@@ -17,11 +17,11 @@ echo '
 /_/   \_\____/ |_| |_| \_\\___/|_|    \___/|_| \_\|_|    \___/|_| \_|_____|
 
 
-ASTROPORT is a peer to peer friends of friends real life game based on IPFS.
-Join the OASIS so we fix the world together.
+ASTROPORT is a peer to peer friends of friends real life game run on IPFS.
+Build an OASIS or join the local crew
 
 @@@@@@@@@@@@@@
-ACTUAL PLAYERS
+OASIS ACTUAL PLAYERS
 @@@@@@@@@@@@@@
 '
 
@@ -30,29 +30,33 @@ ACTUAL PLAYERS
 
 mkdir -p ~/.zen/tmp
 mkdir -p ~/.zen/game/players
+mkdir -p ~/.zen/game/players
 
+## CHECK CONNECTED USER
+if [[ -e ~/.zen/game/players/.current ]]; then
+    echo "WELCOME $(cat ~/.zen/game/players/.current/.pseudo)"
+    PLAYER=$(cat ~/.zen/game/players/.current/.player)
+else
+    PS3='Choisissez ou créez votre identité : '
+    players=($(ls ~/.zen/game/players) "NOUVEAU VISA")
+    select fav in "${players[@]}"; do
+        case $fav in
+        "NOUVEAU VISA")
+            fav=$(${MY_PATH}/tools/VISA.new.sh quiet | tail -n 1)
+            break
+            ;;
+        "")
+            echo "Choix obligatoire. exit"
+            exit
+            ;;
+        *) echo "Salut $fav"
+            break
+            ;;
+        esac
+    done
 
-## VERIFY MadeInZion VISA OWNERSHIP
-# AONE=$(zenity --entry --width 300 --title="Astroport ONE" --text="Connectez vous Astroport One?" --entry-text="OUI" NON)
-PS3='Choisissez ou créez votre identité : '
-players=($(ls ~/.zen/game/players) "NOUVEAU VISA")
-select fav in "${players[@]}"; do
-    case $fav in
-    "NOUVEAU VISA")
-        fav=$(${MY_PATH}/tools/VISA.new.sh quiet | tail -n 1)
-        break
-        ;;
-    "")
-        echo "Choix obligatoire. exit"
-        exit
-        ;;
-    *) echo "Salut $fav"
-        break
-        ;;
-    esac
-done
-
-PLAYER=$fav
+    PLAYER=$fav
+fi
 echo "SVP entrez votre PASS $fav"
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
