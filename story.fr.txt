@@ -1,0 +1,25 @@
+# ASTROPORT One
+Un JEu pour terraformer la planète sur IPFS
+
+Bienvenue.
+
+La confédération intergalactique vient de choisir votre planète pour y établir une expérience.
+
+DELARATION DES LIEUX
+~/.zen/game/places
+
+- Coord GPS - Map Minetest
+- niveaux autonomie
+    * eau
+    * air
+    * feu
+    * terre
+    * ether
+
+
+
+NAVIGATEUR JOUEUR
+~/.zen/game/players
+
+
+ipfs ls Qme6a6RscGHTg4e1XsRrpRoNbfA6yojC6XNCBrS8nPSEox/

@@ -1,0 +1,51 @@
+#!/bin/bash
+################################################################################
+# Author: Fred (support@qo-op.com)
+# Version: 0.1
+# License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
+################################################################################
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+TS=$(date -u +%s%N | cut -b1-13)
+
+
+RECTIME=12
+espeak "Video record starting for $RECTIME seconds"
+# Find "input-slave" :: pactl list short sources
+
+${MY_PATH}/displaytimer.sh 12 &
+# timeout $RECTIME cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.usb-HD_Web_Camera_HD_Web_Camera_Ucamera001-02.analog-mono --sout "#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst=\"$HOME/.zen/tmp/MyVid.mp4\"}"
+
+timeout $RECTIME cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.pci-0000_00_1f.3.analog-stereo --sout "#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst=\"$HOME/.zen/tmp/MyVid.mp4\"}"
+
+# cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.usb-HD_Web_Camera_HD_Web_Camera_Ucamera001-02.analog-mono --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst='~/.zen/tmp/MyVid.mp4'}' --run-time=$RECTIME --stop-time=$RECTIME cvlc://quit
+## RECOMMANCER ?
+
+espeak "mp4 convert" #-acodec aac
+rm -f ~/.zen/tmp/output.mp4
+ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 ~/.zen/tmp/output.mp4
+IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
+echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
+
+
+## Creating new video chain index.html
+PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
+OLDID=$(cat ~/.zen/game/players/.current/.index 2>/dev/null)
+if [[ $OLDID ]]; then
+    sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > /tmp/index.html
+    sed -i s/_IPFSID_/$IPFSID/g /tmp/index.html
+else
+    sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > /tmp/index.html
+fi
+sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/game/players/.current/publish/index.html
+
+INDEXID=$(ipfs add -wrHq ~/.zen/game/players/.current/publish/index.html | tail -n 1)
+echo $INDEXID > ~/.zen/game/players/.current/.index
+echo "LAST VIDEO INDEX http://127.0.0.1:8080/ipfs/$INDEXID"
+
+
+# https://stackoverflow.com/questions/49846400/raspberry-pi-use-vlc-to-stream-webcam-logitech-c920-h264-video-without-tran
+# record to MKV cvlc v4l2:///dev/video0:chroma=h264 :input-slave=alsa://hw:1,0 --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mkv,dst='~/.zen/tmp/Webcam_Record/MyVid.mkv'}'
+# record to MP4 cvlc v4l2:///dev/video0:chroma=h264 :input-slave=alsa://hw:1,0 --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst='~/.zen/tmp/Webcam_Record/MyVid.mp4'}'
+# record + stream cvlc v4l2:///dev/video0:chroma=h264 :input-slave=alsa://hw:1,0 --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:duplicate{dst=standard{access=file,mux=mp4,dst='~/.zen/tmp/Webcam_Record/MyVid.mp4'},dst=standard{access=http,mux=ts,mime=video/ts,dst=:8099}}'
