@@ -1,33 +1,17 @@
-# ASTROPORT One
-Un JEu pour terraformer la planète sur IPFS
-ipfs ls Qme6a6RscGHTg4e1XsRrpRoNbfA6yojC6XNCBrS8nPSEox/
-ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefoot-architect.pdf
+Ce JEu est fait pour ceux qui veulent apprendre à construire un monde harmonieux et abondant.
 
-Bienvenue dans la confédération intergalactique
+Vous découvrirez les nouvelles limites et possibilités que ce mode de vie respectueux de l'environnement vous offre.
 
-DELARATION DES LIEUX
-~/.zen/game/lieux
+Ce guide interactif propose de répondre de façon réaliste aux défis du monde acuel.
+Il partage des solutions faisant appel à des techniques traditionnelles et modernes pour réduire notre empreinte écologique.
 
-- Coord GPS - Map Minetest
-- niveaux autonomie
-    * eau
-    * air
-    * feu
-    * terre
-    * ether
+Les antiques architectes qui foulaient la terre à pied nus ont réussi à construire les jardin suspendus de Babylone.
+En faisant circuler ce jeu chacun pourra l'enrichir, le partager et faire profiter des découvertes à tous.
 
+Ce manuel ne propose pas de méthode générale.
+Il propose au contraire plusieurs façons de batir avec différents matériaux.
+Ainsi vous disposerez d'une grande variété de choix pour créer votre Astroport.
 
+Le climat de votre région est le premier critère.
+Choisir les bons matériaux, les bonnes techniques, apporter le plus de bénéfice pour un cout minimal.
 
-NAVIGATEUR JOUEUR
-~/.zen/game/players
-
-
-
-
-CHOIX DE CONVENTION SYSTEME DE FICHIER
-Chaque fichier est ajouté à ipfs ajoute le fichier .ipfs contenant le lien IPFS du fichier de même nom sans extension .ipfs ?
-
-
-TODO
-AJOUTER des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
-TRADUIRE

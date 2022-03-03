@@ -16,4 +16,32 @@ Longitude: 1.65397188
 
 ---
 
+# ASTROPORT One
+Un JEu pour terraformer la planète sur IPFS
+ipfs ls Qme6a6RscGHTg4e1XsRrpRoNbfA6yojC6XNCBrS8nPSEox/
+ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefoot-architect.pdf
 
+Bienvenue dans la confédération intergalactique
+
+DELARATION DES LIEUX
+~/.zen/game/lieux
+
+- Coord GPS - Map Minetest
+- niveaux autonomie:  eau, nourrture, chaleur, hygiène, esprit, ...
+- expériences techniques + art des gens
+
+
+NAVIGATEUR JOUEUR
+- savoir faire
+- équipements
+- moyens de transport
+
+
+
+CHOIX DE CONVENTION SYSTEME DE FICHIER
+Chaque fichier est ajouté à ipfs ajoute le fichier .ipfs contenant le lien IPFS du fichier de même nom sans extension .ipfs ?
+
+
+TODO
+AJOUTER des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
+TRADUIRE
