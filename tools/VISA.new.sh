@@ -11,6 +11,11 @@ MadeInZion DIPLOMATIC PASSPORT
 =============================================
 A cryptographic key pair to control your P2P Digital Life.
 Solar Punk garden forest terraforming game.
+
+Création de votre PSEUDO, votre PLAYER, votre PASS (diceware) : vos identifiants du JEu
+Création de votre SALT PEPPER : votre compte Gchange et portefeuille June.
+Création de votre clef DUNITER :  votre clef d'accès Cesium ( 100 LOVE <=> 1 DU )
+Création de votre clef IPNS : votre balise de publication dans le réseau IPFS
 "
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -23,7 +28,8 @@ SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
 PEPPER=$(${MY_PATH}/diceware.sh 4 | xargs)
 [[ $1 != "quiet" ]] && echo "-> PEPPER : $PEPPER"
 
-[[ $1 != "quiet" ]] && echo "ENTREZ UN PSEUDO" && read PSEUDO
+[[ $1 != "quiet" ]] && echo "CHOISISSEZ UN PSEUDO" && read PSEUDO
+PSEUDO=${PSEUDO,,} #lowercase
 PLAYER=$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
 [[ $1 != "quiet" ]] && echo "-> $PSEUDO : $PLAYER"
@@ -44,32 +50,44 @@ echo "$PLAYER" > ~/.zen/game/players/$PSEUDO/.player
 echo "$SALT" > ~/.zen/game/players/$PSEUDO/login.june
 echo "$PEPPER" >> ~/.zen/game/players/$PSEUDO/login.june
 
+[[ $1 != "quiet" ]] && echo "Rendez-vous sur https://gchange.fr
+Utilisez ces identifiants pour rejoindre le réseau JUNE
+    $SALT
+    $PEPPER
+"
 G1PUB=$(python3 ${MY_PATH}/key_create_dunikey.py "$SALT" "$PEPPER")
-mv /tmp/secret.dunikey ~/.zen/game/players/$PSEUDO/
-qrencode -s 6 -o $HOME/.zen/game/players/$PSEUDO/QR.png "$G1PUB"
+[[ ! $G1PUB ]]; then
+    [[ $1 != "quiet" ]] && echo "Désolé. Nous n'avons pas pu générer votre clef Cesium automatiquement."
+else
+    mv /tmp/secret.dunikey ~/.zen/game/players/$PSEUDO/
+    qrencode -s 6 -o $HOME/.zen/game/players/$PSEUDO/QR.png "$G1PUB"
 
-secFromDunikey=$(cat ~/.zen/game/players/$PSEUDO/secret.dunikey | grep "sec" | cut -d ' ' -f2)
-echo "$secFromDunikey" > /tmp/${PSEUDO}.sec
-openssl enc -aes-256-cbc -salt -in /tmp/${PSEUDO}.sec -out "/tmp/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
-PASsec=$(cat /tmp/enc.${PSEUDO}.sec | base58) && rm -f /tmp/${PSEUDO}.sec
-qrencode -s 6 -o $HOME/.zen/game/players/$PSEUDO/QRsec.png $PASsec
+    secFromDunikey=$(cat ~/.zen/game/players/$PSEUDO/secret.dunikey | grep "sec" | cut -d ' ' -f2)
+    echo "$secFromDunikey" > /tmp/${PSEUDO}.sec
+    openssl enc -aes-256-cbc -salt -in /tmp/${PSEUDO}.sec -out "/tmp/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
+    PASsec=$(cat /tmp/enc.${PSEUDO}.sec | base58) && rm -f /tmp/${PSEUDO}.sec
+    qrencode -s 6 -o $HOME/.zen/game/players/$PSEUDO/QRsec.png $PASsec
 
-[[ $1 != "quiet" ]] && echo "-> G1PUB QRCODE : $G1PUB"
-[[ $1 != "quiet" ]] && echo "SEC $secFromDunikey"
+    [[ $1 != "quiet" ]] && echo "-> G1PUB QRCODE : $G1PUB"
+    [[ $1 != "quiet" ]] && echo "SEC $secFromDunikey"
+fi
+
+[[ $1 != "quiet" ]] && echo "Rendez-vous sur https://cesium.app et utilisez les mêmes identifiants pour accéder à votre portefeuille JUNE"
 
 cp $HOME/.ipfs/keystore/$KEYFILE ~/.zen/game/players/$PSEUDO/
-qrencode -s 6 -o "$HOME/.zen/game/players/$PSEUDO/IPNS.png" "/ipns/$IPNS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PSEUDO/IPNS.png" "http://localhost:8080/ipns/$IPNS"
 
-[[ $1 != "quiet" ]] && echo "PLAYER LOCAL REPOSITORY ~/.zen/game/players/$PSEUDO/"
+[[ $1 != "quiet" ]] && echo "*** Espace Interplanétaire Activé : ~/.zen/game/players/$PSEUDO/"
+[[ $1 != "quiet" ]] && echo "*** Création de votre balise IPNS : http://localhost:8080/ipns/$IPNS"
 
 # PASS CRYPTING KEY
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PSEUDO/login.june" -out "$HOME/.zen/game/players/$PSEUDO/enc.login.june" -k $PASS 2>/dev/null
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PSEUDO/secret.dunikey" -out "$HOME/.zen/game/players/$PSEUDO/enc.secret.dunikey" -k $PASS 2>/dev/null
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PSEUDO/$KEYFILE -out" "$HOME/.zen/game/players/$PSEUDO/enc.$KEYFILE" -k $PASS 2>/dev/null
-## MORE SECURE ?! USE opengpg
+## TODO MORE SECURE ?! USE opengpg, natools, etc ...
+# ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/$PSEUDO/secret.dunikey -o "$HOME/.zen/game/players/$PSEUDO/secret.dunikey.oasis"
 
-G1PUB=$(cat ~/.zen/game/players/$PSEUDO/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
-${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/$PSEUDO/secret.dunikey -o "$HOME/.zen/game/players/$PSEUDO/secret.dunikey.oasis"
+[[ $1 != "quiet" ]] && echo "Sécurisation de vos clefs par chiffrage SSL... $PASS"
 
 #################################################
 # !!!! # DEV MODE. REMOVE FOR PRODUCTION STATION FORGET PASS
@@ -84,11 +102,12 @@ ln -s ~/.zen/game/players/$PSEUDO ~/.zen/game/players/.current
 rm -f ~/.zen/game/players/$PSEUDO/$KEYFILE
 rm -f ~/.zen/game/players/$PSEUDO/secret.dunikey
 
-[[ $1 != "quiet" ]] && echo "____MANUAL REMOVAL COMMANDS____"
+[[ $1 != "quiet" ]] && echo "_____DEBUG PLAYER REMOVE COMMANDS____"
 [[ $1 != "quiet" ]] && echo "rm -Rf ~/.zen/game/players/$PSEUDO"
-[[ $1 != "quiet" ]] && echo "ipfs key rm $PSEUDO > /dev/null"
-[[ $1 != "quiet" ]] && ls -a ~/.zen/game/players/$PSEUDO
+[[ $1 != "quiet" ]] && echo "ipfs key rm $PLAYER > /dev/null"
+[[ $1 != "quiet" ]] && echo "_____DEBUG PLAYER REMOVE COMMANDS____"
 
-[[ $1 == "quiet" ]] && echo "$PSEUDO"
+[[ $1 != "quiet" ]] && ls -al ~/.zen/game/players/$PSEUDO
+[[ $1 == "quiet" ]] && echo "$PSEUDO = $PLAYER"
 
 exit 0

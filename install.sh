@@ -54,7 +54,7 @@ for i in git fail2ban inotify-tools curl net-tools libsodium* python3-dev python
     fi
 done
 
-for i in build-essential tree fim qrencode jq bc gawk ffmpeg sqlite dnsutils v4l-utils vlc mp3info musl-dev openssl* cargo detox nmap httrack html2text ssmtp imagemagick ttf-mscorefonts-installer libcurl4-openssl-dev; do
+for i in build-essential parallel tree fim qrencode jq bc gawk ffmpeg sqlite dnsutils v4l-utils vlc mp3info musl-dev openssl* cargo detox nmap httrack html2text ssmtp imagemagick ttf-mscorefonts-installer libcurl4-openssl-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         sudo apt install -y $i
     fi
