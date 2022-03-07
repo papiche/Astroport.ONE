@@ -11,44 +11,44 @@ done <"$file1"
 # Obviously if you use this framework to create a game of your own, you can extend this massively.
 echo
 sleep 1
-echo "Vous vous dirigez vers le mur ouest."
+echo "Vous décidez de sortir de la Sation Astroport."
 echo
-sleep 3
-echo "Un long plan de travail se trouve devant vous. Sur le coté de nombreux bocaux"
-echo "certain, eating a very elaborate looking dinner."
 sleep 2
-echo "Weird."
+echo "Vous vérifiez le contenu de votre portefeuille"
+echo "Il vous reste quelques billets..."
+sleep 2
+echo "Etrange."
 echo
 sleep 3
-echo "There appears to have been a place laid at the table for you."
+echo "Certains n'ont pas la même couleur que d'habitude."
 echo
 sleep 5
-echo "Suddenly nervous, you take a seat and look around at the other diners."
-echo "Are these the people who summoned you here? You try to ask them, but"
-echo "seem to be rendered more speechless than a test subject in a portal game."
-echo
-sleep 5
-echo
-echo "A waiter brings out a tray and places it in front of you. Lifting the lid,"
-echo "you find a weird rainbow coloured pill in front of you. Very 'Martix', you think"
-echo "to yourself. What does this mean? Are you supposed to take the pill?"
-echo "Is this some kind of test? And who ARE these people?!"
+echo "Vous sous sentez nerveux."
+echo "Vous avez du mal à vous souvenir de ce que vous êtiez venu faire ici"
+echo "Est-ce que tout cela est vraiment arrivé?"
 echo
 sleep 5
 echo
-echo "What would you like to do?"
+echo "Soudain un homme au visage souriant s'approche de vous,"
+echo "Vous avez bien fait de venir dit-il d'une voix profonde au ton calme. Vous restez avec nous?"
+echo "Voila le jeu. Nous allons tester votre capacité à agir pour l'oeuvre commune que vous visitez"
+echo "Vous aurez le choix ensuite de voyager entre tous les lieux du réseau en franchise!"
+echo
+sleep 5
+echo
+echo "Que voulez vous faire?"
 
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "You get up and look around. Not much over here." ;;
-        s ) echo "You take a look at the decor of the room. It's pretty nice." ;;
-        e ) echo "There's a curtain - but no window behind it. How odd." ;;
-        w ) echo "WHO ARE THESE PEOPLE?!" ;;
-		u ) ./end.sh
+        n ) echo "Pas moyen de se déplacer." ;;
+        s ) echo ".Pas le choix." ;;
+        e ) echo "Pas par là." ;;
+        w ) echo "Plus à l'ouest que ça? Y'a pas!" ;;
+        u ) ./end.sh
             exit ;;
-		h ) echo "You hug the person next to you. He feels cold, and doesn't move." ;;
-        * ) echo "I'm sorry, I don't understand you. Commands are: n, e, s, w, u and h.";;
+        h ) echo "Comment refuser une telle proposition..." ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
 

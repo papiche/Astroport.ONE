@@ -20,11 +20,11 @@ sleep 3
 echo "Une voix synthétique vous accueille."
 echo
 echo "Vous parcourez l'espace du regard"
-echo "Au nord, face à vous se trouve un foyer où brule un bon feu."
+echo "Au nord, face à vous se trouve un foyer où brule un feu."
 echo
-echo "A l'Ouest se trouve un mur où sont suspendus tuyaux, ustensiles et bocaux"
-echo "Un écran et clavier d'ordinateur se situent à l'Est"
-echo "Derrière vous, la porte par où vous êtes entré est toujours ouverte."
+echo "A l'ouest sont suspendus tuyaux, ustensiles et bocaux. Une cuisine?"
+echo "Un écran et un clavier d'ordinateur se situent à l'est de votre position"
+echo "Derrière vous, la porte par où vous êtes entré est encore ouverte."
 echo
 echo "Que voulez vous faire?"
 
@@ -33,15 +33,17 @@ echo "Que voulez vous faire?"
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "Vous vous asseyez sur le grand tapis. Le feu est envoutant. Vous vous relaxez un instant." ;;
+        n ) echo "Vous vous asseyez sur le grand tapis devant le feu. Vous vous relaxez un instant."
+            ./magic8.sh
+            ;;
         s ) ./bigroom.sh
              exit ;;
         e ) ./gameroom.sh
             exit ;;
         w ) ./grue.sh
             exit ;;
-        u ) echo "Choisissez une zone vers où vous diriger dans la pièce pour pouvoir agir." ;;
-        h ) echo "La chaleur est agréable. Sur votre gauche une cuisine, à votre droite un salon" ;;
+        u ) echo "Vous refermez la porte... Puis vous vous ravisez... Si la poignée disparaissait encore. Il vaut mieux la laisser ouverte." ;;
+        h ) echo "La grande pièce est spacieuse, agréable. Devant un feu, à gauche la cuisine, à droite un salon." ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done

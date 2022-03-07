@@ -23,4 +23,7 @@ echo ""
 echo "J'ai regardé dans le futur et je dis: "
 echo "     ${answers[$answer]}" ; echo ""
 
-exit 0
+sleep 3
+./mainroom.sh
+
+exit

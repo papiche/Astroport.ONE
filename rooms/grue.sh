@@ -10,27 +10,26 @@ echo
 
 # I like this room. There is no way to get out of it alive.
 sleep 1
-echo "This is a long room, and ask you walk down it, you see a person."
-echo "Finally! Another person! You start to run toward the shadowy figure"
-echo "but then stop dead. This isn't... no... it can't be. It's... it's..."
-echo "IT'S A GRUE."
+echo "Un évier derrière une fenère, une ancienne porte d'armoire comme table."
+echo "Un meuble fait de planches de bois cousues rempli de bocaux"
+echo "Une glacière recouverte d'une couche d'isolant Un bruleur à gaz."
+echo "C'est un espace pour cuisiner."
 sleep 3
 echo
-echo "No. NO! You cry, as he sits you down and, rather than beating you to"
-echo "death, starts to read you some of his Grue Poetry. It's awful. Your"
-echo "brain starts to melt and, as a result, your nose starts bleeding."
+echo "Vous avez soif. Un filtre à eau gravitationnel vous fait face"
+echo "vous attraper un gobelet et le remplissez à raz bord du liquide de la bombone"
+echo "Vous portez le verre à vos lèvres..."
 echo
 sleep 5
-echo "You start to feel dizzy. You can't think straight. As you fall to the"
-            echo "floor, your own blood and brains all around you, you begin"
-            echo "to wonder why the grue didn't just kill you quickly like"
-            echo "most do. Bloody liberal arts students."
-            echo
-            echo "You slip into unconciousness."
-            sleep 4
-            echo "YOU ARE DEAD."
-            echo
-            read -p "Press [ENTER] to try again..."
-            ./mainroom.sh
+echo "A la première gorgée vous vous sentez ramolir. Comment savoir combien vous avez bu"
+echo "quand votre corps devenu impossible à garder droit s'est éffondré sur le sol."
+echo "Simplement le temps de vous demander pourquoi?"
+echo
+echo "Vous sombrez dans l'inconscience."
+sleep 4
+echo "VOUS VOUS SENTEZ DECOLLER."
+echo
+read -p "Appuyez sur [ENTER] pour revenir..."
+./mainroom.sh
 
 exit

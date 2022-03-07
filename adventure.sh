@@ -9,16 +9,18 @@
 # Thanks and gratitude to all living creatures and the whole creation.
 #                                                      - @Fred
 
-if [[ ! -d ~/.zen/game/rooms ]]; then
 homefolder=$(pwd)
 newgame="$HOME/.zen/game"
 
+if [[ ! -d ~/.zen/game/rooms ]]; then
 mkdir -p $newgame
 
 cp -r rooms $newgame/rooms
 cp -r art $newgame/art
 cp -r script $newgame/script
 cp -r logic $newgame/logic
+cp -r tools $newgame/tools
+
 fi
 
 echo "Chargement..."

@@ -17,12 +17,11 @@ echo '
 /_/   \_\____/ |_| |_| \_\\___/|_|    \___/|_| \_\|_|    \___/|_| \_|_____|
 
 
-ASTROPORT is a peer to peer friends of friends real life game run on IPFS.
-Build an OASIS or join the local crew
+ASTROPORT jeu de terraformation planétaire sur IPFS.<
 
-@@@@@@@@@@@@@@
-OASIS ACTUAL PLAYERS
-@@@@@@@@@@@@@@
+@@@@@@@@@
+ACTUAL PLAYERS
+@@@@@@@@@
 '
 
 ## VERIFY SOFTWARE DEPENDENCIES
@@ -30,12 +29,12 @@ OASIS ACTUAL PLAYERS
 
 mkdir -p ~/.zen/tmp
 mkdir -p ~/.zen/game/players
-mkdir -p ~/.zen/game/players
 
 ## CHECK CONNECTED USER
-if [[ -e ~/.zen/game/players/.current ]]; then
-    echo "WELCOME $(cat ~/.zen/game/players/.current/.pseudo)"
+if [[ -e ~/.zen/game/players/.current/.pseudo ]]; then
     PLAYER=$(cat ~/.zen/game/players/.current/.player)
+    PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo)
+    echo "BIENVENUE $PSEUDO - $PLAYER"
 else
     PS3='Choisissez ou créez votre identité : '
     players=($(ls ~/.zen/game/players) "NOUVEAU VISA")
@@ -60,7 +59,8 @@ fi
 echo "SVP entrez votre PASS $fav"
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
-cat ~/.zen/game/players/.current/.pass
+
+cat ~/.zen/game/players/.current/.pass # DEVEL
 read PASS
 
 ## DECODE CURRENT PLAYER CRYPTO

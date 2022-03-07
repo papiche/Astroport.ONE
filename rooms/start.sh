@@ -13,7 +13,7 @@ sed -i='' 's/on/off/' ../logic/leverlogic.ben
 file1="../art/titleart.ben"
 while IFS= read -r line
 do
-	echo "$line"
+    echo "$line"
 done <"$file1"
 echo
 
@@ -22,7 +22,7 @@ sleep 5
 file2="../script/opening.ben"
 while IFS= read -r line
 do
-	echo "$line"
+    echo "$line"
 done <"$file2"
 read -p "Pressez sur [ENTER] pour démarrer..."
 
@@ -31,22 +31,22 @@ clear
 file1="../art/titleart.ben"
 while IFS= read -r line
 do
-	echo "$line"
+    echo "$line"
 done <"$file1"
 sleep 1
 
 # Here's where you introduce the room to the player. Be sure to tell them if there
 # Are exits - but don't give too much away. Make it fun for them to explore!
 echo
-echo "La téléportation vous a placé debout près d'une batisse en ruine."
-echo "C'est une ancienne grange faites de gros murs de pierre."
-echo "Le toit et une partie des murs sont effondrés."
+echo "La téléportation vous a placé debout au centre d'une clairière."
+echo "Vous vous trouvez près d'une ancienne bergerie aux gros murs de pierres."
+echo "Le toit et une bonne partie des murs sont effondrés."
 echo
-echo "Vous disposez d'un sac à dos et d'une bouteille isotherme."
-echo "Le soleil est déjà haut dans le ciel."
+echo "Tout autour la forêt. Des feuillus. Quelques arbustres épineux."
+echo "SOus vos pieds. Le sol est rouge parsemé dé cailloux blancs."
 echo
 echo "Vous pouvez vous diriger selon les points cardinaux."
-echo "Nord, Sud, Est, Ouest."
+echo "Au nord un chemin remonte, au sud un passage descend, à l'est la bergerie, à l'ouest une trace."
 echo
 echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u et h."
 
@@ -54,16 +54,16 @@ echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u et h."
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) ./white.sh 
+        n ) ./white.sh
             exit ;;       # These lines will take the player to a new room - a new script file.
-        s ) ./brown.sh 
+        s ) ./brown.sh
             exit ;;       # Be sure to include 'exit' otherwise the game won't quit properly!
         e ) ./red.sh
-        	exit ;;
+            exit ;;
         w ) ./green.sh
-        	exit ;;
-		u ) echo "Vous ouvrez votre sac il contient une tente et des vêtements chauds." ;;     # Something to say? You can also just echo.
-		h ) echo "Vous vous souvenez..." ;;
+            exit ;;
+        u ) echo "Vous ouvrez votre sac il contient une tente, des vêtements, un termos, une scie pliante et un couteau" ;;     # Something to say? You can also just echo.
+        h ) echo "Comment avez-vous pu arriver ici.? Des souvenirs vous reviennent... https://oasis.astroport.com/a-quel-jeu-voulons-nous-jouer/" ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done

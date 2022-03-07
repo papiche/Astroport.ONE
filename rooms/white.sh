@@ -21,7 +21,7 @@ echo
 # Here we're going to check to see if the lever - the only logic we are using in this game - is on or off.
 leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
-                echo "Une porte sur la façade est entrouverte. Vous devriez entrer..."
+                echo "Une poignée est apparue sur la porte de la façade..."
             else
                 echo "Vous en faites le tour..."
                 echo "Aucune entrée n'est visible."
@@ -37,13 +37,12 @@ echo "Que voulez-vous faire ?"
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "Vous vous aventurez dans la forêt plus au nord. Sans boussole, vous allez vous vous perdez rapidement... "
-            exit ;;
+        n ) echo "Si vous vous aventurez dans la forêt plus au nord. Sans boussole, vous tisqiez de vous perdre..."
         s ) ./mainroom.sh
             exit ;;
         e ) echo "Vous arrivez le long d'une corniche qui surplombe un ruisseau qui coule dans le fond de la ravine. Impossible de passer" ;;
         w ) echo "Vous voilà face à un Jardin luxuriant. Une cloture électrique en délimite et empêche l'accès." ;;
-        h )  echo "Vous apercevez à l'interieur une video en cours de projection..."
+        h )  echo "Il y a à l'interieur une video en cours de projection..."
                 sleep 2
               xdg-open "https://www.youtube.com/embed/Yk-WRXKysXM"
             ;;

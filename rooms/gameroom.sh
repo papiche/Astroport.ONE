@@ -12,46 +12,54 @@ echo
 # Just because something looks shiny and fun, doesn't make it any
 # less deadly.
 sleep 1
-echo "Un tout petit ordinateur"
-echo "sat on a desk in the middle of it. Is that... YES!"
-echo "Steam is installed, and it looks like the entire library of"
-echo "games is installed! This is one epic gaming rig."
+echo "Dans une cabine, un écran est disposé en coin. Un tout petit ordinateur"
+echo "y est raccordé...  D'autres fils sortent de l'appareil. Une webcam. Une imprimante. COOL!"
+echo "Un TerraPi4. Astroport y est installé."
 echo
-echo "The only way out is east, back the way you came... but..."
-echo "shiny. Maybe it'd be rude NOT to sit down and game a little."
+sleep 2
+echo "Depuis le GRAND RESET, partager des informations est totalement réglementé"
+echo "En dehors de la version payante, cet autre INTERNET gratuit existe. Il se contruit comme on collecte les oeufs à Paques."
+echo "Certains l'appelle 'Le Blob'. On y échange en pair à pair."
 echo
-echo "What would you like to do?"
+echo "Cet endroit est une ambassade MadeInZion. Un crypto pays de la Nation d'Etat d'Esprit."
+echo "Une version optimisée, décentralisée, sans frontière des anciens pays et gouvernements."
+echo
+echo "Vous pouvez "
+echo
+echo "Une version optimisée, décentralisée, sans frontière des anciens pays et gouvernements."
+echo
+echo "Que voulez vous faire?"
 
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "WALL EQUALS TRUE." ;;
-        s ) echo "Nope. Wall." ;;
-        w ) ./kroo2.sh
+        n ) echo "Vous êtes dans une cabine. Des QRCode sont collés à la parois nord" ;;
+        s ) echo "Cette paroie comprte un miroir. Pour se faire une beauté avant d'enregistrer une capsule vidéo." ;;
+        w ) ./kroo.sh
             exit ;;
-        e ) echo "You were going to go east, then you took a wall to the face." ;;
+        e ) echo "Vous êtes face à l'écran. Au dessus des hauts parleurs et une webcam" ;;
         u ) echo
-            echo "You sit and game. And game. And game. You forget about time,"
-            echo "and food, and people. You realise that you cannot get up. You can't"
-            echo "move. You are stuck to the chair."
+            echo "Vous appuyez sur l'interupteur de l'écran et touchez la barre espace du clavier"
+            echo "D'un coup d'oeil vous savez que votre intuition était la bonne"
+            echo "Plusieurs icones sont là."
             echo
             sleep 4
-            echo "Days go by. Weeks. You've played game after game, but..."
+            echo "Ajouter un rêve au lieu."
+            echo "Ajouter un astronaute au jeu."
+            echo "Voir les primes."
+            echo "__________________ Connexion....."
+            sleep 3
             echo
-            echo "Your body is giving up. With your final breath you come to realise that"
-            echo "you cannot live on gamerpoints alone. You close your eyes for the last time."
-            sleep 4
             echo
+            echo "INITIALISATION ASTROPORT"
             echo
-            echo "YOU ARE DEAD."
-            echo
-            read -p "Press [ENTER] to try again..."
-            ./mainroom.sh
+            read -p "Appuyez sur [ENTER] pour créer votre VISA"
+            ../tools/VISA.new.sh
             exit
 
         ;;
-        h ) echo "You hug the computer. Nerd." ;;
-        * ) echo "I'm sorry, I don't understand you. Commands are: n, e, s, w, u and h.";;
+        h ) echo "Votre smartphone a détecté le réseau Wifi 'qo-op' typique de ce lieu. Connectez-vous à son Nextcloud https://192.168.220.1 " ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
 
