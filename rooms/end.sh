@@ -76,12 +76,12 @@ do
     echo "$line"
 done <"$file1"
 echo
-echo "Thank you for playing the demo of BashVenture. Pretty random storyline, I know,"
-echo "but the aim was to show off the functionality, not win a pulitzer prize."
-echo 
-echo "Whoever you are, wherever you're from - live long and prosper. Keep smiling!"
+echo "Merci d'avoir joué le jeu"
+echo "Je suis heureux que vous ayez rejoins les astronautes terraformeurs."
 echo
-echo "                                                                - @BenNunney"
+echo "Toutes les transitions seront possible quand nous autons franchi celle de la monnaie"
+echo
+echo "                                                                - @Fred"
 echo
 
 # That's all, folks!

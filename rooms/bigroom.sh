@@ -14,7 +14,11 @@ echo
 sleep 1
 echo "Vous décidez de sortir de la Sation Astroport."
 echo
-leverstate=`cat ../logic/stationlogic.ben`
+sleep 4
+echo "aAu moment où vous franchiussez le seul.."
+echo "Un immense flash fait jaillir partant de vos pieds votre ombre, immense silhouète aloongée"
+
+            echoleverstate=`cat ../logic/stationlogic.ben`
             if [ "$leverstate" = "on" ]; then
 
                 sleep 2
@@ -24,7 +28,7 @@ leverstate=`cat ../logic/stationlogic.ben`
                 echo "Nous vous attendons sur notre 'bon coin' https://gchange.fr "
                 echo
                 sleep 3
-                echo "Il vous reste maintenant à installer IPFS pour rejoindre l'Internet des Gens."
+                echo "Il vous reste maintenant à installer IPFS pour rejoindre l'autre Internet."
                 echo
                 sleep 4
                 echo "astrXbian -videoclub- contient un script d'installation à mettre à votre sauce."
