@@ -56,7 +56,7 @@ Utilisez ces identifiants pour rejoindre le réseau JUNE
     $PEPPER
 "
 G1PUB=$(python3 ${MY_PATH}/key_create_dunikey.py "$SALT" "$PEPPER")
-[[ ! $G1PUB ]]; then
+if [[ ! $G1PUB ]]; then
     [[ $1 != "quiet" ]] && echo "Désolé. Nous n'avons pas pu générer votre clef Cesium automatiquement."
 else
     mv /tmp/secret.dunikey ~/.zen/game/players/$PSEUDO/

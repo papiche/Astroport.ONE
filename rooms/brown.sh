@@ -23,9 +23,9 @@ echo "Il ressemble à une grosse calculatrice"
 # Here we tell the player whether the lever is on or off.
 leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
-                echo "Le mot SCAN clignote sur l'écran..."
+                echo "'VISA SVP' clignote sur l'écran..."
             else
-                echo "La machine affiche l'heure qu'il est $(date +"%H:%M")"
+                echo "La machine affiche l'heure : 20:12"
             fi
 echo
 echo "Il est tard pour explorer le chemin à pied, vous devriez retourner d'où vous venez."
@@ -44,13 +44,16 @@ while true; do
         w ) echo "Une rivière vous empêche de passer." ;;
         u ) leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
-                echo "L'écran  fait défiler le texte 'VISA SVP'"
+                echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
                 sed -i='' 's/off/on/' ../logic/leverlogic.ben
-                echo "Vous touchez le clavier. L'écran se met à clignoter... "
+                echo "Vous pianotez sur l'appareil..."
+                sleep 3
+                echo "A moment où vous touchez la touche '#' L'écran se met à clignoter..."
+                echo "Puis le message 'ACTIVATION STATION' défile sur les caractères lumineux."
             fi
         ;;
-        h ) echo "Le terminal est réalisé avec un mini ordinateur Raspberry Pi. Il porte un logo - MadeInZion - Astroport ONE" ;;
+        h ) echo "Le terminal comporte un clavier numérique. Un petit écran.. Il est réalisé avec un mini ordinateur Raspberry Pi. Il porte l'adresse G1TAG [https://g1sms.fr]" ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done

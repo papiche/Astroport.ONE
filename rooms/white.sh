@@ -15,7 +15,7 @@ echo "Au sommet de cette petite colline vous découvrez un magestueux chêne"
 echo "trônant au centre d'une clairière lumineuse. La forêt à cet endroit"
 echo "forme un cercle tout autour..."
 echo
-echo "Un Astroport fait de vitres, de planches et de chevrons"
+echo "Un Astroport fait de vitres, de planches, de tôles et de chevrons"
 echo "est posé là. Eclairé par les rayons du soleil."
 echo
 # Here we're going to check to see if the lever - the only logic we are using in this game - is on or off.
@@ -37,12 +37,12 @@ echo "Que voulez-vous faire ?"
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "Si vous vous aventurez dans la forêt plus au nord. Sans boussole, vous tisqiez de vous perdre..."
+        n ) echo "Vous vous aventurez dans la forêt plus au nord. Sans boussole, vous allez vous perdre rapidement... " ;;
         s ) ./mainroom.sh
             exit ;;
-        e ) echo "Vous arrivez le long d'une corniche qui surplombe un ruisseau qui coule dans le fond de la ravine. Impossible de passer" ;;
-        w ) echo "Vous voilà face à un Jardin luxuriant. Une cloture électrique en délimite et empêche l'accès." ;;
-        h )  echo "Il y a à l'interieur une video en cours de projection..."
+        e ) echo "Une corniche surplombe un ruisseau qui coule dans le fond de la ravine. Impossible de passer sans équipement" ;;
+        w ) echo "Vous voilà face à un Jardin luxuriant. Une cloture électrique le délimite et en empêche l'accès." ;;
+        h )  echo "Vous voyez à l'interieur de la Station une video en cours de projection..."
                 sleep 2
               xdg-open "https://www.youtube.com/embed/Yk-WRXKysXM"
             ;;
@@ -51,7 +51,7 @@ while true; do
                 ./kroo.sh
                 exit
             else
-                echo "Vous essayez de trouver une ouverture... Impossible d'entrer."
+                echo "Vous cherchez une ouverture... Pas la moindre. Impossible d'entrer sans commettre une effraction..."
             fi
             ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;

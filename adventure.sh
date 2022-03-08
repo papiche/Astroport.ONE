@@ -20,6 +20,8 @@ cp -r art $newgame/art
 cp -r script $newgame/script
 cp -r logic $newgame/logic
 cp -r tools $newgame/tools
+cp start.sh $newgame/
+
 
 fi
 

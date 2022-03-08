@@ -43,10 +43,10 @@ echo "Vous vous trouvez près d'une ancienne bergerie aux gros murs de pierres."
 echo "Le toit et une bonne partie des murs sont effondrés."
 echo
 echo "Tout autour la forêt. Des feuillus. Quelques arbustres épineux."
-echo "SOus vos pieds. Le sol est rouge parsemé dé cailloux blancs."
+echo "Sous vos pieds. Le sol est rouge parsemé de cailloux blancs."
 echo
 echo "Vous pouvez vous diriger selon les points cardinaux."
-echo "Au nord un chemin remonte, au sud un passage descend, à l'est la bergerie, à l'ouest une trace."
+echo "Au nord un chemin remonte, au sud un passage descend, à l'est, la bergerie, à l'ouest, une trace d'animaux"
 echo
 echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u et h."
 
