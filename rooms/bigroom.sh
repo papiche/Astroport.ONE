@@ -22,7 +22,7 @@ echo "Un immense flash fait jaillir partant de vos pieds votre ombre, immense si
             if [ "$leverstate" = "on" ]; then
 
                 sleep 2
-                echo "Le monde LIBRE est en vous."
+                echo "Il ne dépend que de vous d'explorer ce nouveau futur."
                 echo "Le Visa MadeInZion vous permet de découvrir celui qui vous entoure"
                 sleep 2
                 echo "Nous vous attendons sur notre 'bon coin' https://gchange.fr "
@@ -31,9 +31,9 @@ echo "Un immense flash fait jaillir partant de vos pieds votre ombre, immense si
                 echo "Il vous reste maintenant à installer IPFS pour rejoindre l'autre Internet."
                 echo
                 sleep 4
-                echo "astrXbian -videoclub- contient un script d'installation à mettre à votre sauce."
-                echo "Vous avez du mal à vous souvenir de ce que vous êtiez venu faire ici"
-                echo "Est-ce que tout cela est vraiment arrivé?"
+                echo "Devenez ambassadeur."
+                echo "Renseignez vous sur les formations habitats posés, vissés et cousus. "
+                echo "Apprenez à nourrir le sol et reconnaitre les plantes de votre environement. SOlDiag"
                 echo
             else
                 echo ""
