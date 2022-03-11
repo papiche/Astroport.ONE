@@ -1,0 +1,531 @@
+/** General **/
+
+html {
+    font-family: Helvetica, Geneva, sans-serif;
+}
+
+body {
+    color: #666;
+}
+
+html,
+body {
+    margin: 0;
+    background: hsla(182, 43%, 94%, 1);
+}
+
+/** Helpers **/
+
+.noscroll {
+    overflow: hidden;
+}
+
+/** Structure **/
+
+header {
+    text-align: left;
+    margin: 30px;
+    position: relative;
+    color: rgba(0, 0, 0, .25);
+}
+header img {
+    float: left;
+    margin-right: 2em;
+}
+header h1 {
+    color: #333;
+    margin: 0 0 0.2em;
+    font-size: 3em;
+    font-weight: 600;
+}
+header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 500;
+    color: rgba(0, 0, 0, .35);
+}
+
+.attr {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translate3d(0,-50%,0);
+    font-size: 0.9em;
+}
+.attr a {
+    color: #7abbed;
+    text-decoration: none;
+}
+.attr a:hover {
+    text-decoration: underline;
+}
+
+article {
+    font-family: Verdana, Geneva, sans-serif;
+}
+
+footer {
+    position: fixed;
+    width: 100%;
+    position: sticky;
+    bottom: 0;
+    padding-bottom: 30px;
+    z-index: 1;
+}
+
+/** MCE overrides **/
+
+.editor-toolbar,
+.CodeMirror {
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: 0 !important;
+}
+.editor-toolbar {
+    background-color: #f9f9f9 !important;
+}
+.editor-statusbar {
+    padding: 8px 30px !important;
+}
+
+/** Button **/
+
+button {
+    overflow: visible;
+    text-transform: none;
+    font: inherit;
+}
+
+.pure-button {
+    border: transparent;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: inline-block;
+    font-family: inherit;
+    line-height: normal;
+    padding: .5em 1em;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    white-space: nowrap;
+    zoom: 1;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    color: rgba(0, 0, 0, .5);
+    font-weight: bold;
+    border-radius: 4px;
+    background: rgb(122, 202, 206);
+    display: block;
+    transition: all .25s ease-in;
+    color: #fff;
+    border-color: rgb(82, 137, 132);
+    border-width: 1px 1px 3px;
+    border-style: solid;
+    font-family: Helvetica;
+}
+.pure-button:hover {
+    background-color: #93d4d7;
+}
+.pure-button:active {
+    border-width: 3px 1px 1px;
+}
+
+.button-publish {
+    margin: 0 auto;
+    font-size:  150%;
+}
+
+/** Overlay **/
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,.75);
+    z-index: 2;
+    transform: perspective(600px);
+    display: none;
+    overflow-y: scroll;
+}
+
+#overlay section {
+    background: #fff;
+    margin: 0 auto;
+    transform: translate3d(-50%, -50%,0);
+    left: 50%;
+    top: 50%;
+    position: fixed;
+    padding: 0;
+    text-align: left;
+    width: 48em;
+    display: none;
+    border-radius: 5px;
+    box-shadow: 0px 10px 12px -5px rgba(0,0,0,.25);
+    padding-bottom: 20px;
+}
+#overlay section div {
+    margin: 0 20px;
+}
+#overlay section div p,
+#overlay section a.essayaddr,
+#overlay section code {
+    margin: 0 0 1em;
+}
+#overlay section a.essayaddr {
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
+    background: #f9f9f9;
+    padding: 5px;
+    border-radius: 3px;
+    display: block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+#overlay section code {
+    background: #000;
+    border-radius: 5px;
+    color: #999;
+    display: block;
+    overflow: hidden;
+    overflow-x: auto;
+    padding: 5px;
+    white-space: nowrap;
+}
+#overlay section div.note {
+    padding: 10px;
+    background-color: rgb(255, 255, 209);
+    border-radius: 5px;
+}
+#overlay section div.note p:last-child {
+    margin-bottom: 0;
+}
+#overlay section h3 {
+    margin: 0 0 20px;
+    padding: 10px;
+    background: hsla(182, 43%, 94%, 1);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 1px solid rgba(0,0,0,.15);
+}
+#overlay section a {
+    color: #7abbed;
+}
+#overlay .pure-button {
+    margin: 20px auto 0;
+    display: block;
+}
+#overlay #essay-pin {
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#overlay .loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: block;
+    width: 30px;
+    height: 30px;
+    transform: translate3d(-50%, -50%, 0) rotate3d(0,1,1, -90deg) scale3d(1,1,1);
+    transform-style: preserve-3d;
+    animation: pulse 0.5s infinite alternate;
+}
+#overlay .loading:before,
+#overlay .loading:after,
+#overlay .loading em {
+    content: '';
+    display: block;
+    background-color: #4a9ea1;
+    width: 30px;
+    height: 30px;
+    text-indent: -9999999px;
+    box-shadow: inset 0 0 0px 4px rgba(0, 0, 0, .25);
+}
+#overlay .loading:before {
+    transform: translate3d(50%,0%,0) rotateY(90deg);
+    background: rgb(110,183,187);
+}
+#overlay .loading em {
+    transform: translate3d(0,-100%,15px);
+    background: rgb(122,202,206);
+}
+#overlay .loading:after {
+    transform: translate3d(0%,-150%,0) rotateX(   90deg );
+    background: rgb(95,157,161);
+}
+
+@keyframes pulse {
+    from {
+        transform: translate3d(-50%, -50%, 0) rotate3d(0,1,1, -90deg) scale3d(1,1,1);
+    }
+    to {
+        transform: translate3d(-50%, -50%, 0) rotate3d(0,1,1, -90deg) scale3d(1.5,1.5,1.5);
+    }
+}
+
+/** Overlay **/
+
+.overlay {
+    display: none;
+}
+.overlay.open {
+    display: block;
+}
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 3;
+}
+.overlay .overlay-body {
+    width: 600px;
+    background: #fff;
+    position: absolute;
+    left: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    top: 50%;
+    text-align: center;
+    padding: 0;
+    border-radius: 0px;
+    box-shadow: 0 12px 30px 0 rgba(0,0,0,.5), inset 0 1px 0 0 hsla(0,0%,100%,.65);
+    z-index: 4;
+}
+.overlay .closeoverlay {
+    cursor: pointer;
+}
+.overlay .overlay-body .tabs {
+    white-space: nowrap;
+    background: rgb(122, 202, 206);
+    overflow: hidden;
+}
+.overlay .overlay-body .tab {
+    padding: 10px 0;
+    width: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    text-decoration: none;
+    color: #fff;
+}
+.overlay .overlay-body .tabs .active {
+    color: #000;
+    background: #fff;
+    cursor: default;
+}
+.overlay .overlay-body [data-tabcontent] {
+    display: none;
+    padding: 20px;
+}
+.overlay .overlay-body [data-tabcontent].active {
+    display: block;
+}
+.overlay #upload,
+.overlay form button {
+    margin: 0 0 20px;
+    display: inline-block;
+}
+.overlay #upload.uploading {
+    color: #33759F;
+    background-color: transparent;
+    cursor: default;
+}
+.overlay #upload.uploading:hover {
+    border-color: #33759F;
+}
+.overlay #background {
+    display: none;
+}
+.overlay .overlay-body h3 {
+    margin: 0 0 20px;
+    color: #33759F;
+    padding: 10px 10px 10px;
+    border-bottom: 2px solid #33759F;
+    text-align: left;
+}
+.overlay .visit {
+    display: block;
+    margin-bottom: 20px;
+    font-weight: bold;
+    font-size: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.overlay .fields {
+    text-align: left;
+    width: inherit;
+}
+.overlay .field {
+    margin-bottom: 35px;
+    position: relative;
+}
+.overlay .field:after {
+    display: none;
+    position: absolute;
+    top: 0px;
+    left: 50%;
+    transform: translate3d(-50%, 0,0 );
+    padding: 2px 9px;
+    margin: 0;
+}
+.overlay .field.error:after {
+    content: attr(data-err);
+    display: block;
+}
+.overlay label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.overlay input {
+    width: 100%;
+    margin: 0;
+}
+.overlay .pin-stats {
+    display: none;
+    position: absolute;
+    left: 50%;
+    transform: translate3d(-50%, 100%, 0);
+    font-size: 15px;
+    font-style: normal;
+    bottom: -10px;
+}
+.overlay .pin-stats.open {
+    display: block;
+}
+
+#form-messages p {
+    margin: 10px;
+    display: inline-block;
+    padding: 5px 15px;
+}
+.overlay .field:after,
+#form-messages p {
+    background: red;
+    color: #fff;
+    font-size: 15px;
+    border-radius: 30px;
+}
+
+input {
+    outline: none;
+    margin: 0;
+    font-size: 20px;
+    display: inline;
+    border-radius: 30px;
+    padding: 8px 13px;
+    border: 2px solid #787C7F;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+}
+input::placeholder {
+    color: #ccc;
+}
+
+
+/** Media queries **/
+
+@media (max-width: 48em) {
+    header {
+        text-align: center;
+    }
+    header img {
+        float: none;
+        width: 70px;
+        margin: 0 0 1em 0;
+    }
+    header h1 {
+        font-size: 2em;
+    }
+    header h2 {
+        font-size: 1.2em;
+    }
+    .attr {
+        position: static;
+        transform: initial;
+        margin-top: 30px;
+        text-align: center;
+    }
+    .editor-statusbar {
+        display: none !important;
+    }
+    #overlay section {
+        border-radius: 0;
+        width: 100%;
+        top: 0;
+        left: 0;
+        transform: initial;
+        position: static;
+    }
+    #overlay section h3 {
+        border-radius: 0;
+    }
+}
+
+@media (max-width: 650px) {
+    .overlay .overlay-body {
+        width: 100%;
+        border: none;
+        border-radius: 0;
+        bottom: 0;
+        transform: none;
+        left: 0;
+        box-sizing: border-box;
+        top: initial;
+        padding: 0;
+    }
+    .overlay form button {
+        margin-top: 20px;
+    }
+    .overlay .fields {
+        padding: 20px 20px 0;
+        box-sizing: border-box;
+    }
+    .overlay .field {
+        margin-bottom: 20px;
+        white-space: nowrap;
+    }
+    .overlay .field:last-child {
+        margin: 0;
+    }
+    .overlay .button.newpin {
+        margin: 20px 0;
+    }
+    .overlay .button.closeoverlay {
+        display: block;
+        text-align: center;
+        border: none;
+        margin-top: 20px;
+        border-radius: 0;
+        padding: 10px;
+        font-weight: normal;
+        margin: 0;
+        color: #33759F;
+        border: none;
+        border-top: 1px solid #ddd;
+    }
+}
+@media (max-width: 520px) {
+    .authenticated h1 {
+        font-size: 30px;
+    }
+    .overlay .overlay-body h3 {
+        margin-bottom: 10px;
+    }
+    .overlay .pin-details p.name input {
+        width: 150px;
+    }
+    .overlay .pin-details p.name .button {
+        padding: 7px 10px;
+    }
+}

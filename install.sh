@@ -35,14 +35,9 @@ MMMM0..0MMMMMX    'NMMMMMMMMMMX 'NMMMMMMMMMMM',WMMMMMMMMMMMMx  OMMMMMMMMMMN  dMM
            o00000000000000x,      O000:     l000x    c000x   .lk0000Od;    O000;            ck0000Ox:   o000x    l000d     .0000.
 
 ASTROPORT is a peer to peer friends of friends real life game based on IPFS.
-Join the OASIS so we fix the world together.
+Join the Astronaiuts Team. Learn and share how to live together on 'One Planet'
 
-Oasis is a collective shared place where
-Players are dreamers wanting to enhance their relation to the world
-
-@@@@@@@@@@@@@@
-INSTALL DEPENDENCIES
-@@@@@@@@@@@@@@
+NOW INSTALLING REQUIRED TOOLS & CRYPTO STUFF
 "
 
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
@@ -71,12 +66,12 @@ sudo pip3 install brother_ql
 sudo cupsctl --remote-admin
 sudo usermod -aG lpadmin pi
 
-## CREATE GAME DIRECTORIES
+## CREATING GAME DIRECTORIES
 mkdir -p ~/.zen/tmp
 mkdir -p ~/.zen/game/players
 
 ########################################################################
-echo "CREATING OASIS ASTROPORT STATION IPFSNODEID"
+echo "CREATING OASIS ASTROPORT STATION SPECIAL IPFSNODEID"
 ########################################################################
 salt="$(${MY_PATH}/tools/diceware.sh 3 | xargs)"
 salto="$salt"
@@ -84,9 +79,9 @@ salto="$salt"
 pepper="$(${MY_PATH}/tools/diceware.sh 3 | xargs)"
 XZUID=$(${MY_PATH}/tools/diceware.sh 1 | xargs)${RANDOM:0:2}$(${MY_PATH}/tools/diceware.sh 1 | xargs)
 
-[[ "$USER" != "xbian" ]] && echo "Gardez ou modifiez cet identifiant (passphrase 1)? $salt" && read salty && [[ $salty ]] && salt="$salty"
-[[ "$USER" != "xbian" ]] && echo "Gardez ou modifiez cet mot de passe (passphrase 2)? $pepper" && read peppery && [[ $peppery ]] && pepper="$peppery"
-[[ "$USER" != "xbian" &&  "$salt" != "$salto" ]] && echo "Gardez ou modifiez ce Pseudo? $XZUID" && read XZUIDy && [[ $XZUIDy ]] && XZUID="$XZUIDy"
+echo "Gardez ou modifiez cet identifiant (passphrase 1)? $salt" && read salty && [[ $salty ]] && salt="$salty"
+echo "Gardez ou modifiez cet mot de passe (passphrase 2)? $pepper" && read peppery && [[ $peppery ]] && pepper="$peppery"
+[[ "$salt" != "$salto" ]] && echo "Gardez ou modifiez ce Pseudo? $XZUID" && read XZUIDy && [[ $XZUIDy ]] && XZUID="$XZUIDy"
 
 g1_salt="$salt"
 g1_pepper="$pepper"
@@ -97,7 +92,7 @@ echo "$g1_pepper" >> /tmp/secret.june
 
 ########################################################################
 ########################################################################
-echo "CREATING /tmp/secret.dunikey (https://cesium.app WALLET)"
+echo "CREATING STATION secret.dunikey (https://cesium.app WALLET)"
 ########################################################################
 python3 ${MY_PATH}/tools/key_create_dunikey.py "$g1_salt" "$g1_pepper"
 g1pub=$(cat /tmp/secret.dunikey | grep "pub" | cut -d ' ' -f 2)
@@ -105,7 +100,7 @@ g1sec=$(cat /tmp/secret.dunikey | grep "sec" | cut -d ' ' -f 2)
 
 ########################################################################
 ########################################################################
-echo "CREATING /tmp/config.ipfs"
+echo "CREATING config.ipfs"
 ########################################################################
 ipfs_ID=$(python3 ${MY_PATH}/tools/create_ipfsnodeid_from_tmp_secret.dunikey.py)
 echo $ipfs_ID > /tmp/secret.ipfs && source /tmp/secret.ipfs
