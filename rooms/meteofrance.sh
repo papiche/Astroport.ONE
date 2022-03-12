@@ -8,22 +8,23 @@ ts=$(date -u +%s%N | cut -b1-13)
 ################################################################################
 # Capture la photographie satellite de la France
 # https://fr.sat24.com/image?type=visual5HDComplete&region=fr
-# https://media.meteonews.net/sat/EURwest_1273x892_c1/sat_20220308_1500.jpg
 
-mkdir -p ~/..zen/game/meteofrance
-rm -f ~/..zen/game/meteofrance/meteo.jpg
-curl  -m 20 --output ~/..zen/game/meteofrance/meteo.jpg https://media.meteonews.net/sat/EURwest_1273x892_c1/sat_20220308_1500.jpg
+mkdir -p ~/..zen/game/meteo.anim.eu
+rm -f ~/..zen/game/meteo.anim.eu/meteo.png
+curl  -m 20 --output ~/..zen/game/meteo.anim.eu/meteo.png https://s.w-x.co/staticmaps/wu/wu/satir1200_cur/europ/animate.png
 
-if [[ ! -f  ~/..zen/game/meteofrance/meteo.jpg ]]; then
-    echo "Impossible de vous connecter à https://fr.sat24.com/"
+if [[ ! -f  ~/..zen/game/meteo.anim.eu/meteo.png ]]; then
+    echo "Impossible de vous connecter au service meteo"
     exit 1
 else
-    echo "MIse à jour de votre archive meteo : $ts"
-    echo $ts > ~/..zen/game/meteofrance/.ts
+    echo "NEED HTML TEMPLATING"
+    echo "Mise à jour archive points meteo : $ts"
+    echo $ts > ~/..zen/game/meteo.anim.eu/.ts
+
+    IPFS=$(ipfs add -Rw ~/..zen/game/meteo.anim.eu/)
+    echo $IPFS > ~/..zen/game/meteo.anim.eu/.chain
 
 
-    IPFS=$(ipfs add -Rw ~/..zen/game/meteofrance/)
-    echo $IPFS > ~/..zen/game/meteofrance/.chain
 
 fi
 

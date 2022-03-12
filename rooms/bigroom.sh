@@ -14,26 +14,22 @@ echo
 sleep 1
 echo "Vous décidez de sortir de la Sation Astroport."
 echo
-sleep 4
-echo "aAu moment où vous franchiussez le seul.."
-echo "Un immense flash fait jaillir partant de vos pieds votre ombre, immense silhouète aloongée"
-
             echoleverstate=`cat ../logic/stationlogic.ben`
             if [ "$leverstate" = "on" ]; then
 
                 sleep 2
                 echo "Il ne dépend que de vous d'explorer ce nouveau futur."
-                echo "Le Visa MadeInZion vous permet de découvrir celui qui vous entoure"
+                echo "Le Visa MadeInZion nous permet de découvrir ensemble le monde qui nous entoure"
                 sleep 2
-                echo "Nous vous attendons sur notre 'bon coin' https://gchange.fr "
+                echo "Nous espérons vous voir sur notre 'bon coin' https://gchange.fr "
                 echo
                 sleep 3
-                echo "Il vous reste maintenant à installer IPFS pour rejoindre l'autre Internet."
+                echo "Vous aussi voulez ouvrir une ambassade? Installez IPFS, faisons Internet à notre façon."
                 echo
                 sleep 4
-                echo "Devenez ambassadeur."
-                echo "Renseignez vous sur les formations habitats posés, vissés et cousus. "
-                echo "Apprenez à nourrir le sol et reconnaitre les plantes de votre environement. SOlDiag"
+                echo "Transformez votre bout de terrain, construisez un Astroport."
+                echo "Nous organisons des formations habitats posés, vissés et cousus. Eau potable. Biogaz, Marmite Norvégienne..."
+                echo "Et par desssus tout, comment nourrir le sol, reconnaitre les plantes... Redevenir ceuilleur, créateur."
                 echo
             else
                 echo ""

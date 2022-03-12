@@ -27,9 +27,6 @@ ACTUAL PLAYERS
 ## VERIFY SOFTWARE DEPENDENCIES
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
 
-mkdir -p ~/.zen/tmp
-mkdir -p ~/.zen/game/players
-
 ## CHECK CONNECTED USER
 if [[ -e ~/.zen/game/players/.current/.pseudo ]]; then
     PLAYER=$(cat ~/.zen/game/players/.current/.player)
@@ -77,6 +74,7 @@ select fav in  "${choices[@]}"; do
         ;;
     "EXPORTER VISA")
         echo "EXPORT"
+        ls ~/.zen/game/players/.current
         break
         ;;
     "SUPPRIMER VISA")

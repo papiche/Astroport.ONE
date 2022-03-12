@@ -9,39 +9,51 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
 
-
-RECTIME=12
-espeak "Video record starting for $RECTIME seconds"
+if [[ -f ~/.zen/soundrecord.config ]]; then
+    source ~/.zen/soundrecord.config
+else
+    RECDEVICE=$(pactl list short sources | grep input | cut -f 2)
+fi
+espeak "Starting Video record. Press ENTER to stop."
 # Find "input-slave" :: pactl list short sources
 
-${MY_PATH}/displaytimer.sh 12 &
+# RECTIME=12
+# ${MY_PATH}/displaytimer.sh 12 &
 # timeout $RECTIME cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.usb-HD_Web_Camera_HD_Web_Camera_Ucamera001-02.analog-mono --sout "#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst=\"$HOME/.zen/tmp/MyVid.mp4\"}"
 
-timeout $RECTIME cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.pci-0000_00_1f.3.analog-stereo --sout "#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst=\"$HOME/.zen/tmp/MyVid.mp4\"}"
+cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://$RECDEVICE --sout "#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst=\"$HOME/.zen/tmp/MyVid.mp4\"}" &
+processid="$!"
+echo "Press ENTER to stop video recording"
+read
+kill -15 $processid
 
 # cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.usb-HD_Web_Camera_HD_Web_Camera_Ucamera001-02.analog-mono --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst='~/.zen/tmp/MyVid.mp4'}' --run-time=$RECTIME --stop-time=$RECTIME cvlc://quit
 ## RECOMMANCER ?
 
-espeak "mp4 convert" #-acodec aac
+espeak "mp4 transcoding" #-acodec aac
 rm -f ~/.zen/tmp/output.mp4
-ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 ~/.zen/tmp/output.mp4
+ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output.mp4
 IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
 echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
 
 ## Creating new video chain index.html
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
-OLDID=$(cat ~/.zen/game/players/.current/.index 2>/dev/null)
+OLDID=$(cat ~/.zen/game/players/.current/.vlog.index 2>/dev/null)
 if [[ $OLDID ]]; then
     sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > /tmp/index.html
     sed -i s/_IPFSID_/$IPFSID/g /tmp/index.html
 else
     sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > /tmp/index.html
 fi
-sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/game/players/.current/publish/index.html
+sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/index.html
+sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/game/players/.current/public/index.html
 
-INDEXID=$(ipfs add -wrHq ~/.zen/game/players/.current/publish/index.html | tail -n 1)
-echo $INDEXID > ~/.zen/game/players/.current/.index
+# Copy style css
+cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/public/
+
+INDEXID=$(ipfs add -rHq ~/.zen/game/players/.current/public | tail -n 1)
+echo $INDEXID > ~/.zen/game/players/.current/.vlog.index
 echo "LAST VIDEO INDEX http://127.0.0.1:8080/ipfs/$INDEXID"
 
 

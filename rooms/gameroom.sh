@@ -30,34 +30,33 @@ while true; do
                 echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
                 sed -i='' 's/off/on/' ../logic/stationlogic.ben
-            echo "Vous appuyez sur l'interupteur de l'écran et touchez la barre espace du clavier"
+            echo "Vous appuyez sur l'interupteur de l'écran. Y apparaît alors :"
             sleep 3
-            echo "AMBASSADE MadeInZion"
-            echo "TerraPi4 2 To"
+            echo "AMBASSADE MadeInZion - TerraPi4 - 2 To -"
+            echo ""
             echo
             sleep 2
-            echo "Avant que le GRAND RESET ne nous oblige à totalement réglementer nos information personnelles"
-            echo "En dehors de la version payante, un INTERNET gratuit existe. Il se contruit comme on collecte les oeufs à Paques."
+            echo "INTERNET est dangereux. il vend vos information personnelles pour que vous deveniez un produit.  "
+            echo "Quittez INTERNET. Découvrez le Système de Fichiers Interplanétaire (IPFS)."
             sleep 2
             echo
-            echo "Certains l'appelle 'Le Blob'. On y échange en pair à pair."
+            echo "Nous remplissons IPFS des identités des Astronautes qui explorent le mode de vie en forêt jardin."
             sleep 2
             echo
-            echo "Cet endroit est une ambassade MadeInZion. Un crypto pays de la Nation d'Etat d'Esprit."
-            echo "Version optimisée, décentralisée, sans frontière des anciens pays et gouvernements."
+            echo "On y échange en pair à pair. La monnaie y est Libre."
             sleep 4
             file1="../art/astrored.ben"
             while IFS= read -r line
             do
                 echo "$line"
             done <"$file1"
-            echo "__________________ Connexion....."
-            echo "Parcourir l'Arbre des rêves "
-            echo "Ajouter un Astronaute au JEu."
+            echo "__________________ Astroport 20:12 est un programme qui permet de monter des ambassades de la 'présipauté pair à pair' MadeInZion....."
+            echo "Chaque Lieu porte l'Arbre des rêves de ses habitants"
+            echo "Chaque Astronaute apporte son 'Art des gens'"
+            echo "Il participe au JEu d'ingénierie DIY et propage la terraformation forêt jardin."
             sleep 3
             echo
-            echo
-            echo "INITIALISATION ASTROPORT"
+            echo "ASTROPORT ONE"
             echo
             read -p "Appuyez sur [ENTER] pour accéder au MENU"
             ~/.zen/game/start.sh
@@ -65,7 +64,7 @@ while true; do
         exit
         ;;
 
-        h ) echo "Vous lisez l'inscription Wifi 'qo-op|0penS0urce!' - 192.168.220.1 - Nextcloud https://astroport.cloud - Jukebox https://astroport.music ..." ;;
+        h ) echo "'qo-op|0penS0urce!' - 192.168.220.1 - Nextcloud https://astroport.cloud - Jukebox https://astroport.music ... C'est bien une Station Astroport" ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
