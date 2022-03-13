@@ -1,14 +1,38 @@
+# Préambule
+Quand pourrons nous sortir de ce Méchant Cloud qui nous profile, nous scrute, nous analyse... Pour au final nous faire consommer.
+Je n'ai pas suivi la formation d’ingénieur réseau pour fabriquer ça!
+Alors j'ai fait autre chose.
+
+Astroport est basé sur IPFS pour former nos Cloud personnels échangés entre amis d'amis à l’abri des algorithmes de l'IA et du datamining sauvage qui règne ici bas.
+L'avantage de ce système, une consommation énergétique divisé par 100, une répartition des données qui permet de fonctionner déconnecté, un système d'information pair à pair inaltérable, inviolable.
+S'il vous plaît arrêtons cet Internet Supermarché de nous même...
+C'est une bibliothèque du savoir à la base.
+
+https://astroport.com
+Avec cette technologie, nous devenons chacun hébergeur et fournisseur d'accès, souverain monétaire et médiatique.
+Avec cette technologie, nous établissons une "Crypto Nation" dont la carte relie les territoires au delà des frontières et des pays.
+Astroport ONE est une ambassade.
+
 # Astroport.ONE
 
-Ce Jeu de société grandeur nature consiste à répertorier, inventer, enseigner, diffuser les meilleures façons d'habiter la planète Terre.
-Ce programme introduit des données multimédia (page web, audio, vidéo) en tant que chaines de données (blockchain) inscrites dans le réseau IPFS.
+Il s'agit d'un Jeu de société grandeur nature qui consiste à répertorier, inventer, enseigner, diffuser les meilleures façons d'habiter la planète Terre.
+Ce programme introduit des données multimédia (page web, audio, vidéo) en tant que chaines de données (blockchain) inscrites dans le réseau IPFS
+que les joueurs échangent au travers des Oasis.
 
-Astroport One est aussi une performance scientifique et artistique qui a pris naissance le 25 oct 2021.
-Dans une forêt de 8ha située en France, dans le Tarn et Garonne, une groupe d'individus bénéficiant du RSA
+Astroport One c'est aussi une performance scientifique et artistique néé le 25 oct 2021.
+Dans une forêt de 8ha située en France, dans le Tarn et Garonne, une groupe de bénéficiaires du RSA
 s'est réuni, pour jouer le rôle de membres d'une "NASA Extraterrestes" installés en forêt qu'ils transforment en jardin.
 
-Cette exploration met en oeuvre l'usage de "Monnaie Libre" qui appliquée au JEu de société permet de créer
-un premier scénario détaillant les savoirs faire et techniques mis en pratique sur le Lieu pour améliorer graduellement la qualité de vie.
+Cette exploration met en oeuvre l'usage de "Monnaie Libre" appliquée à ce JEu de société.
+Chaque nouveau joueur reçoit 300 LOVE (correspondant à 3 DU(G1) afin dévaluer sa capacité à pratiquer des activités ayant une valeur pour le commun.
+
+Chacun est invité à enregistrer ses idées et propositions pour améliorer la qualité de vie du lieu.
+Ces publications sont enregistrées comme REVES du lieu.
+
+Chaque joueur aura pour mission, de répartir le montant de sa production monétaire journalière, 100 LOVE entre les ACTIONS et les REVES déclarés.
+Il devra également s'acquiter du montant établi pour assurer sa pension complête, montant réduit au 1/3 quand le joueur aura offert un nouvel habitat.
+
+Les règles évoluent encore... Pour rejoindre l'expérience :
 
 Astroport One, Sorris, Lavaurette, France
 Latitude: 44.22986344
@@ -16,15 +40,17 @@ Longitude: 1.65397188
 
 ---
 
-# ASTROPORT One
-Un JEu pour terraformer la planète sur IPFS
+Amabassade pour Astronautes Terraformeurs.
+
+Avant de commencer l'aventure, découvrez cet ouvrage "The Barefoot Architect" de Johan Van Lengen.
+
 ipfs ls Qme6a6RscGHTg4e1XsRrpRoNbfA6yojC6XNCBrS8nPSEox/
 ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefoot-architect.pdf
 
 Bienvenue dans la confédération intergalactique
 
 DELARATION DES LIEUX
-~/.zen/game/lieux
+~/.zen/game/worlds
 
 - Coord GPS - Map Minetest
 - niveaux autonomie:  eau, nourrture, chaleur, hygiène, esprit, ...
@@ -32,16 +58,16 @@ DELARATION DES LIEUX
 
 
 NAVIGATEUR JOUEUR
+~/.zen/game/players
+
 - savoir faire
 - équipements
 - moyens de transport
 
 
+---
 
-CHOIX DE CONVENTION SYSTEME DE FICHIER
-Chaque fichier est ajouté à ipfs ajoute le fichier .ipfs contenant le lien IPFS du fichier de même nom sans extension .ipfs ?
-
-
-TODO
-AJOUTER des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
-TRADUIRE
+# TODO
+* Ajouter des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
+* Remplacer le chiffrage SSL par PGP
+* Traductions
