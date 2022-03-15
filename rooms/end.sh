@@ -15,48 +15,30 @@ do
 done <"$file1"
 echo
 sleep 1
-echo "You swallow the pill, and suddenly rainbows are all around you."
+echo "Voic la fin de cette petite aventure."
 echo
 sleep 4
-echo "You look down to find that you're riding a unicorn. On a rainbow."
+echo "Vous venez de visiter la forêt où s'est posé Astroport ONE."
 sleep 3
 echo
-echo "A motherfucking UNICORN."
+echo "Une oeuvre habitable. Un jardin sur sol vivant. Un progamme pair à pair interplanétaire"
 sleep 4
 echo
-echo "This is ridiculous. Surely this is some kind of dream? You pinch"
-echo "yourself to try and wake up. Wait, you're feeling dizzy..."
+echo "Les terraformeurs"
+echo "En quête de la meilleure façon de vivre sur le vaisseau spatal Terre..."
 echo
 sleep 5
-echo "You blink, and are surprised to find yourself laying in bed."
-echo "You check your phone - it's 5am, and definitely Thursday. Huh."
-echo "I guess it was all a dream."
+echo "Vous aussi ouvrez votre Ambassade."
+echo "Activez le JEu. Invitez vos visiteurs à rêver d'un monde meilleur"
+echo "Reproduisez, améliorez, partagez les plans pour y parvenir."
 echo
 sleep 7
-echo "You go to get out of bed and suddenly spot a tiny marbel figurine on"
-echo "your bedside table. It's a beautifully carved kitten."
+echo "Il est l'heure de laisser derrière vous la civilisation thermo industrielle."
+echo "Gagnez en autonomie, en convivialité, en optimisme, en conscience."
 echo
 sleep 5
-echo "How the hell did that get there?"
-sleep 5
 echo
-echo "Unable to work out what is dream and what is reality, you shrug your"
-echo "shoulders and pick up the figurine. It hasn't transported you anywhere"
-echo "this time... but how did it get here? What does it mean?"
-echo
-sleep 7
-echo "Your phone buzzes. It's a call from a withheld number. You don't usually"
-echo "answer those, but you get the feeling that this call might be important."
-sleep 5
-echo
-echo "You answer the call, and an electronic voice says five words to you"
-echo "before the line goes dead."
-sleep 3
-echo
-echo "Just five words."
-sleep 7
-echo
-echo "THE KITTEN IS WATCHING YOU."
+echo "EMBARQUEZ VERS LE FUTUR"
 echo
 sleep 9
 echo
@@ -67,7 +49,7 @@ do
 done <"$file1"
 echo
 echo
-read -p "Press [ENTER] to exit..."
+read -p "Appuyez sur [ENTER] pour terminer..."
 echo
 clear
 file1="../art/titleart.ben"
@@ -77,9 +59,9 @@ do
 done <"$file1"
 echo
 echo "Merci d'avoir joué le jeu"
-echo "Je suis heureux que vous ayez rejoins les astronautes terraformeurs."
+echo "Je suis heureux de vous avoir fait partager le rêve des astronautes terraformeurs."
 echo
-echo "Toutes les transitions seront possible quand nous autons franchi celle de la monnaie"
+echo "Le futur ne se prédit pas, il se construit. Il se vit."
 echo
 echo "                                                                - @Fred"
 echo

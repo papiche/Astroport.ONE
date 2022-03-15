@@ -19,17 +19,17 @@ echo
 
                 sleep 2
                 echo "Il ne dépend que de vous d'explorer ce nouveau futur."
-                echo "Le Visa MadeInZion nous permet de découvrir ensemble le monde qui nous entoure"
+                echo "Le Visa MadeInZion inaugure un monde sans territoire, sans frontière, transnationnal, interplanétaire, à vous de voir?"
                 sleep 2
-                echo "Nous espérons vous voir sur notre 'bon coin' https://gchange.fr "
+                echo "Avant de nous rejoindre. Visitez notre 'bon coin' https://gchange.fr "
                 echo
                 sleep 3
-                echo "Vous aussi voulez ouvrir une ambassade? Installez IPFS, faisons Internet à notre façon."
+                echo "Ouvrez une ambassade? Installez IPFS, devenons hébergeur, fournisseur d'accès de nos Internets."
                 echo
                 sleep 4
-                echo "Transformez votre bout de terrain, construisez un Astroport."
+                echo "Ouvrez votre propriété au futur en commun, activez Astroport."
                 echo "Nous organisons des formations habitats posés, vissés et cousus. Eau potable. Biogaz, Marmite Norvégienne..."
-                echo "Et par desssus tout, comment nourrir le sol, reconnaitre les plantes... Redevenir ceuilleur, créateur."
+                echo "Comment nourrir le sol, reconnaitre les plantes... Redevenir ceuilleur, créateur."
                 echo
             else
                 echo ""
