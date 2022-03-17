@@ -49,7 +49,7 @@ MAINTENANT INSTALLATION DES OUTILS NÉCESSAIRES ET DU MATÉRIEL CRYPTOGRAPHIQUE
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
 
 sudo apt-get update
-for i in git fail2ban inotify-tools curl net-tools libsodium* python3-dev python3-pip python3-setuptools python3-wheel python3-dotenv mpack libssl-dev libffi-dev printer-driver-all cups figlet apt-transport-https ca-certificates; do
+for i in git fail2ban inotify-tools curl net-tools libsodium* python3-dev python3-pip python3-setuptools python3-wheel python3-dotenv mpack libssl-dev libffi-dev printer-driver-all cups figlet apt-transport-https ca-certificates protobuf-compiler; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         sudo apt install -y $i
     fi

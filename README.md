@@ -40,30 +40,38 @@ Longitude: 1.65397188
 
 ---
 
-Amabassade pour Astronautes Terraformeurs.
+Bienvenue dans la confédération intergalactique.
+
+Ambassade des Astronautes Terraformeurs.
 
 Avant de commencer l'aventure, découvrez cet ouvrage "The Barefoot Architect" de Johan Van Lengen.
-
+```
 ipfs ls Qme6a6RscGHTg4e1XsRrpRoNbfA6yojC6XNCBrS8nPSEox/
 ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefoot-architect.pdf
+```
 
-Bienvenue dans la confédération intergalactique
+Le JEu est constitué de Stations IPFS localisés à des cooordonnées précises.
+Ces stations acceuillent des joueurs.  Leur mission, réaliser des rêves.
+
+Dans IPFS, chacun publie son site web statique comportant texte, image, sons et vidéos (selon les modèles situés dans Templates)
+
 
 DELARATION DES LIEUX
 ~/.zen/game/worlds
 
-- Coord GPS - Map Minetest
-- niveaux autonomie:  eau, nourrture, chaleur, hygiène, esprit, ...
-- expériences techniques + art des gens
+- Coord GPS (Map Minetest)
+- Certification des niveaux d'aptitudes à utiliser des outils ou équipements.
+- Niveaux autonomies:  eau, nourriture, couchages, electricité, chaleur, conservation, ...
+- Ambassade & Enregistrement des joueurs ("VISA") : Passeport Terre.
+- Collecte & publication des rêves : Pinterest
 
 
 NAVIGATEUR JOUEUR
 ~/.zen/game/players
 
-- savoir faire
-- équipements
-- moyens de transport
-
+- Identité astronaute + VISA
+- aptitudes / équipements
+- arbres informationnels, projection de rêves.
 
 ---
 

@@ -11,29 +11,16 @@
 
 homefolder=$(pwd)
 newgame="$HOME/.zen/game"
-
-if [[ ! -d ~/.zen/game/rooms ]]; then
 mkdir -p $newgame
 
-cp -r rooms $newgame/rooms
-cp -r art $newgame/art
-cp -r script $newgame/script
-cp -r logic $newgame/logic
-cp -r tools $newgame/tools
-cp start.sh $newgame/
-
-
-fi
+[[ -d  "$HOME/.zen/worlds" ]] &&  echo "Ambassade active - Astroport ONE - Le Menu" && ./start.sh && echo && exit
 
 echo "Chargement..."
 echo
 sleep 3
 
-cd $newgame/rooms
+cd "$homefolder/rooms"
 ./start.sh
-
-cd "$homefolder"
-rm -r $newgame
 
 echo
 exit

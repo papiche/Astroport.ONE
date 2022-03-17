@@ -9,11 +9,26 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
 
+screencapture(){
+vlc \
+-I dummy screen://\
+--dummy-quiet \
+--no-video :screen-fps=15 :screen-caching=300 \
+--sout "#transcode{vcodec=h264,vb=800,fps=5,scale=1,acodec=none}:duplicate{dst=std{access=file,mux=mp4,dst='${HOME}/Screencapture $(date +%Y-%m-%d) at $(date +%H.%M.%S).mp4'}}"
+deskid="$!"
+
+}
+
 if [[ -f ~/.zen/soundrecord.config ]]; then
     source ~/.zen/soundrecord.config
 else
     RECDEVICE=$(pactl list short sources | grep input | cut -f 2)
 fi
+
+echo "Voulez-vous enregistrer le bureau? ENTER sinon"
+read desktop
+[[ $desktop != "" ]] && screencapture
+
 espeak "Starting Video record. Press ENTER to stop."
 # Find "input-slave" :: pactl list short sources
 
@@ -31,6 +46,7 @@ kill -15 $processid
 ## RECOMMANCER ?
 
 espeak "mp4 transcoding" #-acodec aac
+# ffmpeg -i input.mp4 -i greenscreen.mp4 -filter_complex '[1:v]colorkey=color=00FF00:similarity=0.85:blend=0.0[ckout];[0:v][ckout]overlay[out]' -map '[out]' output.mp4
 rm -f ~/.zen/tmp/output.mp4
 ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output.mp4
 IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
@@ -52,9 +68,14 @@ sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/game/players/.current/public/i
 # Copy style css
 cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/public/
 
-INDEXID=$(ipfs add -rHq ~/.zen/game/players/.current/public | tail -n 1)
-echo $INDEXID > ~/.zen/game/players/.current/.vlog.index
-echo "LAST VIDEO INDEX http://127.0.0.1:8080/ipfs/$INDEXID"
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/public | tail -n 1)
+echo $IPFSROOT > ~/.zen/game/players/.current/.vlog.index
+# Change CSS path to
+sed s/_IPFSROOT_/$IPFSROOT/g /tmp/index.html > ~/.zen/game/players/.current/public/index.html
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/public | tail -n 1)
+
+
+echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
 
 
 # https://stackoverflow.com/questions/49846400/raspberry-pi-use-vlc-to-stream-webcam-logitech-c920-h264-video-without-tran
