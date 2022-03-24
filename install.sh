@@ -217,6 +217,9 @@ done
 echo "Installation de youtube-dl - Copions le Web avant qu'il ne ferme" # Avoid provider restrictions
 ########################################################################
 ${MY_PATH}/tools/install.youtube-dl.sh
+#TODO# SWITCH TO yt-dlp
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
 
 
 exit 0
