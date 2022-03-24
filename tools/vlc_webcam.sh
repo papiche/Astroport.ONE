@@ -11,9 +11,7 @@ TS=$(date -u +%s%N | cut -b1-13)
 
 screencapture(){
 vlc \
--I dummy screen://\
---dummy-quiet \
---no-video :screen-fps=15 :screen-caching=300 \
+-i screen://\
 --sout "#transcode{vcodec=h264,vb=800,fps=5,scale=1,acodec=none}:duplicate{dst=std{access=file,mux=mp4,dst='${HOME}/Screencapture $(date +%Y-%m-%d) at $(date +%H.%M.%S).mp4'}}"
 deskid="$!"
 
