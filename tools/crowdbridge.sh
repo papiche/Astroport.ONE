@@ -111,16 +111,22 @@ $IPFSNGW/ipfs/$IPFSVIDM3U8/$VIDEOSRC.m3u8
 
 ##########################################################################
     echo ">>>>>>>>>>>>>>>> JOIN MP4 & PUBLISH INDEX"
-    echo "ffmpeg -i /tmp/$VUID/media/$VIDEOSRC -i /tmp/$VUID/media/$AUDIOFILE -shortest /tmp/$VUID/media/output.mp4"
-    [[ ! -f /tmp/$VUID/media/output.mp4 ]] && ffmpeg -i /tmp/$VUID/media/$VIDEOSRC -i /tmp/$VUID/media/$AUDIOFILE -shortest /tmp/$VUID/media/output.mp4
-    IPFSID=$(ipfs add -wrHq /tmp/$VUID/media/output.mp4 | tail -n 1)
+    # CONVERT TO MP4
+#    echo "ffmpeg -i /tmp/$VUID/media/$VIDEOSRC -i /tmp/$VUID/media/$AUDIOFILE -shortest /tmp/$VUID/media/output.mp4"
+#    [[ ! -f /tmp/$VUID/media/output.mp4 ]] && ffmpeg -i /tmp/$VUID/media/$VIDEOSRC -i /tmp/$VUID/media/$AUDIOFILE -shortest /tmp/$VUID/media/output.mp4
+#    IPFSID=$(ipfs add -wrHq /tmp/$VUID/media/output.mp4 | tail -n 1)
 
     mkdir -p /tmp/$VUID/public
-    sed "s/_IPFSID_/$IPFSGWESC\/ipfs\/$IPFSID/g" ${MY_PATH}/../templates/video_bunker.html > /tmp/$VUID/public/index.html
-    sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/$VUID/public/index.html
-    sed -i "s/_PSEUDO_/$(hostname)/g" /tmp/$VUID/public/index.html
 
+#    sed "s/_IPFSID_/$IPFSGWESC\/ipfs\/$IPFSID/g" ${MY_PATH}/../templates/video_bunker.html > /tmp/$VUID/public/index.html
+    sed "s-_HLS_-$VMAIN-g" ${MY_PATH}/../templates/videojs.html > /tmp/$VUID/public/index.html
+    sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/$VUID/public/index.html
+    sed -i "s/_PSEUDO_/$TITLE/g"  /tmp/$VUID/public/index.html
+
+    # COPY style AND js
     cp -R ${MY_PATH}/../templates/styles /tmp/$VUID/public/
+    cp -R ${MY_PATH}/../templates/js /tmp/$VUID/public/
+
     echo "ipfs add -rH /tmp/$VUID/public/* "
     IPFSROOT=$(ipfs add -rwHq  /tmp/$VUID/public/* | tail -n 1)
     # Change CSS path to
