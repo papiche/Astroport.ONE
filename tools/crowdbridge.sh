@@ -109,8 +109,27 @@ $IPFSNGW/ipfs/$IPFSVIDM3U8/$VIDEOSRC.m3u8
     echo ">>>>>>>>>>>>>>>> UPDATING HLS in json"
     cat /tmp/$VUID/$VUID.json | jq ".video.hlsManifest.url = \"$VMAIN\"" > /tmp/$VUID/z_$VUID.json
 
+##########################################################################
+    echo ">>>>>>>>>>>>>>>> JOIN MP4 & PUBLISH INDEX"
+    echo "ffmpeg -i /tmp/$VUID/media/$VIDEOSRC -i /tmp/$VUID/media/$AUDIOFILE -shortest /tmp/$VUID/media/output.mp4"
+    [[ ! -f /tmp/$VUID/media/output.mp4 ]] && ffmpeg -i /tmp/$VUID/media/$VIDEOSRC -i /tmp/$VUID/media/$AUDIOFILE -shortest /tmp/$VUID/media/output.mp4
+    IPFSID=$(ipfs add -wrHq /tmp/$VUID/media/output.mp4 | tail -n 1)
 
+    mkdir -p /tmp/$VUID/public
+    sed "s/_IPFSID_/$IPFSGWESC\/ipfs\/$IPFSID/g" ${MY_PATH}/../templates/video_bunker.html > /tmp/$VUID/public/index.html
+    sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/$VUID/public/index.html
+    sed -i "s/_PSEUDO_/$(hostname)/g" /tmp/$VUID/public/index.html
 
+    cp -R ${MY_PATH}/../templates/styles /tmp/$VUID/public/
+    echo "ipfs add -rH /tmp/$VUID/public/* "
+    IPFSROOT=$(ipfs add -rwHq  /tmp/$VUID/public/* | tail -n 1)
+    # Change CSS path to
+    sed -i "s/_IPFSROOT_/$IPFSGWESC\/ipfs\/$IPFSROOT/g" /tmp/$VUID/public/index.html
+    IPFSROOT=$(ipfs add -rwHq  /tmp/$VUID/public/* | tail -n 1)
+
+    echo "MP4 VIDEO INDEX $IPFSNGW/ipfs/$IPFSROOT"
+##########################################################################
+    echo $VMAIN
     echo "CONTINUE ?"; read
 
 done
