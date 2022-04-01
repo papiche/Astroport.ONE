@@ -49,8 +49,8 @@ for VUID in $(cat /tmp/crowd.json | jq -r '.posts | .[] | .video.id'); do
     curl -s $HLS -o /tmp/$VUID/$VUID.m3u8
     cat /tmp/$VUID/$VUID.m3u8
 
-   echo ">>>>>>>>>>>>>>>> Downloading VIDEO"
-
+    echo ">>>>>>>>>>>>>>>> Downloading VIDEO"
+    start=`date +%s`
     VIDEOHEAD=$(cat /tmp/$VUID/$VUID.m3u8 | grep -B1 360p | head -n 1)
     VIDEOSRC=$(cat /tmp/$VUID/$VUID.m3u8 | grep 360p | tail -n 1 | cut -f 1 -d '.')
     [[ "$VIDEOSRC" == "" ]] && VIDEOHEAD=$(cat /tmp/$VUID/$VUID.m3u8 | grep -B1 480p | head -n 1) && VIDEOSRC=$(cat /tmp/$VUID/$VUID.m3u8 | grep 480p | tail -n 1 | cut -f 1 -d '.') #New try with 480p
@@ -58,20 +58,24 @@ for VUID in $(cat /tmp/crowd.json | jq -r '.posts | .[] | .video.id'); do
     echo "VIDEOSRC=$MEDIASOURCE/$VIDEOSRC"
     [[ ! -f /tmp/$VUID/media/$VIDEOSRC.m3u8 ]] && curl -s $MEDIASOURCE/$VIDEOSRC.m3u8 -o /tmp/$VUID/$VIDEOSRC.m3u8
     [[ ! -f /tmp/$VUID/media/$VIDEOSRC ]] && curl $MEDIASOURCE/$VIDEOSRC -o /tmp/$VUID/media/$VIDEOSRC
+
     IPFSVID=$(ipfs add -wrHq /tmp/$VUID/media/$VIDEOSRC | tail -n 1) ## ADD VIDEO TO IPFS
 
     echo "VIDEO = $IPFSNGW/ipfs/$IPFSVID/$VIDEOSRC"
+    end=`date +%s`;  echo `expr $end - $start` seconds.
 
     echo ">>>>>>>>>>>>>>>> Downloading AUDIO"
-
+    start=`date +%s`
     AUDIOLINE=$(cat /tmp/$VUID/$VUID.m3u8 | grep '=AUDIO')
     AUDIOFILE=$(echo $AUDIOLINE | rev | cut -d '.' -f 2- | cut -d '"' -f 1 | rev)
     echo "AUDIO=$MEDIASOURCE/$AUDIOFILE"
     [[ ! -f /tmp/$VUID/media/$AUDIOFILE.m3u8 ]] && curl -s $MEDIASOURCE/$AUDIOFILE.m3u8 -o /tmp/$VUID/$AUDIOFILE.m3u8
     [[ ! -f /tmp/$VUID/media/$AUDIOFILE ]] && curl $MEDIASOURCE/$AUDIOFILE -o /tmp/$VUID/media/$AUDIOFILE
+
     IPFSAUD=$(ipfs add -wrHq /tmp/$VUID/media/$AUDIOFILE | tail -n 1) ## ADD AUDIO TO IPFS
 
     echo "AUDIO = $IPFSNGW/ipfs/$IPFSAUD/$AUDIOFILE"
+    end=`date +%s`;  echo `expr $end - $start` seconds.
 
     echo ">>>>>>>>>>>>>>>> VIDEO & AUDIO M3U8 IPFS LINKING"
 
@@ -84,8 +88,10 @@ for VUID in $(cat /tmp/crowd.json | jq -r '.posts | .[] | .video.id'); do
     echo "cat /tmp/$VUID/$AUDIOFILE.m3u8"
 
     echo "Adding M3U8 to IPFS"
+    start=`date +%s`
     IPFSVIDM3U8=$(ipfs add -wrHq /tmp/$VUID/$VIDEOSRC.m3u8 | tail -n 1) ## ADD VIDEO.m3u8 TO IPFS
     IPFSAUDM3U8=$(ipfs add -wrHq /tmp/$VUID/$AUDIOFILE.m3u8 | tail -n 1) ## ADD AUDIO.m3u8 TO IPFS
+    end=`date +%s`;  echo `expr $end - $start` seconds.
 
     echo ">>>>>>>>>>>>>>>> CREATING MAIN M3U8"
     echo "#EXTM3U
