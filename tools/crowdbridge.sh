@@ -108,9 +108,10 @@ $VIDEOSRC.m3u8
     echo ">>>>>>>>>>>>>>>> CREATE index.html"
 
     # COPY index, style AND js
-    cp -Rv ${MY_PATH}/../templates/styles /tmp/$VUID/media/
-    cp -Rv ${MY_PATH}/../templates/js /tmp/$VUID/media/
-    cp  -v ${MY_PATH}/../templates/videojs.html /tmp/$VUID/media/index.html
+    cp -R ${MY_PATH}/../templates/styles /tmp/$VUID/media/
+    cp -R ${MY_PATH}/../templates/js /tmp/$VUID/media/
+    cp ${MY_PATH}/../templates/videojs.html /tmp/$VUID/media/index.html
+    cp ${MY_PATH}/../images/astroport.jpg /tmp/$VUID/media/
 
     sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/$VUID/media/index.html
     sed -i "s~_PSEUDO_~$TITLE~g"  /tmp/$VUID/media/index.html
@@ -122,16 +123,18 @@ $VIDEOSRC.m3u8
     sed -i "s/_IPFSROOT_/\/ipfs\/$IPFSROOT/g" /tmp/$VUID/media/index.html
     sed -i "s/_HLS_/$VUID.m3u8/g" /tmp/$VUID/media/index.html
 
-    INDEX=$(ipfs add -rwHq  /tmp/$VUID/media/index.html | tail -n 1)
-    echo "VIDEO PLAYER : $IPFSNGW/ipfs/$INDEX"
-
-    echo ">>>>>>>>>>>>>>>> UPDATING HLS in json"
     VMAIN="/ipfs/$IPFSROOT/$VUID.m3u8"
-    echo "M3U8 CELL $IPFSNGW$VMAIN"
-    cat /tmp/$VUID/$VUID.json | jq ".video.hlsManifest.url = \"$VMAIN\"" > /tmp/$VUID/$VUID.json
+    echo "M3U8 : $IPFSNGW$VMAIN"
 
+    INDEX=$(ipfs add -rwHq  /tmp/$VUID/media/index.html | tail -n 1)
+    echo "INDEX: $IPFSNGW/ipfs/$INDEX"
+
+    cat /tmp/$VUID/$VUID.json | jq ".video.hlsManifest.url = \"$VMAIN\"" > /tmp/$VUID/media/$VUID.json
+
+    JSON=$(ipfs add -rwHq  /tmp/$VUID/media/$VUID.json | tail -n 1)
+    echo "JSON : $IPFSNGW/ipfs/$JSON"
 ##########################################################################
-    cat /tmp/$VUID/$VUID.json | jq -r .video.hlsManifest.url
+#    cat /tmp/$VUID/media/$VUID.json | jq -r .video.hlsManifest.url
 
     end=`date +%s`;  echo Duration `expr $end - $start` seconds.
 

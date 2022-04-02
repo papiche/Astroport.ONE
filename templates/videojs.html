@@ -12,7 +12,7 @@
 <body>
 <header>
     <h6>
-        <a href="https://astroport.com"> "<span>Bunker BOX</span>"</a> powered by <span>"</span>Astroport<span>"</span>
+        <a href="https://crowdbunker.com"> "<span>Bunker BOX</span>"</a> IPFS
     </h6>
 </header>
 
@@ -23,9 +23,7 @@
     class="video-js vjs-theme-forest"
     controls
     preload="auto"
-    width="640"
-    height="360"
-    poster="_IPFSROOT_/styles/logo.png"
+    poster="_IPFSROOT_/astroport.jpg"
     data-setup="{}"
   >
     <source src="_IPFSROOT_/_HLS_" type="application/x-mpegURL" />
@@ -37,16 +35,19 @@
             _PSEUDO_ (_DATE_)
         </h1>
 </article>
+    <h6>
+        powered by <a href="https://astroport.com"><span>"</span>Astroport<span>"</span></a>
+    </h6>
+
 </main>
 </body>
 
-<!-- Put these JS files together with this HTML file -->
 <script src="_IPFSROOT_/js/video.min.js"></script>
-<script src="_IPFSROOT_/js/videojs-contrib-hls.min.js"></script>
 
 <script>
-var player = videojs('_HLS_');
-player.play();
+var player = videojs('_HLS_', {
+  autoplay: 'muted'
+});
 </script>
 
 </html>
