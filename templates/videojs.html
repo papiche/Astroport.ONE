@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>_PSEUDO_ [IPFS Bunker BOX]</title>
     <link rel="stylesheet" href="_IPFSROOT_/styles/video-js.css" type="text/css" />
     <link rel="stylesheet" href="_IPFSROOT_/styles/forest.css" type="text/css" />
@@ -11,23 +12,23 @@
 <body>
 <header>
     <h6>
-        <a href="https://astroport.com">Bunker "<span>BOX</span>"</a> _PSEUDO_
+        <a href="https://astroport.com"> "<span>Bunker BOX</span>"</a> powered by <span>"</span>Astroport<span>"</span>
     </h6>
 </header>
 
 <main>
 <article>
 <video
-    id="my-video"
+    id="_HLS_"
     class="video-js vjs-theme-forest"
     controls
     preload="auto"
     width="640"
     height="360"
-    poster="MY_VIDEO_POSTER.jpg"
+    poster="_IPFSROOT_/styles/logo.png"
     data-setup="{}"
   >
-    <source src="_HLS_" type="application/x-mpegURL" />
+    <source src="_IPFSROOT_/_HLS_" type="application/x-mpegURL" />
     <p class="vjs-no-js">
       Activer JavaScript SVP
     </p>
@@ -44,7 +45,7 @@
 <script src="_IPFSROOT_/js/videojs-contrib-hls.min.js"></script>
 
 <script>
-var player = videojs('my-video');
+var player = videojs('_HLS_');
 player.play();
 </script>
 
