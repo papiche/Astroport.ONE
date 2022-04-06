@@ -44,9 +44,12 @@ kill -15 $processid
 ## RECOMMANCER ?
 
 espeak "mp4 transcoding" #-acodec aac
-# ffmpeg -i input.mp4 -i greenscreen.mp4 -filter_complex '[1:v]colorkey=color=00FF00:similarity=0.85:blend=0.0[ckout];[0:v][ckout]overlay[out]' -map '[out]' output.mp4
+# Ecran vert : ffmpeg -i input.mp4 -i greenscreen.mp4 -filter_complex '[1:v]colorkey=color=00FF00:similarity=0.85:blend=0.0[ckout];[0:v][ckout]overlay[out]' -map '[out]' output.mp4
+
 rm -f ~/.zen/tmp/output.mp4
 ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output.mp4
+# Conversion HLS
+ffmpeg -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
 IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
 echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
