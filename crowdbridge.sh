@@ -132,11 +132,13 @@ echo "##########################################################################
 
     ## UPDATE GLOCAL HISTORY ?
     IsThere=$(cat ~/.zen/bunkerbox/history.json | jq .Videos[].link | grep $VUID)
-    [[ ! $IsThere ]] && echo "Add $INDEX/$VUID.jpg to history.json" && cat ~/.zen/bunkerbox/history.json | jq '.Videos += [{"link": "<a href='"'_INDEX_'"'><img src='"'_INDEX_/_VUID_.jpg'"' height=80 >'"'_TITLE_'"'</a>"}]' > ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
-    sed -i "s~_INDEX_~$INDEX~g" ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
-    sed -i "s~_VUID_~$VUID~g" ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
-    sed -i "s~_TITLE_~$TITLE~g" ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
-    cp -f ~/.zen/bunkerbox/$VUID/media/history.json ~/.zen/bunkerbox/$VUID.history.json
+    if [[ ! $IsThere ]]; then
+        echo "Add $INDEX/$VUID.jpg to history.json" && cat ~/.zen/bunkerbox/history.json | jq '.Videos += [{"link": "<a href='"'_INDEX_'"'><img src='"'_INDEX_/_VUID_.jpg'"' height=80 >'"'_TITLE_'"'</a>"}]' > ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
+        sed -i "s~_INDEX_~$INDEX~g" ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
+        sed -i "s~_VUID_~$VUID~g" ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
+        sed -i "s~_TITLE_~$TITLE~g" ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
+        cp -f ~/.zen/bunkerbox/$VUID/media/$VUID.history.json ~/.zen/bunkerbox/history.json
+    fi
 
 ##  (found ''' later) COULD BE DONE LIKE THAT
 #    cat ~/.zen/bunkerbox/$VUID/media/$VUID.history.json | jq --arg INDEX "$INDEX" --arg TITLE "$TITLE"  '.Videos += [{"link": "<a href='''$INDEX''' >'''$TITLE'''</a>"}]' > ~/.zen/bunkerbox/history.json
