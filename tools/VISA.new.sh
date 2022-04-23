@@ -12,10 +12,12 @@ MadeInZion DIPLOMATIC PASSPORT
 A cryptographic key pair to control your P2P Digital Life.
 Solar Punk garden forest terraforming game.
 
-Création de votre PSEUDO, votre PLAYER, votre PASS (diceware) : vos identifiants du JEu
-Création de votre SALT PEPPER : votre compte Gchange et portefeuille June.
-Création de votre clef DUNITER :  votre clef d'accès Cesium ( 100 LOVE <=> 1 DU )
-Création de votre clef IPNS : votre balise de publication dans le réseau IPFS
+Création de votre PSEUDO, votre PLAYER, votre PASS (6 chiffres)
+Création de votre SALT PEPPER : compte Gchange et son portefeuille G1.
+Création de votre clef DUNITER :  la clef d'accès Cesium
+Création de vos clef IPNS : vos balises de publication dans le réseau IPFS.
+
+Vos identifiants 'Astronaute' sont:
 "
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -30,7 +32,7 @@ PEPPER=$(${MY_PATH}/diceware.sh 4 | xargs)
 
 [[ $1 != "quiet" ]] && echo "CHOISISSEZ UN PSEUDO" && read PSEUDO
 PSEUDO=${PSEUDO,,} #lowercase
-PLAYER=$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
+PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
 [[ $1 != "quiet" ]] && echo "-> $PSEUDO : $PLAYER"
 
@@ -109,5 +111,7 @@ rm -f ~/.zen/game/players/$PSEUDO/secret.dunikey
 
 [[ $1 != "quiet" ]] && ls -al ~/.zen/game/players/$PSEUDO
 [[ $1 == "quiet" ]] && echo "$PSEUDO = $PLAYER"
+
+echo $PSEUDO > ~/.zen/tmp/PSEUDO
 
 exit 0

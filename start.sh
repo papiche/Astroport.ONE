@@ -38,7 +38,8 @@ else
     select fav in "${players[@]}"; do
         case $fav in
         "NOUVEAU VISA")
-            fav=$(${MY_PATH}/tools/VISA.new.sh quiet | tail -n 1)
+            ${MY_PATH}/tools/VISA.new.sh
+            fav=$(cat ~/.zen/tmp/PSEUDO)
             break
             ;;
         "")
