@@ -17,7 +17,8 @@ echo '
 /_/   \_\____/ |_| |_| \_\\___/|_|    \___/|_| \_\|_|    \___/|_| \_|_____|
 
 
-ASTROPORT jeu de terraformation planétaire sur IPFS.<
+ASTROPORT Ambassade numérique pair à pair sur IPFS.
+VISA : MadeInZion
 
 @@@@@@@@@
 ACTUAL PLAYERS
@@ -27,20 +28,16 @@ ACTUAL PLAYERS
 ## VERIFY SOFTWARE DEPENDENCIES
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
 
-## CHECK CONNECTED USER
-if [[ -e ~/.zen/game/players/.current/.pseudo ]]; then
-    PLAYER=$(cat ~/.zen/game/players/.current/.player)
-    PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo)
-    echo "BIENVENUE $PSEUDO - $PLAYER"
-else
-    PS3='Choisissez ou créez votre identité : '
-    players=($(ls ~/.zen/game/players) "NOUVEAU VISA")
+## CONNECT USER
+   PS3='Choisissez votre combinaison Astronaute ou ajoutez la votre. Identité ? '
+    players=("NOUVEAU VISA" $(ls ~/.zen/game/players))
     select fav in "${players[@]}"; do
         case $fav in
         "NOUVEAU VISA")
             ${MY_PATH}/tools/VISA.new.sh
             fav=$(cat ~/.zen/tmp/PSEUDO)
-            break
+            echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
+            exit
             ;;
         "")
             echo "Choix obligatoire. exit"
@@ -52,13 +49,13 @@ else
         esac
     done
 
-    PLAYER=$fav
-fi
+PLAYER=$fav
 echo "SVP entrez votre PASS $fav"
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-cat ~/.zen/game/players/.current/.pass # DEVEL
+cat ~/.zen/game/players/.current/.pass 2>/dev/null # DEVEL
+echo "Saisissez votre PASS "
 read PASS
 
 ## DECODE CURRENT PLAYER CRYPTO
@@ -66,7 +63,7 @@ openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dun
 [ $? != 0 ] && echo "ERROR. MAUVAIS PASS. EXIT" && rm $HOME/.zen/tmp/${PLAYER}.dunikey && exit 1
 
 PS3="$PLAYER choisissez une action à mener : "
-choices=("AJOUTER VIDEOBLOG" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
+choices=("WEBCAM" "JOURNAUX" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
@@ -86,9 +83,13 @@ select fav in  "${choices[@]}"; do
         rm -Rf ~/.zen/game/players/$PLAYER
         break
         ;;
-    "AJOUTER VIDEOBLOG")
+    "WEBCAM")
         echo "VIDEOBLOG"
         ${MY_PATH}/tools/vlc_webcam.sh
+        ;;
+    "JOURNAUX")
+        ${MY_PATH}/tools/PLAYER.entrance.sh
+        break
         ;;
     "QUITTER")
         echo "CIAO" && exit 0
