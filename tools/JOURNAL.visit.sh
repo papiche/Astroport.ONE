@@ -30,16 +30,17 @@ if [[ $IPFS_SYNC_DIR == "$PLAYER" ]]; then
     IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
     [ $? == 0 ] && xdg-open "http://127.0.0.1:8080/ipns/$IPFSNODEID"
 
-    # Ouverture des Moa de tous les PLAYER
+    # Ouverture des Moa de tous les PLAYERs
     for play in $(ls ~/.zen/game/players); do
         moaplayer=$(ipfs key list -l | grep -w moa_$play | cut -d ' ' -f 1)
-        g1pub=$(cat ~/.zen/game/players/$play/_g1.pubkey)
+        g1pub=$(cat ~/.zen/game/players/$play/ipfs/.12D*/G1SSB/_g1.pubkey)
 
+        # TODO USE INTERNAL TIDDLYWIKI TIMESTAMP TO SHOW MODIFIED FIRST
         # Check if different from last record (check .chain)
-        nowchain=$(ipfs cat /ipns/$moaplayer/chain 2>/dev/null)
-        moachain=$(cat ~/.zen/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/chain.moa 2>/dev/null)
+#        nowchain=$(ipfs cat /ipns/$moaplayer/chain 2>/dev/null)
+#        moachain=$(cat ~/.zen/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/chain.moa 2>/dev/null)
 
-        [[ $nowchain != $moachain ]] && xdg-open "http://127.0.0.1:8080/ipns/$moaplayer"
+#        [[ $nowchain != $moachain ]] && xdg-open "http://127.0.0.1:8080/ipns/$moaplayer"
         # TODO Save actual moachain from a command received through Instscan/nc trick for exemple, or recurrent astrXbian actions...
         # ipfs cat /ipns/$moaplayer/chain > ~/.zen/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/chain.moa
     done
