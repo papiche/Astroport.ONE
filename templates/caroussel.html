@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>_CHANNEL_ : CAROUSSEL [BunkerBOX]</title>
+    <link rel="icon" type="image/png" href="styles/logo.png" />
+    <link rel="stylesheet" href="styles/video-js.css" type="text/css" />
+    <link rel="stylesheet" href="styles/forest.css" type="text/css" />
+    <link rel="stylesheet" href="styles/decoration.css" type="text/css" />
+    <link rel="stylesheet" href="styles/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="styles/layout.css" type="text/css" />
+    <link rel="stylesheet" href="styles/video-wall.css" type="text/css" />
+
+    <script src="js/video.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/mustache.min.js"></script>
+    <script src="js/video-wall.js"></script>
+    <script src="js/videojs-contrib-hls.min.js"></script>
+
+</head>
+<body>
+<header>
+    <h6>
+        <a href="_IPNSL_/tw/_CHANNEL_" target="_CHANNEL_"> "<span>BunkerBOX@_CHANNEL_</span>"</a> /<a href="_IPNSL_">qo-op</a>/
+    </h6>
+</header>
+
+<main>
+<center>
+<div class="row justify-center">
+
+
+<video
+    id="vbunk"
+    class="video-js vjs-theme-forest"
+    controls
+    preload="auto"
+    width="auto" height="360"
+    poster="_VUID_.jpg"
+  >
+    <source src="_VUID_.mp4" type="video/mp4" />
+    <p class="vjs-no-js">
+      Activer JavaScript SVP
+    </p>
+</video>
+</div>
+</center>
+
+<article>
+        <h1 class="video-title">
+            _TITLE_
+        </h1>
+</article>
+
+    <div id="videosChan"><div class="wrapper"></div></div>
+
+<center>
+    <h6>
+        <a href="https://crowdbunker.com/v/_VUID_" target="bunker"> _\/_ </a> powered by <a href="https://astroport.com"><span>"</span>Astroport<span>"</span></a>
+    </h6>
+</center>
+
+</main>
+</body>
+
+<script>
+$ ( '#vbunk' ).idowsvideowall ( {
+    _CAROUSSELJSON_
+});
+</script>
+
+<script>
+$.getJSON('_IPNSL_/history._CHANNEL_.json', function (json) {
+// _IPNSL_ is showing the latest, could be relative to show the actual chain.
+    $('#videosChan').pagination({
+        dataSource: json.Videos,
+        pageSize: 1,
+        callback: function(data, pagination) {
+            var wrapper = $('#videosChan .wrapper').empty();
+            $.each(data, function (i, f) {
+                $('#videosChan .wrapper').append('<ul><li><div class="snippet-block">' + f.link + '</div></li></ul>');
+            });
+        }
+    });
+});
+</script>
+<!-- Matomo Tag Manager -->
+<script>
+var _mtm = window._mtm = window._mtm || [];
+_mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
+var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+g.async=true; g.src='https://piwik.p2p.legal/js/container_XDhfGZPj.js'; s.parentNode.insertBefore(g,s);
+</script>
+<!-- End Matomo Tag Manager -->
+</html>

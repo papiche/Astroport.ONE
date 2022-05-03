@@ -1,0 +1,40 @@
+/**
+ * Tag cloud plugin for jQuery, showing bigger tags in the center
+ * @version    1.2.0
+ * @release    2021-04-07
+ * @repository https://github.com/peterthoeny/jquery.tagcloud
+ * @author     Peter Thoeny, https://twiki.org/ & https://github.com/peterthoeny
+ * @copyright  2021 Peter Thoeny, https://github.com/peterthoeny
+ * @license    MIT, https://opensource.org/licenses/mit-license
+ */
+
+.jqTcContainer {
+}
+.jqTcContainer table {
+    border-collapse: collapse;
+    width: 100%;
+}
+.jqTcContainer td {
+    padding: 0;
+    border: 0 none;
+    text-align: center;
+    white-space: nowrap;
+}
+.jqTcTag {
+    display: inline-block;
+    margin: 3px 7px;
+    padding: 3px 10px;
+    border-radius: 5px;
+}
+.jqTcTag:hover {
+    box-shadow: 0 0 5px 1px #aaa;
+}
+.jqTcTag a {
+    text-decoration: none;
+    color: inherit;
+}
+.jqTcTag a:hover {
+  text-decoration: underline;
+}
+
+/* EOF */

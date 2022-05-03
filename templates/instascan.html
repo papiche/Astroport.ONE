@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+	<title>JQuery HTML5 QR Code Scanner using Instascan JS Example - ItSolutionStuff.com</title>
+
+	<script src="js/jquery.min.js"></script>
+
+	<script src="js/instascan.min.js"></script>
+
+</head>
+
+<body>
+
+  
+
+    <h1>JQuery HTML5 QR Code Scanner using Instascan JS Example - ItSolutionStuff.com</h1>
+
+    <h2>Receiver : echo -e 'HTTP/1.1 200 OK\r\n' | nc -l -p 1234 -q 1 | grep '^GET' | cut -d' ' -f2</h2>
+    
+
+    <video id="preview"></video>
+
+    <script type="text/javascript">
+
+      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
+      scanner.addListener('scan', function (content) {
+
+        $.ajax({
+            url: "http://127.0.0.1:1234",
+            data: "qrcode="+content,
+            type: 'GET'
+        });
+
+        alert(content);
+
+      });
+
+      Instascan.Camera.getCameras().then(function (cameras) {
+
+        if (cameras.length > 0) {
+
+          scanner.start(cameras[0]);
+
+        } else {
+
+          console.error('No cameras found.');
+
+        }
+
+      }).catch(function (e) {
+
+        console.error(e);
+
+      });
+
+    </script>
+
+   
+
+</body>
+
+</html>
