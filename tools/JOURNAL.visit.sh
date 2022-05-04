@@ -60,8 +60,8 @@ moa=$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)
 
 zenity --question --width 300 --text "$PSEUDO souhaitez-vous ouvrir votre journal 'qo-op' (niveau 0) ?"
 # Récupération de la clef du capitaine PLAYER ( identique à celle du démon IPFS )
-qo-op=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
-[ $? == 0 ] && xdg-open "http://127.0.0.1:8080/ipns/$qo-op"
+qoop=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
+[ $? == 0 ] && xdg-open "http://127.0.0.1:8080/ipns/$qoop"
 
 # TODO: fabriquer une interface où passer d'un journal à l'autre, y glisser déposer, etc ...
 # Le journal transmit par la balise IPFS est celui de la clef PLAYER du CAPTAIN.
