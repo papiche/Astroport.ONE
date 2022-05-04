@@ -4,12 +4,12 @@
 # Version: 0.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# Gestion de l'identité IPFS de la Station parmis celle des PLAYER
-# La première clef n'a aucun chalenge pour le faire.
-# Les suivantes peuvent être soumises au niveau de confiance (LOVE) des meilleurs Astronautes.
+# Gestion de l'entrée du PLAYER dans la Station
+# Le premier devient Capitaine...
+# Les suivants selon le niveau de confiance (LOVE) des meilleurs Astronautes?!
 #
-# ~/.zen/game/players/$PLAYER/ipfs/
-# ~/.zen/ipfs/.$IPFSNODEID
+# 'player' 'moa'
+# ~/.zen/ipfs/ -> ~/.zen/game/players/$PLAYER/ipfs/
 ################################################################################
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -28,69 +28,103 @@ source ~/.zen/ipfs.sync
 
 ### AN ASTROPORT NEEDS A CAPTAIN
 ##############################
-if [[ $IPFS_SYNC_DIR == "" || $IPFS_SYNC_DIR == "$HOME/astroport" ]]; then
-
+if [[  ! -d $IPFS_SYNC_DIR || $IPFS_SYNC_DIR == "" || $IPFS_SYNC_DIR == "$HOME/astroport" ]]; then
+    echo "#-----------------------------------"
+    echo $IPFS_SYNC_DIR
     echo "Aucun Capitaine à bord."; sleep 1
     echo "$PLAYER vous devenez la clef maitre de la Station et de sa balise astrXbian..."; sleep 1
 
+echo
+echo "** Stop or Kill ipfs daemon **"
     # 1st Captain. Changing IPFS station key.
     sudo service ipfs stop
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     [[ $YOU ]] && sudo killall -5 ipfs
     #-----------------------------------
 
-echo "Replace ~/.ipfs/config"
-read
-    [[ -f ~/.ipfs/config.astrXbian ]] && mv ~/.ipfs/config.astrXbian ~/.ipfs/config.astrXbian.${MOATS} && echo "BACKUP config.astrXbian.${MOATS}"
-    mv ~/.ipfs/config ~/.ipfs/config.astrXbian && echo "BACKUP current ipfs config"
-    cp ~/.zen/game/players/$PLAYER/ipfs.config ~/.ipfs/config && echo "Install $PLAYER G1 ipfs config"
-    IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+echo
+echo "=== Replacing ~/.ipfs/config ==="; sleep 2
 
-echo "Link keystore to captain"
-read
-    mv ~/.ipfs/keystore ~/.ipfs/keystore.astrXbian
+    [[ -f ~/.ipfs/config.astrXbian ]] && mv ~/.ipfs/config.astrXbian ~/.ipfs/config.astrXbian.${MOATS} && echo "BACKUP config.astrXbian.${MOATS}"; sleep 2
+    mv ~/.ipfs/config ~/.ipfs/config.astrXbian && echo "BACKUP current ipfs config"; sleep 2
+    cp ~/.zen/game/players/$PLAYER/ipfs.config ~/.ipfs/config && echo "Installing $PLAYER 'G1' ipfs config"
+    IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID); echo $IPFSNODEID
+
+echo
+echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
+
+    mv ~/.ipfs/keystore ~/.ipfs/keystore.astrXbian.${LAYER}.${MOATS}
     ln -s ~/.zen/game/players/$PLAYER/keystore ~/.ipfs/keystore
 
-echo "Keep 'qo-op' existing key, or create first one"
-read
-    cp ~/.ipfs/keystore.astrXbian/key_ofxs233q ~/.ipfs/keystore/ 2>/dev/null
-    publishkey=$(ipfs key gen qo-op 2>/dev/null)
-    publishkey=$(ipfs key list -l | grep -w qo-op | cut -d ' ' -f 1)
+    # Get already created keys
+    cp ~/.ipfs/keystore.astrXbian.${LAYER}.${MOATS}/* ~/.ipfs/keystore/ 2>/dev/null
 
-    echo "Station 'qo-op' channel : /ipns/$publishkey"; sleep 1
+    # 'qo-op' Key there?
+    [[ ! -f ~/.ipfs/keystore/key_ofxs233q ]] && qoopns=$(ipfs key gen qo-op)
+    ipfs key list -l | grep -w qo-op
+    qoopns=$(ipfs key list -l | grep -w qo-op | cut -d ' ' - f 1)
 
-echo "Connect captain ipfs data ?!"
-read
-    [[ -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs.astrXbian ~/.zen/ipfs.astrXbian.${MOATS} && echo "BACKUP ~/.zen/ipfs.astrXbian.${MOATS}"
-    mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP current ~/.zen/ipfs"
-    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER control 'self' and 'qo-op' channels"
+    echo "----> Station 'qo-op' channel : /ipns/$qoopns"; sleep 1
 
-echo "## Start IPFS DAEMON"
+    # 'moa' Key there?
+    [[ ! -f ~/.ipfs/keystore/key_nvxwc ]] && moans=$(ipfs key gen moa)
+    ipfs key list -l | grep -w moa
+    moans=$(ipfs key list -l | grep -w moa | cut -d ' ' - f 1)
+
+    echo "----> Station 'moa' channel : /ipns/$moans"; sleep 1
+
+echo
+echo "===== Connect captain IPFS datadir to Station (balise junction) ====="; sleep 2
+
+    [[ -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs.astrXbian ~/.zen/ipfs.astrXbian.${MOATS} && echo "BACKUP ~/.zen/ipfs.astrXbian.${MOATS}"; sleep 2
+    mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP current ~/.zen/ipfs"; sleep 2
+    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER become 'self' and now control 'moa' & 'qo-op' channels"
+echo
+echo "** Restart IPFS DAEMON **"
     sudo service ipfs start
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     [[ ! $YOU ]] && ipfs daemon --writable &
     #-----------------------------------
+    echo "#-----------------------------------"
 
-    echo "Nouvelle Identité balise IPFS"; sleep 1
-    ipfs id
+    echo "##################################################### OK"
+    echo "Nouvelle Identité 'self' Balise IPFS"; sleep 1
+    ipfs id -f='<id>\n'
     echo "##################################################### OK"
     echo "IPFS_SYNC_DIR=$PLAYER" > ~/.zen/ipfs.sync ## PLAYER IS ASTROPORT CAPTAIN NOW
 
 else
+##############################
+
+    # Adapting ipfs daemon keystore with player keys
+    mv ~/.ipfs/keystore ~/.ipfs/keystore.astrXbian.${LAYER}.${MOATS}
+    ln -s ~/.zen/game/players/$PLAYER/keystore ~/.ipfs/keystore
+
     if [[ $IPFS_SYNC_DIR == "$PLAYER" ]]; then
         ## THE CAPTAIN IS LOGGED IN
-        echo "Bienvenue capitaine !"; sleep 2
-        echo "Ouverture des journaux...";
+        echo "Bienvenue CAPITAINE !"; sleep 2
+        echo "Ouverture des journaux 'moa' et 'qo-op' de votre Station Astroport";
+
+        # OPEN 'moa' channel
+        moans=$(ipfs key list -l | grep -w moa | cut -d ' ' -f 1)
+        xdg-open "http://127.0.0.1:8080/ipns/$moans"
+
+        # OPEN 'qo-op' channel
+        qoopns=$(ipfs key list -l | grep -w qo-op | cut -d ' ' -f 1)
+        xdg-open "http://127.0.0.1:8080/ipns/$qoopns"
 
     else
-        # A PLAYER IS LOGGED IN
-        echo "Joueur $PLAYER, $IPFS_SYNC_DIR est le capitaine de cet Astroport"; sleep 1
-        echo "$PSEUDO, documentez vos 'rêves' et 'plans' dans votre journal 'moa' et donnez 3 étoiles au capitaine."; sleep 1
+        # ASTRONAUT PLAYER IS LOGGED IN
+        echo "Joueur $PLAYER, $IPFS_SYNC_DIR est Capitaine de cet Astroport"; sleep 1
+        echo "$PSEUDO, Décrivez vos 'Talents', soumettez vos 'Rêves' pour améliorer cet Astroport dans votre journal 'moa'."; sleep 2
+        echo "Publiez dans votre journal public 'qo-op'"; sleep 2
 
     fi
 fi
 
-${MY_PATH}/JOURNAL.visit.sh # OPEN TIDDLYWIKIS
+# OPEN PLAYER HOME
+player=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
+xdg-open "http://127.0.0.1:8080/ipns/$player"
 
 
 [[ $1 != "quiet" ]] && echo "=============================================
