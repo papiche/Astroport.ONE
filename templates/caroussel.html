@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="styles/forest.css" type="text/css" />
     <link rel="stylesheet" href="styles/decoration.css" type="text/css" />
     <link rel="stylesheet" href="styles/font-awesome.min.css" type="text/css" />
-    <link rel="stylesheet" href="styles/layout.css" type="text/css" />
     <link rel="stylesheet" href="styles/video-wall.css" type="text/css" />
 
     <script src="js/video.min.js"></script>
@@ -69,21 +68,6 @@ $ ( '#vbunk' ).idowsvideowall ( {
 });
 </script>
 
-<script>
-$.getJSON('_IPNSL_/history._CHANNEL_.json', function (json) {
-// _IPNSL_ is showing the latest, could be relative to show the actual chain.
-    $('#videosChan').pagination({
-        dataSource: json.Videos,
-        pageSize: 1,
-        callback: function(data, pagination) {
-            var wrapper = $('#videosChan .wrapper').empty();
-            $.each(data, function (i, f) {
-                $('#videosChan .wrapper').append('<ul><li><div class="snippet-block">' + f.link + '</div></li></ul>');
-            });
-        }
-    });
-});
-</script>
 <!-- Matomo Tag Manager -->
 <script>
 var _mtm = window._mtm = window._mtm || [];
