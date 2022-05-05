@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>'Moa' _PLAYER_ 'qo-op' [_PSEUDO_] Astronaute / Astroport.ONE</title>
+    <link rel="icon" type="image/png" href="https://tube.copylaradio.com/ipns/crowdbunker.com/styles/logo.png" />
+
+<style type="text/css" media="screen">
+html,body{
+  width: 100%;
+  height: 100%;
+}
+
+.row {
+  display: flex;
+  height: 100%;
+}
+
+.column {
+  flex: 50%;
+  height: 100%;
+}
+
+body {
+
+    background: var(--noir-fonce);
+    color: white;
+    font-family: Roboto,sans-serif;
+}
+</style>
+
+</head>
+<body>
+
+ <div class="row">
+
+  <div class="column">
+    <iframe src="http://127.0.0.1:8080/ipns/_MOANS_" id="iframe1" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>
+  </div>
+
+  <div class="column">
+    <iframe src="http://127.0.0.1:8080/ipns/_QOOPNS_" id="iframe2" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>
+  </div>
+
+</div>
+
+
+<script>
+$('#iframe1').load(function () {
+    $(this).height($(this).contents().height());
+});
+$('#iframe2').load(function () {
+    $(this).height($(this).contents().height());
+});
+
+</script>
+
+</body>
+
+</html>

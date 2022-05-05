@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>'Moa' _PLAYER_ 'qo-op' [_PSEUDO_] Astronaute / Astroport.ONE</title>
+    <link rel="icon" type="image/png" href="styles/logo.png" />
+    <link rel="stylesheet" href="styles/video-js.css" type="text/css" />
+    <link rel="stylesheet" href="styles/forest.css" type="text/css" />
+    <link rel="stylesheet" href="styles/decoration.css" type="text/css" />
+    <link rel="stylesheet" href="styles/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="styles/video-wall.css" type="text/css" />
+
+    <script src="js/video.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/mustache.min.js"></script>
+    <script src="js/video-wall.js"></script>
+    <script src="js/videojs-contrib-hls.min.js"></script>
+</head>
+<body>
+
+ <div class="row">
+
+  <div class="column">
+    <iframe src="http://127.0.0.1:8080/ipns/bafybeierau6ef7hja2x6hl5xhkuvof3j6gm2mj56amisgn6ryjx6qozzge" id="iframe1" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>
+  </div>
+
+  <div class="column">
+    <iframe src="http://127.0.0.1:8080/ipfs/bafybeidrf7j5muokvoafauf3q4ek72fmz3mvqf3k4rdohxpextnbh3dw6u" id="iframe2" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>
+  </div>
+
+</div>
+
+
+<script>
+$('#iframe1').load(function () {
+    $(this).height($(this).contents().height());
+});
+$('#iframe2').load(function () {
+    $(this).height($(this).contents().height());
+});
+
+</script>
+
+</body>
+
+</html>

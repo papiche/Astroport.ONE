@@ -16,17 +16,19 @@ echo '
  / ___ \ ___) || | |  _ <| |_| |  __/| |_| |  _ < | |   | |_| | |\  | |___
 /_/   \_\____/ |_| |_| \_\\___/|_|    \___/|_| \_\|_|    \___/|_| \_|_____|
 
+Ambassade numérique pair à pair sur IPFS.
 
-ASTROPORT Ambassade numérique pair à pair sur IPFS.
+@@@@@@@@@@@@@@@@@@
+ASTROPORT
 VISA : MadeInZion
+@@@@@@@@@@@@@@@@@@
 
-@@@@@@@@@
-ACTUAL PLAYERS
-@@@@@@@@@
 '
 
 ## VERIFY SOFTWARE DEPENDENCIES
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
+YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+[[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 ## CONNECT USER
    PS3='Choisissez votre combinaison Astronaute ou ajoutez la votre. Identité ? '
@@ -50,7 +52,7 @@ ACTUAL PLAYERS
     done
 
 PLAYER=$fav
-echo "SVP entrez votre PASS"
+
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 

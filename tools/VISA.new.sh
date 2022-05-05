@@ -19,6 +19,8 @@ echo ""
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+[[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
 # [[ $1 != "quiet" ]] && echo "-> SALT : $SALT"
@@ -111,19 +113,25 @@ else
     IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID) # We should have a Captain already...
 
     # PLAYER Home ~/.zen/game/players/$PLAYER/index.html
+    PLAYERNS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
     cp ${MY_PATH}/../templates/playerhome.html ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~_MOANS_~${MOANS}~g" ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~_QOOPNS_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/index.html
+    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/index.html
+    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/index.html
+    # Not used (yet) TODO make jQuery Slider
+    sed -i "s~_PLAYERNS_~${PLAYERNS}~g" ~/.zen/game/players/$PLAYER/index.html
+    sed -i "s~_MOAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/index.html
+    sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${PLAYERNS}~g" ~/.zen/game/players/$PLAYER/index.html
 
                 #echo "## PUBLISHING ${PLAYER} /ipns/$PLAYERNS"
-                IPUSH=$(ipfs add -wHq ~/.zen/game/players/$PLAYER/index.html | tail -n 1)
+                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/index.html | tail -n 1)
                 ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     # Moa WIKI ~/.zen/game/players/$PLAYER/moa/index.html
     mkdir -p ~/.zen/game/players/$PLAYER/moa
     cp ${MY_PATH}/../templates/moawiki.html ~/.zen/game/players/$PLAYER/moa/index.html
     sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_PSEUDO_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.html
+    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/moa/index.html
+    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.html
     sed -i "s~_MOAID_~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.html
     STATION=$(ipfs key list -l | grep -w 'moa' | cut -d ' ' -f 1)
     sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/moa/index.html
@@ -133,13 +141,14 @@ else
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/moa/index.html
 
                 #echo "## PUBLISHING moa_${PLAYER} /ipns/$MOANS"
-                IPUSH=$(ipfs add -wHq ~/.zen/game/players/$PLAYER/moa/index.html | tail -n 1)
+                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/moa/index.html | tail -n 1)
                 ipfs name publish --key=moa_${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     # qo-op WIKI ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     cp ${MY_PATH}/../templates/qoopwiki.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_PSEUDO_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
+    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
+    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_MOAID_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     STATION=$(ipfs key list -l | grep -w 'qo-op' | cut -d ' ' -f 1)
     sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
@@ -149,12 +158,16 @@ else
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
 
                 #echo "## PUBLISHING qo-op_${PLAYER} /ipns/$QOOPNS"
-                IPUSH=$(ipfs add -wHq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html | tail -n 1)
+                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html | tail -n 1)
                 ipfs name publish --key=qo-op_${PLAYER} /ipfs/$IPUSH 2>/dev/null
-
 
     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
+
+    # Record IPNS address for CHANNEL.populate
+    echo "$PLAYERNS" > ~/.zen/game/players/$PLAYER/.playerns
+    echo "$MOANS" > ~/.zen/game/players/$PLAYER/.moans
+    echo "$QOOPNS" > ~/.zen/game/players/$PLAYER/.qoopns
 
     echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
