@@ -31,7 +31,7 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 ## CONNECT USER
-   PS3='Choisissez votre combinaison Astronaute ou ajoutez la votre. Identité ? '
+   PS3='Choisissez votre Astronaute ou ajoutez votre Identité à la liste. '
     players=("NOUVEAU VISA" $(ls ~/.zen/game/players))
     select fav in "${players[@]}"; do
         case $fav in
@@ -56,14 +56,16 @@ PLAYER=$fav
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-cat ~/.zen/game/players/.current/.pass 2>/dev/null # DEVEL
-echo "Saisissez votre PASS "
-read PASS
+# DEVEL
+echo "Saisissez votre PASS -- DEBUG $(cat ~/.zen/game/players/.current/.pass 2>/dev/null) --"
+read pass
 
 ## DECODE CURRENT PLAYER CRYPTO
-echo "_ssl_ DECODAGE _ssl_"
-openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $PASS 2>/dev/null
-[ $? != 0 ] && echo "ERROR. MAUVAIS PASS. EXIT" && rm $HOME/.zen/tmp/${PLAYER}.dunikey && exit 1
+echo "********* DECODAGE SecuredSocketLayer *********"
+rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
+openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>/dev/null
+[ ! -f $HOME/.zen/tmp/${PLAYER}.dunikey ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
+
 echo "____________________";
 echo
 PS3="$PLAYER choisissez une action à mener : "

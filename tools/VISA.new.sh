@@ -149,7 +149,8 @@ else
     sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_MOAID_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
+    sed -i "s~_MOANS_~${MOANS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
+    sed -i "s~_QOOPNS_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     STATION=$(ipfs key list -l | grep -w 'qo-op' | cut -d ' ' -f 1)
     sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_MOAKEY_~qo-op_${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
@@ -181,7 +182,7 @@ qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "$QOOPNS"
 echo; echo "Création de vos QR codes IPNS, clefs de votre réseau IPFS."; sleep 1
 
 [[ $1 != "quiet" ]] && echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Personnel (niveau 5) : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$PLAYERNS"; sleep 2
+[[ $1 != "quiet" ]] && echo; echo "*** Votre Home : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$PLAYERNS"; sleep 2
 [[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Astronaute (niveau 3) : moa_$PLAYER"; echo " http://127.0.0.1:8080/ipns/$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)"; sleep 2
 [[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Passerelle (niveau 0/1) : qo-op_$PLAYER"; echo " http://127.0.0.1:8080/ipns/$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)"; sleep 2
 

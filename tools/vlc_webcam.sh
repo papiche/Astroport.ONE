@@ -23,6 +23,8 @@ else
     RECDEVICE=$(pactl list short sources | grep input | cut -f 2)
 fi
 
+mkdir -p ~/.zen/tmp/
+
 echo "Voulez-vous enregistrer le bureau? ENTER sinon"
 read desktop
 [[ $desktop != "" ]] && screencapture
@@ -53,6 +55,7 @@ ffmpeg -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_l
 IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
 echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
+mkdir -p ~/.zen/game/players/.current/publish
 
 ## Creating new video chain index.html
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
@@ -64,16 +67,17 @@ else
     sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > /tmp/index.html
 fi
 sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/index.html
-sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/game/players/.current/public/index.html
+sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/game/players/.current/publish/index.html
 
-# Copy style css
-cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/public/
+# Copy style & js
+cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/publish/
+cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.current/publish/
 
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/public | tail -n 1)
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/publish | tail -n 1)
 echo $IPFSROOT > ~/.zen/game/players/.current/.vlog.index
 # Change CSS path to
-sed s/_IPFSROOT_/$IPFSROOT/g /tmp/index.html > ~/.zen/game/players/.current/public/index.html
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/public | tail -n 1)
+sed s/_IPFSROOT_/$IPFSROOT/g /tmp/index.html > ~/.zen/game/players/.current/publish/index.html
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/publish | tail -n 1)
 
 
 echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
