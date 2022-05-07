@@ -30,14 +30,14 @@ VISA : MadeInZion
 YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
-## CONNECT USER
+## CREATE AND OR CONNECT USER
    PS3='Choisissez votre Astronaute ou ajoutez votre Identité à la liste. '
     players=("NOUVEAU VISA" $(ls ~/.zen/game/players))
     select fav in "${players[@]}"; do
         case $fav in
         "NOUVEAU VISA")
             ${MY_PATH}/tools/VISA.new.sh
-            fav=$(cat ~/.zen/tmp/PSEUDO) && rm ~/.zen/tmp/PSEUDO
+            fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
             ;;
@@ -63,7 +63,7 @@ read pass
 ## DECODE CURRENT PLAYER CRYPTO
 echo "********* DECODAGE SecuredSocketLayer *********"
 rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
-openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>/dev/null
+openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
 [ ! -f $HOME/.zen/tmp/${PLAYER}.dunikey ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 echo "____________________";
@@ -78,8 +78,8 @@ select fav in  "${choices[@]}"; do
         ;;
 
     "EXPORTER VISA")
-        echo "EXPORT. INSERT USB KEY"
-        ls ~/.zen/game/players/.current
+        echo "EXPORT. INSEREZ CLEF USB"
+        du -h ~/.zen/game/players/.current/
         echo  "Enter to continue. Ctrl+C to stop"
         read
         echo "TODO... ${MY_PATH}/tools/SAVE.astronaut.sh"
@@ -87,7 +87,7 @@ select fav in  "${choices[@]}"; do
         ;;
 
     "SUPPRIMER VISA")
-        echo "SUPPRESSION"
+        echo "ATTENTION SUPPRESSION DEFINITIVE"
         echo  "Enter to continue. Ctrl+C to stop"
         read
         ipfs key rm $PLAYER; ipfs key rm qo-op_$PLAYER; ipfs key rm moa_$PLAYER;

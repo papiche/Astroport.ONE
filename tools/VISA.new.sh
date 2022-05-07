@@ -118,9 +118,8 @@ else
     sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/index.html
     sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/index.html
     # Not used (yet) TODO make jQuery Slider
-    sed -i "s~_PLAYERNS_~${PLAYERNS}~g" ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~_MOAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${PLAYERNS}~g" ~/.zen/game/players/$PLAYER/index.html
+    sed -i "s~_MOANS_~${MOANS}~g" ~/.zen/game/players/$PLAYER/index.html
+    sed -i "s~_QOOPNS_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/index.html
 
                 #echo "## PUBLISHING ${PLAYER} /ipns/$PLAYERNS"
                 IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/index.html | tail -n 1)
@@ -144,7 +143,7 @@ else
                 IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/moa/index.html | tail -n 1)
                 ipfs name publish --key=moa_${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
-    # qo-op WIKI ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
+    # qo-op WIKI ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html (TODO ENHANCE TW TEMPLATE WITH EXTRA PARMETERS, EXTRA TIDDLERS)
     cp ${MY_PATH}/../templates/qoopwiki.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
     sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
@@ -162,8 +161,14 @@ else
                 IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html | tail -n 1)
                 ipfs name publish --key=qo-op_${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
+    ## MEMORISE PLAYER
     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
+    echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
+    echo "$IPFSNODEID" > ~/.zen/game/players/$PLAYER/.ipfsnodeid
+
     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
+    # astrXbian compatible IPFS sub structure =>$XZUID
+    cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/_xbian.zuid
 
     # Record IPNS address for CHANNEL.populate
     echo "$PLAYERNS" > ~/.zen/game/players/$PLAYER/.playerns
@@ -196,18 +201,18 @@ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -ou
 [[ $1 != "quiet" ]] && echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
 
 #################################################
-# !! TODO !! # DEV MODE. REMOVE FOR PRODUCTION
+# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION
 echo "$PASS" > ~/.zen/game/players/$PLAYER/.pass
-[[ $1 != "quiet" ]] && echo "_____ REINIT COMMAND____"
-[[ $1 != "quiet" ]] && echo "for p in \$(ls ~/.zen/game/players/); do rm -Rf ~/.zen/game/players/\$p"
-[[ $1 != "quiet" ]] && echo "for k in \$(ipfs key list | grep \$p); do ipfs key rm \$k; done; done"
-[[ $1 != "quiet" ]] && echo "_____ALL PLAYERS REMOVAL____"
-#################################################
+# ~/.zen/game/players/$PLAYER/secret.june SECURITY TODO
+# Astronaut QRCode + PASS = LOGIN (=> DECRYPTING CRYPTO IPFS INDEX)
+#####################################################
 
-## SET CURRENT PLAYER
+## DISCONNECT AND CONNECT CURRENT PLAYER
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
+## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS
+${MY_PATH}/FRIENDS.init.sh
 
 [[ $1 != "quiet" ]] && echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
 [[ $1 != "quiet" ]] && echo "Souvenez-vous bien de votre PASS : $PASS"; sleep 2

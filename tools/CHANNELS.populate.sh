@@ -18,6 +18,11 @@ for player in $(ls ~/.zen/game/players/); do
     qoopns=$(cat ~/.zen/game/players/$PLAYER/.qoopns)
     moans=$(cat ~/.zen/game/players/$PLAYER/.moans)
     playerns=$(cat ~/.zen/game/players/$PLAYER/.playerns)
+    # CHECK DIFFERENCES FROM LATEST TIME CHECK
+
+# GET DIFF BETWEEN moa_PLAYERs
+# Extract json's => Add to main channel 'moa'
+# Warn Captain to monitor.
 
 done
 

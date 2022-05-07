@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 # SCRIPT INTERACTIF POUR AJOUTER UN FICHIER à ASTROPORT/KODI
@@ -53,8 +53,7 @@ haut=$((height-200))
 
 ########################################################################
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-[[ -f ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title ]] && XGUID="$(cat ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title)" || XGUID="$(cat /etc/hostname)"
-[[ -f ~/.zen/ipfs/.$IPFSNODEID/_xbian.zuid ]] && XZUID=$(cat ~/.zen/ipfs/.$IPFSNODEID/_xbian.zuid)
+XZUID=$(cat ~/.zen/ipfs/.$IPFSNODEID/_xbian.zuid 2>/dev/null) || XZUID="noplayer"
 
 ########################################################################
 ## CADRE EXCEPTION COPIE PRIVE
@@ -93,6 +92,7 @@ if [[ $RUN == "OUI" ]]; then
     STRAP=$(ipfs bootstrap)
     BOOT=$(zenity --entry --width 300 --title="Catégorie" --text="$STRAP Changez de Bootstrap" --entry-text="Aucun" astrXbian Public)
     [[ $BOOT == "Aucun" ]] && ipfs bootstrap rm --all
+    ## TODO REWRITE, Now init_friends.sh populated swarm bootstrapping
     [[ $BOOT == "astrXbian" ]] && for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_nodes.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
     [[ $BOOT == "Public" ]] && for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_public.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
     REP=$(~/.zen/astrXbian/zen/cron_VRFY.sh) &&  zenity --warning --width 600 --text "$REP"
