@@ -68,6 +68,7 @@ openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dun
 [ ! -f $HOME/.zen/tmp/${PLAYER}.dunikey ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 echo "____________________";
+${MY_PATH}/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
 echo
 PS3="$PLAYER choisissez une action à mener : "
 choices=("WEBCAM" "JOURNAUX" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")

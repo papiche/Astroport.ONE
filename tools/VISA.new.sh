@@ -90,7 +90,8 @@ else
 
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
 
-    qrencode -s 6 -o ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/QR.png "$G1PUB"
+    qrencode -s 6 -o ~/.zen/game/players/$PLAYER/QR.png "$G1PUB"
+    cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/QR.png
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
     secFromDunikey=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep "sec" | cut -d ' ' -f2)
@@ -123,24 +124,34 @@ else
 
                 #echo "## PUBLISHING ${PLAYER} /ipns/$PLAYERNS"
                 IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/index.html | tail -n 1)
+                echo $IPUSH > ~/.zen/game/players/$PLAYER/$PLAYER.chain
+                echo $MOATS > ~/.zen/game/players/$PLAYER/$PLAYER.ts
+                echo 1 > ~/.zen/game/players/$PLAYER/$PLAYER.n
                 ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     # Moa WIKI ~/.zen/game/players/$PLAYER/moa/index.html
     mkdir -p ~/.zen/game/players/$PLAYER/moa
-    cp ${MY_PATH}/../templates/moawiki.html ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_MOAID_~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.html
+    cp ${MY_PATH}/../templates/moawiki.html ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~_MOAID_~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
     STATION=$(ipfs key list -l | grep -w 'moa' | cut -d ' ' -f 1)
-    sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_MOAKEY_~moa_${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/moa/index.html
-    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/moa/index.html
+    sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~_MOAKEY_~moa_${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
+
+    ## Add QRCode, ID Scan login page. Private p2p level 3 exploration
+    cp ${MY_PATH}/../templates/instascan.html ~/.zen/game/players/$PLAYER/moa/index.html
+
 
                 #echo "## PUBLISHING moa_${PLAYER} /ipns/$MOANS"
-                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/moa/index.html | tail -n 1)
+                IPUSH=$(ipfs add -wHq ~/.zen/game/players/$PLAYER/moa/* | tail -n 1)
+                echo $IPUSH > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.chain
+                echo $MOATS > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.ts
+                echo 1 > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.n
                 ipfs name publish --key=moa_${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     # qo-op WIKI ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html (TODO ENHANCE TW TEMPLATE WITH EXTRA PARMETERS, EXTRA TIDDLERS)
@@ -159,6 +170,9 @@ else
 
                 #echo "## PUBLISHING qo-op_${PLAYER} /ipns/$QOOPNS"
                 IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html | tail -n 1)
+                echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.chain
+                echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.ts
+                echo 1 > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.n
                 ipfs name publish --key=qo-op_${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     ## MEMORISE PLAYER

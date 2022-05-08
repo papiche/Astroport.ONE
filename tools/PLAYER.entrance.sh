@@ -19,21 +19,14 @@ ME="${0##*/}"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
-# Check who is currently current connected PLAYER
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
+# Check who is .current PLAYER
+PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
+PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
+G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
+IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo "noipfsnodeid" && exit 1 )
 
 # Check if Astroport Station already has a "captain"
 source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN"
-
-### AN ASTROPORT NEEDS A CAPTAIN
-##############################
-if [[ ! -d ~/.zen/game/players/$CAPTAIN || $CAPTAIN == "" || $CAPTAIN == "$HOME/astroport" ]]; then
-    echo "#-----------------------------------"
-    echo $CAPTAIN
-    echo "Aucun Capitaine à bord."; sleep 1
-    echo "$PLAYER vous devenez la clef maitre de la Station et de sa balise astrXbian..."; sleep 2
-    echo "Et de ses canaux, public 'qo-op' et administratif 'moa'"; sleep 2
 
 echo
 echo "** Stop or Kill ipfs daemon **"
@@ -42,6 +35,16 @@ echo "** Stop or Kill ipfs daemon **"
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     [[ $YOU ]] && sudo killall -5 ipfs
     #-----------------------------------
+
+### AN ASTROPORT NEEDS A CAPTAIN
+##############################
+if [[ ! -d ~/.zen/game/players/$CAPTAIN || $CAPTAIN == "" || $CAPTAIN == "$HOME/astroport" ]]; then
+    echo "#-----------------------------------"
+    echo $CAPTAIN
+    echo "Aucun Capitaine à bord."; sleep 1
+    echo "$PLAYER vous devenez la clef maitre de la Station et de sa balise astrXbian..."; sleep 2
+    echo "Vous validez et activez les canaux, public 'qo-op' et administratif 'moa'"; sleep 2
+    echo "Contactez support@qo-op.com afin le Canal original MadeInZion"; sleep 2
 
 echo
 echo "=== Replacing ~/.ipfs/config ==="; sleep 2
@@ -70,7 +73,7 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
     qoopns=$(ipfs key list -l | grep -w qo-op | cut -d ' ' -f 1)
 
     echo "----> Station 'qo-op' channel : http://127.0.0.1:8080/ipns/$qoopns"; sleep 1
-
+    echo "$qoopns" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/.qoopns ## 'qo-op'  public channel declared in ipfs balise
 
     # 'moa' Key there? It is the 'Administrative' 3 star.level confidence information layer.
     [[ ! -f ~/.ipfs/keystore/key_nvxwc ]] &&\
@@ -82,6 +85,7 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
     moans=$(ipfs key list -l | grep -w moa | cut -d ' ' -f 1)
 
     echo "----> Station 'moa' channel : http://127.0.0.1:8080/ipns/$moans"; sleep 1
+    echo "$moans" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/.moans ## 'moa' captain controled channel
 
 echo
 echo "===== Connect captain IPFS datadir to Station (balise junction) ====="; sleep 2
@@ -89,18 +93,13 @@ echo "===== Connect captain IPFS datadir to Station (balise junction) ====="; sl
     [[ -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs.astrXbian ~/.zen/ipfs.astrXbian.${MOATS} && echo "BACKUP ~/.zen/ipfs.astrXbian.${MOATS}"; sleep 2
     mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP current ~/.zen/ipfs"; sleep 2
 
-    # Linking ~/.zen/ipfs & ~/.zen/secret.dunikey
+    # Linking ~/.zen/ipfs
+    # ~/.zen/secret.dunikey
+    [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian && echo "BACKUP ~/.zen/secret.dunikey.astrXbian"; sleep 2
+
     echo "CAPITAINE VOUS ETES EN POSSESSION DES CANAUX PRINCIPAUX DE LA STATION 'qo-op', 'moa', etc ..."
     ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER become 'self' and can manage 'moa' & 'qo-op' channels" && sleep 1
     ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey && echo "Linking your ~/.zen/secret.dunikey with Station" && sleep 1
-
-echo
-echo "** Restart IPFS DAEMON **"
-    sudo service ipfs start
-    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-    [[ ! $YOU ]] && ipfs daemon --writable &
-    #-----------------------------------
-    echo "#-----------------------------------"
 
     echo "##################################################### OK"
     echo "Nouvelle Identité 'self' Balise IPFS"; sleep 1
@@ -113,7 +112,7 @@ else
 ##############################
 
 echo
-echo "=== Replacing ~/.ipfs/config ==="; sleep 2
+echo "=== Switching ~/.ipfs/config ==="; sleep 2
 
     [[ ! -f ~/.ipfs/config.astrXbian ]] && mv ~/.ipfs/config ~/.ipfs/config.astrXbian && echo "BACKUP OLD ipfs config" || rm ~/.ipfs/config
     ln -s ~/.zen/game/players/$PLAYER/ipfs.config ~/.ipfs/config && echo "Installing $PLAYER 'G1' ipfs config";    sleep 2
@@ -125,42 +124,56 @@ echo "==== Astronaute keystore activated ===="; sleep 2
     [[ ! -d ~/.ipfs/keystore.astrXbian ]] && mv ~/.ipfs/keystore ~/.ipfs/keystore.astrXbian || rm ~/.ipfs/keystore
     ln -s ~/.zen/game/players/$PLAYER/keystore ~/.ipfs/keystore
 
+
+echo "==== linking G1 Libre ID to Station ===="; sleep 2
+
+    [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian  || rm ~/.zen/secret.dunikey
+    ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey
+
+
+
+    echo
+    echo "** Restart IPFS DAEMON **"
+    sudo service ipfs start
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+    [[ ! $YOU ]] && ipfs daemon --writable &
+    #-----------------------------------
+    echo "#-----------------------------------"
+
     if [[ $CAPTAIN == "$PLAYER" ]]; then
         ## THE CAPTAIN IS LOGGED IN
         echo "Bienvenue CAPITAINE !"; sleep 2
         echo "Ouverture des journaux 'moa' et 'qo-op' de votre Station Astroport";
-     else
-        # ASTRONAUT PLAYER IS LOGGED IN
-        echo "Joueur $PLAYER, $CAPTAIN est Capitaine de cet Astroport"; sleep 1
-        echo "$PSEUDO, Décrivez vos 'Talents', soumettez vos 'Rêves' pour améliorer cet Astroport dans votre journal 'moa'."; sleep 2
-        echo "Publiez dans votre journal public 'qo-op'"; sleep 2
-
-    fi
         # OPEN 'moa' channel
-        moans=$(ipfs key list -l | grep -w moa | cut -d ' ' -f 1)
-        xdg-open "http://127.0.0.1:8080/ipns/$moans"
+        moans=$(ipfs key list -l | grep -w moa | cut -d ' ' -f 1) || moans=$(cat ~/.zen/game/players/$CAPTAIN/ipfs/.12D*/.moans | tail -n 1)
+        [[ $moans != ""  ]] && xdg-open "http://127.0.0.1:8080/ipns/$moans"
 
         # OPEN 'qo-op' channel
-        qoopns=$(ipfs key list -l | grep -w qo-op | cut -d ' ' -f 1)
-        xdg-open "http://127.0.0.1:8080/ipns/$qoopns"
+        qoopns=$(ipfs key list -l | grep -w qo-op | cut -d ' ' -f 1) || moans=$(cat ~/.zen/game/players/$CAPTAIN/ipfs/.12D*/.qoopns | tail -n 1)
+        [[ $qoopns != ""  ]] && xdg-open "http://127.0.0.1:8080/ipns/$qoopns"
 
+     else
+        # ASTRONAUT PLAYER IS LOGGED IN
+        echo "Joueur $PLAYER. Le Capitaine de cet Astroport est - $CAPTAIN -"; sleep 1
+        echo
+        echo "$PSEUDO, Décrivez vos 'Talents', soumettez vos 'Rêves' pour améliorer cet Astroport dans votre journal 'moa'."; sleep 2
+        echo "Publiez dans votre journal public 'qo-op'"; sleep 2
+        echo
+    fi
 
 fi
 
+echo
+echo "** Restart IPFS DAEMON **"
+    sudo service ipfs start
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+    [[ ! $YOU ]] && ipfs daemon --writable &
+    #-----------------------------------
+    echo "#-----------------------------------"
+
 # OPEN PLAYER HOME (contains 'moa_player' + 'qo-op_player' vertical iframes
+echo "OUVERTURE DE VOTRE INTERFACE JOUEUR"; sleep 1
 player=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
 xdg-open "http://127.0.0.1:8080/ipns/$player"
-
-
-[[ $1 != "quiet" ]] && echo "=============================================
-Appuyez sur ENTRER pour vous déconnecter.
-Saisissez 'S' avant pour copier vos données sur clef USB ?
-=======================================================
-"
-read EJECT
-[[ $EJECT == "" ]] && echo "Merci. Au revoir"; rm -f ~/.zen/game/players/.current && exit 0
-
-echo "## TODO ZIP DANS UN FICHIER CHIFFRE AVEC PASS = BACKUP SUR CLEF USB"
-# ${MY_PATH}/tools/SAVE.astronaut.sh # tar.gzip PLAYER DATA TO USB KEY TODO
 
 exit 0

@@ -11,11 +11,20 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-[[ ! -f ~/.zen/game/players/.current/QR.png ]] && echo "ERROR. Cannot find current connected player" && exit 1
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo)
-PLAYER=$(cat ~/.zen/game/players/.current/.player)
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+
+[[ ! -f ~/.zen/game/players/.current/QR.png ]] &&\
+        echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/.current/" && exit 1
+
+# Check who is .current PLAYER
+PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
+PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
+G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
+IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo "noipfsnodeid" && exit 1 )
 
 PASS=$(cat ~/.zen/game/players/.current/.pass)
+
 SALT=$(cat ~/.zen/game/players/.current/login.june | head -n 1)
 PEPPER=$(cat ~/.zen/game/players/.current/login.june | tail -n 1)
 

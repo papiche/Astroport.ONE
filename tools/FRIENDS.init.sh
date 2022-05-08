@@ -16,9 +16,8 @@ G1PUB=$(cat ~/.zen/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2) && [[ ! $G1PU
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID) || ( echo "noipfsid" && exit 1 )
 ########################################################################
 ########################################################################
-# This script used to initialize 'FRIENDS' data and star.level
-# Astronaut is sendind level3 to Captain
-# Captain send level1 to Astronaut
+# This script used to initialize 'FRIENDS' data and star.level with beetween crew and new Astronaut
+# Astronaut is sendind level3 to Captain / # Captain send level1 to Astronaut
 # astrXbian keychains are written to disk... So IPFS obey to this organisation.
 ########################################################################
 ########################################################################
@@ -31,7 +30,7 @@ G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub"
 IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo "noipfsnodeid" && exit 1 )
 
 # Astroport Station "Captain" connected?
-source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN"
+source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN $(${MY_PATH}/face.sh cool)"
 
 
 # New Astronaut is entering Astroport
@@ -42,23 +41,27 @@ for player in $(ls ~/.zen/game/players/); do
     g1pub=$(cat ~/.zen/game/players/$player/.g1pub) || continue
     ipfsnodeid=$(cat ~/.zen/game/players/$player/.ipfsnodeid) || continue
 
+    [[ $PLAYER == $player ]] && continue
     ## Adding ME as Astronauts Friend. Sharing Stars.
-    # Inform Network / Application levels
+    # Inform Network / Application levels. Friend of Friends appears here.
 
-    echo "Adding to $PLAYER ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub"
+    echo "Adding $player to my astrXbian ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub"
     read
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub # Opening FRIEND RELATION
+    echo "$player" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/player  # This Astronaut become my level 1 friend
     echo "1" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/stars.level  # This Astronaut become my level 1 friend
     echo "$ipfsnodeid" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/ipfsnodeid # This Astronaut become my level 1 friend
 
     if [[ $player == "$CAPTAIN" ]]; then
         echo "Cet Astronaute est le CAPITAINE. Confiance 3 !!!"
         echo "3" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/FRIENDS/$g1pub/stars.level  # Ugrade to Level 3 Friend
+        # Need to receive confidence back before acting as Astronaut. 3 days to compare dreams & reality.
     fi
 
-    echo "Adding to $player ~/.zen/game/players/$player/ipfs/.$ipfsnodeid/FRIENDS/$G1PUB"
+    echo "Adding myself to $player ~/.zen/game/players/$player/ipfs/.$ipfsnodeid/FRIENDS/$G1PUB"
     read
     mkdir -p ~/.zen/game/players/$player/ipfs/.$ipfsnodeid/FRIENDS/$G1PUB # AUTO SYMETRIC RELATION TODO : Not overpassing anymore ?
+    echo "$PLAYER" > ~/.zen/game/players/$player/ipfs/.$ipfsnodeid/FRIENDS/$G1PUB/player  # This Astronaut become my level 1 friend
     echo "1" > ~/.zen/game/players/$player/ipfs/.$ipfsnodeid/FRIENDS/$G1PUB/stars.level
     echo "$IPFSNODEID" > ~/.zen/game/players/$player/ipfs/.$ipfsnodeid/FRIENDS/$G1PUB/ipfsnodeid # TODO : Not overpassing anymore ?
     echo "Compromis de Confiance 1 ajouté à $player"
