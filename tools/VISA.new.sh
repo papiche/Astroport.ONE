@@ -15,6 +15,7 @@ Solar Punk garden forest terraforming game.
 Bienvenue 'Astronaute'"; sleep 1
 
 echo ""
+
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -87,7 +88,6 @@ else
 
     mv /tmp/secret.dunikey ~/.zen/game/players/$PLAYER/
 
-    # plus on est proche de root, plus les données sont privés à cause des partages recursif ipfs
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
 
     qrencode -s 6 -o ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/QR.png "$G1PUB"

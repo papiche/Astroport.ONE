@@ -553,7 +553,7 @@ if [[ ! \$reponse ]]; then
     ~/.zen/astrXbian/zen/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}.mp4\"
 else" >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
-echo "~/.zen/astrXbian/zen/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" " >> ~/astroport/Add_${MEDIAKEY}_script.sh
+echo "${MY_PATH}/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" " >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
 [[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/astroport/Add_${MEDIAKEY}_script.sh
 

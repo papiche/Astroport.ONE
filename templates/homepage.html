@@ -2,45 +2,170 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>'Moa' _PLAYER_ 'qo-op' [_PSEUDO_] Astronaute / Astroport.ONE</title>
+    <title>[Astroport] Administrative _PLAYER_</title>
     <link rel="icon" type="image/png" href="styles/logo.png" />
+   <link rel="stylesheet" href="styles/decoration.css" type="text/css" />
+    <link rel="stylesheet" href="styles/layout.css" type="text/css" />
     <link rel="stylesheet" href="styles/video-js.css" type="text/css" />
     <link rel="stylesheet" href="styles/forest.css" type="text/css" />
-    <link rel="stylesheet" href="styles/decoration.css" type="text/css" />
-    <link rel="stylesheet" href="styles/font-awesome.min.css" type="text/css" />
-    <link rel="stylesheet" href="styles/video-wall.css" type="text/css" />
+    <link rel="stylesheet" href="styles/tagcloud.css" type="text/css" />
 
-    <script src="js/video.min.js"></script>
     <script src="js/jquery.min.js"></script>
-    <script src="js/mustache.min.js"></script>
-    <script src="js/video-wall.js"></script>
-    <script src="js/videojs-contrib-hls.min.js"></script>
+    <script src="js/video.min.js"></script>
+    <script src="js/pagination.min.js"></script>
+    <script src="js/tagcloud.js"></script>
+    <link rel="stylesheet" href="styles/pagination.css" />
+
 </head>
 <body>
+<header>
+    <h6>
+        <a href="_IPNSL_" target="bunker"> "<span>Capitaine _PSEUDO_ Astroport.ONE</span>"</a> /ipfs/
+    </h6>
+</header>
 
- <div class="row">
+<main>
 
-  <div class="column">
-    <iframe src="http://127.0.0.1:8080/ipfs/bafybeierau6ef7hja2x6hl5xhkuvof3j6gm2mj56amisgn6ryjx6qozzge" id="iframe1" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>
-  </div>
+<article>
+    <div class="row justify-center">
+            <h1 class="video-title">
+                <a href="https://git.p2p.legal/qo-op/Astroport.ONE" target="code">'Astroport' effectue une digitalisation 100% blockchain de tout votre Internet</a>.<br>
+                <a target="code" href="http://opencollective.com/monnaie-libre/projects/bunker-box">Copiez, conservez, partagez, diffusez vos chaines vidéos et multimédia dans IPFS, entre amis!<br>
+                Prenez possession des clefs. Rendez in-censurable, in-arrêtable la liberté d'expression.</a>
+        </h1>
+    </div>
+</article>
 
-  <div class="column">
-    <iframe src="http://127.0.0.1:8080/ipfs/bafybeidrf7j5muokvoafauf3q4ek72fmz3mvqf3k4rdohxpextnbh3dw6u" id="iframe2" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>
-  </div>
+<center>
 
-</div>
+</center>
 
+    <div id="videosList"><div class="wrapper"></div></div>
+<center>
+<div id="channels" class="row justify-center"></div>
+</center>
+
+
+<article>
+    <div class="row justify-center">
+            <p><b>Activez votre Journal, récupérez la clef de votre canal !</b>
+             <br>
+             <ul>
+                 <li>Débutant, sous Windows ou Mac ? Installez IPFS Desktop à votre OS: <a href="https://github.com/ipfs/ipfs-desktop/releases" target="code">IPFS Desktop</a></li>
+                 <li>Plus aguerri ou sous Linux? Ajoutez 'go-ipfs' à votre système: <a href="https://github.com/ipfs/go-ipfs/releases" target="code">go-ipfs</a></li>
+                 <li>Rendez votre navigateur compatible avec le compagnon IPFS <a href="https://github.com/ipfs/ipfs-companion/releases" target="code"><b>ipfs-companion</b></a> !!</li>
+                 </ul>
+            Prêt à prendre possession du réseau des réseaux ensemble ?<br>
+            <b>Contactez support@qo-op.com</b><br>
+    </p>
+    </div>
+</article>
+
+
+    <div id="calendarList"><div class="wrapper thumbnail"></div></div>
+
+<center>
+    <h6>
+        <a href="_IPNSL_"> _\/_ </a> powered by <a href="https://astroport.com"><span>"</span>Astroport<span>"</span></a>
+    </h6>
+</center>
+</main>
+</body>
 
 <script>
-$('#iframe1').load(function () {
-    $(this).height($(this).contents().height());
+var player = videojs('vbunk', {
 });
-$('#iframe2').load(function () {
-    $(this).height($(this).contents().height());
-});
-
 </script>
 
-</body>
+<script>
+$.getJSON('./history.json', function (json) {
+    $('#videosList').pagination({
+        dataSource: json.Videos,
+        pageSize: 1,
+        callback: function(data, pagination) {
+            var wrapper = $('#videosList .wrapper').empty();
+            $.each(data, function (i, f) {
+                $('#videosList .wrapper').append('<ul><li>' + f.link + '</li></ul>');
+            });
+        }
+    });
+});
+
+$.getJSON('./calendar.json', function (json) {
+    $('#calendarList').pagination({
+        dataSource: json.History,
+        pageSize: 1,
+        callback: function(data, pagination) {
+            var wrapper = $('#calendarList .wrapper').empty();
+            $.each(data, function (i, f) {
+                $('#calendarList .wrapper').append('<ul><li>' + f.link + '</li></ul>');
+            });
+        }
+    });
+});
+
+var arrTimes = [];
+var i = 0; // start
+var timesToTest = 5;
+var tThreshold = 150; //ms
+var testImage = "https://tube.copylaradio.com/ipfs/QmUUyiuCM4yXgaeGyqC2SVUUXZksuxhDfHQYpUpZPuL2oS/astroport.jpg"; // small image in your server
+var dummyImage = new Image();
+var isConnectedFast = false;
+
+testLatency(function(avg){
+  isConnectedFast = (avg <= tThreshold);
+  /** output */
+  document.body.appendChild(
+    document.createTextNode("Time: " + (avg.toFixed(2)) + "ms - Bunker BOX ready ? " + isConnectedFast)
+  );
+});
+
+/** test and average time took to download image from server, called recursively timesToTest times */
+function testLatency(cb) {
+  var tStart = new Date().getTime();
+  if (i<timesToTest-1) {
+    dummyImage.src = testImage + '?t=' + tStart;
+    dummyImage.onload = function() {
+      var tEnd = new Date().getTime();
+      var tTimeTook = tEnd-tStart;
+      arrTimes[i] = tTimeTook;
+      testLatency(cb);
+      i++;
+    };
+  } else {
+    /** calculate average of array items then callback */
+    var sum = arrTimes.reduce(function(a, b) { return a + b; });
+    var avg = sum / arrTimes.length;
+    cb(avg);
+  }
+}
+
+$(document).ready(function() {
+  let options = {
+    container: {
+      width: 630,
+      backgroundColor: '#000000',
+      //fontFamily: '"Times New Roman", Times, serif',
+    },
+    tag: {
+      format:      '<a href="{tag.link}">{tag.name}</a>: {tag.weight}',
+      maxFontSize: 41,  // max font size in pixels
+      minFontSize: 8,   // min font size in pixels
+      textShadow:  true // enable text shadow
+    },
+    _TAGCLOUD_
+  }
+  $('#channels').tagCloud(options);
+});
+</script>
+
+<!-- Matomo Tag Manager -->
+<script>
+var _mtm = window._mtm = window._mtm || [];
+_mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
+var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+g.async=true; g.src='https://piwik.p2p.legal/js/container_XDhfGZPj.js'; s.parentNode.insertBefore(g,s);
+</script>
+<!-- End Matomo Tag Manager -->
 
 </html>

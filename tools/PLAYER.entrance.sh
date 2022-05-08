@@ -24,7 +24,7 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
 
 # Check if Astroport Station already has a "captain"
-source ~/.zen/ipfs.sync
+source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN"
 
 ### AN ASTROPORT NEEDS A CAPTAIN
 ##############################

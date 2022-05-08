@@ -21,9 +21,10 @@ Ambassade numérique pair à pair sur IPFS.
 @@@@@@@@@@@@@@@@@@
 ASTROPORT
 VISA : MadeInZion
-@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@'
+source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN"
+echo
 
-'
 
 ## VERIFY SOFTWARE DEPENDENCIES
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
@@ -31,7 +32,7 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 ## CREATE AND OR CONNECT USER
-   PS3='Choisissez votre Astronaute ou ajoutez votre Identité à la liste. '
+   PS3='Créez votre nouveau VISA ou selectionner votre Astronaute ... '
     players=("NOUVEAU VISA" $(ls ~/.zen/game/players))
     select fav in "${players[@]}"; do
         case $fav in

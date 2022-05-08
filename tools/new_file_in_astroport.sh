@@ -40,7 +40,7 @@ last_char=${path:length-1:1}
 
 file="$2"
 
-echo "~/.zen/astrXbian/zen/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\""
+echo "${MY_PATH}/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\""
 
 extension="${file##*.}"
 TITLE="${file%.*}"
@@ -49,7 +49,7 @@ TITLE="${file%.*}"
 [[ ! -f "${path}${file}" ]] && file="${TITLE%.*}" && extension="${TITLE##*.}" && [[ ! -f "${path}${file}" ]] && er="NO FILE" && echo "$er" && exit 1
 
 # GET XZUID
-[[ -f ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title ]] && XZUID=$(cat ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title) || XZUID=$(cat /etc/hostname)
+XZUID=$(cat ~/.zen/ipfs/.$IPFSNODEID/_xbian.zuid) || XZUID=$(cat /etc/hostname)
 [[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'astroport') ]] && er="Les fichiers sont à placer dans ~/astroport/ MERCI" && echo "$er" && exit 1
 TYPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/astroport/... TYPE(film, youtube, mp3, video, page)/ REFERENCE /
 CAT=$(echo "$TYPE" | awk '{ print tolower($0) }')
@@ -225,15 +225,15 @@ echo "ASK AUTOPIN to $PINnode"
 if [[ ! -d ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode} && "$PINnode" != "$G1PUB" ]]; then
     mkdir -p ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}
     ## ENCRYPT .ipfsid & .ipfs.filelink (THESE FILES ARE
-    $MY_PATH/tools/natools.py encrypt -p $PINnode -i /tmp/.ipfs.filelink -o "~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.ipfs.filelink.encrypt"
-    $MY_PATH/tools/natools.py encrypt -p $PINnode -i /tmp/.ipfsid -o "~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.ipfsid.encrypt"
+    $MY_PATH/natools.py encrypt -p $PINnode -i /tmp/.ipfs.filelink -o "~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.ipfs.filelink.encrypt"
+    $MY_PATH/natools.py encrypt -p $PINnode -i /tmp/.ipfsid -o "~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.ipfsid.encrypt"
     # .ipfsid.encrypt is searched by each Station running ./zen/tools/autoPINfriends.sh
 fi
 ########################################################################
 ## GREAT natools can convert IPNS MEDIAKEY into .dunikey file
 ########################################################################
 # CREATING QRCODE
-$MY_PATH/tools/natools.py privkey -f ipfs-keystore -k $HOME/.ipfs/keystore/$KEYFILE -F pubsec -o /tmp/${MEDIAKEY}.dunikey
+$MY_PATH/natools.py privkey -f ipfs-keystore -k $HOME/.ipfs/keystore/$KEYFILE -F pubsec -o /tmp/${MEDIAKEY}.dunikey
 # PubFromDunikey=$(cat /tmp/${MEDIAKEY}.dunikey | grep "sec" | cut -d ' ' -f2 | base58 -d | tail -c+33 | base58) ## HOWTO EXTRACT PUBKEY FROM SECKEY
 PubFromDunikey=$(cat /tmp/${MEDIAKEY}.dunikey | grep "pub" | cut -d ' ' -f2)
 qrencode -s 6 -o "$HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/QR.png" "$PubFromDunikey"
@@ -246,11 +246,11 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7) && echo "$PASS" 
 openssl enc -aes-256-cbc -salt -in /tmp/${MEDIAKEY}.dunikey -out "$HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/dunikey.enc" -k $PASS
 
 ## STATION & BOOTSTRAP ACCESS TO PASS
-$MY_PATH/tools/natools.py encrypt -p $G1PUB -i /tmp/${MEDIAKEY}.pass -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.pass.encrypt
-$MY_PATH/tools/natools.py encrypt -p $PINnode -i /tmp/${MEDIAKEY}.pass -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.pass.encrypt
+$MY_PATH/natools.py encrypt -p $G1PUB -i /tmp/${MEDIAKEY}.pass -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.pass.encrypt
+$MY_PATH/natools.py encrypt -p $PINnode -i /tmp/${MEDIAKEY}.pass -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.pass.encrypt
 
 ## DECODE MEDIAKEY.dunikey ##
-# ~/.zen/astrXbian/zen/tools/natools.py decrypt -f pubsec -k "$HOME/.zen/secret.dunikey" -i "$HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.pass.encrypt" -o "/tmp/${MEDIAKEY}.pass"
+# ~/.zen/astrXbian/zen/natools.py decrypt -f pubsec -k "$HOME/.zen/secret.dunikey" -i "$HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.pass.encrypt" -o "/tmp/${MEDIAKEY}.pass"
 # openssl enc -aes-256-cbc -d -in "$HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/dunikey.enc" -out "/tmp/${MEDIAKEY}.dunikey" -k $(cat "/tmp/${MEDIAKEY}.pass")
 rm /tmp/${MEDIAKEY}.dunikey
 
@@ -258,8 +258,8 @@ rm /tmp/${MEDIAKEY}.dunikey
 ## GET .ipfs/keystore file MAHE .ipns.mediakey.encrypt
 # used in ipns_TAG_refresh.sh & autoPINfriends.sh
 ########################################################################
-$MY_PATH/tools/natools.py encrypt -p $G1PUB -i $HOME/.ipfs/keystore/$KEYFILE -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.mediakey.encrypt
-$MY_PATH/tools/natools.py encrypt -p $PINnode -i $HOME/.ipfs/keystore/$KEYFILE -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.ipns.mediakey.encrypt
+$MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.ipfs/keystore/$KEYFILE -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.mediakey.encrypt
+$MY_PATH/natools.py encrypt -p $PINnode -i $HOME/.ipfs/keystore/$KEYFILE -o $HOME/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.ipns.mediakey.encrypt
 
 ## Init zen, views counters & visitor
 echo "0" > ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/${PINnode}/.zen
@@ -274,8 +274,8 @@ touch ~/.zen/PIN/${IPFSREPFILEID}/${G1PUB}
 ########################################################################
 ## encrypt links for myself
 ########################################################################
-$MY_PATH/tools/natools.py encrypt -p ${G1PUB} -i /tmp/.ipfs.filelink -o ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipfs.filelink.natools.encrypt
-$MY_PATH/tools/natools.py encrypt -p ${G1PUB} -i /tmp/.ipfsid -o ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipfsid.encrypt
+$MY_PATH/natools.py encrypt -p ${G1PUB} -i /tmp/.ipfs.filelink -o ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipfs.filelink.natools.encrypt
+$MY_PATH/natools.py encrypt -p ${G1PUB} -i /tmp/.ipfsid -o ~/.zen/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipfsid.encrypt
 rm /tmp/.ipfs.filelink
 rm /tmp/.ipfsid
 ########################################################################
@@ -421,7 +421,7 @@ then
         TAGS="${CAT} astroport $GENRE"
         CANON=''
     else
-        TEXT=''
+        TEXT='${MEDIAKEY}'
         TAGS='$:/isAttachment $:/isIpfs astroport '${CAT} $GENRE
         CANON="/ipfs/"${IPFSID}
     fi
