@@ -74,6 +74,34 @@ NAVIGATEUR JOUEUR
 - arbres informationnels, projection de rêves.
 
 ---
+# astrXbian Balise Structure
+
+Chaque Astronaute quand il se connecte transmet ses G1 clefs au démon ipfs.
+
+Voici où se situe ses chaines...
+
+~/.zen/game/players/$PLAYER/moa
+~/.zen/game/players/$PLAYER/keystore
+~/.zen/game/players/$PLAYER/secret.dunikey
+~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/G1SSB/
+
+Dans IPFS, chaque MEDIA ajouté est associé à une première clef "créateur".
+Chaque "contrat" permettant de libérer le MEDIA est inscrit en tant que index.html de chaque sous-répertoire.
+Le contrat final correspond à enchainer la découverte des sous-répertoires, avant le dernier contenant le HASH recherché.
+
+'G1SSB' contient le contrat "Identité du joueur", Astronaute.
+'FRIENDS' les contrats et niveau de confiance déclarés.
+'KEY' les contrats envers des oeuvres numériques ou numérisées (NFT).
+
+Ces données sont diffusées au travers de la balise IPFS du joueur quand il est connecté.
+
+Le joueur possède les clefs des canaux 'moa_player' et 'qo-op_player', ce sont ses journaux.
+Le premier lié à l'administration du jeu et des joueurs
+Le second public. L'équivalent d'une chaine multimédia collectivement approvisionnées...
+
+L'interface de ces journaux est TiddlyWiki, chaque enregistrement se trouve enregistré en blockchain par le capitaine.
+
+---
 
 # TODO
 * Ajouter des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html

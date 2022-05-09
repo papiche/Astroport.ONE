@@ -194,9 +194,9 @@ else
 
 fi
 
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.PLAYERNS.png" "$PLAYERNS"
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.MOANS.png" "$MOANS"
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "$QOOPNS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.PLAYERNS.png" "/ipns/$PLAYERNS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.MOANS.png" "/ipns/$MOANS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "/ipns/$QOOPNS"
 
 echo; echo "Création de vos QR codes IPNS, clefs de votre réseau IPFS."; sleep 1
 

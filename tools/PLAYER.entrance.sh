@@ -61,7 +61,21 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
 
     # Keep already created keys !!?
     cp ~/.ipfs/keystore.astrXbian.${PLAYER}.${MOATS}/* ~/.ipfs/keystore/ 2>/dev/null
+###################################################################################
+    # 'tokenring' Key there? TOKENRING IS A SHARED KEY TO KNOW WHO IS NEXT IN MY FRIEND TO WRITE COMMON CHANNEL
+    # In case of corruption... Swarm goes into DEFCON 3 procedure and eject "bad friend"
+    # Shared between Astroport to choose Station next write time.
+    [[ ! -f ~/.ipfs/keystore/key_orxwwzloojuw4zy ]] && qoopns=$(ipfs key gen tokenring)
+        # tokenring show which PLAYER is the actual 'official' qo-op and moa channels publisher/
+        # tokenringnns is used to choose who is next...
+    ipfs key list -l | grep -w tokenring
+    tokenringns=$(ipfs key list -l | grep -w tokenring | cut -d ' ' -f 1)
+    ipfs name publish --key=tokenring /ipfs/$(echo $PLAYER | ipfs add -q) 2>/dev/null
 
+    echo "----> 'tokenringnns' WHO IS NEXT : http://127.0.0.1:8080/ipns/$tokenringns"; sleep 1
+    echo "$tokenringnns" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/.tokenringnns ## 'tokenring'  is "who is next player to play"
+
+###################################################################################
     # 'qo-op' Key there? Or Captain already join a flag
     # Astroport public channel 'state of mind' propagation...
     [[ ! -f ~/.ipfs/keystore/key_ofxs233q ]] &&\
@@ -75,6 +89,7 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
     echo "----> Station 'qo-op' channel : http://127.0.0.1:8080/ipns/$qoopns"; sleep 1
     echo "$qoopns" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/.qoopns ## 'qo-op'  public channel declared in ipfs balise
 
+###################################################################################
     # 'moa' Key there? It is the 'Administrative' 3 star.level confidence information layer.
     [[ ! -f ~/.ipfs/keystore/key_nvxwc ]] &&\
         moans=$(ipfs key gen moa) && \
@@ -87,22 +102,23 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
     echo "----> Station 'moa' channel : http://127.0.0.1:8080/ipns/$moans"; sleep 1
     echo "$moans" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/.moans ## 'moa' captain controled channel
 
-echo
-echo "===== Connect captain IPFS datadir to Station (balise junction) ====="; sleep 2
+###################################################################################
+    echo
+    echo "===== Connect captain IPFS datadir to Station (balise junction) ====="; sleep 2
 
-    [[ -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs.astrXbian ~/.zen/ipfs.astrXbian.${MOATS} && echo "BACKUP ~/.zen/ipfs.astrXbian.${MOATS}"; sleep 2
+    [[ ! -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP ~/.zen/ipfs.astrXbian" || rm ~/.zen/ipfs; sleep 2
     mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP current ~/.zen/ipfs"; sleep 2
 
     # Linking ~/.zen/ipfs
     # ~/.zen/secret.dunikey
-    [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian && echo "BACKUP ~/.zen/secret.dunikey.astrXbian"; sleep 2
+    [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian && echo "BACKUP ~/.zen/secret.dunikey.astrXbian" || rm ~/.zen/secret.dunikey; sleep 2
 
-    echo "CAPITAINE VOUS ETES EN POSSESSION DES CANAUX PRINCIPAUX DE LA STATION 'qo-op', 'moa', etc ..."
-    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER become 'self' and can manage 'moa' & 'qo-op' channels" && sleep 1
-    ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey && echo "Linking your ~/.zen/secret.dunikey with Station" && sleep 1
+    echo "CAPITAINE VOUS PRENEZ POSSESSION DE LA STATION ET SES CANAUX 'qo-op', 'moa', etc ..."
+    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER become IPFS 'self'" && sleep 1
+    ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey && echo "Linking your ~/.zen/secret.dunikey to Station" && sleep 1
 
     echo "##################################################### OK"
-    echo "Nouvelle Identité 'self' Balise IPFS"; sleep 1
+    echo "Identité 'self' Balise IPFS"; sleep 1
     ipfs id -f='<id>\n'
     echo "##################################################### OK"
     echo "CAPTAIN=$PLAYER" > ~/.zen/ipfs.sync ## PLAYER IS ASTROPORT CAPTAIN NOW
@@ -119,17 +135,19 @@ echo "=== Switching ~/.ipfs/config ==="; sleep 2
     IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID); echo $IPFSNODEID
 
 echo
-echo "==== Astronaute keystore activated ===="; sleep 2
+echo "==== Astronaute keystore switch ===="; sleep 2
 
     [[ ! -d ~/.ipfs/keystore.astrXbian ]] && mv ~/.ipfs/keystore ~/.ipfs/keystore.astrXbian || rm ~/.ipfs/keystore
     ln -s ~/.zen/game/players/$PLAYER/keystore ~/.ipfs/keystore
 
 
-echo "==== linking G1 Libre ID to Station ===="; sleep 2
+echo "==== linking G1 Libre ID and Station ~/.zen/ipfs ===="; sleep 2
 
     [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian  || rm ~/.zen/secret.dunikey
     ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey
 
+    [[ ! -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP ~/.zen/ipfs.astrXbian" || rm ~/.zen/ipfs
+    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER ~/.zen/ipfs "
 
 
     echo

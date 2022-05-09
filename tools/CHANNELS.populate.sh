@@ -25,39 +25,11 @@ source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN"
 
 [[ $PLAYER != $CAPTAIN ]] && echo "CAPTAIN RUN ONLY. EXIT" && exit 1
 
-# Remove old _SLICKDIV_
-rm ~/.zen/game/players/$CAPTAIN/moa/slick.div 2>/dev/null
-
-for player in $(ls ~/.zen/game/players/); do
-
-
-    moans=$(cat ~/.zen/game/players/$player/.moans)
-    # CHECK DIFFERENCES FROM LATEST TIME CHECK
-    ## GETTING LAST 'player_moa' ONLINE VERSION
-    ipfs cat /ipns/$moans > ~/.zen/game/players/$player/moa/index.html
-    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$player/moa/index.html | tail -n 1)
-
-    # Avance la blockchain CAPTAIN pour archiver les '$player.moa.chain' des Etats modifiés
-    [[ $(cat ~/.zen/game/players/$CAPTAIN/moa/$player.moa.chain 2>/dev/null) != "$IPUSH" ]] &&\
-        echo $IPUSH > ~/.zen/game/players/$CAPTAIN/moa/$player.moa.chain && \
-        echo $MOATS > ~/.zen/game/players/$CAPTAIN/moa/$player.moa.ts && \
-        echo "$player 'moa' UPDATE : $MOATS $IPUSH" && \
-        echo "<div class='multiple'><h4>$player</h4></div>" >> ~/.zen/game/players/$CAPTAIN/moa/slick.div
-#        echo "<div class='multiple'><h4><a href='http://127.0.0.1:8080/ipns/"${moans}"' target=${moans}>$player</a></h4></div>" >> ~/.zen/game/players/$CAPTAIN/moa/slick.div && \
-
-done
-
 MOANS=$(ipfs key list -l | grep -w moa | cut -d ' ' -f 1) ## GET CAPTAIN PLAYER NS PUBKEY
 
 CAPTAINNS=$(ipfs key list -l | grep -w $CAPTAIN | cut -d ' ' -f 1) ## GET CAPTAIN PLAYER NS PUBKEY
 CAPTAINMOANS=$(ipfs key list -l | grep -w moa_$CAPTAIN | cut -d ' ' -f 1)
 CAPTAINQOOPNS=$(ipfs key list -l | grep -w qo-op_$CAPTAIN | cut -d ' ' -f 1)
-
-# Get one line
-[[ ! -f ~/.zen/game/players/$CAPTAIN/moa/slick.div ]] && echo "http://127.0.0.1:8080/ipns/$CAPTAINNS/slick.html" && exit 0
-
-SLICKDIV=$(<~/.zen/game/players/$CAPTAIN/moa/slick.div);
-echo $SLICKDIV
 
     # Copying homepage.html template
     cat ${MY_PATH}/../templates/homepage.html > ~/.zen/game/players/$CAPTAIN/moa/slick.html
@@ -76,5 +48,28 @@ echo $SLICKDIV
                 ipfs name publish --key=${CAPTAIN} /ipfs/$IPUSH 2>/dev/null
 
 echo "http://127.0.0.1:8080/ipns/$CAPTAINNS/slick.html"
+
+
+# UPDATE TW UPDATE CHAIN
+for player in $(ls ~/.zen/game/players/); do
+
+
+    moans=$(cat ~/.zen/game/players/$player/.moans)
+    # CHECK DIFFERENCES FROM LATEST TIME CHECK
+    ## GETTING LAST 'player_moa' ONLINE VERSION
+    echo "Getting $player/.moans  /ipns/$moans"
+    ipfs --timeout=10s get -o ~/.zen/game/players/$player/moa/ /ipns/$moans || continue
+    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$player/moa/index.html | tail -n 1)
+
+    # Avance la blockchain CAPTAIN pour archiver les '$player.moa.chain' des Etats modifiés
+    [[ $(cat ~/.zen/game/players/$CAPTAIN/moa/$player.moa.chain 2>/dev/null) != "$IPUSH" ]] &&\
+        echo $IPUSH > ~/.zen/game/players/$CAPTAIN/moa/$player.moa.chain && \
+        echo $MOATS > ~/.zen/game/players/$CAPTAIN/moa/$player.moa.ts && \
+        echo "$player 'moa' UPDATE : $MOATS $IPUSH" && \
+        echo "<div class='multiple'><h4>$player</h4></div>" >> ~/.zen/game/players/$CAPTAIN/moa/slick.div
+#        echo "<div class='multiple'><h4><a href='http://127.0.0.1:8080/ipns/"${moans}"' target=${moans}>$player</a></h4></div>" >> ~/.zen/game/players/$CAPTAIN/moa/slick.div && \
+
+done
+
 
 exit 0
