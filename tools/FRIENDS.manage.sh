@@ -51,3 +51,4 @@ for player in $(ls ~/.zen/game/players/); do
 
 done
 
+# TODO USE WEB INTERFACE

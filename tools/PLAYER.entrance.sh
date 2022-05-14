@@ -105,17 +105,34 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
 ###################################################################################
     echo
     echo "===== Connect captain IPFS datadir to Station (balise junction) ====="; sleep 2
+    ## TODO MAKE FUNCTIONS
+    echo
+    echo "=== Switching ~/.ipfs/config ==="; sleep 2
 
-    [[ ! -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP ~/.zen/ipfs.astrXbian" || rm ~/.zen/ipfs; sleep 2
-    mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP current ~/.zen/ipfs"; sleep 2
+    [[ ! -f ~/.ipfs/config.astrXbian ]] && mv ~/.ipfs/config ~/.ipfs/config.astrXbian && echo "BACKUP OLD ipfs config" || rm ~/.ipfs/config
+    ln -s ~/.zen/game/players/$PLAYER/ipfs.config ~/.ipfs/config && echo "Installing $PLAYER 'G1' ipfs config";    sleep 2
+    IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID); echo $IPFSNODEID
 
-    # Linking ~/.zen/ipfs
-    # ~/.zen/secret.dunikey
-    [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian && echo "BACKUP ~/.zen/secret.dunikey.astrXbian" || rm ~/.zen/secret.dunikey; sleep 2
+    echo
+    echo "==== Astronaute keystore switch ===="; sleep 2
 
-    echo "CAPITAINE VOUS PRENEZ POSSESSION DE LA STATION ET SES CANAUX 'qo-op', 'moa', etc ..."
-    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER become IPFS 'self'" && sleep 1
-    ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey && echo "Linking your ~/.zen/secret.dunikey to Station" && sleep 1
+    [[ ! -d ~/.ipfs/keystore.astrXbian ]] && mv ~/.ipfs/keystore ~/.ipfs/keystore.astrXbian || rm ~/.ipfs/keystore
+    ln -s ~/.zen/game/players/$PLAYER/keystore ~/.ipfs/keystore
+
+
+    echo "==== linking G1 Libre ID and Station ~/.zen/ipfs ===="; sleep 2
+
+    [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian  || rm ~/.zen/secret.dunikey
+    ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey
+
+    [[ ! -f ~/.zen/secret.june.astrXbian ]] && mv ~/.zen/secret.june ~/.zen/secret.june.astrXbian  || rm ~/.zen/secret.june
+    ln -s ~/.zen/game/players/$PLAYER/secret.june ~/.zen/secret.june
+
+    [[ ! -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP ~/.zen/ipfs.astrXbian" || rm ~/.zen/ipfs
+    ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER ~/.zen/ipfs "
+
+
+    echo "VOUS ETES CAPITAINE DE LA STATION ET SES CANAUX 'qo-op', 'moa', etc ..."
 
     echo "##################################################### OK"
     echo "Identité 'self' Balise IPFS"; sleep 1
@@ -146,17 +163,12 @@ echo "==== linking G1 Libre ID and Station ~/.zen/ipfs ===="; sleep 2
     [[ ! -f ~/.zen/secret.dunikey.astrXbian ]] && mv ~/.zen/secret.dunikey ~/.zen/secret.dunikey.astrXbian  || rm ~/.zen/secret.dunikey
     ln -s ~/.zen/game/players/$PLAYER/secret.dunikey ~/.zen/secret.dunikey
 
+    [[ ! -f ~/.zen/secret.june.astrXbian ]] && mv ~/.zen/secret.june ~/.zen/secret.june.astrXbian  || rm ~/.zen/secret.june
+    ln -s ~/.zen/game/players/$PLAYER/secret.june ~/.zen/secret.june
+
     [[ ! -d ~/.zen/ipfs.astrXbian ]] && mv ~/.zen/ipfs ~/.zen/ipfs.astrXbian && echo "BACKUP ~/.zen/ipfs.astrXbian" || rm ~/.zen/ipfs
     ln -s ~/.zen/game/players/$PLAYER/ipfs ~/.zen/ipfs && echo "$PLAYER ~/.zen/ipfs "
 
-
-    echo
-    echo "** Restart IPFS DAEMON **"
-    sudo service ipfs start
-    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-    [[ ! $YOU ]] && ipfs daemon --writable &
-    #-----------------------------------
-    echo "#-----------------------------------"
 
     if [[ $CAPTAIN == "$PLAYER" ]]; then
         ## THE CAPTAIN IS LOGGED IN
@@ -181,8 +193,8 @@ echo "==== linking G1 Libre ID and Station ~/.zen/ipfs ===="; sleep 2
 
 fi
 
-echo
-echo "** Restart IPFS DAEMON **"
+    echo
+    echo "** Restart IPFS DAEMON **"
     sudo service ipfs start
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     [[ ! $YOU ]] && ipfs daemon --writable &

@@ -24,7 +24,7 @@ for player in $(ls ~/.zen/game/players/); do
     pseudo=$(cat ~/.zen/game/players/$player/.pseudo)
 
     echo "$player 'moa' UPDATE : $MOATS $IPUSH" && \
-    DATA="$DATA { name: '"${pseudo}"', link: '"/ipns/${moans}"', weight: "$(cat ~/.zen/game/players/$CAPTAIN/moa/$player.moa.n)", tooltip: '"${player}"' },"
+    DATA="$DATA { name: '"${pseudo}"', link: '"/ipns/${moans}"', weight: "$(cat ~/.zen/game/players/$player/moa/$player.moa.n)", tooltip: '"${player}"' },"
 done
 
 echo 'data: [ '$DATA' ]'
