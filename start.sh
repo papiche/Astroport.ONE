@@ -22,7 +22,8 @@ Ambassade numérique pair à pair sur IPFS.
 ASTROPORT
 VISA : MadeInZion
 @@@@@@@@@@@@@@@@@@'
-source ~/.zen/ipfs.sync; echo "CAPTAIN is $CAPTAIN"
+source ~/.zen/ipfs.sync 2>/dev/null
+echo "CAPTAIN is $CAPTAIN"
 echo
 
 
@@ -32,8 +33,8 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 ## CREATE AND OR CONNECT USER
-   PS3='Créez votre nouveau VISA ou selectionner votre Astronaute ... '
-    players=("NOUVEAU VISA" $(ls ~/.zen/game/players))
+   PS3='Créez votre nouveau VISA ou selectionner un compte Astronaute existant'
+    players=("NOUVEAU VISA" $(ls ~/.zen/game/players 2>/dev/null))
     select fav in "${players[@]}"; do
         case $fav in
         "NOUVEAU VISA")
@@ -71,7 +72,7 @@ echo "____________________";
 ${MY_PATH}/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
 echo
 PS3="$PLAYER choisissez une action à mener : "
-choices=("WEBCAM" "JOURNAUX" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
+choices=("AJOUTER MEDIA" "JOURNAUX" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
@@ -97,9 +98,10 @@ select fav in  "${choices[@]}"; do
         break
         ;;
 
-    "WEBCAM")
+    "AJOUTER MEDIA")
         echo "VIDEOBLOG"
-        ${MY_PATH}/tools/vlc_webcam.sh
+        # ${MY_PATH}/tools/vlc_webcam.sh
+        ~/.zen/astrXbian/ajouter_video.sh
         ;;
 
     "JOURNAUX")

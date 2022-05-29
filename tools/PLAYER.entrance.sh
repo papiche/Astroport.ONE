@@ -60,7 +60,7 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
     ln -s ~/.zen/game/players/$PLAYER/keystore ~/.ipfs/keystore
 
     # Keep already created keys !!?
-    cp ~/.ipfs/keystore.astrXbian.${PLAYER}.${MOATS}/* ~/.ipfs/keystore/ 2>/dev/null
+    cp ~/.ipfs/keystore.astrXbian/* ~/.ipfs/keystore/ 2>/dev/null
 ###################################################################################
     # 'tokenring' Key there? TOKENRING IS A SHARED KEY TO KNOW WHO IS NEXT IN MY FRIEND TO WRITE COMMON CHANNEL
     # In case of corruption... Swarm goes into DEFCON 3 procedure and eject "bad friend"
