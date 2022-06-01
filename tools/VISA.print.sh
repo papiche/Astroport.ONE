@@ -25,8 +25,8 @@ IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo
 
 PASS=$(cat ~/.zen/game/players/.current/.pass)
 
-SALT=$(cat ~/.zen/game/players/.current/login.june | head -n 1)
-PEPPER=$(cat ~/.zen/game/players/.current/login.june | tail -n 1)
+SALT=$(cat ~/.zen/game/players/.current/secret.june | head -n 1)
+PEPPER=$(cat ~/.zen/game/players/.current/secret.june | tail -n 1)
 
 LP=$(ls /dev/usb/lp*)
 convert ~/.zen/game/players/.current/QR.png -resize 300 /tmp/QR.png
