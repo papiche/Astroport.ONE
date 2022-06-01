@@ -36,7 +36,7 @@ composite -compose Over -gravity NorthWest -geometry +280+30 /tmp/ASTROPORT.png 
 composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
 composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
 
-convert -gravity northwest -pointsize 30 -fill black -draw "text 20,20 \"$PSEUDO $PLAYER\"" /tmp/image.png /tmp/pseudo.png
+convert -gravity southwest -pointsize 30 -fill black -draw "text 20,20 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 80,380 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
 convert -gravity northwest -pointsize 20 -fill black -draw "text 300,200 \"$SALT\"" /tmp/pass.png /tmp/salt.png
 convert -gravity northwest -pointsize 20 -fill black -draw "text 300,240 \"$PEPPER\"" /tmp/salt.png /tmp/done.jpg
