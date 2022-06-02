@@ -9,12 +9,12 @@ IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo
 ########################################################################
 echo "CREATING $PLAYER GCHANGE+ PROFILE"
 ########################################################################
-~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" set --name "$PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" #GCHANGE+
+~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" #GCHANGE+
 [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && exit 1
 ########################################################################
 echo "CREATING $PLAYER CESIUM+ PROFILE"
 ########################################################################
-~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://g1.data.e-is.pro" set --name "$PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" #CESIUM+
+~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://g1.data.e-is.pro" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" #CESIUM+
 [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && exit 1
 ########################################################################
 
