@@ -65,7 +65,7 @@ p=0;Ei(69,e|0,28,i|0,r|0);Be=p;p=0;if(Be&1)break;p=0;Ge(45,u|0,18,f|0,a|0,t|0,n|
 
 
 
-    <h1>QR Code Scanner - Astronaute présentez votre VISA 'MadeInZion' SVP</h1>
+    <h1>Astronaute présentez votre VISA</h1>
 
     <video id="preview"></video>
 
@@ -80,9 +80,9 @@ p=0;Ei(69,e|0,28,i|0,r|0);Be=p;p=0;if(Be&1)break;p=0;Ge(45,u|0,18,f|0,a|0,t|0,n|
             data: "qrcode="+content,
             type: 'GET'
         });
-        alert(content);
-        $(location).attr('href', content);
-
+        // alert(content);
+        // $(location).attr('href', content);
+        // Receiver : echo -e 'HTTP/1.1 200 OK\r\n' | nc -l -p 1234 -q 1 | grep '^GET' | cut -d' ' -f2 | cut -d'=' -f 2
       });
 
       Instascan.Camera.getCameras().then(function (cameras) {
@@ -105,7 +105,7 @@ p=0;Ei(69,e|0,28,i|0,r|0);Be=p;p=0;if(Be&1)break;p=0;Ge(45,u|0,18,f|0,a|0,t|0,n|
 
     </script>
 
-    <h2>Receiver : echo -e 'HTTP/1.1 200 OK\r\n' | nc -l -p 1234 -q 1 | grep '^GET' | cut -d' ' -f2</h2>
+    <h2>- QR Code Scanner -</h2>
 
 
 </body>

@@ -194,16 +194,16 @@ else
 
 fi
 
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.PLAYERNS.png" "/ipns/$PLAYERNS"
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.MOANS.png" "/ipns/$MOANS"
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "/ipns/$QOOPNS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.PLAYERNS.png" "http://astroport:8080/ipns/$PLAYERNS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.MOANS.png" "http://astroport:8080/ipns/$MOANS"
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "http://astroport:8080/ipns/$QOOPNS"
 
 echo; echo "Création de vos QR codes IPNS, clefs de votre réseau IPFS."; sleep 1
 
 [[ $1 != "quiet" ]] && echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
 [[ $1 != "quiet" ]] && echo; echo "*** Votre Home : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$PLAYERNS"; sleep 2
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Astronaute (niveau 3) : moa_$PLAYER"; echo " http://127.0.0.1:8080/ipns/$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)"; sleep 2
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Passerelle (niveau 0/1) : qo-op_$PLAYER"; echo " http://127.0.0.1:8080/ipns/$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)"; sleep 2
+[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Astronaute (niveau 3) : moa_$PLAYER"; echo " http://astroport:8080/ipns/$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)"; sleep 2
+[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Passerelle (niveau 0/1) : qo-op_$PLAYER"; echo " http://astroport:8080/ipns/$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)"; sleep 2
 
 # PASS CRYPTING KEY
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null

@@ -36,7 +36,7 @@ echo "** Stop or Kill ipfs daemon **"
     [[ $YOU ]] && sudo killall -5 ipfs
     #-----------------------------------
 
-### AN ASTROPORT NEEDS A CAPTAIN
+### CHECK FOR THE CAPTAIN
 ##############################
 if [[ ! -d ~/.zen/game/players/$CAPTAIN || $CAPTAIN == "" || $CAPTAIN == "$HOME/astroport" ]]; then
     echo "#-----------------------------------"
