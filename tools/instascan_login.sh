@@ -20,7 +20,7 @@ QOOPNS=$(cat ~/.zen/game/players/.current/.qoopns 2>/dev/null) || ( echo "noplay
 source ~/.zen/ipfs.sync; echo "Le capitaine de cet Astroport est actuellement $CAPTAIN"
 echo "Astronaute $PLAYER ($PSEUDO) "
 
-xdg-open "file:///home/fred/workspace/Astroport.ONE/templates/instascan.html"
+xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html"
 
 while true; do
 
