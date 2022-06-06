@@ -14,7 +14,7 @@ ME="${0##*/}"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
-[[ ! -f ~/.zen/game/players/.current/QR.png ]] &&\
+[[ ! -f ~/.zen/game/players/.current/.player ]] &&\
         echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/.current/" && exit 1
 
 # Check who is .current PLAYER
@@ -35,16 +35,19 @@ echo "Raffraichissement IPNS $PLAYERNS"
                 # TRYING TO LOAD PLAYERNS
                 ipfs get --timeout=10s -o ~/.zen/tmp/index.html /ipns/$PLAYERNS/index.html
                 # NO IPNS RESPONSE... REPUBLISH
-                [[ ! -f ~/.zen/tmp/index.html ]] && \
+                [[ $? != 0 ]] && \
                     IPUSH=$(cat ~/.zen/game/players/$PLAYER/$PLAYER.chain 2>/dev/null) && \
-                    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
+                    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null && \
+                    echo "Restore Chain $IPUSH"
                 # IPNS MEMORIZE BLOCKCHAIN
                 [[ -f ~/.zen/tmp/index.html ]] && \
                     cp -f ~/.zen/tmp/index.html ~/.zen/game/players/$PLAYER/ && \
                     echo $MOATS > ~/.zen/game/players/$PLAYER/$PLAYER.ts && \
                     echo $(($(cat ~/.zen/game/players/$PLAYER/$PLAYER.n) + 1)) > ~/.zen/game/players/$PLAYER/$PLAYER.n &&\
                     IPUSH=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ | tail -n 1) &&\
-                    echo $IPUSH > ~/.zen/game/players/$PLAYER/$PLAYER.chain
+                    echo $IPUSH > ~/.zen/game/players/$PLAYER/$PLAYER.chain && \
+                    echo "Pushing Chain $IPUSH"
+
 
 MOANS=$(cat ~/.zen/game/players/.current/.moans 2>/dev/null) || ( echo "noplayermoans" && exit 1 )
 qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.MOANS.png" "http://astroport:8080/ipns/$MOANS"
@@ -55,17 +58,18 @@ echo "Raffraichissement IPNS $MOANS"
                 # TRYING TO LOAD PLAYERNS
                 ipfs get --timeout=10s -o ~/.zen/tmp/index.html /ipns/$MOANS/index.html
                 # NO IPNS RESPONSE... REPUBLISH
-                [[ ! -f ~/.zen/tmp/index.html ]] && \
+                [[ $? != 0 ]] && \
                     IPUSH=$(cat ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.chain 2>/dev/null) && \
-                    ipfs name publish --key=moa_${PLAYER} /ipfs/$IPUSH 2>/dev/null
+                    ipfs name publish --key=moa_${PLAYER} /ipfs/$IPUSH 2>/dev/null && \
+                    echo "Restore Chain $IPUSH"
                 # IPNS MEMORIZE BLOCKCHAIN
                 [[ -f ~/.zen/tmp/index.html ]] && \
                     cp -f ~/.zen/tmp/index.html ~/.zen/game/players/$PLAYER/moa/ && \
                     echo $MOATS > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.ts && \
                     echo $(($(cat ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.n) + 1)) > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.n &&\
                     IPUSH=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/moa/ | tail -n 1) &&\
-                    echo $IPUSH > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.chain
-
+                    echo $IPUSH > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.chain && \
+                    echo "Pushing Chain $IPUSH"
 
 QOOPNS=$(cat ~/.zen/game/players/.current/.qoopns 2>/dev/null) || ( echo "noplayerqoopns" && exit 1 )
 qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "http://astroport:8080/ipns/$QOOPNS"
@@ -75,18 +79,19 @@ echo "Raffraichissement IPNS $QOOPNS"
                 rm -f ~/.zen/tmp/index.html
                 # TRYING TO LOAD PLAYERNS
                 ipfs get --timeout=10s -o ~/.zen/tmp/index.html /ipns/$QOOPNS/index.html
-
                 # NO IPNS RESPONSE... REPUBLISH
-                [[ ! -f ~/.zen/tmp/index.html ]] && \
+                [[ $? != 0 ]] && \
                     IPUSH=$(cat ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.chain 2>/dev/null) && \
-                    ipfs name publish --key=qo-op_${PLAYER} /ipfs/$IPUSH 2>/dev/null
+                    ipfs name publish --key=qo-op_${PLAYER} /ipfs/$IPUSH 2>/dev/null && \
+                    echo "Restore Chain $IPUSH"
                 # IPNS MEMORIZE BLOCKCHAIN
                 [[ -f ~/.zen/tmp/index.html ]] && \
                     cp -f ~/.zen/tmp/index.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/ && \
                     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.ts && \
                     echo $(($(cat ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.n) + 1)) > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.n &&\
                     IPUSH=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html | tail -n 1) &&\
-                    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.chain
+                    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.chain && \
+                    echo "Pushing Chain $IPUSH"
 
 PASS=$(cat ~/.zen/game/players/.current/.pass)
 
@@ -99,9 +104,12 @@ convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
 
 composite -compose Over -gravity NorthWest -geometry +280+30 /tmp/ASTROPORT.png ${MY_PATH}/../images/demi.png /tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
-convert -gravity northwest -pointsize 50 -fill black -draw "text 300,200 \"TW\"" /tmp/pass.png /tmp/salt.png
+convert -gravity northwest -pointsize 50 -fill black -draw "text 300,200 \"TW\"" /tmp/one.png /tmp/salt.png
 convert -gravity northwest -pointsize 20 -fill black -draw "text 300,240 \"$PLAYER\"" /tmp/salt.png /tmp/done.jpg
 
+
+xdg-open "/tmp/done.jpg"
+exit
 brother_ql_create --model QL-700 --label-size 62 /tmp/done.jpg > /tmp/toprint.bin 2>/dev/null
 sudo brother_ql_print /tmp/toprint.bin $LP
 
