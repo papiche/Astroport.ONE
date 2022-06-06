@@ -144,7 +144,7 @@ else
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
 
     ## Add QRCode, ID Scan login page. Private p2p level 3 exploration
-    cp ${MY_PATH}/../templates/instascan.html ~/.zen/game/players/$PLAYER/moa/index.html
+    # cp ${MY_PATH}/../templates/instascan.html ~/.zen/game/players/$PLAYER/moa/index.html
 
 
                 #echo "## PUBLISHING moa_${PLAYER} /ipns/$MOANS"
