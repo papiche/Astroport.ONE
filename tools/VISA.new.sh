@@ -111,7 +111,7 @@ else
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID) # We should have a Captain already...
+    IPFSNODEID=$(cat ~/.zen/game/players/$PLAYER/ipfs.config | jq -r .Identity.PeerID) # ACTUAL USER
 
     # PLAYER Home ~/.zen/game/players/$PLAYER/index.html
     PLAYERNS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
