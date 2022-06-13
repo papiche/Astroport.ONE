@@ -20,30 +20,66 @@ QOOPNS=$(cat ~/.zen/game/players/.current/.qoopns 2>/dev/null) || ( echo "noplay
 source ~/.zen/ipfs.sync; echo "Le capitaine de cet Astroport est actuellement $CAPTAIN"
 echo "Astronaute $PLAYER ($PSEUDO) "
 
-xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html"
+xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
+
+function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 while true; do
 
-    REPONSE=$(echo -e 'HTTP/1.1 200 OK\r\n' | nc -l -p 1234 -q 1 | grep '^GET' | cut -d' ' -f2 | cut -d'=' -f 2)
+    URL=$(echo -e 'HTTP/1.1 200 OK\r\n' | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    echo "=================================================="
+    echo "GET RECEPTION : $URL"
+    arr=(${URL//[=&]/ })
+    echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]}"
 
-    ## PLAYER G1PUB
-    g1pubpath=$(grep $REPONSE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
-    PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
+    if [[ ${arr[0]} == "qrcode" ]]; then
+        ## Astroport.ONE local use QRCODE Contains PLAYER G1PUB
+        QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "Instascan.html QR : $QRCODE"
+        g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
+        PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
-    ##
-    [[ $(echo $REPONSE | grep '/ipns/') ]] &&
+             # Get IPFS ID
+            ASTROID=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $QRCODE)
+            echo "ASTROID = $ASTROID"
+            # Rechercher dans mon essaim Gchange
 
-    [[ $PLAYER ]] &&\
-       echo "$PLAYER" && \
-       ns=$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1) &&\
+        ## Open "qo-op_PLAYER" TW
+        if [[ $PLAYER ]]; then
+           echo "$PLAYER"
+           qoop=$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)
+           moa=$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)
+           perso=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
+           xdg-open "http://127.0.0.1:8080/ipns/$qoop"
 
-       xdg-open "http://127.0.0.1:8080/ipns/$ns" || \
-       echo "? "$REPONSE
+        else
+           echo "Astronaute INCONNU ? $QRCODE" # && continue
+        fi
+
+        [[ ${arr[2]} == "" ]] && continue
+    fi
+
+    ## Demande de copie d'une URL reçue.
+    if [[ ${arr[0]} == "qrcode" &&  ${arr[2]} == "url" ]]; then
+        wsource="${arr[3]}"
+         [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
+
+        ## LANCEMENT COPIE
+        ~/.zen/astrXbian/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
+
+        if [[ $PLAYER == $CAPTAIN  ]]; then
+            echo "running as captain"
+        else
+            # running for another player than captain.
+            # Captain copy for all PLAYER (Gchange key conversion TODO)
+            echo "$QRCODE $wsource"
+
+        fi
+    fi
+
+    ## ENVOYER MESSAGE GCHANGE POUR QRCODE
+
 
 done
 
 
-moa=$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)
-
-qoop=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
 

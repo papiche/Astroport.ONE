@@ -66,11 +66,11 @@ DELARATION DES LIEUX
 - Collecte & publication des rêves : Pinterest
 
 
-NAVIGATEUR JOUEUR
+ASTRONAUTES
 ~/.zen/game/players
 
-- Identité astronaute + VISA
-- aptitudes / équipements
+- Identité astronaute & VISA MadeInZion (accès au niveau 3 de confiance réciproque)
+- Expression des Talents (Page Gchange?), validation  aptitudes / équipements
 - arbres informationnels, projection de rêves.
 
 ---
