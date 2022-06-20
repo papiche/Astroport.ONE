@@ -7,6 +7,9 @@ ME="${0##*/}"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
+instascan=$(ps auxf --sort=+utime | grep -w nc | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+[[ $instascan ]] && echo "already running" && exit 1
+
 # Check who is .current PLAYER
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
@@ -38,12 +41,27 @@ while true; do
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
         PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
+[[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && exit 1
+## LOGIN
+rm -f ~/.zen/game/players/.current
+ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+
+~/.zen/Astroport.ONE/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
+
              # Get IPFS ID
             ASTROID=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $QRCODE)
             echo "ASTROID = $ASTROID"
-            # Rechercher dans mon essaim Gchange
+            echo "Get ASTROID astrXbian Drive into $USER ipfs_swarm (/ipns/$ASTROID)"
+            ipfs --timeout=21s get --output=/home/$USER/.zen/ipfs_swarm/ /ipns/$ASTROID
+            if [ $? == 0 ]; then
+                echo "Cache OK"
+            else
+                echo "TODO Create PLAYER ipfs astrXbian qo-op_PLAYER !!"
+            fi
 
-        ## Open "qo-op_PLAYER" TW
+
+
+        ## LOCAL PLAYER => Open "qo-op_PLAYER" TW
         if [[ $PLAYER ]]; then
            echo "$PLAYER"
            qoop=$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)
@@ -53,6 +71,7 @@ while true; do
 
         else
            echo "Astronaute INCONNU ? $QRCODE" # && continue
+
         fi
 
         [[ ${arr[2]} == "" ]] && continue
@@ -78,7 +97,8 @@ while true; do
 
     ## ENVOYER MESSAGE GCHANGE POUR QRCODE
 
-
+    ## Une seule boucle !!!
+    [[ "$1" == "ONE" ]] && exit 0
 done
 
 

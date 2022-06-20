@@ -89,6 +89,7 @@ else
     mv /tmp/secret.dunikey ~/.zen/game/players/$PLAYER/
 
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
+    mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
 
     qrencode -s 6 -o ~/.zen/game/players/$PLAYER/QR.png "$G1PUB"
     cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/QR.png
@@ -113,7 +114,7 @@ else
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     IPFSNODEID=$(cat ~/.zen/game/players/$PLAYER/ipfs.config | jq -r .Identity.PeerID) # ACTUAL USER
 
-    # PLAYER Home ~/.zen/game/players/$PLAYER/index.html
+    # PLAYER Home ~/.zen/game/players/$PLAYER/index.html (IFRAME CONTAINING MOANS & QOOPNS)
     PLAYERNS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
     cp ${MY_PATH}/../templates/playerhome.html ~/.zen/game/players/$PLAYER/index.html
     sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/index.html
