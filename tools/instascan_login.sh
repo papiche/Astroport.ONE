@@ -41,38 +41,15 @@ while true; do
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
         PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
-[[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && exit 1
-## LOGIN
-rm -f ~/.zen/game/players/.current
-ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+        ## FORCE LOCAL USE ONLY. Remove to open 1234 API
+        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && echo "AUCUN PLAYER !!" && exit 1
 
-~/.zen/Astroport.ONE/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
+        ## LOGIN
+        rm -f ~/.zen/game/players/.current
+        ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-             # Get IPFS ID
-            ASTROID=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $QRCODE)
-            echo "ASTROID = $ASTROID"
-            echo "Get ASTROID astrXbian Drive into $USER ipfs_swarm (/ipns/$ASTROID)"
-            ipfs --timeout=21s get --output=/home/$USER/.zen/ipfs_swarm/ /ipns/$ASTROID
-            if [ $? == 0 ]; then
-                echo "Cache OK"
-            else
-                echo "TODO Create PLAYER ipfs astrXbian qo-op_PLAYER !!"
-            fi
+        ~/.zen/Astroport.ONE/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
 
-
-
-        ## LOCAL PLAYER => Open "qo-op_PLAYER" TW
-        if [[ $PLAYER ]]; then
-           echo "$PLAYER"
-           qoop=$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)
-           moa=$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)
-           perso=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
-           xdg-open "http://127.0.0.1:8080/ipns/$qoop"
-
-        else
-           echo "Astronaute INCONNU ? $QRCODE" # && continue
-
-        fi
 
         [[ ${arr[2]} == "" ]] && continue
     fi
