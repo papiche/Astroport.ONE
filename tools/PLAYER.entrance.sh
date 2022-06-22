@@ -177,11 +177,21 @@ echo "==== linking G1 Libre ID and Station ~/.zen/ipfs ===="; sleep 2
         echo "Ouverture des journaux 'moa' et 'qo-op' de votre Station Astroport";
         # OPEN 'moa' channel
         moans=$(ipfs key list -l | grep -w moa | cut -d ' ' -f 1) || moans=$(cat ~/.zen/game/players/$CAPTAIN/ipfs/.12D*/.moans | tail -n 1)
-        [[ $moans != ""  ]] && xdg-open "http://127.0.0.1:8080/ipns/$moans"
+        ipfs --timeout=3s ls /ipns/$moans
+        if [ $? != 0 ]; then
+            IPUSH=$(ipfs add -Hq ${MY_PATH}/../templates/moawiki.html | tail -n 1) && \
+            ipfs name publish --key=moa /ipfs/$IPUSH 2>/dev/null
+        fi
+        xdg-open "http://127.0.0.1:8080/ipns/$moans"
 
         # OPEN 'qo-op' channel
         qoopns=$(ipfs key list -l | grep -w qo-op | cut -d ' ' -f 1) || moans=$(cat ~/.zen/game/players/$CAPTAIN/ipfs/.12D*/.qoopns | tail -n 1)
-        [[ $qoopns != ""  ]] && xdg-open "http://127.0.0.1:8080/ipns/$qoopns"
+        ipfs --timeout=3s ls /ipns/$qoopns
+        if [ $? != 0 ]; then
+            IPUSH=$(ipfs add -Hq ${MY_PATH}/../templates/qoopwiki.html | tail -n 1) && \
+            ipfs name publish --key=qo-op /ipfs/$IPUSH 2>/dev/null
+         fi
+        xdg-open "http://127.0.0.1:8080/ipns/$qoopns"
 
      else
         # ASTRONAUT PLAYER IS LOGGED IN
@@ -205,6 +215,9 @@ fi
 # OPEN PLAYER HOME (contains 'moa_player' + 'qo-op_player' vertical iframes
 echo "OUVERTURE DE VOTRE INTERFACE JOUEUR"; sleep 1
 player=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
+~/.zen/astrXbian/zen/ipns_MOA_publish.sh
+~/.zen/astrXbian/zen/ipns_TW5_publish.sh
+~/.zen/astrXbian/zen/ipns_PLAYER_publish.sh
 xdg-open "http://127.0.0.1:8080/ipns/$player"
 
 exit 0
