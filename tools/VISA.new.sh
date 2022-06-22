@@ -184,6 +184,7 @@ else
     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
     # astrXbian compatible IPFS sub structure =>$XZUID
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/_xbian.zuid
+    cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/
 
     # Record IPNS address for CHANNEL.populate
     echo "$PLAYERNS" > ~/.zen/game/players/$PLAYER/.playerns
