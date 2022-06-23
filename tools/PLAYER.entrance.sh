@@ -63,7 +63,7 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
     cp ~/.ipfs/keystore.astrXbian/* ~/.ipfs/keystore/ 2>/dev/null
 
 ###################################################################################
-    # 'tokenring' Key there? TOKENRING IS A SHARED KEY TO KNOW WHO IS NEXT IN MY FRIEND TO WRITE COMMON CHANNEL
+    # 'tokenring' Key there? TOKENRING IS A SHARED KEY TO KNOW WHO IS NEXT IN MY FRIEND TO WRITE COMMON IPNS KEY
     # In case of corruption... Swarm goes into DEFCON 3 procedure and eject "bad friend"
     # Shared between Astroport to choose Station next write time.
     [[ ! -f ~/.ipfs/keystore/key_orxwwzloojuw4zy ]] && qoopns=$(ipfs key gen tokenring)
@@ -75,6 +75,7 @@ echo "==== qo-op & moa Captain/Station keystore ===="; sleep 2
 
     echo "----> 'tokenringnns' WHO IS NEXT : http://127.0.0.1:8080/ipns/$tokenringns"; sleep 1
     echo "$tokenringnns" > ~/.zen/game/players/$PLAYER/ipfs/.$IPFSNODEID/.tokenringnns ## 'tokenring'  is "who is next player to play"
+    ## IDEE utiliser ipfs pubsub en mode RAPIDE
 
 ###################################################################################
     # 'qo-op' Key there? Or Captain already join a flag
@@ -214,10 +215,10 @@ fi
 
 # OPEN PLAYER HOME (contains 'moa_player' + 'qo-op_player' vertical iframes
 echo "OUVERTURE DE VOTRE INTERFACE JOUEUR"; sleep 1
-player=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
+qplayer=$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)
 ~/.zen/astrXbian/zen/ipns_MOA_publish.sh
 ~/.zen/astrXbian/zen/ipns_TW5_publish.sh
 ~/.zen/astrXbian/zen/ipns_PLAYER_publish.sh
-xdg-open "http://127.0.0.1:8080/ipns/$player"
+xdg-open "http://127.0.0.1:8080/ipns/$qplayer"
 
 exit 0
