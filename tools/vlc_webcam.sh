@@ -28,7 +28,11 @@ mkdir -p ~/.zen/tmp/
 #echo "Voulez-vous enregistrer le bureau? ENTER sinon"
 #read desktop
 #[[ $desktop != "" ]] && screencapture
+PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( espeak "no player. EXIT" && exit 1 )
+PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( espeak "no pseudo. EXIT" && exit 1 )
 
+espeak "$PSEUDO"
+sleep 1
 espeak "Starting Video record. Press ENTER to stop."
 # Find "input-slave" :: pactl list short sources
 
@@ -60,7 +64,6 @@ espeak "OK"
 mkdir -p ~/.zen/game/players/.current/publish
 
 ## Creating new video chain index.html
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 OLDID=$(cat ~/.zen/game/players/.current/.vlog.index 2>/dev/null)
 if [[ $OLDID ]]; then
     sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > /tmp/index.html
