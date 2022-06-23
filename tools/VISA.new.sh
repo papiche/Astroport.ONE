@@ -228,8 +228,8 @@ rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS
-${MY_PATH}/FRIENDS.init.sh
-
+## ${MY_PATH}/FRIENDS.init.sh
+## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 [[ $1 != "quiet" ]] && echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
 [[ $1 != "quiet" ]] && echo "Souvenez-vous bien de votre PASS : $PASS"; sleep 2
 
