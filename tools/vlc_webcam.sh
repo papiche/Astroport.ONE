@@ -30,6 +30,8 @@ mkdir -p ~/.zen/tmp/
 #[[ $desktop != "" ]] && screencapture
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( espeak "no player. EXIT" && exit 1 )
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( espeak "no pseudo. EXIT" && exit 1 )
+G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( espeak "no g1 pub" && exit 1 )
+IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( espeak "no ipfs node id" && exit 1 )
 
 espeak "$PSEUDO"
 sleep 1
@@ -61,7 +63,7 @@ echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
 espeak "OK"
 
-mkdir -p ~/.zen/game/players/.current/publish
+mkdir -p ~/.zen/game/players/.current/vlog
 
 ## Creating new video chain index.html
 OLDID=$(cat ~/.zen/game/players/.current/.vlog.index 2>/dev/null)
@@ -72,22 +74,31 @@ else
     sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > /tmp/index.html
 fi
 sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/index.html
-sed s/_PSEUDO_/$PLAYER/g /tmp/index.html > ~/.zen/game/players/.current/publish/index.html
+sed s/_PSEUDO_/$PLAYER/g /tmp/index.html > ~/.zen/game/players/.current/vlog/index.html
 
 # Copy style & js
-cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/publish/
-cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.current/publish/
+cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/vlog/
+cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.current/vlog/
 
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/publish | tail -n 1)
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/vlog | tail -n 1)
 echo $IPFSROOT > ~/.zen/game/players/.current/.vlog.index
 # Change CSS path to
-sed s/_IPFSROOT_/$IPFSROOT/g /tmp/index.html > ~/.zen/game/players/.current/publish/index.html
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/publish | tail -n 1)
+sed s/_IPFSROOT_/$IPFSROOT/g /tmp/index.html > ~/.zen/game/players/.current/vlog/index.html
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/vlog | tail -n 1)
 
 
 echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
-
+## OUVERTURE VLOG CHAIN
 xdg-open "http://127.0.0.1:8080/ipfs/$IPFSROOT"
+
+## AJOUT VIDEO ASTROPORT
+
+MEDIAID="$(date -u +%s%N | cut -b1-13)"
+mkdir -p ~/astroport/video/${MEDIAID}/
+MEDIAKEY="VIDEO_${MEDIAID}"
+cp ~/.zen/tmp/output.mp4 ~/astroport/video/${MEDIAID}/
+
+~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 
 # https://stackoverflow.com/questions/49846400/raspberry-pi-use-vlc-to-stream-webcam-logitech-c920-h264-video-without-tran
 # record to MKV cvlc v4l2:///dev/video0:chroma=h264 :input-slave=alsa://hw:1,0 --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mkv,dst='~/.zen/tmp/Webcam_Record/MyVid.mkv'}'
