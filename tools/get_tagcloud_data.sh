@@ -27,4 +27,4 @@ for player in $(ls ~/.zen/game/players/); do
     DATA="$DATA { name: '"${pseudo}"', link: '"/ipns/${moans}"', weight: "$(cat ~/.zen/game/players/$player/moa/$player.moa.n)", tooltip: '"${player}"' },"
 done
 
-echo 'data: [ '$DATA' ]'
+echo 'data: [ '$(echo $DATA | sed 's/,*$//g')' ]'
