@@ -20,8 +20,8 @@ echo ""
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-[[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
+
+! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
 # [[ $1 != "quiet" ]] && echo "-> SALT : $SALT"
