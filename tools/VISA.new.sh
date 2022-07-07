@@ -66,14 +66,16 @@ Rendez-vous sur https://gchange.fr"; sleep 3
 echo; echo "Création de votre clef 'secret.dunikey' accès aux réseaux DU(G1) + LOVE + IPFS astrXbian."; sleep 2
 echo;
 
-G1PUB=$(python3 ${MY_PATH}/key_create_dunikey.py "$SALT" "$PEPPER")
+keygen -t duniter -o /tmp/secret.dunikey "$SALT" "$PEPPER"
+
+G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
 if [[ ! $G1PUB ]]; then
     [[ $1 != "quiet" ]] && echo "Désolé. Nous n'avons pas pu générer votre clef Cesium automatiquement."
 else
     ## CREATE Player personnal files storage and IPFS publish directory
     mkdir -p ~/.zen/game/players/$PLAYER # Prepare PLAYER datastructure
-
+    mkdir -p ~/.zen/tmp/
     ########################################################################
     #echo "CREATION ~/.zen/game/players/$PLAYER/ipfs.config"; sleep 1
     ########################################################################
