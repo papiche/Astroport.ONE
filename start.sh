@@ -8,6 +8,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 echo '
     _    ____ _____ ____   ___  ____   ___  ____ _____    ___  _   _ _____
@@ -22,8 +23,6 @@ Ambassade numérique pair à pair sur IPFS.
 ASTROPORT
 VISA : MadeInZion
 @@@@@@@@@@@@@@@@@@'
-source ~/.zen/ipfs.sync 2>/dev/null
-echo "CAPTAIN is $CAPTAIN"
 echo
 
 
@@ -33,7 +32,7 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 ## CREATE AND OR CONNECT USER
-   PS3='Créez votre nouveau VISA ou selectionner un compte Astronaute existant'
+   PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
     players=("NOUVEAU VISA" $(ls ~/.zen/game/players 2>/dev/null))
     select fav in "${players[@]}"; do
         case $fav in
@@ -68,11 +67,14 @@ rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
 openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
 [ ! -f $HOME/.zen/tmp/${PLAYER}.dunikey ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
-echo "____________________";
-${MY_PATH}/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
+G1PUB=$(cat ~/.zen/tmp/${PLAYER}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+echo "________LOGIN OK____________";
+echo $G1PUB
 echo
-PS3="$PLAYER choisissez une action à mener : "
-choices=("AJOUTER MEDIA" "JOURNAUX" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
+echo "MOA : http://127.0.0.1:8080/ipns/$(cat ~/.zen/game/players/$PLAYER/.ipfsnodeid)"
+
+PS3="$PLAYER choisissez : __ "
+choices=("AJOUTER MEDIA" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
@@ -85,7 +87,7 @@ select fav in  "${choices[@]}"; do
         du -h ~/.zen/game/players/.current/
         echo  "Enter to continue. Ctrl+C to stop"
         read
-        echo "TODO... ${MY_PATH}/tools/SAVE.astronaut.sh"
+        echo "NOT FINISHED TODO... ${MY_PATH}/tools/SAVE.astronaut.sh"
         break
         ;;
 
@@ -93,20 +95,16 @@ select fav in  "${choices[@]}"; do
         echo "ATTENTION SUPPRESSION DEFINITIVE"
         echo  "Enter to continue. Ctrl+C to stop"
         read
-        ipfs key rm $PLAYER; ipfs key rm qo-op_$PLAYER; ipfs key rm moa_$PLAYER;
+        ipfs key rm $PLAYER; ipfs key rm $G1PUB;
+        ~/.zen/astrXbian/zen/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://data.gchange.fr erase
         rm -Rf ~/.zen/game/players/$PLAYER
         break
         ;;
 
     "AJOUTER MEDIA")
         echo "VIDEOBLOG"
-        # ${MY_PATH}/tools/vlc_webcam.sh
-        ~/.zen/astrXbian/ajouter_video.sh
-        ;;
-
-    "JOURNAUX")
-        ${MY_PATH}/tools/PLAYER.entrance.sh
-        break
+        ${MY_PATH}/tools/vlc_webcam.sh
+        #~/.zen/astrXbian/ajouter_video.sh
         ;;
 
     "QUITTER")

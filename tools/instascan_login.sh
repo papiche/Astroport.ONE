@@ -48,8 +48,6 @@ while true; do
         rm -f ~/.zen/game/players/.current
         ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-        ~/.zen/Astroport.ONE/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
-
 
         [[ ${arr[2]} == "" ]] && continue
     fi

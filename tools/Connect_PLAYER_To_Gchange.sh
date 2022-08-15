@@ -1,4 +1,5 @@
 #!/bin/bash
+# Run After PLAYER.entrance.sh
 ######################################################################### CONNECT PLAYER WITH GCHANGE
 # Check who is .current PLAYER
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
@@ -6,15 +7,17 @@ PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseu
 G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
 IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo "noipfsnodeid" && exit 1 )
 
+ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
+
 ########################################################################
 echo "CREATING $PLAYER GCHANGE+ PROFILE"
 ########################################################################
-~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "https://astroport.com/ipns/$(cat ~/.zen/game/players/$PLAYER/.qoopns)" #GCHANGE+
+~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #GCHANGE+
 [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && exit 1
 ########################################################################
 echo "CREATING $PLAYER CESIUM+ PROFILE"
 ########################################################################
-~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://g1.data.e-is.pro" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "https://astroport.com/ipns/$(cat ~/.zen/game/players/$PLAYER/.moans)" #CESIUM+
+~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/$PLAYER/secret.dunikey -n "https://g1.data.e-is.pro" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #CESIUM+
 [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && exit 1
 ########################################################################
 
@@ -27,7 +30,7 @@ if [[ $bootnode != "" ]]; then
     ipfsnodeid=${bootnode##*/}
     g1node=$(~/.zen/astrXbian/zen/tools/ipfs_to_g1.py $ipfsnodeid)
     echo "SENDING STAR TO BOOTSTRAP NODE : $g1node"
-    ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" stars -p $g1node -n 1
+    ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $g1node -n 1
     ### DELETE
     # ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" unstars -p $g1node
 fi
@@ -50,7 +53,7 @@ if [[ $bootnode != "" ]]; then
     g1node=$(~/.zen/astrXbian/zen/tools/ipfs_to_g1.py $ipfsnodeid)
     echo "SENDING ipfstryme to BOOTSTRAP node : $g1node"
     filelines=$(cat ~/.zen/ipfs/.${IPFSNODEID}/tryme.addr | wc -l)
-    [[ "$filelines" != "0" ]] && ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" send -d $g1node -t "ipfstryme" -f ~/.zen/ipfs/.${IPFSNODEID}/tryme.addr
+    [[ "$filelines" != "0" ]] && ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d $g1node -t "ipfstryme" -f ~/.zen/ipfs/.${IPFSNODEID}/tryme.addr
 fi
 done
 

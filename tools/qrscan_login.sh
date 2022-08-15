@@ -39,9 +39,6 @@ cat /dev/ttyACM0 | while read line; do
         MOANS=$(cat ~/.zen/game/players/.current/.moans 2>/dev/null) || ( echo "noplayermoans" && exit 1 )
         QOOPNS=$(cat ~/.zen/game/players/.current/.qoopns 2>/dev/null) || ( echo "noplayerqoopns" && exit 1 )
 
-        espeak "Opening your TW5"
-        ~/.zen/Astroport.ONE/tools/PLAYER.entrance.sh ## Switch IPFS Layer with Astronaut ID & astrXbian data index structure
-
         espeak "Report your best dreams and plans to the astroport captain. Love."
 
         break

@@ -26,7 +26,7 @@ ME="${0##*/}"
 SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
 # [[ $1 != "quiet" ]] && echo "-> SALT : $SALT"
 
-PEPPER=$(${MY_PATH}/diceware.sh 4 | xargs)
+PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
 # [[ $1 != "quiet" ]] && echo "-> PEPPER : $PEPPER"
 
 echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
@@ -34,26 +34,21 @@ echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
 [[ $1 != "quiet" ]] && echo "CHOISISSEZ UN PSEUDO" && read PSEUDO; PSEUDO=${PSEUDO,,} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 # PSEUDO=${PSEUDO,,} #lowercase
 PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
+[[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
+
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
 [[ $1 != "quiet" ]] && echo; echo "Génération de vos identités Astronaute (PLAYER):"; sleep 1; echo "$PLAYER"; sleep 2
 
+# 6 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
 ############################################################
-######### CLEFS IPNS PLAYER + moa_ + qo-op_
-PLAYERNS=$(ipfs key gen $PLAYER)
-PLAYERKEYFILE=$(${MY_PATH}/give_me_keystore_filename.py "$PLAYER")
-# echo "Votre espace Astronaute privé. Compteurs LOVE 'Astroport' (amis de niveau 5)"
-# [[ $1 != "quiet" ]] && echo "Votre clef $PLAYER <=> $PLAYERNS ($PLAYERKEYFILE)"; sleep 2
-MOANS=$(ipfs key gen moa_$PLAYER)
-MOAKEYFILE=$(${MY_PATH}/give_me_keystore_filename.py "moa_$PLAYER")
+######### TODO Ajouter d'autres clefs IPNS, GPG ?
+# MOANS=$(ipfs key gen moa_$PLAYER)
+# MOAKEYFILE=$(${MY_PATH}/give_me_keystore_filename.py "moa_$PLAYER")
 # echo "Coffre personnel multimedia journalisé dans votre 'Astroport' (amis de niveau 3)"
 # [[ $1 != "quiet" ]] && echo "Votre clef moa_$PLAYER <=> $MOANS ($MOAKEYFILE)"; sleep 2
-QOOPNS=$(ipfs key gen qo-op_$PLAYER)
-QOOPKEYFILE=$(${MY_PATH}/give_me_keystore_filename.py "qo-op_$PLAYER")
-# echo "Votre journal de bord pubié dans le réseau des ambassades/passerelles 'Astroport One' (zone 'publiques' niveau 0 et 1)"
-# [[ $1 != "quiet" ]] && echo "Votre clef qo-op_$PLAYER <=> $QOOPNS ($QOOPKEYFILE)"; sleep 2
-
+############################################################
 
 [[ $1 != "quiet" ]] && echo "Compte Gchange et portefeuille G1.
 Utilisez ces identifiants pour rejoindre le réseau JUNE
@@ -63,32 +58,29 @@ Utilisez ces identifiants pour rejoindre le réseau JUNE
 
 Rendez-vous sur https://gchange.fr"; sleep 3
 
-echo; echo "Création de votre clef 'secret.dunikey' accès aux réseaux DU(G1) + LOVE + IPFS astrXbian."; sleep 2
+echo; echo "Création de votre clef multi-accès..."; sleep 2
 echo;
 
-keygen -t duniter -o /tmp/secret.dunikey "$SALT" "$PEPPER"
+${MY_PATH}/keygen -t duniter -o /tmp/secret.dunikey "$SALT" "$PEPPER"
 
 G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
-if [[ ! $G1PUB ]]; then
-    [[ $1 != "quiet" ]] && echo "Désolé. Nous n'avons pas pu générer votre clef Cesium automatiquement."
-else
+[[ ! $G1PUB ]] && echo "Désolé. clef Cesium absente." && exit 1
+
+
     ## CREATE Player personnal files storage and IPFS publish directory
     mkdir -p ~/.zen/game/players/$PLAYER # Prepare PLAYER datastructure
     mkdir -p ~/.zen/tmp/
-    ########################################################################
-    #echo "CREATION ~/.zen/game/players/$PLAYER/ipfs.config"; sleep 1
-    ########################################################################
-    ipfs_ID=$(python3 ~/.zen/astrXbian/zen/tools/create_ipfsnodeid_from_tmp_secret.dunikey.py)
-    echo $ipfs_ID > ~/.zen/game/players/$PLAYER/secret.ipfs && source ~/.zen/game/players/$PLAYER/secret.ipfs
-    [[ $PrivKEY == "" ]] && echo "ERROR CREATING IPFS IDENTITY" && exit 1
-    jq -r --arg PeerID "$PeerID" '.Identity.PeerID=$PeerID' ~/.ipfs/config > ~/.zen/tmp/config.tmp
-    jq -r --arg PrivKEY "$PrivKEY" '.Identity.PrivKey=$PrivKEY' ~/.zen/tmp/config.tmp > ~/.zen/tmp/config.ipfs
-    jq '.Peering.Peers = []' ~/.zen/tmp/config.ipfs > ~/.zen/tmp/ipfs.config ## RESET .Peering.Peers FRIENDS
-    rm -f ~/.zen/tmp/config.tmp ~/.zen/tmp/config.ipfs
-    mv ~/.zen/tmp/ipfs.config ~/.zen/game/players/$PLAYER/
 
     mv /tmp/secret.dunikey ~/.zen/game/players/$PLAYER/
+
+
+    # Create Player "IPNS Key" (key import)
+    ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
+    ipfs key import $PLAYER -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
+    ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
+
+    ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
@@ -105,136 +97,97 @@ else
 
     [[ $1 != "quiet" ]] && echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
 
-    # TODO ZIP &| ENCRYPT FOR SECURITY (better control to keystore access)
-    mkdir -p ~/.zen/game/players/$PLAYER/keystore/
-    cp $HOME/.ipfs/keystore/$PLAYERKEYFILE ~/.zen/game/players/$PLAYER/keystore/
-    cp $HOME/.ipfs/keystore/$MOAKEYFILE ~/.zen/game/players/$PLAYER/keystore/
-    cp $HOME/.ipfs/keystore/$QOOPKEYFILE ~/.zen/game/players/$PLAYER/keystore/
-
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    IPFSNODEID=$(cat ~/.zen/game/players/$PLAYER/ipfs.config | jq -r .Identity.PeerID) # ACTUAL USER
+        echo "Nouveau Canal TW Astronaute"
+        mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/
 
-    # PLAYER Home ~/.zen/game/players/$PLAYER/index.html (IFRAME CONTAINING MOANS & QOOPNS)
-    PLAYERNS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f 1)
-    cp ${MY_PATH}/../templates/playerhome.html ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/index.html
-    # Not used (yet) TODO make jQuery Slider
-    sed -i "s~_MOANS_~${MOANS}~g" ~/.zen/game/players/$PLAYER/index.html
-    sed -i "s~_QOOPNS_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/index.html
-
-                #echo "## PUBLISHING ${PLAYER} /ipns/$PLAYERNS"
-                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/index.html | tail -n 1)
-                echo $IPUSH > ~/.zen/game/players/$PLAYER/$PLAYER.chain
-                echo $MOATS > ~/.zen/game/players/$PLAYER/$PLAYER.ts
-                echo 1 > ~/.zen/game/players/$PLAYER/$PLAYER.n
-                ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
-
-    # Moa WIKI ~/.zen/game/players/$PLAYER/moa/index.html
-    mkdir -p ~/.zen/game/players/$PLAYER/moa
-    cp ${MY_PATH}/../templates/moawiki.html ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~_MOAID_~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    STATION=$(ipfs key list -l | grep -w 'moa' | cut -d ' ' -f 1)
-    sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~_MOAKEY_~moa_${PLAYER}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${MOANS}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/moa/index.htm
-
-    ## Add QRCode, ID Scan login page. Private p2p level 3 exploration
-    # cp ${MY_PATH}/../templates/instascan.html ~/.zen/game/players/$PLAYER/moa/index.html
+        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        # base58 ssl PASS encoded sec from dunikey (contains public/private key TX tuxmain)
+        sed -i "s~_QRSEC_~${$PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
 
-                #echo "## PUBLISHING moa_${PLAYER} /ipns/$MOANS"
-                IPUSH=$(ipfs add -wHq ~/.zen/game/players/$PLAYER/moa/* | tail -n 1)
-                echo $IPUSH > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.chain
-                echo $MOATS > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.ts
-                echo 1 > ~/.zen/game/players/$PLAYER/moa/$PLAYER.moa.n
-                ipfs name publish --key=moa_${PLAYER} /ipfs/$IPUSH 2>/dev/null
+        IPNSK=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+        # La Clef IPNS porte comme nom G1PUB.
+        sed -i "s~_MOAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${IPNSK}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
-    # qo-op WIKI ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html (TODO ENHANCE TW TEMPLATE WITH EXTRA PARMETERS, EXTRA TIDDLERS)
-    cp ${MY_PATH}/../templates/qoopwiki.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_MOANS_~${MOANS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_QOOPNS_~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    STATION=$(ipfs key list -l | grep -w 'qo-op' | cut -d ' ' -f 1)
-    sed -i "s~_QOOP_~${STATION}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_MOAKEY_~qo-op_${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${QOOPNS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
-    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html
 
-                #echo "## PUBLISHING qo-op_${PLAYER} /ipns/$QOOPNS"
-                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/index.html | tail -n 1)
-                echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.chain
-                echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.ts
-                echo 1 > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/$PLAYER.qo-op.n
-                ipfs name publish --key=qo-op_${PLAYER} /ipfs/$IPUSH 2>/dev/null
+    #echo "## PUBLISHING ${PLAYER} /ipns/$PeerID/"
+    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
+    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moachain # Contains last IPFS backup PLAYER KEY
+    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moats
+    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
-    ## MEMORISE PLAYER
+    # Lanch newly created TW
+#    cd ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/
+#    tiddlywiki $PLAYER --verbose --load ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html --listen port=8282
+#    sleep 3
+#    killall node
+
+    ## MEMORISE PLAYER Ŋ1 ZONE
+    echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
     echo "$IPFSNODEID" > ~/.zen/game/players/$PLAYER/.ipfsnodeid
 
-    echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
     # astrXbian compatible IPFS sub structure =>$XZUID
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/_xbian.zuid
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/
+    # PUBLIC Ŋ7 ZONE
 
-    # Record IPNS address for CHANNEL.populate
-    echo "$PLAYERNS" > ~/.zen/game/players/$PLAYER/.playerns
-    echo "$MOANS" > ~/.zen/game/players/$PLAYER/.moans
-    echo "$QOOPNS" > ~/.zen/game/players/$PLAYER/.qoopns
+    echo "$ASTRONAUTENS" > ~/.zen/game/players/$PLAYER/.playerns
 
     echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
 
-fi
+    rm -f ~/.zen/game/players/.current
+    ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.PLAYERNS.png" "http://astroport:8080/ipns/$PLAYERNS"
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.MOANS.png" "http://astroport:8080/ipns/$MOANS"
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.QOOPNS.png" "http://astroport:8080/ipns/$QOOPNS"
+    ## CREATE GCHANGE+ PROFILE
+    ${MY_PATH}/Connect_PLAYER_To_Gchange.sh
+
+qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
 echo; echo "Création de vos QR codes IPNS, clefs de votre réseau IPFS."; sleep 1
 
 [[ $1 != "quiet" ]] && echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Home : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$PLAYERNS"; sleep 2
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Astronaute (niveau 3) : moa_$PLAYER"; echo " http://astroport:8080/ipns/$(ipfs key list -l | grep -w moa_$PLAYER | cut -d ' ' -f 1)"; sleep 2
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal Passerelle (niveau 0/1) : qo-op_$PLAYER"; echo " http://astroport:8080/ipns/$(ipfs key list -l | grep -w qo-op_$PLAYER | cut -d ' ' -f 1)"; sleep 2
+[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"; sleep 2
 
 # PASS CRYPTING KEY
+[[ $1 != "quiet" ]] && echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.dunikey" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.dunikey" -k $PASS 2>/dev/null
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -out" "$HOME/.zen/game/players/$PLAYER/enc.$KEYFILE" -k $PASS 2>/dev/null
 ## TODO MORE SECURE ?! USE opengpg, natools, etc ...
 # ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/$PLAYER/secret.dunikey -o "$HOME/.zen/game/players/$PLAYER/secret.dunikey.oasis"
 
-[[ $1 != "quiet" ]] && echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
-
 #################################################
 # !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION
 echo "$PASS" > ~/.zen/game/players/$PLAYER/.pass
 # ~/.zen/game/players/$PLAYER/secret.june SECURITY TODO
 # Astronaut QRCode + PASS = LOGIN (=> DECRYPTING CRYPTO IPFS INDEX)
+# TODO : Allow Astronaut PASS change ;)
 #####################################################
 
 ## DISCONNECT AND CONNECT CURRENT PLAYER
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS
+## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 [[ $1 != "quiet" ]] && echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
-[[ $1 != "quiet" ]] && echo "Souvenez-vous bien de votre PASS : $PASS"; sleep 2
+[[ $1 != "quiet" ]] && echo "SRetenez votre PASS : $PASS"; sleep 2
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "cool $(${MY_PATH}/face.sh cool)"
+
+${MY_PATH}/VISA.print.sh
+
 exit 0
