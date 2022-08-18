@@ -78,9 +78,8 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     # Create Player "IPNS Key" (key import)
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
     ipfs key import $PLAYER -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
-    ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
+    ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player)
 
-    ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
@@ -107,18 +106,16 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        # base58 ssl PASS encoded sec from dunikey (contains public/private key TX tuxmain)
-        sed -i "s~_QRSEC_~${$PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
 
-        IPNSK=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+        ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
         # La Clef IPNS porte comme nom G1PUB.
-        sed -i "s~_MOAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${IPNSK}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
-
-    #echo "## PUBLISHING ${PLAYER} /ipns/$PeerID/"
+    echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moachain # Contains last IPFS backup PLAYER KEY
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moats
@@ -134,7 +131,6 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
-    echo "$IPFSNODEID" > ~/.zen/game/players/$PLAYER/.ipfsnodeid
 
     # astrXbian compatible IPFS sub structure =>$XZUID
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/_xbian.zuid
@@ -149,15 +145,12 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     rm -f ~/.zen/game/players/.current
     ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-    ## CREATE GCHANGE+ PROFILE
-    ${MY_PATH}/Connect_PLAYER_To_Gchange.sh
-
 qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
-echo; echo "Création de vos QR codes IPNS, clefs de votre réseau IPFS."; sleep 1
+echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 
 [[ $1 != "quiet" ]] && echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-[[ $1 != "quiet" ]] && echo; echo "*** Votre Journal : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"; sleep 2
+[[ $1 != "quiet" ]] && echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"; sleep 2
 
 # PASS CRYPTING KEY
 [[ $1 != "quiet" ]] && echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
@@ -179,15 +172,16 @@ echo "$PASS" > ~/.zen/game/players/$PLAYER/.pass
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
+## CREATE GCHANGE+ PROFILE
+${MY_PATH}/Connect_PLAYER_To_Gchange.sh
+
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 [[ $1 != "quiet" ]] && echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
-[[ $1 != "quiet" ]] && echo "SRetenez votre PASS : $PASS"; sleep 2
+[[ $1 != "quiet" ]] && echo "Retenez votre PASS : $PASS"; sleep 2
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "cool $(${MY_PATH}/face.sh cool)"
-
-${MY_PATH}/VISA.print.sh
-
+echo "Relancez start."
 exit 0

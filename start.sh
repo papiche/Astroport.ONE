@@ -65,13 +65,17 @@ read pass
 echo "********* DECODAGE SecuredSocketLayer *********"
 rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
 openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
-[ ! -f $HOME/.zen/tmp/${PLAYER}.dunikey ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
+[[ ! $? == 0 ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 G1PUB=$(cat ~/.zen/tmp/${PLAYER}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+[ ! ${G1PUB} ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
+
 echo "________LOGIN OK____________";
 echo $G1PUB
 echo
-echo "MOA : http://127.0.0.1:8080/ipns/$(cat ~/.zen/game/players/$PLAYER/.ipfsnodeid)"
+ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
+
+echo "Votre MOA : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
 PS3="$PLAYER choisissez : __ "
 choices=("AJOUTER MEDIA" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
@@ -83,20 +87,26 @@ select fav in  "${choices[@]}"; do
         ;;
 
     "EXPORTER VISA")
-        echo "EXPORT. INSEREZ CLEF USB"
+        echo "EXPORT IDENTITE ASTRONAUTE"
         du -h ~/.zen/game/players/.current/
-        echo  "Enter to continue. Ctrl+C to stop"
-        read
-        echo "NOT FINISHED TODO... ${MY_PATH}/tools/SAVE.astronaut.sh"
+        echo  "MANUAL BACKUP ZIP ~/.zen/game/players/.$PLAYER/"
+
         break
         ;;
 
     "SUPPRIMER VISA")
-        echo "ATTENTION SUPPRESSION DEFINITIVE"
+        echo "ATTENTION SUPPRESSION DEFINITIVE !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
         ipfs key rm $PLAYER; ipfs key rm $G1PUB;
+        for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
+            ipfs key rm $voeu
+            [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
+        done
+        echo "rm -Rf ~/.zen/game/players/$PLAYER"
         ~/.zen/astrXbian/zen/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://data.gchange.fr erase
+#        ~/.zen/astrXbian/zen/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://g1.data.e-is.pro erase
+
         rm -Rf ~/.zen/game/players/$PLAYER
         break
         ;;

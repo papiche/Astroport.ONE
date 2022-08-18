@@ -94,11 +94,43 @@ xdg-open "http://127.0.0.1:8080/ipfs/$IPFSROOT"
 ## AJOUT VIDEO ASTROPORT
 
 MEDIAID="$(date -u +%s%N | cut -b1-13)"
-mkdir -p ~/astroport/video/${MEDIAID}/
-MEDIAKEY="VIDEO_${MEDIAID}"
-cp ~/.zen/tmp/output.mp4 ~/astroport/video/${MEDIAID}/
+mkdir -p ~/astroport/video/vlog/
+MEDIAKEY="VLOG_${PLAYER}_${MEDIAID}"
+cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/$PLAYER_$MEDIAID.mp4
 
-~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
+REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
+IPFSID=$(ipfs add -q  ~/astroport/video/vlog/$PLAYER_$MEDIAID.mp4)
+
+TEXT="<video controls><source src='/ipfs/"${IPFSID}"' type='"${REAL}"'></video><h1>"${PLAYER}"</h1>"
+## TW not displaying direct ipfs
+MIME="text/vnd.tiddlywiki"
+TAGS="astroport $PLAYER vlog"
+
+echo "## Creation json tiddler"
+echo '[
+  {
+    "text": "'${TEXT}'",
+    "title": "'${TITLE}'",
+    "type": "'${MIME}'",
+    "mime": "'${REAL}'",
+    "cat": "'${CAT}'",
+    "screenshot": "'${SCREENDIR}/screen.png'",
+    "ipfsroot": "'${IPFSREPFILEID}'",
+    "file": "'${file}'",
+    "mediakey": "'${MEDIAKEY}'",
+    "ipns": "'${IPNS}'",
+    "tmdb": "'${REFERENCE}'",
+    "tags": "'${TAGS}'" ' > ~/astroport/${TYPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+
+    [[ ${CANON} != "" ]] && echo  ',
+    "_canonical_uri": "'${CANON}'"' >> ~/astroport/${TYPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+
+    echo '
+  }
+]
+' >> ~/astroport/${TYPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+
+# ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 
 # https://stackoverflow.com/questions/49846400/raspberry-pi-use-vlc-to-stream-webcam-logitech-c920-h264-video-without-tran
 # record to MKV cvlc v4l2:///dev/video0:chroma=h264 :input-slave=alsa://hw:1,0 --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mkv,dst='~/.zen/tmp/Webcam_Record/MyVid.mkv'}'
