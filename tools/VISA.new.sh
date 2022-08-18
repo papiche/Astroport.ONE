@@ -105,6 +105,9 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_WISHKEY_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+
         sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
@@ -115,9 +118,28 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
+## ID CARD
+convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
+convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
+
+composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
+composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
+# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
+
+convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" /tmp/one.png /tmp/image.png
+convert -gravity northwest -pointsize 30 -fill black -draw "text 300,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
+convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
+convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" /tmp/pass.png /tmp/salt.png
+convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" /tmp/salt.png ~/.zen/game/players/$PLAYER/ID.png
+
+# INSERTED IMAGE IPFS
+IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
+sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+
     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moachain # Contains last IPFS backup PLAYER KEY
+    echo "/ipfs/$IPUSH"
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moats
     ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 

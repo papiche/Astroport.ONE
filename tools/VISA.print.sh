@@ -29,19 +29,22 @@ SALT=$(cat ~/.zen/game/players/.current/secret.june | head -n 1)
 PEPPER=$(cat ~/.zen/game/players/.current/secret.june | tail -n 1)
 
 LP=$(ls /dev/usb/lp*)
+
 convert ~/.zen/game/players/.current/QR.png -resize 300 /tmp/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
 
-composite -compose Over -gravity NorthWest -geometry +280+30 /tmp/ASTROPORT.png ${MY_PATH}/../images/carreblanc.png /tmp/astroport.png
+composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
-composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
+# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
 
-convert -gravity southwest -pointsize 40 -fill black -draw "text 20,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
-convert -gravity northwest -pointsize 30 -fill black -draw "text 80,380 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
-convert -gravity northwest -pointsize 25 -fill black -draw "text 300,200 \"$SALT\"" /tmp/pass.png /tmp/salt.png
-convert -gravity northwest -pointsize 25 -fill black -draw "text 300,240 \"$PEPPER\"" /tmp/salt.png /tmp/done.jpg
+convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" /tmp/one.png /tmp/image.png
+convert -gravity northwest -pointsize 30 -fill black -draw "text 300,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
+convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
+convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" /tmp/pass.png /tmp/salt.png
+convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" /tmp/salt.png /tmp/done.jpg
 
 brother_ql_create --model QL-700 --label-size 62 /tmp/done.jpg > /tmp/toprint.bin 2>/dev/null
 sudo brother_ql_print /tmp/toprint.bin $LP
+
 
 exit 0
