@@ -6,7 +6,10 @@
 ################################################################################
 ################################################################################
 #
-[[ $1 != "quiet" ]] && echo "=============================================
+SALT="$1"
+PEPPER="$2"
+
+echo "=============================================
 MadeInZion DIPLOMATIC PASSPORT
 =============================================
 A cryptographic key pair to control your P2P Digital Life.
@@ -23,21 +26,21 @@ ME="${0##*/}"
 
 ! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
-SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
-# [[ $1 != "quiet" ]] && echo "-> SALT : $SALT"
+[[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
+# echo "-> SALT : $SALT"
 
-PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
-# [[ $1 != "quiet" ]] && echo "-> PEPPER : $PEPPER"
+[[ PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
+# echo "-> PEPPER : $PEPPER"
 
 echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
 
-[[ $1 != "quiet" ]] && echo "CHOISISSEZ UN PSEUDO" && read PSEUDO; PSEUDO=${PSEUDO,,} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
+echo "CHOISISSEZ UN PSEUDO" && read PSEUDO; PSEUDO=${PSEUDO,,} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 # PSEUDO=${PSEUDO,,} #lowercase
 PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
-[[ $1 != "quiet" ]] && echo; echo "Génération de vos identités Astronaute (PLAYER):"; sleep 1; echo "$PLAYER"; sleep 2
+echo; echo "Génération de vos identités Astronaute (PLAYER):"; sleep 1; echo "$PLAYER"; sleep 2
 
 # 6 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -47,10 +50,10 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 # MOANS=$(ipfs key gen moa_$PLAYER)
 # MOAKEYFILE=$(${MY_PATH}/give_me_keystore_filename.py "moa_$PLAYER")
 # echo "Coffre personnel multimedia journalisé dans votre 'Astroport' (amis de niveau 3)"
-# [[ $1 != "quiet" ]] && echo "Votre clef moa_$PLAYER <=> $MOANS ($MOAKEYFILE)"; sleep 2
+# echo "Votre clef moa_$PLAYER <=> $MOANS ($MOAKEYFILE)"; sleep 2
 ############################################################
 
-[[ $1 != "quiet" ]] && echo "Compte Gchange et portefeuille G1.
+echo "Compte Gchange et portefeuille G1.
 Utilisez ces identifiants pour rejoindre le réseau JUNE
 
     $SALT
@@ -94,7 +97,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     PASsec=$(cat /tmp/enc.${PSEUDO}.sec | base58) && rm -f /tmp/${PSEUDO}.sec
     qrencode -s 6 -o $HOME/.zen/game/players/$PLAYER/QRsec.png $PASsec
 
-    [[ $1 != "quiet" ]] && echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
+    echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
@@ -171,11 +174,11 @@ qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://1
 
 echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 
-[[ $1 != "quiet" ]] && echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-[[ $1 != "quiet" ]] && echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"; sleep 2
+echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
+echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"; sleep 2
 
 # PASS CRYPTING KEY
-[[ $1 != "quiet" ]] && echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
+echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.dunikey" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.dunikey" -k $PASS 2>/dev/null
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -out" "$HOME/.zen/game/players/$PLAYER/enc.$KEYFILE" -k $PASS 2>/dev/null
@@ -200,8 +203,8 @@ ${MY_PATH}/Connect_PLAYER_To_Gchange.sh
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
-[[ $1 != "quiet" ]] && echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
-[[ $1 != "quiet" ]] && echo "Retenez votre PASS : $PASS"; sleep 2
+echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
+echo "Retenez votre PASS : $PASS"; sleep 2
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "cool $(${MY_PATH}/face.sh cool)"

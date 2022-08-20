@@ -65,6 +65,8 @@ do
     ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
     VOEUXNS=$(ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey)
     # CRYPTO BUG. TODO use natools to protect and share key with Ŋ1 only ;)
+    myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+    echo " QR code fonctionnel sur réseau IP local (qo-op) : $myIP"
 
     echo "# CREATION WORLD UPGRADE DATABASE"
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -73,7 +75,7 @@ do
     echo $PEPPER > ~/.zen/game/world/$WISHKEY/.pepper
 
     echo "# CREATION TW"
-    # ipfs cat /ipfs/bafybeigw5naxqmxt62ljglgzefmfcchp5gulo3yxs5pu7xrxylhzo2obyu > ~/.zen/Astroport.ONE/templates/twdefault.html
+    # ipfs cat /ipfs/bafybeihxqfukhb7jplda5kc32d7nq6oudgp3icy5zxxyxp6vcubg4g3myq > ~/.zen/Astroport.ONE/templates/twdefault.html
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
 
     # PERSONNALISATION
@@ -90,12 +92,18 @@ do
     sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${VOEUXNS}~g" ~/.zen/game/world/$WISHKEY/index.html
     # ASTROPORT RELAY
     sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~https://ipfs.bluelightav.org~http://127.0.0.1:8080~g" ~/.zen/game/world/$WISHKEY/index.html
+
+
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
+
 
     echo "# CREATION QR CODE"
     HOST="$(hostname).local"
 
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "http://$HOST:8080/ipns/$VOEUXNS"
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "http://$HOST:8080/ipns/$ASTRONAUTENS"
+    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
+    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "http://$myIP:8080/ipns/$ASTRONAUTENS"
     qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
     qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
     qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUXNS"
@@ -126,8 +134,8 @@ composite -compose Over -gravity NorthWest -geometry +300+0 /tmp/G1.png ${MY_PAT
 composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/IPNS.png /tmp/astroport.png /tmp/one.png
 composite -compose Over -gravity NorthWest -geometry +320+280 /tmp/MIZLOGO.png /tmp/one.png /tmp/two.png
 
-convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 RÊVE\"" /tmp/play.png /tmp/voeu.png
 convert -gravity northwest -pointsize 28 -fill black -draw "text 32,350 \"$PEPPER\"" /tmp/two.png /tmp/play.png
+convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 RÊVE\"" /tmp/play.png /tmp/voeu.png
 
 
     # IMAGE IPFS

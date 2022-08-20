@@ -118,6 +118,18 @@ select fav in  "${choices[@]}"; do
         #~/.zen/astrXbian/ajouter_video.sh
         ;;
 
+    "LISTE DES VOEUX")
+        PS3='Action à mener ___ '
+        voeux=($(ls ~/.zen/game/players/$PLAYER/voeux 2>/dev/null))
+        select fav in "${voeux[@]}"; do
+            case $fav in
+            *) echo "Salut $fav"
+                break
+                ;;
+            esac
+        done
+        ;;
+
     "QUITTER")
         echo "CIAO" && exit 0
         ;;
