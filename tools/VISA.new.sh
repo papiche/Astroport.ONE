@@ -9,6 +9,33 @@
 SALT="$1"
 PEPPER="$2"
 
+## Chargement TW !!!
+if [[ $SALT != "" && PEPPER != "" ]]; then
+    ipfs key rm gchange
+    rm -f ~/.zen/tmp/gchange.key
+    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
+    GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
+
+    rm -f ~/.zen/tmp/TW.html
+    ipfs --timeout 5s get -o ~/.zen/tmp/TW.html /ipns/$GNS
+
+    # Combien de clefs?
+    ipfs key list -l | grep -w $GNS
+    ipfs key list -l | grep -w $GNS | wc -l
+
+
+if [ ! -f ~/.zen/tmp/TW.html ]; then
+    echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
+    read
+else
+    echo "Bienvenue Astronaute. Nous avons capté votre TW"
+
+fi
+
+
+exit
+
+fi
 echo "=============================================
 MadeInZion DIPLOMATIC PASSPORT
 =============================================
@@ -18,6 +45,7 @@ Solar Punk garden forest terraforming game.
 Bienvenue 'Astronaute'"; sleep 1
 
 echo ""
+echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
 
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -27,12 +55,10 @@ ME="${0##*/}"
 ! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
 
 [[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
-# echo "-> SALT : $SALT"
+echo "-> SALT : $SALT"
 
-[[ PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
-# echo "-> PEPPER : $PEPPER"
-
-echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
+[[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
+echo "-> PEPPER : $PEPPER"
 
 echo "CHOISISSEZ UN PSEUDO" && read PSEUDO; PSEUDO=${PSEUDO,,} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 # PSEUDO=${PSEUDO,,} #lowercase
@@ -87,7 +113,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
 
-    qrencode -s 6 -o ~/.zen/game/players/$PLAYER/QR.png "$G1PUB"
+    qrencode -s 12 -o ~/.zen/game/players/$PLAYER/QR.png "$G1PUB"
     cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/QR.png
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
@@ -95,13 +121,15 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "$secFromDunikey" > /tmp/${PSEUDO}.sec
     openssl enc -aes-256-cbc -salt -in /tmp/${PSEUDO}.sec -out "/tmp/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
     PASsec=$(cat /tmp/enc.${PSEUDO}.sec | base58) && rm -f /tmp/${PSEUDO}.sec
-    qrencode -s 6 -o $HOME/.zen/game/players/$PLAYER/QRsec.png $PASsec
+    qrencode -s 12 -o $HOME/.zen/game/players/$PLAYER/QRsec.png $PASsec
 
     echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    if [ ! -f ~/.zen/tmp/TW.html ]; then
+
         echo "Nouveau Canal TW Astronaute"
         mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/
 
@@ -121,24 +149,30 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
-## ID CARD
-convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
-convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
+        ## ID CARD
+        convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
+        convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
 
-composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
-composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
-# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
+        composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
+        composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
+        # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
 
-convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" /tmp/one.png /tmp/image.png
-convert -gravity northwest -pointsize 30 -fill black -draw "text 300,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
-convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
-convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" /tmp/pass.png /tmp/salt.png
-convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" /tmp/salt.png ~/.zen/game/players/$PLAYER/ID.png
+        convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" /tmp/one.png /tmp/image.png
+        convert -gravity northwest -pointsize 30 -fill black -draw "text 300,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
+        convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
+        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" /tmp/pass.png /tmp/salt.png
+        convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" /tmp/salt.png ~/.zen/game/players/$PLAYER/ID.png
 
-# INSERTED IMAGE IPFS
-IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
-sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        # INSERTED IMAGE IPFS
+        IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
+        sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
+    else
+
+        cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+
+
+fi
     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moachain # Contains last IPFS backup PLAYER KEY
@@ -170,7 +204,7 @@ sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~
     rm -f ~/.zen/game/players/.current
     ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-qrencode -s 6 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
 echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 

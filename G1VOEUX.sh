@@ -20,9 +20,9 @@ QRTW="$4" # Nombre de QR + TW5 à créer
 
 [[ $MONTANT == "" ]] && MONTANT="_?_"
 [[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
 [[ $PLAYER == "" ]] && echo "Second paramètre PLAYER manquant" && exit 1
-[[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
+PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+[[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "Troisième paramètre G1PUB manquant" && exit 1
 [[ $QRTW == "" ]] && QRTW=1
 
@@ -33,14 +33,15 @@ echo "Bienvenue $PSEUDO ($PLAYER) : $G1PUB"
 echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 echo
 
-# BACKING UP IPNS
+# BACKING UP Astronaute TW IPNS
 rm -f ~/.zen/tmp/index.html
 ipfs --timeout 5s get -o ~/.zen/tmp/index.html /ipns/$ASTRONAUTENS
 if [ ! -f ~/.zen/tmp/index.html ]; then
-    echo "ERROR IPNS TIMEOUT"
+    echo "ERROR IPNS TIMEOUT. Restoring local backup..."
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --key=$G1PUB /ipfs/$TW
+    ipfs name publish --key=$PLAYER /ipfs/$TW
 else
+    # Backup
     cp ~/.zen/tmp/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 fi
 
@@ -54,7 +55,7 @@ do
 
     echo "Entrez un Titre pour ce Voeu"
     read TITRE
-    PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+    PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
 
     echo "# CREATION CLEF DE VOEUX"
     ${MY_PATH}/tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
@@ -75,7 +76,7 @@ do
     echo $PEPPER > ~/.zen/game/world/$WISHKEY/.pepper
 
     echo "# CREATION TW"
-    # ipfs cat /ipfs/bafybeihxqfukhb7jplda5kc32d7nq6oudgp3icy5zxxyxp6vcubg4g3myq > ~/.zen/Astroport.ONE/templates/twdefault.html
+    # ipfs cat /ipfs/bafybeierk6mgrlwpowdcfpvibujhg2b6upjfl3gryw2k72f7smxt6cqtiu > ~/.zen/Astroport.ONE/templates/twdefault.html
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
 
     # PERSONNALISATION
@@ -90,57 +91,82 @@ do
     # IPNS KEY is WISHKEY / VOEUXNS
     sed -i "s~_MEDIAKEY_~${WISHKEY}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${VOEUXNS}~g" ~/.zen/game/world/$WISHKEY/index.html
-    # ASTROPORT RELAY
+    # ASTROPORT LOCAL IP RELAY == Smartphone doesn't resolve LAN DNS. So using Astroport Station IP
     sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
-    sed -i "s~https://ipfs.bluelightav.org~http://127.0.0.1:8080~g" ~/.zen/game/world/$WISHKEY/index.html
+    #sed -i "s~https://ipfs.bluelightav.org~http://127.0.0.1:5001~g" ~/.zen/game/world/$WISHKEY/index.html
 
 
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
-
+## RESTART IPFS !?
 
     echo "# CREATION QR CODE"
-    HOST="$(hostname).local"
 
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "http://$myIP:8080/ipns/$ASTRONAUTENS"
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
-    qrencode -s 6 -o "$HOME/.zen/game/world/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUXNS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "http://$myIP:8080/ipns/$ASTRONAUTENS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUXNS"
 
     # Bricolage avec node tiddlywiki (TODO add tiddler with command line)
-    #
-    cd ~/.zen/game/world/$WISHKEY
-    tiddlywiki $WISHKEY --load ~/.zen/game/world/$WISHKEY/index.html --savewikifolder ./tw/
-    cd -
+    # A suivre .... https://talk.tiddlywiki.org/t/how-to-add-extract-modify-tiddlers-from-command-line-to-do-ipfs-media-transfer/4345/4
+    # cd ~/.zen/game/world/$WISHKEY
+    # tiddlywiki $WISHKEY --load ~/.zen/game/world/$WISHKEY/index.html --savewikifolder ./tw/
+    # cd -
 
-    # PREMIER TYPE
-    convert $HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png -resize 300 /tmp/QR.png
+#################################
+    # PREMIER TYPE /tmp/player.png
+    convert $HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png -resize 300 /tmp/QRWISHLINK.png
     convert ${MY_PATH}/images/logoastro.png  -resize 220 /tmp/ASTROLOGO.png
-    convert ${MY_PATH}/images/logojeu.png  -resize 260 /tmp/MIZLOGO.png
 
 composite -compose Over -gravity NorthWest -geometry +350+10 /tmp/ASTROLOGO.png ${MY_PATH}/images/Brother_600x400.png /tmp/astroport.png
-composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
+composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QRWISHLINK.png /tmp/astroport.png /tmp/one.png
 convert -gravity northwest -pointsize 35 -fill black -draw "text 320,250 \"$PSEUDO\"" /tmp/one.png /tmp/hop.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 20,320 \"$PEPPER\"" /tmp/hop.png /tmp/pseudo.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 320,300 \"$SALT\"" /tmp/pseudo.png /tmp/salt.png
 convert -gravity northwest -pointsize 40 -fill black -draw "text 320,350 \"$PEPPER\"" /tmp/salt.png /tmp/player.png
 
-    # SECOND TYPE
-    convert $HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png -resize 300 /tmp/G1.png
-    convert $HOME/.zen/game/world/$WISHKEY/QR.IPNS.png -resize 300 /tmp/IPNS.png
+#################################
+    # SECOND TYPE /tmp/voeu.png
+    convert $HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png -resize 300 /tmp/G1WISH.png
+    convert ${MY_PATH}/images/logojeu.png  -resize 260 /tmp/MIZLOGO.png
 
-composite -compose Over -gravity NorthWest -geometry +300+0 /tmp/G1.png ${MY_PATH}/images/Brother_600x400.png /tmp/astroport.png
-composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/IPNS.png /tmp/astroport.png /tmp/one.png
+composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/G1WISH.png ${MY_PATH}/images/Brother_600x400.png /tmp/astroport.png
+composite -compose Over -gravity NorthWest -geometry +300+0 /tmp/QRWISHLINK.png /tmp/astroport.png /tmp/one.png
 composite -compose Over -gravity NorthWest -geometry +320+280 /tmp/MIZLOGO.png /tmp/one.png /tmp/two.png
 
-convert -gravity northwest -pointsize 28 -fill black -draw "text 32,350 \"$PEPPER\"" /tmp/two.png /tmp/play.png
-convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 RÊVE\"" /tmp/play.png /tmp/voeu.png
+convert -gravity northwest -pointsize 28 -fill black -draw "text 32,350 \"$PEPPER\"" /tmp/two.png /tmp/pep.png
+convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VOEU\"" /tmp/pep.png /tmp/voeu.png
 
 
-    # IMAGE IPFS
-    IREVE=$(ipfs add -Hq /tmp/voeu.png | tail -n 1)
-    sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IREVE}~g" ~/.zen/game/world/$WISHKEY/index.html
+    # IMAGE DASN IPFS
+    IVOEUPLAY=$(ipfs add -Hq /tmp/player.png | tail -n 1)
+
+    IVOEU=$(ipfs add -Hq /tmp/voeu.png | tail -n 1)
+    sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IVOEU}~g" ~/.zen/game/world/$WISHKEY/index.html
+
+    # NEW IVEU TIDDLER
+    echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
+    echo '[
+  {
+    "title": "'Qr${PEPPER}'",
+    "type": "'image/jpeg'",
+    "tags": "'Voeu ${PEPPER}'",
+    "_canonical_uri": "'/ipfs/${IVOEUPLAY}'"
+  }
+]
+' > ~/.zen/tmp/${PEPPER}.voeu.json
+
+    rm ~/.zen/tmp/newindex.html
+    echo "Ajout nouveau tiddler Qr$PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+    tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --import ~/.zen/tmp/${PEPPER}.voeu.json json  --output ~/.zen/tmp/ --render "$:/core/save/all" "newindex.html" "text/plain"
+    if [[ -f ~/.zen/tmp/newindex.html ]]; then
+        TW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
+        echo "Pulication IPNS clef $PLAYER /ipfs/$TW"
+        ipfs name publish --key=$PLAYER /ipfs/$TW
+        # MAJ CACHE TW $PLAYER
+        cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+    fi
 
     # PRINTING
     LP=$(ls /dev/usb/lp* | head -n1)
@@ -153,6 +179,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 R�
 
     # COPY QR CODE TO PLAYER ZONE
     cp /tmp/player.png /tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
+    echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.title
+    echo "http://$myIP:8080/ipns/$VOEUXNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
+    cp ~/.zen/game/world/$WISHKEY/QR.WISHLINK.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
 
     # PUBLISHING
     echo "## ${PLAYER} RECORDING YOU WISH INTO BLOCKCHAIN"
