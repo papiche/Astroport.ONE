@@ -33,6 +33,7 @@ echo "Bienvenue $PSEUDO ($PLAYER) : $G1PUB"
 echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 echo
 
+########################################################
 # BACKING UP Astronaute TW IPNS
 rm -f ~/.zen/tmp/index.html
 ipfs --timeout 5s get -o ~/.zen/tmp/index.html /ipns/$ASTRONAUTENS
@@ -44,8 +45,10 @@ else
     # Backup
     cp ~/.zen/tmp/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 fi
+########################################################
 
-# CREATION DE $QRTW BILLETS DE $MONTANT DU
+
+# CREATION DU VOEU (TODO: REMOVE OR ACTIVATE LOOP ?)
 boucle=0;
 while [ $boucle -lt $QRTW ]
 do
@@ -124,7 +127,7 @@ composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QRWISHLINK.png /t
 convert -gravity northwest -pointsize 35 -fill black -draw "text 320,250 \"$PSEUDO\"" /tmp/one.png /tmp/hop.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 20,320 \"$PEPPER\"" /tmp/hop.png /tmp/pseudo.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 320,300 \"$SALT\"" /tmp/pseudo.png /tmp/salt.png
-convert -gravity northwest -pointsize 40 -fill black -draw "text 320,350 \"$PEPPER\"" /tmp/salt.png /tmp/player.png
+convert -gravity northwest -pointsize 33 -fill black -draw "text 320,350 \"$PEPPER\"" /tmp/salt.png /tmp/player.png
 
 #################################
     # SECOND TYPE /tmp/voeu.png
@@ -155,11 +158,11 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     "_canonical_uri": "'/ipfs/${IVOEUPLAY}'"
   }
 ]
-' > ~/.zen/tmp/${PEPPER}.voeu.json
+' > ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json
 
     rm ~/.zen/tmp/newindex.html
     echo "Ajout nouveau tiddler Qr$PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-    tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --import ~/.zen/tmp/${PEPPER}.voeu.json json  --output ~/.zen/tmp/ --render "$:/core/save/all" "newindex.html" "text/plain"
+    tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --import ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json  --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
     if [[ -f ~/.zen/tmp/newindex.html ]]; then
         TW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
         echo "Pulication IPNS clef $PLAYER /ipfs/$TW"
