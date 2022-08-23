@@ -89,7 +89,7 @@ select fav in  "${choices[@]}"; do
     "EXPORTER VISA")
         echo "EXPORT IDENTITE ASTRONAUTE"
         du -h ~/.zen/game/players/.current/
-        echo  "MANUAL BACKUP ZIP ~/.zen/game/players/.$PLAYER/"
+        echo  "MANUAL BACKUP ZIP ~/.zen/game/players/$PLAYER/"
 
         break
         ;;

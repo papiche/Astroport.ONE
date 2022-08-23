@@ -29,13 +29,12 @@ do
     mkdir -p ~/.zen/tmp/work
 
     echo "Getting latest online TW..."
-    ipfs --timeout 12s get -o ~/.zen/tmp/work/ /ipns/$voeuns
+    ipfs --timeout 12s get -o ~/.zen/tmp/work /ipns/$voeuns
 
 
     if [[ ! -f ~/.zen/tmp/work/index.html ]]; then
-        echo "UNAVAILABLE WISH! Removing $W $voeu"
-        ipfs key rm $voeu
-        rm -Rf ~/.zen/game/world/$voeu
+        echo "UNAVAILABLE WISH! If you want to remove $W $voeu"
+        echo "ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu"
         continue
     fi
 
