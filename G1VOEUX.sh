@@ -164,6 +164,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
   {
     "title": "'Voeu${PEPPER}'",
     "type": "'image/jpeg'",
+    "ipns": "'/ipns/$VOEUXNS'",
     "text": "''",
     "tags": "'$:/isAttachment $:/isEmbedded voeu ${PEPPER}'",
     "_canonical_uri": "'/ipfs/${IVOEUPLAY}'"

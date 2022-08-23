@@ -14,6 +14,9 @@ ME="${0##*/}"
 [[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 
+############################################
+## WORLD VOEUX
+
 for voeu in $(ls ~/.zen/game/world/);
 do
     echo "VOEU : $voeu"
@@ -47,10 +50,34 @@ do
     rm -Rf ~/.zen/tmp/work
 
     if [[ -d ~/.zen/game/players/$PLAYER/voeux/$voeu ]]; then
-        echo "Supprimer votre voeux $W? Tapez sur ENTRER pour passer au voeu suivant..."
-        read QUOI
-        [[ "$QUOI" != "" ]] &&  ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu && echo "SUPRESSION OK"
+        echo "Commande de suppression du Voeu$W (A effacer manuellement de votre TW"
+        echo "ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu"
+        # read QUOI
+        # [[ "$QUOI" != "" ]] &&  ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu && echo "SUPRESSION OK"
     fi
 
 done
 
+############################################
+## PLAYER TW
+
+for PLAYER in $(ls ~/.zen/game/players/); do
+    echo "$PLAYER"
+    ## REFRESH ASTRONAUTE TW
+    ASTRONAUTENS=$(cat ~/.zen/game/players/$PLAYER/.playerns)
+    rm -Rf ~/.zen/tmp/astro
+    ipfs --timeout 12s get -o ~/.zen/tmp/astro /ipns/$ASTRONAUTENS
+
+    if [ ! -f ~/.zen/tmp/astro/index.html ]; then
+        echo "ERROR IPNS TIMEOUT. Using local backup..."
+    else
+        echo "Upgrade TW local copy..."
+        cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+    fi
+
+    TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
+    ipfs name publish --key=$PLAYER /ipfs/$TW
+
+done
+
+exit 0
