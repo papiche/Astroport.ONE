@@ -12,7 +12,6 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 [[ ! -f ~/.zen/game/players/.current/QR.png ]] &&\
         echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/.current/" && exit 1
@@ -21,7 +20,7 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
 G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
-IPFSNODEID=$(cat ~/.zen/game/players/.current/.ipfsnodeid 2>/dev/null) || ( echo "noipfsnodeid" && exit 1 )
+
 
 PASS=$(cat ~/.zen/game/players/.current/.pass)
 
@@ -46,5 +45,15 @@ convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$
 brother_ql_create --model QL-700 --label-size 62 /tmp/done.jpg > /tmp/toprint.bin 2>/dev/null
 sudo brother_ql_print /tmp/toprint.bin $LP
 
+################################################################
+### PRINT PLAYER TW myIP link
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+playerns=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "http://$myIP:8080/ipns/$playerns"
+convert $HOME/.zen/tmp/QR.ASTRO.png -resize 600 /tmp/playerns.png
+
+brother_ql_create --model QL-700 --label-size 62 /tmp/playerns.png > /tmp/toprint.bin 2>/dev/null
+sudo brother_ql_print /tmp/toprint.bin $LP
+################################################################
 
 exit 0
