@@ -6,12 +6,18 @@
 ################################################################################
 ################################################################################
 #
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+
 SALT="$1"
 PEPPER="$2"
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
     ASTRO=""
+    echo "$SALT"
+    echo "$PEPPER"
     ipfs key rm gchange
     rm -f ~/.zen/tmp/gchange.key
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
