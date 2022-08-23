@@ -125,7 +125,7 @@ select fav in  "${choices[@]}"; do
             case $voeu in
             *) echo "IMPRESSION $voeu"
                 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-                VOEUXNS=$($MY_PATH/tools/g1_to_ipfs.py $voeu)
+                VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
                 qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
                 convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 /tmp/QRWISHLINK.png
                 TITLE=$(cat ~/.zen/game/world/$voeu/.pepper)
