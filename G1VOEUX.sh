@@ -110,7 +110,7 @@ do
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
     [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
 
-    ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com", "http://'$(hostname)'.local:8080" ]'
 ## RESTART IPFS !?
 
     echo "# CREATION QR CODE"

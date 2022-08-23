@@ -149,6 +149,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
+        sed -i "s~G1Voeu~G1Visa~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
         # La Clef IPNS porte comme nom G1PUB.
@@ -229,7 +230,7 @@ qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://
 echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 
 echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"; sleep 2
+echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://$myIP:8080/ipns/$ASTRONAUTENS"; sleep 2
 
 # PASS CRYPTING KEY
 echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
