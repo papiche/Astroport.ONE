@@ -11,6 +11,7 @@ PEPPER="$2"
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
+    ASTRO=""
     ipfs key rm gchange
     rm -f ~/.zen/tmp/gchange.key
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
@@ -28,14 +29,14 @@ if [ ! -f ~/.zen/tmp/TW.html ]; then
     echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
     read
 else
+    ASTRO="yes"
     echo "Bienvenue Astronaute. Nous avons capté votre TW"
+    echo "http://127.0.0.1:8080/ipns/$GNS"
+    echo "Initialisation de votre compte local"
+fi
 
 fi
 
-
-exit
-
-fi
 echo "=============================================
 MadeInZion DIPLOMATIC PASSPORT
 =============================================
@@ -176,17 +177,21 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
-    else
+else
 
         cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
 
 fi
+
+    ## Copy Astro TW
+    [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+
     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
-    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
-    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moachain # Contains last IPFS backup PLAYER KEY
+    IPUSH=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/ | tail -n 1)
+    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/.chain # Contains last IPFS backup PLAYER KEY
     echo "/ipfs/$IPUSH"
-    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/.moats
+    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/.moats
     ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     # Lanch newly created TW
