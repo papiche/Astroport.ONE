@@ -23,15 +23,15 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
     GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
-    rm -f ~/.zen/tmp/TW.html
-    ipfs --timeout 5s get -o ~/.zen/tmp/TW.html /ipns/$GNS
+    rm -Rf ~/.zen/tmp/TW
+    ipfs --timeout 5s get -o ~/.zen/tmp/TW /ipns/$GNS
 
     # Combien de clefs?
     ipfs key list -l | grep -w $GNS
     ipfs key list -l | grep -w $GNS | wc -l
 
 
-if [ ! -f ~/.zen/tmp/TW.html ]; then
+if [ ! -f ~/.zen/tmp/TW/index.html ]; then
     echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
     read
 else
@@ -185,7 +185,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
 else
 
-        cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
 
 fi
