@@ -15,7 +15,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 ########################################################################
 echo "CREATING $PLAYER GCHANGE+ PROFILE"
 ########################################################################
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #GCHANGE+
 [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && exit 1
 ########################################################################
 #echo "CREATING $PLAYER CESIUM+ PROFILE"
