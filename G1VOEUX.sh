@@ -30,7 +30,6 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
 
 echo "Bienvenue $PSEUDO ($PLAYER) : $G1PUB"
-echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 echo
 
 ########################################################
@@ -39,7 +38,7 @@ rm -f ~/.zen/tmp/index.html
 ipfs --timeout 5s get -o ~/.zen/tmp/index.html /ipns/$ASTRONAUTENS
 if [ ! -f ~/.zen/tmp/index.html ]; then
     echo "ERROR IPNS TIMEOUT. Restoring local backup..."
-    TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+    TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
 else
     # Backup
@@ -72,14 +71,16 @@ do
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
     echo " QR code fonctionnel sur réseau IP local (qo-op) : $myIP"
 
-    echo "# CREATION WORLD UPGRADE DATABASE"
+    echo "# UPGRADING WORLD WHISHKEY DATABASE"
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
     mkdir -p ~/.zen/game/world/$WISHKEY/
     echo $PEPPER > ~/.zen/game/world/$WISHKEY/.pepper
 
     echo "# CREATION TW"
+    ##########################################################################################
     # ipfs cat /ipfs/bafybeierk6mgrlwpowdcfpvibujhg2b6upjfl3gryw2k72f7smxt6cqtiu > ~/.zen/Astroport.ONE/templates/twdefault.html
+    ##########################################################################################
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
 
     # PERSONNALISATION
@@ -97,10 +98,19 @@ do
     # ASTROPORT LOCAL IP RELAY == Smartphone doesn't resolve LAN DNS. So using Astroport Station IP
     sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
-    #sed -i "s~https://ipfs.bluelightav.org~http://127.0.0.1:5001~g" ~/.zen/game/world/$WISHKEY/index.html
 
+    # ADD API GW TIDDLERS for IPFS SAVE
+    ##########################################################################################
+    # [{"title":"$:/ipfs/saver/api/http/local/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://127.0.0.1:5001"}]
+    # [{"title":"$:/ipfs/saver/gateway/local/myip","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://127.0.0.1:8080"}]
+    ##########################################################################################
+    tiddlywiki  --verbose --load ~/.zen/game/world/$WISHKEY/index.html \
+                        --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
+                        --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
+                        --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+    [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
 
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
+    ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
 ## RESTART IPFS !?
 
     echo "# CREATION QR CODE"
@@ -152,23 +162,38 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
     echo '[
   {
-    "title": "'Qr${PEPPER}'",
+    "title": "'Voeu${PEPPER}'",
     "type": "'image/jpeg'",
-    "tags": "'Voeu ${PEPPER}'",
+    "text": "''",
+    "tags": "'$:/isAttachment $:/isEmbedded voeu ${PEPPER}'",
     "_canonical_uri": "'/ipfs/${IVOEUPLAY}'"
   }
 ]
 ' > ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json
 
-    rm ~/.zen/tmp/newindex.html
-    echo "Ajout nouveau tiddler Qr$PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-    tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --import ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json  --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+
+
+    rm -f ~/.zen/tmp/newindex.html
+
+    echo "Nouveau Qr$PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+    tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+                    --import ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json "application/json" \
+                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+
+    echo "TW Updated..."
     if [[ -f ~/.zen/tmp/newindex.html ]]; then
-        TW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
-        echo "Pulication IPNS clef $PLAYER /ipfs/$TW"
+        echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
+        cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+        echo "Avancement blockchain $PLAYER : $MOATS"
+        cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.old
+        TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
+        echo "ipfs name publish --key=$PLAYER /ipfs/$TW"
         ipfs name publish --key=$PLAYER /ipfs/$TW
         # MAJ CACHE TW $PLAYER
-        cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+        echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+        echo
     fi
 
     # PRINTING
@@ -194,6 +219,8 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     echo $IPUSH > ~/.zen/game/world/$WISHKEY/.chain # Contains last IPFS backup PLAYER KEY
     echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
     ipfs name publish --key=${WISHKEY} /ipfs/$IPUSH 2>/dev/null
+
+    echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
     echo "CAPSULE A REVE $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
 
