@@ -20,7 +20,7 @@ echo "## WORLD VOEUX"
 for voeu in $(ls ~/.zen/game/world/);
 do
     echo "VOEU : $voeu"
-    voeuns=$($MY_PATH/g1_to_ipfs.py $voeu)
+    voeuns=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
     echo "http://127.0.0.1:8080/ipns/$voeuns"
     echo
     W=$(cat ~/.zen/game/world/$voeu/.pepper 2>/dev/null)
