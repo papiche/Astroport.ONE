@@ -37,7 +37,7 @@ echo
 rm -Rf ~/.zen/tmp/TW
 ipfs --timeout 6s get -o ~/.zen/tmp/TW /ipns/$ASTRONAUTENS
 
-CHECK=(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
+CHECK=$(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
 
 if [ ! -f ~/.zen/tmp/TW/index.html ]; then
     echo "ERROR IPNS TIMEOUT. Restoring local backup..."

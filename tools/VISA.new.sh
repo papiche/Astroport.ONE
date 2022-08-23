@@ -30,7 +30,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ipfs key list -l | grep -w $GNS
     ipfs key list -l | grep -w $GNS | wc -l
 
-    CHECK=(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
+    CHECK=$(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
 
     if [ ! -f ~/.zen/tmp/TW/index.html ]; then
         echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
