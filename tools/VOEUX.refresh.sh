@@ -51,8 +51,12 @@ do
     rm -Rf ~/.zen/tmp/work
 
     if [[ -d ~/.zen/game/players/$PLAYER/voeux/$voeu ]]; then
-        echo "Commande de suppression du Voeu$W (A effacer manuellement de votre TW"
-        echo "ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu"
+        echo "==========================="
+        echo "Voeu$W : commande de suppression"
+        echo "ipfs key rm $voeu
+        rm -Rf ~/.zen/game/world/$voeu
+        rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu"
+        echo "==========================="
         # read QUOI
         # [[ "$QUOI" != "" ]] &&  ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu && echo "SUPRESSION OK"
     fi
@@ -73,6 +77,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     CHECK=$(ls ~/.zen/tmp/astro/) && mv ~/.zen/tmp/astro/$CHECK  ~/.zen/tmp/astro/index.html
     if [ ! -f ~/.zen/tmp/astro/index.html ]; then
         echo "ERROR IPNS TIMEOUT. Using local backup..."
+        continue
     else
         echo "Upgrade TW local copy..."
         cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
