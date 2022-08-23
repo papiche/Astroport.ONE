@@ -104,13 +104,9 @@ sudo cat /dev/ttyACM0 | while read line; do
     else
         echo "Canal TW existant"
         # REFRESH IPNS
-        ipfs get -o ~/.zen/game/world/$G1PUB/index.html /ipns/$IPNSK
+        ipfs get -o ~/.zen/game/world/$G1PUB /ipns/$IPNSK
 
-        cd ~/.zen/game/world/
-        tiddlywiki $G1PUB --load ~/.zen/game/world/$G1PUB/index.html &
-        sleep 3 && killall node # TRASH PUNK PROGRAMMING
-        echo "BACKUP DONE !!"
-        cd $MY_PATH
+        CHECK=(ls ~/.zen/game/world/$G1PUB/) && mv ~/.zen/game/world/$G1PUB/$CHECK ~/.zen/game/world/$G1PUB/index.html
     fi
 
     ## CREATE GCHANGE AD

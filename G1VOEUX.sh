@@ -34,15 +34,18 @@ echo
 
 ########################################################
 # BACKING UP Astronaute TW IPNS
-rm -f ~/.zen/tmp/index.html
-ipfs --timeout 5s get -o ~/.zen/tmp/index.html /ipns/$ASTRONAUTENS
-if [ ! -f ~/.zen/tmp/index.html ]; then
+rm -Rf ~/.zen/tmp/TW
+ipfs --timeout 6s get -o ~/.zen/tmp/TW /ipns/$ASTRONAUTENS
+
+CHECK=(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
+
+if [ ! -f ~/.zen/tmp/TW/index.html ]; then
     echo "ERROR IPNS TIMEOUT. Restoring local backup..."
     TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
 else
     # Backup
-    cp ~/.zen/tmp/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+    cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 fi
 ########################################################
 

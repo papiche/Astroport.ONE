@@ -30,16 +30,17 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ipfs key list -l | grep -w $GNS
     ipfs key list -l | grep -w $GNS | wc -l
 
+    CHECK=(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
 
-if [ ! -f ~/.zen/tmp/TW/index.html ]; then
-    echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
-    read
-else
-    ASTRO="yes"
-    echo "Bienvenue Astronaute. Nous avons capté votre TW"
-    echo "http://127.0.0.1:8080/ipns/$GNS"
-    echo "Initialisation de votre compte local"
-fi
+    if [ ! -f ~/.zen/tmp/TW/index.html ]; then
+        echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
+        read
+    else
+        ASTRO="yes"
+        echo "Bienvenue Astronaute. Nous avons capté votre TW"
+        echo "http://127.0.0.1:8080/ipns/$GNS"
+        echo "Initialisation de votre compte local"
+    fi
 
 fi
 

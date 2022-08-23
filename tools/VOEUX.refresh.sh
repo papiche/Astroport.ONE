@@ -31,6 +31,8 @@ do
     echo "Getting latest online TW..."
     ipfs --timeout 12s get -o ~/.zen/tmp/work /ipns/$voeuns
 
+    # CORRECT FileName
+    CHECK=(ls ~/.zen/tmp/work/) && mv ~/.zen/tmp/work/$CHECK  ~/.zen/tmp/work/index.html
 
     if [[ ! -f ~/.zen/tmp/work/index.html ]]; then
         echo "UNAVAILABLE WISH! If you want to remove $W $voeu"
@@ -61,12 +63,13 @@ done
 ## PLAYER TW
 
 for PLAYER in $(ls ~/.zen/game/players/); do
-    echo "PLAYER $PLAYER"
+    echo "PLAYER : $PLAYER"
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(cat ~/.zen/game/players/$PLAYER/.playerns)
     rm -Rf ~/.zen/tmp/astro
     ipfs --timeout 12s get -o ~/.zen/tmp/astro /ipns/$ASTRONAUTENS
 
+    CHECK=(ls ~/.zen/tmp/astro/) && mv ~/.zen/tmp/astro/$CHECK  ~/.zen/tmp/astro/index.html
     if [ ! -f ~/.zen/tmp/astro/index.html ]; then
         echo "ERROR IPNS TIMEOUT. Using local backup..."
     else
