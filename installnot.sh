@@ -10,6 +10,7 @@ ME="${0##*/}"
 
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
 
+echo "Just for reference. PLEASE ADAPT" && exit
 
 ########################################################################
 [[ ! $(which ipfs) ]] && echo "=== Installez IPFS !!" && echo "https://docs.ipfs.io/install/command-line/#official-distributions" && exit 1
@@ -80,6 +81,8 @@ if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin pi
         sudo usermod -a -G gammu pi
+        sudo usermod -a -G tty pi
+
     fi
 fi
 
@@ -107,7 +110,7 @@ cp -Rf ~/.zen/astrXbian/.install/.kodi ~/
 
 ########################################################################
 echo "=== Configuration jaklis: Centre de communication CESIUM+ GCHANGE+"
-cd ~/.zen/astrXbian/zen/jaklis
+cd $MY_PATH/toos/jaklis
 ./setup.sh
 
 ########################################################################
