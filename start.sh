@@ -104,7 +104,7 @@ select fav in  "${choices[@]}"; do
             [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
-        ~/.zen/astrXbian/zen/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://data.gchange.fr erase
+        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://data.gchange.fr erase
 #        ~/.zen/astrXbian/zen/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://g1.data.e-is.pro erase
 
         rm -Rf ~/.zen/game/players/$PLAYER

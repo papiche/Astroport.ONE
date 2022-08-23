@@ -11,12 +11,12 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 ########################################################################
 echo "CREATING $PLAYER GCHANGE+ PROFILE"
 ########################################################################
-~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #GCHANGE+
 [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && exit 1
 ########################################################################
 #echo "CREATING $PLAYER CESIUM+ PROFILE"
 ########################################################################
-#~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.e-is.pro" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+#$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.e-is.pro" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 #[[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && exit 1
 ########################################################################
 
@@ -29,9 +29,9 @@ if [[ $bootnode != "" ]]; then
     ipfsnodeid=${bootnode##*/}
     g1node=$(~/.zen/astrXbian/zen/tools/ipfs_to_g1.py $ipfsnodeid)
     echo "SENDING STAR TO BOOTSTRAP NODE : $g1node"
-    ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $g1node -n 1
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $g1node -n 1
     ### DELETE
-    # ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" unstars -p $g1node
+    # jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" unstars -p $g1node
 fi
 done
 

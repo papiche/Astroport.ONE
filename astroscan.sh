@@ -117,7 +117,7 @@ sudo cat /dev/ttyACM0 | while read line; do
     if [[ ! -f ~/.zen/game/world/.gchange.$G1PUB ]]
     then
         echo "CREATION ANNONCE CROWDFUNDING"
-        echo ~/.zen/astrXbian/zen/jaklis/jaklis.py -k ~/.zen/tmp/secret.dunikey -n "https://data.gchange.fr" setoffer -t "${TITLE} #ASTROMIZ" -d "http://127.0.0.1:8080/ipns/$RESSOURCENS - Gratitude Astronaute $PLAYER" -p $HOME/.zen/Astroport.ONE/images/moa_net.png
+        echo $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.dunikey -n "https://data.gchange.fr" setoffer -t "${TITLE} #ASTROMIZ" -d "http://127.0.0.1:8080/ipns/$RESSOURCENS - Gratitude Astronaute $PLAYER" -p $HOME/.zen/Astroport.ONE/images/moa_net.png
         # echo $GOFFER > ~/.zen/game/world/.gchange.$G1PUB
     fi
 
