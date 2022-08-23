@@ -24,7 +24,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
     rm -Rf ~/.zen/tmp/TW
-    ipfs --timeout 5s get -o ~/.zen/tmp/TW /ipns/$GNS
+    ipfs --timeout 5s get -o ~/.zen/tmp/TW/ /ipns/$GNS
 
     # Combien de clefs?
     ipfs key list -l | grep -w $GNS

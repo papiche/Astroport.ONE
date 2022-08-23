@@ -104,7 +104,7 @@ sudo cat /dev/ttyACM0 | while read line; do
     else
         echo "Canal TW existant"
         # REFRESH IPNS
-        ipfs get -o ~/.zen/game/world/$G1PUB /ipns/$IPNSK
+        ipfs get -o ~/.zen/game/world/$G1PUB/ /ipns/$IPNSK
 
         CHECK=$(ls ~/.zen/game/world/$G1PUB/) && mv ~/.zen/game/world/$G1PUB/$CHECK ~/.zen/game/world/$G1PUB/index.html
     fi

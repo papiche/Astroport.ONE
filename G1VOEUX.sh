@@ -35,7 +35,7 @@ echo
 ########################################################
 # BACKING UP Astronaute TW IPNS
 rm -Rf ~/.zen/tmp/TW
-ipfs --timeout 6s get -o ~/.zen/tmp/TW /ipns/$ASTRONAUTENS
+ipfs --timeout 6s get -o ~/.zen/tmp/TW/ /ipns/$ASTRONAUTENS
 
 CHECK=$(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
 
