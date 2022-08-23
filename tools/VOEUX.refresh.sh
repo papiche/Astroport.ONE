@@ -15,7 +15,7 @@ ME="${0##*/}"
 
 
 ############################################
-## WORLD VOEUX
+echo "## WORLD VOEUX"
 
 for voeu in $(ls ~/.zen/game/world/);
 do
@@ -57,10 +57,11 @@ do
         # [[ "$QUOI" != "" ]] &&  ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu && echo "SUPRESSION OK"
     fi
 
+    echo "$W : http://127.0.0.1:8080/ipns/$voeuns"
 done
 
 ############################################
-## PLAYER TW
+echo "## PLAYER TW"
 
 for PLAYER in $(ls ~/.zen/game/players/); do
     echo "PLAYER : $PLAYER"
@@ -79,6 +80,9 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 
     TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
+
+    echo "$PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+
 
 done
 
