@@ -61,7 +61,7 @@ done
 ## PLAYER TW
 
 for PLAYER in $(ls ~/.zen/game/players/); do
-    echo "$PLAYER"
+    echo "PLAYER $PLAYER"
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(cat ~/.zen/game/players/$PLAYER/.playerns)
     rm -Rf ~/.zen/tmp/astro

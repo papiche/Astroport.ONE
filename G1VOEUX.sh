@@ -181,7 +181,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
                     --import ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
-    echo "TW Updated..."
+    echo "PLAYER TW Update..."
     if [[ -f ~/.zen/tmp/newindex.html ]]; then
         echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
         cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
