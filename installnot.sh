@@ -46,6 +46,12 @@ for i in build-essential qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils 
     fi
 done
 
+### Install tiddlywiki node.js
+sudo apt install -y npm
+sudo npm install -g tiddlywiki
+
+
+
 [[ ! $(which kodi) && "$USER" != "xbian" ]] &&\
     echo ">>> Installation Kodi + Vstream = VOTRE VIDEOTHEQUE ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";\
     sudo apt-get install kodi -y;\

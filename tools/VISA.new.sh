@@ -149,6 +149,15 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
+        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
+
+        tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html \
+                            --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
+                            --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
+                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+        [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+
         ## ID CARD
         convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
         convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
