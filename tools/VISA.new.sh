@@ -157,7 +157,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
+        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
         tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html \
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \

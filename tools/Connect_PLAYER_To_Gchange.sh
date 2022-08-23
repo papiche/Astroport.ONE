@@ -1,5 +1,9 @@
 #!/bin/bash
 # Run After PLAYER.entrance.sh
+################################################################################
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
 ######################################################################### CONNECT PLAYER WITH GCHANGE
 # Check who is .current PLAYER
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
