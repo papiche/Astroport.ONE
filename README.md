@@ -53,25 +53,21 @@ ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefo
 Le JEu est constitué de Stations IPFS localisés à des cooordonnées précises.
 Ces stations acceuillent des joueurs.  Leur mission, réaliser des rêves.
 
-Dans IPFS, chacun publie son site web statique comportant texte, image, sons et vidéos (selon les modèles situés dans Templates)
+Dans IPFS, chaque Astroport fédère des Astronautes autour du lieu en cours de "mise à jour".
+Un canal de communication Tiddlywiki (TW) est attribué à chaque participant, le "Journal de Notes MOA" contient son G1Visa
 
+Il suffit de disposer de G1 pour commencer à jouer!!
 
-DELARATION DES LIEUX
-~/.zen/game/worlds
+Nous utilisons la monnaie libre pour estimer la valeur des idées et voeux de chacun afin d’organiser au mieux les actions qui garantissent une meilleure amélioration pour le plus grand nombre.
+Cela se matérialise au travers des G1Voeux, à la fois porte-monnaie et TW, il permet de coller des QRCODE aux endroits, objets pour lesquels vous proposez une amélioration pour un meilleur usage **(plus simple, moins de maintenance)**
 
-- Coord GPS (Map Minetest)
-- Certification des niveaux d'aptitudes à utiliser des outils ou équipements.
-- Niveaux autonomies:  eau, nourriture, couchages, electricité, chaleur, conservation, ...
-- Ambassade & Enregistrement des joueurs ("VISA") : Passeport Terre.
-- Collecte & publication des rêves : Pinterest
+https://forum.monnaie-libre.fr/t/les-explorateurs-du-libre-rencontre-et-partage-des-constructeurs-du-monde-libre/24040
 
+# INSTALLATION (Debian/Ubuntu/Mint ou Xbian)
 
-ASTRONAUTES
-~/.zen/game/players
-
-- Identité astronaute & VISA MadeInZion (accès au niveau 3 de confiance réciproque)
-- Expression des Talents (Page Gchange?), validation  aptitudes / équipements
-- arbres informationnels, projection de rêves.
+```
+bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
+```
 
 ---
 # astrXbian Balise Structure
