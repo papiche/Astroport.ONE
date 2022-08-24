@@ -15,19 +15,19 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 ########################################################################
 echo "CREATING $PLAYER GCHANGE+ PROFILE"
 ########################################################################
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #GCHANGE+
 [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && exit 1
 ########################################################################
 #echo "CREATING $PLAYER CESIUM+ PROFILE"
 ########################################################################
-#$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 #[[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && exit 1
 ########################################################################
 
 ########################################################################
 echo "BECOME FRIEND with A_boostrap_nodes.txt"
 ########################################################################
-for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
 do
 if [[ $bootnode != "" ]]; then
     ipfsnodeid=${bootnode##*/}
