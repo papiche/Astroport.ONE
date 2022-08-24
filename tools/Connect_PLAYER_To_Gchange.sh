@@ -20,7 +20,7 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "http
 ########################################################################
 #echo "CREATING $PLAYER CESIUM+ PROFILE"
 ########################################################################
-#$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.e-is.pro" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+#$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/astrXbian/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 #[[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && exit 1
 ########################################################################
 
