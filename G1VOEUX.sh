@@ -34,17 +34,17 @@ echo
 
 ########################################################
 # BACKING UP Astronaute TW IPNS
-rm -Rf ~/.zen/tmp/TW
-ipfs --timeout 6s get -o ~/.zen/tmp/TW/ /ipns/$ASTRONAUTENS
-
-CHECK=$(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
+mkdir -p ~/.zen/tmp/TW
+rm -f ~/.zen/tmp/TW/index.html
+ipfs --timeout 6s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/TW/index.html
 
 if [ ! -f ~/.zen/tmp/TW/index.html ]; then
     echo "ERROR IPNS TIMEOUT. Restoring local backup..."
-    TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
+    TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
 else
     # Backup
+    ## TODO index.html are different => Add signaling tiddler
     cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 fi
 ########################################################
@@ -159,6 +159,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     IVOEUPLAY=$(ipfs add -Hq /tmp/player.png | tail -n 1)
 
     IVOEU=$(ipfs add -Hq /tmp/voeu.png | tail -n 1)
+    ## Replace Template G1Voeu image
     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IVOEU}~g" ~/.zen/game/world/$WISHKEY/index.html
 
     # NEW IVEU TIDDLER
@@ -189,11 +190,13 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
         echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
         cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-        echo "Avancement blockchain $PLAYER : $MOATS"
+        echo "Avancement blockchain TW $PLAYER : $MOATS"
         cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.old
-        TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/ | tail -n 1)
+
+        TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
         echo "ipfs name publish --key=$PLAYER /ipfs/$TW"
         ipfs name publish --key=$PLAYER /ipfs/$TW
+
         # MAJ CACHE TW $PLAYER
         echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
         echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
@@ -202,7 +205,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
 
     # PRINTING
     LP=$(ls /dev/usb/lp* | head -n1)
-    [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" # && exit 1
+    [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated"
     echo "IMPRESSION VOEU"
     brother_ql_create --model QL-700 --label-size 62 /tmp/player.png > /tmp/toprint.bin 2>/dev/null
     sudo brother_ql_print /tmp/toprint.bin $LP
@@ -217,12 +220,13 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
 
     # PUBLISHING
     echo "## ${PLAYER} RECORDING YOU WISH INTO BLOCKCHAIN"
-    echo "ipfs add -rHq ~/.zen/game/world/$WISHKEY/
+    echo "ipfs add -Hq ~/.zen/game/world/$WISHKEY/index.html
     ipfs name publish --key=${WISHKEY} /ipfs/\$IPUSH"
-    IPUSH=$(ipfs add -rHq ~/.zen/game/world/$WISHKEY/ | tail -n 1)
-    echo $IPUSH > ~/.zen/game/world/$WISHKEY/.chain # Contains last IPFS backup PLAYER KEY
-    echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
+    IPUSH=$(ipfs add -Hq ~/.zen/game/world/$WISHKEY/index.html | tail -n 1)
     ipfs name publish --key=${WISHKEY} /ipfs/$IPUSH 2>/dev/null
+
+    echo $IPUSH > ~/.zen/game/world/$WISHKEY/.chain
+    echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
 
     echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 

@@ -23,17 +23,16 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
     GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
-    rm -Rf ~/.zen/tmp/TW
-    ipfs --timeout 5s get -o ~/.zen/tmp/TW/ /ipns/$GNS
+    mkdir -p ~/.zen/tmp/TW
+    rm -f ~/.zen/tmp/TW/index.html
+    ipfs --timeout 6s cat /ipns/$GNS > ~/.zen/tmp/TW/index.html
 
     # Combien de clefs?
     ipfs key list -l | grep -w $GNS
     ipfs key list -l | grep -w $GNS | wc -l
 
-    CHECK=$(ls ~/.zen/tmp/TW/) && mv ~/.zen/tmp/TW/$CHECK ~/.zen/tmp/TW/index.html
-
     if [ ! -f ~/.zen/tmp/TW/index.html ]; then
-        echo "Première connexion? Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
+        echo "Aucun ancien TW détecté! Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
         read
     else
         ASTRO="yes"
@@ -193,10 +192,10 @@ else
 fi
 
     ## Copy Astro TW
-    [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+    [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
-    IPUSH=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/ | tail -n 1)
+    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/.chain # Contains last IPFS backup PLAYER KEY
     echo "/ipfs/$IPUSH"
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/.moats
