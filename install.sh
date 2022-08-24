@@ -171,9 +171,9 @@ then
     echo "Appuyez sur la touche ENTREE pour démarrer le mode Aventure"
     echo "sinon interrompez ici l'installation, et activez votre Ambassade  ~/.zen/Astroport.ONE/start.sh"
     read
-    ~/.zen/Astroport.ONE/adventure.sh
+    # ~/.zen/Astroport.ONE/adventure.sh
  #
- #   ~/.zen/astrXbian/ISOconfig.sh
+    ~/.zen/astrXbian/ISOconfig.sh
 else
     ## Rpi Xbian install.
     cat /etc/rc.local | grep -Ev "exit 0" > /tmp/new.rc.local ## REMOVE "exit 0"
