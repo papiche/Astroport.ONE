@@ -31,7 +31,8 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ipfs key list -l | grep -w $GNS
     ipfs key list -l | grep -w $GNS | wc -l
 
-    if [ ! -f ~/.zen/tmp/TW/index.html ]; then
+    if [ ! -s ~/.zen/tmp/TW/index.html ]; then
+        rm -f ~/.zen/tmp/TW/index.html
         echo "Aucun ancien TW détecté! Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
         read
     else

@@ -38,7 +38,7 @@ mkdir -p ~/.zen/tmp/TW
 rm -f ~/.zen/tmp/TW/index.html
 ipfs --timeout 6s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/TW/index.html
 
-if [ ! -f ~/.zen/tmp/TW/index.html ]; then
+if [ ! -s ~/.zen/tmp/TW/index.html ]; then
     echo "ERROR IPNS TIMEOUT. Restoring local backup..."
     TW=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
@@ -111,7 +111,7 @@ do
                         --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                         --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-    [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
+    [[ -s ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
 
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com", "http://'$(hostname)'.local:8080" ]'
 ## RESTART IPFS !?
@@ -186,7 +186,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
     echo "PLAYER TW Update..."
-    if [[ -f ~/.zen/tmp/newindex.html ]]; then
+    if [[ -s ~/.zen/tmp/newindex.html ]]; then
         echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
         cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

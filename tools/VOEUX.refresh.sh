@@ -77,7 +77,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     mkdir -p ~/.zen/tmp/astro
     ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html
 
-    if [ ! -f ~/.zen/tmp/astro/index.html ]; then
+    if [ ! -s ~/.zen/tmp/astro/index.html ]; then
         echo "ERROR IPNS TIMEOUT. Using local backup..."
         continue
     else
