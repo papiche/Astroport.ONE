@@ -168,11 +168,12 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
     echo '[
   {
-    "title": "'Voeu${PEPPER}'",
+    "title": "'${PEPPER}'",
     "type": "'image/jpeg'",
     "ipns": "'/ipns/$VOEUXNS'",
+    "ipfs": "'/ipns/$IVOEUPLAY'",
     "text": "'$TEXT'",
-    "tags": "'voeu ${PEPPER} qrcode'"
+    "tags": "'voeu ${PEPPER}'"
   }
 ]
 ' > ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json
