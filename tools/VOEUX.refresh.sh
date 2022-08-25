@@ -73,31 +73,4 @@ do
     echo "$W : http://127.0.0.1:8080/ipns/$voeuns"
 done
 
-############################################
-echo "## PLAYER TW"
-
-for PLAYER in $(ls ~/.zen/game/players/); do
-    echo "PLAYER : $PLAYER"
-    ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(cat ~/.zen/game/players/$PLAYER/.playerns)
-    rm -Rf ~/.zen/tmp/astro
-    mkdir -p ~/.zen/tmp/astro
-    ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html
-
-    if [ ! -s ~/.zen/tmp/astro/index.html ]; then
-        echo "ERROR IPNS TIMEOUT. Using local backup..."
-        continue
-    else
-        echo "Upgrade TW local copy..."
-        cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-    fi
-
-    TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --key=$PLAYER /ipfs/$TW
-
-    echo "$PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-
-
-done
-
 exit 0
