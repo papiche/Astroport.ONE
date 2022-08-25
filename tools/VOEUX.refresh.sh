@@ -13,9 +13,10 @@ ME="${0##*/}"
 
 [[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
-
 ############################################
 echo "## WORLD VOEUX"
+
+for v in $(cat ~/.zen/game/players/*/voeux/*/.title); do echo $v ;done
 
 for voeu in $(ls ~/.zen/game/world/);
 do
@@ -26,17 +27,23 @@ do
     W=$(cat ~/.zen/game/world/$voeu/.pepper 2>/dev/null)
     echo $W
 
+    rm -Rf ~/.zen/tmp/work
     mkdir -p ~/.zen/tmp/work
-    rm -f ~/.zen/tmp/work/index.html
 
     echo "Getting latest online TW..."
     ipfs --timeout 12s cat /ipns/$voeuns > ~/.zen/tmp/work/index.html
 
-    if [[ ! -f ~/.zen/tmp/work/index.html ]]; then
+    if [[ ! -s ~/.zen/tmp/work/index.html ]]; then
         echo "UNAVAILABLE WISH! If you want to remove $W $voeu"
         echo "ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu"
         continue
     else
+        # Downloading "tag=tube"
+
+        echo "$MY_PATH/TUBE.tw.sh ~/.zen/tmp/work/index.html $voeu"
+        echo "PLEASE MANUAL RUN"
+        read
+
         # Update local copy
         cp ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html
     fi
