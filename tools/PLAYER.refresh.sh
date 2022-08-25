@@ -27,10 +27,14 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 
     ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html
 
+
     if [ ! -s ~/.zen/tmp/astro/index.html ]; then
         echo "ERROR IPNS TIMEOUT. Unchanged local backup..."
         continue
     else
+        ## Replace tube links with downloaded video
+        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
+
         echo "Upgrade TW local copy..."
         cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
     fi

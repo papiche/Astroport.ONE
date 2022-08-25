@@ -38,11 +38,8 @@ do
         echo "ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu"
         continue
     else
-        # Downloading "tag=tube"
-
-        echo "$MY_PATH/TUBE.tw.sh ~/.zen/tmp/work/index.html $voeu"
-        echo "PLEASE MANUAL RUN"
-        read
+        ## Replace tube links with downloaded video
+        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
 
         # Update local copy
         cp ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html

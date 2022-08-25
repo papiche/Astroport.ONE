@@ -127,6 +127,7 @@ select fav in  "${choices[@]}"; do
     "IMPRIMER VOEU")
         PS3='Choisissez un de vos voeux ___ '
         voeux=($(ls ~/.zen/game/players/$PLAYER/voeux 2>/dev/null))
+
         select voeu in "${voeux[@]}"; do
             case $voeu in
             *) echo "IMPRESSION $voeu"
