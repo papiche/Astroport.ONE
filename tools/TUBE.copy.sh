@@ -35,7 +35,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         rm -Rf ~/.zen/tmp/tube
         mkdir -p ~/.zen/tmp/tube
 
-        yt-dlp -f "best[ext=mp4]+best[height<=480]+best[filesize<300M]" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
+        yt-dlp -f "[ext=mp4]+best[height<=480]+[filesize<300M]" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
         FILE=$(ls -t ~/.zen/tmp/tube/ | tail -n 1)
 
         [[ ! -f ~/.zen/tmp/tube/$FILE  ]] && echo "No FILE -- EXIT --" && exit 1
