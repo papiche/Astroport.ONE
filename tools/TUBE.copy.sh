@@ -7,6 +7,14 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+# Need TW index.html path + IPNS publication Key (G1PUB format)
+# Search for "tube" tagged tiddlers to get URL
+# Download video, add to ipfs and import new tiddler
+# Publish !!
+
+## BEWARE, DO NOT MODIFY TW DURING THIS PROCESS !!
+# TODO use crontab to run regularly
+
 INDEX="$1"
 [[ ! $INDEX ]] && echo "Please provide path to source TW index.html" && exit 1
 [[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX" && exit 1
