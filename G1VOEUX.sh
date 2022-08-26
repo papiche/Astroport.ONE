@@ -169,7 +169,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     echo '[
   {
     "title": "'${PEPPER}'",
-    "type": "'image/jpeg'",
+    "type": "'text/vnd.tiddlywiki'",
     "ipns": "'/ipns/$VOEUXNS'",
     "ipfs": "'/ipns/$IVOEUPLAY'",
     "text": "'$TEXT'",
