@@ -240,7 +240,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     echo "CAPSULE A REVE $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
 
     echo "Hop, Une June pour ce Voeu"
-    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "G1Voeu $PEPPER $VOEUXNS" -m -v
+    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m -v
     echo "************************************************************"
     echo
 done
