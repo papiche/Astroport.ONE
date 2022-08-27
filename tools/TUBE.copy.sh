@@ -7,7 +7,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-# Need TW index.html path + IPNS publication Key (G1PUB format)
+# Need TW index.html path + IPNS publication Key (available in IPFS keystore)
 # Search for "tube" tagged tiddlers to get URL
 # Download video, add to ipfs and import new tiddler
 # Publish !!
