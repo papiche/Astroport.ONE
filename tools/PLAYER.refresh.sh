@@ -45,8 +45,15 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         fi
     fi
 
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    [[ $DIFF ]] && cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.old
+
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
+
+    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+
     echo "================================================"
     echo "$PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
     echo "================================================"
