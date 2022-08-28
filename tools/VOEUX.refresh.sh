@@ -42,35 +42,42 @@ do
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
 
         echo "DIFFERENCE ?"
-        diff ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html
-        echo "Update local copy"
-        # Update local copy
-        cp ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html
+        DIFF=$(diff ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html)
+
+        if [[ $DIFF ]]; then
+            echo "Backup & Upgrade TW local copy..."
+            cp -f ~/.zen/game/world/$voeu/index.html ~/.zen/game/world/$voeu/index.backup.html
+            cp ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html
+        else
+            echo "No change since last Refresh"
+        fi
     fi
 
     # RECORDING BLOCKCHAIN TIC
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    cp ~/.zen/game/world/$voeu/.chain ~/.zen/game/world/$voeu/.chain.old
+    [[ $DIFF ]] && cp ~/.zen/game/world/$voeu/.chain ~/.zen/game/world/$voeu/.chain.old
+
     IPUSH=$(ipfs add -Hq ~/.zen/game/world/$voeu/index.html | tail -n 1)
     ipfs name publish --key=${voeu} /ipfs/$IPUSH 2>/dev/null
 
-    echo $IPUSH > ~/.zen/game/world/$voeu/.chain
+    [[ $DIFF ]] && echo $IPUSH > ~/.zen/game/world/$voeu/.chain
     echo $MOATS > ~/.zen/game/world/$voeu/.moats
 
     rm -Rf ~/.zen/tmp/work
 
-    if [[ -d ~/.zen/game/players/$PLAYER/voeux/$voeu ]]; then
-        echo "==========================="
-        echo "Voeu$W : commande de suppression"
-        echo "ipfs key rm $voeu
-        rm -Rf ~/.zen/game/world/$voeu
-        rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu"
-        echo "==========================="
-        # read QUOI
-        # [[ "$QUOI" != "" ]] &&  ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu && echo "SUPRESSION OK"
-    fi
+#    if [[ -d ~/.zen/game/players/$PLAYER/voeux/$voeu ]]; then
+#        echo "==========================="
+#        echo "Voeu$W : commande de suppression"
+#        echo "ipfs key rm $voeu
+#        rm -Rf ~/.zen/game/world/$voeu
+#        rm -Rf ~/.zen/game/players/$PLAYER/voeux/$voeu"
+#        echo "==========================="
+#    fi
 
+    echo "================================================"
     echo "$W : http://127.0.0.1:8080/ipns/$voeuns"
+    echo "================================================"
+
 done
 
 exit 0

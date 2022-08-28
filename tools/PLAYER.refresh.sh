@@ -35,16 +35,21 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         ## Replace tube links with downloaded video
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
         echo "DIFFERENCE ?"
-        diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        echo "Upgrade TW local copy..."
-        cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
+        if [[ $DIFF ]]; then
+            echo "Backup & Upgrade TW local copy..."
+            cp -f ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.backup.html
+            cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        else
+            echo "No change since last Refresh"
+        fi
     fi
 
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW
-
+    echo "================================================"
     echo "$PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-
+    echo "================================================"
 
 done
 
