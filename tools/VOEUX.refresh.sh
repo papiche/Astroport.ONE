@@ -41,6 +41,9 @@ do
         ## Replace tube links with downloaded video
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
 
+        echo "DIFFERENCE ?"
+        diff ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html
+        echo "Update local copy"
         # Update local copy
         cp ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html
     fi

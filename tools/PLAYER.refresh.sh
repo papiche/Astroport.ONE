@@ -34,7 +34,8 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     else
         ## Replace tube links with downloaded video
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
-
+        echo "DIFFERENCE ?"
+        diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         echo "Upgrade TW local copy..."
         cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
     fi
