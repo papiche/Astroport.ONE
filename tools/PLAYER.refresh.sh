@@ -46,7 +46,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     fi
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ $DIFF ]] && cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.old
+    [[ $DIFF ]] && cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
 
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=$PLAYER /ipfs/$TW

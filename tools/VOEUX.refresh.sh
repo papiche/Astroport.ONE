@@ -55,7 +55,7 @@ do
 
     # RECORDING BLOCKCHAIN TIC
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ $DIFF ]] && cp ~/.zen/game/world/$voeu/.chain ~/.zen/game/world/$voeu/.chain.old
+    [[ $DIFF ]] && cp ~/.zen/game/world/$voeu/.chain ~/.zen/game/world/$voeu/.chain.$MOATS
 
     IPUSH=$(ipfs add -Hq ~/.zen/game/world/$voeu/index.html | tail -n 1)
     ipfs name publish --key=${voeu} /ipfs/$IPUSH 2>/dev/null
