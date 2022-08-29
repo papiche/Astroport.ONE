@@ -151,8 +151,8 @@ composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/G1WISH.png ${MY_P
 composite -compose Over -gravity NorthWest -geometry +300+0 /tmp/QRWISHLINK.png /tmp/astroport.png /tmp/one.png
 composite -compose Over -gravity NorthWest -geometry +320+280 /tmp/MIZLOGO.png /tmp/one.png /tmp/two.png
 
-convert -gravity northwest -pointsize 28 -fill black -draw "text 32,350 \"$PEPPER\"" /tmp/two.png /tmp/pep.png
-convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VOEU\"" /tmp/pep.png /tmp/voeu.png
+convert -gravity northwest -pointsize 28 -fill black -draw "text 32,350 \"Ğ1 VOEU\"" /tmp/two.png /tmp/pep.png
+convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPER\"" /tmp/pep.png /tmp/voeu.png
 
 
     # IMAGE DASN IPFS
