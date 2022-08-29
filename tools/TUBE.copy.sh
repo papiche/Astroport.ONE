@@ -57,6 +57,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
     "title": "'$FILE'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
+    "ipfs": "'${ILINK}'",
     "tags": "'ipfs youtube copylaradio ${MIME}'"
   }
 ]
