@@ -193,7 +193,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
         cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
         echo "Avancement blockchain TW $PLAYER : $MOATS"
-        cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.old
+        cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
 
         TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
         echo "ipfs name publish --key=$PLAYER /ipfs/$TW"
