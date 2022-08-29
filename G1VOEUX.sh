@@ -162,7 +162,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     ## Replace Template G1Voeu image
     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IVOEU}~g" ~/.zen/game/world/$WISHKEY/index.html
 
-    TEXT="<a target='_blank' href='"/ipns/${VOEUXNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a>"
+    TEXT="<a target='_blank' href='"/ipns/${VOEUXNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUXNS}"'>"${PEPPER}"</a>"
 
     # NEW IVEU TIDDLER
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
@@ -171,7 +171,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"Ğ1 VO
     "title": "'${PEPPER}'",
     "type": "'text/vnd.tiddlywiki'",
     "ipns": "'/ipns/$VOEUXNS'",
-    "ipfs": "'/ipns/$IVOEUPLAY'",
+    "ipfs": "'/ipfs/$IVOEUPLAY'",
     "text": "'$TEXT'",
     "tags": "'voeu ${PEPPER}'"
   }
