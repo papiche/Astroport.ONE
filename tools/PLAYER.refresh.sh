@@ -45,6 +45,21 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         fi
     fi
 
+##########################
+# Generate Corwdfunding Bars for each wish
+for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
+    wishname=$(cat ~/.zen/game/players/$PLAYER/voeux/$g1wish/.title)
+    echo "VOEU $wishname : $g1wish"
+    # TOTO Install g1barre on localhost !!
+    G1BARRE="https://g1sms.fr/g1barre/image.php?pubkey=$g1wish&target=1000&title=$wishname&node=g1.duniter.org&start_date=2022-08-01&display_pubkey=true&display_qrcode=true&progress_color=ff07a4"
+    echo "LANCEZ curl "'"$G1BARRE"'" "
+
+done
+
+
+############################
+
+
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $DIFF ]] && cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
 

@@ -154,8 +154,7 @@ composite -compose Over -gravity NorthWest -geometry +320+280 /tmp/MIZLOGO.png /
 convert -gravity northwest -pointsize 28 -fill black -draw "text 32,350 \"Ğ1 VOEU\"" /tmp/two.png /tmp/pep.png
 convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPER\"" /tmp/pep.png /tmp/voeu.png
 
-
-    # IMAGE DASN IPFS
+    # IMAGE DANS IPFS
     IVOEUPLAY=$(ipfs add -Hq /tmp/player.png | tail -n 1)
 
     IVOEU=$(ipfs add -Hq /tmp/voeu.png | tail -n 1)
