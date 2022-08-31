@@ -52,7 +52,7 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     echo "VOEU $wishname : $g1wish"
     # TOTO Install g1barre on localhost !!
     G1BARRE="https://g1sms.fr/g1barre/image.php?pubkey=$g1wish&target=1000&title=$wishname&node=g1.duniter.org&start_date=2022-08-01&display_pubkey=true&display_qrcode=true&progress_color=ff07a4"
-    echo "LANCEZ curl "'"$G1BARRE"'" "
+    echo "LANCEZ curl $G1BARRE "
 
 done
 
