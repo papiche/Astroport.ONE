@@ -59,7 +59,7 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     G1BARRE="https://g1sms.fr/g1barre/image.php?pubkey=$g1wish&target=1000&title=$wishname&node=g1.duniter.org&start_date=2022-08-01&display_pubkey=true&display_qrcode=true&progress_color=ff07a4"
     echo "$G1BARRE"
     rm -f ~/.zen/tmp/g1barre.png
-    curl --output ~/.zen/tmp/g1barre.png "$G1BARRE"
+    curl -o ~/.zen/tmp/g1barre.png "$G1BARRE"
      # Verify file exists & non/empy before copy new version in "world/$g1wish"
     [[ ! -s ~/.zen/game/world/$g1wish/g1barre.png ]] && echo "No Image ! ERROR. PLEASE VERIFY NETWORK LOCATION FOR G1BARRE" && continue
     cp ~/.zen/tmp/g1barre.png ~/.zen/game/world/$g1wish/g1barre.png
