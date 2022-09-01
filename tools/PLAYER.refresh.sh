@@ -75,7 +75,8 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
         echo "Update new g1barre: /ipfs/$IG1BAR"
     fi
 
-    if [[ $OLDIG1BAR == ""  ]]; then # Update
+if [[ $OLDIG1BAR == ""  ]]; then # CREATE Tiddler
+
     TEXT="<a target='_blank' href='"/ipns/${wishns}"'><img src='"/ipfs/${IG1BAR}"'></a><br><br><a target='_blank' href='"/ipns/${wishns}"'>"${wishname}"</a>"
 
     # NEW G1BAR TIDDLER
@@ -105,6 +106,10 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
         cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
     fi
 
+    echo $IG1BAR > ~/.zen/game/world/$g1wish/.ig1barre
+
+fi
+
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     echo "Avancement blockchain TW $PLAYER : $MOATS"
     cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
@@ -117,8 +122,6 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
     echo
-
-    fi
     ##################################################################"
     ##################################################################"
 
