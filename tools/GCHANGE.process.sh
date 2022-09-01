@@ -22,7 +22,7 @@ mkdir -p ~/.zen/tmp/gchange
 [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && echo "Astronaute inconnu. Connectez-vous"
 g1pub=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
-CESIUM="https://g1.data.le-sou.org"
+CESIUM="https://g1.data.presles.fr"
 GCHANGE="https://data.gchange.fr" # /user/profile/2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH?&_source_exclude=avatar._content
 
 #curl -sk ${CESIUM}/user/profile/${g1pub} -o ~/.zen/cache/cesium_profile.json
