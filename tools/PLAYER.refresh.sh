@@ -64,12 +64,13 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     [[ ! -s ~/.zen/tmp/g1barre.png ]] && echo "No Image ! ERROR. PLEASE VERIFY NETWORK LOCATION FOR G1BARRE" && continue
     cp ~/.zen/tmp/g1barre.png ~/.zen/game/world/$g1wish/g1barre.png
     ##################################################################"
-    echo "Updating PLAYER $PLAYER TW"
     OLDIG1BAR=$(cat ~/.zen/game/world/$g1wish/.ig1barre)
 
     ##################################################################"
     IG1BAR=$(ipfs add -Hq ~/.zen/game/world/$g1wish/g1barre.png | tail -n 1)
     if [[ $OLDIG1BAR != "" && $OLDIG1BAR != $IG1BAR ]]; then # Update
+        echo "NEW VALUE !! Updating G1VOEU Tiddler /ipfs/$IG1BAR"
+
         ## Replace IG1BAR tiddler ipfs value
         sed -i "s~${OLDIG1BAR}~${IG1BAR}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         echo $IG1BAR > ~/.zen/game/world/$g1wish/.ig1barre
@@ -125,10 +126,6 @@ fi
     echo
     ##################################################################"
     ##################################################################"
-
-
-
-
 
 
 done
