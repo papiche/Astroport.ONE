@@ -32,7 +32,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         echo "ERROR IPNS TIMEOUT. Unchanged local backup..."
         continue
     else
-        ## Replace tube links with downloaded video
+        ## Replace tube links with downloaded video ## TODO create LOG tiddler
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
         echo "DIFFERENCE ?"
         DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
@@ -89,8 +89,9 @@ if [[ $OLDIG1BAR == ""  ]]; then # CREATE Tiddler
     "type": "'text/vnd.tiddlywiki'",
     "ipns": "'/ipns/$wishns'",
     "ipfs": "'/ipfs/$IG1BAR'",
+    "player": "'/ipfs/$PLAYER'",
     "text": "'$TEXT'",
-    "tags": "'g1voeu g1${wishname}'"
+    "tags": "'g1voeu g1${wishname} $PLAYER'"
   }
 ]
 ' > ~/.zen/tmp/g1${wishname}.bank.json

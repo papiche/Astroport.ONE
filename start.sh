@@ -78,7 +78,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 echo "Votre MOA : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
 PS3="$PLAYER choisissez : __ "
-choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER VOEU" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
+choices=("AJOUTER VLOG" "CREER UN VOEU" "CREER G1ROND" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
@@ -124,8 +124,8 @@ select fav in  "${choices[@]}"; do
         #~/.zen/astrXbian/ajouter_video.sh
         ;;
 
-    "IMPRIMER VOEU")
-        PS3='Choisissez un de vos voeux ___ '
+    "CREER G1ROND")
+        PS3='Choisissez le voeux ___ '
         voeux=($(ls ~/.zen/game/players/$PLAYER/voeux 2>/dev/null))
 
         select voeu in "${voeux[@]}"; do
