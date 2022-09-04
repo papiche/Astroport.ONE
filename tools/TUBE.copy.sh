@@ -46,7 +46,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/tube/$FILE" | tail -n 1)
         echo "/ipfs/$ILINK ready"
 
-        MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$FILE" | cut -d ':' -f 2 | cut -d ' ' -f 2)
+        MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$FILE" | rev | cut -d ' ' -f 1 | rev)
 
         TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${FILE}"</h1>"
 

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>_TITLE_ in Astroport</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="Refresh" content="7;URL=/ipns/_IPNSLINK_/_G1PUB_/">
+    <link rel='stylesheet' href='/ipfs/QmdfupE5bVqM1qcxyD22t4y6REPLHP9j1C6mekJugKX4Mf' type='text/css' />
+    <link rel='stylesheet' href='/ipfs/QmbAmMY2m5QDaZnoHMQP7F7sRy2uWVfCE5QWyhA8fjeN4f' type='text/css' />
+
+    <link rel='icon' type='image/png' href='/ipfs/QmZEZVw7ZKJqceDNbCMd6YEy5Poxeg3RXMboqwwBrZpS8Q' />
+</head>
+<body>
+<header>
+    <h6>
+        <a href='/'><span>ASTROPORT</span> <q>_PLAYER_</q></a>
+    </h6>
+</header>
+<main>
+<article>
+
+    <h1>_TITLE_</h1>
+
+    <p>Lancement de la video dans 7 secondes...</p>
+
+    <p class="pubkey-and-copy-button">
+        Ce fichier vous est servi par une station amie. Faites lui un don pour la remercier&nbsp;:
+            <input type="text" id="pubkey" readonly value="_G1PUB_" />
+            <button id="copy">Tip !</button>
+    </p>
+
+    <p id="successMsg">
+        La clef de la station amie est maintenant copiée dans le presse-papier. Vous pouvez la coller dans le client Ğ1 de votre choix (Cesium par exemple) afin de faire votre don 😉
+    </p>
+    <script>
+        function copy() {
+
+            var copyText = document.querySelector("input#pubkey");
+            copyText.select();
+            document.execCommand("copy");
+
+            var successMsg = document.querySelector("#successMsg");
+            successMsg.style.opacity = "1";
+
+            var copyButton = document.querySelector("button#copy");
+            copyButton.style.animation = "none";
+
+        }
+
+
+        document.querySelector("button#copy").addEventListener("click", copy);
+    </script>
+</article>
+</main>
+</body>
+</html>

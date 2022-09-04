@@ -82,7 +82,9 @@ do
 
     echo "# CREATION TW"
     ##########################################################################################
-    # ipfs cat /ipfs/bafybeierk6mgrlwpowdcfpvibujhg2b6upjfl3gryw2k72f7smxt6cqtiu > ~/.zen/Astroport.ONE/templates/twdefault.html
+    # ipfs key import _MEDIAKEY_ ~/.zen/Astroport.ONE/templates/_MEDIAKEY_.keystore.key
+    ##############
+    # ipfs cat /ipfs/bafybeidi66vug7jl6lj2zxnhdd5ux27udo64yyl5kq7tehsmdvcg4675ay > ~/.zen/Astroport.ONE/templates/twdefault.html
     ##########################################################################################
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
 
@@ -97,7 +99,7 @@ do
 
     # IPNS KEY is WISHKEY / VOEUXNS
     sed -i "s~_MEDIAKEY_~${WISHKEY}~g" ~/.zen/game/world/$WISHKEY/index.html
-    sed -i "s~k2k4r8naeti1ny2hsk3a0ziwz22urwiu633hauluwopf4vwjk4x68qgk~${VOEUXNS}~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${VOEUXNS}~g" ~/.zen/game/world/$WISHKEY/index.html
     # ASTROPORT LOCAL IP RELAY == Smartphone doesn't resolve LAN DNS. So using Astroport Station IP
     sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
