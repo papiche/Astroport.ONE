@@ -35,17 +35,19 @@ select voeu in "${voeux[@]}"; do
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
         VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
         qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
-        convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 /tmp/QRWISHLINK.png
+        convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/QRWISHLINK.png
         TITLE=$(cat ~/.zen/game/world/$voeu/.pepper)
-        convert -gravity northwest -pointsize 40 -fill black -draw "text 250,2 \"$TITLE\"" /tmp/QRWISHLINK.png /tmp/g1voeu.png
+        convert -gravity northwest -pointsize 40 -fill black -draw "text 50,2 \"$TITLE\"" ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/g1voeu1.png
+        convert -gravity southeast -pointsize 40 -fill black -draw "text 50,2 \"$TITLE\"" ~/.zen/tmp/g1voeu1.png ~/.zen/tmp/g1voeu.png
+
         echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"
 
         LP=$(ls /dev/usb/lp* | head -n1)
         [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" && continue
 
         echo "IMPRESSION LIEN TW VOEU"
-        brother_ql_create --model QL-700 --label-size 62 /tmp/g1voeu.png > /tmp/toprint.bin 2>/dev/null
-        sudo brother_ql_print /tmp/toprint.bin $LP
+        brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/g1voeu.png > ~/.zen/tmp/toprint.bin 2>/dev/null
+        sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
 
         ;;
     esac
