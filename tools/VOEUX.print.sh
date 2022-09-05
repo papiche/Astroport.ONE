@@ -37,7 +37,7 @@ select voeu in "${voeux[@]}"; do
         qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
         convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 /tmp/QRWISHLINK.png
         TITLE=$(cat ~/.zen/game/world/$voeu/.pepper)
-        convert -gravity northwest -pointsize 35 -fill black -draw "text 250,5 \"$TITLE\"" /tmp/QRWISHLINK.png /tmp/g1voeu.png
+        convert -gravity northwest -pointsize 40 -fill black -draw "text 250,2 \"$TITLE\"" /tmp/QRWISHLINK.png /tmp/g1voeu.png
         echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"
 
         LP=$(ls /dev/usb/lp* | head -n1)
