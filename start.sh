@@ -78,7 +78,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 echo "Votre MOA : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
 PS3="$PLAYER choisissez : __ "
-choices=("AJOUTER VLOG" "CREER UN VOEU" "CREER G1ROND" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
+choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER QRVOEU" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
@@ -114,41 +114,15 @@ select fav in  "${choices[@]}"; do
     "AJOUTER VLOG")
         echo "Lancement Webcam..."
         ${MY_PATH}/tools/vlc_webcam.sh
-        #~/.zen/astrXbian/ajouter_video.sh
         ;;
 
     "CREER UN VOEU")
-        echo "QRCode à coller sur votre REVE"
+        echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
         ${MY_PATH}/G1VOEUX.sh
-        # ${MY_PATH}/tools/vlc_webcam.sh
-        #~/.zen/astrXbian/ajouter_video.sh
         ;;
 
-    "CREER G1ROND")
-        PS3='Choisissez le voeux ___ '
-        voeux=($(ls ~/.zen/game/players/$PLAYER/voeux 2>/dev/null))
-
-        select voeu in "${voeux[@]}"; do
-            case $voeu in
-            *) echo "IMPRESSION $voeu"
-                myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-                VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
-                qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
-                convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 /tmp/QRWISHLINK.png
-                TITLE=$(cat ~/.zen/game/world/$voeu/.pepper)
-                convert -gravity northwest -pointsize 35 -fill black -draw "text 250,5 \"$TITLE\"" /tmp/QRWISHLINK.png /tmp/g1voeu.png
-                echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"
-
-                LP=$(ls /dev/usb/lp* | head -n1)
-                [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" && continue
-
-                echo "IMPRESSION LIEN TW VOEU"
-                brother_ql_create --model QL-700 --label-size 62 /tmp/g1voeu.png > /tmp/toprint.bin 2>/dev/null
-                sudo brother_ql_print /tmp/toprint.bin $LP
-
-                ;;
-            esac
-        done
+    "IMPRIMER QRVOEU")
+        ${MY_PATH}/tools/VOEUX.print.sh
         ;;
 
     "QUITTER")

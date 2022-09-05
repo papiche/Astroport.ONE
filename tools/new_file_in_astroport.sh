@@ -162,7 +162,7 @@ if [[ $KEY ]]; then
     echo "$KEYFILE" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename
     # Publishing IPNS key
     echo "$KEY" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link
-    # CREATE .zen = ZEN economic value
+    # CREATE .zen = ZEN economic value counter
     touch ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.zen
     # CREATE other encrypted copies for friends depending DEFCON & stars
     # > STARGATE 1 - 2 - 3 - 4 - 5 !!
@@ -352,7 +352,11 @@ echo $NEWIPFS > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/
 
 echo "ipfs name publish --quieter --key=${MEDIAKEY} $NEWIPFS"
 IPNS=$(ipfs name publish --quieter --key="${MEDIAKEY}" $NEWIPFS)
-[[ "$IPNS" == "" ]] && echo "~~~ PROBLEM ~~~ ipfs name publish --quieter --key=${MEDIAKEY} $NEWIPFS" && IPNS="$(ipfs key list -l | grep -w ${MEDIAKEY} | cut -f 1 -d ' ')"
+[[ "$IPNS" == "" ]] && \
+echo "~~~ PROBLEM ~~~ ipfs name publish --quieter --key=${MEDIAKEY} $NEWIPFS" && \
+IPNS="$(ipfs key list -l | grep -w ${MEDIAKEY} | cut -f 1 -d ' ')"
+echo "${MEDIAKEY} : /ipns/$IPNS"
+
 ########################################################################
 ########################################################################
 
@@ -394,7 +398,7 @@ then
         RES=${FILE_RES%?}0p
         line="$CAT;${REFERENCE};$YEAR;$TITLE;$SAISON;;${IPNS};$RES;/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
     fi
-    echo "-------------------- UPDATE MY INDEX -----------------------------"
+    echo "-------------------- UPDATE ${PREFIX}ASTRXBIAN INDEX -----------------------------"
     echo "$line"
     echo "$line" >> ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
     echo "UPDATE IPNS ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/ajouter_video.txt"
@@ -406,7 +410,7 @@ then
     ## TODO: ACTIVATE SUB DEFCON 4 MODE = encrypt/decrypt file in $G1DEST subdirectory
     ########################################################################
     echo "----------------- REFRESH LOCAL KODI INDEX ----------------------"
-    cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN ~/.zen/game/players/$PLAYER/ipfs_swarm/.*/astroport/kodi/vstream/${PREFIX}ASTRXBIAN | sort | uniq > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${PREFIX}ASTRXBIAN
+    cat ~/.zen/game/players/$PLAYER/ipfs*/.*/astroport/kodi/vstream/${PREFIX}ASTRXBIAN | sort | uniq > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${PREFIX}ASTRXBIAN
 
 
     echo "----------------- PREPARING TIDDLER ----------------------"

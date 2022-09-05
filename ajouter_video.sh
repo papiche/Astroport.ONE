@@ -588,7 +588,7 @@ echo "~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh \"$HOME/astroport/${CA
 
 echo "rm -f /tmp/\${MEDIAKEY}.pass
 rm -f /tmp/\${MEDIAKEY}.dunikey ## REMOVE KEYS
-mv ~/astroport/Add_${MEDIAKEY}_script.sh ~/astroport/Done_${FILE_NAME}.sh
+mv ~/astroport/Add_${MEDIAKEY}_script.sh \"$HOME/astroport/Done_${FILE_NAME}.sh\"
 " >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
 chmod +x ~/astroport/Add_${MEDIAKEY}_script.sh
@@ -615,19 +615,9 @@ FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; 
 #fi
 ########################################################################
 
-## CHOOSE LIGHT OR COMPLETE
-if [ $1 ]; then
-    bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
-    [ $? == 0 ] && echo "${MEDIAKEY} is RECORDED in ASTROPORT.  GOOD." && exit 0
+zenity --warning --width 300 --text "Association de votre fichier à $MEDIAKEY"
 
-else
-    zenity --question --width 300 --text "OK! ~/astroport/Add_${MEDIAKEY}_script.sh ($FILE_SIZE). Voulez-vous lancer immédiatement l'ajout dans Astroport ?"; \
-    [ $? == 0 ] && bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265" \
-                        && [[ $(cat ~/.zen/game/players/.current/.playerns 2>/dev/null) ]] \
-                        && xdg-open "http://127.0.0.1:8080/ipns/$(cat ~/.zen/game/players/.current/.playerns)" \
-                        || ( zenity --warning --width 300 --text "Désolé une erreur est survenue... cat  /tmp/${MEDIAKEY}.log" && exit 1 )\
-fi
-
+bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
 
 zenity --warning --width 300 --text "Ajout du Tiddler $MEDIAKEY à votre TW 'moa' $PLAYER"
 
@@ -650,7 +640,7 @@ echo "${VOEUXLIST}"
 ## TODO MAKE FUNCTION, idem dans G1VOEUX !!
     echo "Nouveau MEDIAKEY dans MOA $PSEUDO / $PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
     tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
-                    --import ~/astroport/${TYPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "application/json" \
+                    --import ~/astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
     echo "PLAYER TW Update..."
