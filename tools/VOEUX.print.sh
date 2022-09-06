@@ -52,3 +52,5 @@ select voeu in "${voeux[@]}"; do
         ;;
     esac
 done
+
+## TODO EXPORT TW (LIGHT / HEAVY)

@@ -85,7 +85,7 @@ do
     # ipfs key import _MEDIAKEY_ ~/.zen/Astroport.ONE/templates/_MEDIAKEY_.keystore.key
     ##############
     # ipfs cat /ipfs/bafybeibqdoegifzejykmc3qw3e3drgsa5i7az6xwjlfcx7rbtcoj5unpkq > ~/.zen/Astroport.ONE/templates/twdefault.html
-    # HIDE CONTROL FROM https
+    # INTRODUCE HIDING CONTROL (read only from https) https $:/tags/Stylesheet
     # ipfs cat /ipfs/bafybeidkur2tfbmqwscgmkfh76vmbcqay2m4gznxv5emkenxeffmrgywky > ~/.zen/Astroport.ONE/templates/twdefault.html
     ##########################################################################################
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
