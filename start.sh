@@ -34,6 +34,10 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 ## CREATE AND OR CONNECT USER
    PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
     players=("NOUVEAU VISA" $(ls ~/.zen/game/players 2>/dev/null))
+    [[ ${#players[@]} -lt 3 && ! "$1" ]] && PLAYERONE="${players[1]}" && echo $PLAYERONE
+
+    ## MULTIPLAYER
+    if [[ ! $PLAYERONE ]]; then
     select fav in "${players[@]}"; do
         case $fav in
         "NOUVEAU VISA")
@@ -51,15 +55,20 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
             ;;
         esac
     done
+    PLAYER=$fav
 
-PLAYER=$fav
+    else
+    PLAYER=$PLAYERONE
+
+    fi
 
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-# DEVEL
-echo "Saisissez votre PASS -- DEBUG $(cat ~/.zen/game/players/.current/.pass 2>/dev/null) --"
-read pass
+ [[ $PLAYERONE ]] && pass=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
+
+########################################## DEVEL
+ [[ ! $pass ]] && echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY --" && read pass
 
 ## DECODE CURRENT PLAYER CRYPTO
 echo "********* DECODAGE SecuredSocketLayer *********"
@@ -67,16 +76,23 @@ rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
 openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
 [[ ! $? == 0 ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
+echo "________LOGIN OK____________";
+echo
+echo "DECHIFFRAGE CLEFS ASTRONAUTE"
+echo "Votre Pass Astroport.ONE  : $(cat ~/.zen/game/players/.current/.pass 2>/dev/null)"
 G1PUB=$(cat ~/.zen/tmp/${PLAYER}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 [ ! ${G1PUB} ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
-echo "________LOGIN OK____________";
-echo $G1PUB
+echo "Clef Publque Astronaute : "$G1PUB
+echo "ENTREE ACCORDEE"
 echo
 ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
-echo "Votre MOA : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+echo "$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) TW/Moa"
+echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+echo "Echangez vos 'Dessin de Moa' et reliez vous au réseau des Astroport !"
 
+echo
 PS3="$PLAYER choisissez : __ "
 choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER QRVOEU" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
 select fav in  "${choices[@]}"; do
