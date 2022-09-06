@@ -15,7 +15,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 # Get Player Name
-PLAYER="$1"
+PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ $PLAYER == "" ]] &&  echo "NO PLAYER - EXIT" && exit 1
 
 mkdir -p ~/.zen/tmp/gchange
 
@@ -25,15 +26,21 @@ g1pub=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' 
 CESIUM="https://g1.data.presles.fr"
 GCHANGE="https://data.gchange.fr" # /user/profile/2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH?&_source_exclude=avatar._content
 
-#curl -sk ${CESIUM}/user/profile/${g1pub} -o ~/.zen/cache/cesium_profile.json
-LON=$(cat ~/.zen/cache/cesium_profile.json | jq '._source.geoPoint.lon')
-LAT=$(cat ~/.zen/cache/cesium_profile.json | jq '._source.geoPoint.lat')
 
-curl -sk ${GCHANGE}/user/profile/${g1pub} -o ~/.zen/cache/GCHANGE_profile.json
-LON=$(cat ~/.zen/cache/GCHANGE_profile.json | jq '._source.geoPoint.lon')
-LAT=$(cat ~/.zen/cache/GCHANGE_profile.json | jq '._source.geoPoint.lat')
+tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'carte.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Carte'
+tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'gchange.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Gchange'
+tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'g1visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '"Dessin de Moa"'
 
-RAD="$1"
+GPS=$(cat ~/.zen/tmp/gchange/carte.json | jq -r .[].gps)
+DIST=$(cat ~/.zen/tmp/gchange/gchange.json | jq -r .[].distance)
+RECH=($(cat ~/.zen/tmp/gchange/gchange.json | jq -r .[].recherche))
+MOANFT=$(cat /home/fred/.zen/tmp/gchange/MOA.json | jq .[].text)
+
+# AJOUTER CHAMPS  à "Dessin de Moa"
+# IPFSNODEADDRESS
+
+RAD="$DIST"
 [[ ! $RAD ]] && RAD="50km"
 
 if [[ "$LON" != "null" ]]; then
@@ -56,7 +63,7 @@ curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_source=ti
    }' > /tmp/gchange.json || exit 1
 else
     echo "Aucune coordonnées geoPoint pour $g1pub"
-    sbotc publish '{"type":"post","text":"Ajouter sa géolocalisation dans Cesium+ permet de publier les annonces autour de chez soi..."}'
+    # Message tiddlywiki TODO
     exit 1
 fi
 TIMEBEFORE=$(date -u --date="-$DELAY" +"%s")
@@ -76,10 +83,10 @@ LASTDU=$(curl -s ${DUNITERURL}/blockchain/with/ud | jq '.result.blocks[]' | tail
 echo "DU = $LASTDU G1"
 
 for gID in $(cat /tmp/gchange.json | jq -r .hits.hits[]._id); do
-    
+
     NEW=""
-    
-    [[ ! -f ~/.zen/cache/gchange/$gID.json ]] && 
+
+    [[ ! -f ~/.zen/cache/gchange/$gID.json ]] &&
     NEW="true" \
     && curl -s --create-dirs -o ~/.zen/cache/gchange/$gID.json -s https://data.gchange.fr/market/record/$gID?_source=category,title,description,issuer,time,creationTime,location,address,city,price,unit,currency,thumbnail._content_type,thumbnail._content,picturesCount,type,stock,fees,feesCurrency,geoPoint \
     && sleep $((1 + RANDOM % 3))
@@ -91,10 +98,10 @@ for gID in $(cat /tmp/gchange.json | jq -r .hits.hits[]._id); do
     # [[ $type == "need" ]] && continue
     creationTime=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.creationTime)
     title=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.title)
-    
+
     currency=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.currency)
     price=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.price)
-    
+
     categoryname=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.category.name)
 
     [[ $price == null ]] && price="0"
@@ -102,10 +109,10 @@ for gID in $(cat /tmp/gchange.json | jq -r .hits.hits[]._id); do
     love="$love_LOVE"
     price=$(bc -l <<< "scale=2; $price / 100")
 
-    fullcount=$((fullcount+1)) && echo "DEBUG : $fullcount - $type - $price $currency - $title " 
+    fullcount=$((fullcount+1)) && echo "DEBUG : $fullcount - $type - $price $currency - $title "
     [[ $price == "0" ]] && love="..." && price="A débattre "
 
-    
+
     [[ $type == "offer" ]] && LINE="___OFFRE___[$title](https://data.gchange.fr/market/record/$gID/_share)_$love"
     [[ $type == "need" ]] && LINE="__DEMANDE__[$title](https://data.gchange.fr/market/record/$gID/_share)_$love"
 
