@@ -84,7 +84,7 @@ do
     ##########################################################################################
     # ipfs key import _MEDIAKEY_ ~/.zen/Astroport.ONE/templates/_MEDIAKEY_.keystore.key
     ##############
-    # ipfs cat /ipfs/bafybeidi66vug7jl6lj2zxnhdd5ux27udo64yyl5kq7tehsmdvcg4675ay > ~/.zen/Astroport.ONE/templates/twdefault.html
+    # ipfs cat /ipfs/bafybeibqdoegifzejykmc3qw3e3drgsa5i7az6xwjlfcx7rbtcoj5unpkq > ~/.zen/Astroport.ONE/templates/twdefault.html
     ##########################################################################################
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
 

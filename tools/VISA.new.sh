@@ -161,6 +161,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
 
+        ## ADD SYSTEM TW
         tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html \
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
