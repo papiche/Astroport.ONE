@@ -9,5 +9,5 @@ ME="${0##*/}"
 
 ## PROCESS TW BACKOFFICE TREATMENT
 
-~/.zen/Astroport.ONE/tools/VOEUX.refresh.sh
-~/.zen/Astroport.ONE/tools/PLAYER.refresh.sh
+~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
+~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh

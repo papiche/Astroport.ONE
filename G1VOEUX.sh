@@ -98,6 +98,9 @@ do
     sed -i "s~_WISHKEY_~${WISHKEY}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_NUMBER_~${SALT}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_SECRET_~${PEPPER}~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~_ASTROPORT_~${ASTRONAUTENS}~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~_QRSEC_~${myIP}~g" ~/.zen/game/world/$WISHKEY/index.html
+
 
     # IPNS KEY is WISHKEY / VOEUXNS
     sed -i "s~_MEDIAKEY_~${WISHKEY}~g" ~/.zen/game/world/$WISHKEY/index.html
