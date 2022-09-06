@@ -33,7 +33,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         continue
     else
         ## Replace tube links with downloaded video ## TODO create LOG tiddler
-        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/../tools/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
         echo "DIFFERENCE ?"
         DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
         if [[ $DIFF ]]; then

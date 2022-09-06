@@ -39,7 +39,7 @@ do
         continue
     else
         ## Replace tube links with downloaded video
-        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
+        $MY_PATH/../tools/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
 
         echo "DIFFERENCE ?"
         DIFF=$(diff ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html)
