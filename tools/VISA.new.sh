@@ -118,12 +118,12 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player)
 
 
-    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB # Prepare astrXbian sub-datastructure
+    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/G1SSB # Prepare astrXbian sub-datastructure
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
 
     qrencode -s 12 -o ~/.zen/game/players/$PLAYER/QR.png "$G1PUB"
-    cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/QR.png
-    echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
+    cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/QR.png
+    echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
     secFromDunikey=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep "sec" | cut -d ' ' -f2)
     echo "$secFromDunikey" > /tmp/${PSEUDO}.sec
@@ -139,34 +139,37 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     if [ ! -f ~/.zen/tmp/TW.html ]; then
 
         echo "Nouveau Canal TW Astronaute"
-        mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/
+        mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
 
-        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~_WISHKEY_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~_WISHKEY_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        sed -i "s~G1Voeu~G1Visa~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~G1Voeu~G1Visa~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
+        sed -i "s~Moa~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
         # La Clef IPNS porte comme nom G1PUB.
-        sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
-        sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         ## ADD SYSTEM TW
-        tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html \
+        tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                             --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-        [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         ## ID CARD
         convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
@@ -184,28 +187,28 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
         # INSERTED IMAGE IPFS
         IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
-        sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 else
 
-        cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+        cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 
 fi
 
     ## Copy Astro TW
-    [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html
+    [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
-    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html | tail -n 1)
-    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/.chain # Contains last IPFS backup PLAYER KEY
+    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
     echo "/ipfs/$IPUSH"
-    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/.moats
+    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
     ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
     # Lanch newly created TW
-#    cd ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/
-#    tiddlywiki $PLAYER --verbose --load ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/moa/index.html --listen port=8282
+#    cd ~/.zen/game/players/$PLAYER/ipfs/
+#    tiddlywiki $PLAYER --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --listen port=8282
 #    sleep 3
 #    killall node
 
@@ -215,8 +218,8 @@ fi
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
 
     # astrXbian compatible IPFS sub structure =>$XZUID
-    cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/_xbian.zuid
-    cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/.$PeerID/
+    cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/_xbian.zuid
+    cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/
     # PUBLIC Ŋ7 ZONE
 
     echo "$ASTRONAUTENS" > ~/.zen/game/players/$PLAYER/.playerns

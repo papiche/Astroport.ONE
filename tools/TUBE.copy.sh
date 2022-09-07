@@ -71,7 +71,6 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         tiddlywiki --verbose --load $INDEX \
                         --import ~/.zen/tmp/tube.json "application/json" \
                         --deletetiddlers '[tag[tube]]' \
-                        --deletetiddlers '"Dessin de Moa"' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
         if [[ -s ~/.zen/tmp/newindex.html ]]; then

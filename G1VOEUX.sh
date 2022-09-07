@@ -117,6 +117,7 @@ do
     tiddlywiki  --verbose --load ~/.zen/game/world/$WISHKEY/index.html \
                         --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                         --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
+                        --deletetiddlers '"Dessin de Moa"' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
     [[ -s ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
 
