@@ -237,21 +237,23 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo $IPUSH > ~/.zen/game/world/$WISHKEY/.chain
     echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
 
-    ## Creating Cesium+ Profil
-    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
-    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
-
-    echo "************************************************************"
-    echo "Hop, Une June pour ce Voeu"
-    echo $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUXNS G1Voeu $PEPPER"\' -m -v
-    echo "************************************************************"
-
-    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m -v
-    echo "************************************************************"
     echo
     echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 
     echo "CAPSULE A REVE $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
+
+    ech "## Creating Cesium+ Profil #### timeout long ... patience ...."
+    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
+    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
+
+    echo "************************************************************"
+    echo "Hop, UNE JUNE pour le Voeu $PEPPER"
+    echo $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUXNS G1Voeu $PEPPER"\' -m
+    echo "************************************************************"
+
+    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
+    echo "************************************************************"
+
 
 
 done
