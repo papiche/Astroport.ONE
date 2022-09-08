@@ -36,17 +36,33 @@ select voeu in "${vlist[@]}"; do
 
     *) echo "IMPRESSION $voeu"
         voeu=$(echo $voeu | cut -d ':' -f2) ## Get G1PUB part
+        TITLE=$(cat ~/.zen/game/world/$voeu/.pepper) ## Get Voeu title (pepper) = simple GUI form + Name collision => Voeu fusion
 
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
         VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
 
-        qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
-        convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/QRWISHLINK.png
-        TITLE=$(cat ~/.zen/game/world/$voeu/.pepper) ## Get Voeu title (pepper) = simple GUI form + Name collision => Voeu fusion
-        convert -gravity northwest -pointsize 40 -fill black -draw "text 50,2 \"$TITLE\"" ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/g1voeu1.png
-        convert -gravity southeast -pointsize 40 -fill black -draw "text 50,2 \"$TITLE\"" ~/.zen/tmp/g1voeu1.png ~/.zen/tmp/g1voeu.png
+        choices=("TW" "G1")
+        PS3='Imprimer le QR du TiddlyWiki TW ou celui de son G1 portefeuille ?'
+        select typ in "${choices[@]}"; do
 
-        echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"
+            case $typ in
+            "TW")
+                qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
+                convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/START.png
+                echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"
+                break
+            ;;
+            "G1")
+                qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/G1PUB.png" "$voeu"
+                convert $HOME/.zen/game/world/$voeu/G1PUB.png -resize 600 ~/.zen/tmp/START.png
+                break
+            ;;
+            esac
+        done
+
+        convert -gravity northwest -pointsize 40 -fill black -draw "text 50,2 \"$TITLE ($typ)\"" ~/.zen/tmp/START.png ~/.zen/tmp/g1voeu1.png
+        convert -gravity southeast -pointsize 40 -fill black -draw "text 50,2 \"($typ) $TITLE\"" ~/.zen/tmp/g1voeu1.png ~/.zen/tmp/g1voeu.png
+
 
         LP=$(ls /dev/usb/lp* | head -n1)
         [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" && continue
@@ -58,5 +74,3 @@ select voeu in "${vlist[@]}"; do
         ;;
     esac
 done
-
-## TODO EXPORT TW (LIGHT / HEAVY)
