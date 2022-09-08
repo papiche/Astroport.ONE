@@ -7,9 +7,12 @@
 # Extract last ads
 # Thank you @kimamila for cesium & gchange
 # ES backend http://www.elasticsearchtutorial.com/spatial-search-tutorial.html
+## THIS INTERNET NEEDS A BACKUP !!! OR YOU BECOME INTERNET .
+# https://web.archive.org/web/20210621185958/http://www.elasticsearchtutorial.com/spatial-search-tutorial.html
+# Create tiddler informing ... TODO Add keyword ... Use tag="annonce" for tiddlers propagation
 
-echo "REWRITING NEEDED"
-exit 1
+echo "TODO DEBUG. CONTINUE?"
+read
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -27,21 +30,49 @@ CESIUM="https://g1.data.presles.fr"
 GCHANGE="https://data.gchange.fr" # /user/profile/2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH?&_source_exclude=avatar._content
 
 
-tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'carte.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Carte'
+tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'carte.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Carte'
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'gchange.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Gchange'
-tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'g1visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
-tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '"Dessin de Moa"'
+tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'g1visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
 
 GPS=$(cat ~/.zen/tmp/gchange/carte.json | jq -r .[].gps)
+echo $GPS
 DIST=$(cat ~/.zen/tmp/gchange/gchange.json | jq -r .[].distance)
+echo $DIST
 RECH=($(cat ~/.zen/tmp/gchange/gchange.json | jq -r .[].recherche))
+echo "${RECH[@]}"
 MOANFT=$(cat /home/fred/.zen/tmp/gchange/MOA.json | jq .[].text)
+echo $MOANFT < xdg-open
+
+LAT=$(echo $GPS | cut -d ',' -f 1)
+echo $LAT
+LON=$(echo $GPS | cut -d ',' -f 2)
+echo $LON
 
 # AJOUTER CHAMPS  à "Dessin de Moa"
-# IPFSNODEADDRESS
+# IPFSNODEADDRESS for IPFS layer optimization
 
 RAD="$DIST"
 [[ ! $RAD ]] && RAD="50km"
+
+echo curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_source=title' -d '
+   {
+     "size": 200,
+     "query": {
+        "bool": {
+            "filter": [{
+                "geo_distance": {
+                    "distance": "'$RAD'",
+                    "geoPoint": {
+                        "lat": '$LAT',
+                        "lon": '$LON'
+                    }
+                }
+            }]
+        }
+     }
+   }'
+
 
 if [[ "$LON" != "null" ]]; then
 curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_source=title' -d '
@@ -69,63 +100,44 @@ fi
 TIMEBEFORE=$(date -u --date="-$DELAY" +"%s")
 TIMESTAMP=$(date -u +"%s")
 TOTAL=$(cat /tmp/gchange.json | jq .hits.total)
-echo 'tail -f ~/.zen/cache/gchange.txt'
-echo 'Annonces_Gchange' > ~/.zen/cache/gchange.txt
-echo "Portefeuille_[June_:heart:](https://demo.cesium.app/#/app/wot/$g1pub/)" >> ~/.zen/cache/gchange.txt
-echo "Carte_[$RAD](https://www.openstreetmap.org/#map=10/$LAT/$LON) " >> ~/.zen/cache/gchange.txt
+echo 'tail -f ~/.zen/tmp/gchange.txt'
+echo 'Annonces_Gchange' > ~/.zen/tmp/gchange.txt
+echo "Portefeuille_[June_:heart:](https://demo.cesium.app/#/app/wot/$g1pub/)" >> ~/.zen/tmp/gchange.txt
+echo "Carte_[$RAD](https://www.openstreetmap.org/#map=10/$LAT/$LON) " >> ~/.zen/tmp/gchange.txt
 chunk=0
 fullcount=0
 
-DUNITERNODE=$($MY_PATH/tools/duniter_getnode.sh)
-DUNITERURL="https://$DUNITERNODE"
-LASTDU=$(curl -s ${DUNITERURL}/blockchain/with/ud | jq '.result.blocks[]' | tail -n 1);
-[[ $LASTDU != "" ]] && LASTDU=$(curl -s ${DUNITERURL}/blockchain/block/${LASTDU} | jq '.dividend')
-echo "DU = $LASTDU G1"
 
 for gID in $(cat /tmp/gchange.json | jq -r .hits.hits[]._id); do
 
     NEW=""
 
-    [[ ! -f ~/.zen/cache/gchange/$gID.json ]] &&
+    [[ ! -f ~/.zen/tmp/gchange/$gID.json ]] &&
     NEW="true" \
-    && curl -s --create-dirs -o ~/.zen/cache/gchange/$gID.json -s https://data.gchange.fr/market/record/$gID?_source=category,title,description,issuer,time,creationTime,location,address,city,price,unit,currency,thumbnail._content_type,thumbnail._content,picturesCount,type,stock,fees,feesCurrency,geoPoint \
+    && curl -s --create-dirs -o ~/.zen/tmp/gchange/$gID.json -s https://data.gchange.fr/market/record/$gID?_source=category,title,description,issuer,time,creationTime,location,address,city,price,unit,currency,thumbnail._content_type,thumbnail._content,picturesCount,type,stock,fees,feesCurrency,geoPoint \
     && sleep $((1 + RANDOM % 3))
 
-    type=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.type)
-    stock=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.stock)
+    type=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.type)
+    stock=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.stock)
     [[ $stock == 0 ]] && continue
 
     # [[ $type == "need" ]] && continue
-    creationTime=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.creationTime)
-    title=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.title)
+    creationTime=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.creationTime)
+    title=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.title)
 
-    currency=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.currency)
-    price=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.price)
+    currency=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.currency)
+    price=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.price)
 
-    categoryname=$(cat ~/.zen/cache/gchange/$gID.json | jq -r ._source.category.name)
+    categoryname=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.category.name)
 
     [[ $price == null ]] && price="0"
-    [[ $currency == "g1" ]] && love=$(bc -l <<< "scale=2; $price / $LASTDU * 100") || love="?.??"
-    love="$love_LOVE"
-    price=$(bc -l <<< "scale=2; $price / 100")
-
-    fullcount=$((fullcount+1)) && echo "DEBUG : $fullcount - $type - $price $currency - $title "
-    [[ $price == "0" ]] && love="..." && price="A débattre "
-
+    love="$price $currency"
 
     [[ $type == "offer" ]] && LINE="___OFFRE___[$title](https://data.gchange.fr/market/record/$gID/_share)_$love"
     [[ $type == "need" ]] && LINE="__DEMANDE__[$title](https://data.gchange.fr/market/record/$gID/_share)_$love"
 
-    [[ $NEW == "true" ]] && echo "$LINE" >> ~/.zen/cache/gchange.txt && chunk=$((chunk+1)) && echo $chunk
+    [[ $NEW == "true" ]] && echo "$LINE" >> ~/.zen/tmp/gchange.txt && chunk=$((chunk+1)) && echo $chunk
 
 done
-echo "$chunk_nouvelles_annonces_($TOTAL)" >> ~/.zen/cache/gchange.txt
+echo "$chunk_nouvelles_annonces_($TOTAL)" >> ~/.zen/tmp/gchange.txt
 
-## TODO AUTOMATIC PUBLISHING \n and message size problem ??
-if [[ $(cat ~/.zen/cache/gchange.txt | wc -c) -lt 8000 ]]; then
-    export raw="$(cat ~/.zen/cache/gchange.txt)"
-    annonces=$(node -p "JSON.stringify(process.env.raw)")
-    sbotc publish '{"type":"post","text":'$annonces'}'
-fi
-# EXTRA COULD CREATE IT'S OWN MAP with https://github.com/zicmama/tile-stitch.git
-# And magick to overlay... But best would be a local map proxy...
