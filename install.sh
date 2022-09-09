@@ -24,20 +24,20 @@ echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
 [[ "$USER" != "xbian" ]] &&\
-    for i in x11-utils xclip zenity handbrake*; do\
+    for i in x11-utils xclip zenity; do\
         [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ] &&\
             echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";\
             sudo apt install -y $i;
     done
 
-for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-dev python3-pip python3-setuptools python3-wheel python3-dotenv mpack libssl-dev libffi-dev; do
+for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
     fi
 done
 
-for i in build-essential qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* cargo detox nmap httrack html2text ssmtp imagemagick ttf-mscorefonts-installer libcurl4-openssl-dev; do
+for i in qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick ttf-mscorefonts-installer; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -71,7 +71,7 @@ echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo
 python3 -m pip install -U pip
 python3 -m pip install -U setuptools wheel
 python3 -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy
-python3 -m pip install -U nicotine-plus silkaj
+python3 -m pip install -U silkaj
 python3 -m pip install -U protobuf==3.19.0
 
 
@@ -95,39 +95,32 @@ sudo ln -f -s  /usr/bin/python3 /usr/bin/python
 
 
 ########################################################################
-echo "=== Clonage git CODE 'astrXbian' + 'Astroport.ONE' depuis https://git.p2p.legal"
+echo "=== Clonage git CODE  'Astroport.ONE' depuis https://git.p2p.legal"
 mkdir -p ~/.zen
 cd ~/.zen
-git clone https://git.p2p.legal/axiom-team/astrXbian.git
 git clone https://git.p2p.legal/qo-op/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
 
 ## Scripts pour systemd ou InitV (xbian)
 echo "=== Astroport SYSTEM IPFS"
-~/.zen/astrXbian/.install/ipfs_alone.sh
+~/.zen/Astroport.ONE/tools/ipfs_setup.sh
 
-########################################################################
-echo "=== IMPORT configuration ASTROPORT dans ~/.kodi"
-cp -Rf ~/.zen/astrXbian/.install/.kodi ~/
 
 ########################################################################
 echo "=== Configuration jaklis: Centre de communication CESIUM+ GCHANGE+"
 cd $MY_PATH/toos/jaklis
 ./setup.sh
 
-########################################################################
-echo "=== Sécurisation DEFCON SUDOERS FAIL2BAN"
 ## XBIAN fail2ban ERROR correction ##
 #[....] Starting authentication failure monitor: fail2ban No file(s) found for glob /var/log/auth.log
 [[ "$USER" == "xbian" ]] && sudo sed -i "s/auth.log/faillog/g" /etc/fail2ban/paths-common.conf
-# NODE activates fail2ban IN zen/ipfs_SWARM_refresh.sh
 
 ### MODIFIYING /etc/sudoers ###
 [[ "$USER" == "xbian" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/astroport')
 
 # PERSONNAL DEFCON LEVEL
-# cp ~/.zen/astrXbian/DEFCON ~/.zen/
+# cp ~/.zen/Astroport.ONE/DEFCON ~/.zen/
 
 if [[ "$USER" == "xbian" ]]
 then
@@ -158,7 +151,7 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
 
 echo "## INSTALL open_with_linux.py ##
 ## https://darktrojan.github.io/openwith/webextension.html"
-~/.zen/astrXbian/open_with_linux.py install
+~/.zen/Astroport.ONE/open_with_linux.py install
 
 echo ">>> INFO : Ajoutez l'extension 'OpenWith' à votre navigateur !!
 # https://addons.mozilla.org/firefox/addon/open-with/
@@ -203,10 +196,12 @@ ipfs config --json Experimental.Libp2pStreamMounting true
 ipfs config --json Experimental.P2pHttpProxy true
 ipfs config --json Swarm.ConnMgr.LowWater 0
 ipfs config --json Swarm.ConnMgr.HighWater 0
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
 
+## TODO ADPAT PERMISSIONS
 ipfs config Addresses.API "/ip4/0.0.0.0/tcp/5001"
 ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
 
@@ -215,8 +210,6 @@ ipfs bootstrap rm --all
 ###########################################
 # BOOTSTRAP NODES ARE ADDED LATER
 ###########################################
-# AVOID CONFLICT WITH KODI ./.install/.kodi/userdata/guisettings.xml
-ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
 
 [[ "$USER" != "xbian" ]] && sudo systemctl restart ipfs
 
