@@ -47,7 +47,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 
     # Get PLAYER wallet amount
     BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    echo "MONTANT (G1) $BAL"
+    echo "PLAYER : (G1) $BAL"
 
 ##########################
 # Generate G1BARRE for each wish
@@ -70,6 +70,8 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     ##################################################################"
     OLDIG1BAR=$(cat ~/.zen/game/world/$g1wish/.ig1barre)
 
+    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -p $g1wish balance)
+    echo "MONTANT (G1) $BAL"
     ##################################################################"
     IG1BAR=$(ipfs add -Hq ~/.zen/game/world/$g1wish/g1barre.png | tail -n 1)
     if [[ $OLDIG1BAR != "" && $OLDIG1BAR != $IG1BAR ]]; then # Update
