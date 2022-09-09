@@ -187,6 +187,57 @@ else
     exit 0
 fi
 
+###########################################
+# ACTIVATE IPFS OPTIONS: #swarm0 INIT
+###########################################
+### IMPORTANT !!!!!!! IMPORTANT !!!!!!
+###########################################
+# DHT PUBSUB mode
+ipfs config Pubsub.Router gossipsub
+# MAXSTORAGE = 1/2 available
+availableDiskSize=$(df -P ~/ | awk 'NR>1{sum+=$4}END{print sum}')
+diskSize="$((availableDiskSize / 2))"
+ipfs config Datastore.StorageMax $diskSize
+## Activate Rapid "ipfs p2p"
+ipfs config --json Experimental.Libp2pStreamMounting true
+ipfs config --json Experimental.P2pHttpProxy true
+ipfs config --json Swarm.ConnMgr.LowWater 0
+ipfs config --json Swarm.ConnMgr.HighWater 0
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
+
+ipfs config Addresses.API "/ip4/0.0.0.0/tcp/5001"
+ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
+
+######### CLEAN DEFAULT BOOTSTRAP TO STAY INVISIBLE ###########
+ipfs bootstrap rm --all
+###########################################
+# BOOTSTRAP NODES ARE ADDED LATER
+###########################################
+# AVOID CONFLICT WITH KODI ./.install/.kodi/userdata/guisettings.xml
+ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
+
+[[ "$USER" != "xbian" ]] && sudo systemctl restart ipfs
+
+########################################################################
+# SUDO permissions
+########################################################################
+## USED FOR fail2ban-client (DEFCON)
+echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/fail2ban-client" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/fail2ban-client')
+## USED FOR RAMDISK (video live streaming)
+echo "$USER ALL=(ALL) NOPASSWD:/bin/mount" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/mount')
+echo "$USER ALL=(ALL) NOPASSWD:/bin/umount" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/umount')
+## USED FOR SYSTEM UPGRADE
+echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/apt-get" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/apt-get')
+echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/apt" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/apt')
+## USED FOR "systemctl restart ipfs"
+echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
+
+## brother_ql_print
+echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
+
+
 # MAIN # -f ~/.zen/secret.june (ISOConfig déjà lancé) ##
 else
 

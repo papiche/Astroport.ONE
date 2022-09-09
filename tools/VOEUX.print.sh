@@ -47,6 +47,8 @@ select voeu in "${vlist[@]}"; do
 
             case $typ in
             "TW")
+                echo "Changer de Gateway http://$myIP:8080 ?"
+                read GW && [[ ! $GW ]] && GW="http://$myIP:8080"
                 qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
                 convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/START.png
                 echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"

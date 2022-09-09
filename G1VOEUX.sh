@@ -242,7 +242,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     echo "CAPSULE A REVE $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
 
-    ech "## Creating Cesium+ Profil #### timeout long ... patience ...."
+    echo "## Creating Cesium+ Profil #### timeout long ... patience ...."
     $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
 
