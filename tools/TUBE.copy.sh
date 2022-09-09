@@ -36,7 +36,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         mkdir -p ~/.zen/tmp/tube
 
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
-        yt-dlp -f "bv*[height<=480]+ba/b[height<=480] / wv*+ba/w" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
+        yt-dlp -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / wv*+ba/w" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s"yt-dlp -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / wv*+ba/w" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
         FILE=$(ls -t ~/.zen/tmp/tube/ | tail -n 1)
 
         [[ ! -f ~/.zen/tmp/tube/$FILE  ]] && echo "No FILE -- EXIT --" && exit 1
