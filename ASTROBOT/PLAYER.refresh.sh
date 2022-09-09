@@ -45,6 +45,10 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         fi
     fi
 
+    # Get PLAYER wallet amount
+    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    echo "MONTANT (G1) $BAL"
+
 ##########################
 # Generate G1BARRE for each wish
 for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
@@ -63,9 +67,6 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
      # Verify file exists & non/empy before copy new version in "world/$g1wish"
     [[ ! -s ~/.zen/tmp/g1barre.png ]] && echo "No Image ! ERROR. PLEASE VERIFY NETWORK LOCATION FOR G1BARRE" && continue
     cp ~/.zen/tmp/g1barre.png ~/.zen/game/world/$g1wish/g1barre.png
-    # Get wallet amount
-    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    echo "MONTANT (G1) $BAL"
     ##################################################################"
     OLDIG1BAR=$(cat ~/.zen/game/world/$g1wish/.ig1barre)
 
