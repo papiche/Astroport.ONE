@@ -63,6 +63,9 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
      # Verify file exists & non/empy before copy new version in "world/$g1wish"
     [[ ! -s ~/.zen/tmp/g1barre.png ]] && echo "No Image ! ERROR. PLEASE VERIFY NETWORK LOCATION FOR G1BARRE" && continue
     cp ~/.zen/tmp/g1barre.png ~/.zen/game/world/$g1wish/g1barre.png
+    # Get wallet amount
+    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    echo "MONTANT (G1) $BAL"
     ##################################################################"
     OLDIG1BAR=$(cat ~/.zen/game/world/$g1wish/.ig1barre)
 
@@ -71,12 +74,13 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     if [[ $OLDIG1BAR != "" && $OLDIG1BAR != $IG1BAR ]]; then # Update
         echo "NEW VALUE !! Updating G1VOEU Tiddler /ipfs/$IG1BAR"
 
-        ## Replace IG1BAR tiddler ipfs value
+        ## Replace IG1BAR "in TW" ipfs value (hash unicity is cool !!)
         sed -i "s~${OLDIG1BAR}~${IG1BAR}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         echo $IG1BAR > ~/.zen/game/world/$g1wish/.ig1barre
         echo "Update new g1barre: /ipfs/$IG1BAR"
     fi
 
+### NO OLDIG1BAR, MEANS FIRST RUN
 if [[ $OLDIG1BAR == ""  ]]; then # CREATE Tiddler
 
     TEXT="<a target='_blank' href='"/ipns/${wishns}"'><img src='"/ipfs/${IG1BAR}"'></a><br><br><a target='_blank' href='"/ipns/${wishns}"'>"${wishname}"</a>"
@@ -112,6 +116,8 @@ if [[ $OLDIG1BAR == ""  ]]; then # CREATE Tiddler
     echo $IG1BAR > ~/.zen/game/world/$g1wish/.ig1barre
 
 fi
+
+
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     echo "Avancement blockchain TW $PLAYER : $MOATS"
