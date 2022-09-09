@@ -26,7 +26,7 @@ done
 echo "${vlist[@]}"
 
 
-PS3='Choisissez le voeux ___ '
+PS3='Choisissez le TW à exporter ___ '
 voeux=($(ls ~/.zen/game/players/$PLAYER/voeux 2>/dev/null) "QUITTER")
 
 select voeu in "${vlist[@]}"; do
@@ -35,29 +35,19 @@ select voeu in "${vlist[@]}"; do
         exit 0
     ;;
 
-    *) echo "IMPRESSION $voeu"
+    *) echo "OK pour $voeu"
         voeu=$(echo $voeu | cut -d ':' -f2) ## Get G1PUB part
-
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-        VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
+        VOEUNS=$(ipfs key list -l | grep -w $voeu | cut -d ' ' -f1)
+        echo "/ipns/$VOEUNS"
 
-        qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "http://$myIP:8080/ipns/$VOEUXNS"
-        convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/QRWISHLINK.png
-        TITLE=$(cat ~/.zen/game/world/$voeu/.pepper) ## Get Voeu title (pepper) = simple GUI form + Name collision => Voeu fusion
-        convert -gravity northwest -pointsize 40 -fill black -draw "text 50,2 \"$TITLE\"" ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/g1voeu1.png
-        convert -gravity southeast -pointsize 40 -fill black -draw "text 50,2 \"$TITLE\"" ~/.zen/tmp/g1voeu1.png ~/.zen/tmp/g1voeu.png
+        ipfs --timeout 12s cat /ipns/$VOEUNS > ~/.zen/tmp/index.html
+        [[ ! -s ~/.zen/tmp/index.html ]] && echo "TIMEOUT ERROR" && break
 
-        echo " QR code $TITLE  : http://$myIP:8080/ipns/$VOEUXNS"
+        tiddlywiki --load ~/.zen/tmp/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[ipfs]]' ## TUBE.copy.sh Tiddlers
 
-        LP=$(ls /dev/usb/lp* | head -n1)
-        [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" && continue
-
-        echo "IMPRESSION LIEN TW VOEU"
-        brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/g1voeu.png > ~/.zen/tmp/toprint.bin 2>/dev/null
-        sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
+        cat ~/.zen/tmp/tiddlers.json | jq -r
 
         ;;
     esac
 done
-
-## TODO EXPORT TW (LIGHT / HEAVY)

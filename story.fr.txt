@@ -28,3 +28,12 @@ Eau chaude
 Puit canadien
 Compost Papin
 Mur en canettes
+
+
+Astroport forme une strucutre informationnelle chainées faites de "TiddlyWiki" (TW) publiés sur IPFS.
+Chaque soir à 20h12, Astro se met en marche pour
+
+- analyser les "tiddlers" du TW "Astronaute"
+- repérer les amis dans IPFS (ayant échangé leur "Dessin de Moa") et récupérer leur TW.
+- enfin opérer les enrichissements informationnels selon les canaux partagés et les règles établies (CrossTagging, PIN contract, Web Scrapping, etc ...)
+
