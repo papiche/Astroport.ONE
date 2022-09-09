@@ -422,7 +422,7 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
         TEXT="<video controls><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>"
         MIME="text/vnd.tiddlywiki"
-        TAGS="${CAT} astroport $GENRE"
+        TAGS="${CAT} astroport $GENRE ipfs"
         CANON=''
     else
         TEXT='${MEDIAKEY}'
