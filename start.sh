@@ -30,6 +30,7 @@ echo
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
 YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP" && exit 1
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 ## CREATE AND OR CONNECT USER
    PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
@@ -83,10 +84,18 @@ echo "Votre Pass Astroport.ONE  : $(cat ~/.zen/game/players/.current/.pass 2>/de
 G1PUB=$(cat ~/.zen/tmp/${PLAYER}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 [ ! ${G1PUB} ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
-echo "Clef Publque Astronaute : "$G1PUB
+echo "Clef Publque Astronaute : $G1PUB"
 echo "ENTREE ACCORDEE"
 echo
 ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
+
+## IPFSNODEID SIGNALING ##
+[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
+ROUTING=$(ipfs add -q ~/.zen/game/astronautes.txt)
+echo "PUBLISHING IPFSNODEID / Astronaute List"
+ipfs name publish /ipfs/$ROUTING
+######################
+
 
 echo "$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) TW/Moa"
 echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"

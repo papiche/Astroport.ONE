@@ -140,6 +140,9 @@ done
 
 
 ############################
+## ASTRONAUTE SIGNALING ##
+[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
+############################
 
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -156,5 +159,10 @@ done
     echo "================================================"
 
 done
+
+## IPFSNODEID ROUTING
+ROUTING=$(ipfs add -q ~/.zen/game/astronautes.txt)
+echo "PUBLISHING IPFSNODEID / Astronaute List"
+ipfs name publish /ipfs/$ROUTING
 
 exit 0
