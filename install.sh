@@ -23,17 +23,21 @@ echo "Appuyez sur ENTRER pour commencer."; read TEST;  [[ "$TEST" != "" ]] && ec
 echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
-[[ "$USER" != "xbian" ]] &&\
+[[ "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11']] &&\
     for i in x11-utils xclip zenity; do\
         [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ] &&\
             echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";\
             sudo apt install -y $i;
+            [[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+
     done
 
 for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
+        [[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+
     fi
 done
 
@@ -41,17 +45,20 @@ for i in qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
+        [[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+
     fi
 done
 
-### Install tiddlywiki node.js
+##########################################################
+echo "### Install tiddlywiki node.js"
 sudo npm install -g tiddlywiki
+[[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+##########################################################
 
-
-
-[[ ! $(which kodi) && "$USER" != "xbian" ]] &&\
-    echo ">>> Installation Kodi + Vstream = VOTRE VIDEOTHEQUE ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";\
-    sudo apt-get install kodi -y;\
+[[ ! $(which kodi) && "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11' ]] && \
+    echo ">>> Installation Kodi + Vstream = VOTRE VIDEOTHEQUE ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"; \
+    sudo apt-get install kodi -y; \
     ${MY_PATH}/.install/kodi_uqload_downloader.sh
 
 # echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' "
@@ -109,7 +116,7 @@ echo "=== Astroport SYSTEM IPFS"
 
 ########################################################################
 echo "=== Configuration jaklis: Centre de communication CESIUM+ GCHANGE+"
-cd $MY_PATH/toos/jaklis
+cd $MY_PATH/tools/jaklis
 ./setup.sh
 
 ## XBIAN fail2ban ERROR correction ##
@@ -151,8 +158,7 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
 
 echo "## INSTALL open_with_linux.py ##
 ## https://darktrojan.github.io/openwith/webextension.html"
-~/.zen/Astroport.ONE/open_with_linux.py install
-
+[[ $XDG_SESSION_TYPE == 'x11' ]] && ~/.zen/Astroport.ONE/open_with_linux.py install; \
 echo ">>> INFO : Ajoutez l'extension 'OpenWith' à votre navigateur !!
 # https://addons.mozilla.org/firefox/addon/open-with/
 # https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno"
@@ -166,7 +172,7 @@ then
     read
     # ~/.zen/Astroport.ONE/adventure.sh
  #
-    ~/.zen/astrXbian/ISOconfig.sh
+ #  ~/.zen/astrXbian/ISOconfig.sh
 else
     ## Rpi Xbian install.
     cat /etc/rc.local | grep -Ev "exit 0" > /tmp/new.rc.local ## REMOVE "exit 0"
