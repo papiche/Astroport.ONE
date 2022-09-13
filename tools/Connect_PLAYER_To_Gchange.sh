@@ -29,17 +29,17 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "http
 ########################################################################
 echo "BECOME FRIEND with A_boostrap_nodes.txt"
 ########################################################################
-for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
-do
-if [[ $bootnode != "" ]]; then
-    ipfsnodeid=${bootnode##*/}
-    g1node=$(~/.zen/astrXbian/zen/tools/ipfs_to_g1.py $ipfsnodeid)
-    echo "SENDING STAR TO BOOTSTRAP NODE : $g1node"
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $g1node -n 1
-    ### DELETE
-    # jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" unstars -p $g1node
-fi
-done
+#for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+#do
+#if [[ $bootnode != "" ]]; then
+#    ipfsnodeid=${bootnode##*/}
+#    g1node=$(~/.zen/astrXbian/zen/tools/ipfs_to_g1.py $ipfsnodeid)
+#    echo "SENDING STAR TO BOOTSTRAP NODE : $g1node"
+#    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $g1node -n 1
+#    ### DELETE
+#    # jaklis.py -k ~/.zen/secret.dunikey -n "https://data.gchange.fr" unstars -p $g1node
+#fi
+#done
 
 ########################################################################
 # echo 'Creating "ipfstryme" message'
