@@ -33,12 +33,10 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 ## CREATE AND OR CONNECT USER
-   PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
+    PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
     players=("NOUVEAU VISA" "IMPORT GVISA" $(ls ~/.zen/game/players 2>/dev/null))
-    [[ ${#players[@]} -lt 3 && ! "$1" ]] && PLAYERONE="${players[1]}" && echo $PLAYERONE
-
     ## MULTIPLAYER
-    if [[ ! $PLAYERONE ]]; then
+
     select fav in "${players[@]}"; do
         case $fav in
         "NOUVEAU VISA")
@@ -68,10 +66,6 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
     done
     PLAYER=$fav
 
-    else
-    PLAYER=$PLAYERONE
-
-    fi
 
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
