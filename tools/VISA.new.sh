@@ -18,10 +18,11 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ASTRO=""
     echo "$SALT"
     echo "$PEPPER"
-    ipfs key rm gchange
+    ipfs key rm gchange 2>/dev/null
     rm -f ~/.zen/tmp/gchange.key
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
     GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
+    echo "/ipns/$GNS"
 
     mkdir -p ~/.zen/tmp/TW
     rm -f ~/.zen/tmp/TW/index.html
@@ -72,9 +73,11 @@ echo "-> SALT : $SALT"
 echo "-> PEPPER : $PEPPER"
 
 PSEUDO=${PLAYER%%[0-9]*}
+
 [[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO; PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 # PSEUDO=${PSEUDO,,} #lowercase
 [[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
+[[ $ASTRO ]] && echo "$PLAYER ! Vous aviez déjà un autre Player ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER

@@ -145,7 +145,7 @@ ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP'
 
 composite -compose Over -gravity NorthWest -geometry +350+10 /tmp/ASTROLOGO.png ${MY_PATH}/images/Brother_600x400.png /tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QRWISHLINK.png /tmp/astroport.png /tmp/one.png
-convert -gravity northwest -pointsize 35 -fill black -draw "text 320,250 \"$PSEUDO\"" /tmp/one.png /tmp/hop.png
+convert -gravity northwest -pointsize 35 -fill black -draw "text 320,250 \"$PLAYER\"" /tmp/one.png /tmp/hop.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 20,320 \"$PEPPER\"" /tmp/hop.png /tmp/pseudo.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 320,300 \"$SALT\"" /tmp/pseudo.png /tmp/salt.png
 convert -gravity northwest -pointsize 33 -fill black -draw "text 320,350 \"$PEPPER\"" /tmp/salt.png /tmp/player.png
