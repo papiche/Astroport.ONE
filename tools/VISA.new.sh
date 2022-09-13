@@ -27,17 +27,19 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     rm -f ~/.zen/tmp/TW/index.html
     ipfs --timeout 6s cat /ipns/$GNS > ~/.zen/tmp/TW/index.html
 
-    # Combien de clefs?
-    ipfs key list -l | grep -w $GNS
-    ipfs key list -l | grep -w $GNS | wc -l
-
     if [ ! -s ~/.zen/tmp/TW/index.html ]; then
         rm -f ~/.zen/tmp/TW/index.html
-        echo "Aucun ancien TW détecté! Appuyez sur ENTRER pour créer un nouveau TW Astronaute"
+        echo "Aucun ancien TW détecté! Appuyez sur ENTRER pour créer votre TW Astronaute" ## Compte Gchange
         read
     else
         ASTRO="yes"
-        echo "Bienvenue Astronaute. Nous avons capté votre TW"
+        # EXTRACTION MOA
+        rm -f ~/.zen/tmp/tiddlers.json
+        tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
+        TITLE=$(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].title') # Dessin de PLAYER
+        PLAYER=$(echo $TITLE | rev | cut -f 1 -d ' ' | rev)
+        [[ $(ls ~/.zen/game/players/$PLAYER 2>/dev/null) ]] && echo "PLAYER déjà présent sur cet Astroport" && exit 0
+        echo "Bienvenue Astronaute $PLAYER. Nous avons capté votre TW"
         echo "http://127.0.0.1:8080/ipns/$GNS"
         echo "Initialisation de votre compte local"
     fi
@@ -52,8 +54,9 @@ Solar Punk garden forest terraforming game.
 =============================================
 Bienvenue 'Astronaute'"; sleep 1
 
-echo ""
-echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
+
+echo "$TITLE"
+[[ ! $ASTRO ]] && echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
 
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -68,9 +71,10 @@ echo "-> SALT : $SALT"
 [[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
 echo "-> PEPPER : $PEPPER"
 
-echo "CHOISISSEZ UN PSEUDO" && read PSEUDO; PSEUDO=${PSEUDO,,} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
+PSEUDO=${PLAYER%%[0-9]*}
+[[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO; PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 # PSEUDO=${PSEUDO,,} #lowercase
-PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
+[[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
@@ -116,7 +120,6 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
     ipfs key import $PLAYER -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player)
-
 
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/G1SSB # Prepare astrXbian sub-datastructure
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm

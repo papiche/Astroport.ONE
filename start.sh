@@ -34,7 +34,7 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 ## CREATE AND OR CONNECT USER
    PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
-    players=("NOUVEAU VISA" $(ls ~/.zen/game/players 2>/dev/null))
+    players=("NOUVEAU VISA" "IMPORT GVISA" $(ls ~/.zen/game/players 2>/dev/null))
     [[ ${#players[@]} -lt 3 && ! "$1" ]] && PLAYERONE="${players[1]}" && echo $PLAYERONE
 
     ## MULTIPLAYER
@@ -45,6 +45,16 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
             ${MY_PATH}/tools/VISA.new.sh
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
+            exit
+            ;;
+        "IMPORT GVISA")
+            echo "Saisissez votre 'identifiant Gchange'"
+            read SALT
+            echo "Saisissez votre 'mot de passe Gchange'"
+            read PEPPER
+            ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER"
+            fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
+            echo "Astronaute $fav heureux de vous acceuillir"
             exit
             ;;
         "")
