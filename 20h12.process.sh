@@ -9,6 +9,9 @@ ME="${0##*/}"
 start=`date +%s`
 ## PROCESS TW BACKOFFICE TREATMENT
 
+cd ~/.zen/Astroport.ONE/
+git pull
+
 ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
