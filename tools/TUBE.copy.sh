@@ -54,6 +54,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${FILE}"</h1>"
 
         echo "Creating Youtube tiddler"
+        echo $TEXT
 
         echo '[
   {
@@ -71,7 +72,9 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
 
         rm -f ~/.zen/tmp/newindex.html
 
-        tiddlywiki --verbose --load $INDEX \
+        echo  "importing $HOME/.zen/tmp/$FILE.TW.json"
+
+        tiddlywiki --load $INDEX \
                         --import "$HOME/.zen/tmp/$FILE.TW.json" "application/json" \
                         --deletetiddlers '[tag[tube]]' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
