@@ -41,8 +41,8 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         yt-dlp -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / wv*+ba/w" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
 
 
-        # Get last writen file... TOTDO: Could we do better ?
-        ZFILE=$(ls -t ~/.zen/tmp/tube/ | head -n 1)
+        # Get last writen file... TODO: Could we do better ?
+        ZFILE=$(ls -t ~/.zen/tmp/tube/*.mp4 | head -n 1)
         [[ ! -f ~/.zen/tmp/tube/$ZFILE  ]] && echo "No FILE -- EXIT --" && exit 1
 
         echo "~/.zen/tmp/tube/$ZFILE downloaded"
