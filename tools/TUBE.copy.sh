@@ -35,12 +35,14 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         mkdir -p ~/.zen/tmp/tube
 
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
+        # SUBS ? --write-subs --write-auto-subs --sub-langs "en, en-orig" --embed-subs
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
         echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / wv*+ba/w\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/tube/%(title)s.%(ext)s\" ${yurl}"
         yt-dlp -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / wv*+ba/w" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
 
+
         # Get last writen file... TOTDO: Could we do better ?
-        ZFILE=$(ls -t ~/.zen/tmp/tube/ | tail -n 1)
+        ZFILE=$(ls -t ~/.zen/tmp/tube/ | head -n 1)
         [[ ! -f ~/.zen/tmp/tube/$ZFILE  ]] && echo "No FILE -- EXIT --" && exit 1
 
         echo "~/.zen/tmp/tube/$ZFILE downloaded"
