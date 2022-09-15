@@ -73,7 +73,7 @@ ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 pass=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
 
 ########################################## DEVEL
-echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY --" && read pass
+echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read pass
 
 ## DECODE CURRENT PLAYER CRYPTO
 echo "********* DECODAGE SecuredSocketLayer *********"
