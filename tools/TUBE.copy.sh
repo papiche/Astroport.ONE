@@ -46,6 +46,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         TITLE=$(yt-dlp --print title ${yurl})
         echo "$TITLE"
         ZFILE=$(ls "$HOME/.zen/tmp/tube/$TITLE"* | head -n 1)
+        ZFILE=${ZFILE##/*/}
         echo "$ZFILE"
 
         [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- EXIT --" && exit 1
