@@ -40,42 +40,42 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         yt-dlp -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / wv*+ba/w" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/%(title)s.%(ext)s" ${yurl}
 
         # Get last writen file... TOTDO: Could we do better ?
-        FILE=$(ls -t ~/.zen/tmp/tube/ | tail -n 1)
-        [[ ! -f ~/.zen/tmp/tube/$FILE  ]] && echo "No FILE -- EXIT --" && exit 1
+        ZFILE=$(ls -t ~/.zen/tmp/tube/ | tail -n 1)
+        [[ ! -f ~/.zen/tmp/tube/$ZFILE  ]] && echo "No FILE -- EXIT --" && exit 1
 
-        echo "~/.zen/tmp/tube/$FILE downloaded"
+        echo "~/.zen/tmp/tube/$ZFILE downloaded"
 
         echo "Adding to IPFS"
-        ILINK=$(ipfs add -q "$HOME/.zen/tmp/tube/$FILE" | tail -n 1)
+        ILINK=$(ipfs add -q "$HOME/.zen/tmp/tube/$ZFILE" | tail -n 1)
         echo "/ipfs/$ILINK ready"
 
-        MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$FILE" | rev | cut -d ' ' -f 1 | rev)
+        MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
 
-        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${FILE}"</h1>"
+        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"
 
         echo "Creating Youtube tiddler"
         echo $TEXT
 
         echo '[
   {
-    "title": "'$FILE'",
+    "title": "'$ZFILE'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
     "ipfs": "'${ILINK}'",
     "tags": "'ipfs youtube ${MIME}'"
   }
 ]
-' > "$HOME/.zen/tmp/$FILE.TW.json"
+' > "$HOME/.zen/tmp/tube/$ZFILE.TW.json"
 
         echo "=========================="
         echo "Adding tiddler to TW"
 
         rm -f ~/.zen/tmp/newindex.html
 
-        echo  "importing $HOME/.zen/tmp/$FILE.TW.json"
+        echo  "importing $HOME/.zen/tmp/tube/$ZFILE.TW.json"
 
         tiddlywiki --load $INDEX \
-                        --import "$HOME/.zen/tmp/$FILE.TW.json" "application/json" \
+                        --import "$HOME/.zen/tmp/tube/$ZFILE.TW.json" "application/json" \
                         --deletetiddlers '[tag[tube]]' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
