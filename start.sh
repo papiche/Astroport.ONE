@@ -70,7 +70,7 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
- [[ $PLAYERONE ]] && pass=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
+pass=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
 
 ########################################## DEVEL
  [[ ! $pass ]] && echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY --" && read pass
