@@ -44,7 +44,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         [[ ! -f ~/.zen/tmp/tube/$FILE  ]] && echo "No FILE -- EXIT --" && exit 1
 
         echo "~/.zen/tmp/tube/$FILE downloaded"
-        mv
+
         echo "Adding to IPFS"
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/tube/$FILE" | tail -n 1)
         echo "/ipfs/$ILINK ready"
