@@ -49,10 +49,6 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         ZFILE=${ZFILE##/*/}
         echo "$ZFILE"
 
-        # coNVERT To mp4
-        EXT=$(echo $ZFILE | rev | cut -d '.' -f 1 | rev)
-        [[ $EXT != "mp4" ]] && ffmpeg -y -i "$HOME/.zen/tmp/tube/$ZFILE" -c copy "$HOME/.zen/tmp/tube/$TITLE.mp4" && ZFILE="$TITLE.mp4" && rm "$HOME/.zen/tmp/tube/$ZFILE"
-
         [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- EXIT --" && exit 1
         echo
 
