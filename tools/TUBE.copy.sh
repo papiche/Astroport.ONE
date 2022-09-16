@@ -36,13 +36,16 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
 
 
         TITLE=$(yt-dlp --print title ${yurl})
-        TITLE=${TITLE//[^a-zA-Z0-9 ]/}
+        TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
 
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
-        # SUBS ? --write-subs --write-auto-subs --sub-langs "en, en-orig" --embed-subs
+        # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
         echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/tube/$TITLE.%(ext)s\" ${yurl}"
-        yt-dlp -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]" -S "filesize:500M" --no-mtime --embed-thumbnail --add-metadata -o "$HOME/.zen/tmp/tube/$TITLE.%(ext)s" ${yurl}
+        yt-dlp  -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]" \
+                    -S "filesize:500M" --no-mtime --embed-thumbnail --add-metadata \
+                    --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
+                    -o "$HOME/.zen/tmp/tube/$TITLE.%(ext)s" ${yurl}
 
         echo
         # Get last writen file... TODO: Could we do better ?
