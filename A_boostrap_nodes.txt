@@ -1,6 +1,6 @@
 # CONTAINS Address of 1st Bootstrap Stations (24/24 Public IP)
 # cancer.astroport.com
-/ip4/185.202.238.69/tcp/4001/p2p/12D3KooWRaqNpB2xr8w5WGDvU9HHj9MST9Rnp1kmMGc67e6z98ef
+/ip4/185.202.238.69/tcp/4001/p2p/12D3KooWSnxRBuoeCZGdXBbSKiW8qM4HxLp3RLypW9dg82o41ZqM
 # libra.copylaradio.com
 /ip4/149.102.158.67/udp/4001/quic/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 # aries.copylaradio.com
