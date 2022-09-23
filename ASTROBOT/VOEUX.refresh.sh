@@ -36,6 +36,9 @@ do
     if [[ ! -s ~/.zen/tmp/work/index.html ]]; then
         echo "UNAVAILABLE WISH! If you want to remove $W $voeu"
         echo "ipfs key rm $voeu && rm -Rf ~/.zen/game/world/$voeu"
+        echo "============================================="
+        echo "ipfs name publish -t 72h /ipfs/$(cat ~/.zen/game/world/$voeu/.chain)"
+
         continue
     else
         ## Replace tube links with downloaded video
@@ -58,7 +61,7 @@ do
     [[ $DIFF ]] && cp ~/.zen/game/world/$voeu/.chain ~/.zen/game/world/$voeu/.chain.$MOATS
 
     IPUSH=$(ipfs add -Hq ~/.zen/game/world/$voeu/index.html | tail -n 1)
-    ipfs name publish --key=${voeu} /ipfs/$IPUSH 2>/dev/null
+    ipfs name publish  -t 72h --key=${voeu} /ipfs/$IPUSH 2>/dev/null
 
     [[ $DIFF ]] && echo $IPUSH > ~/.zen/game/world/$voeu/.chain
     echo $MOATS > ~/.zen/game/world/$voeu/.moats
