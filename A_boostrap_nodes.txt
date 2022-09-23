@@ -3,3 +3,5 @@
 /ip4/185.202.238.69/tcp/4001/p2p/12D3KooWRaqNpB2xr8w5WGDvU9HHj9MST9Rnp1kmMGc67e6z98ef
 # libra.copylaradio.com
 /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWAz374FBeBTUb16T4JLMsNDUdvBfc3fgGowGjGAFBXQGu
+# aries.copylaradio.com
+/ip4/37.187.127.175/tcp/4001/p2p/12D3KooWSQYTxeoZZ39SNosEKxi7RUdGTtAQAqpKeZJxjzqqrZTx
