@@ -39,7 +39,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
         if [[ $DIFF ]]; then
             echo "Backup & Upgrade TW local copy..."
-            cp -f ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.backup.html
+            cp -f ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.backup.html # UNNECESSARY .chain
             cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         else
             echo "No change since last Refresh"
@@ -82,6 +82,12 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
         sed -i "s~${OLDIG1BAR}~${IG1BAR}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         echo $IG1BAR > ~/.zen/game/world/$g1wish/.ig1barre
         echo "Update new g1barre: /ipfs/$IG1BAR"
+
+        ## LAN TO WAN MIGRATION
+        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+        sed -i "s~192.168.199.191~${myIP}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        echo $myIP > ~/.zen/game/world/$g1wish/.ip
+        echo "Setting new IP : $myIP"
 
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
         echo "Avancement blockchain TW $PLAYER : $MOATS"

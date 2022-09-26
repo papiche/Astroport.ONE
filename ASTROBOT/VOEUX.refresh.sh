@@ -44,6 +44,12 @@ do
         ## Replace tube links with downloaded video
         $MY_PATH/../tools/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
 
+        ## LAN TO WAN MIGRATION
+        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+        sed -i "s~192.168.199.191~${myIP}~g" ~/.zen/tmp/work/index.html
+        echo $myIP > ~/.zen/game/world/$voeu/.ip
+        echo "Setting new IP : $myIP"
+
         echo "DIFFERENCE ?"
         DIFF=$(diff ~/.zen/tmp/work/index.html ~/.zen/game/world/$voeu/index.html)
 
