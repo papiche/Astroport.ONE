@@ -35,6 +35,12 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     else
         ## Replace tube links with downloaded video ## TODO create LOG tiddler
         $MY_PATH/../tools/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
+
+        ## LAN TO WAN MIGRATION
+        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+        sed -i "s~192.168.199.191~${myIP}~g" ~/.zen/tmp/astro/index.html
+        echo "Setting new IP : $myIP"
+
         echo "DIFFERENCE ?"
         DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
         if [[ $DIFF ]]; then
@@ -82,12 +88,6 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
         sed -i "s~${OLDIG1BAR}~${IG1BAR}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         echo $IG1BAR > ~/.zen/game/world/$g1wish/.ig1barre
         echo "Update new g1barre: /ipfs/$IG1BAR"
-
-        ## LAN TO WAN MIGRATION
-        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-        sed -i "s~192.168.199.191~${myIP}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        echo $myIP > ~/.zen/game/world/$g1wish/.ip
-        echo "Setting new IP : $myIP"
 
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
         echo "Avancement blockchain TW $PLAYER : $MOATS"

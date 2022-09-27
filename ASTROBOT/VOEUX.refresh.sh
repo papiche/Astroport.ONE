@@ -47,7 +47,7 @@ do
         ## LAN TO WAN MIGRATION
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
         sed -i "s~192.168.199.191~${myIP}~g" ~/.zen/tmp/work/index.html
-        echo $myIP > ~/.zen/game/world/$voeu/.ip
+        echo $myIP > ~/.zen/game/world/$voeu/.myIP
         echo "Setting new IP : $myIP"
 
         echo "DIFFERENCE ?"
