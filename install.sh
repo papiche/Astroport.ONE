@@ -203,7 +203,7 @@ ipfs config --json Experimental.P2pHttpProxy true
 ipfs config --json Swarm.ConnMgr.LowWater 0
 ipfs config --json Swarm.ConnMgr.HighWater 0
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com" ]'
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com", "http://libra.copylaradio.com:8080" ]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
 

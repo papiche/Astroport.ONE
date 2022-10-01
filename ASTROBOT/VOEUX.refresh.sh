@@ -12,7 +12,6 @@ ME="${0##*/}"
 # Backup and chain
 
 [[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-
 ############################################
 echo "## WORLD VOEUX"
 
@@ -31,7 +30,11 @@ do
     mkdir -p ~/.zen/tmp/work
 
     echo "Getting latest online TW..."
-    ipfs --timeout 12s cat /ipns/$voeuns > ~/.zen/tmp/work/index.html
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    echo "$LIBRA/ipns/$voeuns"
+    [[ $YOU ]] && ipfs --timeout 12s cat /ipns/$voeuns > ~/.zen/tmp/work/index.html \
+                        || curl -so ~/.zen/tmp/work/index.html "$LIBRA/ipns/$voeuns"
 
     if [[ ! -s ~/.zen/tmp/work/index.html ]]; then
         echo "UNAVAILABLE WISH! If you want to remove $W $voeu"
@@ -42,7 +45,7 @@ do
         continue
     else
         ## Replace tube links with downloaded video
-        $MY_PATH/../tools/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
+        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/work/index.html $voeu
 
         ## LAN TO WAN MIGRATION
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)

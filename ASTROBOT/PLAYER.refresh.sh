@@ -26,7 +26,13 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     rm -Rf ~/.zen/tmp/astro
     mkdir -p ~/.zen/tmp/astro
 
-    ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html
+
+    echo "Getting latest online TW..."
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    echo "$LIBRA/ipns/$voeuns"
+    [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html \
+                        || curl -so ~/.zen/tmp/astro/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
 
     if [ ! -s ~/.zen/tmp/astro/index.html ]; then
@@ -34,7 +40,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         continue
     else
         ## Replace tube links with downloaded video ## TODO create LOG tiddler
-        $MY_PATH/../tools/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
 
         ## LAN TO WAN MIGRATION
         myIP=$(hostname -I | awk '{print $1}' | head -n 1)
@@ -167,7 +173,10 @@ done
 
 done
 
+#################################################################
 ## IPFSNODEID ROUTING
+## PUBLISHING ASTRONAUTS LIST
+## EVOLVE TO P2P QOS MAP
 ROUTING=$(ipfs add -q ~/.zen/game/astronautes.txt)
 echo "PUBLISHING IPFSNODEID / Astronaute List"
 ipfs name publish /ipfs/$ROUTING

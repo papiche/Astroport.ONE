@@ -15,13 +15,16 @@ start=`date +%s`
 ## PROCESS TW BACKOFFICE TREATMENT
 cd ~/.zen/Astroport.ONE/
 git pull
+## SOON /ipns/ Address !!!
 
+# Refresh ~/.zen/game/world/G1VOEU
 ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
+
+# Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
 
-## ADD A_boostrap_nodes.txt TO BOOTSTRAP
-
+## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
 ipfs bootstrap rm --all > /dev/null 2>&1
 for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
 do
