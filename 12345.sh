@@ -47,22 +47,22 @@ while true; do
             # CHECK IPNS KEY EXISTENCE
             ipfs key rm gchange 2>/dev/null
             rm -f ~/.zen/tmp/gchange.key
-            ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
+            ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
             GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
             echo "/ipns/$GNS"
 
             echo "Getting latest online TW..."
             mkdir -p ~/.zen/tmp/TW
             rm -f ~/.zen/tmp/TW/index.html
-            YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+            YOU=$(ps auxf --sort=+utime | grep -w "ipfs " | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
             LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
             echo "$LIBRA/ipns/$GNS"
 
             [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/TW/index.html \
-                                || curl -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/$GNS"
+                                || curl -m 12 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/$GNS"
 
             if [ ! -s ~/.zen/tmp/TW/index.html ]; then
-                rm -f ~/.zen/tmp/TW/index.html
+
                 echo "Aucun TW détecté! Creation TW Astronaute"
                 ###################################################################################################
                 PLAYER="$EMAIL"
@@ -82,7 +82,7 @@ while true; do
 
 
                     # Create Player "IPNS Key" (key import)
-                    ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
+                    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
                     ipfs key import $PLAYER -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
                     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player)
 

@@ -5,7 +5,7 @@ Content-Type: text/html; charset=UTF-8
 <!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="7; url='_TWLINK_'" />
+    <meta http-equiv="refresh" content="0; url='_TWLINK_'" />
   </head>
   <body>
     <p>Please follow <a href="_TWLINK_">this link</a>.</p>
