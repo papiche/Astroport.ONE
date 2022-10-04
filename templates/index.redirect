@@ -1,0 +1,13 @@
+HTTP/1.1 200 Everything Is Just Fine
+Server: Astroport
+Content-Type: text/html; charset=UTF-8
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="7; url='_TWLINK_'" />
+  </head>
+  <body>
+    <p>Please follow <a href="_TWLINK_">this link</a>.</p>
+  </body>
+</html>
