@@ -54,7 +54,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
         ZFILE="$TITLE.mp4"
         echo "$ZFILE"
 
-        [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && ffmpeg -i "$HOME/.zen/tmp/tube/$TITLE.mkv" -c copy "$HOME/.zen/tmp/tube/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
+        [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && ffmpeg -i "$HOME/.zen/tmp/tube/$TITLE.mkv" –c:v h264 "$HOME/.zen/tmp/tube/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
         [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- EXIT --" && exit 1
         echo
 
