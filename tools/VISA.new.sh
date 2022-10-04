@@ -26,7 +26,12 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     mkdir -p ~/.zen/tmp/TW
     rm -f ~/.zen/tmp/TW/index.html
-    ipfs --timeout 6s cat /ipns/$GNS > ~/.zen/tmp/TW/index.html
+
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    echo "$LIBRA/ipns/$voeuns"
+    [[ $YOU ]] && ipfs --timeout 12s cat /ipns/$GNS > ~/.zen/tmp/TW/index.html \
+                        || curl -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/$GNS"
 
     if [ ! -s ~/.zen/tmp/TW/index.html ]; then
         rm -f ~/.zen/tmp/TW/index.html
