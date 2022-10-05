@@ -47,7 +47,7 @@ while true; do
             # CHECK IPNS KEY EXISTENCE
             ipfs key rm gchange 2>/dev/null
             rm -f ~/.zen/tmp/gchange.key
-            ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
+            ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key '$SALT' '$PEPPER'
             GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
             echo "/ipns/$GNS"
 
@@ -68,8 +68,11 @@ while true; do
                 PLAYER="$EMAIL"
                 PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
                 PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}
-
-                ${MY_PATH}/tools/keygen -t duniter -o /tmp/secret.dunikey "$SALT" "$PEPPER"
+                    # PASS CRYPTING KEY
+                    PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+echo "PASS=$PASS"
+                ${MY_PATH}/tools/keygen -t duniter -o /tmp/secret.dunikey '$SALT' '$PEPPER'
+echo "key genesis"
                 G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
                 [[ ! $G1PUB ]] && echo "ERREUR. clef Cesium absente." && exit 1
@@ -82,9 +85,9 @@ while true; do
 
 
                     # Create Player "IPNS Key" (key import)
-                    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
+                    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player '$SALT' '$PEPPER'
                     ipfs key import $PLAYER -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
-                    ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player)
+                    ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
 
                     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/G1SSB # Prepare astrXbian sub-datastructure
                     mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
@@ -120,14 +123,15 @@ while true; do
                     sed -i "s~Moa~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 
-                    ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+                    GNS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
                     # La Clef IPNS porte comme nom G1PUB et PLAYER
                     sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-                    sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                    sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${GNS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
                     sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
                     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
                     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                    sed -i "s~_SECRET_~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
                     ## ADD SYSTEM TW
                     tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -141,7 +145,7 @@ while true; do
                     convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
                     convert ${MY_PATH}/images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
 
-                    composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
+                    composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/images/Brother_600x400.png /tmp/astroport.png
                     composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
                     # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
 
@@ -158,7 +162,7 @@ while true; do
                     ## Copy Astro TW
                     cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-                    echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
+                    echo "## PUBLISHING ${PLAYER} /ipns/$GNS/"
                     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
                     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
                     echo "/ipfs/$IPUSH"
@@ -169,21 +173,19 @@ while true; do
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
-                    echo "$ASTRONAUTENS" > ~/.zen/game/players/$PLAYER/.playerns
+                    echo "$GNS" > ~/.zen/game/players/$PLAYER/.playerns
                     echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
                     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
 
                     rm -f ~/.zen/game/players/.current
                     ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-                    qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+                    qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.GNS.png" "http://127.0.0.1:8080/ipns/$GNS"
                     echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"
 
                     echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"
-                    echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
+                    echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://$myIP:8080/ipns/$GNS"
 
-                    # PASS CRYPTING KEY
-                    PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
                     echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
                     openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
