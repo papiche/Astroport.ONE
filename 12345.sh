@@ -20,8 +20,10 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 ncrunning=$(ps auxf --sort=+utime | grep -w nc | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "already running" && exit 1
 
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+
 # Check if Astroport Station already has a "captain"
-echo "Connect Astronaut"
+echo "Connect Astronaut with $myIP"
 
 xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
 
@@ -131,7 +133,7 @@ echo "key genesis"
 
                     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
                     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-                    sed -i "s~_SECRET_~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                    sed -i "s~_SECRET_~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # Use ''{{MadeInZion!!secret}}'' field to change KeyKeeper Gateway IP
 
                     ## ADD SYSTEM TW
                     tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -158,9 +160,6 @@ echo "key genesis"
                     # INSERTED IMAGE IPFS
                     IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
                     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-
-                    ## Copy Astro TW
-                    cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
                     echo "## PUBLISHING ${PLAYER} /ipns/$GNS/"
                     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
@@ -207,7 +206,7 @@ echo "key genesis"
                     ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
                     ## CREATE GCHANGE+ PROFILE
-                    ${MY_PATH}/Connect_PLAYER_To_Gchange.sh
+                    ${MY_PATH}/tools/Connect_PLAYER_To_Gchange.sh
 
                     ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
                     ## ${MY_PATH}/FRIENDS.init.sh
@@ -215,12 +214,12 @@ echo "key genesis"
                     echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
                     echo "Retenez votre PASS : $PASS"
 
+                    cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html  ~/.zen/tmp/TW/index.html
 
                 ###################################################################################################
 
 
-
-            else
+            fi
 
 
                 ###################################################################################################
@@ -229,10 +228,10 @@ echo "key genesis"
                 tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                 TITLE=$(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].title') # Dessin de PLAYER
                 PLAYER=$(echo $TITLE | rev | cut -f 1 -d ' ' | rev)
-                [[ $(ls ~/.zen/game/players/$PLAYER 2>/dev/null) ]] && echo "PLAYER déjà présent sur cet Astroport" && exit 0
+
                 echo "Bienvenue Astronaute $PLAYER. Nous avons capté votre TW"
                 echo "Redirection"
-                [[ $YOU ]] && TWLINK="http://127.0.0.1:8080/ipns/$GNS" \
+                [[ $YOU ]] && TWLINK="http://$myIP:8080/ipns/$GNS" \
                                     || TWLINK="$LIBRA/ipns/$GNS"
                 echo "$TWLINK"
 
@@ -243,7 +242,6 @@ echo "key genesis"
 
                 ###################################################################################################
 
-            fi
 
     fi
 
