@@ -24,11 +24,11 @@ WISHKEY="$2"
 WNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
 
 # Extract tag=tube from TW
-rm -f ~/.zen/tmp/tiddlers.json
-tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[tube]]'
+rm -f ~/.zen/tmp/tube.json
+tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp --render '.' 'tube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[tube]]'
 
 ## Extract URL from text field
-for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
+for yurl in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
     echo "Detected $yurl"
     echo "Start Downloading"
 
@@ -73,7 +73,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
 
         MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
 
-#        DESC=$(yt-dlp --print "%(description)s" "${yurl}")
+        EXTRATAG=$(yt-dlp --print "%(creator)s %(channel)s %(duration)s %(playlist)s" "${yurl}")
         TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"
 
         echo "Creating Youtube tiddler"
@@ -85,7 +85,7 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
     "ipfs": "'${ILINK}'",
-    "tags": "'ipfs youtube ${MIME}'"
+    "tags": "'ipfs youtube ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/tube/$ZFILE.TW.json"
