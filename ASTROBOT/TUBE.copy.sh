@@ -73,8 +73,8 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
 
         MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
 
-        DESC=$(yt-dlp --print "%(description)s" "${yurl}")
-        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"${DESC}""
+#        DESC=$(yt-dlp --print "%(description)s" "${yurl}")
+        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"
 
         echo "Creating Youtube tiddler"
         echo $TEXT
