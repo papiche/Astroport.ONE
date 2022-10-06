@@ -34,7 +34,7 @@ echo "SCANNING $PLAYER Gchange FRIENDS"
 ################## CHECKING WHO GAVE ME STARS
 ################## BOOTSTRAP LIKES THEM BACK
 ################## SEND ipfstryme MESSAGES to FRIENDS
-rm -f ~/.zen/tmp/friend_of_mine
+rm -f ~/.zen/tmp/my_star_level
 ## Getting Gchange  liking_me list
 echo "Reading received stars"
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/liking_me
@@ -55,24 +55,24 @@ do
 #### RECUP ANNONCES Gchange
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
 
-    friend_of_mine=$(cat ~/.zen/tmp/Gstars.json | jq -r '.likes[].issuer' | grep -w "$G1PUB" );
+    my_star_level=$(cat ~/.zen/tmp/Gstars.json | jq -r '.yours.level');
+    f_score=$(cat ~/.zen/tmp/Gstars.json | jq -r '.score');
     myfriendship=$(cat ~/.zen/tmp/Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$G1PUB'"))')
-    if [[ "$friend_of_mine" != "null" && "$liking_me" != "$G1PUB" ]]
+    if [[ "$my_star_level" != "null" && "$liking_me" != "$G1PUB" ]]
     then
         # ADD $liking_me TO MY ipfs FRIENDS list
-        echo "$liking_me is my FRIEND"
+        echo "$liking_me is Ŋ1 $f_score FRIEND ($my_star_level)"
         mkdir -p ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me
 
         # REFRESH & PUBLISH stars friends map
-        stars="$(echo  $myfriendship | jq -r '.level')"
-        if [[ "$stars" == "null" || "$stars" == "" ]]; then
+        if [[ "$my_star_level" == "null" || "$my_star_level" == "" ]]; then
             rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me
-            echo "$friend_of_mine NO STAR !! Removing $liking_me"
+            echo "$my_star_level NO STAR !! Removing $liking_me"
             ## TODO : remove "ipfs pin" in "~/.zen/PIN/"
             continue ## REMOVE NO GOOD FRIENDS (no star)
         fi
         cp ~/.zen/tmp/Gstars.json ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/ && rm -f ~/.zen/tmp/Gstars.json
-        echo "$stars" > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/stars.level && echo "***** $stars STARS *****"
+        echo "$my_star_level" > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/stars.level && echo "***** $my_star_level STARS *****"
 
         ## Get Ŋ2 LEVEL
         for nid in $(cat ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/Gstars.json | jq -r '.likes[].issuer');
