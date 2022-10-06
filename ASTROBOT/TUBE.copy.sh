@@ -116,14 +116,13 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
 
         done # FINISH yid loop
 
-        ## TW IPNS PUBLISHING
-            echo "ipfs name publish -k $WISHKEY ($INDEX)"
-            ILINK=$(ipfs add -q $INDEX | tail -n 1)
-            echo "/ipfs/$ILINK"
-            ipfs name publish -k $WISHKEY /ipfs/$ILINK
-
-
 done
+
+## FINAL TW IPNS PUBLISHING
+echo "ipfs name publish -k $WISHKEY ($INDEX)"
+ILINK=$(ipfs add -q $INDEX | tail -n 1)
+echo "/ipfs/$ILINK"
+ipfs name publish -k $WISHKEY /ipfs/$ILINK
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
