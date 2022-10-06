@@ -16,12 +16,12 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 echo "CREATING $PLAYER GCHANGE+ PROFILE"
 ########################################################################
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #GCHANGE+
-[[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #GCHANGE+
+[[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://tube.copylaradio.com/ipns/$ASTRONAUTENS" #GCHANGE+
 
 ########################################################################
 #echo "CREATING $PLAYER CESIUM+ PROFILE"
 ########################################################################
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && echo "Action Manuelle " $ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 
 ########################################################################
@@ -34,24 +34,25 @@ echo "SCANNING MY GCHANGE FRIENDS"
 ################## SEND ipfstryme MESSAGES to FRIENDS
 rm -f ~/.zen/tmp/friend_of_mine
 ## Getting Gchange  liking_me list
+echo "Reading incoming stars"
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/liking_me
-
-## Adding RANDOM bootstrap to liking_me list
-~/.zen/Astroport.ONE/tools/ipfs_to_g1.py $(cat ~/.zen/astrXbian/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | shuf | head -n 1) >> ~/.zen/tmp/liking_me
 
 for liking_me in $(cat ~/.zen/tmp/liking_me | sort | uniq);
 do
     [[ "$liking_me" == "" ]] && continue ## Protect from empty line !!
 
     ipfsnodeid=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $liking_me)
-    echo "Reading stars.level from Stations IPNS Capsules."
+    echo "Reading stars.level from Astronaut /ipns/$ipfsnodeid TW Capsule"
 
 ##### CHECKING IF WE LIKE EACH OTHER (AVOID LIKING MYSELF)
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $liking_me > ~/.zen/tmp/Gstars.json
     ## ZOMBIE PROTECTION
     [[ "$?" == "0" && ! -s ~/.zen/tmp/Gstars.json ]] && rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me && echo "$liking_me is a ZOMBIE..." && continue
 
-    friend_of_mine=$(cat ~/.zen/tmp/Gstars.json | jq -r '.yours');
+#### RECUP ANNONCES Gchange
+## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
+
+    friend_of_mine=$(cat ~/.zen/tmp/Gstars.json | jq -r '.likes[].issuer' | grep -w "$G1PUB" );
     if [[ "$friend_of_mine" != "null" && "$liking_me" != "$G1PUB" ]]
     then
         # ADD $liking_me TO MY ipfs FRIENDS list

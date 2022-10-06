@@ -25,7 +25,7 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 # Check if Astroport Station already has a "captain"
 echo "Connect Astronaut with $myIP"
 
-xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
+[[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 

@@ -11,6 +11,8 @@
 # https://web.archive.org/web/20210621185958/http://www.elasticsearchtutorial.com/spatial-search-tutorial.html
 # Create tiddler informing ... TODO Add keyword ... Use tag="annonce" for tiddlers propagation
 
+# DOC : http://doc.e-is.pro/cesium-plus-pod/REST_API.html#overview
+
 echo "TODO DEBUG. CONTINUE?"
 read
 
