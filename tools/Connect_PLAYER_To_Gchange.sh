@@ -12,29 +12,31 @@ G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub"
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
-########################################################################
-echo "CREATING $PLAYER GCHANGE+ PROFILE"
-########################################################################
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #GCHANGE+
-[[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://tube.copylaradio.com/ipns/$ASTRONAUTENS" #GCHANGE+
+if [[ ! -d ~/.zen/game/players/$PLAYER/FRIENDS/ ]]; then
+    ########################################################################
+    echo "CREATING $PLAYER GCHANGE+ PROFILE"
+    ########################################################################
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://astroport.com/ipns/$ASTRONAUTENS" #GCHANGE+
+    [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "https://tube.copylaradio.com/ipns/$ASTRONAUTENS" #GCHANGE+
+
+    ########################################################################
+    #echo "CREATING $PLAYER CESIUM+ PROFILE"
+    ########################################################################
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && echo "Action Manuelle " $ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+fi
 
 ########################################################################
-#echo "CREATING $PLAYER CESIUM+ PROFILE"
-########################################################################
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
-[[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && echo "Action Manuelle " $ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 
 ########################################################################
-
-########################################################################
-echo "SCANNING MY GCHANGE FRIENDS"
+echo "SCANNING $PLAYER Gchange FRIENDS"
 ########################################################################
 ################## CHECKING WHO GAVE ME STARS
 ################## BOOTSTRAP LIKES THEM BACK
 ################## SEND ipfstryme MESSAGES to FRIENDS
 rm -f ~/.zen/tmp/friend_of_mine
 ## Getting Gchange  liking_me list
-echo "Reading incoming stars"
+echo "Reading received stars"
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/liking_me
 
 for liking_me in $(cat ~/.zen/tmp/liking_me | sort | uniq);
@@ -42,9 +44,10 @@ do
     [[ "$liking_me" == "" ]] && continue ## Protect from empty line !!
 
     ipfsnodeid=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $liking_me)
-    echo "Reading stars.level from Astronaut /ipns/$ipfsnodeid TW Capsule"
+    echo "$liking_me is Astronaut ?"
+    echo "Check TW Capsule https://tube.copylaradio.com/ipns/$ipfsnodeid "
 
-##### CHECKING IF WE LIKE EACH OTHER (AVOID LIKING MYSELF)
+##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $liking_me > ~/.zen/tmp/Gstars.json
     ## ZOMBIE PROTECTION
     [[ "$?" == "0" && ! -s ~/.zen/tmp/Gstars.json ]] && rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me && echo "$liking_me is a ZOMBIE..." && continue
@@ -53,6 +56,7 @@ do
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
 
     friend_of_mine=$(cat ~/.zen/tmp/Gstars.json | jq -r '.likes[].issuer' | grep -w "$G1PUB" );
+    myfriendship=$(cat ~/.zen/tmp/Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$G1PUB'"))')
     if [[ "$friend_of_mine" != "null" && "$liking_me" != "$G1PUB" ]]
     then
         # ADD $liking_me TO MY ipfs FRIENDS list
@@ -60,7 +64,7 @@ do
         mkdir -p ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me
 
         # REFRESH & PUBLISH stars friends map
-        stars="$(cat ~/.zen/tmp/Gstars.json | jq -r '.yours.level')"
+        stars="$(echo  $myfriendship | jq -r '.level')"
         if [[ "$stars" == "null" || "$stars" == "" ]]; then
             rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me
             echo "$friend_of_mine NO STAR !! Removing $liking_me"
@@ -69,6 +73,15 @@ do
         fi
         cp ~/.zen/tmp/Gstars.json ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/ && rm -f ~/.zen/tmp/Gstars.json
         echo "$stars" > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/stars.level && echo "***** $stars STARS *****"
+
+        ## Get Ŋ2 LEVEL
+        for nid in $(cat ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/Gstars.json | jq -r '.likes[].issuer');
+        do
+            echo "Ami(s) de cet Ami $linking_me : $nid"
+            friend_of_friend=$(~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$nid'"))')
+            echo "$friend_of_friend" | jq -r > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/fof.json
+
+        done
 
         echo "***** Convert $liking_me to ipfsnodeid *****"
         ipfsnodeid=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $liking_me)
