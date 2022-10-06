@@ -31,7 +31,10 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 while true; do
 
-    URL=$(cat $HOME/.zen/Astroport.ONE/templates/index.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    # REPLACE myIP in http response template
+    sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http
+
+    URL=$(cat $HOME/.zen/tmp/myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
