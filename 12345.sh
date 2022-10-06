@@ -37,11 +37,21 @@ while true; do
     arr=(${URL//[=&]/ })
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]}"
 
+###################################################################################################
+###################################################################################################
+
     if [[ ${arr[0]} == "email" ]]; then
+    start=`date +%s`
 
         EMAIL=$(urldecode ${arr[1]})
         SALT=$(urldecode ${arr[3]})
         PEPPER=$(urldecode ${arr[5]})
+
+                PLAYER="$EMAIL"
+                PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
+                PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}
+                # PASS CRYPTING KEY
+                PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
             echo "$SALT"
             echo "$PEPPER"
@@ -56,7 +66,7 @@ while true; do
             echo "Getting latest online TW..."
             mkdir -p ~/.zen/tmp/TW
             rm -f ~/.zen/tmp/TW/index.html
-            YOU=$(ps auxf --sort=+utime | grep -w "ipfs " | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+            YOU=$(ps auxf --sort=+utime | grep -w "ipfs" | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
             LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
             echo "$LIBRA/ipns/$GNS"
 
@@ -67,14 +77,10 @@ while true; do
 
                 echo "Aucun TW détecté! Creation TW Astronaute"
                 ###################################################################################################
-                PLAYER="$EMAIL"
-                PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
-                PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}
-                    # PASS CRYPTING KEY
-                    PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
-echo "PASS=$PASS"
+
+                echo "PASS=$PASS"
                 ${MY_PATH}/tools/keygen -t duniter -o /tmp/secret.dunikey '$SALT' '$PEPPER'
-echo "key genesis"
+                echo "key genesis"
                 G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
                 [[ ! $G1PUB ]] && echo "ERREUR. clef Cesium absente." && exit 1
@@ -161,13 +167,6 @@ echo "key genesis"
                     IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
                     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-                    echo "## PUBLISHING ${PLAYER} /ipns/$GNS/"
-                    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-                    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
-                    echo "/ipfs/$IPUSH"
-                    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-                    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
-
                     ## MEMORISE PLAYER Ŋ1 ZONE
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
@@ -217,10 +216,28 @@ echo "key genesis"
                     cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html  ~/.zen/tmp/TW/index.html
 
                 ###################################################################################################
+            else
 
+                # Get MadeInZion secret
+                tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+
+                # myIP replacement
+                sed -i "s~_SECRET_~$myIP~g" ~/.zen/tmp/TW/index.html
+                sed -i "s~$OLDIP~$myIP~g" ~/.zen/tmp/TW/index.html
+
+                cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
             fi
 
+
+                ###################################################################################################
+                echo "## PUBLISHING ${PLAYER} /ipns/$GNS/"
+                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+                echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
+                echo "/ipfs/$IPUSH"
+                echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+                ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
                 ###################################################################################################
                 # EXTRACTION MOA
@@ -241,11 +258,13 @@ echo "key genesis"
                 cat ~/.zen/tmp/index.redirect | nc -l -p 12345 -q 1 &
 
                 ###################################################################################################
-
+                end=`date +%s`
+                echo Execution time was `expr $end - $start` seconds.
 
     fi
 
-
+###################################################################################################
+###################################################################################################
     if [[ ${arr[0]} == "qrcode" ]]; then
         ## Astroport.ONE local use QRCODE Contains PLAYER G1PUB
         QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "Instascan.html QR : $QRCODE"
@@ -255,14 +274,14 @@ echo "key genesis"
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
         [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && echo "AUCUN PLAYER !!" && exit 1
 
-        ## LOGIN
-        rm -f ~/.zen/game/players/.current
-        ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+        ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
         [[ ${arr[2]} == "" ]] && continue
 
     fi
 
+###################################################################################################
+###################################################################################################
     ## Demande de copie d'une URL reçue.
     if [[ ${arr[0]} == "qrcode" &&  ${arr[2]} == "url" ]]; then
         wsource="${arr[3]}"
