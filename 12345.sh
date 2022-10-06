@@ -23,7 +23,7 @@ ncrunning=$(ps auxf --sort=+utime | grep -w nc | grep -v -E 'color=auto|grep' | 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 # Check if Astroport Station already has a "captain"
-echo "Connect Astronaut with $myIP"
+echo "Register and Connect Astronaut with http://$myIP:1234/?email=&ph1=&ph2="
 
 [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
 
@@ -33,8 +33,8 @@ while true; do
 
     # REPLACE myIP in http response template
     sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http
-
     URL=$(cat $HOME/.zen/tmp/myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
