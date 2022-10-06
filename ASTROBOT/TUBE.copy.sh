@@ -29,13 +29,20 @@ tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp --render '.' 'tiddlers.
 
 ## Extract URL from text field
 for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
-        echo "Detected $yurl"
-        echo "Start Downloading"
+    echo "Detected $yurl"
+    echo "Start Downloading"
 
-        mkdir -p ~/.zen/tmp/tube
+    mkdir -p ~/.zen/tmp/tube
 
+    ### GETTING ALL VIDEO IDs (for playlist copy)
+    yt-dlp --print "%(id)s" "${yurl}" > ~/.zen/tmp/ytids
 
-        TITLE=$(yt-dlp --print title ${yurl})
+    for yid in "$(cat ~/.zen/tmp/ytids)";
+        do
+
+        # SINGLE VIDEO yurl
+        yurl="https://www.youtube.com/watch?v=$yid";
+        TITLE="$(yt-dlp --print "%(title)s" "${yurl}")"
         TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
 
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
@@ -66,7 +73,8 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
 
         MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
 
-        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"
+        DESC=$(yt-dlp --print "%(description)s" "${yurl}")
+        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"${DESC}""
 
         echo "Creating Youtube tiddler"
         echo $TEXT
@@ -99,17 +107,22 @@ for yurl in $(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].text' | grep 'http'); do
             echo "Updating $INDEX"
             cp ~/.zen/tmp/newindex.html $INDEX
 
-            echo "ipfs name publish -k $WISHKEY"
-            ILINK=$(ipfs add -q $INDEX | tail -n 1)
-            ipfs name publish -k $WISHKEY /ipfs/$ILINK
-            echo "/ipfs/$ILINK"
-
         else
 
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/newindex.html"
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
 
         fi
+
+        done # FINISH yid loop
+
+        ## TW IPNS PUBLISHING
+            echo "ipfs name publish -k $WISHKEY ($INDEX)"
+            ILINK=$(ipfs add -q $INDEX | tail -n 1)
+            echo "/ipfs/$ILINK"
+            ipfs name publish -k $WISHKEY /ipfs/$ILINK
+
+
 done
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
