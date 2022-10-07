@@ -40,15 +40,15 @@ while true; do
     arr=(${URL//[=&]/ })
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]}"
 
+    if [[ ${arr[0]} == "email" ]]; then
+    start=`date +%s`
+
 #######################################
-### WAITING WITH SELF REDIRECT
+### WAITING 12345 WITH SELF REDIRECT
 rm ~/.zen/tmp/index.redirect
 ###################################################################################################
 while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http | nc -l -p 12345 -q 1; done &
 ###################################################################################################
-
-    if [[ ${arr[0]} == "email" ]]; then
-    start=`date +%s`
 
         EMAIL=$(urldecode ${arr[1]})
         SALT=$(urldecode ${arr[3]})
@@ -222,6 +222,16 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
 
                     cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html  ~/.zen/tmp/TW/index.html
 
+                    ###################################################################################################
+                    echo "## PUBLISHING ${PLAYER} /ipns/$GNS "
+                    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+                    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
+                    echo "/ipfs/$IPUSH"
+                    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+                    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
+
+
+
                 ###################################################################################################
             else
 
@@ -243,16 +253,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
 
             fi
 
-
-                ###################################################################################################
-                echo "## PUBLISHING ${PLAYER} /ipns/$GNS "
-                IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-                echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
-                echo "/ipfs/$IPUSH"
-                echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-                ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
-
-                ###################################################################################################
+               ###################################################################################################
                 # EXTRACTION MOA
                 rm -f ~/.zen/tmp/tiddlers.json
                 tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
