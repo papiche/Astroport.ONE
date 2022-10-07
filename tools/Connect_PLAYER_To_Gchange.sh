@@ -75,6 +75,9 @@ do
         cp ~/.zen/tmp/Gstars.json ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/ && rm -f ~/.zen/tmp/Gstars.json
         echo "$my_star_level" > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/stars.level && echo "***** $my_star_level STARS *****"
 
+        ## TODO COPIER "Dessin de Moa" !!
+        ## APPLIQUER FILTRAGE TAG
+
         ## Get Ŋ2 LEVEL
         for nid in $(cat ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/Gstars.json | jq -r '.likes[].issuer');
         do
