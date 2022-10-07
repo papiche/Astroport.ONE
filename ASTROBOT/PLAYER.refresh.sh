@@ -39,6 +39,11 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         echo "ERROR IPNS TIMEOUT. Unchanged local backup..."
         continue
     else
+        ## CHECK IF myIP IS LAST GATEWAY
+        tiddlywiki --load ~/.zen/tmp/astro/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+        [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING" && continue
+
         ## Replace tube links with downloaded video ## TODO create LOG tiddler
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
 
