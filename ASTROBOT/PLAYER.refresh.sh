@@ -140,7 +140,7 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
         rm -f ~/.zen/tmp/newindex.html
 
         echo "Nouveau G1${wishname}  : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-        tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                         --import ~/.zen/tmp/g1${wishname}.bank.json "application/json" \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
