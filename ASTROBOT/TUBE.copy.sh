@@ -37,7 +37,7 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
     ### GETTING ALL VIDEO IDs (for playlist copy)
     yt-dlp --print "%(id)s" "${YURL}" > ~/.zen/tmp/ytids
 
-    for YID in "$(cat ~/.zen/tmp/ytids)";
+    while read YID;
         do
         # SINGLE VIDEO YURL
         ZYURL="https://www.youtube.com/watch?v=$YID";
@@ -96,14 +96,14 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
 ]
 ' > "$HOME/.zen/tmp/tube/$YID.TW.json"
 
-        done # FINISH YID loop 1
+        done  < ~/.zen/tmp/ytids # FINISH YID loop 1
 
 done # FINISH YURL loop
 
 #################################################################
 ### ADDING $YID.TW.json to TWNS INDEX.html
 #################################################################
-for YID in "$(cat ~/.zen/tmp/ytids)";
+while read YID;
         do
         echo "=========================="
         echo "Adding $YID tiddler to TW /ipns/$TWNS "
@@ -125,7 +125,7 @@ for YID in "$(cat ~/.zen/tmp/ytids)";
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
         fi
 
-done # FINISH YID loop 2
+done  < ~/.zen/tmp/ytids # FINISH YID loop 2
 
 ## FINAL TW IPNS PUBLISHING
 echo "ipfs name publish -k $WISHKEY ($INDEX)"
