@@ -52,7 +52,7 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
         echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/tube/$TITLE.%(ext)s\" ${ZYURL}"
 
         #############################################################################
-        ## COPY FROM YOUTUBE
+        ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
         yt-dlp  -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]" \
                     -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
                     --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
@@ -80,7 +80,7 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
         ## ADD TAGS
         EXTRATAG=$(yt-dlp --print "crea_%(creator)s chan_%(channel)s sec_%(duration)s list_%(playlist)s" "${ZYURL}")
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>"
+        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
         echo "Creating Youtube ${YID} tiddler"
         echo $TEXT
