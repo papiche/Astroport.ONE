@@ -9,9 +9,9 @@ Content-Type: text/html; charset=UTF-8
   </head>
 <body>
 <h1>ASTROPORT</h1>
-<h2>Astronaute</h2>
+<h2>Astronaute nous recherchons votre TW .... </h2>
 <form action = "http://127.0.0.1:12345" method = "GET">
-<input type='submit' value='RECHERCHE TW'>
+<input type='submit' value='PATIENTEZ SVP'>
 </form>
 </body>
 </html>

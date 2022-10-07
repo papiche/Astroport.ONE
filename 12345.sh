@@ -230,7 +230,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
 
                 ##
-                if [[ ! d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
+                if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
                     echo "MISSING ASTRONAUT VISA"
                     echo "ASKING TO $OLDIP"
 
