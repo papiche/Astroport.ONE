@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.3
+# Version: 0.4
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -19,50 +19,53 @@ INDEX="$1"
 [[ ! $INDEX ]] && echo "Please provide path to source TW index.html" && exit 1
 [[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX" && exit 1
 
-WISHKEY="$2"
+WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $WISHKEY ]] && echo "Please provide IPFS publish key" && exit 1
-WNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
+TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
 
-# Extract tag=tube from TW
+# Extract tag=tube from TW into ~/.zen/tmp/tube.json
 rm -f ~/.zen/tmp/tube.json
 tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp --render '.' 'tube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[tube]]'
 
 ## Extract URL from text field
-for yurl in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
-    echo "Detected $yurl"
+for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
+    echo "Detected $YURL"
     echo "Start Downloading"
 
     mkdir -p ~/.zen/tmp/tube
 
     ### GETTING ALL VIDEO IDs (for playlist copy)
-    yt-dlp --print "%(id)s" "${yurl}" > ~/.zen/tmp/ytids
+    yt-dlp --print "%(id)s" "${YURL}" > ~/.zen/tmp/ytids
 
-    for yid in "$(cat ~/.zen/tmp/ytids)";
+    for YID in "$(cat ~/.zen/tmp/ytids)";
         do
-
-        # SINGLE VIDEO yurl
-        yurl="https://www.youtube.com/watch?v=$yid";
-        TITLE="$(yt-dlp --print "%(title)s" "${yurl}")"
+        # SINGLE VIDEO YURL
+        ZYURL="https://www.youtube.com/watch?v=$YID";
+        TITLE="$(yt-dlp --print "%(title)s" "${ZYURL}")"
         TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
+        echo "OK! Going to download $TITLE.mp4 from $ZYURL"
 
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
-        echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/tube/$TITLE.%(ext)s\" ${yurl}"
+        echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/tube/$TITLE.%(ext)s\" ${ZYURL}"
+
+        #############################################################################
+        ## COPY FROM YOUTUBE
         yt-dlp  -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]" \
                     -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
                     --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
-                    -o "$HOME/.zen/tmp/tube/$TITLE.%(ext)s" ${yurl}
-
+                    -o "$HOME/.zen/tmp/tube/$TITLE.%(ext)s" ${ZYURL}
+        ################################################################################
+        ### ADAPT TO TW RYTHM (DELAY COPY?)
         echo
-        # Get last writen file... TODO: Could we do better ?
-        # ZFILE=$(ls -t ~/.zen/tmp/tube/*.mp4 | head -n 1)
-
         ZFILE="$TITLE.mp4"
         echo "$ZFILE"
 
+        ############################################################################
+        ### CHECK RESULT CONVERT MKV TO MP4
         [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && ffmpeg -i "$HOME/.zen/tmp/tube/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/tube/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
-        [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- EXIT --" && exit 1
+        [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- EXIT --" && continue
         echo
 
         echo "FOUND : ~/.zen/tmp/tube/$ZFILE"
@@ -74,11 +77,11 @@ for yurl in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
         MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
 
         ## ADD TAGS
-        EXTRATAG=$(yt-dlp --print "crea_%(creator)s chan_%(channel)s sec_%(duration)s list_%(playlist)s" "${yurl}")
+        EXTRATAG=$(yt-dlp --print "crea_%(creator)s chan_%(channel)s sec_%(duration)s list_%(playlist)s" "${ZYURL}")
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>"
 
-        echo "Creating Youtube tiddler"
+        echo "Creating Youtube ${YID} tiddler"
         echo $TEXT
 
         echo '[
@@ -87,38 +90,42 @@ for yurl in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
     "ipfs": "'${ILINK}'",
+    "youtubeid": "'${YID}'",
     "tags": "'ipfs youtube ${EXTRATAG} ${MIME}'"
   }
 ]
-' > "$HOME/.zen/tmp/tube/$ZFILE.TW.json"
+' > "$HOME/.zen/tmp/tube/$YID.TW.json"
 
+        done # FINISH YID loop 1
+
+done # FINISH YURL loop
+
+#################################################################
+### ADDING $YID.TW.json to TWNS INDEX.html
+#################################################################
+for YID in "$(cat ~/.zen/tmp/ytids)";
+        do
         echo "=========================="
-        echo "Adding tiddler to TW"
+        echo "Adding $YID tiddler to TW /ipns/$TWNS "
 
         rm -f ~/.zen/tmp/newindex.html
 
-        echo  "importing $HOME/.zen/tmp/tube/$ZFILE.TW.json"
+        echo  ">>> Importing $HOME/.zen/tmp/tube/$YID.TW.json"
 
         tiddlywiki --load $INDEX \
-                        --import "$HOME/.zen/tmp/tube/$ZFILE.TW.json" "application/json" \
+                        --import "$HOME/.zen/tmp/tube/$YID.TW.json" "application/json" \
                         --deletetiddlers '[tag[tube]]' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
         if [[ -s ~/.zen/tmp/newindex.html ]]; then
-
             echo "Updating $INDEX"
             cp ~/.zen/tmp/newindex.html $INDEX
-
         else
-
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/newindex.html"
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
-
         fi
 
-        done # FINISH yid loop
-
-done
+done # FINISH YID loop 2
 
 ## FINAL TW IPNS PUBLISHING
 echo "ipfs name publish -k $WISHKEY ($INDEX)"
@@ -130,6 +137,6 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 echo "=========================="
 echo "Nouveau TW"
-echo "http://$myIP:8080/ipns/$WNS"
+echo "http://$myIP:8080/ipns/$TWNS"
 # Removing tag=tube
 # --deletetiddlers '[tag[tube]]'
