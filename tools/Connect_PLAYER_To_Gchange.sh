@@ -54,6 +54,7 @@ do
 
 #### RECUP ANNONCES Gchange
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
+## https://www.gchange.fr/#/app/market/records/42LqLa7ARTZqUKGz2Msmk79gwsY8ZSoFyMyPyEnoaDXR
 
     my_star_level=$(cat ~/.zen/tmp/Gstars.json | jq -r '.yours.level');
     f_score=$(cat ~/.zen/tmp/Gstars.json | jq -r '.score');
