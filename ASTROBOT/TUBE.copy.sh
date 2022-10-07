@@ -44,6 +44,7 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
         TITLE="$(yt-dlp --print "%(title)s" "${ZYURL}")"
         TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
         echo "OK! Going to download $TITLE.mp4 from $ZYURL"
+        [[ ! $TITLE ]] && continue
 
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
@@ -65,7 +66,7 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
         ############################################################################
         ### CHECK RESULT CONVERT MKV TO MP4
         [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && ffmpeg -i "$HOME/.zen/tmp/tube/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/tube/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
-        [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- EXIT --" && continue
+        [[ ! -f "$HOME/.zen/tmp/tube/$ZFILE"  ]] && echo "No FILE -- CONTINUE --" && continue
         echo
 
         echo "FOUND : ~/.zen/tmp/tube/$ZFILE"
