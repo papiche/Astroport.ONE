@@ -225,29 +225,27 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
                 ###################################################################################################
             else
 
-                # Get MadeInZion secret
+                # Get MadeInZion secret : TW OFFICIAL GW
                 tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-
+                echo "TW OFFICIAL GW : $OLDIP"
                 ##
                 if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
                     echo "MISSING ASTRONAUT VISA"
-                    echo "ASKING TO $OLDIP"
+                    echo "MUST ASK TO $OLDIP - TODO"
 
-                    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa
+                    # mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa
                 fi
 
                     # myIP replacement
-                    sed -i "s~_SECRET_~$myIP~g" ~/.zen/tmp/TW/index.html
-                    sed -i "s~$OLDIP~$myIP~g" ~/.zen/tmp/TW/index.html
-
-                cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                    # sed -i "s~_SECRET_~$myIP~g" ~/.zen/tmp/TW/index.html
+                    # sed -i "s~$OLDIP~$myIP~g" ~/.zen/tmp/TW/index.html
 
             fi
 
 
                 ###################################################################################################
-                echo "## PUBLISHING ${PLAYER} /ipns/$GNS/"
+                echo "## PUBLISHING ${PLAYER} /ipns/$GNS "
                 IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
                 echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
                 echo "/ipfs/$IPUSH"
