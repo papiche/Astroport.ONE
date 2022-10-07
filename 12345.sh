@@ -41,6 +41,7 @@ while true; do
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]}"
 
     [[ ${arr[0]} == "" && ${arr[1]} == "" ]] && echo "GET NO DATA" && continue
+    [[ ${arr[1]} == "ph1" ]] && echo "GET NO DATA" && continue
 
     if [[ ${arr[0]} == "email" ]]; then
     start=`date +%s`
