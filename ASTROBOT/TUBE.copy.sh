@@ -50,7 +50,7 @@ for yurl in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
         echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/tube/$TITLE.%(ext)s\" ${yurl}"
         yt-dlp  -f "bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]" \
-                    -S "filesize:500M" --no-mtime --embed-thumbnail --add-metadata \
+                    -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
                     --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
                     -o "$HOME/.zen/tmp/tube/$TITLE.%(ext)s" ${yurl}
 
@@ -69,12 +69,14 @@ for yurl in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
 
         echo "Adding to IPFS"
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/tube/$ZFILE" | tail -n 1)
-        echo "/ipfs/$ILINK ready"
+        echo "/ipfs/$ILINK <=> $ZFILE"
 
         MIME=$(file --mime-type "$HOME/.zen/tmp/tube/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
 
-        EXTRATAG=$(yt-dlp --print "%(creator)s %(channel)s %(duration)s %(playlist)s" "${yurl}")
-        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${ZFILE}"</h1>"
+        ## ADD TAGS
+        EXTRATAG=$(yt-dlp --print "crea_%(creator)s chan_%(channel)s sec_%(duration)s list_%(playlist)s" "${yurl}")
+        ## PREPARE VIDEO HTML5 CODE
+        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>"
 
         echo "Creating Youtube tiddler"
         echo $TEXT
