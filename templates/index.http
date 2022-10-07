@@ -5,13 +5,13 @@ Content-Type: text/html; charset=UTF-8
 <!doctype html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="30; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="3; url='http://127.0.0.1:12345'" />
   </head>
 <body>
 <h1>ASTROPORT</h1>
 <h2>Astronaute</h2>
 <form action = "http://127.0.0.1:12345" method = "GET">
-<input type='submit' value='OUVRIR VOTRE TW'>
+<input type='submit' value='RECHERCHE TW'>
 </form>
 </body>
 </html>

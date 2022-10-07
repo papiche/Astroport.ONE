@@ -17,7 +17,7 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 ## CHECK FOR ANY ALREADY RUNNING nc
-ncrunning=$(ps auxf --sort=+utime | grep -w nc | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "already running" && exit 1
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
@@ -40,7 +40,11 @@ while true; do
     arr=(${URL//[=&]/ })
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]}"
 
+#######################################
+### WAITING WITH SELF REDIRECT
+rm ~/.zen/tmp/index.redirect
 ###################################################################################################
+while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http | nc -l -p 12345 -q 1; done &
 ###################################################################################################
 
     if [[ ${arr[0]} == "email" ]]; then
@@ -225,9 +229,17 @@ while true; do
                 tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
 
-                # myIP replacement
-                sed -i "s~_SECRET_~$myIP~g" ~/.zen/tmp/TW/index.html
-                sed -i "s~$OLDIP~$myIP~g" ~/.zen/tmp/TW/index.html
+                ##
+                if [[ ! d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
+                    echo "MISSING ASTRONAUT VISA"
+                    echo "ASKING TO $OLDIP"
+
+                    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa
+                fi
+
+                    # myIP replacement
+                    sed -i "s~_SECRET_~$myIP~g" ~/.zen/tmp/TW/index.html
+                    sed -i "s~$OLDIP~$myIP~g" ~/.zen/tmp/TW/index.html
 
                 cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
@@ -257,7 +269,9 @@ while true; do
 
                 # Injection TWLINK dans template de redirection.
                 sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect
-                ## Lancement one shot http server
+
+                ## Attente cloture WAITING 12345. Puis Lancement one shot http server
+                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
                 cat ~/.zen/tmp/index.redirect | nc -l -p 12345 -q 1 &
 
                 ###################################################################################################
@@ -280,6 +294,10 @@ while true; do
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
         [[ ${arr[2]} == "" ]] && continue
+
+        if [[ ${arr[2]} == "TX" ]]; then
+            echo "ASK FOR VISA TRANSFER FROM "
+        fi
 
     fi
 
