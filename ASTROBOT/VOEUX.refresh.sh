@@ -34,7 +34,7 @@ do
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "$LIBRA/ipns/$voeuns"
     [[ $YOU ]] && ipfs --timeout 12s cat /ipns/$voeuns > ~/.zen/tmp/work/index.html \
-                        || curl -so ~/.zen/tmp/work/index.html "$LIBRA/ipns/$voeuns"
+                        || curl -m 12 -so ~/.zen/tmp/work/index.html "$LIBRA/ipns/$voeuns"
 
     if [[ ! -s ~/.zen/tmp/work/index.html ]]; then
         echo "UNAVAILABLE WISH! If you want to remove $W $voeu"

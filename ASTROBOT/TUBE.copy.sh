@@ -92,7 +92,7 @@ for YURL in $(cat ~/.zen/tmp/tube.json | jq -r '.[].text' | grep 'http'); do
     "text": "'$TEXT'",
     "ipfs": "'${ILINK}'",
     "youtubeid": "'${YID}'",
-    "tags": "'ipfs youtube ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs youtube g1tube ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/tube/$YID.TW.json"

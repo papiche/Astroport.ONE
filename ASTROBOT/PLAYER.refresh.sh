@@ -8,64 +8,86 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ################################################################################
-# Inspect game wishes, refresh latest IPNS version
-# Backup and chain
-
-[[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-
+## Publish All PLAYER TW,
+# Run TAG subprocess: tube, voeu
 ############################################
-echo "## PLAYER TW"
+echo "## RUNNING PLAYER.refresh"
 
+## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls ~/.zen/game/players/); do
-    echo "PLAYER : $PLAYER"
+
+    echo "##################################################################"
+    echo ">>>>> PLAYER : $PLAYER"
+    echo "##################################################################"
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
-    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY -- EXIT --" && exit 1
+    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY -- CONTINUE --" && continue
 
     rm -Rf ~/.zen/tmp/astro
     mkdir -p ~/.zen/tmp/astro
 
+    # Get PLAYER wallet amount
+    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    echo "+++ WALLET BALANCE _ $BAL (G1) _"
+
+    myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
     echo "Getting latest online TW..."
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    echo "$LIBRA/ipns/$voeuns"
+    echo "$LIBRA/ipns/$ASTRONAUTENS"
+    echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
     [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html \
-                        || curl -so ~/.zen/tmp/astro/index.html "$LIBRA/ipns/$ASTRONAUTENS"
+                        || curl -m 12 -so ~/.zen/tmp/astro/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
-
+    ## PLAYER TW IS ONLINE ?
     if [ ! -s ~/.zen/tmp/astro/index.html ]; then
-        echo "ERROR IPNS TIMEOUT. Unchanged local backup..."
+
+        echo "ERROR_PLAYERTW_TIMEOUT : /ipns/$ASTRONAUTENS"
+        echo "------------------------------------------------"
+        echo "MANUAL PROCEDURE NEEDED"
+        echo "------------------------------------------------"
+        echo "TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)"
+        echo "ipfs name publish  -t 72h --key=$PLAYER /ipfs/\$TW"
         continue
+
     else
+
         ## CHECK IF myIP IS LAST GATEWAY
         tiddlywiki --load ~/.zen/tmp/astro/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-        [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING" && continue
 
-        ## Replace tube links with downloaded video ## TODO create LOG tiddler
+        [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING -" && continue
+
+        ## RUN ASTROBOT SUBPROCESS
+        ##############################################################
+        ## TAG="tube" tiddler => Dowload youtube video links (playlist accepted) ## WISHKEY=PLAYER or G1PUB !
         $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
+        ##############################################################
+        ##############################################################
+        ## TAG="voeu" => Creation G1Voeu "TW"
+        $MY_PATH/VOEU.create.sh ~/.zen/tmp/astro/index.html $PLAYER
+        ##############################################################
 
-        ## LAN TO WAN MIGRATION
-        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-        sed -i "s~192.168.199.191~${myIP}~g" ~/.zen/tmp/astro/index.html
-        echo "Setting new IP : $myIP"
-
-        echo "DIFFERENCE ?"
+        ## ANY CHANGES ?
+        ##############################################################
         DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
         if [[ $DIFF ]]; then
+            echo "DIFFERENCE DETECTED !! "
             echo "Backup & Upgrade TW local copy..."
-            cp -f ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.backup.html # UNNECESSARY .chain
             cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         else
-            echo "No change since last Refresh"
+            echo "No change since last Refresh..."
         fi
+        ##############################################################
+
     fi
 
-    # Get PLAYER wallet amount
-    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    echo "PLAYER : (G1) $BAL"
+    #
+
+        ##############################################################
+        ##############################################################
 
 ##########################
 # Generate G1BARRE for each wish
@@ -106,14 +128,13 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
 
         TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
         echo "ipfs name publish --key=$PLAYER /ipfs/$TW"
-        ipfs name publish --key=$PLAYER /ipfs/$TW
+        ipfs name publish --allow-offline --key=$PLAYER /ipfs/$TW
 
         # MAJ CACHE TW $PLAYER
         echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
         echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-        echo
-        ##################################################################"
-        ##################################################################"
+        echo "##################################################################"
+        ##################################################################
 
     fi
 
@@ -155,6 +176,8 @@ for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
     fi
 
 done
+        ##############################################################
+        ##############################################################
 
 
 ############################
@@ -167,13 +190,13 @@ done
     [[ $DIFF ]] && cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
 
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish  -t 72h --key=$PLAYER /ipfs/$TW
+    ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
 
     [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
 
     echo "================================================"
-    echo "$PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+    echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
     echo "================================================"
 
 done
