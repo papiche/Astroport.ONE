@@ -41,6 +41,8 @@ for YURL in $(cat ~/.zen/tmp/$WISHKEY/tube.json | jq -r '.[].text' | grep 'http'
 done # FINISH YURL loop
 
 ###################################################################
+[[ ! -s  ~/.zen/tmp/$WISHKEY/ytids.$MOATS ]] && echo "NO TUBE" && exit  0
+
 ###################################################################
 while read YID;
         do
