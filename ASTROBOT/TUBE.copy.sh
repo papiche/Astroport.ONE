@@ -62,7 +62,7 @@ while read YID;
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # (bv*[height<=720][vcodec~='^((he|a)vc|h26[45])']+ba)
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
-        echo "yt-dlp -f \"bv*[ext=mp4][height<=480]+ba/b[height<=480] / bv*[ext=mp4][height<=720]+ba/b[height<=720]\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/$WISHKEY/$TITLE.%(ext)s\" ${ZYURL}"
+        echo "yt-dlp -f \"(bv*[ext=mp4][height<=720]+ba/b[height<=720])\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/$WISHKEY/$TITLE.%(ext)s\" ${ZYURL}"
 
         #############################################################################
         ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
