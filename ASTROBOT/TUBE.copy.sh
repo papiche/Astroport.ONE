@@ -27,8 +27,14 @@ TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/$WISHKEY
 
+###################################################################
 rm -f ~/.zen/tmp/$WISHKEY/tube.json
-tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp/$WISHKEY --render '.' 'tube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[tube]]'
+tiddlywiki  --load ${INDEX} \
+                    --output ~/.zen/tmp/$WISHKEY \
+                    --render '.' 'tube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[tube]]'
+
+[[ ! -s  ~/.zen/tmp/$WISHKEY/tube.json ]] && echo "NO TUBE" && exit  0
+###################################################################
 
 ## Extract URL from text field
 for YURL in $(cat ~/.zen/tmp/$WISHKEY/tube.json | jq -r '.[].text' | grep 'http'); do
@@ -41,8 +47,9 @@ for YURL in $(cat ~/.zen/tmp/$WISHKEY/tube.json | jq -r '.[].text' | grep 'http'
 done # FINISH YURL loop
 
 ###################################################################
-[[ ! -s  ~/.zen/tmp/$WISHKEY/ytids.$MOATS ]] && echo "NO TUBE" && exit  0
 
+###################################################################
+# PROCESS YOUTUBEID
 ###################################################################
 while read YID;
         do
