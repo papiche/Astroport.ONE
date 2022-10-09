@@ -96,8 +96,11 @@ while read YID;
 
         ## ADD TAGS
         SEC=$(yt-dlp --print "%(duration)s" "${ZYURL}")
+        CHANNEL=$(yt-dlp --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+        PLAYLIST=$(yt-dlp --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+        EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+        TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE} - ${FILE_SIZE}"</a></h1>"
 
         echo "Creating Youtube ${YID} tiddler"
         echo $TEXT
