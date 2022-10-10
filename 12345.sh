@@ -234,25 +234,30 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
                     ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
 
 
-
-                ###################################################################################################
+            ## EXISTING TW
+            ###################################################################################################
             else
 
-                # Get MadeInZion secret : TW OFFICIAL GW
+                # Get MadeInZion secret : TW OFFICIAL GW (TODO USE RANDOM 12345 PORT TO SEPARATE CONNECTIONS)
                 tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                echo "TW OFFICIAL GW : $OLDIP"
+                echo "TW OFFICIAL GATEWAY : $OLDIP"
+
                 ##
                 if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
-                    echo "MISSING ASTRONAUT VISA"
-                    echo "MUST ASK TO $OLDIP - TODO"
 
-                    # mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa
+                    echo "MISSING $PLAYER ASTRONAUT LOCAL VISA - REDIRECT TO -"
+
+                    TWLINK="http://$OLDIP:8080/ipns/$GNS"
+                    echo "$TWLINK"
+                    # Injection TWLINK dans template de redirection.
+                    sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect
+
+                    ## Attente cloture WAITING 12345. Puis Lancement one shot http server
+                    while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
+                    cat ~/.zen/tmp/index.redirect | nc -l -p 12345 -q 1 &
+
                 fi
-
-                    # myIP replacement
-                    # sed -i "s~_SECRET_~$myIP~g" ~/.zen/tmp/TW/index.html
-                    # sed -i "s~$OLDIP~$myIP~g" ~/.zen/tmp/TW/index.html
 
             fi
 
@@ -297,9 +302,6 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
 
         [[ ${arr[2]} == "" ]] && continue
 
-        if [[ ${arr[2]} == "TX" ]]; then
-            echo "ASK FOR VISA TRANSFER FROM "
-        fi
 
     fi
 
