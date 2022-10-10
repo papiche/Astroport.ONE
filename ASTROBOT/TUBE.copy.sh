@@ -12,8 +12,8 @@ ME="${0##*/}"
 # Download video, add to ipfs and import new tiddler
 # Publish !!
 
-## BEWARE, DO NOT MODIFY TW DURING THIS PROCESS !!
-# TODO use crontab to run regularly
+# ASTROBOT PROCESS # tube + (voeu) => tube (G1Voeu G1Tube) = ASTROBOT copy Ŋ1 "(G1Tube)"
+
 
 INDEX="$1"
 [[ ! $INDEX ]] && echo "Please provide path to source TW index.html" && exit 1
@@ -123,7 +123,7 @@ while read YID;
     "sec": "'${SEC}'",
     "ipfs": "'${ILINK}'",
     "youtubeid": "'${YID}'",
-    "tags": "'ipfs youtube g1tube ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs G1Tube ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/$WISHKEY/$YID.TW.json"

@@ -170,7 +170,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     "ipns": "'/ipns/$VOEUXNS'",
     "ipfs": "'/ipfs/$IVOEUPLAY'",
     "text": "'$TEXT'",
-    "tags": "'g1voeu ${PEPPER}'"
+    "tags": "'G1Voeu G1${PEPPER}'"
   }
 ]
 ' > ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json
@@ -189,6 +189,8 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
         echo "Mise à jour $INDEX"
         cp -f ~/.zen/tmp/newindex.html $INDEX
+    else
+        echo "ERROR INTO ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json"
     fi
 
     # PRINTING
@@ -220,11 +222,11 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
 
     echo
-    echo "Astronaute Ŋ1 : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+    echo "Astronaute TW : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+    echo "Nouveau G1Voeu : $PEPPER (document de contrôle de copie Ŋ1)"
+    echo "TW $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
 
-    echo "CAPSULE A REVE $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
-
-    echo "## Creating Cesium+ Profil #### timeout long ... patience ...."
+    echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
     $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
 
