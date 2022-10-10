@@ -25,6 +25,7 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 rm -f ~/.zen/tmp/voeu.json
 tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[voeu]]'
 
+[[ !-s ~/.zen/tmp/voeu.json ]] && echo "Aucun Tiddler avec le tag voeu..." && exit 0
 ## Tous les tiddlers comportant le tag "voeu" lancent la création d'un G1VOEU ayant le titre du Voeu comme génrateur de clef TW (pepper).
 for VOEU in $(cat ~/.zen/tmp/voeu.json | jq -r '.[].title')
 do
@@ -33,6 +34,5 @@ do
 
     echo "Creating G1$VOEU TW"
     ~/.zen/Astroport.ONE/G1VOEUX.sh "$VOEU" "$PLAYER" "$INDEX"
-
 
 done
