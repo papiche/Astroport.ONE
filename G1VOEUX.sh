@@ -51,10 +51,14 @@ echo
 
     echo "# NOUVEAU VOEU"
     mkdir -p ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
-    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
+    ${MY_PATH}/tools/keygen -t ipfs -o <game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
     ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey
     VOEUXNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
     echo "/ipns/$VOEUNS"
+
+    ## TEST IPFS
+    ipfs --timeout=6s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html
+    [[ -s ~/.zen/tmp/$VOEUNS.html ]] && echo "HEY !!! OH !! CE VOEUX EXISTE !  ~/.zen/tmp/$VOEUNS.html " && exit 1
 
     # CRYPTO BUG. TODO use natools to protect and share key with Ŋ1 only ;)
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
