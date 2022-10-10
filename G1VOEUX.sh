@@ -59,6 +59,9 @@ echo
     ## TEST IPFS
     ipfs --timeout=6s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html
     [[ -s ~/.zen/tmp/$VOEUNS.html ]] && echo "HEY !!! OH !! CE VOEUX EXISTE !  ~/.zen/tmp/$VOEUNS.html " && exit 1
+    ## WORLD TEST
+    TEST=$(cat ~/.zen/game/world/$WISHKEY/.pepper 2>/dev/null | grep -w "$PEPPER")
+    [[ $TEST ]]  && echo "HEY !!! OH !! CE VOEUX $PEPPER EXISTE DANS VOTRE MONDE !  $TEST " && exit 1
 
     # CRYPTO BUG. TODO use natools to protect and share key with Ŋ1 only ;)
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
