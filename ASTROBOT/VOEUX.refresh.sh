@@ -48,7 +48,7 @@ do
     else
         echo "SEARCH VOEU TW FOR tag=tube"
         ## TAG="tube" tiddler => Dowload youtube video links (playlist accepted) ## WISHKEY=G1PUB !
-        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/work/index.html $VOEU
+        $MY_PATH/G1CopierYoutube.sh ~/.zen/tmp/work/index.html $VOEU
 
         echo "NEXT SEARCH Ŋ1 FRIENDS TW's FOR tag=$WISHNAME"
 

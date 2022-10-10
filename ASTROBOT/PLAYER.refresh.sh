@@ -63,14 +63,16 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         # ALREADY MANAGED TW
         [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING -" && continue
 
-        ## RUN ASTROBOT SUBPROCESS
+
+        ##############################################################
+        ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
+        ##############################################################
+        $MY_PATH/VOEU.create.sh ~/.zen/tmp/astro/index.html $PLAYER
+        ##############################################################
+        ## RUN ASTROBOT SUBPROCESS (SEARCH FOR SPECIFIC OR RUN STANDARD Ŋ1 SYNC)
         ##############################################################
         ## TAG="tube" tiddler => Dowload youtube video links (playlist accepted) ## WISHKEY=PLAYER or G1PUB !
-        $MY_PATH/TUBE.copy.sh ~/.zen/tmp/astro/index.html $PLAYER
-        ##############################################################
-        ##############################################################
-        ## TAG="voeu" => Creation G1Voeu "TW"
-        $MY_PATH/VOEU.create.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/G1CopierYoutube.sh ~/.zen/tmp/astro/index.html $PLAYER
         ##############################################################
 
         ## ANY CHANGES ?

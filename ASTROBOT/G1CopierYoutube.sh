@@ -12,7 +12,8 @@ ME="${0##*/}"
 # Download video, add to ipfs and import new tiddler
 # Publish !!
 
-# ASTROBOT PROCESS # tube + (voeu) => tube (G1Voeu G1Tube) = ASTROBOT copy Ŋ1 "(G1Tube)"
+# ASTROBOT FIRST PROCESS
+# "Copier youtube" + (voeu) => CopierYoutube (G1Voeu G1CopierYoutube) = ASTROBOT copy Ŋ1 "(G1CopierYoutube)"
 
 
 INDEX="$1"
@@ -23,21 +24,23 @@ WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $WISHKEY ]] && echo "Please provide IPFS publish key" && exit 1
 TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
 
-# Extract tag=tube from TW into ~/.zen/tmp/$WISHKEY/tube.json
+# Extract tag=tube from TW into ~/.zen/tmp/$WISHKEY/CopierYoutube.json
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/$WISHKEY
 
 ###################################################################
-rm -f ~/.zen/tmp/$WISHKEY/tube.json
+## TODO BOUCLER SUR LES INDEX des G1Astronautes G1Ami
+###################################################################
+rm -f ~/.zen/tmp/$WISHKEY/CopierYoutube.json
 tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/tmp/$WISHKEY \
-                    --render '.' 'tube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[tube]]'
+                    --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
-[[ ! -s  ~/.zen/tmp/$WISHKEY/tube.json ]] && echo "NO TUBE" && exit  0
+[[ ! -s  ~/.zen/tmp/$WISHKEY/CopierYoutube.json ]] && echo "NO TUBE" && exit  0
 ###################################################################
-
-## Extract URL from text field
-for YURL in $(cat ~/.zen/tmp/$WISHKEY/tube.json | jq -r '.[].text' | grep 'http'); do
+## TEXT TREATMENT
+## For this TAG, specific extract URL from text field and copy all video from links into tid.json
+for YURL in $(cat ~/.zen/tmp/$WISHKEY/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
     echo "Detected $YURL"
     echo "Extracting video playlist"
 
@@ -49,7 +52,7 @@ done # FINISH YURL loop
 ###################################################################
 
 ###################################################################
-# PROCESS YOUTUBEID
+# PROCESS YOUTUBEID VIDEO DOWNLOAD AND CREATE TIDDLER in TW
 ###################################################################
 while read YID;
         do
@@ -111,7 +114,7 @@ while read YID;
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=360><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE} - ${FILE_SIZE}"</a></h1>"
 
-        echo "Creating Youtube ${YID} tiddler"
+        echo "Creating Youtube ${YID} tiddler : G1CopierYoutube !"
         echo $TEXT
 
         echo '[
@@ -123,7 +126,7 @@ while read YID;
     "sec": "'${SEC}'",
     "ipfs": "'${ILINK}'",
     "youtubeid": "'${YID}'",
-    "tags": "'ipfs G1Tube ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs G1CopierYoutube ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/$WISHKEY/$YID.TW.json"
@@ -141,7 +144,7 @@ while read YID;
 
         tiddlywiki --load $INDEX \
                         --import "$HOME/.zen/tmp/$WISHKEY/$YID.TW.json" "application/json" \
-                        --deletetiddlers '[tag[tube]]' \
+                        --deletetiddlers '[tag[CopierYoutube]]' \
                         --output ~/.zen/tmp/$WISHKEY --render "$:/core/save/all" "newindex.html" "text/plain"
 
         if [[ -s ~/.zen/tmp/$WISHKEY/newindex.html ]]; then
