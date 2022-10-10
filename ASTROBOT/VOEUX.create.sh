@@ -33,6 +33,6 @@ do
     VOEU=$(echo "$VOEU" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
 
     echo "Creating G1$VOEU TW"
-    ~/.zen/Astroport.ONE/G1VOEUX.sh "$VOEU" "$PLAYER" "$INDEX"
+    ~/.zen/Astroport.ONE/ASTROBOT/G1Voeu.sh "$VOEU" "$PLAYER" "$INDEX"
 
 done

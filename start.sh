@@ -147,7 +147,7 @@ select fav in  "${choices[@]}"; do
 
     "CREER UN VOEU")
         echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
-        ${MY_PATH}/G1VOEUX.sh
+        ${MY_PATH}/ASTROBOT/G1Voeu.sh
         ;;
 
     "IMPRIMER QRVOEU")
