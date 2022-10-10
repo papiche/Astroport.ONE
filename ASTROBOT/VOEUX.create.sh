@@ -29,7 +29,9 @@ tiddlywiki --verbose --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json
 for VOEU in $(cat ~/.zen/tmp/voeu.json | jq -r '.[].title')
 do
     echo "Detected $VOEU"
-    echo "Creating Voeu TW"
+    VOEU=$(echo "$VOEU" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+
+    echo "Creating G1$VOEU TW"
     ~/.zen/Astroport.ONE/G1VOEUX.sh "$VOEU" "$PLAYER" "$INDEX"
 
 
