@@ -12,6 +12,11 @@ ME="${0##*/}"
 
 SALT="$1"
 PEPPER="$2"
+PLAYER="$3"
+PSEUDO="$4"
+
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
@@ -31,23 +36,27 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "$LIBRA/ipns/$voeuns"
     [[ $YOU ]] && ipfs --timeout 12s cat /ipns/$GNS > ~/.zen/tmp/TW/index.html \
-                        || curl -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/$GNS"
+                        || curl -m 12 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/$GNS"
 
     if [ ! -s ~/.zen/tmp/TW/index.html ]; then
         rm -f ~/.zen/tmp/TW/index.html
-        echo "Aucun ancien TW détecté! Appuyez sur ENTRER pour créer votre TW Astronaute" ## Compte Gchange
-        read
+        echo "Aucun ancien TW détecté! CREATION DU TW Astronaute" ## Compte Gchange
+
     else
-        ASTRO="yes"
-        # EXTRACTION MOA
-        rm -f ~/.zen/tmp/tiddlers.json
-        tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
-        TITLE=$(cat ~/.zen/tmp/tiddlers.json | jq -r '.[].title') # Dessin de PLAYER
-        PLAYER=$(echo $TITLE | rev | cut -f 1 -d ' ' | rev)
-        [[ $(ls ~/.zen/game/players/$PLAYER 2>/dev/null) ]] && echo "PLAYER déjà présent sur cet Astroport" && exit 0
-        echo "Bienvenue Astronaute $PLAYER. Nous avons capté votre TW"
-        echo "http://127.0.0.1:8080/ipns/$GNS"
-        echo "Initialisation de votre compte local"
+
+        # EXTRACTION myIP
+        rm -f ~/.zen/tmp/miz.json
+        tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+        echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/$GNS"
+        if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
+            echo "UPDATE LOCAL COPY ~/.zen/game/players/$PLAYER/ipfs/moa"
+            [[ "$myIP" == "$OLDIP" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/
+        fi
+        # DO NOT CONTINUE
+        echo "VISA ALREADY EXISTS"
+        exit 1
+
     fi
 
 fi
@@ -60,9 +69,7 @@ Solar Punk garden forest terraforming game.
 =============================================
 Bienvenue 'Astronaute'"; sleep 1
 
-
-echo "$TITLE"
-[[ ! $ASTRO ]] && echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
+echo "Création de votre PSEUDO, votre PLAYER, avec PASS (6 chiffres)"
 
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -79,10 +86,14 @@ echo "-> PEPPER : $PEPPER"
 
 PSEUDO=${PLAYER%%[0-9]*}
 
-[[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO; PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*} && [[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
+[[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO
+PSEUDO=${PSEUDO,,}
+PSEUDO=${PSEUDO%%[0-9]*}
+[[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
+
 # PSEUDO=${PSEUDO,,} #lowercase
-[[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2}
-[[ $ASTRO ]] && echo "$PLAYER ! Vous aviez déjà un autre Player ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
+[[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2} \
+                            && echo "$PLAYER ! Vous aviez déjà un autre Player ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
@@ -123,7 +134,6 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
     mv /tmp/secret.dunikey ~/.zen/game/players/$PLAYER/
 
-
     # Create Player "IPNS Key" (key import)
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
     ipfs key import $PLAYER -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player
@@ -147,7 +157,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    if [ ! -f ~/.zen/tmp/TW.html ]; then
+if [ ! -f ~/.zen/tmp/TW.html ]; then
 
         echo "Nouveau Canal TW Astronaute"
         mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
@@ -172,7 +182,6 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~_SECRET_~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # IP of the Astronaut KeyKeeper Gateway
 
@@ -218,12 +227,6 @@ fi
     echo "/ipfs/$IPUSH"
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
     ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
-
-    # Lanch newly created TW
-#    cd ~/.zen/game/players/$PLAYER/ipfs/
-#    tiddlywiki $PLAYER --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --listen port=8282
-#    sleep 3
-#    killall node
 
     ## MEMORISE PLAYER Ŋ1 ZONE
     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
@@ -281,5 +284,5 @@ echo "Retenez votre PASS : $PASS"; sleep 2
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "cool $(${MY_PATH}/face.sh cool)"
-echo "Relancez start."
+echo "$PASS"
 exit 0

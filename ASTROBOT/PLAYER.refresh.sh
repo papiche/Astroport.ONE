@@ -37,7 +37,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "$LIBRA/ipns/$ASTRONAUTENS"
-    echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
     [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html \
                         || curl -m 12 -so ~/.zen/tmp/astro/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
@@ -67,7 +67,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
-        $MY_PATH/VOEU.create.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/VOEUX.create.sh ~/.zen/tmp/astro/index.html $PLAYER
         ##############################################################
         ## RUN ASTROBOT SUBPROCESS (SEARCH FOR SPECIFIC OR RUN STANDARD Ŋ1 SYNC)
         ##############################################################
