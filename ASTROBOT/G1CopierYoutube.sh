@@ -6,7 +6,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-
+echo "$ME RUNNING"
 # Need TW index.html path + IPNS publication Key (available in IPFS keystore)
 # Search for "tube" tagged tiddlers to get URL
 # Download video, add to ipfs and import new tiddler
@@ -17,12 +17,13 @@ ME="${0##*/}"
 
 
 INDEX="$1"
-[[ ! $INDEX ]] && echo "Please provide path to source TW index.html" && exit 1
-[[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX" && exit 1
+[[ ! $INDEX ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
+[[ ! -f $INDEX ]] && echo "ERROR - Fichier TW absent. $INDEX" && exit 1
 
 WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
-[[ ! $WISHKEY ]] && echo "Please provide IPFS publish key" && exit 1
+[[ ! $WISHKEY ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
 TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
+[[ ! $TWNS ]] && echo "ERROR - Clef IPNS $WISHKEY introuvable!"  && exit 1
 
 # Extract tag=tube from TW into ~/.zen/tmp/$WISHKEY/CopierYoutube.json
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
