@@ -54,14 +54,14 @@ echo
     mkdir -p ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
     ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey
-    VOEUXNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
+    VOEUNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
     echo "/ipns/$VOEUNS"
 
     ## TEST IPFS
     ipfs --timeout=6s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html
     [[ -s ~/.zen/tmp/$VOEUNS.html ]] && echo "HEY !!! OH !! CE VOEUX EXISTE !  ~/.zen/tmp/$VOEUNS.html " && exit 1
     ## WORLD TEST
-    TEST=$(cat ~/.zen/game/world/$WISHKEY/.pepper 2>/dev/null | grep -w "$PEPPER")
+    TEST=$(cat ~/.zen/game/world/*/.pepper 2>/dev/null | grep -w "$PEPPER")
     [[ $TEST ]]  && echo "HEY !!! OH !! CE VOEUX $PEPPER EXISTE DANS VOTRE MONDE !  $TEST " && exit 1
 
     # CRYPTO BUG. TODO use natools to protect and share key with Ŋ1 only ;)
@@ -97,9 +97,9 @@ echo
     sed -i "s~_ASTROPORT_~${ASTRONAUTENS}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_QRSEC_~${myIP}~g" ~/.zen/game/world/$WISHKEY/index.html
 
-    # IPNS KEY is WISHKEY / VOEUXNS
+    # IPNS KEY is WISHKEY / VOEUNS
     sed -i "s~_MEDIAKEY_~${WISHKEY}~g" ~/.zen/game/world/$WISHKEY/index.html
-    sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${VOEUXNS}~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${VOEUNS}~g" ~/.zen/game/world/$WISHKEY/index.html
 
     # ASTROPORT LOCAL IP RELAY == Smartphone doesn't resolve LAN DNS. So using Astroport Station IP
     sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$WISHKEY/index.html
@@ -127,11 +127,11 @@ echo "RESTART IPFS !?"
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     LIBRA="http://qo-op.com:8080"
 
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUXNS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUXNS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUNS"
 
     # Bricolage avec node tiddlywiki (TODO add tiddler with command line)
     # A suivre .... https://talk.tiddlywiki.org/t/how-to-add-extract-modify-tiddlers-from-command-line-to-do-ipfs-media-transfer/4345/4
@@ -170,7 +170,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     ## Replace Template G1Voeu image
     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IVOEU}~g" ~/.zen/game/world/$WISHKEY/index.html
 
-    TEXT="<a target='_blank' href='"/ipns/${VOEUXNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUXNS}"'>"${PEPPER}"</a>"
+    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
 
     # NEW IVEU TIDDLER
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
@@ -178,7 +178,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
   {
     "title": "'${PEPPER}'",
     "type": "'text/vnd.tiddlywiki'",
-    "ipns": "'/ipns/$VOEUXNS'",
+    "ipns": "'/ipns/$VOEUNS'",
     "ipfs": "'/ipfs/$IVOEUPLAY'",
     "text": "'$TEXT'",
     "tags": "'G1Voeu G1${PEPPER}'"
@@ -219,7 +219,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     # COPY QR CODE TO PLAYER ZONE
     cp ~/.zen/tmp/player.png ~/.zen/tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
     echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.title
-    echo "http://$myIP:8080/ipns/$VOEUXNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
+    echo "http://$myIP:8080/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
     cp ~/.zen/game/world/$WISHKEY/QR.WISHLINK.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
 
     # PUBLISHING
@@ -235,15 +235,15 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo
     echo "Astronaute TW : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
     echo "Nouveau G1Voeu : $PEPPER (document de contrôle de copie Ŋ1)"
-    echo "TW $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
+    echo "TW $PEPPER : http://127.0.0.1:8080/ipns/$VOEUNS"
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
     echo "Hop, UNE JUNE pour le Voeu $PEPPER"
-    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUXNS G1Voeu $PEPPER"\' -m
+    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUNS G1Voeu $PEPPER"\' -m
     echo "************************************************************"
 
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
