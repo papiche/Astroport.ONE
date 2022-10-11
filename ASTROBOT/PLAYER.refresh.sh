@@ -30,6 +30,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     # Get PLAYER wallet amount
     BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
     echo "+++ WALLET BALANCE _ $BAL (G1) _"
+    echo
 
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 

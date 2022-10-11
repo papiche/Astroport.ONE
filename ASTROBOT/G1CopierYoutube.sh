@@ -6,6 +6,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+echo "-----"
 echo "$ME RUNNING"
 # Need TW index.html path + IPNS publication Key (available in IPFS keystore)
 # Search for "tube" tagged tiddlers to get URL
@@ -37,7 +38,6 @@ tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/tmp/$WISHKEY \
                     --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
-[[ ! -s  ~/.zen/tmp/$WISHKEY/CopierYoutube.json ]] && echo "NO TUBE" && exit  0
 ###################################################################
 ## TEXT TREATMENT
 ## For this TAG, specific extract URL from text field and copy all video from links into tid.json
@@ -51,13 +51,14 @@ for YURL in $(cat ~/.zen/tmp/$WISHKEY/CopierYoutube.json | jq -r '.[].text' | gr
 done # FINISH YURL loop
 
 ###################################################################
+[[ ! -s  ~/.zen/tmp/$WISHKEY/ytids.$MOATS ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
+###################################################################
 
 ###################################################################
 # PROCESS YOUTUBEID VIDEO DOWNLOAD AND CREATE TIDDLER in TW
 ###################################################################
 while read YID;
         do
-
 
         [[ -f ~/.zen/tmp/$WISHKEY/$YID.TW.json ]] && echo "Tiddler json already existing : ~/.zen/tmp/$WISHKEY/$YID.TW.json" && continue
 
@@ -157,17 +158,4 @@ while read YID;
         fi
 
 done  < ~/.zen/tmp/$WISHKEY/ytids.$MOATS # FINISH YID loop 1
-
-## FINAL TW IPNS PUBLISHING
-echo "ipfs name publish -k $WISHKEY ($INDEX)"
-ILINK=$(ipfs add -q $INDEX | tail -n 1)
-echo "/ipfs/$ILINK"
-ipfs name publish -k $WISHKEY /ipfs/$ILINK
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-
-echo "=========================="
-echo "Nouveau TW"
-echo "http://$myIP:8080/ipns/$TWNS"
-# Removing tag=tube
-# --deletetiddlers '[tag[tube]]'
+exit 0

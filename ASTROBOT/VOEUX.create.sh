@@ -19,10 +19,12 @@ PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
 ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
+[[ ! $ASTRONAUTENS ]] && echo "$PLAYER IPNS INTROUVABLE" && exit 1
+
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 ## EXPORT [tag[voeu]]
-echo '## EXPORT FROM $PLAYER TW "[tag[voeu]]"'
+echo "## EXPORT FROM $PLAYER TW [tag[voeu]] $INDEX"
 rm -f ~/.zen/tmp/voeu.json
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[voeu]]'
 

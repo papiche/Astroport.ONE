@@ -19,6 +19,7 @@ for v in $(cat ~/.zen/game/players/*/VOEUx/*/.title); do echo $v ;done
 
 for VOEU in $(ls ~/.zen/game/world/);
 do
+    [[ ! -d ~/.zen/game/world/$VOEU ]] && echo "BAD $VOEU - CONTINUE -" && continue
     ## CLEAN OLD CACHE
     rm -Rf ~/.zen/tmp/work
     mkdir -p ~/.zen/tmp/work
