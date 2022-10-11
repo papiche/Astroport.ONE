@@ -22,7 +22,8 @@ PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "Troisième paramètre G1PUB manquant" && exit 1
 
-[[ ! $INDEX ]] && INDEX="~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
+[[ ! $INDEX ]] && echo "MISSING ASTRONAUTE TW index.html" && exit 1
+echo "Working on $INDEX" # FROM VOEUX.create.sh
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
@@ -36,7 +37,7 @@ echo
 #####################################################
 # CREATION DU TW G1VOEU
 #####################################################
-    SALT=$(${MY_PATH}/tools/diceware.sh 3 | xargs)
+    SALT=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
     echo "$SALT"
 
     echo "## TITRE POUR CE VOEU ? "
@@ -45,13 +46,13 @@ echo
     echo "$PEPPER"
 
     echo "## keygen CLEF DE VOEUX"
-    ${MY_PATH}/tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
+    ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
     WISHKEY=$(cat ~/.zen/tmp/qrtw.dunikey | grep "pub:" | cut -d ' ' -f 2)
     echo "WISHKEY (G1PUB) = $WISHKEY"
 
     echo "# NOUVEAU VOEU"
     mkdir -p ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
-    ${MY_PATH}/tools/keygen -t ipfs -o <game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
+    ${MY_PATH}/../tools/keygen -t ipfs -o <game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
     ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey
     VOEUXNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
     echo "/ipns/$VOEUNS"
@@ -117,12 +118,14 @@ echo
     [[ -s ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
 
 ## EXTEND ipfs daemon accreditation
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport", "https://astroport.com", "https://qo-op.com", "https://tube.copylaradio.com", "http://'$(hostname)'.local:8080" ]'
-## RESTART IPFS !?
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport:8080", "http://astroport.com:8080", "https://astroport.com", "https://qo-op.com", "http://qo-op.com:8080", "https://tube.copylaradio.com", "http://'$(hostname)'.local:8080" ]'
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin ## CORS
+echo "RESTART IPFS !?"
 
     echo "# CREATION QR CODE"
 
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    LIBRA="http://qo-op.com:8080"
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUXNS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
@@ -139,9 +142,9 @@ ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP'
 #################################
     # PREMIER TYPE ~/.zen/tmp/player.png
     convert $HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png -resize 300 ~/.zen/tmp/QRWISHLINK.png
-    convert ${MY_PATH}/images/logoastro.png  -resize 220 ~/.zen/tmp/ASTROLOGO.png
+    convert ${MY_PATH}/../images/logoastro.png  -resize 220 ~/.zen/tmp/ASTROLOGO.png
 
-composite -compose Over -gravity NorthWest -geometry +350+10 ~/.zen/tmp/ASTROLOGO.png ${MY_PATH}/images/Brother_600x400.png ~/.zen/tmp/astroport.png
+composite -compose Over -gravity NorthWest -geometry +350+10 ~/.zen/tmp/ASTROLOGO.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/astroport.png ~/.zen/tmp/one.png
 convert -gravity northwest -pointsize 35 -fill black -draw "text 320,250 \"$PLAYER\"" ~/.zen/tmp/one.png ~/.zen/tmp/hop.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 20,320 \"$PEPPER\"" ~/.zen/tmp/hop.png ~/.zen/tmp/pseudo.png
@@ -151,9 +154,9 @@ convert -gravity northwest -pointsize 33 -fill black -draw "text 320,350 \"$PEPP
 #################################
     # SECOND TYPE ~/.zen/tmp/voeu.png
     convert $HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png -resize 300 ~/.zen/tmp/G1WISH.png
-    convert ${MY_PATH}/images/logojeu.png  -resize 260 ~/.zen/tmp/MIZLOGO.png
+    convert ${MY_PATH}/../images/logojeu.png  -resize 260 ~/.zen/tmp/MIZLOGO.png
 
-composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/G1WISH.png ${MY_PATH}/images/Brother_600x400.png ~/.zen/tmp/astroport.png
+composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/G1WISH.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +300+0 ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/astroport.png ~/.zen/tmp/one.png
 composite -compose Over -gravity NorthWest -geometry +320+280 ~/.zen/tmp/MIZLOGO.png ~/.zen/tmp/one.png ~/.zen/tmp/two.png
 
@@ -235,15 +238,15 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo "TW $PEPPER : http://127.0.0.1:8080/ipns/$VOEUXNS"
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
-    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUXNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
     echo "Hop, UNE JUNE pour le Voeu $PEPPER"
-    echo $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUXNS G1Voeu $PEPPER"\' -m
+    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUXNS G1Voeu $PEPPER"\' -m
     echo "************************************************************"
 
-    $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
     echo "************************************************************"
 
 exit 0

@@ -147,7 +147,23 @@ select fav in  "${choices[@]}"; do
 
     "CREER UN VOEU")
         echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
-        ${MY_PATH}/ASTROBOT/G1Voeu.sh
+        cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
+        ${MY_PATH}/ASTROBOT/G1Voeu.sh "" "$PLAYER" "~/.zen/tmp/$PLAYER.html"
+        DIFF=$(diff ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html)
+        if [[ $DIFF ]]; then
+            MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+            cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
+                    ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
+
+            TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+            ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
+
+            echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+            echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+        fi
+    echo "================================================"
+    echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "================================================"
         ;;
 
     "IMPRIMER QRVOEU")
