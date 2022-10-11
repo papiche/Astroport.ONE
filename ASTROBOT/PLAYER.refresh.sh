@@ -124,7 +124,8 @@ done
 ## PUBLISHING ASTRONAUTS LIST
 ## EVOLVE TO P2P QOS MAP JSON
 ROUTING=$(ipfs add -q ~/.zen/game/astronautes.txt)
-echo "PUBLISHING IPFSNODEID / Astronaute List"
+echo "PUBLISHING Astronaute List SELF"
 ipfs name publish /ipfs/$ROUTING
+cat ~/.zen/game/astronautes.txt
 
 exit 0

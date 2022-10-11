@@ -28,7 +28,7 @@ echo "## EXPORT FROM $PLAYER TW [tag[voeu]] $INDEX"
 rm -f ~/.zen/tmp/voeu.json
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[voeu]]'
 
-[[ !-s ~/.zen/tmp/voeu.json ]] && echo "Aucun Tiddler avec le tag voeu..." && exit 0
+[[ ! -s ~/.zen/tmp/voeu.json ]] && echo "Aucun Tiddler avec le tag voeu..." && exit 0
 
 ## Tous les tiddlers comportant le tag "voeu" lancent la création d'un G1VOEU ayant le titre du Voeu comme génrateur de clef TW (pepper).
 for VOEU in "$(cat ~/.zen/tmp/voeu.json | jq -r '.[].title')"

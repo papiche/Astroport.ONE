@@ -52,7 +52,7 @@ echo
 
     echo "# NOUVEAU VOEU"
     mkdir -p ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
-    ${MY_PATH}/../tools/keygen -t ipfs -o <game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
     ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey
     VOEUXNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
     echo "/ipns/$VOEUNS"
