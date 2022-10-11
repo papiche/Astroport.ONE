@@ -37,7 +37,11 @@ echo "SCANNING $PLAYER Gchange FRIENDS"
 rm -f ~/.zen/tmp/my_star_level
 ## Getting Gchange  liking_me list
 echo "Reading received stars"
-~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/liking_me
+################################## JAKLIS PLAYER stars
+~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
+-k ~/.zen/game/players/$PLAYER/secret.dunikey \
+-n "https://data.gchange.fr" stars | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/liking_me
 
 for liking_me in $(cat ~/.zen/tmp/liking_me | sort | uniq);
 do
@@ -48,7 +52,13 @@ do
     echo "Check TW Capsule https://tube.copylaradio.com/ipns/$ipfsnodeid "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" stars -p $liking_me > ~/.zen/tmp/Gstars.json
+    ################################## JAKLIS LIKING_ME stars
+    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+    ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
+    -k ~/.zen/game/players/$PLAYER/secret.dunikey \
+    -n "https://data.gchange.fr" \
+    stars -p $liking_me > ~/.zen/tmp/Gstars.json
+
     ## ZOMBIE PROTECTION
     [[ "$?" == "0" && ! -s ~/.zen/tmp/Gstars.json ]] && rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me && echo "$liking_me is a ZOMBIE..." && continue
 
@@ -56,14 +66,17 @@ do
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
 ## https://www.gchange.fr/#/app/market/records/42LqLa7ARTZqUKGz2Msmk79gwsY8ZSoFyMyPyEnoaDXR
 
+    ## DATA EXTRACTION FROM ~/.zen/tmp/Gstars.json
     my_star_level=$(cat ~/.zen/tmp/Gstars.json | jq -r '.yours.level');
     f_score=$(cat ~/.zen/tmp/Gstars.json | jq -r '.score');
     myfriendship=$(cat ~/.zen/tmp/Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$G1PUB'"))')
+
+    ## OH MY FRIEND !
     if [[ "$my_star_level" != "null" && "$liking_me" != "$G1PUB" ]]
     then
         # ADD $liking_me TO MY ipfs FRIENDS list
-        echo "$liking_me is Ŋ1 $f_score FRIEND ($my_star_level)"
-        mkdir -p ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me
+        echo "$liking_me ($my_star_level stars) : Ŋ1 SCORE  $f_score "
+        mkdir -p ~/.zen/game/players/$PLAYER/FRsIENDS/$liking_me
 
         # REFRESH & PUBLISH stars friends map
         if [[ "$my_star_level" == "null" || "$my_star_level" == "" ]]; then
@@ -75,7 +88,31 @@ do
         cp ~/.zen/tmp/Gstars.json ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/ && rm -f ~/.zen/tmp/Gstars.json
         echo "$my_star_level" > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/stars.level && echo "***** $my_star_level STARS *****"
 
-        ## TODO COPIER "Dessin de Moa" !!
+        ## GET FRIEND TW !!
+        echo "Getting latest online TW..."
+        YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+        LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+        echo "$LIBRA/ipns/$ipfsnodeid"
+        echo "http://$myIP:8080/ipns/$ipfsnodeid ($YOU)"
+        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ipfsnodeid > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/index.html \
+                            || curl -m 12 -so ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/index.html "$LIBRA/ipns/$ipfsnodeid"
+
+        ## PLAYER TW IS ONLINE ?
+        if [ ! -s ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/index.html ]; then
+                        # # # # # # # # # # # # # # #
+            ## AUCUN VISA ASTRONAUTE
+            echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "$liking_me" -t "SALUT. Je suis sur 'Astroport' Et toi ?" -m "Active ta 'Capsule Interplanétaire' et raccordons nos TW : https://qo-op.com"
+        else
+            echo "COOL MON AMI EST SUR IPFS"
+            ls -al ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/index.html
+            # # # # # # # # # # # # # # # TODO
+                 # CHECK Dessin de Moa
+                        # # # # # # # # # # # # # # #
+                                    # # # # # # # # # # # # # # #
+                                    ## ASTROBOT POST TREATMENT
+        fi
+
         ## APPLIQUER FILTRAGE TAG
 
         ## Get Ŋ2 LEVEL
@@ -87,8 +124,7 @@ do
 
         done
 
-        echo "***** Convert $liking_me to ipfsnodeid *****"
-        ipfsnodeid=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py $liking_me)
+        echo "***** Keep G1/IPNS conversion *****"
         echo ${ipfsnodeid} > ~/.zen/game/players/$PLAYER/FRIENDS/$liking_me/ipfsnodeid
     fi
 
