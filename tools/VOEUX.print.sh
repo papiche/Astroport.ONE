@@ -17,7 +17,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 
 
 for v in $(cat ~/.zen/game/players/*/voeux/*/.title); do
-    g1pub=$(grep -r $v ~/.zen/game/players/*/voeux/ $v 2>/dev/null | rev | cut -d '/' -f 2 | rev )
+    g1pub=$(grep -r $v ~/.zen/game/players/*/voeux/ 2>/dev/null | rev | cut -d '/' -f 2 | rev )
 #    echo "$v : $g1pub"
 #    echo '------------------------------------------------------------------'
     vlist=($v:$g1pub ${vlist[@]})

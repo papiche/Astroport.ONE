@@ -18,7 +18,7 @@ git pull
 ## SOON /ipns/ Address !!!
 
 # Refresh ~/.zen/game/world/G1VOEU
-~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
+# NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh

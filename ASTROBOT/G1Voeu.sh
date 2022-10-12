@@ -9,12 +9,12 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ################################################################################
 # Create G1VOEU TW for PLAYER
-# TITRE => G1TITRE => PEPPER
-## PARAM : "TITRE DU VOEU" "PLAYER"
+# Mon Titre => G1MonTitre => PEPPER
+## PARAM : "TITRE DU VOEU" "PLAYER" "INDEX"
 ################################################################################
 TITRE="$1"
 PLAYER="$2"
-INDEX="$3" ## When called from VOEUX.create.sh (Not provided in CLI start.sh )
+INDEX="$3"
 
 [[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ $PLAYER == "" ]] && echo "Second paramètre PLAYER manquant" && exit 1
@@ -23,7 +23,8 @@ PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "Troisième paramètre G1PUB manquant" && exit 1
 
 [[ ! $INDEX ]] && echo "MISSING ASTRONAUTE TW index.html" && exit 1
-echo "Working on $INDEX" # FROM VOEUX.create.sh
+
+echo "Working on $INDEX"
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
@@ -86,7 +87,7 @@ echo
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
     # TODO : CREATE ONE TEMPLATE / REMOVE USELESS TID
 
-    # PERSONNALISATION
+    # PERSONNALISATION "MadeInZion"
     sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/world/$WISHKEY/index.html
@@ -115,7 +116,9 @@ echo
                         --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                         --deletetiddlers '"Dessin de Moa"' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+
     [[ -s ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
+    [[ ! -s ~/.zen/tmp/newindex.html ]] && echo "ERROR ~/.zen/tmp/newindex.html  MISSING" && exit 1
 
 ## EXTEND ipfs daemon accreditation
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport:8080", "http://astroport.com:8080", "https://astroport.com", "https://qo-op.com", "http://qo-op.com:8080", "https://tube.copylaradio.com", "http://'$(hostname)'.local:8080" ]'
@@ -178,8 +181,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
   {
     "title": "'${PEPPER}'",
     "type": "'text/vnd.tiddlywiki'",
-    "ipns": "'/ipns/$VOEUNS'",
-    "ipfs": "'/ipfs/$IVOEUPLAY'",
+    "astronautens": "'$ASTRONAUTENS'",
+    "ipns": "'$VOEUNS'",
+    "wish": "'$WISHKEY'",
     "text": "'$TEXT'",
     "tags": "'G1Voeu G1${PEPPER}'"
   }

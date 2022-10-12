@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -28,8 +28,8 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     mkdir -p ~/.zen/tmp/astro
 
     # Get PLAYER wallet amount
-    BAL=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    echo "+++ WALLET BALANCE _ $BAL (G1) _"
+    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    echo "+++ WALLET BALANCE _ $COINS (G1) _"
     echo
 
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
@@ -45,35 +45,39 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     ## PLAYER TW IS ONLINE ?
     if [ ! -s ~/.zen/tmp/astro/index.html ]; then
 
+        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         echo "ERROR_PLAYERTW_TIMEOUT : /ipns/$ASTRONAUTENS"
         echo "------------------------------------------------"
         echo "MANUAL PROCEDURE NEEDED"
         echo "------------------------------------------------"
         echo "TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)"
         echo "ipfs name publish  -t 72h --key=$PLAYER /ipfs/\$TW"
+        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         continue
 
     else
 
-        ## CHECK IF myIP IS LAST GATEWAY
+        #############################################################
+        ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
         tiddlywiki --load ~/.zen/tmp/astro/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-
-        # FIRST TW MANAGER
+        # FIRST TIME PLAYER TW USING GATEWAY
         [[ $OLDIP == "_SECRET_" ]] && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/astro/index.html && OLDIP=$myIP
-        # ALREADY MANAGED TW
+        # AM I MANAGING TW
         [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING -" && continue
+        #############################################################
 
-
+        # VOEUX.create.sh
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
         $MY_PATH/VOEUX.create.sh ~/.zen/tmp/astro/index.html $PLAYER
+
+        # VOEUX.refresh.sh
         ##############################################################
-        ## RUN ASTROBOT SUBPROCESS (SEARCH FOR SPECIFIC OR RUN STANDARD Ŋ1 SYNC)
+        ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC AND STANDARD Ŋ1 SYNC)
         ##############################################################
-        ## TAG="tube" tiddler => Dowload youtube video links (playlist accepted) ## WISHKEY=PLAYER or G1PUB !
-        $MY_PATH/G1CopierYoutube.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/VOEUX.refresh.sh ~/.zen/tmp/astro/index.html $PLAYER
         ##############################################################
 
         ## ANY CHANGES ?
@@ -91,17 +95,12 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     fi
 
     #
-
+        ##############################################################
+        ## TODO : Make it G1Voeu with program contained in a tiddler using G1AstroBot ;)
         ## REFRESH G1BARRE for ALL G1VOEUX in PLAYER TW
         ##############################################################
 #        ~/.zen/Astroport.ONE/tools/G1Barre4Player.sh $PLAYER
         ##############################################################
-
-############################
-## ASTRONAUTE SIGNALING ##
-[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
-############################
-
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
@@ -120,12 +119,15 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 done
 
 #################################################################
-## IPFSNODEID ROUTING
+## IPFSNODEIDE ASTRONAUTES SIGNALING ##
+############################
 ## PUBLISHING ASTRONAUTS LIST
-## EVOLVE TO P2P QOS MAP JSON
+[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
+############################
+## TODO EVOLVE TO P2P QOS MAPPING
+cat ~/.zen/game/astronautes.txt
 ROUTING=$(ipfs add -q ~/.zen/game/astronautes.txt)
 echo "PUBLISHING Astronaute List SELF"
 ipfs name publish /ipfs/$ROUTING
-cat ~/.zen/game/astronautes.txt
 
 exit 0
