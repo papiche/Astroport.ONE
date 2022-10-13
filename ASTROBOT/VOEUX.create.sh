@@ -17,7 +17,7 @@ INDEX="$1"
 [[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX" && exit 1
 
 PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
-[[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
+[[ ! $PLAYER ]] && echo "Please provide IPNS publish key name" && exit 1
 ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "$PLAYER IPNS INTROUVABLE" && exit 1

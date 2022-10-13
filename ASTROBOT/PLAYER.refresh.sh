@@ -12,6 +12,7 @@ ME="${0##*/}"
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING PLAYER.refresh"
+rm ~/.zen/game/astronautes.txt
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls ~/.zen/game/players/); do
@@ -116,13 +117,14 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
     echo "================================================"
 
+## PUBLISHING ASTRONAUTS LIST
+[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
+
 done
 
 #################################################################
 ## IPFSNODEIDE ASTRONAUTES SIGNALING ##
 ############################
-## PUBLISHING ASTRONAUTS LIST
-[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
 ############################
 ## TODO EVOLVE TO P2P QOS MAPPING
 cat ~/.zen/game/astronautes.txt
