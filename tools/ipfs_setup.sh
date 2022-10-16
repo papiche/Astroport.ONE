@@ -56,7 +56,7 @@ After=network.target
 
 [Service]
 User=_USER_
-ExecStart=/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub --enable-gc
+ExecStart=/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
 Restart=on-failure
 CPUAccounting=true
 CPUQuota=60%
