@@ -26,8 +26,10 @@ echo "Exporting $PLAYER TW [tag[G1Voeu]]"
 rm -f ~/.zen/tmp/g1voeu.json
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'g1voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
 
+cat ~/.zen/tmp/g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/g1wishes
+
 ## GET VoeuTitle LIST
-for WISH in "$(cat ~/.zen/tmp/g1voeu.json | jq -r '.[].wish')"
+while read WISH
 do
     echo "G1Voeu $WISH"
     ## Get $WISHNAME TW
@@ -90,17 +92,18 @@ do
             FRIENDNS=$(cat ~/.zen/tmp/astroport.json | jq -r .[].astroport)  ## Value exists also in "MadeInZion" tiddler
             G1FRIEND=$(cat ~/.zen/tmp/astroport.json | jq -r .[].g1pub)  ## Value exists also in "MadeInZion" tiddler
 
-            [[ ! $FRIENDNS ]] && echo "MISSING /ipns/astroport  FOR THAT WISH" && continue
-            [[ $FRIENDNS == $ASTRONAUTENS ]] && echo "One of My Wish !! " && continue
+            [[ ! $FRIENDNS ]] && echo "ERROR MISSING /ipns/astroport  FOR THAT WISH - CONTINUE -" && continue
+            [[ $FRIENDNS == $ASTRONAUTENS ]] && echo "One of My Wish !! - CONTINUE -" && continue
 
             FINDEX="$HOME/.zen/game/players/$PLAYER/FRIENDS/$G1FRIEND/index.html"
+
             echo "Expport [tag[G1$WISHNAME]]  from $FINDEX"
             tiddlywiki --load $FINDEX \
                                 --output ~/.zen/tmp --render '.' 'g1wishtiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'$WISHNAME']]'
             [[ ! -s ~/.zen/tmp/g1wishtiddlers.json ]] && echo "ERROR - FAILED" && continue
 
             # TODO Add Friends G1Voeu Tiddlers to my G1Voeu
-
+            ## DIRECTLY LOOP SCAN FRIENDS TW !?
         #####
         done
 
@@ -137,18 +140,18 @@ do
     echo "*****************************************************"
 
 
-
-done
+done < ~/.zen/tmp/g1wishes
 
 ############################################
-echo "## WORLD VOEUX"
+echo "## WORLD VOEUX LIST = "
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 for v in $(cat ~/.zen/game/players/*/voeux/*/.title); do echo $v ;done
 
 for VOEU in $(ls ~/.zen/game/world/);
 do
-
+    echo "$VOEU"
+    ## TODO REFESH IPNS
 done
 
 exit 0

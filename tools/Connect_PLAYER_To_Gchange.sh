@@ -22,7 +22,7 @@ if [[ ! -d ~/.zen/game/players/$PLAYER/FRIENDS/ ]]; then
     ########################################################################
     echo "CREATING $PLAYER GCHANGE+ PROFILE"
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://qo-op.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://astroport.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://qo-op.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
 
     ########################################################################
@@ -121,8 +121,8 @@ do
                         # # # # # # # # # # # # # # #
                                 # GET G1Voeux
                                 # # # # # # # # # # # # # # #
-                                ## EXPORT [tag[voeu]]
-                                echo "## EXPORT FROM $PLAYER TW [tag[voeu]] $INDEX"
+                                ## EXPORT [tag[G1Voeu]]
+                                echo "## EXPORT FRIEND $PLAYER TW [tag[G1Voeu]] $INDEX"
                                 rm -f ~/.zen/tmp/g1amig1voeu.json
                                 tiddlywiki  --load ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html \
                                                     --output ~/.zen/tmp --render '.' 'g1amig1voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
@@ -143,14 +143,15 @@ do
                                         # IPNS could contain VOEUNS or /ipns/VOEUNS (/ tailing)
                                         VOEUNS=$(echo $IPNS | rev | cut -d '/' -f 1 | rev)
 
-                                        echo "Getting latest $VOEUNS TW into Local World"
+                                        echo "Getting latest FRIEND G1$TITLE TW into Local World"
                                         mkdir -p  ~/.zen/game/world/$WISH
+                                        echo "/ipns/$VOEUNS =>  ~/.zen/game/world/$WISH"
                                         [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html \
                                                             || curl -m 12 -so ~/.zen/tmp/$VOEUNS.html "$LIBRA/ipns/$ipfsnodeid"
 
                                         [[ -s ~/.zen/tmp/$VOEUNS.html ]] && cp ~/.zen/tmp/$VOEUNS.html ~/.zen/game/world/$WISH/index.html
 
-                                        echo "$TITLE FRIEND G1WISH COPY !"
+                                        echo "FRIEND G1WISH COPIED ! $TITLE"
                                         echo "$TITLE" > ~/.zen/game/world/$WISH/.pepper
                                         ls -al ~/.zen/game/world/$WISH/index.html
 
@@ -179,9 +180,8 @@ do
         echo ${ipfsnodeid} > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/ipfsnodeid
 
     else
-        echo "ETOILES!! ... ENVOI MOI UN MESSAGE POUR CONNAITRE QUI"
+        echo "ETOILES RECUES!! ... ENVOI MOI UN MESSAGE POUR CONNAITRE QUI"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Etoiles de ($my_star_level stars) : Ŋ1 SCORE  $f_score" -m "https://www.gchange.fr/#/app/user?q=${liking_me} "
-
          echo "Not Linking ;( YET."
     fi
 

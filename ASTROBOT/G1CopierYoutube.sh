@@ -124,11 +124,12 @@ while read YID;
     "title": "'$ZFILE'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
+    "mime": "'$MIME'",
     "size": "'${FILE_BSIZE}'",
     "sec": "'${SEC}'",
     "ipfs": "'${ILINK}'",
     "youtubeid": "'${YID}'",
-    "tags": "'ipfs G1CopierYoutube ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/$WISHKEY/$YID.TW.json"

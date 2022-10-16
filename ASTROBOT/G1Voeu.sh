@@ -44,7 +44,7 @@ echo
     echo "## TITRE POUR CE VOEU ? "
     [[ ! $TITRE ]] && read TITRE
     PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
-    echo "$PEPPER"
+    echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
 
     echo "## keygen CLEF DE VOEUX"
     ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
