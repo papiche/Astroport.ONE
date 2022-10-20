@@ -173,7 +173,17 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     ## Replace Template G1Voeu image
     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IVOEU}~g" ~/.zen/game/world/$WISHKEY/index.html
 
-    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
+#    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
+
+    # Contains QRCode linked to G1VoeuTW and BUTTON listing G1Voeux
+    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"' ><img src='"/ipfs/${IVOEUPLAY}"'></a>
+    <br><br>
+    <\$button class='tc-tiddlylink'>
+    <\$list filter='[tag["${PEPPER}"]]'>
+   <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
+    </\$list>
+    "${PEPPER}"
+    </$button>"
 
     # NEW IVEU TIDDLER
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
