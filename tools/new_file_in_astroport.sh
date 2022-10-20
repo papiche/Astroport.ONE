@@ -422,7 +422,7 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
         TEXT="<video controls><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>"
         MIME="text/vnd.tiddlywiki"
-        TAGS="${CAT} $GENRE IPFS G1Cinema"
+        TAGS="${CAT} $GENRE ipfs"
         CANON=''
     else
         TEXT='${MEDIAKEY}'
@@ -445,6 +445,7 @@ then
     "screenshot": "'${SCREENDIR}/screen.png'",
     "ipfsroot": "'${IPFSREPFILEID}'",
     "file": "'${file}'",
+    "ipfs": "'${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
     "mediakey": "'${MEDIAKEY}'",
     "ipns": "'${IPNS}'",
     "tmdb": "'${REFERENCE}'",
@@ -494,8 +495,8 @@ fi
 ########################################################################
 echo "DUNIKEY PASS $PASS"
 echo "NEW $TYPE ($file) ADDED. http://127.0.0.1:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
-echo "INDEX UPDATED : http://127.0.0.1:8080/ipns/${IPFSNODEID}/.${IPFSNODEID}/${PREFIX}ASTRXBIAN"
-echo "VIDEO IPNS LINK : http://127.0.0.1:8080/ipns/$KEY/$G1PUB/"
+echo "INDEX UPDATED :  ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN"
+echo "VIDEO IPNS LINK : http://127.0.0.1:8080/ipns/$KEY/$G1PUB/ (MUST Activate 'G1VideoClub.sh' to publish & renew)"
 echo "#### EXCECUTION TIME"
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
