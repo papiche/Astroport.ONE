@@ -445,9 +445,9 @@ then
     "screenshot": "'${SCREENDIR}/screen.png'",
     "ipfsroot": "'${IPFSREPFILEID}'",
     "file": "'${file}'",
-    "ipfs": "'${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
+    "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
     "mediakey": "'${MEDIAKEY}'",
-    "ipns": "'${IPNS}'",
+    "ipns": "'/ipns/${IPNS}'",
     "tmdb": "'${REFERENCE}'",
     "tags": "'${TAGS}'" ' > ~/astroport/${TYPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
