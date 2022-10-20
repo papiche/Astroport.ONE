@@ -103,7 +103,7 @@ ipfs name publish /ipfs/$ROUTING
 
 echo "$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) TW/Moa"
 echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-echo "Echangez vos 'Dessin de Moa' et reliez vous au réseau des Astroport !"
+echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choisissez : __ "
