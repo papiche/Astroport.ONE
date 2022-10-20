@@ -28,9 +28,9 @@ mkdir -p ~/.zen/tmp/
 #echo "Voulez-vous enregistrer le bureau? ENTER sinon"
 #read desktop
 #[[ $desktop != "" ]] && screencapture
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( espeak "no player. EXIT" && exit 1 )
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( espeak "no pseudo. EXIT" && exit 1 )
-G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( espeak "no g1 pub" && exit 1 )
+PLAYER=$(cat ~/.zen/game/players/.${PLAYER}/.player 2>/dev/null) || ( espeak "no player. EXIT" && exit 1 )
+PSEUDO=$(cat ~/.zen/game/players/.${PLAYER}/.pseudo 2>/dev/null) || ( espeak "no pseudo. EXIT" && exit 1 )
+G1PUB=$(cat ~/.zen/game/players/.${PLAYER}/.g1pub 2>/dev/null) || ( espeak "no g1 pub" && exit 1 )
 
 espeak "$PSEUDO"
 sleep 1
@@ -62,15 +62,17 @@ ffmpeg -ss 1.0 -t 4.0 -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
 
 # Conversion HLS
 ffmpeg -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
+
+## ADDING TO IPFS
 IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
 echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
 espeak "OK"
 
-mkdir -p ~/.zen/game/players/.current/vlog
+mkdir -p ~/.zen/game/players/.${PLAYER}/vlog
 
 ## Creating new video chain index.html
-OLDID=$(cat ~/.zen/game/players/.current/.vlog.index 2>/dev/null)
+OLDID=$(cat ~/.zen/game/players/.${PLAYER}/.vlog.index 2>/dev/null)
 if [[ $OLDID ]]; then
     sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > /tmp/index.html
     sed -i s/_IPFSID_/$IPFSID/g /tmp/index.html
@@ -78,18 +80,18 @@ else
     sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > /tmp/index.html
 fi
 sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/index.html
-sed "s~_PSEUDO_~$PLAYER~g" /tmp/index.html > ~/.zen/game/players/.current/vlog/index.html
+sed "s~_PSEUDO_~$PLAYER~g" /tmp/index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
 
 # Copy style & js
-cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.current/vlog/
-cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.current/vlog/
+cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.${PLAYER}/vlog/
+cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.${PLAYER}/vlog/
 
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/vlog | tail -n 1)
-echo $IPFSROOT > ~/.zen/game/players/.current/.vlog.index
-# Change CSS path to
-sed s/_IPFSROOT_/$IPFSROOT/g /tmp/index.html > ~/.zen/game/players/.current/vlog/index.html
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.current/vlog | tail -n 1)
-
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.${PLAYER}/vlog | tail -n 1)
+echo $IPFSROOT > ~/.zen/game/players/.${PLAYER}/.vlog.index
+# TEMPLATE EVOLUTION
+sed 's/_PSEUDO_/$PSEUDO/g' /tmp/index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
+sed 's/_IPFSROOT_/$IPFSROOT/g' /tmp/index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.${PLAYER}/vlog | tail -n 1)
 
 echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
 ## OUVERTURE VLOG CHAIN
@@ -104,7 +106,6 @@ cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/$PLAYER_$MEDIAID.mp4
 ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 
 REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
-IPFSID=$(ipfs add -q  ~/astroport/video/vlog/$PLAYER_$MEDIAID.mp4)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
 TEXT="<video controls  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${REAL}"'></video><h1>"${PSEUDO}" / VLOG / "${MEDIAID}"</h1><br>http://127.0.0.1:8080/ipfs/$IPFSROOT"
@@ -116,39 +117,47 @@ echo '[
     "title": "'VLOG ${MEDIAID}'",
     "type": "'text/vnd.tiddlywiki'",
     "mediakey": "'${MEDIAKEY}'",
-    "tags": "'${PSEUDO} vlog webcam ipfs video'"
+    "ipfs": "'${IPFSID}'",
+    "gif_ipfs": "'${ANIMH}'",
+    "player": "'${PLAYER}'",
+    "tags": "'${PLAYER} ${PS} vlog webcam ipfs video'"
   }
 ]
-' > ~/.zen/game/players/.current/vlog/${MEDIAKEY}.dragdrop.json
+' > ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json
 
 # LOG
-cat ~/.zen/game/players/.current/vlog/${MEDIAKEY}.dragdrop.json | jq
+cat ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json | jq
 
 ## Adding tiddler to PLAYER TW
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 
 rm -f ~/.zen/tmp/newindex.html
 
-echo "Nouveau Qr$PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+echo "Nouveau TID dans TW $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
 tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
-                   --import ~/.zen/game/players/.current/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
+                   --import ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
 echo "PLAYER TW Update..."
 if [[ -s ~/.zen/tmp/newindex.html ]]; then
-    echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
-    cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    echo "Avancement blockchain TW $PLAYER : $MOATS"
-    cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.old
+    echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
 
+    DIFF=$(diff ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
+
+    [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
+                                    ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
+
+    cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    echo "ipfs name publish --key=$PLAYER /ipfs/$TW"
-    ipfs name publish --key=$PLAYER /ipfs/$TW
+    ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
 
-    # MAJ CACHE TW $PLAYER
-    echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+
+    echo "================================================"
+    echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "================================================"
     echo
 else
     echo "Une erreur est survenue lors de l'ajout du tiddler VLOG à votre TW"
