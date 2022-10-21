@@ -45,10 +45,19 @@ while true; do
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     start=`date +%s`
 
+    ## BARE CONTACT
     if [[ $URL == "/" ]]; then
-        echo "NO PARAM" && continue
-        cp $HOME/.zen/Astroport.ONE/templates/instascan.html ~/.zen/tmp/myIP.http.${MOATS}
+        echo "NO PARAM - Launching login page"
+        echo "HTTP/1.1 200 Everything Is Just Fine
+Server: Astroport
+Content-Type: text/html; charset=UTF-8
+" > ~/.zen/tmp/index.redirect.${MOATS}
+cat $HOME/.zen/Astroport.ONE/templates/instascan.html >> ~/.zen/tmp/index.redirect.${MOATS}
+
+        cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
+        continue
     fi
+
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
@@ -129,7 +138,6 @@ cat ~/.zen/tmp/mess.$MOATS.json >> ~/.zen/tmp/index.redirect.${MOATS}
 
 #######################################
 ### WAITING 12345 WITH SELF REDIRECT
-rm -f ~/.zen/tmp/index.redirect.${MOATS}
 ###################################################################################################
 while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p ${PORT} -q 1; done &
 ###################################################################################################
@@ -177,7 +185,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
                 sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
 
                 ## Attente cloture WAITING $PORT. Puis Lancement one shot http server
-                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do echo "sleep"; sleep 0.5; done
+                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do echo "sleeping...."; sleep 0.5; done
                 echo "ASTRONAUT REDIRECTION /ipns/$TWLINK AVAILABLE on http://$myIP:${PORT}"
 
                 cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
