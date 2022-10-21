@@ -32,6 +32,7 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 PORT=12345
 
 while true; do
+    echo "ŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊ"
     echo "SERVING.............................. 1234 PORT"
     echo "NEW LANDING PAGE http://$myIP:$PORT"
 
@@ -40,6 +41,7 @@ while true; do
 
     ## LAUNCHING
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    [[ $URL == "" ]] && echo "PING. NO PARAM" && continue
 
     echo "=================================================="
     echo "GET RECEPTION : $URL"
@@ -72,6 +74,8 @@ while true; do
 
         ## CHECK IF ALREADY EXISTING PLAYER
         # IF NOT = BATCH CREATE TW
+
+        [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
 
         continue
 
