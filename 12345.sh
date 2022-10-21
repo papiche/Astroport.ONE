@@ -51,7 +51,7 @@ while true; do
 
     ## BARE CONTACT
     if [[ $URL == "/" ]]; then
-        echo "NO PARAM - Launching login page"
+        echo "___________________________ Launching homepage.html"
         echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
