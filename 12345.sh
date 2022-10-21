@@ -30,21 +30,14 @@ echo "Register and Connect Astronaut with http://$myIP:1234/?email=&ph1=&ph2="
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 PORT=12345
-HOMEPAGE="$HOME/.zen/Astroport.ONE/templates/instascan.html"
 
 while true; do
     echo "SERVING.............................. 1234 PORT"
-    if  [[ $HOMEPAGE != "" ]]; then
-        echo "HOMEPAGE"
-        echo "HTTP/1.1 200 Everything Is Just Fine
-Server: Astroport
-Content-Type: text/html; charset=UTF-8" > $HOME/.zen/tmp/myIP.http.${MOATS}
-        cat $HOMEPAGE >> $HOME/.zen/tmp/myIP.http.${MOATS}
-    else
-        echo "WAITING PAGE"
-        # REPLACE myIP in http response template
-        sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
-    fi
+    echo "LANDING PAGE $myIP:$PORT"
+
+    # REPLACE myIP in http response template
+    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+
     ## LAUNCHING
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
 
