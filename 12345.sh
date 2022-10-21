@@ -56,7 +56,7 @@ while true; do
         ## CALCULATING IPNS ADDRESS
         ipfs key rm gchange 2>/dev/null
         rm -f ~/.zen/tmp/gchange.key
-        ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
+        ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
         echo "$GNS"
 
