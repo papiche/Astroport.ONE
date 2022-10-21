@@ -33,7 +33,7 @@ PORT=12345
 
 while true; do
     echo "SERVING.............................. 1234 PORT"
-    echo "LANDING PAGE $myIP:$PORT"
+    echo "NEW LANDING PAGE http://$myIP:$PORT"
 
     # REPLACE myIP in http response template
     sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
