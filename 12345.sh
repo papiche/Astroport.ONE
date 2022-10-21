@@ -70,7 +70,10 @@ while true; do
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
         echo "$GNS is AVAILABLE on http://$myIP:${PORT}"
-        echo "$GNS" | nc -l -p ${PORT} -q 1 &
+        echo "HTTP/1.1 200 Everything Is Just Fine
+Server: Astroport
+Content-Type: text/html; charset=UTF-8
+        $GNS" | nc -l -p ${PORT} -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
         # IF NOT = BATCH CREATE TW
