@@ -33,9 +33,9 @@ PORT=12345
 
 while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    echo "ŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊ "
-    echo "SERVING.............................. 1234 PORT"
-    echo "NEW LANDING PAGE http://$myIP:$PORT"
+    echo "************************************************************************* "
+    echo "SERVING.............................. http://$myIP:1234 PORT"
+    echo "NEXT LANDING PAGE http://$myIP:$PORT"
 
     # REPLACE myIP in http response template
     sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
