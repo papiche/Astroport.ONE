@@ -212,9 +212,9 @@ if [ ! -f ~/.zen/tmp/TW.html ]; then
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 else
-
-        cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-
+        echo "BYPASS ASTRONAUT TW INIT"
+        echo "WARNING  - TEMP TW EXISTING - COPYING AS OFFICIAL IPNS TW VAULT"
+        ASTRO="yes"
 
 fi
 
@@ -262,7 +262,7 @@ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -ou
 # ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/$PLAYER/secret.dunikey -o "$HOME/.zen/game/players/$PLAYER/secret.dunikey.oasis"
 
 #################################################
-# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION
+# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
 echo "$PASS" > ~/.zen/game/players/$PLAYER/.pass
 # ~/.zen/game/players/$PLAYER/secret.june SECURITY TODO
 # Astronaut QRCode + PASS = LOGIN (=> DECRYPTING CRYPTO IPFS INDEX)
