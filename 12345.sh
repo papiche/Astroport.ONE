@@ -70,10 +70,8 @@ while true; do
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
         echo "$GNS is AVAILABLE on http://$myIP:${PORT}"
-        echo "HTTP/1.1 200 Everything Is Just Fine
-Server: Astroport
-Content-Type: text/html; charset=UTF-8
-        $GNS" | nc -l -p ${PORT} -q 1 &
+        sed "s~_TWLINK_~$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
+        cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
         # IF NOT = BATCH CREATE TW
@@ -137,7 +135,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
                 echo "$TWLINK"
 
                 # Injection TWLINK dans template de redirection.
-                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect.${MOATS}  > ~/.zen/tmp/index.redirect.${MOATS}
+                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
 
                 ## Attente cloture WAITING $PORT. Puis Lancement one shot http server
                 while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do echo "sleep"; sleep 0.5; done
