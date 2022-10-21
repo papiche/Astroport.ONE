@@ -32,41 +32,78 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 while true; do
 
     # REPLACE myIP in http response template
-    sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http
-    URL=$(cat $HOME/.zen/tmp/myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+    URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
 
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
-    echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]}"
+    echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]}"
 
     [[ ${arr[0]} == "" && ${arr[1]} == "" ]] && echo "GET NO DATA" && continue
     [[ ${arr[1]} == "ph1" ]] && echo "GET NO DATA" && continue
 
-    if [[ ${arr[0]} == "email" ]]; then
+    ########## CHECK GET PARAM NAMES
+###################################################################################################
+###################################################################################################
+# API ZERO : ?salt=Phrase%20Une&pepper=Phrase%20Deux&elastic=GChangeID
+    if [[ ${arr[0]} == "salt" ]]; then
+        echo "Application G1Radar !! Coucou boris ;)"
+        SALT=$(urldecode ${arr[1]})
+        PEPPER=$(urldecode ${arr[3]})
+        PLAYER=$(urldecode ${arr[7]})
+
+        ## CALCULATING IPNS ADDRESS
+        ipfs key rm gchange 2>/dev/null
+        rm -f ~/.zen/tmp/gchange.key
+        ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
+        GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
+        echo "$GNS"
+
+        ## CHECK IF ALREADY EXISTING PLAYER
+        # IF NOT CREATE TW
+
+        continue
+
+    fi
+
+###################################################################################################
+###################################################################################################
+# API ONE : ?email/elastic=ELASTICID&salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&pseudo=PROFILENAME
+    if [[ ${arr[0]} == "email" || ${arr[0]} == "elastic" ]]; then
     start=`date +%s`
 
 #######################################
 ### WAITING 12345 WITH SELF REDIRECT
-rm ~/.zen/tmp/index.redirect
+rm -f ~/.zen/tmp/index.redirect.${MOATS}
 ###################################################################################################
-while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http | nc -l -p 12345 -q 1; done &
+while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 12345 -q 1; done &
 ###################################################################################################
-
-        EMAIL=$(urldecode ${arr[1]})
+        PLAYER=$(urldecode ${arr[1]})
         SALT=$(urldecode ${arr[3]})
         PEPPER=$(urldecode ${arr[5]})
+        PSEUDO=$(urldecode ${arr[7]})
 
-                PLAYER="$EMAIL"
-                PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
-                PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}
+                if [[ ! $PSEUDO ]]; then
+                    PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
+                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}
+                fi
                 # PASS CRYPTING KEY
                 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
             echo "$SALT"
             echo "$PEPPER"
 
-                $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER" "$PSEUDO"
+                if [[ ! -d ~/.zen/game/players/$PLAYER ]]; then
+                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER" "$PSEUDO"
+               else
+                    CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$SALT")
+                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$PEPPER")
+                    [[ ! $CHECK ]] && echo "ERROR - CREDENTIALS NOT CORRESPONDING WITH PLAYER" && continue
+                    echo "TODO VERIFY PLAYER CREDS... LOW SECURITY MODE !!! "
+                    mkdir -p ~/.zen/tmp/TW/
+                    cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/TW/index.html
+               fi
 
                ###################################################################################################
                 # EXTRACTION MOA
@@ -83,11 +120,11 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
                 echo "$TWLINK"
 
                 # Injection TWLINK dans template de redirection.
-                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect
+                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect.${MOATS}  > ~/.zen/tmp/index.redirect.${MOATS}
 
                 ## Attente cloture WAITING 12345. Puis Lancement one shot http server
                 while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
-                cat ~/.zen/tmp/index.redirect | nc -l -p 12345 -q 1 &
+                cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p 12345 -q 1 &
 
                 ###################################################################################################
                 end=`date +%s`
@@ -97,6 +134,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
 
 ###################################################################################################
 ###################################################################################################
+# API TWO : ?qrcode=G1PUB
     if [[ ${arr[0]} == "qrcode" ]]; then
         ## Astroport.ONE local use QRCODE Contains PLAYER G1PUB
         QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "Instascan.html QR : $QRCODE"
@@ -115,6 +153,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect && ! $(ps auxf --sort=+utime | grep -w '
 
 ###################################################################################################
 ###################################################################################################
+# API THREE : ?qrcode=G1PUB&url=HTTPLINK
     ## Demande de copie d'une URL reçue.
     if [[ ${arr[0]} == "qrcode" &&  ${arr[2]} == "url" ]]; then
         wsource="${arr[3]}"
