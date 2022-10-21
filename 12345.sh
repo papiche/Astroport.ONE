@@ -32,7 +32,8 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 PORT=12345
 
 while true; do
-    echo "ŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊ"
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    echo "ŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊŊ "
     echo "SERVING.............................. 1234 PORT"
     echo "NEW LANDING PAGE http://$myIP:$PORT"
 
@@ -41,6 +42,8 @@ while true; do
 
     ## LAUNCHING
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    start=`date +%s`
+
     [[ $URL == "" ]] && echo "PING. NO PARAM" && continue
 
     echo "=================================================="
@@ -54,14 +57,15 @@ while true; do
     ########## CHECK GET PARAM NAMES
 ###################################################################################################
 ###################################################################################################
-# API ZERO : ?salt=Phrase%20Une&pepper=Phrase%20Deux&elastic=GChangeID
+# API ZERO : ?salt=Phrase%20Une&pepper=Phrase%20Deux
     if [[ ${arr[0]} == "salt" ]]; then
         echo "Application G1Radar !! ?salt=Phrase%20Une&pepper=Phrase%20Deux&elastic=GChangeID"
         SALT=$(urldecode ${arr[1]})
         [[ ! $SALT ]] && echo "BAD SALT API CALL" && continue
         PEPPER=$(urldecode ${arr[3]})
         [[ ! $PEPPER ]] && echo "BAD PEPPER API CALL" && continue
-        PLAYER=$(urldecode ${arr[7]})
+        TYPE=$(urldecode ${arr[4]})
+        PLAYER=$(urldecode ${arr[5]})
 
         ## CALCULATING IPNS ADDRESS
         ipfs key rm gchange 2>/dev/null
@@ -69,9 +73,36 @@ while true; do
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
-        echo "$GNS is AVAILABLE on http://$myIP:${PORT}"
-        sed "s~_TWLINK_~$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
+        [[ $TYPE == "messaging" ]]; then
+            ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/secret.key  "$SALT" "$PEPPER"
+            G1PUB=$(cat ~/.zen/tmp/secret.key | grep 'pub:' | cut -d ' ' -f 2)
+            [[ ! $G1PUB ]] && echo "ERROR - G1PUB COMPUTATION EMPTY" && continue
+
+            echo "Extracting $G1PUB messages"
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j > ~/.zen/tmp/messin.json
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j -o > ~/.zen/tmp/messout.json
+
+            echo "Creating messages In/Out JSON ~/.zen/tmp/mess.$MOATS.json"
+            echo '[' > ~/.zen/tmp/mess.$MOATS.json
+            cat ~/.zen/tmp/messin.json >> ~/.zen/tmp/mess.$MOATS.json
+            echo "," >> ~/.zen/tmp/mess.$MOATS.json
+            cat ~/.zen/tmp/messout.json >> ~/.zen/tmp/mess.$MOATS.json
+            echo ']' >> ~/.zen/tmp/mess.$MOATS.json
+
+            echo "HTTP/1.1 200 Everything Is Just Fine
+Server: Astroport
+Content-Type: text/html; charset=UTF-8
+" > ~/.zen/tmp/index.redirect.${MOATS}
+cat ~/.zen/tmp/mess.$MOATS.json >> ~/.zen/tmp/index.redirect.${MOATS}
+            echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/index.redirect.${MOATS}"
+
+        fi
+
+        [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} ]] && sed "s~_TWLINK_~http://$myIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
+
+        ## RESPONDING
         cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
+        echo "NOW $GNS PAGE is AVAILABLE on http://$myIP:${PORT}"
         #echo "$GNS" | nc -l -p ${PORT} -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
@@ -79,6 +110,8 @@ while true; do
 
         [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
 
+        end=`date +%s`
+        echo Execution time was `expr $end - $start` seconds.
         continue
 
     fi
