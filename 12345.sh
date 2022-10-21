@@ -73,7 +73,7 @@ while true; do
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
-        [[ $TYPE == "messaging" ]]; then
+        if [[ $TYPE == "messaging" ]]; then
             ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/secret.key  "$SALT" "$PEPPER"
             G1PUB=$(cat ~/.zen/tmp/secret.key | grep 'pub:' | cut -d ' ' -f 2)
             [[ ! $G1PUB ]] && echo "ERROR - G1PUB COMPUTATION EMPTY" && continue
