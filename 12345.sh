@@ -45,8 +45,10 @@ while true; do
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     start=`date +%s`
 
-    [[ $URL == "" ]] && echo "PING. NO PARAM" && continue
-
+    if [[ $URL == "/" ]]; then
+        echo "NO PARAM" && continue
+        cp $HOME/.zen/Astroport.ONE/templates/instascan.html ~/.zen/tmp/myIP.http.${MOATS}
+    fi
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
@@ -80,8 +82,10 @@ while true; do
             [[ ! $G1PUB ]] && echo "ERROR - G1PUB COMPUTATION EMPTY" && continue
 
             echo "Extracting $G1PUB messages"
-            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j > ~/.zen/tmp/messin.json
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j  > ~/.zen/tmp/messin.json
+            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messin.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messin.json
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j -o > ~/.zen/tmp/messout.json
+            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messout.json) == "True" ]] && echo "[]" > messout.json
 
             echo "Creating messages In/Out JSON ~/.zen/tmp/mess.$MOATS.json"
             echo '[' > ~/.zen/tmp/mess.$MOATS.json
@@ -227,6 +231,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
     [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
                 ## TODO : RANDOM PORT SWAPPINESS
 
+    rm ~/.zen/tmp/myIP.http.${MOATS}
     HOMEPAGE=""
 
 done
