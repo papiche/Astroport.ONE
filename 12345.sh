@@ -29,10 +29,13 @@ echo "Register and Connect Astronaut with http://$myIP:1234/?email=&ph1=&ph2="
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
+PORT=12345
+
 while true; do
 
     # REPLACE myIP in http response template
-    sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+    ## LAUNCHING
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
 
     echo "=================================================="
@@ -48,9 +51,11 @@ while true; do
 ###################################################################################################
 # API ZERO : ?salt=Phrase%20Une&pepper=Phrase%20Deux&elastic=GChangeID
     if [[ ${arr[0]} == "salt" ]]; then
-        echo "Application G1Radar !! Coucou boris ;)"
+        echo "Application G1Radar !! ?salt=Phrase%20Une&pepper=Phrase%20Deux&elastic=GChangeID"
         SALT=$(urldecode ${arr[1]})
+        [[ ! $SALT ]] && echo "BAD SALT API CALL" && continue
         PEPPER=$(urldecode ${arr[3]})
+        [[ ! $PEPPER ]] && echo "BAD PEPPER API CALL" && continue
         PLAYER=$(urldecode ${arr[7]})
 
         ## CALCULATING IPNS ADDRESS
@@ -60,7 +65,7 @@ while true; do
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
         echo "$GNS"
-        echo "$GNS" | nc -l -p 12345 -q 1 &
+        echo "$GNS" | nc -l -p ${PORT} -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
         # IF NOT = BATCH CREATE TW
@@ -79,7 +84,7 @@ while true; do
 ### WAITING 12345 WITH SELF REDIRECT
 rm -f ~/.zen/tmp/index.redirect.${MOATS}
 ###################################################################################################
-while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 12345 -q 1; done &
+while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p ${PORT} -q 1; done &
 ###################################################################################################
         PLAYER=$(urldecode ${arr[1]})
         SALT=$(urldecode ${arr[3]})
@@ -124,9 +129,9 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
                 # Injection TWLINK dans template de redirection.
                 sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect.${MOATS}  > ~/.zen/tmp/index.redirect.${MOATS}
 
-                ## Attente cloture WAITING 12345. Puis Lancement one shot http server
-                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
-                cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p 12345 -q 1 &
+                ## Attente cloture WAITING $PORT. Puis Lancement one shot http server
+                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
+                cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
 
                 ###################################################################################################
                 end=`date +%s`
@@ -144,7 +149,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
         PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && echo "AUCUN PLAYER !!" && exit 1
+        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && echo "AUCUN PLAYER !!" && continue
 
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
@@ -172,6 +177,9 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
 
     ## Une seule boucle !!!
     [[ "$1" == "ONE" ]] && exit 0
+
+    ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
+    [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
 
 done
 exit 0
