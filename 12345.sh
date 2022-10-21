@@ -67,7 +67,7 @@ while true; do
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
-        echo "$GNS"
+        echo "$GNS is AVAILABLE on http://$myIP:${PORT}"
         echo "$GNS" | nc -l -p ${PORT} -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
@@ -134,6 +134,8 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
 
                 ## Attente cloture WAITING $PORT. Puis Lancement one shot http server
                 while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
+                echo "ASTRONAUT REDIRECTION /ipns/$TWLINK AVAILABLE on http://$myIP:${PORT}"
+
                 cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
 
                 ###################################################################################################
