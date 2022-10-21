@@ -56,7 +56,7 @@ while true; do
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/index.redirect.${MOATS}
-sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/instascan.html >> ~/.zen/tmp/index.redirect.${MOATS}
+sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/index.redirect.${MOATS}
 
         cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
         continue
