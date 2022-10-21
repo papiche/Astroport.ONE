@@ -21,6 +21,7 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 [[ $ncrunning ]] && echo "already running" && exit 1
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+[[ ! $myIP ]] && myIP="127.0.1.1"
 
 # Check if Astroport Station already has a "captain"
 echo "Register and Connect Astronaut with http://$myIP:1234/?email=&ph1=&ph2="
