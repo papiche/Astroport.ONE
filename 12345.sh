@@ -133,7 +133,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
                 sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect.${MOATS}  > ~/.zen/tmp/index.redirect.${MOATS}
 
                 ## Attente cloture WAITING $PORT. Puis Lancement one shot http server
-                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do sleep 0.5; done
+                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do echo "sleep"; sleep 0.5; done
                 echo "ASTRONAUT REDIRECTION /ipns/$TWLINK AVAILABLE on http://$myIP:${PORT}"
 
                 cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
