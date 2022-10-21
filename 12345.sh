@@ -33,6 +33,10 @@ PORT=12345
 
 while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
+    [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
+                ## TODO : RANDOM PORT SWAPPINESS
+
     echo "************************************************************************* "
     echo "SERVING.............................. http://$myIP:1234 PORT"
     echo "NEXT LANDING PAGE http://$myIP:$PORT"
@@ -121,9 +125,6 @@ cat ~/.zen/tmp/mess.$MOATS.json >> ~/.zen/tmp/index.redirect.${MOATS}
 
         ## CHECK IF ALREADY EXISTING PLAYER
         # IF NOT = BATCH CREATE TW
-
-        [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
-
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
         continue
@@ -235,9 +236,6 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
     ## Une seule boucle !!!
     [[ "$1" == "ONE" ]] && exit 0
 
-    ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
-                ## TODO : RANDOM PORT SWAPPINESS
 
     rm ~/.zen/tmp/myIP.http.${MOATS}
     HOMEPAGE=""
