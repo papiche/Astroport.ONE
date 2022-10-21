@@ -48,11 +48,11 @@ while true; do
     ## BARE CONTACT
     if [[ $URL == "/" ]]; then
         echo "NO PARAM - Launching login page"
-        echo "HTTP/1.1 200 Everything Is Just Fine
+        echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/index.redirect.${MOATS}
-cat $HOME/.zen/Astroport.ONE/templates/instascan.html >> ~/.zen/tmp/index.redirect.${MOATS}
+sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/instascan.html >> ~/.zen/tmp/index.redirect.${MOATS}
 
         cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
         continue
@@ -103,7 +103,7 @@ cat $HOME/.zen/Astroport.ONE/templates/instascan.html >> ~/.zen/tmp/index.redire
             cat ~/.zen/tmp/messout.json >> ~/.zen/tmp/mess.$MOATS.json
             echo ']' >> ~/.zen/tmp/mess.$MOATS.json
 
-            echo "HTTP/1.1 200 Everything Is Just Fine
+            echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/index.redirect.${MOATS}

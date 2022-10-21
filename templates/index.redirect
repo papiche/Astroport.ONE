@@ -1,4 +1,4 @@
-HTTP/1.1 200 Everything Is Just Fine
+HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
 
