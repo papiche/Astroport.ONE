@@ -39,6 +39,7 @@ while true; do
 
     # REPLACE myIP in http response template
     sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+    sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/myIP.http.${MOATS}
 
     ## LAUNCHING
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
