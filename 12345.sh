@@ -30,11 +30,16 @@ echo "Register and Connect Astronaut with http://$myIP:1234/?email=&ph1=&ph2="
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 PORT=12345
+HOMEPAGE="$HOME/.zen/Astroport.ONE/templates/instascan.html"
 
 while true; do
 
-    # REPLACE myIP in http response template
-    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+    if  [[ $HOMEPAGE ]]; then
+        cp $HOMEPAGE $HOME/.zen/tmp/myIP.http.${MOATS}
+    else
+        # REPLACE myIP in http response template
+        sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
+    fi
     ## LAUNCHING
     URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
 
@@ -180,6 +185,9 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
 
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
     [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
+                ## TODO : RANDOM PORT SWAPPINESS
+
+    HOMEPAGE=""
 
 done
 exit 0
