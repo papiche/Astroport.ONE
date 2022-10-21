@@ -35,7 +35,10 @@ HOMEPAGE="$HOME/.zen/Astroport.ONE/templates/instascan.html"
 while true; do
 
     if  [[ $HOMEPAGE ]]; then
-        cp $HOMEPAGE $HOME/.zen/tmp/myIP.http.${MOATS}
+        echo "HTTP/1.1 200 Everything Is Just Fine
+Server: Astroport
+Content-Type: text/html; charset=UTF-8" > $HOME/.zen/tmp/myIP.http.${MOATS}
+        cat $HOMEPAGE $HOME/.zen/tmp/myIP.http.${MOATS} >> $HOME/.zen/tmp/myIP.http.${MOATS}
     else
         # REPLACE myIP in http response template
         sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
