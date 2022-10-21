@@ -56,9 +56,9 @@ for liking_me in $(cat ~/.zen/tmp/liking_me | sort | uniq);
 do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
 
-    ipfsnodeid=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
+    ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
     echo "${liking_me} is Astronaut ?"
-    echo "Get TW Capsule http://qo-op.com:8080/ipns/$ipfsnodeid "
+    echo "Get TW Capsule http://qo-op.com:8080/ipns/$ASTRONAUTENS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     ################################## JAKLIS LIKING_ME stars
@@ -102,10 +102,10 @@ do
         echo "Getting latest online TW..."
         YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-        echo "$LIBRA/ipns/$ipfsnodeid"
-        echo "http://$myIP:8080/ipns/$ipfsnodeid ($YOU)"
-        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ipfsnodeid > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html \
-                            || curl -m 12 -so ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ipfsnodeid"
+        echo "$LIBRA/ipns/$ASTRONAUTENS"
+        echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
+        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html \
+                            || curl -m 12 -so ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
         ## PLAYER TW IS ONLINE ?
         if [ ! -s ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html ]; then
@@ -147,7 +147,7 @@ do
                                         mkdir -p  ~/.zen/game/world/$WISH
                                         echo "/ipns/$VOEUNS =>  ~/.zen/game/world/$WISH"
                                         [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html \
-                                                            || curl -m 12 -so ~/.zen/tmp/$VOEUNS.html "$LIBRA/ipns/$ipfsnodeid"
+                                                            || curl -m 12 -so ~/.zen/tmp/$VOEUNS.html "$LIBRA/ipns/$ASTRONAUTENS"
 
                                         [[ -s ~/.zen/tmp/$VOEUNS.html ]] && cp ~/.zen/tmp/$VOEUNS.html ~/.zen/game/world/$WISH/index.html
 
@@ -172,12 +172,12 @@ do
         do
             echo "Ami(s) de cet Ami $linking_me : $nid"
             friend_of_friend=$(cat ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$nid'"))')
-            echo "$friend_of_friend" | jq -r > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/fof.json
+            echo "$friend_of_friend" | jq -r > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/friend_of_friend.json
 
         done
 
         echo "***** Keep G1/IPNS conversion *****"
-        echo ${ipfsnodeid} > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/ipfsnodeid
+        echo ${ASTRONAUTENS} > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/.astronautens
 
     else
         echo "ETOILES RECUES!! ... ENVOI MOI UN MESSAGE POUR CONNAITRE QUI"
