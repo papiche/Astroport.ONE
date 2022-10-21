@@ -8,6 +8,10 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 
+## CLEANING  ~/.zen/tmp
+rm -Rf ~/.zen/tmp
+mkdir -p ~/.zen/tmp
+
 ## RESTART IPFS DAEMON
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 [[ -s /etc/sudoers.d/systemctl ]] && sudo systemctl restart ipfs && sleep 5
