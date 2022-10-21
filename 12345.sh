@@ -58,10 +58,12 @@ while true; do
         rm -f ~/.zen/tmp/gchange.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
+
         echo "$GNS"
+        echo "$GNS" | nc -l -p 12345 -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
-        # IF NOT CREATE TW
+        # IF NOT = BATCH CREATE TW
 
         continue
 
