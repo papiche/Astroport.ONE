@@ -70,8 +70,9 @@ while true; do
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
 
         echo "$GNS is AVAILABLE on http://$myIP:${PORT}"
-        sed "s~_TWLINK_~$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
-        cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
+        # sed "s~_TWLINK_~$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
+        # cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
+        echo $GNS | nc -l -p ${PORT} -q 1 &
 
         ## CHECK IF ALREADY EXISTING PLAYER
         # IF NOT = BATCH CREATE TW
