@@ -103,7 +103,7 @@ sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j  > ~/.zen/tmp/messin.json
             [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messin.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messin.json
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j -o > ~/.zen/tmp/messout.json
-            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messout.json) == "True" ]] && echo "[]" > messout.json
+            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messout.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messout.json
 
             echo "Creating messages In/Out JSON ~/.zen/tmp/mess.$MOATS.json"
             echo '[' > ~/.zen/tmp/mess.$MOATS.json
