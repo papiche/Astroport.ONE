@@ -18,7 +18,7 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"
 PORT=12345
 
-mkdir -p ~/.zen/tmp/123
+mkdir -p ~/.zen/tmp/123/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
@@ -45,7 +45,7 @@ while true; do
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/123/${MOATS}.myIP.http
 
     ## WAITING TO SERVE LANDING REDIRECT PAGE
-    URL=$(cat $HOME/.zen/tmp/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    URL=$(cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     ############################################################################
     start=`date +%s`
 
@@ -152,7 +152,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 #######################################
 ### RELAUCH myIP.http.${MOATS} SELF REDIRECT $PORT PAGE UNTIL ~/.zen/tmp/123/${MOATS}.index.redirect IS CREATED &
 ###################################################################################################
-while [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
+while [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
 ###################################################################################################
 
         PLAYER=$(urldecode ${arr[1]})
