@@ -39,11 +39,11 @@ while true; do
     echo "$MOATS LANDING PAGE http://$myIP:$PORT"
 
     # REPLACE myIP in http response template
-    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/myIP.http.${MOATS}
-    sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/myIP.http.${MOATS}
+    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/${MOATS}.myIP.http
+    sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/${MOATS}.myIP.http
 
     ## WAITING TO SERVE LANDING REDIRECT PAGE
-    URL=$(cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    URL=$(cat $HOME/.zen/tmp/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     ############################################################################
     start=`date +%s`
 
@@ -54,10 +54,10 @@ while true; do
         echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/index.redirect.${MOATS}
-sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/index.redirect.${MOATS}
+" > ~/.zen/tmp/${MOATS}.index.redirect
+sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/${MOATS}.index.redirect
 
-        cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
+        cat ~/.zen/tmp/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
 
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
@@ -87,45 +87,50 @@ sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/
 
         echo "API ZERO CALL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&$TYPE=$PLAYER"
 
+        echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/${MOATS}.secret.june
+
+        # CALCULATING G1PUB
+        ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}.secret.key  "$SALT" "$PEPPER"
+        G1PUB=$(cat ~/.zen/tmp/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
+        [[ ! $G1PUB ]] && echo "ERROR - G1PUB COMPUTATION EMPTY" && continue
+
         ## CALCULATING IPNS ADDRESS
         ipfs key rm gchange 2>/dev/null
-        rm -f ~/.zen/tmp/gchange.key
-        ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
-        GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
-        echo "Astronaute TW : http://$myIP:8080/ipns/$GNS"
+        rm -f ~/.zen/tmp/${MOATS}.${G1PUB}.ipns.key
+        ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
+        GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.${G1PUB}.ipns.key )
+        echo "Astronaute TW ? http://$myIP:8080/ipns/$GNS"
 
         if [[ $TYPE == "messaging" ]]; then
-            ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/secret.key  "$SALT" "$PEPPER"
-            G1PUB=$(cat ~/.zen/tmp/secret.key | grep 'pub:' | cut -d ' ' -f 2)
-            [[ ! $G1PUB ]] && echo "ERROR - G1PUB COMPUTATION EMPTY" && continue
 
             echo "Extracting $G1PUB messages..."
-            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j  > ~/.zen/tmp/messin.json
-            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messin.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messin.json
-            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key read -n 10 -j -o > ~/.zen/tmp/messout.json
-            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messout.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messout.json
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/messin.${G1PUB}.json
+            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messin.${G1PUB}.json
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/messout.${G1PUB}.json
+            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/messout.${G1PUB}.json
 
-            echo "Creating messages In/Out JSON ~/.zen/tmp/mess.$MOATS.json"
-            echo '[' > ~/.zen/tmp/mess.$MOATS.json
-            cat ~/.zen/tmp/messin.json >> ~/.zen/tmp/mess.$MOATS.json
-            echo "," >> ~/.zen/tmp/mess.$MOATS.json
-            cat ~/.zen/tmp/messout.json >> ~/.zen/tmp/mess.$MOATS.json
-            echo ']' >> ~/.zen/tmp/mess.$MOATS.json
+            echo "Creating messages In/Out JSON ~/.zen/tmp/${MOATS}.messaging.json"
+            echo '[' > ~/.zen/tmp/${MOATS}.messaging.json
+            cat ~/.zen/tmp/messin.${G1PUB}.json >> ~/.zen/tmp/${MOATS}.messaging.json
+            echo "," >> ~/.zen/tmp/${MOATS}.messaging.json
+            cat ~/.zen/tmp/messout.${G1PUB}.json >> ~/.zen/tmp/${MOATS}.messaging.json
+            echo ']' >> ~/.zen/tmp/${MOATS}.messaging.json
 
             echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/index.redirect.${MOATS}
-cat ~/.zen/tmp/mess.$MOATS.json >> ~/.zen/tmp/index.redirect.${MOATS}
+" > ~/.zen/tmp/${MOATS}.index.redirect
+cat ~/.zen/tmp/${MOATS}.messaging.json >> ~/.zen/tmp/${MOATS}.index.redirect
 
         fi
 
         ## IF NO MESSAGING => IPNS TW REDIRECT PAGE
-        [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} ]] && sed "s~_TWLINK_~http://$myIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
+        [[ "$TYPE" == "g1pub" ]] && sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${MOATS}.index.redirect
+        [[ ! -f ~/.zen/tmp/${MOATS}.index.redirect ]] && sed "s~_TWLINK_~http://$myIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${MOATS}.index.redirect
 
         ## RESPONDING
-        cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
-        echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/index.redirect.${MOATS}"
+        cat ~/.zen/tmp/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
+        echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/${MOATS}.index.redirect"
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
         #echo "$GNS" | nc -l -p ${PORT} -q 1 &
 
@@ -143,9 +148,9 @@ cat ~/.zen/tmp/mess.$MOATS.json >> ~/.zen/tmp/index.redirect.${MOATS}
     if [[ ${arr[0]} == "email" || ${arr[0]} == "elastic" ]]; then
 
 #######################################
-### RELAUCH myIP.http.${MOATS} SELF REDIRECT $PORT PAGE UNTIL ~/.zen/tmp/index.redirect.${MOATS} IS CREATED &
+### RELAUCH myIP.http.${MOATS} SELF REDIRECT $PORT PAGE UNTIL ~/.zen/tmp/${MOATS}.index.redirect IS CREATED &
 ###################################################################################################
-while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/myIP.http.${MOATS} | nc -l -p ${PORT} -q 1; done &
+while [[ ! -f ~/.zen/tmp/${MOATS}.index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
 ###################################################################################################
 
         PLAYER=$(urldecode ${arr[1]})
@@ -192,13 +197,13 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
                 echo "$TWLINK"
 
                 # Injection TWLINK dans template de redirection.
-                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/index.redirect.${MOATS}
+                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${MOATS}.index.redirect
 
-                ## NOW ~/.zen/tmp/index.redirect.${MOATS} APPEARS. WAITING $PORT AVAILABLE THEN INJECT $TWLINK REDIRECT
+                ## NOW ~/.zen/tmp/${MOATS}.index.redirect APPEARS. WAITING $PORT AVAILABLE THEN INJECT $TWLINK REDIRECT
                 while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do echo "sleeping...."; sleep 0.5; done
                 echo "ASTRONAUT REDIRECTION $TWLINK AVAILABLE on http://$myIP:${PORT}"
 
-                cat ~/.zen/tmp/index.redirect.${MOATS} | nc -l -p ${PORT} -q 1 &
+                cat ~/.zen/tmp/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
 
                 ###################################################################################################
                 end=`date +%s`
@@ -246,7 +251,7 @@ while [[ ! -f ~/.zen/tmp/index.redirect.${MOATS} && ! $(ps auxf --sort=+utime | 
     [[ "$1" == "ONE" ]] && exit 0
 
 
-    rm ~/.zen/tmp/myIP.http.${MOATS}
+    rm ~/.zen/tmp/${MOATS}.myIP.http
     HOMEPAGE=""
 
 done
