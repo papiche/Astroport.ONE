@@ -15,28 +15,25 @@ ME="${0##*/}"
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+[[ ! $myIP ]] && myIP="127.0.1.1"
+PORT=12345
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "already running" && exit 1
+[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=toto&pepper=toto " && exit 1
 
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-[[ ! $myIP ]] && myIP="127.0.1.1"
-
-# Check if Astroport Station already has a "captain"
-echo "Register and Connect Astronaut with http://$myIP:1234/?email=&ph1=&ph2="
+echo "LAUNCHING Astroport  API Server - http://$myIP:1234/?salt=toto&pepper=toto&messaging"
 
 [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
-PORT=12345
-
 while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ $PORT -lt 12399 ] && PORT=$((PORT+1)) || PORT=12345
-                ## TODO : RANDOM PORT SWAPPINESS
+    [ $PORT -lt 12445 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=12345
+                ## RANDOM PORT SWAPPINESS
 
     echo "************************************************************************* "
     echo "SERVING.............................. http://$myIP:1234 PORT"
