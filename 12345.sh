@@ -26,7 +26,8 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 
 echo "LAUNCHING Astroport  API Server - http://$myIP:1234/?salt=toto&pepper=toto&messaging"
 
-[[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
+# [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
+[[ $DISPLAY ]] && xdg-open "http://$myIP:1234" 2>/dev/null
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
@@ -102,6 +103,19 @@ sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key )
         echo "Astronaute TW ? http://$myIP:8080/ipns/$GNS"
+
+        ## ARCHIVE TOCTOC PLAYERS
+        mkdir -p ~/.zen/tmp/toctoc/
+        ISTHERE=$(ls -t ~/.zen/tmp/toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
+        TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
+        if [[ ! $ISTHERE ]]; then
+            echo "PLAYER 1ST TOCTOC : $MOATS"
+            cp ~/.zen/tmp/123/${MOATS}.* ~/.zen/tmp/toctoc/
+        else
+            OLDONE=$(ls -t ~/.zen/tmp/123/*.${G1PUB}.ipns.key | tail -n 1)
+            DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
+            [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/123/$DTIME.*
+        fi
 
         if [[ $TYPE == "messaging" ]]; then
 
