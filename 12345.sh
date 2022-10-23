@@ -34,7 +34,7 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ $PORT -lt 12445 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=12345
+    [ $PORT -lt 12445 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT+1))
                 ## RANDOM PORT SWAPPINESS
 
     echo "************************************************************************* "
