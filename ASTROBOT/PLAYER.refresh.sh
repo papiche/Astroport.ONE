@@ -20,10 +20,15 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER"
     echo "##################################################################"
+    # Get PLAYER wallet amount
+    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    echo "+++ WALLET BALANCE _ $COINS (G1) _"
+    echo
     echo "    ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION"
     ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "$PLAYER"
     echo "##################################################################"
     echo "##################################################################"
+    echo "################### REFRESH ASTRONAUTE TW ###########################"
     echo "##################################################################"
 
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
@@ -33,11 +38,6 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 
     rm -Rf ~/.zen/tmp/astro
     mkdir -p ~/.zen/tmp/astro
-
-    # Get PLAYER wallet amount
-    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _"
-    echo
 
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
