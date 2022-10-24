@@ -160,18 +160,19 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
 ###################################################################################################
 ###################################################################################################
-# API ONE : ?email/elastic=ELASTICID&salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&pseudo=PROFILENAME
-    if [[ ${arr[0]} == "email" || ${arr[0]} == "elastic" ]]; then
+# API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&email/elastic=ELASTICID&pseudo=PROFILENAME
+    if [[ ${arr[4]} == "email" || ${arr[4]} == "elastic" ]]; then
 
 #######################################
 ### RELAUCH myIP.http.${MOATS} SELF REDIRECT $PORT PAGE UNTIL ~/.zen/tmp/123/${MOATS}.index.redirect IS CREATED &
 ###################################################################################################
-while [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
+while [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; \
+do cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
 ###################################################################################################
 
-        PLAYER=$(urldecode ${arr[1]})
-        SALT=$(urldecode ${arr[3]})
-        PEPPER=$(urldecode ${arr[5]})
+        SALT=$(urldecode ${arr[1]})
+        PEPPER=$(urldecode ${arr[3]})
+        PLAYER=$(urldecode ${arr[5]})
         PSEUDO=$(urldecode ${arr[7]})
 
                 if [[ ! $PSEUDO ]]; then
