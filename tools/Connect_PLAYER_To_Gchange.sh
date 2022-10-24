@@ -55,7 +55,7 @@ echo "cat ~/.zen/tmp/received_stars.json | jq -r"
 for liking_me in $(cat ~/.zen/tmp/liking_me | sort | uniq);
 do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
-
+    echo "........................."
     ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
     echo "${liking_me} is Astronaut ?"
     echo "Get TW Capsule http://qo-op.com:8080/ipns/$ASTRONAUTENS "
@@ -68,7 +68,7 @@ do
     -n "https://data.gchange.fr" \
     stars -p ${liking_me} > ~/.zen/tmp/${liking_me}.Gstars.json
 
-    echo "Got Stars : cat ~/.zen/tmp/${liking_me}.Gstars.json | jq -r"
+    echo "Got Stars - DEBUG - cat ~/.zen/tmp/${liking_me}.Gstars.json | jq -r"
     ## ZOMBIE PROTECTION
     [[ "$?" == "0" && ! -s ~/.zen/tmp/${liking_me}.Gstars.json ]] && rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me} && echo "${liking_me} is a ZOMBIE..." && continue
 
@@ -86,15 +86,8 @@ do
     then
         # ADD ${liking_me} TO MY ipfs FRIENDS list
         echo "${liking_me} ($my_star_level stars) : Ŋ1 SCORE  $f_score "
-        mkdir -p ~/.zen/game/players/$PLAYER/FRsIENDS/${liking_me}
+        mkdir -p ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}
 
-        # REFRESH & PUBLISH stars friends map
-        if [[ "$my_star_level" == "null" || "$my_star_level" == "" ]]; then
-            rm -Rf ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}
-            echo "$my_star_level NO STAR !! Removing ${liking_me}"
-            ## TODO : remove "ipfs pin" in "~/.zen/PIN/"
-            continue ## REMOVE NO GOOD FRIENDS (no star)
-        fi
         cp ~/.zen/tmp/${liking_me}.Gstars.json ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${liking_me}.Gstars.json
         echo "$my_star_level" > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/stars.level && echo "***** $my_star_level STARS *****"
 
@@ -112,60 +105,17 @@ do
                         # # # # # # # # # # # # # # #
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "SALUT. Je suis sur Astroport. Et toi." -m "Active ton TW avec moi : http://libra.copylaradio.com:1234"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "SALUT. Je suis sur Astroport. Tu viens." -m "Active ton TW avec moi : http://libra.copylaradio.com:1234 - DEV MODE -"
         else
             echo "COOL MON AMI PUBLIE SUR IPFS"
             ls -al ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html
             # # # # # # # # # # # # # # # TODO
-                 # CHECK Dessin de Moa ?? For Now Gchange contains official friends stars level
+                 # CHECK Dessin de Moa ?? (DIS)CONNECT PLAYERS
                         # # # # # # # # # # # # # # #
-                                # GET G1Voeux
-                                # # # # # # # # # # # # # # #
-                                ## EXPORT [tag[G1Voeu]]
-                                echo "## EXPORT FRIEND $PLAYER TW [tag[G1Voeu]] $INDEX"
-                                rm -f ~/.zen/tmp/g1amig1voeu.json
-                                tiddlywiki  --load ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html \
-                                                    --output ~/.zen/tmp --render '.' 'g1amig1voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
-
-                                if [[ -s ~/.zen/tmp/g1amig1voeu.json ]];
-                                then
-                                    for VOEUNS in "$(cat ~/.zen/tmp/g1amig1voeu.json | jq -r '.[].ipns')"
-                                    do
-                                        # GET SUB JSON VALUES
-                                        cat ~/.zen/tmp/g1amig1voeu.json | jq -r '.[] | select(.ipns | strings | test("'$VOEUNS'"))' > ~/.zen/tmp/wish.json
-                                        WISH=$(cat ~/.zen/tmp/wish.json | jq -r '.wish' )
-                                        TITLE=$(cat ~/.zen/tmp/wish.json | jq -r '.title' )
-                                        TAGS=$(cat ~/.zen/tmp/wish.json | jq -r '.tags' )
-                                        IPNS=$(cat ~/.zen/tmp/wish.json | jq -r '.ipns' )
-
-                                        [[ ! $WISH ]] && echo "JSON G1WISH ERROR - CHECK - ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html" && continue
-
-                                        # IPNS could contain VOEUNS or /ipns/VOEUNS (/ tailing)
-                                        VOEUNS=$(echo $IPNS | rev | cut -d '/' -f 1 | rev)
-
-                                        echo "Getting latest FRIEND G1$TITLE TW into Local World"
-                                        mkdir -p  ~/.zen/game/world/$WISH
-                                        echo "/ipns/$VOEUNS =>  ~/.zen/game/world/$WISH"
-                                        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html \
-                                                            || curl -m 12 -so ~/.zen/tmp/$VOEUNS.html "$LIBRA/ipns/$ASTRONAUTENS"
-
-                                        [[ -s ~/.zen/tmp/$VOEUNS.html ]] && cp ~/.zen/tmp/$VOEUNS.html ~/.zen/game/world/$WISH/index.html
-
-                                        echo "FRIEND G1WISH COPIED ! $TITLE"
-                                        echo "$TITLE" > ~/.zen/game/world/$WISH/.pepper
-                                        ls -al ~/.zen/game/world/$WISH/index.html
-
-                                    done
-
-                                else
-
-                                        echo "ERROR -- NOT COMPATIBLE TW -- AUCUN G1VOEU CHEZ CET AMI ?"
-
-                                fi
 
         fi
 
-        ## APPLIQUER FILTRAGE TAG
+        ## ACTIVER FILTRAGE TAG...
 
         ## Get Ŋ2 LEVEL
         for nid in $(cat ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[].issuer');

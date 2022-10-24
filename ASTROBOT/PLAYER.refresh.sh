@@ -23,8 +23,8 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     # Get PLAYER wallet amount
     COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
     echo "+++ WALLET BALANCE _ $COINS (G1) _"
-    echo
-    echo "    ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION"
+    echo "##################################################################"
+    echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
     ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "$PLAYER"
     echo "##################################################################"
     echo "##################################################################"
