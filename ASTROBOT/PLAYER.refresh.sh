@@ -20,6 +20,12 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER"
     echo "##################################################################"
+    echo "    ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION"
+    ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "$PLAYER"
+    echo "##################################################################"
+    echo "##################################################################"
+    echo "##################################################################"
+
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)

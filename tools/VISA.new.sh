@@ -274,8 +274,8 @@ echo "$PASS" > ~/.zen/game/players/$PLAYER/.pass
 rm -f ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-## CREATE GCHANGE+ PROFILE
-${MY_PATH}/Connect_PLAYER_To_Gchange.sh
+## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
+${MY_PATH}/Connect_PLAYER_To_Gchange.sh "$PLAYER"
 
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh

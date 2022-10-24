@@ -11,15 +11,16 @@ ME="${0##*/}"
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
 INDEX="$1"
-[[ ! $INDEX ]] && echo "Please provide path to source TW index.html" && exit 1
-[[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX" && exit 1
+[[ ! $INDEX ]] && echo "Please provide path to source TW index.html - EXIT -" && exit 1
+[[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX - EXIT -" && exit 1
 
 PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
 ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
-[[ ! $ASTRONAUTENS ]] && echo "$PLAYER IPNS INTROUVABLE" && exit 1
+[[ ! $ASTRONAUTENS ]] && echo "$PLAYER CLEF IPNS INTROUVABLE - EXIT -" && exit 1
 
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
 echo "Exporting $PLAYER TW [tag[G1Voeu]]"
@@ -28,9 +29,13 @@ tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'g1voeu.json' 'text/
 
 cat ~/.zen/tmp/g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/g1wishes
 
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
 ## GET VoeuTitle LIST
 while read WISH
 do
+    [[ $WISH = "" ]] && continue
+    echo "==============================="
     echo "G1Voeu $WISH"
     ## Get $WISHNAME TW
     WISHNAME=$(cat ~/.zen/game/world/$WISH/.pepper)
@@ -39,23 +44,24 @@ do
     WISHINDEX="$HOME/.zen/game/world/$WISH/index.html"
     ## RUN SPECIFIC G1Voeu Treatment (G1CopierYoutube.sh)
     if [[ -s $MY_PATH/G1$WISHNAME.sh ]]; then
-        echo "Astrobot G1$WISHNAME.sh program found !"
+        echo "........................ Astrobot G1$WISHNAME.sh program found !"
         echo "________________________________  Running it *****"
         ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "$PLAYER"
         echo "________________________________   Finished ******"
-
+    else
+        echo "......................... G1$WISHNAME No special program found !"
     fi
 
     ## RUN TW search & copy treatment
-    echo "Search & Collect default program"
+    echo "*********************************"
+    echo "Search & Collect Ŋ1 G1$WISHNAME tids"
 
     ## CLEAN OLD CACHE
     rm -Rf ~/.zen/tmp/work
     mkdir -p ~/.zen/tmp/work
-    echo "==============================="
     echo "VOEU : $WISHNAME : $WISH"
     VOEUNS=$(ipfs key list -l | grep $WISH | cut -d ' ' -f1)
-    echo "/ipns/$VOEUNS"
+    echo "http://$myIP:8080/ipns/$VOEUNS"
     echo "==============================="
 
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
