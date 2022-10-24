@@ -174,15 +174,15 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IVOEU}~g" ~/.zen/game/world/$WISHKEY/index.html
 
 #    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
-
+#:[tag[G1CopierYoutube]] [tag[pdf]]
     # Contains QRCode linked to G1VoeuTW and BUTTON listing G1Voeux
-    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"' ><img src='"/ipfs/${IVOEUPLAY}"'></a>
-    <br><br>
+    TEXT="<a target='_blank' href='#:[tag[G1"$PEPPER"]]' ><img src='"/ipfs/${IVOEUPLAY}"'></a>
+    <br><a target='_blank' href='"/ipns/${VOEUNS}"'>TW G1Voeu "$PLAYER"</a><br><br>
     <\$button class='tc-tiddlylink'>
-    <\$list filter='[tag["${PEPPER}"]]'>
+    <\$list filter='[tag[G1"${PEPPER}"]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
     </\$list>
-    "${PEPPER}"
+    Afficher tous les G1"${PEPPER}"
     </$button>"
 
     # NEW IVEU TIDDLER
@@ -195,7 +195,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     "ipns": "'$VOEUNS'",
     "wish": "'$WISHKEY'",
     "text": "'$TEXT'",
-    "tags": "'G1Voeu G1${PEPPER}'"
+    "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'"
   }
 ]
 ' > ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json
