@@ -41,9 +41,9 @@ do
     echo "==============================="
     echo "G1Voeu $WISH"
     ## Get $WISHNAME TW
-    WISHNAME=$(cat ~/.zen/tmp/g1voeu.json | jq -r '.title | select(.wish | strings | test("'$WISH'"))')
+    WISHNAME=$(cat ~/.zen/tmp/g1voeu.json | jq .[] | jq -r 'select(.wish=="'$WISH'") | .title')
     [[ ! $WISHNAME ]] && echo "WISH sans NOM - CONTINUE -" && continue
-    VOEUNS=$(cat ~/.zen/tmp/g1voeu.json | jq -r '.ipns | select(.wish | strings | test("'$WISH'"))')
+    VOEUNS=$(cat ~/.zen/tmp/g1voeu.json  | jq .[] | jq -r 'select(.wish=="'$WISH'") | .ipns')
 
     mkdir -p ~/.zen/tmp/$WISHNAME/$WISH
 
