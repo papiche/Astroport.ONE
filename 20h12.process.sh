@@ -24,9 +24,15 @@ git pull
 # Refresh ~/.zen/game/world/G1VOEU
 # NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 
+## CLOSING 1234 REDIRECT
+killall 12345.sh
+killall nc
+
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
+## OPEN ENTRANCE AGAIN
+~/.zen/Astroport.ONE/12345.sh &
 
 ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
 ipfs bootstrap rm --all > /dev/null 2>&1
