@@ -22,13 +22,13 @@ if [[ ! -d ~/.zen/game/players/$PLAYER/FRIENDS/ ]]; then
     ########################################################################
     echo "CREATING $PLAYER GCHANGE+ PROFILE"
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://astroport.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --site "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://qo-op.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
 
     ########################################################################
     #echo "CREATING $PLAYER CESIUM+ PROFILE"
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && echo "Action Manuelle " $ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
 fi
 
@@ -112,7 +112,7 @@ do
                         # # # # # # # # # # # # # # #
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "SALUT. Je suis sur 'Astroport' Et toi ?" -m "Active ta 'Capsule Interplanétaire' et raccordons nos TW : https://qo-op.com"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "SALUT. Je suis sur Astroport. Et toi." -m "Active ton TW avec moi : http://libra.copylaradio.com:1234"
         else
             echo "COOL MON AMI PUBLIE SUR IPFS"
             ls -al ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html
@@ -181,7 +181,7 @@ do
 
     else
         echo "ETOILES RECUES!! ... ENVOI MOI UN MESSAGE POUR CONNAITRE QUI"
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Etoiles de ($my_star_level stars) : Ŋ1 SCORE  $f_score" -m "https://www.gchange.fr/#/app/user?q=${liking_me} "
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "ETOILES RECUES ${liking_me} ($my_star_level stars) : Ŋ1 SCORE  $f_score" -m "https://www.gchange.fr/#/app/user?q=${liking_me} "
          echo "Not Linking ;( YET."
     fi
 
