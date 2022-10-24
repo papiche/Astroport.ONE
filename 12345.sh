@@ -45,8 +45,11 @@ while true; do
     sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/123/${MOATS}.myIP.http
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/123/${MOATS}.myIP.http
 
-    ## WAITING TO SERVE LANDING REDIRECT PAGE
+    ############################################################################
+    ## WAITING TO SERVE 1ST LANDING REDIRECT PAGE
+    ############################################################################
     URL=$(cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    ############################################################################
     ############################################################################
     start=`date +%s`
 
@@ -154,30 +157,26 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         # IF NOT = BATCH CREATE TW
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
-        continue
 
     fi
 
 ###################################################################################################
 ###################################################################################################
-# API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&email/elastic=ELASTICID&pseudo=PROFILENAME
-    if [[ ${arr[4]} == "email" || ${arr[4]} == "elastic" ]]; then
+# API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&messaging/g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
+    if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
 
-#######################################
-### RELAUCH myIP.http.${MOATS} SELF REDIRECT $PORT PAGE UNTIL ~/.zen/tmp/123/${MOATS}.index.redirect IS CREATED &
-###################################################################################################
-while [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect && ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; \
-do cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
-###################################################################################################
+        start=`date +%s`
 
         SALT=$(urldecode ${arr[1]})
         PEPPER=$(urldecode ${arr[3]})
-        PLAYER=$(urldecode ${arr[5]})
-        PSEUDO=$(urldecode ${arr[7]})
+        PLAYER=$(urldecode ${arr[7]})
+        PSEUDO=$(urldecode ${arr[9]})
+
+        [[ ! $PLAYER ]] && echo "ERROR - NO EMAIL. BAD ELASTIC PLAYER" && continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
-                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}
+                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:3}
                 fi
                 # PASS CRYPTING KEY
                 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -217,10 +216,8 @@ do cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p ${PORT} -q 1; done &
                 sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
 
                 ## NOW ~/.zen/tmp/123/${MOATS}.index.redirect APPEARS. WAITING $PORT AVAILABLE THEN INJECT $TWLINK REDIRECT
-                while [[ $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]]; do echo "sleeping...."; sleep 0.5; done
-                echo "ASTRONAUT REDIRECTION $TWLINK AVAILABLE on http://$myIP:${PORT}"
-
-                cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
+                echo "ASTRONAUT $TWLINK AVAILABLE on http://$myIP:${PORT}"
+                [[ ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]] && cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
 
                 ###################################################################################################
                 end=`date +%s`
