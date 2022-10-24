@@ -193,10 +193,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                     CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$PEPPER")
                     [[ ! $CHECK ]] && echo "ERROR - CREDENTIALS NOT CORRESPONDING WITH PLAYER" && continue
+               fi
 
                     mkdir -p ~/.zen/tmp/123/TW/
                     cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/123/TW/index.html
-               fi
 
                ###################################################################################################
                 # VERIFICATION PAR EXTRACTION MOA
