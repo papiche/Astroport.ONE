@@ -74,7 +74,8 @@ do
             echo "TRY EXPORT [tag[G1$WISHNAME]]  FROM $FINDEX"
             tiddlywiki --load $FRIENDTW \
                                 --output ~/.zen/tmp/$WISHNAME --render '.' 'g1wishtiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'$WISHNAME']]'
-            [[ ! -s ~/.zen/tmp/$WISHNAME/g1wishtiddlers.json ]] && echo "NO $WISHNAME - CONTINUE" && continue
+            [[ ! -s ~/.zen/tmp/$WISHNAME/g1wishtiddlers.json ]] && echo "NO $WISHNAME - CONTINUE -" && continue
+            [[ $(cat ~/.zen/tmp/$WISHNAME/g1wishtiddlers.json) == "[]" ]] && echo "NO $WISHNAME - CONTINUE -" && continue
 
             echo "## WISHES FOUND ;) MIAM "
             ## TODO ADD EXTRA TAG ?
