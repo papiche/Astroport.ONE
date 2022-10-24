@@ -63,7 +63,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         tiddlywiki --load ~/.zen/tmp/astro/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
         # FIRST TIME PLAYER TW USING GATEWAY
-        [[ $OLDIP == "_SECRET_" ]] && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/astro/index.html && OLDIP=$myIP
+        [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/astro/index.html && OLDIP=$myIP
         # AM I MANAGING TW
         [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING -" && continue
         #############################################################

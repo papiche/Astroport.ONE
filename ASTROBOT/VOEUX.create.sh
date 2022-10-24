@@ -25,7 +25,8 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 ## EXPORT [tag[voeu]]
-echo "## EXPORT FROM $PLAYER TW [tag[voeu]] $INDEX"
+echo "## EXTRACTION DE NOUVEAUX VOEUX pour $PLAYER TW"
+echo "$INDEX  [tag[voeu]]  ?"
 rm -f ~/.zen/tmp/voeu.json
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[voeu]]'
 
@@ -34,11 +35,11 @@ tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/pl
 ## Tous les tiddlers comportant le tag "voeu" lancent la création d'un G1VOEU ayant le titre du Voeu comme génrateur de clef TW (pepper).
 for VOEU in "$(cat ~/.zen/tmp/voeu.json | jq -r '.[].title')"
 do
-    [[ ! $VOEU ]] && echo "NO NAME" && continue
-    echo "Detected $VOEU"
+    [[ ! $VOEU ]] && echo "AUCUN VOEU" && continue
+    echo "NOUVEAU $VOEU"
     VOEU=$(echo "$VOEU" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
 
-    echo "Creating G1$VOEU TW"
+    echo "CREATION G1Voeu G1$VOEU"
     ~/.zen/Astroport.ONE/ASTROBOT/G1Voeu.sh "$VOEU" "$PLAYER" "$INDEX"
 
 done

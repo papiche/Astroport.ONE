@@ -22,12 +22,12 @@ PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "Troisième paramètre G1PUB manquant" && exit 1
 
-[[ ! $INDEX ]] && echo "MISSING ASTRONAUTE TW index.html" && exit 1
+[[ ! $INDEX ]] && echo "MISSING ASTRONAUTE TW index.html - EXIT -" && exit 1
 
 echo "Working on $INDEX"
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-[[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
+[[ $ASTRONAUTENS == "" ]] && echo "CLEF IPNS ASTRONAUTE MANQUANTE - EXIT -" && exit 1
 
 echo "Bienvenue $PSEUDO ($PLAYER) : $G1PUB"
 echo
@@ -60,10 +60,10 @@ echo
 
     ## TEST IPFS
     ipfs --timeout=6s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.html
-    [[ -s ~/.zen/tmp/$VOEUNS.html ]] && echo "HEY !!! OH !! CE VOEUX EXISTE !  ~/.zen/tmp/$VOEUNS.html " && exit 1
+    [[ -s ~/.zen/tmp/$VOEUNS.html ]] && echo "HEY !!! UN TW EXISTE POUR CE VOEU !  ~/.zen/tmp/$VOEUNS.html  - EXIT -" && exit 1
     ## WORLD TEST
     TEST=$(cat ~/.zen/game/world/*/.pepper 2>/dev/null | grep -w "$PEPPER")
-    [[ $TEST ]]  && echo "HEY !!! OH !! CE VOEUX $PEPPER EXISTE DANS VOTRE MONDE !  $TEST " && exit 1
+    [[ $TEST ]]  && echo "HEY !!! OH !! VOEU $PEPPER DANS VOTRE MONDE !  $TEST  - EXIT -" && exit 1
 
     # CRYPTO BUG. TODO use natools to protect and share key with Ŋ1 only ;)
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)

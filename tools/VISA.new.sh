@@ -16,7 +16,8 @@ PLAYER="$3"
 PSEUDO="$4"
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-
+ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+[[ $ASTRONAUTENS ]] && echo "IPNS $PLAYER EXISTANT http://$myIP:8080/$ASTRONAUTENS !! DO NOTHING - EXIT -" && exit 0
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
