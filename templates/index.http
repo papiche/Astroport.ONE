@@ -8,16 +8,16 @@ Content-Type: text/html; charset=UTF-8
     <meta http-equiv="refresh" content="4; url='http://127.0.0.1:12345'" />
     <style>
     #wait {
-    width:100%;
-    height:100%;
+    width:60%;
+    height:60%;
     }
     </style>
   </head>
 <body>
 <center>
 <h1>ASTROPORT Ŋ1</h1>
-<img src='http://127.0.0.1:8080/ipfs/QmS4xmYNpto1ce65VBPJsDjiaoupmxTTE7o5RD2zrnJcVb/QRCode.gif' id='await'/>
-<h2>Recherche TW Astronaute</h2>
+<b>Astronaute... préparation de votre port d'arrimage</b><br>
+<img src='http://127.0.0.1:8080/ipfs/QmS4xmYNpto1ce65VBPJsDjiaoupmxTTE7o5RD2zrnJcVb/QRCode.gif' id='wait'/>
 </center>
 </body>
 </html>
