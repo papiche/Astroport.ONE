@@ -74,7 +74,7 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 Nous cherchons des amis pour étendre les possibilités de nos TW
 
 ```
-# TiddlyWiki # DEVELOPPERS NEEDED
+# TiddlyWiki # DO YOU TALK TW ? https://talk.tiddlywiki.org
 sudo apt install npm
 sudo npm install -g tiddlywiki
 added 1 package, and audited 2 packages in 10s
