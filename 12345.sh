@@ -162,7 +162,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 # AM I MANAGING TW
                 [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
             else
-                echo "TRY OFFICIAL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
+                echo "***** TRY OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
             fi
             sed "s~_TWLINK_~http://$TWIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
         fi
