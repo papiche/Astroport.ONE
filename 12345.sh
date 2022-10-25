@@ -148,6 +148,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
         ## ELSE IPNS TW REDIRECT
         if [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]]; then
+            TWIP=$myIP
             # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
             if [[ $TYPE="official" ]]; then
                 ipfs --timeout 3s cat /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html
@@ -159,7 +160,6 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
             else
                 echo "TRY OFFICIAL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
-                TWIP=$myIP
             fi
             sed "s~_TWLINK_~http://$TWIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
         fi
