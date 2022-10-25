@@ -136,6 +136,7 @@ sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/
             cat ~/.zen/tmp/123/messout.${G1PUB}.json >> ~/.zen/tmp/123/${MOATS}.messaging.json
             echo ']' >> ~/.zen/tmp/123/${MOATS}.messaging.json
 
+            ## ADDING HTTP/1.1 PROTOCOL HEADER
             echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
@@ -143,6 +144,8 @@ Content-Type: text/html; charset=UTF-8
 cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redirect
 
         fi
+        ######################## MESSAGING
+
         # G1PUB -> Open Gchange Profile
         [[ "$TYPE" == "g1pub" ]] && sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
 
