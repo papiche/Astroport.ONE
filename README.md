@@ -69,6 +69,18 @@ https://forum.monnaie-libre.fr/t/les-explorateurs-du-libre-rencontre-et-partage-
 bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
 ```
 
+# A L'AIDE
+
+Nous cherchons des amis pour étendre les possibilités de nos TW
+
+```
+# TiddlyWiki # DEVELOPPERS NEEDED
+sudo apt install npm
+sudo npm install -g tiddlywiki
+added 1 package, and audited 2 packages in 10s
+found 0 vulnerabilities
+```
+
 ---
 # DEPANNAGE
 
