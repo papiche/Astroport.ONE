@@ -155,7 +155,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
             if [[ $TYPE="official" ]]; then
                 ipfs --timeout 3s cat /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html && echo "LATEST TW: ~/.zen/tmp/123/${MOATS}.astroindex.html"
-                [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret) && [[ ! $OLDIP ]] && echo "+x+x+x+x+x+ SECRET IP ERROR - BAD TW - CONTINUE " && continue
                 # FIRST TIME PLAYER TW USING GATEWAY
                 [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html && OLDIP=$myIP
