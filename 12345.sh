@@ -27,7 +27,7 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 echo "LAUNCHING Astroport  API Server - http://$myIP:1234/?salt=toto&pepper=toto&messaging"
 
 # [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
-[[ $DISPLAY ]] && xdg-open "http://$myIP:1234" 2>/dev/null
+# [[ $DISPLAY ]] && xdg-open "http://$myIP:1234" 2>/dev/null
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
