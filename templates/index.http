@@ -8,8 +8,8 @@ Content-Type: text/html; charset=UTF-8
     <meta http-equiv="refresh" content="4; url='http://127.0.0.1:12345'" />
     <style>
     #wait {
-    width:60%;
-    height:60%;
+    width:42%;
+    height:42%;
     }
     </style>
   </head>
