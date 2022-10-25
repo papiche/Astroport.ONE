@@ -119,7 +119,8 @@ sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/
             DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
             [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/123/$DTIME.*
         fi
-
+## TYPE SLECTION
+        # MESSAGING
         if [[ $TYPE == "messaging" ]]; then
 
             echo "Extracting $G1PUB messages..."
@@ -142,11 +143,26 @@ Content-Type: text/html; charset=UTF-8
 cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redirect
 
         fi
-
-        ## IF NO MESSAGING => IPNS TW REDIRECT PAGE
+        # G1PUB -> Open Gchange Profile
         [[ "$TYPE" == "g1pub" ]] && sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
-        [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]] && sed "s~_TWLINK_~http://$myIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
 
+        ## ELSE IPNS TW REDIRECT
+        if [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]]; then
+            # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
+            if [[ $TYPE="official" ]]; then
+                ipfs --timeout 3s cat /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html
+                [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret) && [[ ! $OLDIP ]] && echo "+x+x+x+x+x+ SECRET IP ERROR - BAD TW - CONTINUE " && continue
+                # FIRST TIME PLAYER TW USING GATEWAY
+                [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html && OLDIP=$myIP
+                # AM I MANAGING TW
+                [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
+            else
+                echo "TRY OFFICIAL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
+                TWIP=$myIP
+            fi
+            sed "s~_TWLINK_~http://$TWIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+        fi
         ## TODO PATCH _SECRET_ myIP STUFF
 
         ## RESPONDING
@@ -166,7 +182,8 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 ###################################################################################################
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&messaging/g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
-
+        TYPE=$(urldecode ${arr[4]})
+        [[ $TYPE != "g1pub" ]] && echo "ONLY WORKS WITH TYPE=g1pub CALL" && continue
         start=`date +%s`
 
         SALT=$(urldecode ${arr[1]})
@@ -262,9 +279,6 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
     fi
 
     ## ENVOYER MESSAGE GCHANGE POUR QRCODE
-
-    ## Une seule boucle !!!
-    [[ "$1" == "ONE" ]] && exit 0
 
 
     rm ~/.zen/tmp/123/${MOATS}.myIP.http
