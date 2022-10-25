@@ -32,7 +32,7 @@ killall nc
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
 ## OPEN ENTRANCE AGAIN
-~/.zen/Astroport.ONE/12345.sh &
+~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 
 ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
 ipfs bootstrap rm --all > /dev/null 2>&1
