@@ -194,10 +194,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 &) && continue
         start=`date +%s`
 
-        SALT=$(urldecode ${arr[1]})
-        PEPPER=$(urldecode ${arr[3]})
-        PLAYER=$(urldecode ${arr[7]})
-        PSEUDO=$(urldecode ${arr[9]})
+        SALT=$(urldecode ${arr[1]} | xargs)
+        PEPPER=$(urldecode ${arr[3]} | xargs)
+        PLAYER=$(urldecode ${arr[7]} | xargs)
+        PSEUDO=$(urldecode ${arr[9]} | xargs)
 
         [[ ! $PLAYER ]] && (echo "ERROR - MISSING EMAIL FOR PLAYER ID" | nc -l -p ${PORT} -q 1 &) && continue
 
@@ -212,41 +212,18 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             echo "$PEPPER"
 
                 if [[ ! -d ~/.zen/game/players/$PLAYER ]]; then
-                    # ASTRONAUT NEW VISA
-                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER" "$PSEUDO"
-
+                    # ASTRONAUT NEW VISA Create VISA.new.sh in background
+                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER" "$PSEUDO" &
+                    echo "OK - ASTRONAUT VISA CREATION WITH $SALT + $PEPPER ($PLAYER / $PSEUDO)" | nc -l -p ${PORT} -q 1 &
+                    continue
                else
                     # ASTRONAUT EXISTING PLAYER
                     CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "ERROR - PLAYER ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 &) && continue
+                    [[ ! $CHECK ]] && (echo "ERROR - PLAYER $PLAYER ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 &) && continue
                fi
 
-                    mkdir -p ~/.zen/tmp/123/TW/
-                    cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/123/TW/index.html
-
-               ###################################################################################################
-                # VERIFICATION PAR EXTRACTION MOA
-                rm -f ~/.zen/tmp/123/tiddlers.json
-                tiddlywiki --load ~/.zen/tmp/123/TW/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
-                TITLE=$(cat ~/.zen/tmp/123/tiddlers.json | jq -r '.[].title') # Dessin de PLAYER
-                PLAYER=$(echo $TITLE | rev | cut -f 1 -d ' ' | rev)
-                [[ ! $PLAYER ]] && (echo "ERROR - WRONG TW"  | nc -l -p ${PORT} -q 1 &) && continue
-
-                echo "Bienvenue Astronaute $PLAYER. Nous avons capté votre TW"
-                echo "Redirection"
-                [[ $YOU ]] && TWLINK="http://$myIP:8080/ipns/$GNS" \
-                                    || TWLINK="$LIBRA/ipns/$GNS"
-                echo "$TWLINK"
-
-                # Injection TWLINK dans template de redirection.
-                sed "s~_TWLINK_~$TWLINK~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
-
-                ## NOW ~/.zen/tmp/123/${MOATS}.index.redirect APPEARS. WAITING $PORT AVAILABLE THEN INJECT $TWLINK REDIRECT
-                echo "ASTRONAUT $TWLINK AVAILABLE on http://$myIP:${PORT}"
-                [[ ! $(ps auxf --sort=+utime | grep -w 'nc -l -p '${PORT} | grep -v -E 'color=auto|grep') ]] && cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
-
-                ###################################################################################################
+                 ###################################################################################################
                 end=`date +%s`
                 echo Execution time was `expr $end - $start` seconds.
 
@@ -257,40 +234,29 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 # API TWO : ?qrcode=G1PUB
     if [[ ${arr[0]} == "qrcode" ]]; then
         ## Astroport.ONE local use QRCODE Contains PLAYER G1PUB
-        QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "Instascan.html QR : $QRCODE"
+        QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "QRCODE : $QRCODE"
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
         PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && (echo "ERROR - NO PLAYER !!"  | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && (echo "ERROR - QRCODE - NO PLAYER ON BOARD !!"  | nc -l -p ${PORT} -q 1 &) && continue
 
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
-        [[ ${arr[2]} == "" ]] && (echo "MISSING PASS"   | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ${arr[2]} == "" ]] && (echo "ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 &) && continue
+        ## Demande de copie d'une URL reçue.
+        if [[ ${arr[2]} == "url" ]]; then
+            wsource="${arr[3]}"
+             [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
 
+            ## LANCEMENT COPIE
+            ~/.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
 
-    fi
-
-###################################################################################################
-###################################################################################################
-# API THREE : ?qrcode=G1PUB&url=HTTPLINK
-    ## Demande de copie d'une URL reçue.
-    if [[ ${arr[0]} == "qrcode" &&  ${arr[2]} == "url" ]]; then
-        wsource="${arr[3]}"
-         [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
-
-        ## LANCEMENT COPIE
-        ~/.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
-
-        echo "$QRCODE $wsource"
+            (echo "OK - QRCODE - COPYING $(urldecode $wsource) FOR $PLAYER"   | nc -l -p ${PORT} -q 1 &) && continue
+        fi
 
     fi
 
-    ## ENVOYER MESSAGE GCHANGE POUR QRCODE
-
-
-    rm ~/.zen/tmp/123/${MOATS}.myIP.http
-    HOMEPAGE=""
 
 done
 exit 0
