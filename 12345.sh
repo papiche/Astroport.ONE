@@ -266,7 +266,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
-        [[ ${arr[2]} == "" ]] && echo "MISSING PASS"   | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ${arr[2]} == "" ]] && (echo "MISSING PASS"   | nc -l -p ${PORT} -q 1 &) && continue
 
 
     fi
