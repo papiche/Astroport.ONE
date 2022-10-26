@@ -55,7 +55,7 @@ while true; do
     ############################################################################
     start=`date +%s`
 
-    ## NO API CONTACT - PUBLISH HOMEPAGE
+    ## NO API CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
     if [[ $URL == "/" ]]; then
         echo "API NULL CALL :  http://$myIP:1234"
         echo "___________________________ Launching homepage.html"
@@ -79,7 +79,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     arr=(${URL//[=&]/ })
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]}"
 
-    [[ ${arr[0]} == "" && ${arr[1]} == "" ]] && echo "GET NO DATA" && continue
+    [[ ${arr[0]} == "" && ${arr[1]} == "" ]] && (echo "GET NO DATA" | nc -l -p ${PORT} -q 1 &) && continue
 
     ########## CHECK GET PARAM NAMES
 ###################################################################################################
@@ -88,9 +88,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     if [[ ${arr[0]} == "salt" ]]; then
         echo "Application LaBureautique !!"
         SALT=$(urldecode ${arr[1]} | xargs);
-        [[ ! $SALT ]] && echo "BAD SALT API CALL" && continue
+        [[ ! $SALT ]] && (echo "BAD SALT API CALL" | nc -l -p ${PORT} -q 1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
-        [[ ! $PEPPER ]] && echo "BAD PEPPER API CALL" && continue
+        [[ ! $PEPPER ]] && (echo "BAD PEPPER API CALL" | nc -l -p ${PORT} -q 1 &) && continue
 
         TYPE=$(urldecode ${arr[4]} | xargs)
         PLAYER=$(urldecode ${arr[5]} | xargs)
@@ -102,7 +102,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         # CALCULATING G1PUB
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/123/${MOATS}.secret.key  "$SALT" "$PEPPER"
         G1PUB=$(cat ~/.zen/tmp/123/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
-        [[ ! $G1PUB ]] && echo "ERROR - G1PUB COMPUTATION EMPTY" && continue
+        [[ ! $G1PUB ]] && (echo "ERROR - G1PUB COMPUTATION EMPTY"  | nc -l -p ${PORT} -q 1 &) && continue
 
         ## CALCULATING IPNS ADDRESS
         ipfs key rm gchange 2>/dev/null
@@ -160,7 +160,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             if [[ $TYPE="official" ]]; then
                 ipfs --timeout 3s cat /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html && echo "LATEST TW: ~/.zen/tmp/123/${MOATS}.astroindex.html"
                 [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret) && [[ ! $OLDIP ]] && echo "+x+x+x+x+x+ SECRET IP ERROR - BAD TW - CONTINUE " && continue
+                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret) && [[ ! $OLDIP ]] && (echo "+x+x+x+x+x+ SECRET IP ERROR - BAD TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
                 # FIRST TIME PLAYER TW USING GATEWAY
                 [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html && OLDIP=$myIP
                 # AM I MANAGING TW
@@ -191,7 +191,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&messaging/g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
         TYPE=$(urldecode ${arr[4]})
-        [[ $TYPE != "g1pub" ]] && echo "ONLY WORKS WITH TYPE=g1pub CALL" && continue
+        [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 &) && continue
         start=`date +%s`
 
         SALT=$(urldecode ${arr[1]})
@@ -199,7 +199,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         PLAYER=$(urldecode ${arr[7]})
         PSEUDO=$(urldecode ${arr[9]})
 
-        [[ ! $PLAYER ]] && echo "ERROR - NO EMAIL. BAD ELASTIC PLAYER" && continue
+        [[ ! $PLAYER ]] && (echo "ERROR - MISSING EMAIL FOR PLAYER ID" | nc -l -p ${PORT} -q 1 &) && continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
@@ -219,7 +219,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                     # ASTRONAUT EXISTING PLAYER
                     CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && echo "ERROR - CREDENTIALS NOT CORRESPONDING WITH PLAYER" && continue
+                    [[ ! $CHECK ]] && (echo "ERROR - PLAYER ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 &) && continue
                fi
 
                     mkdir -p ~/.zen/tmp/123/TW/
@@ -231,7 +231,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 tiddlywiki --load ~/.zen/tmp/123/TW/index.html --output ~/.zen/tmp --render '.' 'tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                 TITLE=$(cat ~/.zen/tmp/123/tiddlers.json | jq -r '.[].title') # Dessin de PLAYER
                 PLAYER=$(echo $TITLE | rev | cut -f 1 -d ' ' | rev)
-                [[ ! $PLAYER ]] && echo "ERROR WRONG TW" && continue
+                [[ ! $PLAYER ]] && (echo "ERROR - WRONG TW"  | nc -l -p ${PORT} -q 1 &) && continue
 
                 echo "Bienvenue Astronaute $PLAYER. Nous avons capté votre TW"
                 echo "Redirection"
@@ -262,11 +262,11 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && echo "AUCUN PLAYER !!" && continue
+        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && (echo "ERROR - NO PLAYER !!"  | nc -l -p ${PORT} -q 1 &) && continue
 
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
-        [[ ${arr[2]} == "" ]] && continue
+        [[ ${arr[2]} == "" ]] && echo "MISSING PASS"   | nc -l -p ${PORT} -q 1 &) && continue
 
 
     fi

@@ -5,11 +5,12 @@ Content-Type: text/html; charset=UTF-8
 <!DOCTYPE html>
 <html>
   <head>
-    <title>[Astroport] Redirecting ... Please refresh if failed</title>
+    <title>[Astroport] Redirecting ... </title>
 
     <meta http-equiv="refresh" content="0; url='_TWLINK_'" />
   </head>
   <body>
     <p>Please follow <a href="_TWLINK_">this link</a>.</p>
+    <h1>If failing. Clic above link or try to refresh page... </h1>
   </body>
 </html>
