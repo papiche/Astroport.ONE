@@ -44,6 +44,7 @@ while true; do
     # REPLACE myIP in http response template
     sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/123/${MOATS}.myIP.http
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/123/${MOATS}.myIP.http
+    sed -i "s~_IPFSNODEID_~$IPFSNODEID~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED PLAYER'S JSON
 
     ############################################################################
     ## WAITING TO SERVE 1ST LANDING REDIRECT PAGE
