@@ -64,6 +64,7 @@ Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
 sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
 sed -i "s~_IPFSNODEID_~$IPFSNODEID~g" ~/.zen/tmp/123/${MOATS}.index.redirect
+sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
 
@@ -163,6 +164,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html && OLDIP=$myIP
                 # AM I MANAGING TW
                 [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
+                echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
                 echo "***** TRY OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
             fi
