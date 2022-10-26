@@ -3,6 +3,8 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+
 ME="${0##*/}"
 ######################################################################### CONNECT PLAYER WITH GCHANGE
 # Check who is .current PLAYER
