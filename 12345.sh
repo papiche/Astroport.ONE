@@ -24,7 +24,7 @@ mkdir -p ~/.zen/tmp/123/
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=toto&pepper=toto " && exit 1
 
-echo "LAUNCHING Astroport  API Server - http://$myIP:1234/?salt=toto&pepper=toto&messaging"
+echo "LAUNCHING Astroport  API Server - http://$myIP:1234/?salt=toto&pepper=toto&official"
 
 # [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
 # [[ $DISPLAY ]] && xdg-open "http://$myIP:1234" 2>/dev/null
@@ -173,12 +173,14 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html \
                                     || curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/$GNS"
 
-                echo "~/.zen/tmp/123/${MOATS}.astroindex.html"
+                # DEBUG
+                echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
+                echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
 
                 if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
                     tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                     OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                    [[ ! $OLDIP ]] && (echo "ERROR - NO IP - BAD TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
+                    [[ ! $OLDIP ]] && (echo "ERROR - $OLDIP WRONG  TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
                     # FIRST TIME PLAYER TW USING GATEWAY
                     if [[ $OLDIP == "_SECRET_" ]]; then
                         echo "_SECRET_ TW PUSHING TW"
