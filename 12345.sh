@@ -132,10 +132,13 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         if [[ $TYPE == "messaging" ]]; then
 
             echo "Extracting $G1PUB messages..."
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/123/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/123/messin.${G1PUB}.json
-            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/123/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/123/messin.${G1PUB}.json
+            [[ ! -s ~/.zen/tmp/123/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/123/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/123/messin.${G1PUB}.json
+
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/123/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/123/messout.${G1PUB}.json
-            [[ $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/123/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/123/messout.${G1PUB}.json
+            [[ ! -s ~/.zen/tmp/123/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/123/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/123/messout.${G1PUB}.json
 
             echo "Creating messages In/Out JSON ~/.zen/tmp/123/${MOATS}.messaging.json"
             echo '[' > ~/.zen/tmp/123/${MOATS}.messaging.json
@@ -161,19 +164,45 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         if [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]]; then
             TWIP=$myIP
             # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
-            if [[ $TYPE="official" ]]; then
-                ipfs --timeout 3s cat /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html && echo "LATEST TW: ~/.zen/tmp/123/${MOATS}.astroindex.html"
-                [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret) && [[ ! $OLDIP ]] && (echo "+x+x+x+x+x+ SECRET IP ERROR - BAD TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
-                # FIRST TIME PLAYER TW USING GATEWAY
-                [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html && OLDIP=$myIP
-                # AM I MANAGING TW
-                [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
-                echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
+            if [[ $TYPE == "official" ]]; then
+                echo "OFFICIAL latest online TW..."
+                YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+                LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+                echo "$LIBRA/ipns/$GNS"
+                echo "http://$myIP:8080/ipns/$GNS ($YOU)"
+                [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html \
+                                    || curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/$GNS"
+
+                echo "~/.zen/tmp/123/${MOATS}.astroindex.html"
+
+                if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
+                    tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                    OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                    [[ ! $OLDIP ]] && (echo "ERROR - NO IP - BAD TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
+                    # FIRST TIME PLAYER TW USING GATEWAY
+                    if [[ $OLDIP == "_SECRET_" ]]; then
+                        echo "_SECRET_ TW PUSHING TW"
+                        sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
+                        echo "HTTP/1.1 200 OK
+Server: Astroport
+Content-Type: text/html; charset=UTF-8
+" > ~/.zen/tmp/123/${MOATS}.index.redirect
+                        cat ~/.zen/tmp/123/${MOATS}.astroindex.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
+                        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
+                        continue
+                    fi
+                    # REDIRECTING TO ACTUAL GATEWAY
+                    [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
+                    echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
+                else
+                     (echo "ERROR - NO TW FOUND - ASK FOR VISA" | nc -l -p ${PORT} -q 1 &) && continue
+                fi
             else
                 echo "***** TRY OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
             fi
+
             sed "s~_TWLINK_~http://$TWIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+
         fi
         ## TODO PATCH _SECRET_ myIP STUFF
 
