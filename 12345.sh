@@ -63,6 +63,7 @@ Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
 sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
+sed -i "s~_IPFSNODEID_~$IPFSNODEID~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
 

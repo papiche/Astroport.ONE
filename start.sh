@@ -12,8 +12,7 @@ ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-killall 12345.sh
-killall nc
+killall 12345.sh; killall nc
 
 echo '
     _    ____ _____ ____   ___  ____   ___  ____ _____    ___  _   _ _____
@@ -36,7 +35,7 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP sudo systemctl start ipfs" && exit 1
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
-echo "LAUNCHING 1234 PORT REDIRECTING SPIDER http://myIP:1234"
+echo "LAUNCHING 1234 PORT REDIRECTING SPIDER http://$myIP:1234"
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 
 ## CREATE AND OR CONNECT USER
