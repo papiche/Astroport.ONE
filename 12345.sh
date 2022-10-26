@@ -51,6 +51,7 @@ while true; do
     ############################################################################
     URL=$(cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     ############################################################################
+    echo "URL" > ~/.zen/tmp/123/${MOATS}.url ## LOGGING URL
     ############################################################################
     start=`date +%s`
 
@@ -86,13 +87,13 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
         echo "Application LaBureautique !!"
-        SALT=$(urldecode ${arr[1]})
+        SALT=$(urldecode ${arr[1]} | xargs);
         [[ ! $SALT ]] && echo "BAD SALT API CALL" && continue
-        PEPPER=$(urldecode ${arr[3]})
+        PEPPER=$(urldecode ${arr[3]} | xargs)
         [[ ! $PEPPER ]] && echo "BAD PEPPER API CALL" && continue
 
-        TYPE=$(urldecode ${arr[4]})
-        PLAYER=$(urldecode ${arr[5]})
+        TYPE=$(urldecode ${arr[4]} | xargs)
+        PLAYER=$(urldecode ${arr[5]} | xargs)
 
         echo "API ZERO CALL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&$TYPE=$PLAYER"
 
