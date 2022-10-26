@@ -55,7 +55,8 @@ while true; do
     ############################################################################
     start=`date +%s`
 
-    ## NO API CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
+    ############################################################################
+    ## BARE URL CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
     if [[ $URL == "/" ]]; then
         echo "API NULL CALL :  http://$myIP:1234"
         echo "___________________________ Launching homepage.html"
@@ -73,6 +74,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         echo Execution time was `expr $end - $start` seconds.
         continue
     fi
+    ############################################################################
+    ############################################################################
+
 
     echo "=================================================="
     echo "GET RECEPTION : $URL"
@@ -88,9 +92,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     if [[ ${arr[0]} == "salt" ]]; then
         echo "Application LaBureautique !!"
         SALT=$(urldecode ${arr[1]} | xargs);
-        [[ ! $SALT ]] && (echo "BAD SALT API CALL" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $SALT ]] && (echo "ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
-        [[ ! $PEPPER ]] && (echo "BAD PEPPER API CALL" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $PEPPER ]] && (echo "ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 &) && continue
 
         TYPE=$(urldecode ${arr[4]} | xargs)
         PLAYER=$(urldecode ${arr[5]} | xargs)
@@ -188,10 +192,12 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
 ###################################################################################################
 ###################################################################################################
-# API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&messaging/g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
+# API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
+        # CHECK TYPE
         TYPE=$(urldecode ${arr[4]})
         [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 &) && continue
+
         start=`date +%s`
 
         SALT=$(urldecode ${arr[1]} | xargs)
@@ -199,7 +205,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         PLAYER=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $PLAYER ]] && (echo "ERROR - MISSING EMAIL FOR PLAYER ID" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $PLAYER ]] && (echo "ERROR - MISSING EMAIL FOR PLAYER CONTACT" | nc -l -p ${PORT} -q 1 &) && continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
@@ -214,7 +220,8 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 if [[ ! -d ~/.zen/game/players/$PLAYER ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER" "$PSEUDO" &
-                    echo "OK - ASTRONAUT VISA CREATION WITH $SALT + $PEPPER ($PLAYER / $PSEUDO)" | nc -l -p ${PORT} -q 1 &
+                    echo "OK - ASTRONAUT $PLAYER VISA CREATION [$SALT + $PEPPER] ($PSEUDO)
+                    <br> - PLEASE 'CHECK IN' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 &
                     continue
                else
                     # ASTRONAUT EXISTING PLAYER
