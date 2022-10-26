@@ -13,6 +13,7 @@ ME="${0##*/}"
 ############################################
 echo "## RUNNING PLAYER.refresh"
 rm ~/.zen/game/astronautes.txt
+rm ~/.zen/game/players/.current
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls ~/.zen/game/players/); do
