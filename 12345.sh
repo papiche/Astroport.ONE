@@ -166,8 +166,9 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
         # G1PUB -> Open Gchange Profile
         [[ "$TYPE" == "g1pub" ]] && sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
-
-#testcraft nodeid dataid
+########################################
+#TESTCRAFT=ON nodeid dataid
+########################################
         if [[ "$TYPE" == "testcraft" ]]; then
             SALT=$(urldecode ${arr[1]} | xargs)
             PEPPER=$(urldecode ${arr[3]} | xargs)
@@ -178,13 +179,15 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             echo "PING $NODEID"
             ipfs --timeout 12s ping $NODEID &
 
-            echo "CURL  https://ipfs.io/ipfs/$DATAID"
-            (curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/ "https://gateway.ipfs.io/ipfs/$DATAID" && \
-            [[ -s ~/.zen/tmp/123/${MOATS}.data.$NODEID.ipfs ]] && \
-            ipfs add ~/.zen/tmp/123/${MOATS}.data.$NODEID.ipfs ) &
+            ## COULD BE A RAW FILE, AN HTML, A JSON
+            echo "CURLING  https://ipfs.io/ipfs/$DATAID"
+            (curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html "https://gateway.ipfs.io/ipfs/$DATAID" && \
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html ]] && \
+            [[ ! $(~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html | jq) ]] && \
+            $MY_PATH/tools/testcraft.DECODE.sh "~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html") &
 
             echo "CAT $NODEID /ipfs/$DATAID"
-            ([[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/123/${MOATS}.data.${NODEID}.ipfs &)
+            [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/123/${MOATS}.data.${NODEID}.ipfs &
 
             echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
             (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 &) && continue
