@@ -205,15 +205,15 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             TWIP=$myIP
             # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
             if [[ $TYPE == "official" ]]; then
-                echo "OFFICIAL latest online TW..."
-                echo "$LIBRA/ipns/$GNS"
-                echo "http://$myIP:8080/ipns/$GNS ($YOU)"
-                [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html \
-                                    || curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/$GNS"
+
+                echo "OFFICIAL latest online TW... $LIBRA ($YOU)"
+
+                [[ $YOU ]] && echo "http://$myIP:8080/ipns/$GNS ($YOU)" && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html
+                [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/$GNS" && curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/$GNS"
 
                 # DEBUG
-                echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
-                echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
+                # echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
+                # echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
 
                 if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
                     tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
