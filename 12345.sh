@@ -18,6 +18,9 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"
 PORT=12345
 
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+
 mkdir -p ~/.zen/tmp/123/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
@@ -45,7 +48,7 @@ while true; do
     # REPLACE myIP in http response template
     sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/123/${MOATS}.myIP.http
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/123/${MOATS}.myIP.http
-    sed -i "s~_IPFSNODEID_~$IPFSNODEID~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED PLAYER'S JSON
+    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
 
     ############################################################################
     ## WAITING TO SERVE 1ST LANDING REDIRECT PAGE
@@ -66,7 +69,7 @@ Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
 sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
-sed -i "s~_IPFSNODEID_~$IPFSNODEID~g" ~/.zen/tmp/123/${MOATS}.index.redirect
+sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
@@ -85,6 +88,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]} & ${arr[8]} = ${arr[9]}"
         # CHECK TYPE
         TYPE=$(urldecode ${arr[4]})
+        WHAT=$(urldecode ${arr[5]})
 
     [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 &) && continue
 
@@ -100,9 +104,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         [[ ! $PEPPER ]] && (echo "ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 &) && continue
 
         TYPE=$(urldecode ${arr[4]} | xargs)
-        PLAYER=$(urldecode ${arr[5]} | xargs)
+        WHAT=$(urldecode ${arr[5]} | xargs)
 
-        echo "API ZERO CALL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&$TYPE=$PLAYER"
+        echo "API ZERO CALL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&$TYPE=$WHAT"
 
         echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/123/${MOATS}.secret.june
 
@@ -118,12 +122,12 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key )
         echo "Astronaute TW ? http://$myIP:8080/ipns/$GNS"
 
-        ## ARCHIVE TOCTOC PLAYERS
+        ## ARCHIVE TOCTOC WHATS
         mkdir -p ~/.zen/tmp/toctoc/
         ISTHERE=$(ls -t ~/.zen/tmp/toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
         if [[ ! $ISTHERE ]]; then
-            echo "PLAYER 1ST TOCTOC : $MOATS"
+            echo "WHAT 1ST TOCTOC : $MOATS"
             cp ~/.zen/tmp/123/${MOATS}.* ~/.zen/tmp/toctoc/
         else
             OLDONE=$(ls -t ~/.zen/tmp/123/*.${G1PUB}.ipns.key | tail -n 1)
@@ -170,10 +174,20 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             NODEID=$(urldecode ${arr[7]} | xargs)
             DATAID=$(urldecode ${arr[9]} | xargs)
 
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}
+            echo "PING $NODEID"
             ipfs --timeout 12s ping $NODEID &
-            ipfs --timeout 12s ls /ipfs/$DATAID &
+
+            echo "CURL  https://ipfs.io/ipfs/$DATAID"
+            (curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/ "https://gateway.ipfs.io/ipfs/$DATAID" && \
+            [[ -s ~/.zen/tmp/123/${MOATS}.data.$NODEID.ipfs ]] && \
+            ipfs add ~/.zen/tmp/123/${MOATS}.data.$NODEID.ipfs ) &
+
+            echo "CAT $NODEID /ipfs/$DATAID"
+            ([[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/123/${MOATS}.data.${NODEID}.ipfs &)
+
             echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
-            (echo "OK - $NODEID WE GONE GET YOUR /ipfs/$DATAID " | nc -l -p ${PORT} -q 1 &) && continue
+            (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 &) && continue
         fi
 
         ## ELSE IPNS TW REDIRECT
@@ -182,8 +196,6 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
             if [[ $TYPE == "official" ]]; then
                 echo "OFFICIAL latest online TW..."
-                YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-                LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
                 echo "$LIBRA/ipns/$GNS"
                 echo "http://$myIP:8080/ipns/$GNS ($YOU)"
                 [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html \
@@ -197,7 +209,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                     tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                     OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
                     [[ ! $OLDIP ]] && (echo "ERROR - $OLDIP WRONG  TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
-                    # FIRST TIME PLAYER TW USING GATEWAY
+                    # FIRST TIME WHAT TW USING GATEWAY
                     if [[ $OLDIP == "_SECRET_" ]]; then
                         echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
                         sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
@@ -230,7 +242,7 @@ Content-Type: text/html; charset=UTF-8
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
         #echo "$GNS" | nc -l -p ${PORT} -q 1 &
 
-        ## CHECK IF ALREADY EXISTING PLAYER
+        ## CHECK IF ALREADY EXISTING WHAT
         # IF NOT = BATCH CREATE TW
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
@@ -249,13 +261,13 @@ Content-Type: text/html; charset=UTF-8
 
         SALT=$(urldecode ${arr[1]} | xargs)
         PEPPER=$(urldecode ${arr[3]} | xargs)
-        PLAYER=$(urldecode ${arr[7]} | xargs)
+        WHAT=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $PLAYER ]] && (echo "ERROR - MISSING EMAIL FOR PLAYER CONTACT" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $WHAT ]] && (echo "ERROR - MISSING EMAIL FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 &) && continue
 
                 if [[ ! $PSEUDO ]]; then
-                    PSEUDO=$(echo $PLAYER | cut -d '@' -f 1)
+                    PSEUDO=$(echo $WHAT | cut -d '@' -f 1)
                     PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:3}
                 fi
                 # PASS CRYPTING KEY
@@ -264,17 +276,17 @@ Content-Type: text/html; charset=UTF-8
             echo "$SALT"
             echo "$PEPPER"
 
-                if [[ ! -d ~/.zen/game/players/$PLAYER ]]; then
+                if [[ ! -d ~/.zen/game/players/$WHAT ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
-                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER" "$PSEUDO" &
-                    echo "OK - ASTRONAUT $PLAYER VISA CREATION [$SALT + $PEPPER] ($PSEUDO)
+                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
+                    echo "OK - ASTRONAUT $WHAT VISA CREATION [$SALT + $PEPPER] ($PSEUDO)
                     <br> - PLEASE 'CHECK IN' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 &
                     continue
                else
-                    # ASTRONAUT EXISTING PLAYER
-                    CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$SALT")
-                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$PLAYER/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "ERROR - PLAYER $PLAYER ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 &) && continue
+                    # ASTRONAUT EXISTING WHAT
+                    CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$SALT")
+                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$PEPPER")
+                    [[ ! $CHECK ]] && (echo "ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 &) && continue
                fi
 
                  ###################################################################################################
@@ -287,13 +299,13 @@ Content-Type: text/html; charset=UTF-8
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB
     if [[ ${arr[0]} == "qrcode" ]]; then
-        ## Astroport.ONE local use QRCODE Contains PLAYER G1PUB
+        ## Astroport.ONE local use QRCODE Contains WHAT G1PUB
         QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "QRCODE : $QRCODE"
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
-        PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
+        WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$PLAYER || $PLAYER == "" ]] && (echo "ERROR - QRCODE - NO PLAYER ON BOARD !!"  | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "ERROR - QRCODE - NO WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 &) && continue
 
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
@@ -306,7 +318,7 @@ Content-Type: text/html; charset=UTF-8
             ## LANCEMENT COPIE
             ~/.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
 
-            (echo "OK - QRCODE - COPYING $(urldecode $wsource) FOR $PLAYER"   | nc -l -p ${PORT} -q 1 &) && continue
+            (echo "OK - QRCODE - COPYING $(urldecode $wsource) FOR $WHAT"   | nc -l -p ${PORT} -q 1 &) && continue
         fi
 
     fi

@@ -11,32 +11,40 @@ ME="${0##*/}"
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
 
 ########################################################################
-[[ ! $(which ipfs) ]] && echo "=== Installez IPFS !!" && echo "https://docs.ipfs.io/install/command-line/#official-distributions" && exit 1
+[[ ! $(which ipfs) ]] && echo "=== Installez IPFS KUBO !!" && echo "https://docs.ipfs.io/install/command-line/#official-distributions" && exit 1
+
+#### GIT CLONE ###############################################################
+[[ ! $(which git) ]] && sudo apt install -y git
+echo "=== Clonage git CODE  'Astroport.ONE' depuis https://git.p2p.legal"
+mkdir -p ~/.zen
+cd ~/.zen
+git clone https://git.p2p.legal/qo-op/Astroport.ONE.git
+# TODO INSTALL FROM IPFS / IPNS
 
 # MAIN # SI AUCUNE CLEF DE STATION...
-if [[ ! -f ~/.zen/game/players/.current/secret.dunikey ]];
+if [[ ! -d ~/.zen/game/players/ ]];
 then
 
 # Check requirements
-echo "Astroport.ONE installateur pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/) ou XBIAN (https://xbian.org) recommandées"
+echo "Astroport.ONE installateur pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/) ou XBIAN (https://xbian.org) testées"
 echo "Appuyez sur ENTRER pour commencer."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
 echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
-[[ "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11']] &&\
-    for i in x11-utils xclip zenity; do\
-        [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ] &&\
-            echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";\
+if [[ "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11']]; then
+    for i in x11-utils xclip zenity; do
+        if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+        echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             sudo apt install -y $i;
-            [[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
-
+            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
     done
+fi
 
 for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
 
     fi
 done
@@ -45,23 +53,31 @@ for i in qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
 
     fi
 done
 
 ##########################################################
-echo "### Install tiddlywiki node.js"
+echo "### INSTALL TW node.js"
 sudo npm install -g tiddlywiki
-[[ $? != 0 ]] && echo "INSTALL FAILED. PLEASE REPORT ISSUE" && exit 1
+[[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.failed.log && continue
+
 ##########################################################
+########### KODI + kodi_uqload_downloader
+if [[ ! $(which kodi) && "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11' ]]; then
+    ## Il manque kodi
+    echo ">>> Installation Kodi + Vstream = VOTRE VIDEOTHEQUE ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    sudo apt-get install kodi -y
+    [[ $? != 0 ]] && echo "INSTALL kodi FAILED." && echo "INSTALL kodi FAILED." >> /tmp/install.failed.log && continue
+fi
+if [[ $(which kodi) ]]; then
+    echo ">>> Installation kodi_uqload_downloade <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    ${MY_PATH}/kodi_uqload_downloader.sh
+    [[ $? != 0 ]] && echo "INSTALL kodi_uqload_downloader FAILED." && echo "INSTALL kodi_uqload_downloader FAILED." >> /tmp/install.failed.log && continue
+fi
 
-[[ ! $(which kodi) && "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11' ]] && \
-    echo ">>> Installation Kodi + Vstream = VOTRE VIDEOTHEQUE ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"; \
-    sudo apt-get install kodi -y; \
-    ${MY_PATH}/.install/kodi_uqload_downloader.sh
-
-# echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' "
+echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
 
 ## Correct PDF restrictions for imagemagick
@@ -74,14 +90,22 @@ fi
 echo "###########################"
 echo "## INSTALL PYTHON CRYPTO LAYER "
 echo "###########################"
-echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo ">>> PATH=$PATH"
-python3 -m pip install -U pip
-python3 -m pip install -U setuptools wheel
-python3 -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes
-python3 -m pip install -U silkaj
-python3 -m pip install -U protobuf==3.19.0
+sudo ln -f -s  /usr/bin/python3 /usr/bin/python
+echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo "<<< CHECK YOUR >>> PATH=$PATH"
 
+# python3 -m pip install -U pip
+# python3 -m pip install -U setuptools wheel
+# python3 -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes
+# python3 -m pip install -U silkaj
+# python3 -m pip install -U protobuf==3.19.0
 
+for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes; do
+        echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        python3 -m pip install -U $i
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python3 -m pip install -U $i FAILED." >> /tmp/install.failed.log && continue
+done
+
+########### PRINTER ##############
 if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
     echo "Ambassade? Ajouter imprimante 'brother_ql'? Saisissez OUI, sinon laissez vide et tapez sur ENTRER"
     read saisie
@@ -96,25 +120,12 @@ if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
     fi
 fi
 
-# python3 -m pip install -U silkaj
-## python -> python3 link
-sudo ln -f -s  /usr/bin/python3 /usr/bin/python
-
-
-########################################################################
-echo "=== Clonage git CODE  'Astroport.ONE' depuis https://git.p2p.legal"
-mkdir -p ~/.zen
-cd ~/.zen
-git clone https://git.p2p.legal/qo-op/Astroport.ONE.git
-# TODO INSTALL FROM IPFS / IPNS
-
 
 ## Scripts pour systemd ou InitV (xbian)
-echo "=== Astroport SYSTEM IPFS"
+echo "=== Astroport UPGRADE SYSTEM IPFS"
 ~/.zen/Astroport.ONE/tools/ipfs_setup.sh
 
-
-########################################################################
+#### SETUP JAKLIS ###############################################################
 echo "=== Configuration jaklis: Centre de communication CESIUM+ GCHANGE+"
 cd $MY_PATH/tools/jaklis
 ./setup.sh
@@ -167,17 +178,14 @@ if [[ "$USER" != "xbian" ]]
 then
     ## Desktop install
     echo "INITIALISATION Astroport"
-    echo "Appuyez sur la touche ENTREE pour démarrer le mode Aventure"
-    echo "sinon interrompez ici l'installation, et activez votre Ambassade  ~/.zen/Astroport.ONE/start.sh"
+    echo "Appuyez sur la touche ENTREE pour démarrer votre Station"
     read
-    # ~/.zen/Astroport.ONE/adventure.sh
- #
- #  ~/.zen/astrXbian/ISOconfig.sh
+    ~/.zen/Astroport.ONE/start.sh
 else
     ## Rpi Xbian install.
     cat /etc/rc.local | grep -Ev "exit 0" > /tmp/new.rc.local ## REMOVE "exit 0"
     # PREPARE NEXT BOOT - Network config - NEXTBOOT - ISOConfig - NEXTBOOT - OK
-    echo "su - xbian -c '~/.zen/astrXbian/FirstBOOT.sh'" >> /tmp/new.rc.local
+    echo "su - xbian -c '~/.zen/Astroport.ONE/FirstBOOT.sh'" >> /tmp/new.rc.local
     echo "exit 0" >> /tmp/new.rc.local
     sudo cp -f /tmp/new.rc.local /etc/rc.local
 
@@ -216,8 +224,10 @@ ipfs bootstrap rm --all
 ###########################################
 # BOOTSTRAP NODES ARE ADDED LATER
 ###########################################
-
 [[ "$USER" != "xbian" ]] && sudo systemctl restart ipfs
+
+### ADD 20h12.sh CRON ###############
+$MY_PATH/tools/cron_VRFY.sh ON
 
 ########################################################################
 # SUDO permissions
@@ -242,13 +252,13 @@ else
 
 echo "Installation existante !!
 ========================
-Astroport/KODI (Gchange)
+Astroport/TW
 ========================
 Connectez-vous sur https://gchange.fr avec vos identifiants
 
 $(cat ~/.zen/game/players/.current/secret.june)
 
-https://astroport.com
+http://astroport.com
 "
 
 # MAIN #
