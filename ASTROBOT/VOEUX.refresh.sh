@@ -70,6 +70,8 @@ do
 
         for FRIENDTW in ${FINDEX[@]};
         do
+            [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
+
             rm -f ~/.zen/tmp/$WISHNAME/g1wishtiddlers.json
             echo "TRY EXPORT [tag[G1$WISHNAME]]  FROM $FINDEX"
             tiddlywiki --load $FRIENDTW \

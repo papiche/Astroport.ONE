@@ -263,7 +263,7 @@ Content-Type: text/html; charset=UTF-8
 ###################################################################################################
 ###################################################################################################
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
-    if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
+    if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
         [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
