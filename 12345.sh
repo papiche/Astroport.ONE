@@ -37,6 +37,7 @@ while true; do
     [ $PORT -lt 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
                 ## RANDOM PORT SWAPPINESS
 
+    SALT=""; PEPPER=""; TYPE=""
     echo "************************************************************************* "
     echo "ASTROPORT API SERVER UP.......................... http://$myIP:1234 PORT"
     echo "$MOATS LANDING PAGE http://$myIP:$PORT"

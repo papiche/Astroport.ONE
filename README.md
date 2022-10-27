@@ -69,6 +69,20 @@ https://forum.monnaie-libre.fr/t/les-explorateurs-du-libre-rencontre-et-partage-
 bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
 ```
 
+# LANCEMENT
+
+```
+~/.zen/Astroport.ONE/start.sh
+```
+
+# API
+
+> salt=$SALT&pepper=$PEPPER&$TYPE=on& .... + EXTRA PARAM defined in ./12345.sh opens oneshot minimal HTTP API
+
+Chaque Station active son port 1234, sur lequel un $PORT de réponse est attribué.
+Le moteur cryptographique est le même que celui de https://gchange.fr
+
+
 # A L'AIDE
 
 Nous cherchons des amis pour étendre les possibilités de nos TW
