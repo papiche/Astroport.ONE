@@ -5,7 +5,7 @@ Content-Type: text/html; charset=UTF-8
 <!doctype html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="5; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="8; url='http://127.0.0.1:12345'" />
     <style>
     #wait {
     width:42%;
