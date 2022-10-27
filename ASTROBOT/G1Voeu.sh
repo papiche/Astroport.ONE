@@ -181,7 +181,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
     </\$list>
     Afficher tous les G1"${PEPPER}"
-    </$button>"
+    </\$button>"
 
     # NEW IVEU TIDDLER
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"

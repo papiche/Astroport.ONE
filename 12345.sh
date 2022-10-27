@@ -74,7 +74,7 @@ sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/
 sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 
-        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
+        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
@@ -87,44 +87,43 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
-    echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]} & ${arr[8]} = ${arr[9]}"
 
     # CHECK TYPE
         TYPE=$(urldecode ${arr[4]})
         WHAT=$(urldecode ${arr[5]})
 
-    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 &) && continue
+    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
     ########## CHECK GET PARAM NAMES
 ###################################################################################################
 ###################################################################################################
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
-        echo "!!!!!!!!!! Application LaBureautique !! TYPE = $TYPE"
+        echo ">>>>>>>>>>>>>> Application LaBureautique >><< TYPE = $TYPE <<<<<<<<<<<<<<<<<<<<"
         SALT=$(urldecode ${arr[1]} | xargs);
-        [[ ! $SALT ]] && (echo "ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $SALT ]] && (echo "ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
-        [[ ! $PEPPER ]] && (echo "ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $PEPPER ]] && (echo "ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         TYPE=$(urldecode ${arr[4]} | xargs)
         WHAT=$(urldecode ${arr[5]} | xargs)
 
-        echo "API ZERO CALL :  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&$TYPE=$WHAT"
-
+        echo "API ZERO CALL : \"$SALT\" \"$PEPPER\""
         echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/123/${MOATS}.secret.june
 
         # CALCULATING G1PUB
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/123/${MOATS}.secret.key  "$SALT" "$PEPPER"
         G1PUB=$(cat ~/.zen/tmp/123/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
-        [[ ! $G1PUB ]] && (echo "ERROR - G1PUB COMPUTATION EMPTY"  | nc -l -p ${PORT} -q 1 &) && continue
-
+        [[ ! $G1PUB ]] && (echo "ERROR - G1PUB COMPUTATION EMPTY"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        echo "G1PUB : $G1PUB"
         ## CALCULATING IPNS ADDRESS
-        ipfs key rm gchange 2>/dev/null
+        ipfs key rm gchange > /dev/null 2>&1
         rm -f ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
         GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key )
-        echo "Astronaute TW ? http://$myIP:8080/ipns/$GNS"
-
+        echo "ASTRONAUTE TW : http://$myIP:8080/ipns/$GNS"
+        echo
+#####################################
         ## ARCHIVE TOCTOC WHATS
         mkdir -p ~/.zen/tmp/toctoc/
         ISTHERE=$(ls -t ~/.zen/tmp/toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
@@ -132,12 +131,13 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         if [[ ! $ISTHERE ]]; then
             echo "WHAT 1ST TOCTOC : $MOATS"
             cp ~/.zen/tmp/123/${MOATS}.* ~/.zen/tmp/toctoc/
-        else
+        else ## KEEP 1ST CONTACT ONLY
             OLDONE=$(ls -t ~/.zen/tmp/123/*.${G1PUB}.ipns.key | tail -n 1)
             DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
             [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/123/$DTIME.*
         fi
-## TYPE SLECTION
+
+## TYPE SLECTION ########################
         # MESSAGING
         if [[ $TYPE == "messaging" ]]; then
 
@@ -165,10 +165,14 @@ Content-Type: text/html; charset=UTF-8
 cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redirect
 
         fi
-        ######################## MESSAGING
+        ######################## MESSAGING END
 
-        # G1PUB -> Open Gchange Profile
-        [[ "$TYPE" == "g1pub" ]] && sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+########################################
+# G1PUB -> Open Gchange Profile
+########################################
+        if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
+            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+        fi
 ########################################
 #TESTCRAFT=ON nodeid dataid
 ########################################
@@ -193,7 +197,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/123/${MOATS}.data.${NODEID}.ipfs &
 
             echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
-            (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 &) && continue
+            (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
         ## ELSE IPNS TW REDIRECT
@@ -214,7 +218,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
                     tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                     OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                    [[ ! $OLDIP ]] && (echo "ERROR - $OLDIP WRONG  TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
+                    [[ ! $OLDIP ]] && (echo "ERROR - $OLDIP WRONG  TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                     # FIRST TIME WHAT TW USING GATEWAY
                     if [[ $OLDIP == "_SECRET_" ]]; then
                         echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
@@ -224,14 +228,14 @@ Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
                         cat ~/.zen/tmp/123/${MOATS}.astroindex.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
-                        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
+                        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                         continue
                     fi
                     # REDIRECTING TO ACTUAL GATEWAY
                     [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
                     echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
                 else
-                     (echo "ERROR - NO TW FOUND - ASK FOR VISA" | nc -l -p ${PORT} -q 1 &) && continue
+                     (echo "ERROR - NO TW FOUND - ASK FOR VISA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                 fi
             else
                 echo "***** READER MODE - R/W USE OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
@@ -243,10 +247,10 @@ Content-Type: text/html; charset=UTF-8
         ## TODO PATCH _SECRET_ myIP STUFF
 
         ## RESPONDING
-        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 &
+        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/123/${MOATS}.index.redirect"
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
-        #echo "$GNS" | nc -l -p ${PORT} -q 1 &
+        #echo "$GNS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
         ## CHECK IF ALREADY EXISTING WHAT
         # IF NOT = BATCH CREATE TW
@@ -261,7 +265,7 @@ Content-Type: text/html; charset=UTF-8
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
 
-        [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         start=`date +%s`
 
@@ -270,7 +274,7 @@ Content-Type: text/html; charset=UTF-8
         WHAT=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $WHAT ]] && (echo "ERROR - MISSING EMAIL FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! $WHAT ]] && (echo "ERROR - MISSING EMAIL FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $WHAT | cut -d '@' -f 1)
@@ -286,13 +290,13 @@ Content-Type: text/html; charset=UTF-8
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
                     echo "OK - ASTRONAUT $WHAT VISA CREATION [$SALT + $PEPPER] ($PSEUDO)
-                    <br> - PLEASE 'CHECK IN' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 &
+                    <br> - PLEASE 'CHECK IN' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     continue
                else
                     # ASTRONAUT EXISTING WHAT
                     CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 &) && continue
+                    [[ ! $CHECK ]] && (echo "ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                fi
 
                  ###################################################################################################
@@ -311,11 +315,11 @@ Content-Type: text/html; charset=UTF-8
         WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "ERROR - QRCODE - NO WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "ERROR - QRCODE - NO WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         ## UNE SECOND HTTP SERVER TO RECEIVE PASS
 
-        [[ ${arr[2]} == "" ]] && (echo "ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 &) && continue
+        [[ ${arr[2]} == "" ]] && (echo "ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         ## Demande de copie d'une URL reçue.
         if [[ ${arr[2]} == "url" ]]; then
             wsource="${arr[3]}"
@@ -324,7 +328,7 @@ Content-Type: text/html; charset=UTF-8
             ## LANCEMENT COPIE
             ~/.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
 
-            (echo "OK - QRCODE - COPYING $(urldecode $wsource) FOR $WHAT"   | nc -l -p ${PORT} -q 1 &) && continue
+            (echo "OK - QRCODE - COPYING $(urldecode $wsource) FOR $WHAT"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
     fi
