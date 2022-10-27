@@ -77,33 +77,39 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 
 # API
 
-> salt=$SALT&pepper=$PEPPER&$TYPE=on& .... + EXTRA PARAM defined in ./12345.sh opens oneshot minimal HTTP API
+Astroport n'utilise pas de serveur web!
 
-Chaque Station active son port 1234, sur lequel un $PORT de réponse est attribué.
-Le moteur cryptographique est le même que celui de https://gchange.fr
+"12345.sh" publie une page avec **netcat** sur le port 1234... Celle-ci renvoi le visiteur vers le $PORT du retour de l'exécution de l'API. Ce processus empêche le DDOS. Et réparti l'usage de l'essaim (bootstrap en roundrobin DNS)
 
-
-# A L'AIDE
-
-Nous cherchons des amis pour étendre les possibilités de nos TW
+Chaque appel API comporte "salt" et "pepper", correspondance NaCl de la clef en usage.
 
 ```
-# TiddlyWiki # DO YOU TALK TW ? https://talk.tiddlywiki.org
+# TYPE = official, g1pub, messaging, testcraft, ....
+http://127.0.0.1:1234/?salt=${SALT}&pepper=${PEPPER}&${TYPE}=?&...
+```
+
+
+# TIDDLYWIKI
+
+Les données produites par chaque clef sont stockées en temps que tiddlers dans Tiddlywiki.
+Le tag "voeu" déclenche la transformation du tiddler en "G1Voeu".
+Son Titre  devient un tag qui permet d'échanger les tiddlers correspondant au même voeu entre les TW amis.
+
+> [https://ncase.me/loopy/v1.1/?data=[[[3,646,229,0.5,%22Astronaute%22,5],[4,806,372,0.16,%22G1Voeu%22,3],[5,449,133,0.83,%22G1Talent%22,1],[6,928,124,0.5,%22Astronaute%22,0],[7,1055,293,0.5,%22Astronaute%22,0],[8,883,587,0.5,%22Astronaute%22,0],[10,691,54,0.5,%22G1Voeu%22,3]],[[3,5,82,1,0],[3,4,-87,1,0],[6,4,83,1,0],[4,5,176,1,0],[8,8,85,1,12],[8,4,-45,1,0],[7,4,34,1,0],[5,3,49,1,0],[7,7,101,1,225],[6,6,113,1,-84],[3,3,90,1,75],[5,4,-293,1,0],[3,10,34,1,0]],[],10%5D
+](Simulateur Astronaute/Voeux)
+
+## DO YOU TALK TW ? https://talk.tiddlywiki.org
+
+```
+# TiddlyWiki #
 sudo apt install npm
 sudo npm install -g tiddlywiki
 added 1 package, and audited 2 packages in 10s
 found 0 vulnerabilities
 ```
-
----
-# DEPANNAGE
-
-- Erreur keygen
-sudo apt install python3-gpg python3-jwcrypto
-python3 -m pip install -U pynentry SecureBytes
+Proposez vos "Templates"...
 
 ---
 
 # TODO
 * Ajouter des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
-https://ncase.me/loopy/v1.1/?data=[[[3,646,229,0.5,%22Astronaute%22,5],[4,806,372,0.16,%22G1Voeu%22,3],[5,449,133,0.83,%22G1Talent%22,1],[6,928,124,0.5,%22Astronaute%22,0],[7,1055,293,0.5,%22Astronaute%22,0],[8,883,587,0.5,%22Astronaute%22,0],[10,691,54,0.5,%22G1Voeu%22,3]],[[3,5,82,1,0],[3,4,-87,1,0],[6,4,83,1,0],[4,5,176,1,0],[8,8,85,1,12],[8,4,-45,1,0],[7,4,34,1,0],[5,3,49,1,0],[7,7,101,1,225],[6,6,113,1,-84],[3,3,90,1,75],[5,4,-293,1,0],[3,10,34,1,0]],[],10%5D
