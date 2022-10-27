@@ -26,8 +26,10 @@ mkdir -p ~/.zen/tmp/123/
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=toto&pepper=toto " && exit 1
-
-echo "LAUNCHING Astroport  API Server - http://$myIP:1234/?salt=toto&pepper=toto&official"
+echo "_________________________________________________________"
+echo "LAUNCHING Astroport  API Server "
+echo "TEST http://$myIP:1234/?salt=toto&pepper=toto&official"
+echo "_________________________________________________________"
 
 # [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
 # [[ $DISPLAY ]] && xdg-open "http://$myIP:1234" 2>/dev/null
@@ -86,7 +88,8 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
     echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]} & ${arr[8]} = ${arr[9]}"
-        # CHECK TYPE
+
+    # CHECK TYPE
         TYPE=$(urldecode ${arr[4]})
         WHAT=$(urldecode ${arr[5]})
 
@@ -97,7 +100,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 ###################################################################################################
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
-        echo "Application LaBureautique !!"
+        echo "!!!!!!!!!! Application LaBureautique !! TYPE = $TYPE"
         SALT=$(urldecode ${arr[1]} | xargs);
         [[ ! $SALT ]] && (echo "ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
@@ -180,10 +183,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             ipfs --timeout 12s ping $NODEID &
 
             ## COULD BE A RAW FILE, AN HTML, A JSON
-            echo "CURLING  https://ipfs.io/ipfs/$DATAID"
+            echo "CURLING  https://ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}"
             (curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html "https://gateway.ipfs.io/ipfs/$DATAID" && \
-            [[ -s ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html ]] && \
-            [[ ! $(~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html | jq) ]] && \
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html ]] && echo "index.html" &&\
+            [[ ! $(~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html | jq) ]] && echo "NOT JSON - DECODING " &&\
             $MY_PATH/tools/testcraft.DECODE.sh "~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html") &
 
             echo "CAT $NODEID /ipfs/$DATAID"

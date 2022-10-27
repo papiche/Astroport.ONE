@@ -40,6 +40,8 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP sudo systemctl start ipfs" && exit 1
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
+echo 'PRESS ENTER... '; read
+
 ## CREATE AND OR CONNECT USER
     PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
     players=("NOUVEAU VISA" "IMPORT GVISA" $(ls ~/.zen/game/players 2>/dev/null))
