@@ -134,9 +134,11 @@ done
 ############################
 ############################
 ## TODO EVOLVE TO P2P QOS MAPPING
-cat ~/.zen/game/astronautes.txt
-ROUTING=$(ipfs add -q ~/.zen/game/astronautes.txt)
-echo "PUBLISHING Astronaute List SELF"
-ipfs name publish /ipfs/$ROUTING
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+ls ~/.zen/tmp/${IPFSNODEID}/
+ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
+echo "PUBLISHING ASTRONAUTES SIGNALING"
+ipfs name publish --allow-offline -t 72h /ipfs/$ROUTING
+echo "THANK YOU."
 
 exit 0
