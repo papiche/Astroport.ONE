@@ -21,17 +21,21 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
 ## Directory is created, So this script already run once.
 if [[ ! -d ~/.zen/game/players/$PLAYER/FRIENDS/ ]]; then
+    ## GET GCHANGE
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" get >  ~/.zen/game/players/$PLAYER/ipfs/gchange.json
     ########################################################################
-    echo "CREATING $PLAYER GCHANGE+ PROFILE"
+    echo "UPDATE $PLAYER GCHANGE+ PROFILE"
     ########################################################################
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --site "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
-    [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" && echo "Action Manuelle " $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" set --name "Astronaute $PSEUDO" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://qo-op.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+    [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
 
+    ## GET CESIUM
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" get >  ~/.zen/game/players/$PLAYER/ipfs/cesium.json
     ########################################################################
-    #echo "CREATING $PLAYER CESIUM+ PROFILE"
+    echo "UPDATE $PLAYER CESIUM+ PROFILE"
     ########################################################################
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
-    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" && echo "Action Manuelle " $ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://g1.data.presles.fr" set --name "Astronaute $PLAYER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logo.png" --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
 fi
 
 ########################################################################

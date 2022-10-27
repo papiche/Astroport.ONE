@@ -81,9 +81,11 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
-    echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]}"
+    echo "PARAM : ${arr[0]} = ${arr[1]} & ${arr[2]} = ${arr[3]} & ${arr[4]} = ${arr[5]} & ${arr[6]} = ${arr[7]} & ${arr[8]} = ${arr[9]}"
+        # CHECK TYPE
+        TYPE=$(urldecode ${arr[4]})
 
-    [[ ${arr[0]} == "" && ${arr[1]} == "" ]] && (echo "GET NO DATA" | nc -l -p ${PORT} -q 1 &) && continue
+    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 &) && continue
 
     ########## CHECK GET PARAM NAMES
 ###################################################################################################
@@ -160,6 +162,19 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         # G1PUB -> Open Gchange Profile
         [[ "$TYPE" == "g1pub" ]] && sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
 
+#testcraft nodeid dataid
+        if [[ "$TYPE" == "testcraft" ]]; then
+            SALT=$(urldecode ${arr[1]} | xargs)
+            PEPPER=$(urldecode ${arr[3]} | xargs)
+            NODEID=$(urldecode ${arr[7]} | xargs)
+            DATAID=$(urldecode ${arr[9]} | xargs)
+
+            ipfs --timeout 12s ping $NODEID &
+            ipfs --timeout 12s ls /ipfs/$DATAID &
+            echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
+            (echo "OK - $NODEID WE GONE GET YOUR /ipfs/$DATAID " | nc -l -p ${PORT} -q 1 &) && continue
+        fi
+
         ## ELSE IPNS TW REDIRECT
         if [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]]; then
             TWIP=$myIP
@@ -183,7 +198,7 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                     [[ ! $OLDIP ]] && (echo "ERROR - $OLDIP WRONG  TW - CONTINUE " | nc -l -p ${PORT} -q 1 &) && continue
                     # FIRST TIME PLAYER TW USING GATEWAY
                     if [[ $OLDIP == "_SECRET_" ]]; then
-                        echo "_SECRET_ TW PUSHING TW"
+                        echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
                         sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
                         echo "HTTP/1.1 200 OK
 Server: Astroport
@@ -200,7 +215,7 @@ Content-Type: text/html; charset=UTF-8
                      (echo "ERROR - NO TW FOUND - ASK FOR VISA" | nc -l -p ${PORT} -q 1 &) && continue
                 fi
             else
-                echo "***** TRY OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
+                echo "***** READER MODE - R/W USE OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
             fi
 
             sed "s~_TWLINK_~http://$TWIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
@@ -221,12 +236,12 @@ Content-Type: text/html; charset=UTF-8
 
     fi
 
+
 ###################################################################################################
 ###################################################################################################
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ ${arr[6]} == "email" || ${arr[6]} == "elastic" ]]; then
-        # CHECK TYPE
-        TYPE=$(urldecode ${arr[4]})
+
         [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 &) && continue
 
         start=`date +%s`
