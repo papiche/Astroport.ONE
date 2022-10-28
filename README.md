@@ -90,6 +90,9 @@ Vous pouvez rejoindre l'Astroport officiel, Swam#0, et devenir bootstrap et hôt
 
 Bien sûr, la meilleure utilisation est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée alors), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent de bits massif.
 
+TW est la première application disponible pour les personnes décentralisées.
+L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de commande" pour activer la copie des tiddlers entre les TW d'amis et exécuter des pré et/ou post traitements.
+
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
 
