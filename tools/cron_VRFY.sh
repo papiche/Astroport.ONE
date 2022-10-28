@@ -13,7 +13,7 @@ echo '
 # qo-op
 ############# '$MY_PATH/$ME'
 ########################################################################
-# Activate / Desactivate ASTROPORT 20h12.sh job
+# Activate / Desactivate ASTROPORT 20h12.sh job & IPFS daemon
 ########################################################################'
 # Clean
 rm -f /tmp/mycron /tmp/newcron
@@ -30,6 +30,7 @@ crontest=$(cat /tmp/mycron | grep -F '20h12.sh')
 
 if [[ ! $crontest ]]; then
     ## HEADER
+    [[ $1 == "OFF" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
@@ -39,9 +40,10 @@ if [[ ! $crontest ]]; then
     sudo systemctl enable ipfs
     sudo systemctl start ipfs
     echo "ASTROPORT is ON"
-    [[ $1 == "ON" ]] && exit 0
+
 else
     ## HEADER
+    [[ $1 == "ON" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     ## REMOVE 20h12.sh line
@@ -50,7 +52,7 @@ else
     sudo systemctl stop ipfs
     sudo systemctl disable ipfs
     echo "ASTROPORT is OFF"
-    [[ $1 == "OFF" ]] && exit 0
+
 fi
 
 
