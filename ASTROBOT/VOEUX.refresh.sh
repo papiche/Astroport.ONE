@@ -80,7 +80,7 @@ do
             [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
 
             rm -f ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json
-            echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FINDEX"
+            echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
                                 --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME} --render '.' 'g1wishtiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']]'
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
