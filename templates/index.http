@@ -19,7 +19,7 @@ Content-Type: text/html; charset=UTF-8
 <center>
 <h1>ASTROPORT Ŋ1</h1>
 <b>Astronaute ! Ouverture de votre sas en cours...</b><br>
-<a href="/ipns/_IPFSNODEID_" target="json"><img src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='wait'/></a>
+<a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json"><img src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='wait'/></a>
 </center>
 </body>
 </html>
