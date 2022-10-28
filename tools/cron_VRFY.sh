@@ -35,7 +35,7 @@ if [[ ! $crontest ]]; then
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
     # ADD  20h12.sh line
-    echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.sh 2>&1>/dev/null" >> /tmp/newcron
+    echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
     crontab /tmp/newcron
     sudo systemctl enable ipfs
     sudo systemctl start ipfs
