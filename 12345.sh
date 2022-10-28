@@ -120,11 +120,11 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         ipfs key rm gchange > /dev/null 2>&1
         rm -f ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
-        GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key )
-        echo "ASTRONAUTE TW : http://$myIP:8080/ipns/$GNS"
+        ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key )
+        echo "ASTRONAUTE TW : http://$myIP:8080/ipns/${ASTRONAUTENS}"
         echo
-#####################################
-        ## ARCHIVE TOCTOC WHATS
+########################################
+        ## ARCHIVE TOCTOC WHATS & KEEPS LOGS CLEAN
         mkdir -p ~/.zen/tmp/toctoc/
         ISTHERE=$(ls -t ~/.zen/tmp/toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
@@ -171,12 +171,15 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 # G1PUB -> Open Gchange Profile
 ########################################
         if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
+            ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
             sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
         fi
 ########################################
 #TESTCRAFT=ON nodeid dataid
+# 192.168.199.166:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
 ########################################
         if [[ "$TYPE" == "testcraft" ]]; then
+            ## RECORD DATA MADE IN BROWSER (JSON)
             SALT=$(urldecode ${arr[1]} | xargs)
             PEPPER=$(urldecode ${arr[3]} | xargs)
             NODEID=$(urldecode ${arr[7]} | xargs)
@@ -200,7 +203,9 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
-        ## ELSE IPNS TW REDIRECT
+##############################################
+# DEFAULT (NO REDIRECT DONE YET) CHECK OFFICIAL GATEWAY
+##############################################
         if [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]]; then
             TWIP=$myIP
             # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
@@ -208,8 +213,8 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
                 echo "OFFICIAL latest online TW... $LIBRA ($YOU)"
 
-                [[ $YOU ]] && echo "http://$myIP:8080/ipns/$GNS ($YOU)" && ipfs --timeout 12s cat  /ipns/$GNS > ~/.zen/tmp/123/${MOATS}.astroindex.html
-                [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/$GNS" && curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/$GNS"
+                [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/123/${MOATS}.astroindex.html
+                [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
                 # DEBUG
                 # echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
@@ -241,7 +246,7 @@ Content-Type: text/html; charset=UTF-8
                 echo "***** READER MODE - R/W USE OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
             fi
 
-            sed "s~_TWLINK_~http://$TWIP:8080/ipns/$GNS~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+            sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
 
         fi
         ## TODO PATCH _SECRET_ myIP STUFF
@@ -250,14 +255,14 @@ Content-Type: text/html; charset=UTF-8
         cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/123/${MOATS}.index.redirect"
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
-        #echo "$GNS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
         ## CHECK IF ALREADY EXISTING WHAT
         # IF NOT = BATCH CREATE TW
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
 
-    fi
+    fi ## END IF SALT
 
 
 ###################################################################################################
@@ -289,8 +294,8 @@ Content-Type: text/html; charset=UTF-8
                 if [[ ! -d ~/.zen/game/players/$WHAT ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
-                    echo "OK - ASTRONAUT $WHAT VISA CREATION [$SALT + $PEPPER] ($PSEUDO)
-                    <br> - PLEASE 'CHECK IN' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    echo "OK - ASTRONAUT $PSEUDO VISA CREATION  [$SALT + $PEPPER] ($WHAT)
+                    <br> PREPARING YOUR TW - PLEASE 'CHECK' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     continue
                else
                     # ASTRONAUT EXISTING WHAT
