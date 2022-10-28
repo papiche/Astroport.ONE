@@ -174,7 +174,7 @@ if [ ! -f ~/.zen/tmp/TW.html ]; then
 
         sed -i "s~G1Voeu~G1Visa~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        sed -i "s~Moa~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~de Moa~de ${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
