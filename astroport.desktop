@@ -1,0 +1,7 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=Astroport
+Exec=/home/_USER_/.zen/Astroport.ONE/ajouter_video.sh
+Icon=/home/_USER_/.zen/Astroport.ONE/logo96.png
+Type=Application
+Categories=Utility
