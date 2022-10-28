@@ -127,7 +127,7 @@ while read YID;
     "mime": "'$MIME'",
     "size": "'${FILE_BSIZE}'",
     "sec": "'${SEC}'",
-    "ipfs": "'${ILINK}'",
+    "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
     "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
   }
