@@ -325,9 +325,9 @@ Content-Type: text/html; charset=UTF-8
         WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "ERROR - QRCODE - NO WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "ERROR - QRCODE - NO $WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
-        ## UNE SECOND HTTP SERVER TO RECEIVE PASS
+        ## USE SECOND HTTP SERVER TO RECEIVE PASS
 
         [[ ${arr[2]} == "" ]] && (echo "ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         ## Demande de copie d'une URL reçue.
@@ -335,10 +335,22 @@ Content-Type: text/html; charset=UTF-8
             wsource="${arr[3]}"
              [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
 
-            ## LANCEMENT COPIE
-            ~/.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
+            ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
+            # /.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
+            echo "## Insertion tiddler : G1CopierYoutube"
+            echo '[
+  {
+    "title": "'${MOATS}'",
+    "type": "'text/vnd.tiddlywiki'",
+    "text": "'$(urldecode $wsource)'",
+    "tags": "'CopierYoutube ${WHAT}'"
+  }
+]
+' > ~/.zen/tmp/${WHAT}.${MOATS}.import.json
 
-            (echo "OK - QRCODE - COPYING $(urldecode $wsource) FOR $WHAT"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+            ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
+
+            (echo "OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
     fi
