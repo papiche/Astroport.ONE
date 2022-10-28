@@ -75,6 +75,8 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 ~/.zen/Astroport.ONE/start.sh
 ```
 
+Hommage au jeu des origines de la bureautique ludique, essayez, enrichissez le script ```~/.zen/Astroport.ONE/aventure.sh```
+
 # API
 
 Astroport n'utilise pas de serveur web!
