@@ -38,8 +38,8 @@ then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             sudo apt install -y $i;
             [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
+        fi
     done
-    fi
 fi
 
 for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto mpack; do
