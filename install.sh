@@ -49,7 +49,7 @@ for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsod
     fi
 done
 
-for i in qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick ttf-mscorefonts-installer; do
+for i in qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick ttf-mscorefonts-installer; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -79,6 +79,10 @@ fi
 
 echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
+
+## MAILJET RELAYING
+cp ~/.zen/Astroport.ONE/templates/.msmtprc ~/
+chmod 600 ~/.msmtprc
 
 ## Correct PDF restrictions for imagemagick
 echo "# Correction des droits export PDF imagemagick"
