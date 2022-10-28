@@ -186,18 +186,22 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             DATAID=$(urldecode ${arr[9]} | xargs)
 
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}
-            echo "PING $NODEID"
+            echo "TRYING PING $NODEID"
             ipfs --timeout 12s ping $NODEID &
 
             ## COULD BE A RAW FILE, AN HTML, A JSON
-            echo "CURLING  https://ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}"
-            (curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html "https://gateway.ipfs.io/ipfs/$DATAID" && \
-            [[ -s ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html ]] && echo "index.html" &&\
-            [[ ! $(~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html | jq) ]] && echo "NOT JSON - DECODING " &&\
-            $MY_PATH/tools/testcraft.DECODE.sh "~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/index.html") &
+            echo "$WHAT is being sent : json, html, ipfs ? Default on=json"
+            echo "TRYING CURL https://ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}data.json"
+            curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
 
-            echo "CAT $NODEID /ipfs/$DATAID"
-            [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/123/${MOATS}.data.${NODEID}.ipfs &
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json ]] && echo "OK data.json" &&\
+            [[ ! $(~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json | jq) ]] && echo "NOT JSON IMPLEMENT : testcraft=html" || \
+            ipfs add ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json
+
+            echo "TRYIN CAT /ipfs/$DATAID"
+            [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json &
+
+            ## TODO ADD data.json to PLAYER TW
 
             echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
             (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
