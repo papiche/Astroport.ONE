@@ -31,13 +31,15 @@ echo "Appuyez sur ENTRER pour commencer."; read TEST;  [[ "$TEST" != "" ]] && ec
 echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
-if [[ "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11']]; then
+if [[ "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11']]
+then
     for i in x11-utils xclip zenity; do
         if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             sudo apt install -y $i;
             [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
     done
+    fi
 fi
 
 for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto mpack; do
