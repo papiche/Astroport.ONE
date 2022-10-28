@@ -79,20 +79,21 @@ Hommage au jeu des origines de la bureautique ludique, essayez, enrichissez le s
 
 # USAGE
 
-L'introduction du cryptosystème signifie que tout hôte possédant une clé privée peut modifier "quelque chose", la clé publique étant l'adresse de cette "chose". Quand on se concentre sur le hachage des données comme le fait IPFS, on peut stocker n'importe quoi partout.
+L'utilisation du cryptosystème signifie que tout hôte possédant une clé privée peut modifier "quelque chose", la clé publique étant l'adresse de cette "chose". Quand on se concentre sur le hachage des données comme le fait IPFS, on peut stocker n'importe quoi partout.
 
-Astroport.ONE joint une clé (génération NaCl à 2 passes) et un email à un modèle émis par TW. Chaque ordinateur sert l'API sur le port 1234. Il peut héberger plusieurs clés PLAYER
+Astroport.ONE attache une clé (2 pass phrase NaCl generattion) et un email à un modèle TW. Chaque ordinateur sert l'API sur le port 1234. Il peut héberger plusieurs clés PLAYER et gérer leurs TW.
 
-Chaque jour, à 20h12, tous les nœuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini dans l'échange d'étoiles via l'application https://gchange.fr.
+Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini en échangeant des étoiles via l'application https://gchange.fr.
 
 N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" et des "G1Tags" ensemble.
-Vous pouvez rejoindre l'Astroport officiel, Swam#0, et devenir bootstrap et hôte dans le "DNS Round Robin" http://tube.copylaradio.com:1234
+Vous pouvez rejoindre le swam#0 officiel d'Astroport, en devenant bootstrap et hôte dans http://copylaradio.com:1234 TestNet "DNS Round Robin".
 
-Bien sûr, la meilleure utilisation est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée alors), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent de bits massif.
+Bien entendu, le mieux est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée dans ce cas), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent bit massif.
 
 TW est la première application disponible pour les personnes décentralisées.
 L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de commande" pour activer la copie des tiddlers entre les TW d'amis et exécuter des pré et/ou post traitements.
 
+Traduit avec www.DeepL.com/Translator (version gratuite)
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
 
