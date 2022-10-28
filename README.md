@@ -86,9 +86,12 @@ Astroport.ONE joint une clé (génération NaCl à 2 passes) et un email à un m
 Chaque jour, à 20h12, tous les nœuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini dans l'échange d'étoiles via l'application https://gchange.fr.
 
 N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" et des "G1Tags" ensemble.
-Vous pouvez rejoindre l'Astroport officiel swam#0, en devenant bootstrap et hôte dans http://copylaradio.com:1234 "DNS Round Robin".
+Vous pouvez rejoindre l'Astroport officiel, Swam#0, et devenir bootstrap et hôte dans le "DNS Round Robin" http://tube.copylaradio.com:1234
 
 Bien sûr, la meilleure utilisation est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée alors), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent de bits massif.
+
+[20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
+
 
 # API
 
@@ -100,7 +103,7 @@ Chaque appel API comporte "salt" et "pepper", correspondance NaCl de la clef en 
 # TYPE = official, g1pub, messaging, testcraft, ....
 http://127.0.0.1:1234/?salt=${SALT}&pepper=${PEPPER}&${TYPE}=?&...
 ```
-
+[12345.sh](/qo-op/Astroport.ONE/src/branch/master/12345.sh)
 
 # TIDDLYWIKI
 
