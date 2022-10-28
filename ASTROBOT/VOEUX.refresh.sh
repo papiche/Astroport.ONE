@@ -43,33 +43,34 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GET VoeuTitle LIST
 while read WISH
 do
-    [[ $WISH = "" ]] && continue
+    [[ ${WISH} = "" ]] && continue
     echo "==============================="
-    echo "G1Voeu $WISH"
-    ## Get $WISHNAME TW
-    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json | jq .[] | jq -r 'select(.wish=="'$WISH'") | .title')
-    [[ ! $WISHNAME ]] && echo "WISH sans NOM - CONTINUE -" && continue
-    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json  | jq .[] | jq -r 'select(.wish=="'$WISH'") | .ipns')
+    echo "G1Voeu ${WISH}"
+    ## Get ${WISHNAME} TW
+    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
+    [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
+    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
 
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/$WISH
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}
 
     ## RUN SPECIFIC G1Voeu Treatment (G1CopierYoutube.sh)
-    if [[ -s $MY_PATH/G1$WISHNAME.sh ]]; then
-        echo "........................ Astrobot G1$WISHNAME.sh program found !"
+    if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
+        echo "........................ Astrobot G1${WISHNAME}.sh program found !"
         echo "________________________________  Running it *****"
         ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "$PLAYER"
         echo "________________________________   Finished ******"
     else
-        echo "......................... G1$WISHNAME No special program found !"
+        echo "......................... G1${WISHNAME} No special program found !"
     fi
 
     ## RUN TW search & copy treatment
     echo "*********************************"
         ##################################
-        ## Search for [tag[G1$WISHNAME]] in all Friends TW.
+        ## Search for [tag[G1${WISHNAME}]] in all Friends TW.
         ## Copy tiddlers ...
         ##################################
-        echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=$WISHNAME"
+        echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=${WISHNAME}"
+        echo "ls ~/.zen/game/players/$PLAYER/FRIENDS/*/index.html"
         echo "*********************************"
         ## Search in Local World (NB! G1Voeu TW copied by Connect_PLAYER_To_Gchange.sh)
         FINDEX=($( ls $HOME/.zen/game/players/$PLAYER/FRIENDS/*/index.html))
@@ -78,32 +79,35 @@ do
         do
             [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
 
-            rm -f ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/g1wishtiddlers.json
-            echo "TRY EXPORT [tag[G1$WISHNAME]]  FROM $FINDEX"
+            rm -f ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json
+            echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FINDEX"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME --render '.' 'g1wishtiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'$WISHNAME']]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/g1wishtiddlers.json ]] && echo "NO $WISHNAME - CONTINUE -" && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/g1wishtiddlers.json) == "[]" ]] && echo "NO $WISHNAME - CONTINUE -" && continue
+                                --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME} --render '.' 'g1wishtiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']]'
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## WISHES FOUND ;) MIAM "
             ## TODO ADD EXTRA TAG ?
-            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/g1wishtiddlers.json"
+            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json"
 
             tiddlywiki --load $INDEX \
-                            --import "~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/g1wishtiddlers.json" "application/json" \
-                            --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/$WISH --render "$:/core/save/all" "newindex.html" "text/plain"
+                            --import "~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json" "application/json" \
+                            --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH} --render "$:/core/save/all" "newindex.html" "text/plain"
 
-            if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/$WISH/newindex.html ]]; then
+            if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html ]]; then
                 echo "Updating $INDEX"
-                cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/$WISH/newindex.html $INDEX
+                cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html $INDEX
             else
-                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/$WISHNAME/$WISH/newindex.html"
+                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html"
                 echo "XXXXXXXXXXXXXXXXXXXXXXX"
             fi
 
         done
 
 done < ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1wishes
+
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 ############################################
 
