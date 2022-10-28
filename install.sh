@@ -32,7 +32,7 @@ echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
 
- for i in x11-utils xclip zenity kodi; do
+ for i in x11-utils xclip zenity; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo apt install -y $i;
@@ -48,8 +48,8 @@ for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsod
 
     fi
 done
-
-for i in qrencode jq bc file gawk yt-dlp ffmpeg sqlite dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick ttf-mscorefonts-installer; do
+# removed : sqlite
+for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -64,13 +64,6 @@ sudo npm install -g tiddlywiki
 [[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.failed.log && continue
 
 ##########################################################
-########### KODI + kodi_uqload_downloader
-if [[ $(which kodi) ]]; then
-    echo ">>> Installation kodi_uqload_downloade <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-    ${MY_PATH}/kodi_uqload_downloader.sh
-    [[ $? != 0 ]] && echo "INSTALL kodi_uqload_downloader FAILED." && echo "INSTALL kodi_uqload_downloader FAILED." >> /tmp/install.failed.log && continue
-fi
-
 echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
 
@@ -108,7 +101,7 @@ if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
     echo "Ambassade? Ajouter imprimante 'brother_ql'? Saisissez OUI, sinon laissez vide et tapez sur ENTRER"
     read saisie
     if [[ $saisie != "" ]]; then
-        sudo apt install printer-driver-all cups -y
+        sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
         sudo pip3 install brother_ql
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin pi
@@ -249,7 +242,7 @@ echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'E
 [[ "$USER" != "xbian" && -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Bureau/astroport.desktop && chmod +x ~/Bureau/astroport.desktop
 [[ "$USER" != "xbian" && -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
 
-
+mkdir -p ~/.zen/tmp
 # MAIN # -f ~/.zen/secret.june (ISOConfig déjà lancé) ##
 else
 

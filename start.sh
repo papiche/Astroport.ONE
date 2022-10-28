@@ -14,7 +14,8 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 ###################################################
 killall 12345.sh; killall nc; killall tail
-~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+cd ~/.zen/Astroport.ONE/
+./12345.sh > ~/.zen/tmp/12345.log &
 tail -f ~/.zen/tmp/12345.log &
 echo "1234 PORT SPIDER http://$myIP:1234"
 ###################################################
