@@ -13,9 +13,8 @@ TS=$(date -u +%s%N | cut -b1-13)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 ###################################################
-killall 12345.sh; killall nc; killall tail
-cd ~/.zen/Astroport.ONE/
-./12345.sh > ~/.zen/tmp/12345.log &
+killall 12345.sh; killall nc; killall tail; mkdir -p ~/.zen/tmp
+~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 tail -f ~/.zen/tmp/12345.log &
 echo "1234 PORT SPIDER http://$myIP:1234"
 ###################################################
