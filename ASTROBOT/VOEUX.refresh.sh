@@ -91,7 +91,7 @@ do
             echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json"
 
             tiddlywiki --load $INDEX \
-                            --import "~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json" "application/json" \
+                            --import "$HOME/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json" "application/json" \
                             --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH} --render "$:/core/save/all" "newindex.html" "text/plain"
 
             if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html ]]; then
