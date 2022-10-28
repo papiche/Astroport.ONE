@@ -31,16 +31,14 @@ echo "Appuyez sur ENTRER pour commencer."; read TEST;  [[ "$TEST" != "" ]] && ec
 echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
-if [[ "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11']]
-then
-    for i in x11-utils xclip zenity; do
-        if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+
+ for i in x11-utils xclip zenity kodi; do
+    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-            sudo apt install -y $i;
-            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
-        fi
-    done
-fi
+        [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo apt install -y $i;
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
+    fi
+done
 
 for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
@@ -67,12 +65,6 @@ sudo npm install -g tiddlywiki
 
 ##########################################################
 ########### KODI + kodi_uqload_downloader
-if [[ ! $(which kodi) && "$USER" != "xbian" && $XDG_SESSION_TYPE == 'x11' ]]; then
-    ## Il manque kodi
-    echo ">>> Installation Kodi + Vstream = VOTRE VIDEOTHEQUE ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-    sudo apt-get install kodi -y
-    [[ $? != 0 ]] && echo "INSTALL kodi FAILED." && echo "INSTALL kodi FAILED." >> /tmp/install.failed.log && continue
-fi
 if [[ $(which kodi) ]]; then
     echo ">>> Installation kodi_uqload_downloade <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     ${MY_PATH}/kodi_uqload_downloader.sh
@@ -274,4 +266,5 @@ http://astroport.com
 
 # MAIN #
 fi
+
 }
