@@ -1,14 +1,14 @@
 HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-Access-Control-Allow-Origin = "*"
-Access-Control-Allow-Credentials = "true"
-Access-Control-Allow-Methods = "GET"
 
 <!doctype html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="6; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="10; url='http://127.0.0.1:12345'" />
     <style>
     #reduce42 {
     width:42%;
@@ -18,21 +18,23 @@ Access-Control-Allow-Methods = "GET"
     <title>[Astroport](_HOSTNAME_) - IPFS BIOS -  Interplanetray File System + Basic Input Output System +  Scuttlebut Confidence Layer Ŋ1 </title>
   </head>
 <body>
-<center>
-<h2>Astroport Ŋ1 Swarm#0</h2>
-<b>--- Astronaute ---</b><br>
 
-<form id="formlink" action = "http://127.0.0.1:1234" method = "GET">
+<center>
+        <h2>Astronaute - Entrez dans votre Astroport Ŋ1</h2>
+<form action = "http://127.0.0.1:1234" method = "GET">
     <br>
-     <b>Saisir vos clefs pour recevoir votre Visa Libre par email</b></br>
-        Phrase Une ("identifiant") : <input name=salt value=''></br>
-        Phrase Deux ("mot de passe") : <input name=pepper value=''></br>
-         <input type="checkbox" id="g1pub" name="g1pub"> accepter leur délégation et synchonisation Ŋ1 à 20h12</br>
-        Email : <input name=email value=''></br></br>
-        <input type='submit' value='OCCUPER CET ESPACE'>
+        Phrase Une (identifiant) : <input name=salt value=''></br>
+        Phrase Deux (mot de passe) : <input name=pepper value=''></br>
+        ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br></br>
+        <input type='submit' value='OUVRIR TW...'>
     </form>
-    <div id="linkresultat">
-<h3>[<a href="http://127.0.0.1:12345">DECOUVREZ LA REPONSE SUR LE PORT :12345</a>]</h3>
+
+            <p>
+            <b>Besoin d'aide ? Contactez support@qo-op.com</b>
+            </p>
+
+<div id="linkresultat">
+<h3><a href="http://127.0.0.1:12345">A SUIVRE SUR LE PORT:12345</a></h3>
 </div>
 <br>
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json"><img width=420 height=420 src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='API'/></a>
