@@ -93,7 +93,6 @@ Bien entendu, le mieux est que chacun héberge et publie ses propres données su
 TW est la première application disponible pour les personnes décentralisées.
 L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de commande" pour activer la copie des tiddlers entre les TW d'amis et exécuter des pré et/ou post traitements.
 
-Traduit avec www.DeepL.com/Translator (version gratuite)
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
 
@@ -115,7 +114,7 @@ Les données produites par chaque clef sont stockées en tant que tiddlers dans 
 Le tag "voeu" déclenche la transformation du tiddler en "G1Voeu".
 Son Titre  devient un tag qui permet d'échanger les tiddlers correspondant au même voeu que ses TW amis.
 
-> [https://ncase.me/loopy/v1.1/?data=[[[3,646,229,0.5,%22Astronaute%22,5],[4,806,372,0.16,%22G1Voeu%22,3],[5,449,133,0.83,%22G1Talent%22,1],[6,928,124,0.5,%22Astronaute%22,0],[7,1055,293,0.5,%22Astronaute%22,0],[8,883,587,0.5,%22Astronaute%22,0],[10,691,54,0.5,%22G1Voeu%22,3]],[[3,5,82,1,0],[3,4,-87,1,0],[6,4,83,1,0],[4,5,176,1,0],[8,8,85,1,12],[8,4,-45,1,0],[7,4,34,1,0],[5,3,49,1,0],[7,7,101,1,225],[6,6,113,1,-84],[3,3,90,1,75],[5,4,-293,1,0],[3,10,34,1,0]],[],10%5D](Simulateur Astronaute/Voeux)
+> [https://ncase.me/loopy/v1.1/?data=%5B3%2C646%2C229%2C0.5%2C%2522Astronaute%2522%2C5%5D%2C%5B4%2C806%2C372%2C0.16%2C%2522G1Voeu%2522%2C3%5D%2C%5B5%2C449%2C133%2C0.83%2C%2522G1Talent%2522%2C1%5D%2C%5B6%2C928%2C124%2C0.5%2C%2522Astronaute%2522%2C0%5D%2C%5B7%2C1055%2C293%2C0.5%2C%2522Astronaute%2522%2C0%5D%2C%5B8%2C883%2C587%2C0.5%2C%2522Astronaute%2522%2C0%5D%2C%5B10%2C691%2C54%2C0.5%2C%2522G1Voeu%2522%2C3%2C3%2C5%2C82%2C1%2C0%5D%2C%5B3%2C4%2C-87%2C1%2C0%5D%2C%5B6%2C4%2C83%2C1%2C0%5D%2C%5B4%2C5%2C176%2C1%2C0%5D%2C%5B8%2C8%2C85%2C1%2C12%5D%2C%5B8%2C4%2C-45%2C1%2C0%5D%2C%5B7%2C4%2C34%2C1%2C0%5D%2C%5B5%2C3%2C49%2C1%2C0%5D%2C%5B7%2C7%2C101%2C1%2C225%5D%2C%5B6%2C6%2C113%2C1%2C-84%5D%2C%5B3%2C3%2C90%2C1%2C75%5D%2C%5B5%2C4%2C-293%2C1%2C0%5D%2C%5B3%2C10%2C34%2C1%2C0%2C%5B%5D%2C10%255D%5D](Simulateur Astronaute/Voeux)
 
 ## DO YOU TALK TW ? https://talk.tiddlywiki.org
 
