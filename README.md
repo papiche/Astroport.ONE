@@ -87,6 +87,8 @@ Le projet reproduit le "[protocole Scuttlebut](https://scuttlebot.io/more/protoc
 
 Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini en échangeant des étoiles via l'application https://gchange.fr.
 
+**Nous utilisons [la Ğ1](https://monnaie-libre.fr/) comme "la meilleure invention d'une crypto-monnaie"**
+
 N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" et des "G1Tags" ensemble.
 Vous pouvez rejoindre le swam#0 officiel d'Astroport, en devenant bootstrap et hôte dans http://copylaradio.com:1234 TestNet "DNS Round Robin".
 
