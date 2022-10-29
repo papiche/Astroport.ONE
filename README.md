@@ -114,7 +114,6 @@ Les données produites par chaque clef sont stockées en tant que tiddlers dans 
 Le tag "voeu" déclenche la transformation du tiddler en "G1Voeu".
 Son Titre  devient un tag qui permet d'échanger les tiddlers correspondant au même voeu que ses TW amis.
 
-> [https://ncase.me/loopy/v1.1/?data=%5B3%2C646%2C229%2C0.5%2C%2522Astronaute%2522%2C5%5D%2C%5B4%2C806%2C372%2C0.16%2C%2522G1Voeu%2522%2C3%5D%2C%5B5%2C449%2C133%2C0.83%2C%2522G1Talent%2522%2C1%5D%2C%5B6%2C928%2C124%2C0.5%2C%2522Astronaute%2522%2C0%5D%2C%5B7%2C1055%2C293%2C0.5%2C%2522Astronaute%2522%2C0%5D%2C%5B8%2C883%2C587%2C0.5%2C%2522Astronaute%2522%2C0%5D%2C%5B10%2C691%2C54%2C0.5%2C%2522G1Voeu%2522%2C3%2C3%2C5%2C82%2C1%2C0%5D%2C%5B3%2C4%2C-87%2C1%2C0%5D%2C%5B6%2C4%2C83%2C1%2C0%5D%2C%5B4%2C5%2C176%2C1%2C0%5D%2C%5B8%2C8%2C85%2C1%2C12%5D%2C%5B8%2C4%2C-45%2C1%2C0%5D%2C%5B7%2C4%2C34%2C1%2C0%5D%2C%5B5%2C3%2C49%2C1%2C0%5D%2C%5B7%2C7%2C101%2C1%2C225%5D%2C%5B6%2C6%2C113%2C1%2C-84%5D%2C%5B3%2C3%2C90%2C1%2C75%5D%2C%5B5%2C4%2C-293%2C1%2C0%5D%2C%5B3%2C10%2C34%2C1%2C0%2C%5B%5D%2C10%255D%5D](Simulateur Astronaute/Voeux)
 
 ## DO YOU TALK TW ? https://talk.tiddlywiki.org
 
@@ -128,6 +127,14 @@ found 0 vulnerabilities
 Proposez vos "Templates"...
 
 ---
+
+## LOOPY :
+
+> [Simulateur Astronaute/Voeux](https://ncase.me/loopy/v1.1/?data=[[[3,646,229,0.5,%22Astronaute%22,5],[4,806,372,0.16,%22G1Voeu%22,3],[5,449,133,0.83,%22G1Talent%22,1],[6,928,124,0.5,%22Astronaute%22,0],[7,1055,293,0.5,%22Astronaute%22,0],[8,883,587,0.5,%22Astronaute%22,0],[10,691,54,0.5,%22G1Voeu%22,3]],[[3,5,82,1,0],[3,4,-87,1,0],[6,4,83,1,0],[4,5,176,1,0],[8,8,85,1,12],[8,4,-45,1,0],[7,4,34,1,0],[5,3,49,1,0],[7,7,101,1,225],[6,6,113,1,-84],[3,3,90,1,75],[5,4,-293,1,0],[3,10,34,1,0]],[],10%5D)
+
+> [Essaim Astroport.ONE](https://ncase.me/loopy/v1.1/?data=[[[1,419,351,1,%22Astroport.ONE%22,3],[2,506,530,1,%22Terrien%22,5],[3,499,95,1,%22IPFS%22,1],[4,272,225,1,%22Astroport.ONE%22,3],[5,620,297,0.16,%22Astroport.ONE%22,4],[7,927,69,0.66,%22Astroport.ONE%22,3],[8,798,175,0.66,%22Astroport.ONE%22,3]],[[2,1,94,-1,0],[1,2,89,1,0],[2,5,-122,1,0],[5,3,58,1,0],[3,5,25,1,0],[4,3,117,1,0],[3,4,-152,1,0],[1,3,60,1,0],[3,1,-18,1,0],[7,3,-44,1,0],[3,7,15,1,0],[8,3,37,1,0],[3,8,-47,1,0]],[[798,557,%22http%253A%252F%252Ftube.copylaradio.com%253A1234%250A(salt%2520%252F%2520pepper%2520%252F%2520email)%2520%253D%2520TW%2520%252B%2520AstroBot%2520API%22],[256,141,%22Station%2520Officielle%250A(Bootstrap%2520%252B%2520RoundRobin%2520DNS)%22],[868,332,%22D%25C3%25A9l%25C3%25A9gation%2520de%2520clef%250A(Tiers%2520de%2520confiance)%22]],9%5D)
+
+
 
 # TODO
 * Ajouter des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
