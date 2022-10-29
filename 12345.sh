@@ -39,7 +39,7 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ $PORT -lt 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
+    [ $PORT -lt 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
                 ## RANDOM PORT SWAPPINESS
 
     SALT=""; PEPPER=""; TYPE=""
@@ -228,8 +228,8 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
                     tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                     OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                    [[ ! $OLDIP ]] && (echo "ERROR - $OLDIP WRONG  TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-                    # FIRST TIME WHAT TW USING GATEWAY
+                    [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    # LOCKED TW BECOMING NEW GATEWAY
                     if [[ $OLDIP == "_SECRET_" ]]; then
                         echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
                         sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
@@ -241,7 +241,7 @@ Content-Type: text/html; charset=UTF-8
                         cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                         continue
                     fi
-                    # REDIRECTING TO ACTUAL GATEWAY
+                    # REDIRECTING TO TODAY GATEWAY
                     [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
                     echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
                 else

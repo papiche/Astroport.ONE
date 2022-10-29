@@ -87,7 +87,11 @@ do
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## WISHES FOUND ;) MIAM "
+            ######################################
             ## TODO ADD EXTRA TAG ?
+            # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER
+            # Reduce importation with extra filters days:created[-1]
+            # Apply Extra filters... TODO LEARN https://talk.tiddlywiki.org/t/how-to-filter-and-delete-multiple-tiddlers/4950/2?u=papiche
             echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json"
 
             tiddlywiki --load $INDEX \
