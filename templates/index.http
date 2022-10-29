@@ -24,11 +24,11 @@ Content-Type: text/html; charset=UTF-8
      <b>Choisissez vos phrases clefs ! </b></br>
         Phrase Une (identifiant) : <input name=salt value=''></br>
         Phrase Deux (mot de passe) : <input name=pepper value=''></br>
-         <input type="checkbox" id="g1pub" name="g1pub"> Acceptez nos G1Conditions</br>
+         <input type="checkbox" id="g1pub" name="g1pub"> acceptation des G1Conditions</br>
         Votre email : <input name=email value=''></br></br>
-        <input type='submit' value='OUVRIR MON COMPTE'>
+        <input type='submit' value='OUVRIR UN COMPTE'>
     </form>
-<h3><a href="http://127.0.0.1:12345">ALLEZ AU PROCHAIN PORT</a></h3>
+<h3><a href="http://127.0.0.1:12345">ALLER AU PROCHAIN PORT</a></h3>
 <br>
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json"><img width=420 height=420 src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='API'/></a>
 </center>
