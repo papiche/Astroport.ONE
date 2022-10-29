@@ -83,6 +83,8 @@ L'utilisation du cryptosystème signifie que tout hôte possédant une clé priv
 
 Astroport.ONE attache une clé (2 pass phrase NaCl generattion) et un email à un modèle TW. Chaque ordinateur sert l'API sur le port 1234. Il peut héberger plusieurs clés PLAYER et gérer leurs TW.
 
+Le projet reproduit le "[protocole Scuttlebut](https://scuttlebot.io/more/protocols/secure-scuttlebutt.html)", d'où emerge le réseau Ŋ1, Ŋ2,... une fois généralisé à toute clef IPFS enchaînées par un mappage "Web of Trust", créant ainsi un service d'hébergement partagé "peer to peer".
+
 Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini en échangeant des étoiles via l'application https://gchange.fr.
 
 N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" et des "G1Tags" ensemble.
