@@ -12,25 +12,24 @@ Content-Type: text/html; charset=UTF-8
     height:36%;
     }
     </style>
-    <title>[Astroport Ŋ1](_HOSTNAME_) - IPFS BIOS -  Interplanetray File System + Basic Input Output System + Social Confidence Layer </title>
-
+    <title>[Astroport](_HOSTNAME_) - IPFS BIOS -  Interplanetray File System + Basic Input Output System +  Scuttlebut Confidence Layer Ŋ1 </title>
   </head>
 <body>
 <center>
 <h2>Astroport Ŋ1 Swarm#0</h2>
-<b>Astronaute ! Choisissez votre crypto clef... Pour <a href="http://127.0.0.1:12345">accéder à votre TW !</a></b><br>
+<b>Devenez Astronaute du nouvel Internet !</b><br>
 
 <form action = "http://127.0.0.1:1234" method = "GET">
     <br>
+     <b>Choisissez vos phrases clefs ! </b></br>
         Phrase Une (identifiant) : <input name=salt value=''></br>
         Phrase Deux (mot de passe) : <input name=pepper value=''></br>
-</br></br></br>
-        Choisissez vos phrases! cochez cette case : <input type="checkbox" id="g1pub" name="g1pub"></br>
-        Et indiquez votre email pour activez votre TW Officiel : <input name=email value=''></br></br>
-        <input type='submit' value='RECEVOIR MES CLEFS'>
+         <input type="checkbox" id="g1pub" name="g1pub"> Acceptez les G1Conditions</br>
+        Votre email : <input name=email value=''></br></br>
+        <input type='submit' value='ACTIVATION !'>
     </form>
-<br><br>
-Vous avez une minute...<br>
+<h3><a href="http://127.0.0.1:12345">SAUTER VERS LE NOUVEAU PORT !</a></h3>
+<br>
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json"><img src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='wait'/></a>
 </center>
 </body>
