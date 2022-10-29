@@ -21,11 +21,11 @@ Content-Type: text/html; charset=UTF-8
 
 <form action = "http://127.0.0.1:1234" method = "GET">
     <br>
-     <b>Recevez vos clefs par email ! </b></br>
-        Phrase Une (identifiant) : <input name=salt value=''></br>
-        Phrase Deux (mot de passe) : <input name=pepper value=''></br>
+     <b>Recevez vos clefs par Email</b></br>
+        Phrase Une ("identifiant") : <input name=salt value=''></br>
+        Phrase Deux ("mot de passe") : <input name=pepper value=''></br>
          <input type="checkbox" id="g1pub" name="g1pub"> acceptation des G1Conditions</br>
-        Votre email : <input name=email value=''></br></br>
+        Email : <input name=email value=''></br></br>
         <input type='submit' value='OUVRIR UN COMPTE'>
     </form>
 <h3><a href="http://127.0.0.1:12345">ALLER AU PROCHAIN PORT</a></h3>
