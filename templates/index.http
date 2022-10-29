@@ -1,11 +1,14 @@
 HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
+Access-Control-Allow-Origin = "*"
+Access-Control-Allow-Credentials = "true"
+Access-Control-Allow-Methods = "GET"
 
 <!doctype html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="60; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="6; url='http://127.0.0.1:12345'" />
     <style>
     #reduce42 {
     width:42%;
@@ -19,7 +22,7 @@ Content-Type: text/html; charset=UTF-8
 <h2>Astroport Ŋ1 Swarm#0</h2>
 <b>--- Astronaute ---</b><br>
 
-<form action = "http://127.0.0.1:1234" method = "GET">
+<form id="formlink" action = "http://127.0.0.1:1234" method = "GET">
     <br>
      <b>Saisir vos clefs pour recevoir votre Visa Libre par email</b></br>
         Phrase Une ("identifiant") : <input name=salt value=''></br>
@@ -28,9 +31,16 @@ Content-Type: text/html; charset=UTF-8
         Email : <input name=email value=''></br></br>
         <input type='submit' value='OCCUPER CET ESPACE'>
     </form>
-<h3>[<a href="http://127.0.0.1:12345">VISITER LE PORT SUIVANT</a>]</h3>
+    <div id="linkresultat">
+<h3>[<a href="http://127.0.0.1:12345">DECOUVREZ LA REPONSE SUR LE PORT :12345</a>]</h3>
+</div>
 <br>
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json"><img width=420 height=420 src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='API'/></a>
 </center>
 </body>
+
+<script>
+</script>
+
+
 </html>
