@@ -7,6 +7,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+start=`date +%s`
 
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
 
@@ -25,9 +26,13 @@ git clone https://git.p2p.legal/qo-op/Astroport.ONE.git
 if [[ ! -d ~/.zen/game/players/ ]];
 then
 
+
 # Check requirements
 echo "Astroport.ONE installateur pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/) ou XBIAN (https://xbian.org) testées"
-echo "Appuyez sur ENTRER pour commencer."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
+echo "$USER appuyez sur ENTRER pour commencer installation"; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
+echo "#############################################"
+echo "######### PATIENCE "
+echo "#############################################"
 echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
@@ -40,6 +45,10 @@ sudo apt-get update
     fi
 done
 
+echo "#############################################"
+echo "######### PATIENCE ####"
+echo "#############################################"
+
 for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsodium* python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -48,6 +57,9 @@ for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsod
 
     fi
 done
+echo "#############################################"
+echo "######### PATIENCE ######"
+echo "#############################################"
 # removed : sqlite
 for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
@@ -58,16 +70,23 @@ for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils v4l-utils espeak vlc mp
     fi
 done
 
+echo "#############################################"
+echo "######### PATIENCE ############"
+echo "#############################################"
 ##########################################################
 echo "### INSTALL TW node.js"
 sudo npm install -g tiddlywiki
 [[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.failed.log && continue
 
+echo "#############################################"
+echo "######### PATIENCE #################"
+echo "#############################################"
+
 ##########################################################
 echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
 
-## MAILJET RELAYING
+## MAILJET RELAYING : ADD YOUR CREDENTIALS
 cp ~/.zen/Astroport.ONE/templates/.msmtprc ~/
 chmod 600 ~/.msmtprc
 
@@ -96,6 +115,10 @@ for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy pynac
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python3 -m pip install -U $i FAILED." >> /tmp/install.failed.log && continue
 done
 
+echo "#############################################"
+echo "######### PATIENCE ######################"
+echo "#############################################"
+
 ########### PRINTER ##############
 if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
     echo "Ambassade? Ajouter imprimante 'brother_ql'? Saisissez OUI, sinon laissez vide et tapez sur ENTRER"
@@ -111,6 +134,9 @@ if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
     fi
 fi
 
+echo "#############################################"
+echo "######### PATIENCE #########################"
+echo "#############################################"
 
 ## Scripts pour systemd ou InitV (xbian)
 echo "=== Astroport UPGRADE SYSTEM IPFS"
@@ -167,8 +193,13 @@ echo ">>> INFO : Ajoutez l'extension 'OpenWith' à votre navigateur !!
 
 if [[ "$USER" != "xbian" ]]
 then
+echo "#############################################"
+echo "#############################################"
+echo "#############################################"
+
     ## Desktop install
-    echo "INITIALISATION Astroport"
+    echo "INITIALISATION Astroport terminée"
+
     echo "Appuyez sur la touche ENTREE pour démarrer votre Station"
     read
     ~/.zen/Astroport.ONE/start.sh
@@ -259,5 +290,6 @@ http://astroport.com
 
 # MAIN #
 fi
-
+end=`date +%s`
+echo Execution time was `expr $end - $start` seconds.
 }
