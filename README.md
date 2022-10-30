@@ -76,9 +76,45 @@ et des [Json](http://libra.copylaradio.com:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5
 
 # API
 
-Astroport n'utilise pas de serveur web! **netcat** publie un dcoument de bienvenu sur le port 1234... Il redirige le visiteur vers le $PORT du retour de l'exécution de l'API. Ce processus rend tout DDOS impossible. Le Round Robin DNS réparti les délégations de clefs.
+## hybride et asynchrone
+API du système.
 
-Chaque appel API comporte "salt" et "pepper", correspondance NaCl de la clef en usage.
+En utilisant netcat comme "serveur web minimal", la première page que renvoi le serveur est un rendez-vous vers la prochaine adresse IP et port où trouver la réponse à l'appel de l'API.
+
+Comme un client qui commande, à qui on attribue un point relai qu'il devra contrôler lui même pour en connaitre la livraison.
+
+chaque passerelle de l'essaim sert toujours la même page (voir "templates/index.http")
+
+http://tube.copylaradio.com:1234, informe où trouver la suite qui permet de découvrir la suite.
+
+ici pour informer de l'état de la commande (OK, ERROR)
+```
+<meta http-equiv="refresh" content="12; url='http://_ASTROIP_:_ASTROPORT_'" />
+
+```
+http://_ASTROIP_:_ASTROPORT_
+
+ici pour récupérer les éventuels colis
+```
+<a href="http://_ASTROIP_:8080/ipns/_APID_" target="json">
+```
+http://_ASTROIP_:8080/ipns/_APID_/
+
+_APID_ est la clef IPNS qui contient l'arborescence "json" en lecture
+
+Exemple pour l'application "G1Voeu" http://149.102.158.67:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+
+Application "messaging"
+http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&messaging=on
+
+
+Pour écrire une application utilisera "jsipfs"
+
+https://js.ipfs.tech/
+
+et l'appel API "testcraft" ?salt=toto&pepper=toto&testcraft=on&nodeid=_IPFDNODEID_&DATAID=_IPDSID_
+
+http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
 
 ```
 # TYPE = official, g1pub, messaging, testcraft, ....

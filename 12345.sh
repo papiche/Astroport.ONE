@@ -27,8 +27,16 @@ mkdir -p ~/.zen/tmp/123/
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=toto&pepper=toto " && exit 1
 echo "_________________________________________________________"
-echo "LAUNCHING Astroport  API Server "
-echo "TEST http://$myIP:1234/?salt=toto&pepper=toto&official"
+echo "LAUNCHING Astroport  API Server - TEST - "
+echo
+echo "CREATE GCHANGE + TW http://$myIP:1234/?salt=toto&pepper=toto&g1pub=on&email=fred@astroport.com"
+echo "CREATE TW ONLY http://$myIP:1234/?salt=toto&pepper=toto&g1pub=off&email=fred@astroport.com"
+echo "OPEN TW R/W http://$myIP:1234/?salt=toto&pepper=toto&official"
+echo
+echo "GCHANGE MESSAGING http://$myIP:1234/?salt=toto&pepper=toto&messaging"
+echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=toto&pepper=toto&g1pub"
+echo
+echo "TESTCRAFT http://$myIP:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD"
 echo "_________________________________________________________"
 
 # [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
@@ -185,7 +193,6 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         fi
 ########################################
 #TESTCRAFT=ON nodeid dataid
-# 192.168.199.166:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
 ########################################
         if [[ "$TYPE" == "testcraft" ]]; then
             ## RECORD DATA MADE IN BROWSER (JSON)
@@ -286,7 +293,7 @@ Content-Type: text/html; charset=UTF-8
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
-        [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         start=`date +%s`
 
@@ -295,7 +302,7 @@ Content-Type: text/html; charset=UTF-8
         WHAT=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $WHAT ]] && (echo "ERROR - MISSING EMAIL FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! $WHAT ]] && (echo "ERROR - MISSING $WHAT FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $WHAT | cut -d '@' -f 1)
