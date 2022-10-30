@@ -67,17 +67,16 @@ while true; do
     ## BARE URL CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
     if [[ $URL == "/" ]]; then
         echo "API NULL CALL :  http://$myIP:1234"
-        echo "___________________________ Launching homepage.html"
+        echo "___________________________ Preparing register.html"
         echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
-sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/homepage.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
+sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
 sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
         continue
@@ -110,13 +109,13 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         TYPE=$(urldecode ${arr[4]} | xargs)
         WHAT=$(urldecode ${arr[5]} | xargs)
 
-        echo "API ZERO CALL : \"$SALT\" \"$PEPPER\""
+        echo "API CALL CREDENTIALS : \"$SALT\" \"$PEPPER\""
         echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/123/${MOATS}.secret.june
 
         # CALCULATING G1PUB
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/123/${MOATS}.secret.key  "$SALT" "$PEPPER"
         G1PUB=$(cat ~/.zen/tmp/123/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
-        [[ ! $G1PUB ]] && (echo "ERROR - G1PUB COMPUTATION EMPTY"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! $G1PUB ]] && (echo "ERROR - CORE COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         echo "G1PUB : $G1PUB"
         ## CALCULATING IPNS ADDRESS
         ipfs key rm gchange > /dev/null 2>&1
@@ -166,6 +165,10 @@ Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
 cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redirect
 
+            cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo Execution time was `expr $end - $start` seconds.
+            continue
         fi
         ######################## MESSAGING END
 
@@ -175,6 +178,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
             sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+            cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo Execution time was `expr $end - $start` seconds.
+            continue
         fi
 ########################################
 #TESTCRAFT=ON nodeid dataid
@@ -206,7 +213,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             ## TODO ADD data.json to PLAYER TW
 
             echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
-            (echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+            echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo Execution time was `expr $end - $start` seconds.
+            continue
         fi
 
 ##############################################
