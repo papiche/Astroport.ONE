@@ -36,7 +36,7 @@ echo
 echo "GCHANGE MESSAGING http://$myIP:1234/?salt=toto&pepper=toto&messaging"
 echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=toto&pepper=toto&g1pub"
 echo
-echo "TESTCRAFT http://$myIP:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD"
+echo "TESTCRAFT http://$myIP:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZgfoCtJ1KwoBNUQepM1xhdmdU4x34ZxpLMtLqY43jvXV/g1wishtiddlers.json"
 echo "_________________________________________________________"
 
 # [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
@@ -214,7 +214,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             continue
         fi
 ########################################
+########################################
+########################################
 #TESTCRAFT=ON nodeid dataid
+########################################
 ########################################
         if [[ "$TYPE" == "testcraft" ]]; then
             ## RECORD DATA MADE IN BROWSER (JSON)
@@ -228,12 +231,13 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             ipfs --timeout 12s ping ${NODEID} &
 
             ## COULD BE A RAW FILE, AN HTML, A JSON
-            echo "$WHAT is being sent : json, html, ipfs ? Default on=json"
-            echo "TRYING CURL https://ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
+            echo "$WHAT IS JSON (COULD BE ANYTHING)"
+            echo "TRYING CURL https://gateway.ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
             curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
 
-            [[ -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]] && echo "OK data.json" &&\
-            [[ ! $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && echo "NOT JSON IMPLEMENT : testcraft=html" || \
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]] && echo "OK data.json" || echo "404 ERROR - $DATAID NOT FOUND" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+            [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
             ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
 
             echo "TRYIN CAT /ipfs/$DATAID"
