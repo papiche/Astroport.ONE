@@ -28,7 +28,7 @@ then
 
 
 # Check requirements
-echo "Astroport.ONE installateur pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/) ou XBIAN (https://xbian.org) testées"
+echo "Astroport.ONE installateur pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/) testées"
 echo "$USER appuyez sur ENTRER pour commencer installation"; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
 echo "#############################################"
 echo "######### PATIENCE "
@@ -191,31 +191,6 @@ echo ">>> INFO : Ajoutez l'extension 'OpenWith' à votre navigateur !!
 # https://addons.mozilla.org/firefox/addon/open-with/
 # https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno"
 
-if [[ "$USER" != "xbian" ]]
-then
-echo "#############################################"
-echo "#############################################"
-echo "#############################################"
-
-    ## Desktop install
-    echo "INITIALISATION Astroport terminée"
-
-    echo "Appuyez sur la touche ENTREE pour démarrer votre Station"
-    read
-    ~/.zen/Astroport.ONE/start.sh
-else
-    ## Rpi Xbian install.
-    cat /etc/rc.local | grep -Ev "exit 0" > /tmp/new.rc.local ## REMOVE "exit 0"
-    # PREPARE NEXT BOOT - Network config - NEXTBOOT - ISOConfig - NEXTBOOT - OK
-    echo "su - xbian -c '~/.zen/Astroport.ONE/FirstBOOT.sh'" >> /tmp/new.rc.local
-    echo "exit 0" >> /tmp/new.rc.local
-    sudo cp -f /tmp/new.rc.local /etc/rc.local
-
-    echo "STOP!! Redémarrer Xbian pour continuer la configuration de votre station Astroport/KODI"
-    echo "Faites une ISO : sudo xbian-config"
-    exit 0
-fi
-
 ###########################################
 # ACTIVATE IPFS OPTIONS: #swarm0 INIT
 ###########################################
@@ -275,6 +250,24 @@ echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'E
 
 mkdir -p ~/.zen/tmp
 # MAIN # -f ~/.zen/secret.june (ISOConfig déjà lancé) ##
+
+
+echo "#############################################"
+echo "#############################################"
+echo "#############################################"
+
+    ## Desktop install
+    echo "INITIALISATION Astroport terminée"
+    end=`date +%s`
+echo Execution time was `expr $end - $start` seconds.
+    echo
+    echo "Demarrage instantané ~/.zen/Astroport.ONE/start.sh"
+    echo "Souhaitez vous démarrer le mode aventure? Entrez OUI"
+    read ADVENTURE
+    [[ $ADVENTURE ]] && ~/.zen/Astroport.ONE/adventure/adventure.sh \
+                                        || ~/.zen/Astroport.ONE/start.sh
+
+
 else
 
 echo "Installation existante !!
@@ -290,6 +283,4 @@ http://astroport.com
 
 # MAIN #
 fi
-end=`date +%s`
-echo Execution time was `expr $end - $start` seconds.
 }
