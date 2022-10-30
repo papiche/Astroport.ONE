@@ -12,12 +12,10 @@ ME="${0##*/}"
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING PLAYER.refresh"
-rm ~/.zen/game/astronautes.txt
-rm ~/.zen/game/players/.current
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls ~/.zen/game/players/); do
-
+    [[ $PLAYER == '.current' ]] && continue
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER"
     echo "##################################################################"
@@ -91,6 +89,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     ####################
     # LOCKING TW : myIP becomes _SECRET_
     sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/astro/index.html
+    ####################
 
         ## ANY CHANGES ?
         ##############################################################
