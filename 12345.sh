@@ -21,7 +21,8 @@ PORT=12345
     YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 
-mkdir -p ~/.zen/tmp/123/
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
@@ -64,21 +65,21 @@ while true; do
     echo "$MOATS LANDING PAGE http://$myIP:$PORT"
 
     # REPLACE myIP in http response template
-    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/123/${MOATS}.myIP.http
-    sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/123/${MOATS}.myIP.http
-    sed -i "s~:12345~:$PORT~g" ~/.zen/tmp/123/${MOATS}.myIP.http
-    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
-    sed -i "s~_SESSIONNS_~${SESSIONNS}~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
+    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
+    sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
+    sed -i "s~:12345~:$PORT~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
+    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
+    sed -i "s~_SESSIONNS_~${SESSIONNS}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
 
 
-    sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## HOSTNAME
+    sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## HOSTNAME
 
     ############################################################################
     ## WAITING TO SERVE 1ST LANDING REDIRECT PAGE
     ############################################################################
-    URL=$(cat $HOME/.zen/tmp/123/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    URL=$(cat $HOME/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     ############################################################################
-    echo "URL" > ~/.zen/tmp/123/${MOATS}.url ## LOGGING URL
+    echo "URL" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.url ## LOGGING URL
     ############################################################################
     start=`date +%s`
 
@@ -90,12 +91,12 @@ while true; do
         echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/123/${MOATS}.index.redirect
-sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
-sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.index.redirect
-sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
+" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
         echo Execution time was `expr $end - $start` seconds.
         continue
@@ -129,18 +130,18 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         WHAT=$(urldecode ${arr[5]} | xargs)
 
         echo "API CALL CREDENTIALS : \"$SALT\" \"$PEPPER\""
-        echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/123/${MOATS}.secret.june
+        echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.june
 
         # CALCULATING G1PUB
-        ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/123/${MOATS}.secret.key  "$SALT" "$PEPPER"
-        G1PUB=$(cat ~/.zen/tmp/123/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
+        ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key  "$SALT" "$PEPPER"
+        G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
         [[ ! $G1PUB ]] && (echo "ERROR - CORE COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         echo "G1PUB : $G1PUB"
         ## CALCULATING IPNS ADDRESS
         ipfs key rm gchange > /dev/null 2>&1
-        rm -f ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key
-        ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
-        ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/123/${MOATS}.${G1PUB}.ipns.key )
+        rm -f ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key
+        ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
+        ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key )
         echo "ASTRONAUTE TW : http://$myIP:8080/ipns/${ASTRONAUTENS}"
         echo
 ########################################
@@ -150,11 +151,11 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
         if [[ ! $ISTHERE ]]; then
             echo "WHAT 1ST TOCTOC : $MOATS"
-            cp ~/.zen/tmp/123/${MOATS}.* ~/.zen/tmp/toctoc/
+            cp ~/.zen/tmp/${IPFSNODEID}/${MOATS}.* ~/.zen/tmp/toctoc/
         else ## KEEP 1ST CONTACT ONLY
-            OLDONE=$(ls -t ~/.zen/tmp/123/*.${G1PUB}.ipns.key | tail -n 1)
+            OLDONE=$(ls -t ~/.zen/tmp/${IPFSNODEID}/*.${G1PUB}.ipns.key | tail -n 1)
             DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
-            [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/123/$DTIME.*
+            [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/${IPFSNODEID}/$DTIME.*
         fi
 
 ## TYPE SLECTION ########################
@@ -163,32 +164,32 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.index.redirect
 
             echo "Extracting $G1PUB messages..."
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
-            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/123/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/123/messin.${G1PUB}.json
-            [[ ! -s ~/.zen/tmp/123/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/123/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/123/messin.${G1PUB}.json
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json
 
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
-            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/123/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/123/messout.${G1PUB}.json
-            [[ ! -s ~/.zen/tmp/123/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/123/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/123/messout.${G1PUB}.json
+            ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/${IPFSNODEID}/messout.${G1PUB}.json
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${IPFSNODEID}/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${IPFSNODEID}/messout.${G1PUB}.json
 
-            echo "Creating messages In/Out JSON ~/.zen/tmp/123/${MOATS}.messaging.json"
-            echo '[' > ~/.zen/tmp/123/${MOATS}.messaging.json
-            cat ~/.zen/tmp/123/messin.${G1PUB}.json >> ~/.zen/tmp/123/${MOATS}.messaging.json
-            echo "," >> ~/.zen/tmp/123/${MOATS}.messaging.json
-            cat ~/.zen/tmp/123/messout.${G1PUB}.json >> ~/.zen/tmp/123/${MOATS}.messaging.json
-            echo ']' >> ~/.zen/tmp/123/${MOATS}.messaging.json
+            echo "Creating messages In/Out JSON ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json"
+            echo '[' > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json
+            cat ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json
+            echo "," >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json
+            cat ~/.zen/tmp/${IPFSNODEID}/messout.${G1PUB}.json >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json
+            echo ']' >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json
 
             ## ADDING HTTP/1.1 PROTOCOL HEADER
             echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/123/${MOATS}.index.redirect
-cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redirect
+" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-                REPONSE=$(cat ~/.zen/tmp/123/${MOATS}.index.redirect | ipfs add -q)
+                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | ipfs add -q)
                 ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
                 echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
-            cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue
@@ -200,13 +201,13 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 ########################################
         if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
-            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-                REPONSE=$(cat ~/.zen/tmp/123/${MOATS}.index.redirect | ipfs add -q)
+                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | ipfs add -q)
                 ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
                 echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
-            cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue
@@ -260,27 +261,27 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 
             echo "OFFICIAL latest online TW... $LIBRA ($YOU)"
 
-            [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/123/${MOATS}.astroindex.html
-            [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
+            [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
             # DEBUG
-            # echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
+            # echo "tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
             # echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
 
-            if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
-                tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            if [[ -s ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html ]]; then
+                tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
                 [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                 # LOCKED TW BECOMING NEW GATEWAY
                 if [[ $OLDIP == "_SECRET_" ]]; then
                     echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
-                    sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
+                    sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html
                     echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/123/${MOATS}.index.redirect
-                    cat ~/.zen/tmp/123/${MOATS}.astroindex.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
-                    cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+                    cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+                    cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     continue
                 fi
                 # REDIRECTING TO TODAY GATEWAY
@@ -293,13 +294,13 @@ Content-Type: text/html; charset=UTF-8
             echo "***** READER MODE - R/W USE OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
         fi
 
-        sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+        sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
         ## TODO PATCH _SECRET_ myIP STUFF
 
         ## RESPONDING
-        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-        echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/123/${MOATS}.index.redirect"
+        cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        echo "HTTP 1.1 PROTOCOL DOCUMENT READY ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect"
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
         #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
