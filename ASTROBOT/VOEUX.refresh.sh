@@ -24,19 +24,19 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
 echo "Exporting $PLAYER TW [tag[G1Voeu]]"
-rm -f ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json
-tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS} --render '.' 'g1voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+rm -f ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json
+tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS} --render '.' 'g1voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
 
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
 
-cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1wishes
-echo "NB DE VOEUX : "$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1wishes | wc -l)
+cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1wishes.txt
+echo "NB DE VOEUX : "$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1wishes.txt | wc -l)
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
@@ -47,13 +47,14 @@ do
     echo "==============================="
     echo "G1Voeu ${WISH}"
     ## Get ${WISHNAME} TW
-    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
+    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
-    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
+    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
 
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${WISH}
 
-    ## RUN SPECIFIC G1Voeu Treatment (G1CopierYoutube.sh)
+
+    ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
     if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh program found !"
         echo "________________________________  Running it *****"
@@ -78,13 +79,14 @@ do
         for FRIENDTW in ${FINDEX[@]};
         do
             [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
+            PLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
 
-            rm -f ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json
+            rm -f ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json
             echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME} --render '.' 'g1wishtiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
+                                --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME} --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']]'
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## WISHES FOUND ;) MIAM "
             ######################################
@@ -92,23 +94,23 @@ do
             # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER
             # Reduce importation with extra filters days:created[-1]
             # Apply Extra filters... TODO LEARN https://talk.tiddlywiki.org/t/how-to-filter-and-delete-multiple-tiddlers/4950/2?u=papiche
-            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json"
+            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json"
 
             tiddlywiki --load $INDEX \
-                            --import "$HOME/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/g1wishtiddlers.json" "application/json" \
-                            --output ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH} --render "$:/core/save/all" "newindex.html" "text/plain"
+                            --import "$HOME/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json" "application/json" \
+                            --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS} --render "$:/core/save/all" "newindex.html" "text/plain"
 
-            if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html ]]; then
+            if [[ -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/newindex.html ]]; then
                 echo "Updating $INDEX"
-                cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html $INDEX
+                cp ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/newindex.html $INDEX
             else
-                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html"
+                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html"
                 echo "XXXXXXXXXXXXXXXXXXXXXXX"
             fi
 
         done
 
-done < ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/g1wishes
+done < ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1wishes.txt
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"

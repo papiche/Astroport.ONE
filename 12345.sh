@@ -54,9 +54,7 @@ while true; do
     echo
     ipfs key rm ${PORT} > /dev/null 2>&1
     SESSIONNS=$(ipfs key gen ${PORT})
-    REPONSE=$(echo "COUCOU" | ipfs add -q)
-    ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
-    echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+    echo "IPNS SESSION http://$myIP:8080/ipns/$SESSIONNS CREATED"
     echo
     ###############
 
@@ -227,15 +225,19 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             DATAID=$(urldecode ${arr[9]} | xargs)
 
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}
-            echo "TRYING PING ${NODEID}"
-            ipfs --timeout 12s ping ${NODEID} &
+            # echo "TRYING PING ${NODEID}"
+            # ipfs --timeout 12s ping ${NODEID} &
 
             ## COULD BE A RAW FILE, AN HTML, A JSON
-            echo "$WHAT IS JSON (COULD BE ANYTHING)"
-            echo "TRYING CURL https://gateway.ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
+            echo "TYPE IS $WHAT json default (add others)"
+            echo ">>>  curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json https://gateway.ipfs.io/ipfs/$DATAID"
             curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
 
-            [[ -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]] && echo "OK data.json" || echo "404 ERROR - $DATAID NOT FOUND" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
+                REPONSE=$(echo "404 EROOR -$DATAID NOT FOUND" | ipfs add -q)
+                ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
+                ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            fi
 
             [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
             ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
@@ -243,13 +245,11 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             echo "TRYIN CAT /ipfs/$DATAID"
             [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json &
 
-            ## TODO ADD data.json to PLAYER TW
+            ## REPONSE ON PORT & PORTNS
                 REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | ipfs add -q)
-                ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
-                echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+                ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
+                ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
-            echo "OK - ${NODEID} GONE GET YOUR /ipfs/$DATAID"
-            echo "/ipns/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue
@@ -258,49 +258,47 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
 ##############################################
 # DEFAULT (NO REDIRECT DONE YET) CHECK OFFICIAL GATEWAY
 ##############################################
-        if [[ ! -f ~/.zen/tmp/123/${MOATS}.index.redirect ]]; then
-            TWIP=$myIP
-            # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
-            if [[ $TYPE == "official" ]]; then
+       TWIP=$myIP
+        # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
+        if [[ $TYPE == "official" ]]; then
 
-                echo "OFFICIAL latest online TW... $LIBRA ($YOU)"
+            echo "OFFICIAL latest online TW... $LIBRA ($YOU)"
 
-                [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/123/${MOATS}.astroindex.html
-                [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
+            [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/123/${MOATS}.astroindex.html
+            [[ ! -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/123/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
-                # DEBUG
-                # echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
-                # echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
+            # DEBUG
+            # echo "tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
+            # echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
 
-                if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
-                    tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                    OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                    [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-                    # LOCKED TW BECOMING NEW GATEWAY
-                    if [[ $OLDIP == "_SECRET_" ]]; then
-                        echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
-                        sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
-                        echo "HTTP/1.1 200 OK
+            if [[ -s ~/.zen/tmp/123/${MOATS}.astroindex.html ]]; then
+                tiddlywiki --load ~/.zen/tmp/123/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                # LOCKED TW BECOMING NEW GATEWAY
+                if [[ $OLDIP == "_SECRET_" ]]; then
+                    echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
+                    sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/123/${MOATS}.astroindex.html
+                    echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
-                        cat ~/.zen/tmp/123/${MOATS}.astroindex.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
-                        cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-                        continue
-                    fi
-                    # REDIRECTING TO TODAY GATEWAY
-                    [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
-                    echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
-                else
-                     (echo "ERROR - NO TW FOUND - ASK FOR VISA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    cat ~/.zen/tmp/123/${MOATS}.astroindex.html >> ~/.zen/tmp/123/${MOATS}.index.redirect
+                    cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    continue
                 fi
+                # REDIRECTING TO TODAY GATEWAY
+                [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
+                echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
-                echo "***** READER MODE - R/W USE OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
+                (echo "ERROR - NO TW FOUND - ASK FOR VISA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
             fi
-
-            sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
-
+        else
+            echo "***** READER MODE - R/W USE OFFICIAL *****  http://$myIP:1234/?salt=$SALT&pepper=$PEPPER&official=on"
         fi
+
+        sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+
         ## TODO PATCH _SECRET_ myIP STUFF
 
         ## RESPONDING
