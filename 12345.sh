@@ -283,9 +283,9 @@ cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}
                 tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
                 [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-                # LOCKED TW BECOMING NEW GATEWAY
+                # LOCKED TW BECOMING ACTIVE GATEWAY
                 if [[ $OLDIP == "_SECRET_" ]]; then
-                    echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL SEND NEW TW
+                    echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
                     sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html
                     echo "HTTP/1.1 200 OK
 Server: Astroport
@@ -295,7 +295,7 @@ Content-Type: text/html; charset=UTF-8
                     cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     continue
                 fi
-                # REDIRECTING TO TODAY GATEWAY
+                # ACTIVE GATEWAY
                 [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else

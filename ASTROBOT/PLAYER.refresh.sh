@@ -88,6 +88,10 @@ for PLAYER in $(ls ~/.zen/game/players/); do
         $MY_PATH/VOEUX.refresh.sh ~/.zen/tmp/astro/index.html $PLAYER
         ##############################################################
 
+    ####################
+    # LOCKING TW : myIP becomes _SECRET_
+    sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/astro/index.html
+
         ## ANY CHANGES ?
         ##############################################################
         DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
@@ -102,7 +106,7 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 
     fi
 
-    #
+#
         ##############################################################
         ## TODO : Make it G1Voeu with program contained in a tiddler using G1AstroBot ;)
         ## REFRESH G1BARRE for ALL G1VOEUX in PLAYER TW
