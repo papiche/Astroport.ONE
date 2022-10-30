@@ -45,6 +45,8 @@ echo "_________________________________________________________"
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 while true; do
+    start=`date +%s`
+
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
     [ ${PORT} -lt 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
@@ -59,7 +61,7 @@ while true; do
     MIAM=$(echo ${PORT} | ipfs add -q)
     ipfs name publish --allow-offline --key=${PORT} /ipfs/$MIAM
     end=`date +%s`
-    echo Execution time was `expr $end - $start` seconds.
+    echo ${PORT} initialisation time was `expr $end - $start` seconds.
     echo
     ###############
     ###############
