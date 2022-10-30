@@ -78,7 +78,6 @@ while true; do
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
     sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
-    sed -i "s~_SESSIONNS_~${SESSIONNS}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## HOSTNAME
     ###############    ###############    ###############    ###############
     ############################################################################

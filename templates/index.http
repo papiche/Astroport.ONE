@@ -44,8 +44,6 @@ Content-Type: text/html; charset=UTF-8
 
 <div id="yellow">
 <h3><a href="http://127.0.0.1:12345"> >>> CLIQUEZ WEB <<< </a></h3>
-<h3><a href="http://127.0.0.1:8080/ipns/_SESSIONNS_"> >>>  ASTRO <<< </a></h3>
-
 </div>
    <script>
 const el = document.getElementById('yellow');
