@@ -119,7 +119,7 @@ echo
     [[ ! -s ~/.zen/tmp/newindex.html ]] && echo "ERROR ~/.zen/tmp/newindex.html  MISSING" && exit 1
 
 ## EXTEND ipfs daemon accreditation
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport:8080", "http://astroport.com:8080", "https://astroport.com", "https://qo-op.com", "http://qo-op.com:8080", "https://tube.copylaradio.com", "http://'$(hostname)'.local:8080" ]'
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport:8080", "http://'$(hostname)'.home:8080" ]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin ## CORS
 echo "RESTART IPFS !?"
 
