@@ -61,7 +61,7 @@ echo "#############################################"
 echo "######### PATIENCE ######"
 echo "#############################################"
 # removed : sqlite
-for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick; do
+for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -109,7 +109,7 @@ echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo
 # python3 -m pip install -U silkaj
 # python3 -m pip install -U protobuf==3.19.0
 
-for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes; do
+for i in pip setuptools wheel cryptography==3.4.8 Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         python3 -m pip install -U $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python3 -m pip install -U $i FAILED." >> /tmp/install.failed.log && continue
