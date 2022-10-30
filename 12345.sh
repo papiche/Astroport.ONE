@@ -54,15 +54,15 @@ while true; do
 
     ###############
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
-    echo
-    ipfs key rm ${PORT} > /dev/null 2>&1
-    SESSIONNS=$(ipfs key gen ${PORT})
-    echo "IPNS SESSION http://$myIP:8080/ipns/$SESSIONNS CREATED"
-    MIAM=$(echo ${PORT} | ipfs add -q)
-    ipfs name publish --allow-offline --key=${PORT} /ipfs/$MIAM
-    end=`date +%s`
-    echo ${PORT} initialisation time was `expr $end - $start` seconds.
-    echo
+        ### echo
+        ### ipfs key rm ${PORT} > /dev/null 2>&1
+        ### SESSIONNS=$(ipfs key gen ${PORT})
+        ### echo "IPNS SESSION http://$myIP:8080/ipns/$SESSIONNS CREATED"
+        ### MIAM=$(echo ${PORT} | ipfs add -q)
+        ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$MIAM
+        ### end=`date +%s`
+        ### echo ${PORT} initialisation time was `expr $end - $start` seconds.
+        ### echo
     ###############
     ###############
 
@@ -198,9 +198,9 @@ Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json | ipfs add -q)
-                ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-                echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+            ### REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json | ipfs add -q)
+            ###   ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
+            ###   echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
             cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
@@ -216,9 +216,9 @@ cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
             sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-                REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
-                ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-                echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+            ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
+            ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
+            ### echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
             cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
