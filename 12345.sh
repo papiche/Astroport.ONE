@@ -237,13 +237,10 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
                 REPONSE=$(echo "404 EROOR -$DATAID NOT FOUND" | ipfs add -q)
                 ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
                 ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            else
+                [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
+                ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
             fi
-
-            [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
-            ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
-
-            echo "TRYIN CAT /ipfs/$DATAID"
-            [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json &
 
             ## REPONSE ON PORT & PORTNS
                 REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | ipfs add -q)
