@@ -25,18 +25,18 @@ mkdir -p ~/.zen/tmp/123/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=toto&pepper=toto " && exit 1
+[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=totodu56&pepper=totodu56 " && exit 1
 echo "_________________________________________________________"
 echo "LAUNCHING Astroport  API Server - TEST - "
 echo
-echo "CREATE GCHANGE + TW http://$myIP:1234/?salt=toto&pepper=toto&g1pub=on&email=fred@astroport.com"
-echo "CREATE TW ONLY http://$myIP:1234/?salt=toto&pepper=toto&g1pub=off&email=fred@astroport.com"
-echo "OPEN TW R/W http://$myIP:1234/?salt=toto&pepper=toto&official"
+echo "CREATE GCHANGE + TW http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=fred@astroport.com"
 echo
-echo "GCHANGE MESSAGING http://$myIP:1234/?salt=toto&pepper=toto&messaging"
-echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=toto&pepper=toto&g1pub"
+echo "OPEN TW R/W http://$myIP:1234/?salt=totodu56&pepper=totodu56&official"
 echo
-echo "TESTCRAFT http://$myIP:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZgfoCtJ1KwoBNUQepM1xhdmdU4x34ZxpLMtLqY43jvXV/g1wishtiddlers.json"
+echo "GCHANGE MESSAGING http://$myIP:1234/?salt=totodu56&pepper=totodu56&messaging"
+echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub"
+echo
+echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZgfoCtJ1KwoBNUQepM1xhdmdU4x34ZxpLMtLqY43jvXV/g1wishtiddlers.json"
 echo "_________________________________________________________"
 
 # [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
