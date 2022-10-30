@@ -234,19 +234,18 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
 
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                REPONSE=$(echo "404 EROOR -$DATAID NOT FOUND" | ipfs add -q)
+                REPONSE=$(echo "ERROR - $DATAID TIMEOUT - TRY AGAIN" | ipfs add -q)
                 ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
                 ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             else
                 [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
                 ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
-            fi
 
             ## REPONSE ON PORT & PORTNS
                 REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | ipfs add -q)
                 ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
                 ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
+            fi
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue
