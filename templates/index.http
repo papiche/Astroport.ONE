@@ -43,7 +43,9 @@ Content-Type: text/html; charset=UTF-8
             </p>
 
 <div id="yellow">
-<h3><a href="http://127.0.0.1:12345"> >>> CLIQUEZ ICI <<< </a></h3>
+<h3><a href="http://127.0.0.1:12345"> >>> CLIQUEZ WEB <<< </a></h3>
+<h3><a href="http://127.0.0.1:8080/ipns/_SESSIONNS_"> >>>  ASTRO <<< </a></h3>
+
 </div>
    <script>
 const el = document.getElementById('yellow');
@@ -58,5 +60,4 @@ setTimeout(() => {
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json"><img width=420 height=420 src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='API'/></a>
 </center>
 </body>
-
 </html>

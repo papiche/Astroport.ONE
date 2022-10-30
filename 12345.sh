@@ -50,6 +50,16 @@ while true; do
     [ $PORT -lt 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
                 ## RANDOM PORT SWAPPINESS
 
+    ### CREATE IPNS KEY
+    echo
+    ipfs key rm ${PORT} > /dev/null 2>&1
+    SESSIONNS=$(ipfs key gen ${PORT})
+    REPONSE=$(echo "COUCOU" | ipfs add -q)
+    ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
+    echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+    echo
+    ###############
+
     SALT=""; PEPPER=""; TYPE=""
     echo "************************************************************************* "
     echo "ASTROPORT API SERVER UP.......................... http://$myIP:1234 PORT"
@@ -60,6 +70,9 @@ while true; do
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/123/${MOATS}.myIP.http
     sed -i "s~:12345~:$PORT~g" ~/.zen/tmp/123/${MOATS}.myIP.http
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
+    sed -i "s~_SESSIONNS_~${SESSIONNS}~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
+
+
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/123/${MOATS}.myIP.http ## HOSTNAME
 
     ############################################################################
@@ -173,6 +186,10 @@ Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/123/${MOATS}.index.redirect
 cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redirect
 
+                REPONSE=$(cat ~/.zen/tmp/123/${MOATS}.index.redirect | ipfs add -q)
+                ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
+                echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+
             cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
@@ -186,6 +203,11 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
         if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
             sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/123/${MOATS}.index.redirect
+
+                REPONSE=$(cat ~/.zen/tmp/123/${MOATS}.index.redirect | ipfs add -q)
+                ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
+                echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+
             cat ~/.zen/tmp/123/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
@@ -201,26 +223,29 @@ cat ~/.zen/tmp/123/${MOATS}.messaging.json >> ~/.zen/tmp/123/${MOATS}.index.redi
             NODEID=$(urldecode ${arr[7]} | xargs)
             DATAID=$(urldecode ${arr[9]} | xargs)
 
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}
-            echo "TRYING PING $NODEID"
-            ipfs --timeout 12s ping $NODEID &
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}
+            echo "TRYING PING ${NODEID}"
+            ipfs --timeout 12s ping ${NODEID} &
 
             ## COULD BE A RAW FILE, AN HTML, A JSON
             echo "$WHAT is being sent : json, html, ipfs ? Default on=json"
-            echo "TRYING CURL https://ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}data.json"
-            curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
+            echo "TRYING CURL https://ipfs.io/ipfs/$DATAID ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
+            curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
 
-            [[ -s ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json ]] && echo "OK data.json" &&\
-            [[ ! $(~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json | jq) ]] && echo "NOT JSON IMPLEMENT : testcraft=html" || \
-            ipfs add ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]] && echo "OK data.json" &&\
+            [[ ! $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && echo "NOT JSON IMPLEMENT : testcraft=html" || \
+            ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
 
             echo "TRYIN CAT /ipfs/$DATAID"
-            [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/${IPFSNODEID}/$NODEID/${MOATS}/data.json &
+            [[ $YOU ]] && ipfs --timeout 12s cat /ipfs/$DATAID > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json &
 
             ## TODO ADD data.json to PLAYER TW
+                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | ipfs add -q)
+                ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
+                echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
-            echo "OK - $NODEID GONE GET YOUR /ipfs/$DATAID"
-            echo "/ipns/${IPFSNODEID}/$NODEID/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            echo "OK - ${NODEID} GONE GET YOUR /ipfs/$DATAID"
+            echo "/ipns/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue
