@@ -70,8 +70,8 @@ ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefo
 ```
 Après un passage par [ajouter_media.sh](/qo-op/Astroport.ONE/src/branch/master/ajouter_media.sh)
 
-Vos données son stockées [dans des Tiddlers](http://libra.copylaradio:8080/ipns/k51qzi5uqu5dioeckikst5f8jw1tbljom6acjbw9zerl3671921krs4nm1531r#:[tag[G1Films]])
-et des [Json](http://libra.copylaradio:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u/k51qzi5uqu5dgbyodfu8ojvcsbuq9b3x19ufwpb4mar1h6chwt0bkyok1gwmhl/CopierYoutube/g1wishtiddlers.json)
+Vos données son stockées [dans des Tiddlers](http://libra.copylaradio.com:8080/ipns/k51qzi5uqu5dioeckikst5f8jw1tbljom6acjbw9zerl3671921krs4nm1531r#:[tag[G1Films]])
+et des [Json](http://libra.copylaradio.com<:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u/k51qzi5uqu5dgbyodfu8ojvcsbuq9b3x19ufwpb4mar1h6chwt0bkyok1gwmhl/CopierYoutube/g1wishtiddlers.json)
 
 
 # API
