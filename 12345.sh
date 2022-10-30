@@ -337,7 +337,7 @@ Content-Type: text/html; charset=UTF-8
              [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
 
             ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
-            # /.zen/Astropor.ONE/ajouter_video.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
+            # /.zen/Astropor.ONE/ajouter_media.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
             echo "## Insertion tiddler : G1CopierYoutube"
             echo '[
   {
