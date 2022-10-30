@@ -238,28 +238,27 @@ cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}
             NODEID=$(urldecode ${arr[7]} | xargs)
             DATAID=$(urldecode ${arr[9]} | xargs)
 
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}
-            # echo "TRYING PING ${NODEID}"
-            # ipfs --timeout 12s ping ${NODEID} &
-
             ## COULD BE A RAW FILE, AN HTML, A JSON
-            echo "TYPE IS $WHAT json default (add others)"
-            echo ">>>  curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json https://gateway.ipfs.io/ipfs/$DATAID"
-            curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
+            echo "$TYPE IS $WHAT"
 
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}
+
+            echo "TRYING  ipfs --timeout 2s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
+            ipfs --timeout 2s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                REPONSE=$(echo "ERROR - $DATAID TIMEOUT - TRY AGAIN" | ipfs add -q)
-                ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
-                ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                echo ">>>  curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json https://gateway.ipfs.io/ipfs/$DATAID"
+                curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
+            fi
+            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
+                echo "ERROR - $DATAID TIMEOUT - TRY AGAIN" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             else
                 [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
                 ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
-
-            ## REPONSE ON PORT & PORTNS
-                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | ipfs add -q)
-                ipfs name publish --allow-offline -k ${PORT} /ipfs/${REPONSE} &
-                ipfs cat /ipfs/${REPONSE} | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             fi
+
+            ## REPONSE ON PORT
+                cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue
