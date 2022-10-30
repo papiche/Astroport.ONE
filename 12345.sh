@@ -6,7 +6,8 @@
 ################################################################################
 ################################################################################
 ## ASTROPORT API SERVER http://$myIP:1234
-## ATOMIC GET REDIRECT TO ONE SHOT WEB SERVICE THROUGH 12345-12445 PORTS
+## ATOMIC GET REDIRECT TO ONE SHOT WEB SERVICE THROUGH PORTS
+## ASYNCHRONOUS IPFS API
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -18,15 +19,16 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"
 PORT=12345
 
-    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1); ## $USER running ipfs
+    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=totodu56&pepper=totodu56 " && exit 1
+## NOT RUNNING TWICE
+
 echo "_________________________________________________________"
 echo "LAUNCHING Astroport  API Server - TEST - "
 echo
@@ -40,42 +42,45 @@ echo
 echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZgfoCtJ1KwoBNUQepM1xhdmdU4x34ZxpLMtLqY43jvXV/g1wishtiddlers.json"
 echo "_________________________________________________________"
 
-# [[ $DISPLAY ]] && xdg-open "file://$HOME/.zen/Astroport.ONE/templates/instascan.html" 2>/dev/null
-# [[ $DISPLAY ]] && xdg-open "http://$myIP:1234" 2>/dev/null
-
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ $PORT -lt 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
+    [ ${PORT} -lt 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
                 ## RANDOM PORT SWAPPINESS
 
-    ### CREATE IPNS KEY
+    ###############
+    ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
     echo
     ipfs key rm ${PORT} > /dev/null 2>&1
     SESSIONNS=$(ipfs key gen ${PORT})
     echo "IPNS SESSION http://$myIP:8080/ipns/$SESSIONNS CREATED"
+    MIAM=$(echo ${PORT} | ipfs add -q)
+    ipfs name publish --allow-offline --key=${PORT} /ipfs/$MIAM
+    end=`date +%s`
+    echo Execution time was `expr $end - $start` seconds.
     echo
     ###############
+    ###############
 
+    # RESET VARIABLES
     SALT=""; PEPPER=""; TYPE=""
     echo "************************************************************************* "
     echo "ASTROPORT API SERVER UP.......................... http://$myIP:1234 PORT"
-    echo "$MOATS LANDING PAGE http://$myIP:$PORT"
+    echo "$MOATS LANDING PAGE http://$myIP:${PORT}"
 
-    # REPLACE myIP in http response template
-    sed "s~127.0.0.1:12345~$myIP:$PORT~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
+    ###############    ###############    ###############    ############### templates/index.http
+    # REPLACE myIP in http response template (fixing next API meeting point)
+    sed "s~127.0.0.1:12345~$myIP:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
-    sed -i "s~:12345~:$PORT~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
+    sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
     sed -i "s~_SESSIONNS_~${SESSIONNS}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
-
-
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http ## HOSTNAME
-
+    ###############    ###############    ###############    ###############
     ############################################################################
-    ## WAITING TO SERVE 1ST LANDING REDIRECT PAGE
+    ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
     URL=$(cat $HOME/.zen/tmp/${IPFSNODEID}/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     ############################################################################
@@ -84,14 +89,14 @@ while true; do
     start=`date +%s`
 
     ############################################################################
-    ## BARE URL CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
+    ## / CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
     if [[ $URL == "/" ]]; then
-        echo "API NULL CALL :  http://$myIP:1234"
+        echo "/ CONTACT :  http://$myIP:1234"
         echo "___________________________ Preparing register.html"
         echo "HTTP/1.1 200 OK
 Server: Astroport
 Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
 sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
@@ -104,7 +109,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redi
     ############################################################################
     ############################################################################
 
-
+    ############################################################################
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
@@ -115,12 +120,14 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redi
 
     [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
-    ########## CHECK GET PARAM NAMES
+########## CHECK GET PARAM NAMES
 ###################################################################################################
 ###################################################################################################
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
+        ################### KEY GEN ###################################
         echo ">>>>>>>>>>>>>> Application LaBureautique >><< TYPE = $TYPE <<<<<<<<<<<<<<<<<<<<"
+
         SALT=$(urldecode ${arr[1]} | xargs);
         [[ ! $SALT ]] && (echo "ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
@@ -129,21 +136,25 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redi
         TYPE=$(urldecode ${arr[4]} | xargs)
         WHAT=$(urldecode ${arr[5]} | xargs)
 
-        echo "API CALL CREDENTIALS : \"$SALT\" \"$PEPPER\""
+        ## SAVE "salt" "pepper" DEBUG REMOVE OR PASS ENCRYPT FOR SECURITY REASON
+        echo "PLAYER CREDENTIALS : \"$SALT\" \"$PEPPER\""
         echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.june
 
-        # CALCULATING G1PUB
+        # CALCULATING ${MOATS}.secret.key + G1PUB
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key  "$SALT" "$PEPPER"
         G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
-        [[ ! $G1PUB ]] && (echo "ERROR - CORE COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-        echo "G1PUB : $G1PUB"
+        [[ ! ${G1PUB} ]] && (echo "ERROR - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        echo "G1PUB : ${G1PUB}"
+
         ## CALCULATING IPNS ADDRESS
-        ipfs key rm gchange > /dev/null 2>&1
+        ipfs key rm ${G1PUB} > /dev/null 2>&1
         rm -f ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
-        ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key )
+        ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${IPFSNODEID}/${MOATS}.${G1PUB}.ipns.key )
         echo "ASTRONAUTE TW : http://$myIP:8080/ipns/${ASTRONAUTENS}"
         echo
+        ################### KEY GEN ###################################
+
 ########################################
         ## ARCHIVE TOCTOC WHATS & KEEPS LOGS CLEAN
         mkdir -p ~/.zen/tmp/toctoc/
@@ -162,7 +173,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redi
         # MESSAGING
         if [[ $TYPE == "messaging" ]]; then
 
-            echo "Extracting $G1PUB messages..."
+            echo "Extracting ${G1PUB} messages..."
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/${IPFSNODEID}/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${IPFSNODEID}/messin.${G1PUB}.json
@@ -185,8 +196,8 @@ Content-Type: text/html; charset=UTF-8
 " > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | ipfs add -q)
-                ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
+                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json | ipfs add -q)
+                ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
                 echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
             cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
@@ -201,10 +212,10 @@ cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}
 ########################################
         if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
-            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/$G1PUB/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
+            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect
 
-                REPONSE=$(cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | ipfs add -q)
-                ipfs name publish --allow-offline --key=$PORT /ipfs/$REPONSE
+                REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
+                ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
                 echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
             cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
@@ -274,7 +285,7 @@ cat ~/.zen/tmp/${IPFSNODEID}/${MOATS}.messaging.json >> ~/.zen/tmp/${IPFSNODEID}
                 [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                 # LOCKED TW BECOMING NEW GATEWAY
                 if [[ $OLDIP == "_SECRET_" ]]; then
-                    echo "_SECRET_ TW PUSHING TW" ## SEND FULL TW
+                    echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL SEND NEW TW
                     sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/${IPFSNODEID}/${MOATS}.astroindex.html
                     echo "HTTP/1.1 200 OK
 Server: Astroport
