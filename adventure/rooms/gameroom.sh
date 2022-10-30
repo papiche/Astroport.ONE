@@ -62,7 +62,7 @@ while true; do
             echo
             echo "ASTROPORT ONE"
             echo
-            read -p "Appuyez sur [ENTER] pour démarrer votre station"
+            read -p "Appuyez sur [ENTER] démarrez la Station Astroport.ONE"
             ~/.zen/Astroport.ONE/start.sh
             fi
         exit
