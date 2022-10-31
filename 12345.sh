@@ -29,6 +29,17 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 [[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=totodu56&pepper=totodu56 " && exit 1
 ## NOT RUNNING TWICE
 
+Some client needs to respect that
+HTTPCORS="HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
+Server: Astroport.ONE
+Content-Type: text/html; charset=UTF-8
+"
+
+
+
 echo "_________________________________________________________"
 echo "LAUNCHING Astroport  API Server - TEST - "
 echo
@@ -94,10 +105,7 @@ while true; do
     if [[ $URL == "/" ]]; then
         echo "/ CONTACT :  http://$myIP:1234"
         echo "___________________________ Preparing register.html"
-        echo "HTTP/1.1 200 OK
-Server: Astroport
-Content-Type: text/html; charset=UTF-8
-" > ~/.zen/tmp/coucou/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
+        echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
 sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
@@ -119,7 +127,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         TYPE=$(urldecode ${arr[4]})
         WHAT=$(urldecode ${arr[5]})
 
-    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "$HTTPCORS ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
 ########## CHECK GET PARAM NAMES
 ###################################################################################################
@@ -130,9 +138,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         echo ">>>>>>>>>>>>>> Application LaBureautique >><< TYPE = $TYPE <<<<<<<<<<<<<<<<<<<<"
 
         SALT=$(urldecode ${arr[1]} | xargs);
-        [[ ! $SALT ]] && (echo "ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! $SALT ]] && (echo "$HTTPCORS ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
-        [[ ! $PEPPER ]] && (echo "ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! $PEPPER ]] && (echo "$HTTPCORS ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         TYPE=$(urldecode ${arr[4]} | xargs)
         WHAT=$(urldecode ${arr[5]} | xargs)
@@ -144,7 +152,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         # CALCULATING ${MOATS}.secret.key + G1PUB
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/coucou/${MOATS}.secret.key  "$SALT" "$PEPPER"
         G1PUB=$(cat ~/.zen/tmp/coucou/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
-        [[ ! ${G1PUB} ]] && (echo "ERROR - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         echo "G1PUB : ${G1PUB}"
 
         ## CALCULATING IPNS ADDRESS
@@ -197,11 +205,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             echo ']' >> ~/.zen/tmp/coucou/${MOATS}.messaging.json
 
             ## ADDING HTTP/1.1 PROTOCOL HEADER
-            echo "HTTP/1.1 200 OK
-Server: Astroport
-Content-Type: application/json; charset=UTF-8
-" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             ### REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
             ###   ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
@@ -260,14 +266,18 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
                 curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
             fi
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                echo "ERROR - $DATAID TIMEOUT - TRY AGAIN" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                echo "$HTTPCORS ERROR - $DATAID TIMEOUT - TRY AGAIN" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             else
                 [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
                 ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
             fi
 
             ## REPONSE ON PORT
-                cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+
+                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
             end=`date +%s`
             echo $TYPE Execution time was `expr $end - $start` seconds.
@@ -297,18 +307,17 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                 # LOCKED TW BECOMING ACTIVE GATEWAY
                 if [[ $OLDIP == "_SECRET_" ]]; then
                     echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
                     sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
-                    # cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     # GET PLAYER FORM Dessin de $PLAYER
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                     PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].title | rev | cut -d ' ' -f 1 | rev)
 
-                    [[ ! $PLAYER ]] && (echo "ERROR - CANNOT FIND PLAYER IN TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - CANNOT FIND PLAYER IN TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
@@ -326,14 +335,16 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
                 [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
-                (echo "ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                (echo "$HTTPCORS ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
             fi
         else
             echo "***** COULD BE READER MODE *****"
 
         fi
 
-        sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                cat ~/.zen/Astroport.ONE/templates/index.redirect >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         ## RESPONDING
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
@@ -355,7 +366,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
-        [[ $TYPE != "g1pub" ]] && (echo "ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ $TYPE != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         start=`date +%s`
 
@@ -364,7 +375,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
         WHAT=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $WHAT ]] && (echo "ERROR - MISSING $WHAT FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! $WHAT ]] && (echo "$HTTPCORS ERROR - MISSING $WHAT FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $WHAT | cut -d '@' -f 1)
@@ -379,14 +390,14 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
                 if [[ ! -d ~/.zen/game/players/$WHAT ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
-                    echo "OK - ASTRONAUT $PSEUDO VISA CREATION  [$SALT + $PEPPER] ($WHAT)
+                    echo "$HTTPCORS OK - ASTRONAUT $PSEUDO VISA CREATION  [$SALT + $PEPPER] ($WHAT)
                     <br> PREPARING YOUR TW - PLEASE 'CHECK' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     continue
                else
                     # ASTRONAUT EXISTING WHAT
                     CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                fi
 
                  ###################################################################################################
@@ -405,11 +416,11 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
         WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "ERROR - QRCODE - NO $WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO $WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         ## USE SECOND HTTP SERVER TO RECEIVE PASS
 
-        [[ ${arr[2]} == "" ]] && (echo "ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ${arr[2]} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         ## Demande de copie d'une URL reçue.
         if [[ ${arr[2]} == "url" ]]; then
             wsource="${arr[3]}"
@@ -430,7 +441,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
 
             ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
 
-            (echo "OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+            (echo "$HTTPCORS OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
     fi
