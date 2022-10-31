@@ -75,7 +75,7 @@ ffmpeg -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_l
 
 ## ADDING TO IPFS
 [[ ! -s ~/.zen/tmp/output.mp4 ]] && espeak "Sorry no video file found" && exit 1
-IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
+IPFSID=$(ipfs add -wHq ~/.zen/tmp/output.mp4 | tail -n 1)
 echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
 echo "FOUND : ~/.zen/tmp/output.mp4"
@@ -123,7 +123,8 @@ ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
-TEXT="<video controls  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${REAL}"'></video><h1>"${PSEUDO}" / VLOG / "${MEDIAID}"</h1><br>http://qo-op.com:8080/ipfs/$IPFSROOT"
+TEXT="<video controls width=360  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>"${PSEUDO}" / VLOG / </a></h1><br>"
+EXTRA="<\$button class='tc-tiddlylink'><\$list filter='[tag[G1Vlog]]'><\$action-navigate \$to=<<currentTiddler>> \$scroll=no/></\$list>Afficher tous les G1Vlog</\$button>"
 
 echo "## Creation json tiddler"
 echo '[
@@ -133,9 +134,10 @@ echo '[
     "type": "'text/vnd.tiddlywiki'",
     "mediakey": "'${MEDIAKEY}'",
     "mime": "'${REAL}'",
+    "story": "'/ipfs/${$IPFSROOT}'",
     "size": "'${FILE_BSIZE}'",
-    "ipfs": "'${IPFSID}'",
-    "gif_ipfs": "'${ANIMH}'",
+    "ipfs": "'/ipfs/${IPFSID}'",
+    "gif_ipfs": "'/ipfs/${ANIMH}'",
     "player": "'${PLAYER}'",
     "tags": "'${PLAYER} G1Vlog vlog ipfs'"
   }

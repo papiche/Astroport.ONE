@@ -426,7 +426,13 @@ then
     MIME=$(file --mime-type "$HOME/astroport/${TYPE}/${REFERENCE}/${file}" | rev | cut -d ' ' -f 1 | rev)
     REAL=$MIME
     if [[ $(echo "$MIME" | grep 'video') ]]; then
-        TEXT="<video controls width=360><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>"
+        TEXT="<video controls width=360><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>
+    <\$button class='tc-tiddlylink'>
+    <\$list filter='[tag[${CAT}]]'>
+   <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
+    </\$list>
+    Afficher tous les ${CAT}
+    </\$button>"
         MIME="text/vnd.tiddlywiki"
         TAGS="G1Films G1DessinsAnimes G1Series G1CopierYoutube ${CAT} ${PLAYER} $GENRE ipfs"
         CANON=''
