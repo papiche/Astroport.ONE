@@ -39,8 +39,6 @@ Content-Type: text/html; charset=UTF-8
 
 "
 
-
-
 echo "_________________________________________________________"
 echo "LAUNCHING Astroport  API Server - TEST - "
 echo

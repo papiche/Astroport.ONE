@@ -2,5 +2,6 @@ HTTP/1.1 302 Found
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
+Content-Type: text/html; charset=UTF-8
 Location: _TWLINK_
 
