@@ -1,2 +1,5 @@
 HTTP/1.1 302 Found
-Location: http://127.0.0.1:8080/ipns/_TWLINK_
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
+Location: _TWLINK_
