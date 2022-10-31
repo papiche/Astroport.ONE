@@ -16,7 +16,7 @@ PLAYER="$3"
 PSEUDO="$4"
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+[[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS ]] && echo "IPNS $PLAYER EXISTANT http://$myIP:8080/$ASTRONAUTENS !! DO NOTHING - EXIT -" && exit 0
 
 ## Chargement TW !!!
@@ -51,7 +51,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
         echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/$GNS"
         if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
-            echo "UPDATE LOCAL COPY ~/.zen/game/players/$PLAYER/ipfs/moa"
+            echo "UPDATE $PLAYER LOCAL COPY ~/.zen/game/players/$PLAYER/ipfs/moa"
             [[ "$myIP" == "$OLDIP" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/
         fi
         # DO NOT CONTINUE
@@ -94,7 +94,7 @@ PSEUDO=${PSEUDO%%[0-9]*}
 
 # PSEUDO=${PSEUDO,,} #lowercase
 [[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2} \
-                            && echo "$PLAYER ! Vous aviez déjà un autre Player ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
+                            && echo "$PLAYER ! A quelle adresse email vous joindre ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER

@@ -329,7 +329,8 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
                 (echo "ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
             fi
         else
-            echo "***** READER MODE *****"
+            echo "***** COULD BE READER MODE *****"
+
         fi
 
         sed "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
@@ -344,7 +345,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
         ## CHECK IF ALREADY EXISTING WHAT
         # IF NOT = BATCH CREATE TW
         end=`date +%s`
-        echo Execution time was `expr $end - $start` seconds.
+        echo  $type Execution time was `expr $end - $start` seconds.
 
     fi ## END IF SALT
 
