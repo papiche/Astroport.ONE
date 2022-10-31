@@ -291,7 +291,7 @@ cat ~/.zen/game/players/toctoc/${MOATS}.messaging.json >> ~/.zen/game/players/to
 
                     # cat ~/.zen/game/players/toctoc/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     # GET PLAYER FORM Dessin de $PLAYER
-                    tiddlywiki --load ~/.zen/game/players/toctoc/${MOATS}.astroindex.html--output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
+                    tiddlywiki --load ~/.zen/game/players/toctoc/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                     PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].title | rev | cut -d ' ' -f 1 | rev)
 
                     [[ ! $PLAYER ]] && (echo "ERROR - CANNOT FIND PLAYER IN TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
