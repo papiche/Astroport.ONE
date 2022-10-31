@@ -290,23 +290,22 @@ cat ~/.zen/game/players/toctoc/${MOATS}.messaging.json >> ~/.zen/game/players/to
                     sed -i "s~_SECRET_~${myIP}~g" ~/.zen/game/players/toctoc/${MOATS}.astroindex.html
 
                     # cat ~/.zen/game/players/toctoc/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    # GET PLAYER FORM Dessin de $PLAYER
+                    tiddlywiki --load ~/.zen/game/players/toctoc/${MOATS}.astroindex.html--output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
+                    PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].title | rev | cut -d ' ' -f 1 | rev)
+
+                    [[ ! $PLAYER ]] && (echo "ERROR - CANNOT FIND PLAYER IN TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/toctoc/${MOATS}.${G1PUB}.ipns.key
-                    [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]] && \
-                    mv ~/.zen/game/players/toctoc ~/.zen/game/players/$PLAYER
-                    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
-                    mv ~/.zen/game/players/$PLAYER/${MOATS}.astroindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                    [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]] && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
+                    # cp ~/.zen/game/players/toctoc/${MOATS}.astroindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
                     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
-                    IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-                    echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
-                    echo "/ipfs/$IPUSH"
-                    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-                    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
+                    IPUSH=$(ipfs add -Hq ~/.zen/game/players/toctoc/${MOATS}.astroindex.html | tail -n 1)
+                    [[ $IPUSH ]] && ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
                     ## MEMORISE PLAYER Ŋ1 ZONE (TODO compare with VISA.new.sh)
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
-                    echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
 
                     continue
