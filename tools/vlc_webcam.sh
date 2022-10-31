@@ -24,7 +24,7 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}
+mkdir -p ~/.zen/game/players/${PLAYER}/vlog
 
 screencapture(){
 vlc \
@@ -84,29 +84,30 @@ echo "FOUND : ~/.zen/tmp/output.mp4"
         espeak "FILE SIZE = $FILE_SIZE"
 espeak "OK"
 
-mkdir -p ~/.zen/game/players/.${PLAYER}/vlog
+mkdir -p ~/.zen/game/players/${PLAYER}/vlog
 
 ## Creating new video chain index.html
-OLDID=$(cat ~/.zen/game/players/.${PLAYER}/.vlog.index 2>/dev/null)
+OLDID=$(cat ~/.zen/game/players/${PLAYER}/.vlog.index 2>/dev/null)
 if [[ $OLDID ]]; then
-    sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
-    sed -i s/_IPFSID_/$IPFSID/g ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
+    sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
+    sed -i s/_IPFSID_/$IPFSID/g ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
 else
-    sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
+    sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
 fi
-sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
-sed "s~_PSEUDO_~$PLAYER~g" ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
+sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
+## TODO : THIS IS NOT CHANGING _PSEUDO_ WHY?
+sed "s~_PSEUDO_~$PLAYER~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html > ~/.zen/game/players/${PLAYER}/vlog/index.html
 
 # Copy style & js
-cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.${PLAYER}/vlog/
-cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.${PLAYER}/vlog/
+cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/${PLAYER}/vlog/
+cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/${PLAYER}/vlog/
 
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.${PLAYER}/vlog | tail -n 1)
-echo $IPFSROOT > ~/.zen/game/players/.${PLAYER}/.vlog.index
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/${PLAYER}/vlog | tail -n 1)
+echo $IPFSROOT > ~/.zen/game/players/${PLAYER}/.vlog.index
 # TEMPLATE EVOLUTION
-sed 's/_PSEUDO_/$PSEUDO/g' ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
-sed 's/_IPFSROOT_/$IPFSROOT/g' ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.${PLAYER}/vlog | tail -n 1)
+sed 's/_PSEUDO_/$PSEUDO/g' ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html > ~/.zen/game/players/${PLAYER}/vlog/index.html
+sed 's/_IPFSROOT_/$IPFSROOT/g' ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html > ~/.zen/game/players/${PLAYER}/vlog/index.html
+IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/${PLAYER}/vlog | tail -n 1)
 
 echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
 ## OUVERTURE VLOG CHAIN
@@ -123,8 +124,8 @@ ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
-TEXT="<video controls width=360  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>"${PSEUDO}" / VLOG / </a></h1><br>"
-EXTRA="<\$button class='tc-tiddlylink'><\$list filter='[tag[G1Vlog]]'><\$action-navigate \$to=<<currentTiddler>> \$scroll=no/></\$list>Afficher tous les G1Vlog</\$button>"
+TEXT="<video controls width=360  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>"${PSEUDO}" / VLOG / </a></h1><br>
+<\$button class='tc-tiddlylink'><\$list filter='[tag[G1Vlog]]'><\$action-navigate \$to=<<currentTiddler>> \$scroll=no/></\$list>Afficher tous les G1Vlog</\$button>"
 
 echo "## Creation json tiddler"
 echo '[
@@ -134,18 +135,18 @@ echo '[
     "type": "'text/vnd.tiddlywiki'",
     "mediakey": "'${MEDIAKEY}'",
     "mime": "'${REAL}'",
-    "story": "'/ipfs/${$IPFSROOT}'",
+    "story": "'/ipfs/${IPFSROOT}'",
     "size": "'${FILE_BSIZE}'",
-    "ipfs": "'/ipfs/${IPFSID}'",
+    "ipfs": "'/ipfs/${IPFSID}/output.mp4'",
     "gif_ipfs": "'/ipfs/${ANIMH}'",
     "player": "'${PLAYER}'",
     "tags": "'${PLAYER} G1Vlog vlog ipfs'"
   }
 ]
-' > ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json
+' > ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json
 
 # LOG
-cat ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json | jq
+cat ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json | jq
 
 ## Adding tiddler to PLAYER TW
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
@@ -154,7 +155,7 @@ rm -f ~/.zen/tmp/newindex.html
 
 echo "Nouveau TID dans TW $PSEUDO : http://$myIP:8080/ipns/$ASTRONAUTENS"
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
-                   --import ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
+                   --import ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
 if [[ -s ~/.zen/tmp/newindex.html ]]; then
@@ -184,7 +185,7 @@ else
     echo "Une erreur est survenue lors de l'ajout du tiddler VLOG à votre TW"
 fi
 
-echo "$PSEUDO TW : http://$myIP:8080/ipns/$ASTRONAUTENS"
+echo "$PSEUDO TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#:[tag[vlog]]"
 
 # ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 

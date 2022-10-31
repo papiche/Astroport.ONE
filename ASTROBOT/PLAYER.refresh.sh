@@ -15,7 +15,7 @@ echo "## RUNNING PLAYER.refresh"
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls -t ~/.zen/game/players/); do
-    [[ $PLAYER == 'toctoc' ]] && echo "toctoc" && continue
+    [[ $PLAYER == '.toctoc' ]] && echo ".toctoc users " && continue
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"

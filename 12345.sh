@@ -69,8 +69,8 @@ while true; do
     # RESET VARIABLES
     SALT=""; PEPPER=""; TYPE=""
     echo "************************************************************************* "
-    echo "ASTROPORT API SERVER UP.......................... http://$myIP:1234 PORT"
-    echo "$MOATS LANDING PAGE http://$myIP:${PORT}"
+    echo "ASTROPORT 1234 UP & RUNNING.......................... http://$myIP:1234 PORT"
+    echo "$MOATS NEXT COMMAND DELIVERY PAGE http://$myIP:${PORT}"
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myIP in http response template (fixing next API meeting point)
@@ -159,28 +159,28 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
 ########################################
         ## ARCHIVE TOCTOC WHATS & KEEPS LOGS CLEAN
-        mkdir -p ~/.zen/game/players/toctoc/
-        ISTHERE=$(ls -t ~/.zen/game/players/toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
+        mkdir -p ~/.zen/game/players/.toctoc/
+        ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
         if [[ ! $ISTHERE ]]; then
             echo "WHAT 1ST TOCTOC : $MOATS"
-            cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/toctoc/
+            cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/.toctoc/
         else ## KEEP 1ST CONTACT ONLY
             OLDONE=$(ls -t ~/.zen/tmp/coucou/*.${G1PUB}.ipns.key | tail -n 1)
             DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
             [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/coucou/$DTIME.*
         fi
 
-## TYPE SLECTION ########################
+## TYPE SLECTION  ########################
         # MESSAGING
         if [[ $TYPE == "messaging" ]]; then
-
+            (
             echo "Extracting ${G1PUB} messages..."
-            ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/coucou/messin.${G1PUB}.json
             [[ ! -s ~/.zen/tmp/coucou/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/coucou/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/coucou/messin.${G1PUB}.json
 
-            ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/coucou/messout.${G1PUB}.json
             [[ ! -s ~/.zen/tmp/coucou/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/coucou/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/coucou/messout.${G1PUB}.json
 
@@ -194,7 +194,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             ## ADDING HTTP/1.1 PROTOCOL HEADER
             echo "HTTP/1.1 200 OK
 Server: Astroport
-Content-Type: text/html; charset=UTF-8
+Content-Type: application/json; charset=UTF-8
 " > ~/.zen/tmp/coucou/${MOATS}.index.redirect
 cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
@@ -203,6 +203,10 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
             ###   echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo Execution time was `expr $end - $start` seconds.
+            ) &
+
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
             continue

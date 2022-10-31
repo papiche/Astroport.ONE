@@ -29,19 +29,27 @@ ME="${0##*/}"
 [[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
 
 # Check who is .current PLAYER
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
-G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
+PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ $PLAYER == "" ]] && espeak "ERROR CONNECT YOUR PLAYER - EXIT" && exit 1
+PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
+G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
+[[ $G1PUB == "" ]] && espeak "ERROR NO G1 PUBLIC KEY FOUND - EXIT" && exit 1
+
 PLAYERNS=$(cat ~/.zen/game/players/.current/.playerns 2>/dev/null) || ( echo "noplayerns" && exit 1 )
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-[[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
+[[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
+
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 URL="$1"
 if [ $URL ]; then
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="Que copier depuis cette source ?" --entry-text="Video" MP3 Web) || IMPORT="Youtube"
+    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="Que copier depuis cette source ?" --entry-text="Page" Video MP3 Web)
+    [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
 fi
@@ -58,9 +66,6 @@ width=$(echo $screen | cut -d 'x' -f 1)
 height=$(echo $screen | cut -d 'x' -f 2)
 large=$((width-300))
 haut=$((height-200))
-
-########################################################################
-PLAYER=$(cat ~/.zen/game/players/.current/.player)
 
 ########################################################################
 ## CADRE EXCEPTION COPIE PRIVE
@@ -90,25 +95,23 @@ case $? in
 esac
 fi
 
-## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
-YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ ! $YOU ]] &&  RUN=$(zenity --entry --width 300 --title="Astroport IPFS OFF" --text="Activer Astroport ?" --entry-text="OUI" NON) && [[ $RUN == ""  || $RUN == "NON"  ]] && exit 1
-[[ $YOU && ! $1 ]] &&  RUN=$(zenity --entry --width 300 --title="Astroport IPFS ON" --text="Désactiver Astroport ? Non, vous voulez ajouter un Media?" --entry-text="OUI" NON)
 ## DES/ACTIVATION ASTROPORT
-if [[ $RUN == "OUI" ]]; then
+if [[ $1 == "on" ]]; then
     STRAP=$(ipfs bootstrap)
     BOOT=$(zenity --entry --width 300 --title="Catégorie" --text="$STRAP Changez de Bootstrap" --entry-text="Aucun" astrXbian Public)
     [[ $BOOT == "Aucun" ]] && ipfs bootstrap rm --all
     [[ $BOOT == "astrXbian" ]] && for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_nodes.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
     [[ $BOOT == "Public" ]] && for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_public.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
-    REP=$(~/.zen/Astroport.ONE/tools/cron_VRFY.sh) &&  zenity --warning --width 600 --text "$REP"
+    REP=$(~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
 fi
+
+## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $YOU == ""  ]] && echo "IPFS not running" && exit 1
+[[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre ajout" --entry-text="Film" Serie Youtube AstroBlog Video)
+[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre media" --entry-text="Vlog" Film Serie Youtube Video)
 [[ $CHOICE == "" ]] && exit 1
 
 # LOWER CARACTERS
@@ -132,10 +135,9 @@ case ${CAT} in
 #
 #
 ########################################################################
-    astroblog)
+    vlog)
 
-    # INSTASCAN G1PUB CAPTURE
-    ~/.zen/Astroport.ONE/tools/instascan_login.sh "ONE"
+    espeak "vlog is video blogging"
 
     zenity --warning --width 300 --text "$PLAYER. Prêt à enregistrer votre video ?"
 
@@ -155,6 +157,8 @@ case ${CAT} in
 # |___/
 ########################################################################
     youtube)
+
+    espeak "youtube : video copying"
 
 YTURL="$URL"
 [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 300 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
@@ -236,8 +240,13 @@ rm -Rf ${YTEMP}
 # CASE ## WEB
     web)
 
+        espeak "web : clone web site. Please help debugging"
+
     ## wget current URL -> index.html ## TEST ## TEST httrack ??
-        [[ ! $(which httrack) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de site web absent.. Lancez la commande 'sudo apt install httrack'" && exit 1
+        [[ ! $(which httrack) ]] && espeak "Plase install httrack software - EXIT" && \
+                                                zenity --warning --width ${large} --text "Utilitaire de copie de site web absent.. Lancez la commande 'sudo apt install httrack'" && \
+                                                exit 1
+
         echo "httrack --mirror $URL" # TODO : FOR NOW NOT WORKING
         FILE_NAME="index.html"
         REVSOURCE="$(echo "$URL" | rev | sha256sum | cut -d ' ' -f 1)_"; echo $REVSOURCE # URL="https://discuss.ipfs.io/t/limit-ipfs-get-command/3573/6"
@@ -258,6 +267,8 @@ rm -Rf ${YTEMP}
 ########################################################################
 # CASE ## PAGE
     page)
+
+        espeak "page : convert into portable digital document"
 
     ## record one page to PDF
         [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
@@ -288,7 +299,10 @@ rm -Rf ${YTEMP}
 ########################################################################
     mp3)
 
-zenity --warning --width 600 --text 'WARNING. HEAVY DEBUG ZONE . Join us at https://git.p2p.legal'
+        espeak "mp3 is music copying. Please help..."
+
+zenity --warning --width 600 --text 'DEVELOPPER ZONE ONLY - https://git.p2p.legal'
+exit 0
 
 # Create TEMP directory
 YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
@@ -359,6 +373,8 @@ exit 0
 #
 ########################################################################
     film | serie)
+
+    espeak "thank you for sharing your best movies"
 
 # SELECT FILE TO ADD TO ASTROPORT/KODI
 FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
@@ -494,6 +510,8 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     video)
 
+    epeak "video is adding your personnal video in TW"
+
     zenity --warning --width 600 --text 'DEVELOPPEMENT. SVP. Inscrivez-vous sur https://git.p2p.legal'
 
     ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
@@ -625,20 +643,9 @@ zenity --warning --width 300 --text "Ajout du Tiddler $MEDIAKEY à votre TW 'moa
 ########################################################################
 ## ADD TIDDLER TO TW
 ########################################################################
-VOEUXLIST=($(cat /home/fred/.zen/game/players/.current/voeux/*/.title)) # LIST PLAYER VOEUX
-echo "${VOEUXLIST}"
-# TODO : Make it work Add FALSE between each voeu in VOEUXLIST
-# VCHOOSE=$(zenity --list --checklist --title="VOEUX"\
-#    --text="Choisissez le voeux ou ajouter \"${TITLE}\""\
-#    --column="Use"\
-#    --column="Feature"\
-#    ${VOEUXLIST})
-## CHOOSE VOEU TW
-## ADD TIDDLER TO VOEUTW
-## ADD VOEUTW TO IPFS...
-## OR ADD TO PLAYER TW
-## TODO MAKE FUNCTION, idem dans G1VOEUX !!
-    echo "Nouveau MEDIAKEY dans MOA $PSEUDO / $PLAYER : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+###############################
+    echo "Nouveau MEDIAKEY dans TW $PSEUDO / $PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
     tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                     --import ~/astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
@@ -647,7 +654,6 @@ echo "${VOEUXLIST}"
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
         echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
         cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
         echo "Avancement blockchain TW $PLAYER : $MOATS"
         cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
 
@@ -660,5 +666,7 @@ echo "${VOEUXLIST}"
         echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
         echo
     fi
+
+ espeak "Well done my friend. You are feeding the blob. Happy TW"
 
 exit 0
