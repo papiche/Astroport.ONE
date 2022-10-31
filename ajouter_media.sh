@@ -48,13 +48,11 @@ URL="$1"
 if [ $URL ]; then
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="Que copier depuis cette source ?" --entry-text="Page" Video MP3 Web)
+    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="Quel type de media voulez vous copier ?" --entry-text="Video" Page MP3 Web)
     [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
 fi
-
-[[ $CHOICE == "Web" ]] && CHOICE="Page" #&& CHOICE=$(zenity --entry --width 640 --title="$URL => Astroport" --text="Cette source Web est à enregistrer comme " --entry-text="Page" WebSite)
 
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases

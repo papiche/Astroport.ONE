@@ -18,11 +18,13 @@ YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 [[ ! $IPFSNODEID ]] && echo 'ERROR missing IPFS Node id !! IPFS is not responding !?' && exit 1
 
-
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
 
 # ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
-# Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from http://127.0.0.1:8080/.$IPFNODEID/
+# Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from http://${myIP}:8080/.$IPFNODEID/
 # Index File Format (could be enhanced) is using Kodi TMDB enhancement
 # https://github.com/Kodi-vStream/venom-xbmc-addons/wiki/Voir-et-partager-sa-biblioth%C3%A8que-priv%C3%A9e#d%C3%A9clarer-des-films
 ########################################################################
@@ -288,7 +290,7 @@ rm ~/.zen/tmp/.ipfsid
 ## EXPLANATIONS
 ########################################################################
 # What is being in ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/
-# is published on http://127.0.0.1:8080/ipns/$KEY/ AND ipfs ls /ipns/$KEY/
+# is published on http://${myIP}:8080/ipns/$KEY/ AND ipfs ls /ipns/$KEY/
 ########################################################################
 ########################################################################
 # CONTRACTS, are small App (fulljs or jquery + nginx backend app server)
@@ -338,7 +340,7 @@ IPNSLINK=$(ipfs key list -l | grep -w ${MEDIAKEY} | cut -d ' ' -f 1)
     > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/index.html
 
 
-# echo "<meta http-equiv=\"Refresh\" content=\"0;URL=http://127.0.0.1:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME\">" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/index.html
+# echo "<meta http-equiv=\"Refresh\" content=\"0;URL=http://${myIP}:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME\">" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/index.html
 ########################################################################
 ## TODO ACTIVATE "./zen/ipns_TAG_refresh.sh" (SACEM & Netflix Buziness is HERE!! Add your crypto/contracts there)
 ########################################################################
@@ -393,7 +395,7 @@ then
     # CREATION DU FICHIER ${PREFIX}ASTRXBIAN FILE : Add Header (TODO DEBUG Kodi Plugin !! )
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/
     [[ ! -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN ]] \
-    && echo "CAT;TMDB;YEAR;TITLE;SAISON;GENRES;GROUPES;RES;URLS=http://127.0.0.1:8080" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
+    && echo "CAT;TMDB;YEAR;TITLE;SAISON;GENRES;GROUPES;RES;URLS=http://${myIP}:8080" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
 
     # ADD NEW LINE TO INDEX
     if [[ -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/ajouter_video.txt ]]
@@ -433,7 +435,7 @@ then
     </\$list>
     Afficher tous les ${CAT}
     </\$button>"
-        MIME="text/vnd.tiddlywiki"
+        MIME="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
         TAGS="G1Films G1DessinsAnimes G1Series G1CopierYoutube ${CAT} ${PLAYER} $GENRE ipfs"
         CANON=''
     else
@@ -442,9 +444,9 @@ then
         CANON="/ipfs/"${IPFSID}
     fi
 
-    ## Add screenshot
-    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && SCREENDIR=$(ipfs add -wq "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
-    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/$CAT.png ]] && SCREENDIR=$(ipfs add -wq "$HOME/astroport/${TYPE}/${REFERENCE}/$CAT.png" | tail -n 1)
+    ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
+    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && IPSCREENSHOT=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
+    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/$CAT.png ]] && IPSCREENSHOT=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/$CAT.png" | tail -n 1)
 
     echo "## Creation json tiddler"
     echo '[
@@ -455,7 +457,7 @@ then
     "mime": "'${REAL}'",
     "cat": "'${CAT}'",
     "size": "'${FILE_BSIZE}'",
-    "screenshot": "'${SCREENDIR}/screen.png'",
+    "screenshot": "'${IPSCREENSHOT}'",
     "ipfsroot": "'${IPFSREPFILEID}'",
     "file": "'${file}'",
     "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
@@ -491,7 +493,7 @@ fi
 ## COPY LOCALHOST IPFS URL TO CLIPBOARD
 [[ $(which xclip) ]] &&\
     [[ $TEXT == "" ]] &&\
-        echo "http://127.0.0.1:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME" | xclip -selection c ||\
+        echo "http://${myIP}:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME" | xclip -selection c ||\
         echo "$TEXT" | xclip -selection c
 
 ########################################################################
@@ -507,9 +509,9 @@ fi
 
 ########################################################################
 echo "DUNIKEY PASS $PASS"
-echo "NEW $TYPE ($file) ADDED. http://127.0.0.1:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
+echo "NEW $TYPE ($file) ADDED. http://${myIP}:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
 echo "INDEX UPDATED :  ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN"
-echo "VIDEO IPNS LINK : http://127.0.0.1:8080/ipns/$KEY/$G1PUB/ (MUST Activate 'G1VideoClub.sh' to publish & renew)"
+echo "VIDEO IPNS LINK : http://${myIP}:8080/ipns/$KEY/$G1PUB/ (MUST Activate 'G1VideoClub.sh' to publish & renew)"
 echo "#### EXCECUTION TIME"
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
