@@ -294,8 +294,9 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
         if [[ $TYPE == "official" ]]; then
 
-            echo "OFFICIAL latest online TW... $LIBRA ($YOU)"
+            echo "SEARCHING FOR OFFICIAL TW GW... $LIBRA/ipns/${ASTRONAUTENS} ($YOU)"
 
+            ## GETTING LAST TW via IPFS or HTTP GW
             [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
             [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
@@ -307,6 +308,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
                 [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                echo "TW is on $OLDIP"
                 # LOCKED TW BECOMING ACTIVE GATEWAY
                 if [[ $OLDIP == "_SECRET_" ]]; then
                     echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
@@ -329,15 +331,16 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                     ## MEMORISE PLAYER Ŋ1 ZONE (TODO compare with VISA.new.sh)
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
+                    OLDIP=${myIP}
                 fi
                 # ACTIVE GATEWAY
-                [[ $OLDIP != $myIP ]] && TWIP=$OLDIP
+                TWIP=$OLDIP
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
                 (echo "$HTTPCORS ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
             fi
         else
-            echo "***** SEARVING IN READER MODE *****"
+            echo "***** SEARVING $TWIP IN READER MODE *****"
 
         fi ## official
 
