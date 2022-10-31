@@ -155,8 +155,13 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         echo "ASTRONAUTE TW : http://$myIP:8080/ipns/${ASTRONAUTENS}"
         echo
         ################### KEY GEN ###################################
-
-
+    # Get PLAYER wallet amount
+    ( ## SUB PROCESS
+        COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
+        echo "+++ WALLET BALANCE _ $COINS (G1) _"
+        end=`date +%s`
+        echo jaklis Execution time was `expr $end - $start` seconds.
+    ) &
 ########################################
         ## ARCHIVE TOCTOC WHATS & KEEPS LOGS CLEAN
         mkdir -p ~/.zen/game/players/.toctoc/
@@ -174,7 +179,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 ## TYPE SLECTION  ########################
         # MESSAGING
         if [[ $TYPE == "messaging" ]]; then
-            (
+            ( ## SUB PROCESS
             echo "Extracting ${G1PUB} messages..."
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/coucou/messin.${G1PUB}.json
@@ -204,7 +209,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo Execution time was `expr $end - $start` seconds.
+            echo $TYPE Execution time was `expr $end - $start` seconds.
             ) &
 
             end=`date +%s`
@@ -226,7 +231,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo Execution time was `expr $end - $start` seconds.
+            echo $TYPE Execution time was `expr $end - $start` seconds.
             continue
         fi
 ########################################
@@ -236,6 +241,7 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
 ########################################
 ########################################
         if [[ "$TYPE" == "testcraft" ]]; then
+        ( # SUB PROCESS
             ## RECORD DATA MADE IN BROWSER (JSON)
             SALT=$(urldecode ${arr[1]} | xargs)
             PEPPER=$(urldecode ${arr[3]} | xargs)
@@ -262,6 +268,10 @@ cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.inde
 
             ## REPONSE ON PORT
                 cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+            end=`date +%s`
+            echo $TYPE Execution time was `expr $end - $start` seconds.
+        ) &
 
             end=`date +%s`
             echo Execution time was `expr $end - $start` seconds.
