@@ -106,14 +106,6 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
 
     fi
 
-#
-        ##############################################################
-        ## TODO : Make it G1Voeu with program contained in a tiddler using G1AstroBot ;)
-        ## REFRESH G1BARRE for ALL G1VOEUX in PLAYER TW
-        ##############################################################
-#        ~/.zen/Astroport.ONE/tools/G1Barre4Player.sh $PLAYER
-        ##############################################################
-
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
                                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
@@ -127,6 +119,8 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     echo "================================================"
     echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
     echo "================================================"
+
+    ## TODO ! NOT .current SO ipfs key rm
 
 ## PUBLISHING ASTRONAUTS LIST
 [[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
