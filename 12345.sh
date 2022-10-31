@@ -29,7 +29,7 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 [[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=totodu56&pepper=totodu56 " && exit 1
 ## NOT RUNNING TWICE
 
-Some client needs to respect that
+# Some client needs to respect that
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
