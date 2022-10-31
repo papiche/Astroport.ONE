@@ -230,7 +230,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 ########################################
         if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
-            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.redirect  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
@@ -292,7 +292,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 ##############################################
 # DEFAULT (NO REDIRECT DONE YET) CHECK OFFICIAL GATEWAY
 ##############################################
-       TWIP=$myIP
+        TWIP=$(hostname)
         # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
         if [[ $TYPE == "official" ]]; then
 
@@ -339,15 +339,16 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 (echo "$HTTPCORS ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
             fi
         else
-            echo "***** COULD BE READER MODE *****"
+            echo "***** SEARVING IN READER MODE *****"
 
-        fi
+        fi ## official
+
                 ## 302 REDIRECT
                 cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         ## RESPONDING
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
