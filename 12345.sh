@@ -347,9 +347,6 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-                # 200 OK PATCH
-                echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-
         ## RESPONDING
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
