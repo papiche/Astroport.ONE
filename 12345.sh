@@ -304,7 +304,7 @@ cat ~/.zen/game/players/toctoc/${MOATS}.messaging.json >> ~/.zen/game/players/to
                     echo "/ipfs/$IPUSH"
                     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
                     ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
-                    ## MEMORISE PLAYER Ŋ1 ZONE
+                    ## MEMORISE PLAYER Ŋ1 ZONE (TODO compare with VISA.new.sh)
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$PSEUDO" > ~/.zen/game/players/$PLAYER/.pseudo
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
