@@ -8,7 +8,7 @@ Content-Type: text/html; charset=UTF-8
 <!doctype html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="12; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="20; url='http://127.0.0.1:12345'" />
     <style>
     #reduce42 {
     width:42%;
@@ -50,7 +50,7 @@ const el = document.getElementById('yellow');
 
 setTimeout(() => {
   el.style.visibility = 'visible';
-}, 2000); // 👈️ delay in milliseconds
+}, 3000); // 👈️ delay in milliseconds
 
 </script>
 
