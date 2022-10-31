@@ -14,14 +14,15 @@ ME="${0##*/}"
 echo "## RUNNING PLAYER.refresh"
 
 ## RUNING FOR ALL LOCAL PLAYERS
-for PLAYER in $(ls ~/.zen/game/players/); do
-    [[ $PLAYER == '.current' ]] && continue
+for PLAYER in $(ls -t ~/.zen/game/players/); do
+    [[ $PLAYER == 'toctoc' ]] && echo "toctoc" && continue
     echo "##################################################################"
-    echo ">>>>> PLAYER : $PLAYER"
+    echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
     # Get PLAYER wallet amount
     COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
     echo "+++ WALLET BALANCE _ $COINS (G1) _"
+    ## DROP IF WALLET IS EMPTY : TODO
     echo "##################################################################"
     echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
     ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "$PLAYER"
@@ -31,12 +32,13 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     echo "##################################################################"
 
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY -- CONTINUE --" && continue
 
-    rm -Rf ~/.zen/tmp/astro
-    mkdir -p ~/.zen/tmp/astro
+    rm -Rf ~/.zen/tmp/${PLAYER}
+    mkdir -p ~/.zen/tmp/${PLAYER}
 
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 
@@ -45,11 +47,11 @@ for PLAYER in $(ls ~/.zen/game/players/); do
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "$LIBRA/ipns/$ASTRONAUTENS"
     echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
-    [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/astro/index.html \
-                        || curl -m 12 -so ~/.zen/tmp/astro/index.html "$LIBRA/ipns/$ASTRONAUTENS"
+    [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${PLAYER}/index.html \
+                        || curl -m 12 -so ~/.zen/tmp/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
     ## PLAYER TW IS ONLINE ?
-    if [ ! -s ~/.zen/tmp/astro/index.html ]; then
+    if [ ! -s ~/.zen/tmp/${PLAYER}/index.html ]; then
 
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         echo "ERROR_PLAYERTW_TIMEOUT : /ipns/$ASTRONAUTENS"
@@ -65,39 +67,38 @@ for PLAYER in $(ls ~/.zen/game/players/); do
 
         #############################################################
         ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
-        tiddlywiki --load ~/.zen/tmp/astro/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        tiddlywiki --load ~/.zen/tmp/${PLAYER}/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-        # FIRST TIME PLAYER TW USING GATEWAY
-        [[ $OLDIP == "_SECRET_" ]] && echo "_SECRET_ TW" && sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/astro/index.html && OLDIP=$myIP
-        # AM I MANAGING TW
-        [[ $OLDIP != $myIP ]] && echo "ASTRONAUTE GATEWAY IS http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING -" && continue
+        [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - TW IS BROKEN - CONTINUE "
+        # WHO IS OFFICIAL TW GATEWAY
+        [[ $OLDIP != $myIP ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING - ***" && continue
         #############################################################
 
         # VOEUX.create.sh
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
-        $MY_PATH/VOEUX.create.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/VOEUX.create.sh ~/.zen/tmp/${PLAYER}/index.html $PLAYER
 
         # VOEUX.refresh.sh
         ##############################################################
         ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC AND STANDARD Ŋ1 SYNC)
         ##############################################################
-        $MY_PATH/VOEUX.refresh.sh ~/.zen/tmp/astro/index.html $PLAYER
+        $MY_PATH/VOEUX.refresh.sh ~/.zen/tmp/${PLAYER}/index.html $PLAYER
         ##############################################################
 
     ####################
     # LOCKING TW : myIP becomes _SECRET_
-    sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/astro/index.html
+    sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/${PLAYER}/index.html
     ####################
 
         ## ANY CHANGES ?
         ##############################################################
-        DIFF=$(diff ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
+        DIFF=$(diff ~/.zen/tmp/${PLAYER}/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
         if [[ $DIFF ]]; then
             echo "DIFFERENCE DETECTED !! "
             echo "Backup & Upgrade TW local copy..."
-            cp ~/.zen/tmp/astro/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+            cp ~/.zen/tmp/${PLAYER}/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         else
             echo "No change since last Refresh..."
         fi
