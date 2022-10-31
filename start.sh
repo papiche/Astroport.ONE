@@ -144,7 +144,7 @@ select fav in  "${choices[@]}"; do
 
     "AJOUTER VLOG")
         echo "Lancement Webcam..."
-        ${MY_PATH}/tools/vlc_webcam.sh
+        ${MY_PATH}/tools/vlc_webcam.sh "$PLAYER"
         ;;
 
     "CREER UN VOEU")

@@ -133,6 +133,12 @@ IPFS=$(ipfs add -wq "${path}${file}")
 IPFSREPFILEID=$(echo $IPFS | cut -d ' ' -f 2)
 IPFSID=$(echo $IPFS | cut -d ' ' -f 1)
 [[ $IPFSREPFILEID == "" ]] && echo "ipfs add ERROR" && exit 1
+
+        echo "FOUND : ${path}${file}"
+        FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
+        FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
+        echo "FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
+
 echo "-----------------------------------------------------------------"
 echo "IPFS $file DIRECTORY: ipfs ls /ipfs/$IPFSREPFILEID"
 echo "-----------------------------------------------------------------"
@@ -442,6 +448,7 @@ then
     "type": "'${MIME}'",
     "mime": "'${REAL}'",
     "cat": "'${CAT}'",
+    "size": "'${FILE_BSIZE}'",
     "screenshot": "'${SCREENDIR}/screen.png'",
     "ipfsroot": "'${IPFSREPFILEID}'",
     "file": "'${file}'",

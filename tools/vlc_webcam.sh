@@ -7,7 +7,24 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-TS=$(date -u +%s%N | cut -b1-13)
+
+PLAYER="$1"
+
+[[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ $PLAYER == "" ]] && espeak "ERROR PLAYER - EXIT" && exit 1
+PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+[[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
+[[ $G1PUB == "" ]] && espeak "ERROR G1PUB - EXIT" && exit 1
+
+ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+
+[[ ! $ASTRONAUTENS ]] && echo "$PLAYER CLEF IPNS INTROUVABLE - EXIT -" && exit 1
+
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}
 
 screencapture(){
 vlc \
@@ -25,16 +42,9 @@ fi
 
 mkdir -p ~/.zen/tmp/
 
-#echo "Voulez-vous enregistrer le bureau? ENTER sinon"
-#read desktop
-#[[ $desktop != "" ]] && screencapture
-PLAYER=$(cat ~/.zen/game/players/.${PLAYER}/.player 2>/dev/null) || ( espeak "no player. EXIT" && exit 1 )
-PSEUDO=$(cat ~/.zen/game/players/.${PLAYER}/.pseudo 2>/dev/null) || ( espeak "no pseudo. EXIT" && exit 1 )
-G1PUB=$(cat ~/.zen/game/players/.${PLAYER}/.g1pub 2>/dev/null) || ( espeak "no g1 pub" && exit 1 )
-
 espeak "$PSEUDO"
 sleep 1
-espeak "Starting Video record. Press ENTER to stop."
+espeak "Start Video recording. Press ENTER to stop !"
 # Find "input-slave" :: pactl list short sources
 
 # RECTIME=12
@@ -64,9 +74,14 @@ ffmpeg -ss 1.0 -t 4.0 -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
 ffmpeg -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
 
 ## ADDING TO IPFS
+[[ ! -s ~/.zen/tmp/output.mp4 ]] && espeak "Sorry no video file found" && exit 1
 IPFSID=$(ipfs add -wrHq ~/.zen/tmp/output.mp4 | tail -n 1)
 echo "NEW VIDEO FILE /ipfs/$IPFSID/output.mp4"
 
+echo "FOUND : ~/.zen/tmp/output.mp4"
+        FILE_BSIZE=$(du -b "$HOME/.zen/tmp/output.mp4" | awk '{print $1}')
+        FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
+        espeak "FILE SIZE = $FILE_SIZE"
 espeak "OK"
 
 mkdir -p ~/.zen/game/players/.${PLAYER}/vlog
@@ -74,13 +89,13 @@ mkdir -p ~/.zen/game/players/.${PLAYER}/vlog
 ## Creating new video chain index.html
 OLDID=$(cat ~/.zen/game/players/.${PLAYER}/.vlog.index 2>/dev/null)
 if [[ $OLDID ]]; then
-    sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > /tmp/index.html
-    sed -i s/_IPFSID_/$IPFSID/g /tmp/index.html
+    sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/video_chain.html > ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
+    sed -i s/_IPFSID_/$IPFSID/g ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
 else
-    sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > /tmp/index.html
+    sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
 fi
-sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/index.html
-sed "s~_PSEUDO_~$PLAYER~g" /tmp/index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
+sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html
+sed "s~_PSEUDO_~$PLAYER~g" ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
 
 # Copy style & js
 cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/.${PLAYER}/vlog/
@@ -89,8 +104,8 @@ cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/.${PLAYER}/vlog/
 IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.${PLAYER}/vlog | tail -n 1)
 echo $IPFSROOT > ~/.zen/game/players/.${PLAYER}/.vlog.index
 # TEMPLATE EVOLUTION
-sed 's/_PSEUDO_/$PSEUDO/g' /tmp/index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
-sed 's/_IPFSROOT_/$IPFSROOT/g' /tmp/index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
+sed 's/_PSEUDO_/$PSEUDO/g' ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
+sed 's/_IPFSROOT_/$IPFSROOT/g' ~/.zen/tmp/${IPFSNODEID}/vlog/${ASTRONAUTENS}/${MOATS}.index.html > ~/.zen/game/players/.${PLAYER}/vlog/index.html
 IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/.${PLAYER}/vlog | tail -n 1)
 
 echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
@@ -108,7 +123,7 @@ ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
-TEXT="<video controls  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${REAL}"'></video><h1>"${PSEUDO}" / VLOG / "${MEDIAID}"</h1><br>http://127.0.0.1:8080/ipfs/$IPFSROOT"
+TEXT="<video controls  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${REAL}"'></video><h1>"${PSEUDO}" / VLOG / "${MEDIAID}"</h1><br>http://qo-op.com:8080/ipfs/$IPFSROOT"
 
 echo "## Creation json tiddler"
 echo '[
@@ -117,10 +132,12 @@ echo '[
     "title": "'VLOG ${MEDIAID}'",
     "type": "'text/vnd.tiddlywiki'",
     "mediakey": "'${MEDIAKEY}'",
+    "mime": "'${REAL}'",
+    "size": "'${FILE_BSIZE}'",
     "ipfs": "'${IPFSID}'",
     "gif_ipfs": "'${ANIMH}'",
     "player": "'${PLAYER}'",
-    "tags": "'${PLAYER} ${PS} vlog webcam ipfs video'"
+    "tags": "'${PLAYER} G1Vlog vlog ipfs'"
   }
 ]
 ' > ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json
@@ -133,13 +150,14 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 
 rm -f ~/.zen/tmp/newindex.html
 
-echo "Nouveau TID dans TW $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+echo "Nouveau TID dans TW $PSEUDO : http://$myIP:8080/ipns/$ASTRONAUTENS"
+tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                    --import ~/.zen/game/players/.${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
-echo "PLAYER TW Update..."
 if [[ -s ~/.zen/tmp/newindex.html ]]; then
+espeak "Updating your TW"
+echo "PLAYER TW Update..."
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
 
@@ -160,10 +178,11 @@ if [[ -s ~/.zen/tmp/newindex.html ]]; then
     echo "================================================"
     echo
 else
+    espeak "Shit hit the fan baby. Sorry something went wrong."
     echo "Une erreur est survenue lors de l'ajout du tiddler VLOG à votre TW"
 fi
 
-echo "$PSEUDO TW : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+echo "$PSEUDO TW : http://$myIP:8080/ipns/$ASTRONAUTENS"
 
 # ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 
