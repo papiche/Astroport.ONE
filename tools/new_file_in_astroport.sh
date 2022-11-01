@@ -428,7 +428,7 @@ then
     MIME=$(file --mime-type "$HOME/astroport/${TYPE}/${REFERENCE}/${file}" | rev | cut -d ' ' -f 1 | rev)
     REAL=$MIME
     if [[ $(echo "$MIME" | grep 'video') ]]; then
-        TEXT="<video controls width=360><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>
+        TEXT="<video controls preload='none' width=100%><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[${CAT}]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>

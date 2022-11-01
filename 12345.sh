@@ -258,16 +258,17 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}
 
-            echo "TRYING  ipfs --timeout 2s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
-            ipfs --timeout 2s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
+            echo "TRYING  ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
+            ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                echo ">>>  curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json https://gateway.ipfs.io/ipfs/$DATAID"
+                echo "IPFS TIMEOUT >>>  curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json https://gateway.ipfs.io/ipfs/$DATAID"
                 curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
             fi
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
                 echo "$HTTPCORS ERROR - $DATAID TIMEOUT - TRY AGAIN" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             else
-                [[ $(~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
+                [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
+                ## IPFS ADD
                 ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
             fi
 
@@ -277,6 +278,16 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
                 cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+            ## REPONSE ON IPFSNODEID
+                (
+                    echo "¯\_༼<O͡〰o>༽_/¯ $IPFSNODEID $PLAYER SIGNALING"
+                    ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
+                    ipfs name publish --allow-offline /ipfs/$ROUTING
+                    echo "DONE"
+                    end=`date +%s`
+                    echo ROUTING Execution time was `expr $end - $start` seconds.
+                ) &
 
             end=`date +%s`
             echo $TYPE Execution time was `expr $end - $start` seconds.

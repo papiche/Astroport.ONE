@@ -68,10 +68,10 @@ ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output
 
 ## Create short gif
 rm -f ~/.zen/tmp/screen.gif
-ffmpeg -ss 1.0 -t 4.0 -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
+ffmpeg -ss 1.0 -t 4.0 -loglevel quiet -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
 
 # Conversion HLS
-ffmpeg -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
+ffmpeg -loglevel quiet -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
 
 ## ADDING TO IPFS
 [[ ! -s ~/.zen/tmp/output.mp4 ]] && espeak "Sorry no video file found" && exit 1
@@ -94,26 +94,19 @@ if [[ $OLDID ]]; then
 else
     sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
 fi
-sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
-## TODO : THIS IS NOT CHANGING _PSEUDO_ WHY?
-sed "s~_PSEUDO_~$PLAYER~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html > ~/.zen/game/players/${PLAYER}/vlog/index.html
+sed -i "s~_DATE_~$(date -u "+%Y-%m-%d#%H:%M:%S")~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
+sed -i "s~_PLAYER_~$PLAYER~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
 
-# Copy style & js
-cp -R ${MY_PATH}/../templates/styles ~/.zen/game/players/${PLAYER}/vlog/
-cp -R ${MY_PATH}/../templates/js ~/.zen/game/players/${PLAYER}/vlog/
+mv ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html ~/.zen/game/players/${PLAYER}/vlog/index.html
 
 IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/${PLAYER}/vlog | tail -n 1)
 echo $IPFSROOT > ~/.zen/game/players/${PLAYER}/.vlog.index
-# TEMPLATE EVOLUTION
-sed 's/_PSEUDO_/$PSEUDO/g' ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html > ~/.zen/game/players/${PLAYER}/vlog/index.html
-sed 's/_IPFSROOT_/$IPFSROOT/g' ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html > ~/.zen/game/players/${PLAYER}/vlog/index.html
-IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/${PLAYER}/vlog | tail -n 1)
 
-echo "NEW VIDEO http://127.0.0.1:8080/ipfs/$IPFSROOT"
-## OUVERTURE VLOG CHAIN
-# xdg-open "http://127.0.0.1:8080/ipfs/$IPFSROOT"
+echo "NEW VIDEO http://$myIP:8080/ipfs/$IPFSROOT"
 
-## AJOUT VIDEO ASTROPORT
+###########################
+## AJOUT VIDEO ASTROPORT TW
+###########################
 MEDIAID=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/astroport/video/vlog/
 MEDIAKEY="VLOG_${PLAYER}_${MEDIAID}"
@@ -124,14 +117,14 @@ ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
-TEXT="<video controls width=360  preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>"${PSEUDO}" / VLOG / </a></h1><br>
+TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>"${MEDIAID}" / VLOG / </a></h1><br>
 <\$button class='tc-tiddlylink'><\$list filter='[tag[G1Vlog]]'><\$action-navigate \$to=<<currentTiddler>> \$scroll=no/></\$list>Afficher tous les G1Vlog</\$button>"
 
 echo "## Creation json tiddler"
 echo '[
   {
     "text": "'${TEXT}'",
-    "title": "'VLOG ${MEDIAID}'",
+    "title": "'VLOG_${MEDIAID}'",
     "type": "'text/vnd.tiddlywiki'",
     "mediakey": "'${MEDIAKEY}'",
     "mime": "'${REAL}'",
@@ -185,7 +178,7 @@ else
     echo "Une erreur est survenue lors de l'ajout du tiddler VLOG à votre TW"
 fi
 
-echo "$PSEUDO TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#:[tag[vlog]]"
+echo "$PSEUDO TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#VLOG_${MEDIAID}"
 
 # ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 
