@@ -68,7 +68,7 @@ ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output
 
 ## Create short gif
 rm -f ~/.zen/tmp/screen.gif
-ffmpeg -ss 1.0 -t 4.0 -loglevel quiet -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
+ffmpeg -ss 1.0 -t 1.6 -loglevel quiet -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
 
 # Conversion HLS
 ffmpeg -loglevel quiet -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
