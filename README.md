@@ -57,18 +57,20 @@ L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de comm
 
 Le "pays de la cryptographie" n'est plus un endroit structuré par des répertoires et des fichiers, il devient un hachage perdu dans un échange de bits, où les clés mémorisent des chaînes (hachage + horodatage + signature).
 
-IPFS l'amène au niveau du réseau et crée un "disque virtuel fluide" à partir de tous ou d'un groupe de nœuds en fonctionnement. Actuellement, les CDN l'utilisent, mais c'est une technologie qui permet aux gens de s'éloigner des centres de données.
+IPFS l'amène au niveau du réseau et crée un "lecteur virtuel fluide" à partir de tous les nœuds ou d'un groupe de nœuds en fonctionnement.
+En fait, les CDN l'utilisent, mais il s'agit d'une technologie pour les personnes qui utilisent IPFS pour s'éloigner des centres de données, la plupart d'entre elles ne comprennent toujours pas.
 
 Par rapport à la sémantique du "disque dur".
-Astroport.ONE crée une sorte de "BIOS" pour le lecteur IPFS utilisé avec une paire de clés.
+Astroport.ONE crée un "BIOS" pour le lecteur IPFS utilisé avec une paire de clés.
 
-Le port 1234 redirige vers le "Master Boot Record" (ip:port) redirigeant vers la "Table d'allocation" montrant les fichiers au "Système d'exploitation". Nous utilisons TW comme table d'allocation et interface d'administration et de débogage pour aider à développer une application distribuée au-dessus.
+Le port 1234 redirige vers le "Master Boot Record" (ip:port) redirigeant vers la "Table d'allocation" montrant les fichiers au "Système d'exploitation".
+Nous utilisons TW comme table d'allocation et interface d'administration et de débogage pour aider à développer une application distribuée au-dessus.
 
-TW bénéficie d'un "service d'hébergement collectif distribué".
+TW bénéficie automatiquement d'un "service d'hébergement collectif distribué".
 
-Depuis la page de connexion (MBR) de la "phase alpha" http://qwantic.com:1234
-cliquez sur le lien dans le "pop jaune" pour atteindre le formulaire de création d'un nouveau.
-Cliquez sur le pop "jaune suivant" (et rafraîchissez car cela peut prendre 30s pour être prêt).
+Depuis la page de connexion (BIOS) de la "phase alpha" http://qwantic.com:1234
+cliquez sur le lien dans le "pop jaune (MBR)" pour atteindre le formulaire de création d'un nouveau.
+Cliquez sur le pop "jaune suivant (DApp)" (et rafraîchissez car cela peut prendre 30s pour être prêt).
 
 À partir de deux phrases de passe et d'un courriel, le système génère la paire de clés et l'adresse IPN permanente du TW (seuls ceux qui ont installé la clé dans leur keystore ipfs peuvent la modifier).
 
