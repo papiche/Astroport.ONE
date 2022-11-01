@@ -61,19 +61,18 @@ IPFS l'amène au niveau du réseau et crée un "disque virtuel fluide" à partir
 
 Par rapport à la sémantique du "disque dur".
 Astroport.ONE crée une sorte de "BIOS" pour le lecteur IPFS utilisé avec une paire de clés.
-Le port 1234 est le "Master Boot Record", redirigeant vers la "table d'allocation" gérée par TW.
-Un système de "web of trust" ouvre alors un niveau de sécurité entre les "acteurs" (le premier est l'acte certifié d'être introduit par la blockchain "G1 monnaie libre") avec lesquels il est connecté.
 
-On génère une paire de clés qui devient l'adresse d'un TW stocké sur IPFS.
-Ceux-ci sont faits avec 2 phrases de passe et un email.
+Le port 1234 redirige vers le "Master Boot Record" (ip:port) redirigeant vers la "Table d'allocation" montrant les fichiers au "Système d'exploitation". Nous utilisons TW comme table d'allocation et interface d'administration et de débogage pour aider à développer une application distribuée au-dessus.
 
-A partir de la page de login (MBR) "alpha stage" http://qwantic.com:1234
+TW bénéficie d'un "service d'hébergement collectif distribué".
+
+Depuis la page de connexion (MBR) de la "phase alpha" http://qwantic.com:1234
 cliquez sur le lien dans le "pop jaune" pour atteindre le formulaire de création d'un nouveau.
-Cliquez sur le pop "jaune suivant" (et actualisez car cela peut prendre 30s pour être prêt).
+Cliquez sur le pop "jaune suivant" (et rafraîchissez car cela peut prendre 30s pour être prêt).
+
+À partir de deux phrases de passe et d'un courriel, le système génère la paire de clés et l'adresse IPN permanente du TW (seuls ceux qui ont installé la clé dans leur keystore ipfs peuvent la modifier).
 
 J'espère que cela vous aidera.
-
-Traduit avec www.DeepL.com/Translator (version gratuite)
 
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
