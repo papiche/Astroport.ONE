@@ -30,13 +30,13 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
 echo "Exporting $PLAYER TW [tag[G1Voeu]]"
-rm -f ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json
-tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS} --render '.' 'g1voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+rm -f ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json
+tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS} --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
 
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
 
-cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1wishes.txt
-echo "NB DE VOEUX : "$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1wishes.txt | wc -l)
+cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1wishes.txt
+echo "NB DE VOEUX : "$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1wishes.txt | wc -l)
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
@@ -47,9 +47,9 @@ do
     echo "==============================="
     echo "G1Voeu ${WISH}"
     ## Get ${WISHNAME} TW
-    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
+    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
-    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
+    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
 
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${WISH}
 
@@ -110,7 +110,7 @@ do
 
         done
 
-done < ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/g1wishes.txt
+done < ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1wishes.txt
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
