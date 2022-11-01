@@ -404,8 +404,8 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 if [[ ! -d ~/.zen/game/players/$WHAT ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
-                    echo "$HTTPCORS OK - ASTRONAUT $PSEUDO VISA CREATION  [$SALT + $PEPPER] ($WHAT)
-                    <br> PREPARING YOUR TW - PLEASE 'CHECK' http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    echo "$HTTPCORS OK - ASTRONAUT $PSEUDO IPFS FILESYSTEM CREATION [$SALT + $PEPPER] ($WHAT)
+                    <br>- BUILDING TW - PLEASE 'ASK BIOS AGAIN' IN A WHILE http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                     continue
                else
                     # ASTRONAUT EXISTING WHAT
