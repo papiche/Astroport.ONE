@@ -75,7 +75,7 @@ echo "######### PATIENCE ############"
 echo "#############################################"
 ##########################################################
 echo "### INSTALL TW node.js"
-sudo npm install -g tiddlywiki
+sudo npm install -g tiddlywiki sjcl-cli
 [[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.failed.log && continue
 
 echo "#############################################"
