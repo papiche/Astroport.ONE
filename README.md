@@ -55,6 +55,26 @@ Bien entendu, le mieux est que chacun héberge et publie ses propres données su
 TW est la première application disponible pour les personnes décentralisées.
 L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de commande" pour activer la copie des tiddlers entre les TW d'amis et exécuter des pré et/ou post traitements.
 
+Le "pays de la cryptographie" n'est plus un endroit structuré par des répertoires et des fichiers, il devient un hachage perdu dans un échange de bits, où les clés mémorisent des chaînes (hachage + horodatage + signature).
+
+IPFS l'amène au niveau du réseau et crée un "disque virtuel fluide" à partir de tous ou d'un groupe de nœuds en fonctionnement. Actuellement, les CDN l'utilisent, mais c'est une technologie qui permet aux gens de s'éloigner des centres de données.
+
+Par rapport à la sémantique du "disque dur".
+Astroport.ONE crée une sorte de "BIOS" pour le lecteur IPFS utilisé avec une paire de clés.
+Le port 1234 est le "Master Boot Record", redirigeant vers la "table d'allocation" gérée par TW.
+Un système de "web of trust" ouvre alors un niveau de sécurité entre les "acteurs" (le premier est l'acte certifié d'être introduit par la blockchain "G1 monnaie libre") avec lesquels il est connecté.
+
+On génère une paire de clés qui devient l'adresse d'un TW stocké sur IPFS.
+Ceux-ci sont faits avec 2 phrases de passe et un email.
+
+A partir de la page de login (MBR) "alpha stage" http://qwantic.com:1234
+cliquez sur le lien dans le "pop jaune" pour atteindre le formulaire de création d'un nouveau.
+Cliquez sur le pop "jaune suivant" (et actualisez car cela peut prendre 30s pour être prêt).
+
+J'espère que cela vous aidera.
+
+Traduit avec www.DeepL.com/Translator (version gratuite)
+
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
 

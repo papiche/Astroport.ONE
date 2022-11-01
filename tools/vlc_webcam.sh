@@ -20,6 +20,9 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "$PLAYER CLEF IPNS INTROUVABLE - EXIT -" && exit 1
 
+YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
@@ -42,8 +45,15 @@ fi
 
 mkdir -p ~/.zen/tmp/
 
-espeak "$PSEUDO"
-sleep 1
+espeak "Hello"
+espeak "Getting player latest TW. please wait."
+## GETTING LAST TW via IPFS or HTTP GW
+[[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/vlc_webcam.html
+[[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/vlc_webcam.html "$LIBRA/ipns/${ASTRONAUTENS}"
+[[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && espeak "WARNING. impossible to find your TW online"
+[[ ! -s ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No local copy found !" && exit 1
+[[ -s ~/.zen/tmp/vlc_webcam.html ]] && cp -f ~/.zen/tmp/vlc_webcam.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html && espeak "OK DONE"
+
 espeak "Start Video recording. Press ENTER to stop !"
 # Find "input-slave" :: pactl list short sources
 
@@ -107,6 +117,7 @@ echo "NEW VIDEO http://$myIP:8080/ipfs/$IPFSROOT"
 ###########################
 ## AJOUT VIDEO ASTROPORT TW
 ###########################
+
 MEDIAID=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/astroport/video/vlog/
 MEDIAKEY="VLOG_${PLAYER}_${MEDIAID}"
@@ -117,7 +128,7 @@ ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
-TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>"${MEDIAID}" / VLOG / </a></h1><br>
+TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>VLOG ("${MEDIAID}") Story</a></h1><br>
 <\$button class='tc-tiddlylink'><\$list filter='[tag[G1Vlog]]'><\$action-navigate \$to=<<currentTiddler>> \$scroll=no/></\$list>Afficher tous les G1Vlog</\$button>"
 
 echo "## Creation json tiddler"
