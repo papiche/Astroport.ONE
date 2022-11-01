@@ -98,13 +98,13 @@ do
 
             tiddlywiki --load $INDEX \
                             --import "$HOME/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json" "application/json" \
-                            --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS} --render "$:/core/save/all" "newindex.html" "text/plain"
+                            --output ~/.zen/tmp --render "$:/core/save/all" "${ASTRONAUTENS}.newindex.html" "text/plain"
 
-            if [[ -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/newindex.html ]]; then
+            if [[ -s ~/.zen/tmp/${ASTRONAUTENS}.newindex.html ]]; then
                 echo "Updating $INDEX"
-                cp ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/newindex.html $INDEX
+                cp ~/.zen/tmp/${ASTRONAUTENS}.newindex.html $INDEX
             else
-                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${WISH}/newindex.html"
+                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${ASTRONAUTENS}.newindex.html"
                 echo "XXXXXXXXXXXXXXXXXXXXXXX"
             fi
 
