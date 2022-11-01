@@ -189,8 +189,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
   {
     "title": "'${PEPPER}'",
     "type": "'text/vnd.tiddlywiki'",
-    "astronautens": "'$ASTRONAUTENS'",
-    "ipns": "'$VOEUNS'",
+    "astronautens": "'/ipns/$ASTRONAUTENS'",
+    "wishns": "'/ipns/$VOEUNS'",
+    "qrcode": "'/ipfs/${IVOEUPLAY}'",
     "wish": "'$WISHKEY'",
     "text": "'$TEXT'",
     "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'"
