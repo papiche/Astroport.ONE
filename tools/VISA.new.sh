@@ -15,9 +15,17 @@ PEPPER="$2"
 PLAYER="$3"
 PSEUDO="$4"
 
+
+YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+
+## LOCAL
 [[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-[[ $ASTRONAUTENS ]] && echo "IPNS $PLAYER EXISTANT http://$myIP:8080/$ASTRONAUTENS !! DO NOTHING - EXIT -" && exit 0
+[[ ${ASTRONAUTENS} ]] && echo "IPNS $PLAYER EXISTANT http://$myIP:8080/${ASTRONAUTENS} !! DO NOTHING - EXIT -" && exit 0
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
@@ -27,17 +35,16 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ipfs key rm gchange 2>/dev/null
     rm -f ~/.zen/tmp/gchange.key
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
-    GNS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
-    echo "/ipns/$GNS"
+    ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
+    echo "/ipns/${ASTRONAUTENS}"
 
     mkdir -p ~/.zen/tmp/TW
     rm -f ~/.zen/tmp/TW/index.html
 
-    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    echo "$LIBRA/ipns/$voeuns"
-    [[ $YOU ]] && ipfs --timeout 12s cat /ipns/$GNS > ~/.zen/tmp/TW/index.html \
-                        || curl -m 12 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/$GNS"
+## GLOBAL
+## GETTING LAST TW via IPFS or HTTP GW
+    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/TW/index.html
+    [[ ! -s ~/.zen/tmp/TW/index.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     if [ ! -s ~/.zen/tmp/TW/index.html ]; then
         rm -f ~/.zen/tmp/TW/index.html
@@ -49,7 +56,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         rm -f ~/.zen/tmp/miz.json
         tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-        echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/$GNS"
+        echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/${ASTRONAUTENS}"
         if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
             echo "UPDATE $PLAYER LOCAL COPY ~/.zen/game/players/$PLAYER/ipfs/moa"
             [[ "$myIP" == "$OLDIP" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/
@@ -222,7 +229,7 @@ fi
     ## Copy Astro TW
     [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-    echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
+    echo "## PUBLISHING ${PLAYER} /ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
     echo "/ipfs/$IPUSH"
@@ -239,7 +246,7 @@ fi
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/
     # PUBLIC Ŋ7 ZONE
 
-    echo "$ASTRONAUTENS" > ~/.zen/game/players/$PLAYER/.playerns
+    echo "${ASTRONAUTENS}" > ~/.zen/game/players/$PLAYER/.playerns
 
     echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
@@ -247,12 +254,12 @@ fi
     rm -f ~/.zen/game/players/.current
     ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
-qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/${ASTRONAUTENS}"
 
 echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 
 echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://$myIP:8080/ipns/$ASTRONAUTENS"; sleep 2
+echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 2
 
 # PASS CRYPTING KEY
 echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
