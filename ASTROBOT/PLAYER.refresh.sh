@@ -58,8 +58,9 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
         echo "------------------------------------------------"
         echo "MANUAL PROCEDURE NEEDED"
         echo "------------------------------------------------"
-        echo "TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)"
-        echo "ipfs name publish  -t 72h --key=$PLAYER /ipfs/\$TW"
+        echo "http://$myIP:8080/ipfs/"
+        cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.*
+        echo "ipfs name publish  -t 72h --key=$PLAYER /ipfs/"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         continue
 
