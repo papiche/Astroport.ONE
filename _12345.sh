@@ -21,6 +21,8 @@ PORT=12345
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "(≖‿‿≖) - API Server Already Running -  (≖‿‿≖) " && exit 1
 
+rm -Rf ~/.zen/tmp/swarm/*
+
 while true; do
     start=`date +%s`
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
