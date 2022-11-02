@@ -50,7 +50,7 @@ Server: Astroport.ONE
 Content-Type: application/json; charset=UTF-8
 
 {
-    \"moats\" : \"${MOATS}\",
+    \"created\" : \"${MOATS}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
     \"url\" : \"http://${myIP}:8080/ipns/${IPFSNODEID}\"
 }
