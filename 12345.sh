@@ -62,6 +62,10 @@ while true; do
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
                 ## RANDOM PORT SWAPPINESS
 
+    ## CHECK 12345 PORT RUNNING (PUBLISHING IPNS SWARM MAP)
+    maprunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING http://'$myIP:'12345 (ᵔ◡◡ᵔ)'
+
     ###############
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
         ### echo
