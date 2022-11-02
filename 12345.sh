@@ -49,7 +49,7 @@ echo
 echo "GCHANGE MESSAGING http://$myIP:1234/?salt=totodu56&pepper=totodu56&messaging"
 echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub"
 echo
-echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmSKeu79QfsYAd44sBFTVoc7oxKpc3KQwQQw9ntpXHwjaR"
+echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
@@ -264,31 +264,34 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             echo "TRYING  ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
             ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
-
+echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID MISSING GATEWAY RUSH (°▃▃°)"
 
                 # official ipfs best gateway from https://luke.lol/ipfs.php
                 for nicegw in https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash; do
-                    echo "<<< $($MY_PATH/tools/displaytimer.sh 3 &)  >>>"
+                    [[ $(cat ~/.zen/tmp/.ipfsgw.bad.twt | grep -w $nicegw) ]] && echo "<<< BAD GATEWAY >>>  $nicegw" && continue
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
                     curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "$gum"
-                    [[ $? == 0 ]] && echo "(♥‿‿♥) $nicegw OK"; echo
-                    [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw PASSING"; echo
+                    [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw BYPASSING"; echo
 
+                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
                     if [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq -r) ]]; then
-                        echo " (╥☁╥ ) - $nicegw TIMEOUT - (╥☁╥ )"
-                        # AVOID BANISHMENT
-                        echo $nicegw > ~/.zen/tmp/.nogoodqwantic
+                        echo " (╥☁╥ ) - $nicegw ERROR - (╥☁╥ )"
+                        # NOT A JSON AVOID BANISHMENT
+                        echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
                         continue
                     else
                         ## GOT IT !! IPFS ADD
                         ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
                         ## + TW ADD
-
+                        echo "(♥‿‿♥) $nicegw OK"; echo
                         break
+                    fi
+                    echo " (╥☁╥ ) - $nicegw TIMEOUT - (╥☁╥ )"
+                    continue
                     fi
                 done
             fi ## NO DIRECT IPFS - GATEWAY TRY
