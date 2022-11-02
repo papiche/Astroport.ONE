@@ -21,8 +21,11 @@ PORT=12345
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "(≖‿‿≖) - API Server Already Running -  (≖‿‿≖) " && exit 1
 
+## RESET MEMORY
 rm -Rf ~/.zen/tmp/swarm/*
+ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEePxy2oXJ
 
+# REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do
     start=`date +%s`
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
@@ -36,8 +39,6 @@ while true; do
         echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
         ls ~/.zen/tmp/swarm/$ipfsnodeid
     done
-
-
 
     ls ~/.zen/tmp/swarm/
     ROUTING=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 )
