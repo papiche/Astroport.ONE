@@ -31,7 +31,7 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 
 # Some client needs to respect that
 HTTPCORS="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: '*'
+Access-Control-Allow-Origin: \*
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE

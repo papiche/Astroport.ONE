@@ -43,7 +43,7 @@ while true; do
     ipfs name publish --allow-offline /ipfs/$ROUTING
 
     HTTPCORS="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: '*'
+Access-Control-Allow-Origin: \*
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
