@@ -38,7 +38,7 @@ while true; do
 
 
     ls ~/.zen/tmp/swarm/
-    ROUTING=$(ipfs add -rwq ~/.zen/tmp/swarm | tail -n 1 )
+    ROUTING=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 )
     echo "SELF PUBLISHING SWARM STATUS"
     ipfs name publish --allow-offline /ipfs/$ROUTING
 

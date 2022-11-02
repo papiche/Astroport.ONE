@@ -49,7 +49,7 @@ echo
 echo "GCHANGE MESSAGING http://$myIP:1234/?salt=totodu56&pepper=totodu56&messaging"
 echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub"
 echo
-echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZgfoCtJ1KwoBNUQepM1xhdmdU4x34ZxpLMtLqY43jvXV/g1wishtiddlers.json"
+echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmSKeu79QfsYAd44sBFTVoc7oxKpc3KQwQQw9ntpXHwjaR"
 echo "_________________________________________________________"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
@@ -115,7 +115,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
-        echo Execution time was `expr $end - $start` seconds.
+        echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
         continue
     fi
     ############################################################################
@@ -171,7 +171,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
         end=`date +%s`
-        echo jaklis Execution time was `expr $end - $start` seconds.
+        echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
 ########################################
         ## ARCHIVE TOCTOC WHATS & KEEPS LOGS CLEAN
@@ -218,11 +218,11 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo $TYPE Execution time was `expr $end - $start` seconds.
+            echo "$TYPE (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             ) &
 
             end=`date +%s`
-            echo Execution time was `expr $end - $start` seconds.
+            echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             continue
         fi
         ######################## MESSAGING END
@@ -240,7 +240,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo $TYPE Execution time was `expr $end - $start` seconds.
+            echo $TYPE" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             continue
         fi
 ########################################
@@ -264,17 +264,40 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             echo "TRYING  ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
             ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
+
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                echo "IPFS TIMEOUT >>>  curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json https://gateway.ipfs.io/ipfs/$DATAID"
-                curl -m 12 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "https://gateway.ipfs.io/ipfs/$DATAID"
-            fi
-            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                echo "$HTTPCORS ERROR - $DATAID TIMEOUT - TRY AGAIN" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-            else
-                [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq) ]] && \
-                ## IPFS ADD
-                ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
-            fi
+
+                echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID MISSING GATEWAY RUSH (°▃▃°)"
+
+                # official ipfs best gateway from https://luke.lol/ipfs.php
+                for nicegw in https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash; do
+                    echo "<<< $($MY_PATH/tools/displaytimer.sh 3 &)  >>>"
+                    gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
+                    echo "LOADING $gum"
+                    curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "$gum"
+                    [[ $? == 0 ]] && echo "(♥‿‿♥) $nicegw OK"; echo
+                    [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw PASSING"; echo
+
+                    if [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq -r) ]]; then
+                        echo " (╥☁╥ ) - $nicegw TIMEOUT - (╥☁╥ )"
+                        # AVOID BANISHMENT
+                        echo $nicegw > ~/.zen/tmp/.nogoodqwantic
+                        continue
+                    else
+                        ## GOT IT !! IPFS ADD
+                        ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
+                        ## + TW ADD
+
+                        break
+                    fi
+                done
+            fi ## NO DIRECT IPFS - GATEWAY TRY
+
+           ## REALLY NO FILE FOUND !!!
+           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]] && \
+           echo "$HTTPCORS ERROR (╥☁╥ ) - $DATAID TIMEOUT - (╥☁╥ )" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+
 
             ## REPONSE ON PORT
                 echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
@@ -290,15 +313,15 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                     ipfs name publish --allow-offline /ipfs/$ROUTING
                     echo "DONE"
                     end=`date +%s`
-                    echo ROUTING Execution time was `expr $end - $start` seconds.
+                    echo $ROUTING" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
                 ) &
 
             end=`date +%s`
-            echo $TYPE Execution time was `expr $end - $start` seconds.
+            echo $TYPE" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
         ) &
 
             end=`date +%s`
-            echo Execution time was `expr $end - $start` seconds.
+            echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             continue
         fi
 
@@ -364,7 +387,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         ## RESPONDING
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/${MOATS}.official.swallow &
+        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
         echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
@@ -374,7 +397,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         ## CHECK IF ALREADY EXISTING WHAT
         # IF NOT = BATCH CREATE TW
         end=`date +%s`
-        echo  $type Execution time was `expr $end - $start` seconds.
+        echo $type" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
 
     fi ## END IF SALT
 
@@ -420,7 +443,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
                  ###################################################################################################
                 end=`date +%s`
-                echo Execution time was `expr $end - $start` seconds.
+                echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
 
     fi
 
