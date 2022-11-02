@@ -59,7 +59,7 @@ while true; do
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ ${PORT} -lt 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
+    [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
                 ## RANDOM PORT SWAPPINESS
 
     ###############
