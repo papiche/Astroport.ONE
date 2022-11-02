@@ -380,7 +380,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 TWIP=$OLDIP
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
-                (echo "$HTTPCORS ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                (echo "$HTTPCORS ERROR - NO ACTIVE TW FOUND - $(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.*)" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
             fi
         else
             echo "***** SEARVING $TWIP IN READER MODE *****"

@@ -510,7 +510,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     epeak "video is adding your personnal video in TW"
 
-    zenity --warning --width 600 --text 'DEVELOPPEMENT. SVP. Inscrivez-vous sur https://git.p2p.legal'
+    zenity --warning --width 600 --text 'DEV ZONE - HELP US - REGISTER - https://git.p2p.legal'
 
     ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
     # SELECT FILE TO ADD TO ASTROPORT/KODI
@@ -540,7 +540,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     MEDIAKEY="VIDEO_${MEDIAID}"
 
     ## CREATE SIMPLE JSON
-    jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"htag":$htag}' > ~/astroport/${CAT}/${MEDIAID}/video.json
+    jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/astroport/${CAT}/${MEDIAID}/video.json
     ## MOVE FILE TO IMPORT ZONE
     mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT}"
     FILE_NAME="${TITLE}.${FILE_EXT}"
@@ -562,8 +562,8 @@ esac
 ## Extract thumbnail
 MIME=$(file --mime-type $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT}  | rev | cut -d ' ' -f 1 | rev)
 
-[[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/${CAT}.png
-[[ ! -f ~/astroport/${CAT}/${MEDIAID}/${CAT}.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
+[[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
+[[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
 
 ########################################################################
 # ADD $FILE to IPFS / ASTROPORT / KODI
@@ -571,7 +571,7 @@ echo "new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_N
 [[ -f ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] && cat ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt
 # LOG NOISE # [[ -f ~/astroport/${CAT}/${MEDIAID}/video.json ]] && cat ~/astroport/${CAT}/${MEDIAID}/video.json
 ########################################################################
-## CREATION DU FICHIER ajouter_video.txt OK
+## CREATION DU FICHIER ~/astroport/Add_${MEDIAKEY}_script.sh
 ########################################################################
 ### AJOUT DANS IPFS  #######################################################
 ########################################################################
@@ -631,37 +631,46 @@ FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; 
 #fi
 ########################################################################
 
-zenity --warning --width 300 --text "Association de votre fichier à $MEDIAKEY"
+zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY (ᵔ◡◡ᵔ)"
 
 bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
 
-zenity --warning --width 300 --text "Ajout du Tiddler $MEDIAKEY à votre TW 'moa' $PLAYER"
+zenity --warning --width 320 --text "Ajout à votre TW $PLAYER"
 
 
 ########################################################################
 ## ADD TIDDLER TO TW
 ########################################################################
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+## GETTING LAST TW via IPFS or HTTP GW
+LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+[[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
+[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
+[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. impossible to find your TW online"
+[[ ! -s ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
+[[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html && espeak "OK DONE"
 ###############################
+
     echo "Nouveau MEDIAKEY dans TW $PSEUDO / $PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
     tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                     --import ~/astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
-    echo "PLAYER TW Update..."
+
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
-        echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
-        cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        echo "Avancement blockchain TW $PLAYER : $MOATS"
-        cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$MOATS
+        DIFF="ON"
+        [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
+                                        ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
         TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-        echo "ipfs name publish --key=$PLAYER /ipfs/$TW"
-        ipfs name publish --key=$PLAYER /ipfs/$TW
+        ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
 
-        # MAJ CACHE TW $PLAYER
-        echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+        [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
         echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+
+        echo "================================================"
+        echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+        echo "================================================"
         echo
     fi
 
