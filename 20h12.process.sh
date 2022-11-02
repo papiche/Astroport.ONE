@@ -8,6 +8,11 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 
+
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+[[ ! $myIP ]] && myIP="127.0.1.1"
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+
 ## CLEANING  ~/.zen/tmp
 rm -Rf ~/.zen/tmp
 mkdir -p ~/.zen/tmp
@@ -34,17 +39,17 @@ killall nc
 ## OPEN ENTRANCE AGAIN
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 
-## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
-ipfs bootstrap rm --all > /dev/null 2>&1
-for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
-do
-    ipfsnodeid=${bootnode##*/}
-    ipfs bootstrap add $bootnode
-done
-
-
+if [[ ! $isLAN ]]; then
+    ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
+    ipfs bootstrap rm --all > /dev/null 2>&1
+    for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+    do
+        ipfsnodeid=${bootnode##*/}
+        ipfs bootstrap add $bootnode
+    done
+fi
 
 ########################################################################
 end=`date +%s`
-echo Execution time was `expr $end - $start` seconds.
+echo "20H12 (♥‿‿♥) Execution time was "`expr $end - $start` seconds.
 exit 0
