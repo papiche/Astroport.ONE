@@ -47,7 +47,7 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "$LIBRA/ipns/$ASTRONAUTENS"
     echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
-    [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${PLAYER}/index.html \
+    [[ $YOU ]] && ipfs --timeout 12s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/${PLAYER}/index.html \
                         || curl -m 12 -so ~/.zen/tmp/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
     ## PLAYER TW IS ONLINE ?
@@ -64,14 +64,14 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
         continue
 
     else
-
+     ## FOUND TW
         #############################################################
         ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
         tiddlywiki --load ~/.zen/tmp/${PLAYER}/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-        [[ ! $OLDIP ]] && (echo "501 ERROR - SORRY - TW IS BROKEN - CONTINUE "
+        [[ ! $OLDIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IS BROKEN - (╥☁╥ ) " && continue
         # WHO IS OFFICIAL TW GATEWAY
-        [[ $OLDIP != $myIP ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - BYPASSING - ***" && continue
+        [[ $OLDIP != $myIP ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - (⌐■_■) - ***" && continue
         #############################################################
 
         # VOEUX.create.sh
@@ -87,10 +87,10 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
         $MY_PATH/VOEUX.refresh.sh ~/.zen/tmp/${PLAYER}/index.html $PLAYER
         ##############################################################
 
-    ####################
-    # LOCKING TW : myIP becomes _SECRET_
-    sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/${PLAYER}/index.html
-    ####################
+        ####################
+        # LOCKING TW : myIP becomes _SECRET_
+        sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/${PLAYER}/index.html
+        ####################
 
         ## ANY CHANGES ?
         ##############################################################
@@ -99,13 +99,14 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
             echo "DIFFERENCE DETECTED !! "
             echo "Backup & Upgrade TW local copy..."
             cp ~/.zen/tmp/${PLAYER}/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        else
-            echo "No change since last Refresh..."
         fi
         ##############################################################
 
     fi
 
+    ##################################################
+    ##################################################
+    ################## UPDATING PLAYER MOA
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
                                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)

@@ -40,9 +40,9 @@ fi
 
 ########################################################################
 
-########################################################################
+echo "########################################################################"
 echo "SCANNING $PLAYER - $G1PUB - Gchange FRIENDS"
-########################################################################
+echo "########################################################################"
 ################## CHECKING WHO GAVE ME STARS
 ################## BOOTSTRAP LIKES THEM BACK
 ################## SEND ipfstryme MESSAGES to FRIENDS
@@ -63,8 +63,9 @@ do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
     echo "........................."
     ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
-    echo "${liking_me} is Astronaut ?"
-    echo "Get TW Capsule http://qo-op.com:8080/ipns/$ASTRONAUTENS "
+    echo "==========================="
+    echo "${liking_me} IS LIKING ME"
+    echo "TW ? http://tube.copylaradio?com:8080/ipns/$ASTRONAUTENS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     ################################## JAKLIS LIKING_ME stars
@@ -84,14 +85,14 @@ do
 
     ## DATA EXTRACTION FROM ~/.zen/tmp/${liking_me}.Gstars.json
     my_star_level=$(cat ~/.zen/tmp/${liking_me}.Gstars.json | jq -r '.yours.level');
-    f_score=$(cat ~/.zen/tmp/${liking_me}.Gstars.json | jq -r '.score');
+    gscore=$(cat ~/.zen/tmp/${liking_me}.Gstars.json | jq -r '.score');
     myfriendship=$(cat ~/.zen/tmp/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$G1PUB'"))')
 
     ## OH MY FRIEND !
     if [[ "$my_star_level" != "null" && "${liking_me}" != "$G1PUB" ]]
     then
         # ADD ${liking_me} TO MY ipfs FRIENDS list
-        echo "${liking_me} ($my_star_level stars) : Ŋ1 SCORE  $f_score "
+        echo "LIKING with $my_star_level stars : Friend Ŋ1 SCORE  $gscore "
         mkdir -p ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}
 
         cp ~/.zen/tmp/${liking_me}.Gstars.json ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${liking_me}.Gstars.json
@@ -103,16 +104,19 @@ do
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
         echo "$LIBRA/ipns/$ASTRONAUTENS"
         echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
-        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html \
-                            || curl -m 12 -so ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
+        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html
+        [[ ! -s ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html ]] && curl -m 12 -so ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
-        ## PLAYER TW IS ONLINE ?
+        ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html ]; then
+
                         # # # # # # # # # # # # # # #
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "SALUT. Je suis sur Astroport. Tu viens." -m "Active ton TW avec moi : http://libra.copylaradio.com:1234 - DEV MODE -"
+
         else
+
             echo "COOL MON AMI PUBLIE SUR IPFS"
             ls -al ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/index.html
             # # # # # # # # # # # # # # # TODO
@@ -121,9 +125,10 @@ do
 
         fi
 
-        ## ACTIVER FILTRAGE TAG...
+        ## ACTIVER RECUP ANNONCES...
 
         ## Get Ŋ2 LEVEL
+        echo "(°▃▃°) (°▃▃°) (°▃▃°) Ŋ2 scraping  ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/friend_of_friend.json"
         for nid in $(cat ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[].issuer');
         do
             echo "Ami(s) de cet Ami $linking_me : $nid"
@@ -133,16 +138,18 @@ do
         done
 
         echo "***** Keep G1/IPNS conversion *****"
-        echo ${ASTRONAUTENS} > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/.astronautens
+        echo ${G1PUB} > ~/.zen/game/players/$PLAYER/FRIENDS/${liking_me}/${ASTRONAUTENS}
 
     else
+
         echo "ETOILES RECUES!! ... ENVOI MOI UN MESSAGE POUR CONNAITRE QUI"
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "ETOILES RECUES (G1STARS  $f_score)" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
-         echo "Not Linking ;( YET."
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "ETOILES RECUES (G1STARS  $gscore)" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
+        echo "LIKING LATER."
+
     fi
 
-
     sleep $((1 + RANDOM % 2)) # SLOW DOWN
+
 done
 
 
