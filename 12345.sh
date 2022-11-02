@@ -60,13 +60,15 @@ while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
-                ## RANDOM PORT SWAPPINESS
+    portinuse=$(ps auxf --sort=+utime | grep -w ${PORT} | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+    [[ $portinuse ]] && echo "$portinuse" && continue
+                ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
 
     ## CHECK 12345 PORT RUNNING (PUBLISHING IPNS SWARM MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
     [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING http://'$myIP:'12345 (ᵔ◡◡ᵔ)'
 
-    ###############
+    ############### IPNS SESSION KEY TRY LATER
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
         ### echo
         ### ipfs key rm ${PORT} > /dev/null 2>&1
@@ -316,15 +318,15 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     ipfs name publish --allow-offline /ipfs/$ROUTING
                     echo "DONE"
                     end=`date +%s`
-                    echo $ROUTING" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+                    echo "MAP PUBLISHING (o‿‿o) Execution time was "`expr $end - $start` seconds.
                 ) &
 
             end=`date +%s`
-            echo $TYPE" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo "(|$TYPE|) Execution time was "`expr $end - $start` seconds.
         ) &
 
             end=`date +%s`
-            echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             continue
         fi
 
@@ -348,7 +350,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
                 echo "TW is on $OLDIP"
                 # LOCKED TW BECOMING ACTIVE GATEWAY
                 if [[ $OLDIP == "_SECRET_" ]]; then
@@ -359,7 +361,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                     PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].title | rev | cut -d ' ' -f 1 | rev)
 
-                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - CANNOT FIND PLAYER IN TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - CANNOT FIND PLAYER IN TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
@@ -378,7 +380,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 TWIP=$OLDIP
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
-                (echo "$HTTPCORS ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                (echo "$HTTPCORS ERROR - NO TW FOUND - ERROR" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
             fi
         else
             echo "***** SEARVING $TWIP IN READER MODE *****"
@@ -410,7 +412,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
-        [[ $TYPE != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ $TYPE != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
 
         start=`date +%s`
 
@@ -419,7 +421,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         WHAT=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $WHAT ]] && (echo "$HTTPCORS ERROR - MISSING $WHAT FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! $WHAT ]] && (echo "$HTTPCORS ERROR - MISSING $WHAT FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo $WHAT | cut -d '@' -f 1)
@@ -436,12 +438,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
                     echo "$HTTPCORS OK - ASTRONAUT $PSEUDO IPFS FILESYSTEM CREATION [$SALT + $PEPPER] ($WHAT)
                     <br>- BUILDING TW - PLEASE 'ASK BIOS AGAIN' IN A WHILE http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                     echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
                     continue
                else
                     # ASTRONAUT EXISTING WHAT
                     CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
                fi
 
                  ###################################################################################################
