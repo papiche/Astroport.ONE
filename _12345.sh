@@ -51,6 +51,8 @@ Content-Type: application/json; charset=UTF-8
 
 {
     \"created\" : \"${MOATS}\",
+    \"hostname\" : \"$(hostname)\",
+    \"myIP\" : \"${myIP}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
     \"url\" : \"http://${myIP}:8080/ipns/${IPFSNODEID}\"
 }
