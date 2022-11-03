@@ -17,10 +17,10 @@ echo '
 ########################################################################'
 ### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
 ## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
-mail=support@qo-op.com
+mail=$1
+[[ ! $1 ]] && mail="support@qo-op.com"
 
-echo "
-From: fred@g1sms.fr
+echo "From: fred@g1sms.fr
 To: EMAIL
 Subject: SUBJECT
 MESSAGE

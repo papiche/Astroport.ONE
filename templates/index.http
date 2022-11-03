@@ -43,7 +43,7 @@ Content-Type: text/html; charset=UTF-8
             </p>
 
 <div id="yellow">
-<h3><a href="http://127.0.0.1:12345"> >>> CREATION TW <<< </a></h3>
+<h3><a href="http://127.0.0.1:12345"> >>> SUIVANT / NEXT <<< </a></h3>
 </div>
    <script>
 const el = document.getElementById('yellow');
