@@ -61,7 +61,7 @@ echo "#############################################"
 echo "######### PATIENCE ######"
 echo "#############################################"
 # removed : sqlite
-for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text msmtp imagemagick; do
+for i in qrencode jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -86,9 +86,9 @@ echo "#############################################"
 echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
 
-## MAILJET RELAYING : ADD YOUR CREDENTIALS
-cp ~/.zen/Astroport.ONE/templates/.msmtprc ~/
-chmod 600 ~/.msmtprc
+## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
+sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
+chmod 600 /etc/ssmtp/ssmtp.conf
 
 ## Correct PDF restrictions for imagemagick
 echo "# Correction des droits export PDF imagemagick"

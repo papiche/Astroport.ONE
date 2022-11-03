@@ -1,0 +1,8 @@
+root=support@g1sms.fr
+mailhub=mail.asycn.io:587
+rewriteDomain=g1sms.fr
+FromLineOverride=YES
+AuthUser=support@g1sms.fr
+AuthPass=mercilaput1depasserellesmtp
+UseSTARTTLS=yes
+UseTLS=yes

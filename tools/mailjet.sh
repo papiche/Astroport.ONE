@@ -13,65 +13,19 @@ echo '
 # qo-op
 ############# '$MY_PATH/$ME'
 ########################################################################
-# SEND EMAIL $1=SUBJECT $2=TXT $3=HTML $4=DEST
+# SEND EMAIL FORGE IT YOUR WAY
 ########################################################################'
 ### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
 ## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
-MJ_APIKEY_PUBLIC='fbcd95c1b3d08a67dad0988193ca0795'
-MJ_APIKEY_PRIVATE='367a3a753546134eeac030d5bf6e41f0'
+mail=support@qo-op.com
 
-SENDER_EMAIL='support@qo-op.com'
+echo "
+From: fred@g1sms.fr
+To: EMAIL
+Subject: SUBJECT
+MESSAGE
+" > ~/.zen/tmp/email.txt
 
-RECIPIENT_EMAIL="$4"
-[[ ! $RECIPIENT_EMAIL ]] && RECIPIENT_EMAIL='support@qo-op.com'
-
-
-
-## NOT WORKING !!! HOW TO MAKE THE RIGHT JSON : TODO
-echo '{"Messages":[
-                {
-                        "From": {
-                                "Email": "'$SENDER_EMAIL'",
-                                "Name": "qo-op"
-                        },
-                        "To": [
-                                {
-                                        "Email": "'$RECIPIENT_EMAIL'",
-                                        "Name": "Astroport"
-                                }
-                        ],
-                        "Subject": "'$1'",
-                        "TextPart": "'$2'",
-                        "HTMLPart": "'$3'"
-                }
-        ]
-    }'
-
-echo "THIS SCRIPT NEED DEBUGGING"
-exit 1
-
-# Run:
-curl -s -X POST \
-    --user "$MJ_APIKEY_PUBLIC:$MJ_APIKEY_PRIVATE" \
-    https://api.mailjet.com/v3.1/send \
-    -H 'Content-Type: application/json' \
-    -d '{"Messages":[
-                {
-                        "From": {
-                                "Email": "'$SENDER_EMAIL'",
-                                "Name": "qo-op"
-                        },
-                        "To": [
-                                {
-                                        "Email": "'$RECIPIENT_EMAIL'",
-                                        "Name": "Astroport"
-                                }
-                        ],
-                        "Subject": "'$1'",
-                        "TextPart": "'$2'",
-                        "HTMLPart": "'$3'"
-                }
-        ]
-    }' | jq -r
-
-
+SUBJECT="[(♥‿‿♥)] message personnel. merci. "
+MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nTW http://qwantic.com:1234 .\n\nAstroport"
+cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | ssmtp -v ${mail}
