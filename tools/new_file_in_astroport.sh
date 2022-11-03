@@ -425,7 +425,7 @@ then
 
     GENRE=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
     echo $GENRE
-    MIME=$(file --mime-type "$HOME/astroport/${TYPE}/${REFERENCE}/${file}" | rev | cut -d ' ' -f 1 | rev)
+    MIME=$(file --mime-type -b "$HOME/astroport/${TYPE}/${REFERENCE}/${file}")
     REAL=$MIME
 
     ## ASK FOR EXTRA METADATA

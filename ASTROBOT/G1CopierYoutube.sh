@@ -106,7 +106,7 @@ while read YID;
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/$WISHKEY/$ZFILE" | tail -n 1)
         echo "/ipfs/$ILINK <=> $ZFILE"
 
-        MIME=$(file --mime-type "$HOME/.zen/tmp/$WISHKEY/$ZFILE" | rev | cut -d ' ' -f 1 | rev)
+        MIME=$(file --mime-type -b "$HOME/.zen/tmp/$WISHKEY/$ZFILE")
 
         ## ADD TAGS
         SEC=$(yt-dlp --print "%(duration)s" "${ZYURL}")

@@ -127,7 +127,7 @@ mkdir -p ~/astroport/video/vlog/
 MEDIAKEY="VLOG_${PLAYER}_${MEDIAID}"
 cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4
 
-REAL=$(file --mime-type "$HOME/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
+REAL=$(file --mime-type -b "$HOME/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4")
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
 TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>VLOG ("${MEDIAID}") Story</a></h1><br>

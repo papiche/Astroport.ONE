@@ -554,7 +554,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 esac
 
 ## Extract thumbnail
-MIME=$(file --mime-type $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT}  | rev | cut -d ' ' -f 1 | rev)
+MIME=$(file --mime-type -b $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT})
 
 [[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
 [[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
