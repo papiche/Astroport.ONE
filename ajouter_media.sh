@@ -508,7 +508,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     video)
 
-    epeak "video is adding your personnal video in TW"
+    espeak "Simply adds your personnal video in TW"
 
     zenity --warning --width 600 --text 'DEV ZONE - HELP US - REGISTER - https://git.p2p.legal'
 
@@ -528,18 +528,12 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     [[ $TITLE == "" ]] && exit 1
     TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TITLE (NO ;)
 
-    OUTPUT=$(zenity --forms --width ${large} --title="METADATA" --text="Ajouter des métadonnées" --separator=";" --add-entry="Sous titres" --add-entry="Hashtag(s)")
-    [[ $? != 0 ]] && echo "FAIL" && exit 1
-
-    DESCRIPTION=$(awk -F ';' '{print $1}' <<<$OUTPUT)
-    HASHTAG=$(awk -F ';' '{print $2}' <<<$OUTPUT)
-
     ## video_timestamp INDEX
     MEDIAID="$(date -u +%s%N | cut -b1-13)"
     mkdir -p ~/astroport/${CAT}/${MEDIAID}/
     MEDIAKEY="VIDEO_${MEDIAID}"
 
-    ## CREATE SIMPLE JSON
+    ## CREATE SIMPLE JSON (REMOVE== it ?
     jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/astroport/${CAT}/${MEDIAID}/video.json
     ## MOVE FILE TO IMPORT ZONE
     mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT}"
@@ -648,7 +642,9 @@ LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. impossible to find your TW online"
 [[ ! -s ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 [[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html && espeak "OK DONE"
+
 ###############################
 
     echo "Nouveau MEDIAKEY dans TW $PSEUDO / $PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
@@ -658,7 +654,7 @@ LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d
 
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
-        DIFF="ON"
+        cp ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
                                         ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 

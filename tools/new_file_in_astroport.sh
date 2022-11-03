@@ -427,8 +427,15 @@ then
     echo $GENRE
     MIME=$(file --mime-type "$HOME/astroport/${TYPE}/${REFERENCE}/${file}" | rev | cut -d ' ' -f 1 | rev)
     REAL=$MIME
+
+    ## ASK FOR EXTRA METADATA
+    OUTPUT=$(zenity --forms --width 480 --title="METADATA" --text="Ajouter des métadonnées" --separator=";" --add-entry="Sous-titre" --add-entry="tag(s)")
+    DESCRIPTION=$(awk -F ';' '{print $1}' <<<$OUTPUT)
+    HASHTAG=$(awk -F ';' '{print $2}' <<<$OUTPUT)
+
     if [[ $(echo "$MIME" | grep 'video') ]]; then
         TEXT="<video controls preload='none' width=100%><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>
+        <h2>$DESCRIPTION</h2>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[${CAT}]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
@@ -436,7 +443,7 @@ then
     Afficher tous les ${CAT}
     </\$button>"
         MIME="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
-        TAGS="G1Films G1DessinsAnimes G1Series G1CopierYoutube ${CAT} ${PLAYER} $GENRE ipfs"
+        TAGS="G1Films G1DessinsAnimes G1Series G1CopierYoutube ${CAT} ${PLAYER} $GENRE ipfs ${HASHTAG}"
         CANON=''
     else
         TEXT='${MEDIAKEY}'
@@ -445,8 +452,8 @@ then
     fi
 
     ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
-    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && IPSCREENSHOT=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
-    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/$CAT.png ]] && IPSCREENSHOT=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/$CAT.png" | tail -n 1)
+    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
+    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png ]] && IPTHUMB=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png" | tail -n 1)
 
     echo "## Creation json tiddler"
     echo '[
@@ -457,8 +464,10 @@ then
     "mime": "'${REAL}'",
     "cat": "'${CAT}'",
     "size": "'${FILE_BSIZE}'",
-    "screenshot": "'${IPSCREENSHOT}'",
-    "ipfsroot": "'${IPFSREPFILEID}'",
+    "description": "'${DESCRIPTION}'",
+    "screencapture": "'/ipfs/${IPSCREEN}'",
+    "thumbnail": "'/ipfs/${IPTHUMB}'",
+    "ipfsroot": "'/ipfs/${IPFSREPFILEID}'",
     "file": "'${file}'",
     "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
     "mediakey": "'${MEDIAKEY}'",
