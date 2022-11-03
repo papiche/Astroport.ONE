@@ -27,6 +27,8 @@ ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEeP
 
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do
+
+    (
     start=`date +%s`
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
@@ -44,6 +46,11 @@ while true; do
     ROUTING=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 )
     echo "SELF PUBLISHING SWARM STATUS"
     ipfs name publish --allow-offline /ipfs/$ROUTING
+
+    end=`date +%s`
+    echo '(*__*) UPDATE & PUBLISH duration was '`expr $end - $start`' seconds.'
+
+    ) &
 
     HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: \*
