@@ -9,6 +9,7 @@
 # Then publish map of json DApp data
 #
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"
@@ -28,6 +29,10 @@ ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEeP
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do
 
+    lastrun=$(cat ~/.zen/tmp/swarm/${IPFSNODEID}/.moats)
+    duree=$(expr ${MOATS} - $lastrun)
+
+    if [[ duree -gt 3600000 ]]; then
     (
     start=`date +%s`
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
@@ -50,7 +55,15 @@ while true; do
     end=`date +%s`
     echo '(*__*) UPDATE & PUBLISH duration was '`expr $end - $start`' seconds.'
 
+    # last run recording
+    echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
+
     ) &
+
+    else
+        echo "$duree only cache life"
+
+    fi
 
     HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: \*
@@ -73,7 +86,10 @@ Content-Type: application/json; charset=UTF-8
     #### 12345 NETWORK MAP TOKEN
     end=`date +%s`
     echo '(#__#) WAITING TIME was '`expr $end - $start`' seconds.'
-     echo '(^‿‿^) 12345 TOKEN '${MOATS}' CONSUMED  (^‿‿^)'
+    echo '(^‿‿^) 12345 TOKEN '${MOATS}' CONSUMED  (^‿‿^)'
+
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+
 done
 
 exit 0
