@@ -433,9 +433,12 @@ then
     DESCRIPTION=$(awk -F ';' '{print $1}' <<<$OUTPUT)
     HASHTAG=$(awk -F ';' '{print $2}' <<<$OUTPUT)
 
+
+
     if [[ $(echo "$MIME" | grep 'video') ]]; then
-        TEXT="<video controls preload='none' width=100%><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video><h1>"${TITLE}"</h1>
-        <h2>$DESCRIPTION</h2>
+        TEXT="<video controls preload='none' width=100% poster='/ipfs/"${IPSCREEN}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
+        </video><h1>"${TITLE}"</h1>
+        <h2>"$DESCRIPTION"</h2>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[${CAT}]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>

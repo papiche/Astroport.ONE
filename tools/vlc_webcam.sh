@@ -10,15 +10,15 @@ ME="${0##*/}"
 
 PLAYER="$1"
 
-[[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-[[ $PLAYER == "" ]] && espeak "ERROR PLAYER - EXIT" && exit 1
-PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
-[[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
+[[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ ${PLAYER} == "" ]] && espeak "ERROR PLAYER - EXIT" && exit 1
+PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
+[[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && espeak "ERROR G1PUB - EXIT" && exit 1
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 
-[[ ! $ASTRONAUTENS ]] && echo "$PLAYER CLEF IPNS INTROUVABLE - EXIT -" && exit 1
+[[ ! $ASTRONAUTENS ]] && echo "${PLAYER} CLEF IPNS INTROUVABLE - EXIT -" && exit 1
 
 YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
 LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
@@ -51,8 +51,8 @@ espeak "Getting player latest TW. please wait."
 [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/vlc_webcam.html
 [[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/vlc_webcam.html "$LIBRA/ipns/${ASTRONAUTENS}"
 [[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && espeak "WARNING. impossible to find your TW online"
-[[ ! -s ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No local copy found !" && exit 1
-[[ -s ~/.zen/tmp/vlc_webcam.html ]] && cp -f ~/.zen/tmp/vlc_webcam.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html && espeak "OK DONE"
+[[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No local copy found !" && exit 1
+[[ -s ~/.zen/tmp/vlc_webcam.html ]] && cp -f ~/.zen/tmp/vlc_webcam.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "OK DONE"
 
 espeak "Start Video recording. Press ENTER to stop !"
 # Find "input-slave" :: pactl list short sources
@@ -63,8 +63,10 @@ espeak "Start Video recording. Press ENTER to stop !"
 
 cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://$RECDEVICE --sout "#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst=\"$HOME/.zen/tmp/MyVid.mp4\"}" &
 processid="$!"
+
+
 echo "Press ENTER to stop video recording"
-read
+[[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]] && zenity --warning --width 360 --text "(◕‿‿◕) STOP... " || read
 kill -15 $processid
 
 # cvlc v4l2:///dev/video0:width=640:height=480 --input-slave=pulse://alsa_input.usb-HD_Web_Camera_HD_Web_Camera_Ucamera001-02.analog-mono --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mp4,dst='~/.zen/tmp/MyVid.mp4'}' --run-time=$RECTIME --stop-time=$RECTIME cvlc://quit
@@ -79,6 +81,7 @@ ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output
 ## Create short gif
 rm -f ~/.zen/tmp/screen.gif
 ffmpeg -ss 1.0 -t 1.6 -loglevel quiet -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
+ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 
 # Conversion HLS
 ffmpeg -loglevel quiet -i ~/.zen/tmp/output.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls ~/.zen/tmp/output.m3u8
@@ -105,7 +108,8 @@ else
     sed s/_IPFSID_/$IPFSID/g ${MY_PATH}/../templates/video_first.html > ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
 fi
 sed -i "s~_DATE_~$(date -u "+%Y-%m-%d#%H:%M:%S")~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
-sed -i "s~_PLAYER_~$PLAYER~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
+sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
+sed -i "s~_ANIMH_~${ANIMH}~g" ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html
 
 mv ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html ~/.zen/game/players/${PLAYER}/vlog/index.html
 
@@ -121,11 +125,9 @@ echo "NEW VIDEO http://$myIP:8080/ipfs/$IPFSROOT"
 MEDIAID=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/astroport/video/vlog/
 MEDIAKEY="VLOG_${PLAYER}_${MEDIAID}"
-cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/$PLAYER_$MEDIAID.mp4
+cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4
 
-ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
-
-REAL=$(file --mime-type "$HOME/astroport/video/vlog/$PLAYER_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
+REAL=$(file --mime-type "$HOME/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4" | cut -d ':' -f 2 | cut -d ' ' -f 2)
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
 TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>VLOG ("${MEDIAID}") Story</a></h1><br>
@@ -134,8 +136,8 @@ TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipf
 echo "## Creation json tiddler"
 echo '[
   {
+    "title": "'VLOG_${MEDIAID} ${PSEUDO}'",
     "text": "'${TEXT}'",
-    "title": "'VLOG_${MEDIAID}'",
     "type": "'text/vnd.tiddlywiki'",
     "mediakey": "'${MEDIAKEY}'",
     "mime": "'${REAL}'",
@@ -151,37 +153,38 @@ echo '[
 
 # LOG
 cat ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json | jq
+cp ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json ~/astroport/video/vlog/
 
 ## Adding tiddler to PLAYER TW
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 
 rm -f ~/.zen/tmp/newindex.html
 
-echo "Nouveau TID dans TW $PSEUDO : http://$myIP:8080/ipns/$ASTRONAUTENS"
-tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+echo "Nouveau TID dans TW ${PSEUDO} : http://$myIP:8080/ipns/$ASTRONAUTENS"
+tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                    --import ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
 if [[ -s ~/.zen/tmp/newindex.html ]]; then
 espeak "Updating your TW"
 echo "PLAYER TW Update..."
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    echo "Mise à jour ~/.zen/game/players/$PLAYER/ipfs/moa/index.html"
+    echo "Mise à jour ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html"
+    DIFF=$(diff ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html)
+    cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-    DIFF=$(diff ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
+    [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+                                    ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
-    [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
-                                    ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
+    TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
+    ipfs name publish --allow-offline -t 72h --key=${PLAYER} /ipfs/$TW
 
-    cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-    TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
+    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
+    echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
-    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
-    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+    espeak "Hip Hip Hip Hurray"
 
     echo "================================================"
-    echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
     echo "================================================"
     echo
 else
@@ -189,7 +192,7 @@ else
     echo "Une erreur est survenue lors de l'ajout du tiddler VLOG à votre TW"
 fi
 
-echo "$PSEUDO TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#VLOG_${MEDIAID}"
+echo "${PSEUDO} TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#VLOG_${MEDIAID}"
 
 # ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 
