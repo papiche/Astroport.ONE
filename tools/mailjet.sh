@@ -23,13 +23,15 @@ messfile="$2" # CORPS MESSAGE
 [[ ! $1 ]] && mail="support@qo-op.com"
 
 SUBJECT="[(♥‿‿♥)] message personnel. merci. "
-MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nTW http://qwantic.com:1234 .\n\nAstroport"
+MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nBootez sur votre TW personnelle http://qo-op.com:1234 .\n\nAstroport"
 [[ $messfile && -f $messfile ]] && [[ $(file --mime-type -b $messfile) == 'text/plain' ]] &&  MESSAGE=$(cat $messfile)
 
-echo "From: Fred<fred@g1sms.fr>
+echo "From: fred@g1sms.fr
 To: EMAIL
 Subject: SUBJECT
 MESSAGE
 " > ~/.zen/tmp/email.txt
+[[ $messfile && -f $messfile ]] && [[ $(file --mime-type -b $messfile) == 'text/plain' ]] && cat $messfile >> ~/.zen/tmp/email.txt
+
 
 cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | ssmtp -v ${mail}
