@@ -354,10 +354,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
                 [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
                 echo "TW is on $OLDIP"
+                wasLAN=$(echo $OLDIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+                [[ ! $wasLAN ]] && TWIP=$OLDIP || TWIP=$myIP
                 # LOCKED TW BECOMING ACTIVE GATEWAY
-                if [[ $OLDIP == "_SECRET_" ]]; then
+                if [[ $OLDIP == "_SECRET_" || "$TWIP" == "$myIP" ]]; then
                     echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
-                    sed -i "s~_SECRET_~${myIP}~g" ~/.zen/tmp/coucou/${MOATS}.astroindex.html
+                    sed -i "s~$OLDIP~${myIP}~g" ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
                     # GET PLAYER FORM Dessin de $PLAYER
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
@@ -368,7 +370,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
                     [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]] && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
-                    # cp ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                    cp ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
                     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
                     IPUSH=$(ipfs add -Hq ~/.zen/tmp/coucou/${MOATS}.astroindex.html | tail -n 1)
@@ -378,12 +380,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
                     OLDIP=${myIP}
                 fi
-                wasLAN=$(echo $OLDIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-                [[ ! $wasLAN ]] && TWIP=$OLDIP || TWIP=$myIP
 
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
-                (echo "$HTTPCORS ERROR - NO ACTIVE TW FOUND - $(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.*)" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                echo "NO TW FOUND - LAUNCHING CENTRAL"
+                ## 302 REDIRECT CENTRAL GW
+                cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed -i "s~_TWLINK_~$LIBRA/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
             fi
         else
             echo "***** SEARVING $TWIP IN READER MODE *****"
