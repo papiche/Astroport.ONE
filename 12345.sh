@@ -387,7 +387,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 ## 302 REDIRECT CENTRAL GW
                 cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~_TWLINK_~$LIBRA/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
             fi
         else
             echo "***** SEARVING $TWIP IN READER MODE *****"
