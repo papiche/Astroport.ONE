@@ -52,4 +52,8 @@ fi
 ########################################################################
 end=`date +%s`
 echo "20H12 (♥‿‿♥) Execution time was "`expr $end - $start` seconds.
+
+## MAIL LOG : support@qo-op.com
+$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log.txt"
+
 exit 0

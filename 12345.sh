@@ -349,6 +349,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             # echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
 
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
+                echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
                 [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - YOUR TW IS OUT OF SWARM#0 - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
@@ -377,8 +378,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
                     OLDIP=${myIP}
                 fi
-                # ACTIVE GATEWAY
-                TWIP=$OLDIP
+                wasLAN=$(echo $OLDIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+                [[ ! $wasLAN ]] && TWIP=$OLDIP || TWIP=$myIP
+
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
             else
                 (echo "$HTTPCORS ERROR - NO ACTIVE TW FOUND - $(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.*)" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
