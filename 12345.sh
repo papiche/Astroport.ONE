@@ -367,7 +367,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                                             || TWIP=$myIP
 
                 # LOCKED TW BECOMING ACTIVE GATEWAY
-                if [[ $OLDIP == "_SECRET_" || "$TWIP" == "$myIP" ]]; then
+                TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
+                if [[ $OLDIP == "_SECRET_" || $OLDIP == "$TUBE" || "$TWIP" == "$myIP" ]]; then
                     echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
                     sed -i "s~$OLDIP~${myIP}~g" ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 

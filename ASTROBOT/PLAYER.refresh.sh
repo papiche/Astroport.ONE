@@ -96,8 +96,11 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         ##############################################################
 
         ####################
-        # LOCKING TW : myIP becomes _SECRET_
+        # REMOVE OFFCIAL : myIP becomes _SECRET_
         sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+        TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
+        sed -i "s~_SECRET_~$TUBE~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+
         ####################
 
         ## ANY CHANGES ?
