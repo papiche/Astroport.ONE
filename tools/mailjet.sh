@@ -23,7 +23,7 @@ messfile="$2" # CORPS MESSAGE
 [[ ! $1 ]] && mail="support@qo-op.com"
 
 SUBJECT="[(♥‿‿♥)] message personnel. merci. "
-MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nBootez sur votre TW personnelle http://qo-op.com:1234 .\n\nAstroport"
+MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nBootez sur votre TW http://qo-op.com:1234 .\n\nAstroport"
 
 echo "From: fred@g1sms.fr
 To: EMAIL

@@ -33,19 +33,19 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
 
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
 echo "Exporting $PLAYER TW [tag[G1Voeu]]"
-rm -f ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json
-tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS} --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json
+tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
 
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
 
-cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1wishes.txt
-echo "NB DE VOEUX : "$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1wishes.txt | wc -l)
+cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
+echo "NB DE VOEUX : "$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
@@ -56,11 +56,11 @@ do
     echo "==============================="
     echo "G1Voeu ${WISH}"
     ## Get ${WISHNAME} TW
-    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
+    WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
-    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
+    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
 
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${WISH}
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
 
 
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
@@ -90,12 +90,12 @@ do
             [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
             PLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
 
-            rm -f ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json
+            rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json
             echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME} --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
+                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']]'
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## WISHES FOUND ;) MIAM "
             ######################################
@@ -103,10 +103,10 @@ do
             # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER
             # Reduce importation with extra filters days:created[-1]
             # Apply Extra filters... TODO LEARN https://talk.tiddlywiki.org/t/how-to-filter-and-delete-multiple-tiddlers/4950/2?u=papiche
-            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json"
+            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json"
 
             tiddlywiki --load $INDEX \
-                            --import "$HOME/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${WISHNAME}/${PLAYER}.tiddlers.json" "application/json" \
+                            --import "$HOME/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json" "application/json" \
                             --output ~/.zen/tmp --render "$:/core/save/all" "${ASTRONAUTENS}.newindex.html" "text/plain"
 
             if [[ -s ~/.zen/tmp/${ASTRONAUTENS}.newindex.html ]]; then
@@ -119,7 +119,7 @@ do
 
         done
 
-done < ~/.zen/tmp/${IPFSNODEID}/g1voeu/${ASTRONAUTENS}/${PLAYER}.g1wishes.txt
+done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
