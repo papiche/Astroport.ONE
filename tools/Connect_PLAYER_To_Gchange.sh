@@ -18,8 +18,14 @@ PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "ERROR G1PUB - EXIT" && exit 1
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
-[[ ! $ASTRONAUTENS ]] &&  echo "ERROR ASTRONAUTENS - EXIT" && exit 1
+    PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
+    ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
+
+    ## REFRESH ASTRONAUTE TW
+    ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
+    [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
+    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" && exit 1
 
 ## Directory is created, So this script already run once.
 if [[ ! -d ~/.zen/game/players/$PLAYER/FRIENDS/ ]]; then

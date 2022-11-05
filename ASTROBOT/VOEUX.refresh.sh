@@ -16,12 +16,19 @@ INDEX="$1"
 
 PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
-ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
-[[ ! $ASTRONAUTENS ]] && echo "$PLAYER CLEF IPNS INTROUVABLE - EXIT -" && exit 1
+    PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
+    ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
+
+    ## REFRESH ASTRONAUTE TW
+    ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
+    [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
+    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+IPFSNODEID=$(ipfs id -f='<id>\n')
+
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
