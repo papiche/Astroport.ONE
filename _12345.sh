@@ -9,7 +9,8 @@
 # Then publish map of json DApp data
 #
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-PFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+IPFSNODEID=$(ipfs id -f='<id>\n')
+
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
@@ -32,20 +33,28 @@ echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
 
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do
+    start=`date +%s`
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
     lastrun=$(cat ~/.zen/tmp/swarm/${IPFSNODEID}/.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
     if [[ duree -gt 3600000 ]]; then
+
     (
     start=`date +%s`
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
+        echo "############# RUN LOOP #########"
+
         ipfsnodeid=${bootnode##*/}
         mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
         echo "IPFS get  /ipns/$ipfsnodeid"
         [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ipfsnodeid} ($YOU)" && ipfs --timeout 12s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid
     ##    [[ ! -s ~/.zen/tmp/swarm/$ipfsnodeid/index.json ]] && echo "$LIBRA/ipns/${ipfsnodeid}" && curl -m 6 -so ~/.zen/tmp/swarm/$ipfsnodeid/index.json "$LIBRA/ipns/${ipfsnodeid}"
+
+        ## TODO LOOP CREATE bootstrap json array
+        #
 
         echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
         ls ~/.zen/tmp/swarm/$ipfsnodeid
@@ -69,7 +78,7 @@ while true; do
 
     fi
 
-    HTTPCORS="HTTP/1.1 200 OK
+    HTTPSEND="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: \*
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
@@ -84,15 +93,15 @@ Content-Type: application/json; charset=UTF-8
     \"url\" : \"http://${myIP}:8080/ipns/${IPFSNODEID}\"
 }
 "
-    #  BLOCKING COMMAND
+    ######################################################################################
+    #  BLOCKING COMMAND nc 12345 port waiting
     echo '(◕‿‿◕) http://'$myIP:'12345 READY (◕‿‿◕)'
-    echo "$HTTPCORS" | nc -l -p 12345 -q 1 > /dev/null 2>&1
+    echo "$HTTPSEND" | nc -l -p 12345 -q 1 > /dev/null 2>&1
+
     #### 12345 NETWORK MAP TOKEN
     end=`date +%s`
     echo '(#__#) WAITING TIME was '`expr $end - $start`' seconds.'
     echo '(^‿‿^) 12345 TOKEN '${MOATS}' CONSUMED  (^‿‿^)'
-
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 done
 

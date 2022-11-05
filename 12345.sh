@@ -240,7 +240,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
             ## https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
             echo "url='https://www.gchange.fr/#/app/user/"${G1PUB}"/'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-
+            echo "GCHANGE REDIRECTING https://www.gchange.fr/#/app/user/"${G1PUB}"/"
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
             ### echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
