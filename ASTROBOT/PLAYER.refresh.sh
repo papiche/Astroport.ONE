@@ -12,6 +12,7 @@ ME="${0##*/}"
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING PLAYER.refresh"
+IPFSNODEID=$(ipfs id -f='<id>\n')
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls -t ~/.zen/game/players/); do
@@ -32,10 +33,13 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     echo "##################################################################"
 
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
+    ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
 
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
-    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY -- CONTINUE --" && continue
+    [[ ! $ASTRONAUTENS || $COINS -lt 0 ]] && echo "WARNING No $PLAYER IPNS KEY or Missing $COINS G1 --" && ASTRONAUTENS=$ASTRONS
+    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" &&  continue
 
     rm -Rf ~/.zen/tmp/${PLAYER}
     mkdir -p ~/.zen/tmp/${PLAYER}
@@ -56,7 +60,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     if [ ! -s ~/.zen/tmp/${PLAYER}/index.html ]; then
 
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        echo "ERROR_PLAYERTW_TIMEOUT : /ipns/$ASTRONAUTENS"
+        echo "ERROR_PLAYERTW_OFFLINE : /ipns/$ASTRONAUTENS"
         echo "------------------------------------------------"
         echo "MANUAL PROCEDURE NEEDED"
         echo "------------------------------------------------"
@@ -64,6 +68,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.*
         echo "ipfs name publish  -t 72h --key=$PLAYER /ipfs/"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
         continue
 
     else
@@ -108,6 +113,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     fi
 
     ##################################################
+    IKEY=$G1PUB
     ##################################################
     ################## UPDATING PLAYER MOA
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -115,7 +121,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
+    ipfs name publish --allow-offline -t 72h --key=$IKEY /ipfs/$TW
 
     [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
@@ -124,23 +130,18 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
     echo "================================================"
 
-    ## TODO ! NOT .current SO ipfs key rm
-
-## PUBLISHING ASTRONAUTS LIST
-[[ ! $(grep -w "$ASTRONAUTENS" ~/.zen/game/astronautes.txt ) ]] && echo "$PSEUDO:$PLAYER:$ASTRONAUTENS" >> ~/.zen/game/astronautes.txt
-
 done
 
 #################################################################
-## IPFSNODEIDE ASTRONAUTES SIGNALING ##
+## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
-############################
-## TODO EVOLVE TO P2P QOS MAPPING
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 ls ~/.zen/tmp/${IPFSNODEID}/
+
 ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
-echo "PUBLISHING ASTRONAUTES SIGNALING"
+
+echo "PUBLISHING SELF"
 ipfs name publish --allow-offline -t 72h /ipfs/$ROUTING
+
 echo "THANK YOU."
 
 exit 0

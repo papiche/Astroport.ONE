@@ -150,7 +150,6 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.player)
 
     mkdir -p ~/.zen/game/players/$PLAYER/ipfs/G1SSB # Prepare astrXbian sub-datastructure
-    mkdir -p ~/.zen/game/players/$PLAYER/ipfs_swarm
 
     qrencode -s 12 -o ~/.zen/game/players/$PLAYER/QR.png "$G1PUB"
     cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/QR.png
