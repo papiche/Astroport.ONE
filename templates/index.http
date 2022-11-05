@@ -32,15 +32,13 @@ Content-Type: text/html; charset=UTF-8
         <h2>Astronaute<br> - TW Astroport Ŋ1 -</h2>
 <form action = "http://127.0.0.1:1234" method = "GET">
     <br>
+    <h2>
         Phrase Une : <input name=salt value=''></br>
         Phrase Deux : <input name=pepper value=''></br>
         ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br></br>
         <input type='submit' value='CONNECTION'>
+        </h2>
     </form>
-
-            <p>
-            <b>Besoin d'aide ? Contactez support@qo-op.com</b>
-            </p>
 
 <div id="yellow">
 <h3><a href="http://127.0.0.1:12345"> >>> SUIVANT / NEXT <<< </a></h3>
@@ -55,7 +53,12 @@ setTimeout(() => {
 </script>
 
 <br>
-<a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json" alt="Station Stomac"><img width=420 height=420 src='http://127.0.0.1:8080/ipfs/QmbY3R4UV43Bz7eQDEYgXZKWnszArGwnJqMmfSZ7CCWFcq' id='API'/></a>
+<a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json" alt="Station Stomac"><img width=320 height=240 src='http://127.0.0.1:8080/ipfs/QmYjPCvbwTcvEpjvrcryCAAE1Ui73rsbJGbtZXpniddKDj' id='API'/></a>
+
+            <p>
+            <b>Besoin d'aide ? Contactez support@qo-op.com</b>
+            </p>
+
 </center>
 </body>
 </html>
