@@ -118,11 +118,6 @@ echo
     [[ -s ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
     [[ ! -s ~/.zen/tmp/newindex.html ]] && echo "ERROR ~/.zen/tmp/newindex.html  MISSING" && exit 1
 
-## EXTEND ipfs daemon accreditation
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://astroport:8080", "http://'$(hostname)'.home:8080" ]'
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin ## CORS
-echo "RESTART IPFS !?"
-
     echo "# CREATION QR CODE"
 
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
