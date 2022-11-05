@@ -38,7 +38,10 @@ select voeu in "${vlist[@]}"; do
         voeu=$(echo $voeu | cut -d ':' -f2) ## Get G1PUB part
         TITLE=$(cat ~/.zen/game/world/$voeu/.pepper) ## Get Voeu title (pepper) = simple GUI form + Name collision => Voeu fusion
 
-        myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+[[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
+
         VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
 
         choices=("TW" "G1")

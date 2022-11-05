@@ -9,10 +9,10 @@
 # Then publish map of json DApp data
 #
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+PFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-[[ ! $myIP ]] && myIP="127.0.1.1"
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+[[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
 
 PORT=12345
 
@@ -24,7 +24,11 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color
 
 ## RESET MEMORY
 rm -Rf ~/.zen/tmp/swarm/*
+## NAME PUBLISH EMPTY !!!
 ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEePxy2oXJ
+
+mkdir -p ~/.zen/tmp/swarm/${IPFSNODEID}
+echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
 
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do
