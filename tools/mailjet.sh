@@ -27,6 +27,7 @@ MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nBootez sur votre TW personnelle http://
 
 echo "From: fred@g1sms.fr
 To: EMAIL
+Bcc: support@qo-op.com
 Subject: SUBJECT
 MESSAGE
 " > ~/.zen/tmp/email.txt
