@@ -50,7 +50,7 @@ while true; do
         ipfsnodeid=${bootnode##*/}
         mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
         echo "IPFS get  /ipns/$ipfsnodeid"
-        [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ipfsnodeid} ($YOU)" && ipfs --timeout 12s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid
+        [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ipfsnodeid} ($YOU)" && ipfs --timeout 12s get -o ~/.zen/tmp/swarm /ipns/$ipfsnodeid
     ##    [[ ! -s ~/.zen/tmp/swarm/$ipfsnodeid/index.json ]] && echo "$LIBRA/ipns/${ipfsnodeid}" && curl -m 6 -so ~/.zen/tmp/swarm/$ipfsnodeid/index.json "$LIBRA/ipns/${ipfsnodeid}"
 
         ## TODO LOOP CREATE bootstrap json array

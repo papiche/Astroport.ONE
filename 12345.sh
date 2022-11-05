@@ -89,14 +89,14 @@ while true; do
     SALT=""; PEPPER=""; TYPE=""
     echo "************************************************************************* "
     echo "ASTROPORT 1234 UP & RUNNING.......................... http://$myIP:1234 PORT"
-    echo "$MOATS NEXT COMMAND DELIVERY PAGE http://$myIP:${PORT}"
+    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$myIP:${PORT}"
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myIP in http response template (fixing next API meeting point)
     sed "s~127.0.0.1:12345~$myIP:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/coucou/${MOATS}.myIP.http
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http
     sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http
-    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## NODE PUBLISH HOSTED WHAT'S JSON
+    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## NODE PUBLISH HOSTED ${WHAT}'S JSON
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## HOSTNAME
     ###############    ###############    ###############    ###############
     ############################################################################
@@ -179,17 +179,17 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
 ########################################
-        ## ARCHIVE TOCTOC WHATS & KEEPS LOGS CLEAN
+        ## ARCHIVE TOCTOC ${WHAT}S & KEEPS LOGS CLEAN
         mkdir -p ~/.zen/game/players/.toctoc/
         ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
         if [[ ! $ISTHERE ]]; then
-            echo "WHAT 1ST TOCTOC : $MOATS"
+            echo "${WHAT} 1ST TOCTOC : ${MOATS}"
             cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/.toctoc/
         else ## KEEP 1ST CONTACT ONLY
             OLDONE=$(ls -t ~/.zen/tmp/coucou/*.${G1PUB}.ipns.key | tail -n 1)
             DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
-            [[ $DTIME != $MOATS ]] && rm ~/.zen/tmp/coucou/$DTIME.*
+            [[ $DTIME != ${MOATS} ]] && rm ~/.zen/tmp/coucou/$DTIME.*
         fi
 
 ## TYPE SLECTION  ########################
@@ -265,7 +265,7 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             DATAID=$(urldecode ${arr[9]} | xargs)
 
             ## IS IT INDEX JSON
-            echo "$TYPE IS $WHAT"
+            echo "$TYPE IS ${WHAT}"
 
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}
 
@@ -311,7 +311,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
            echo "$HTTPCORS ERROR (╥☁╥ ) - $DATAID TIMEOUT - (╥☁╥ )" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
             ## SPECIAL INDEX JSON
-            [[ $WHAT == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
+            [[ ${WHAT} == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
 
             ## REPONSE ON PORT
                 echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
@@ -412,11 +412,11 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        echo "$MOATS -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
+        echo "${MOATS} -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
 
         #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
-        ## CHECK IF ALREADY EXISTING WHAT
+        ## CHECK IF ALREADY EXISTING ${WHAT}
         # IF NOT = BATCH CREATE TW
         end=`date +%s`
         echo $type" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
@@ -435,13 +435,21 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
         SALT=$(urldecode ${arr[1]} | xargs)
         PEPPER=$(urldecode ${arr[3]} | xargs)
-        WHAT=$(urldecode ${arr[7]} | xargs)
+        ${WHAT}=$(urldecode ${arr[7]} | xargs)
         PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! $WHAT ]] && (echo "$HTTPCORS ERROR - MISSING $WHAT FOR WHAT CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
+        [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
+
+regex="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
+if [[ ${WHAT} =~ $regex ]] ; then
+    echo "VALID EMAIL OK"
+else
+    echo "BAD EMAIL"
+    (echo "$HTTPCORS KO ${WHAT} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+fi
 
                 if [[ ! $PSEUDO ]]; then
-                    PSEUDO=$(echo $WHAT | cut -d '@' -f 1)
+                    PSEUDO=$(echo ${WHAT} | cut -d '@' -f 1)
                     PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:3}
                 fi
                 # PASS CRYPTING KEY
@@ -450,18 +458,22 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             echo "$SALT"
             echo "$PEPPER"
 
-                if [[ ! -d ~/.zen/game/players/$WHAT ]]; then
+                if [[ ! -d ~/.zen/game/players/${WHAT} ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
-                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "$WHAT" "$PSEUDO" &
-                    echo "$HTTPCORS OK - ASTRONAUT $PSEUDO IPFS FILESYSTEM CREATION [$SALT + $PEPPER] ($WHAT)
+                    (
+                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "${WHAT}" "$PSEUDO" > ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
+                    $MY_PATH/tools/mailjet.sh "${WHAT}" ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
+                    ) &
+
+                    echo "$HTTPCORS OK - ASTRONAUT $PSEUDO IPFS FILESYSTEM CREATION [$SALT + $PEPPER] (${WHAT})
                     <br>- BUILDING TW - PLEASE 'ASK BIOS AGAIN' IN A WHILE http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                      echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
                     continue
                else
-                    # ASTRONAUT EXISTING WHAT
-                    CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$SALT")
-                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/$WHAT/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - WHAT $WHAT ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
+                    # ASTRONAUT EXISTING ${WHAT}
+                    CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$SALT")
+                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$PEPPER")
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - ${WHAT} ${WHAT} ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
                fi
 
                  ###################################################################################################
@@ -474,13 +486,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB
     if [[ ${arr[0]} == "qrcode" ]]; then
-        ## Astroport.ONE local use QRCODE Contains WHAT G1PUB
+        ## Astroport.ONE local use QRCODE Contains ${WHAT} G1PUB
         QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "QRCODE : $QRCODE"
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
-        WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
+        ${WHAT}=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/$WHAT || $WHAT == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO $WHAT ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! -d ~/.zen/game/players/${WHAT} || ${WHAT} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO ${WHAT} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         ## USE SECOND HTTP SERVER TO RECEIVE PASS
 
@@ -498,14 +510,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
     "title": "'${MOATS}'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$(urldecode $wsource)'",
-    "tags": "'CopierYoutube ${WHAT}'"
+    "tags": "'CopierYoutube ${${WHAT}}'"
   }
 ]
-' > ~/.zen/tmp/${WHAT}.${MOATS}.import.json
+' > ~/.zen/tmp/${${WHAT}}.${MOATS}.import.json
 
-            ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
+            ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${${WHAT}}.${MOATS}.import.json
 
-            (echo "$HTTPCORS OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+            (echo "$HTTPCORS OK - ~/.zen/tmp/${${WHAT}}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
     fi
