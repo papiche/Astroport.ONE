@@ -262,15 +262,18 @@ sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             NODEID=$(urldecode ${arr[7]} | xargs)
             DATAID=$(urldecode ${arr[9]} | xargs)
 
-            ## COULD BE A RAW FILE, AN HTML, A JSON
+            ## IS IT INDEX JSON
             echo "$TYPE IS $WHAT"
 
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}
 
-            echo "TRYING  ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json"
-            ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
+            ## TODO : modify timeout if isLAN or NOT
+            [[ $isLAN ]] && WAIT=3 || WAIT=6
+            echo "TRYING  ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json"
+            ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
 echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
-            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
+
+            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID MISSING GATEWAY RUSH (°▃▃°)"
 
@@ -279,18 +282,18 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     [[ $(cat ~/.zen/tmp/.ipfsgw.bad.twt | grep -w $nicegw) ]] && echo "<<< BAD GATEWAY >>>  $nicegw" && continue
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
-                    curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json "$gum"
+                    curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json "$gum"
                     [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw BYPASSING"; echo
 
-                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]]; then
-                    if [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json | jq -r) ]]; then
+                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ]]; then
+                    if [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json | jq -r) ]]; then
                         echo " (╥☁╥ ) - $nicegw ERROR - (╥☁╥ )"
                         # NOT A JSON AVOID BANISHMENT
                         echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
                         continue
                     else
                         ## GOT IT !! IPFS ADD
-                        ipfs add ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json
+                        ipfs add ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
                         ## + TW ADD
                         echo "(♥‿‿♥) $nicegw OK"; echo
                         break
@@ -302,15 +305,16 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             fi ## NO DIRECT IPFS - GATEWAY TRY
 
            ## REALLY NO FILE FOUND !!!
-           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json ]] && \
+           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ]] && \
            echo "$HTTPCORS ERROR (╥☁╥ ) - $DATAID TIMEOUT - (╥☁╥ )" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
-
+            ## SPECIAL INDEX JSON
+            [[ $WHAT == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
 
             ## REPONSE ON PORT
                 echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                cat ~/.zen/tmp/${IPFSNODEID}/${TYPE}/${NODEID}/${MOATS}/data.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
                 cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
