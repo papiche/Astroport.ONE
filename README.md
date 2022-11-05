@@ -98,7 +98,8 @@ et des [Json](http://libra.copylaradio.com:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5
 # API
 
 ## hybride et asynchrone
-API du système.
+API du système
+
 
 En utilisant netcat comme "serveur web minimal", la première page que renvoi le serveur est un rendez-vous vers la prochaine adresse IP et port où trouver la réponse à l'appel de l'API.
 
@@ -142,6 +143,12 @@ http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3
 http://127.0.0.1:1234/?salt=${SALT}&pepper=${PEPPER}&${TYPE}=?&...
 ```
 [12345.sh](/qo-op/Astroport.ONE/src/branch/master/12345.sh)
+
+```
+IPFSNODEID JSON CACHE
+DATA ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
+INDEX ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
+```
 
 
 # TIDDLYWIKI
