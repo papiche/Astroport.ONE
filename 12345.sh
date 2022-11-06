@@ -119,7 +119,7 @@ sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirec
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
 ## Random Background image ;)
-sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 15 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
