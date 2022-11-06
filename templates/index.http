@@ -21,6 +21,9 @@ Content-Type: text/html; charset=UTF-8
       left: 60%;
       visibility: hidden;
     }
+    input[type=submit] {
+    width: 12em;  height: 4em;
+    }
     </style>
 
     <title>[Astroport](_HOSTNAME_) - IPFS BIOS -  Interplanetray File System + Basic Input Output System +  Scuttlebut Confidence Layer Ŋ1 </title>
@@ -30,18 +33,9 @@ Content-Type: text/html; charset=UTF-8
 
 <center>
         <h2>Astronaute<br> - TW Astroport Ŋ1 -</h2>
-<form action = "http://127.0.0.1:1234" method = "GET">
-    <br>
-    <h2>
-        Phrase Une : <input name=salt value=''></br>
-        Phrase Deux : <input name=pepper value=''></br>
-        ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br></br>
-        <input type='submit' value='CONNECTION'>
-        </h2>
-    </form>
 
 <div id="yellow">
-<h3><a href="http://127.0.0.1:12345"> >>> SUIVANT / NEXT <<< </a></h3>
+<h3><a href="http://127.0.0.1:12345"> >>>  (◕‿‿◕) <<< </a></h3>
 </div>
    <script>
 const el = document.getElementById('yellow');
@@ -54,7 +48,17 @@ setTimeout(() => {
 
 <br>
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json" alt="Station Stomac"><img width=320 height=240 src='http://127.0.0.1:8080/ipfs/QmYjPCvbwTcvEpjvrcryCAAE1Ui73rsbJGbtZXpniddKDj' id='API'/></a>
-
+<br>
+<form action = "http://127.0.0.1:1234" method = "GET">
+    <br>
+    <h2>
+        Phrase Une : <input name=salt value=''></br>
+        Phrase Deux : <input name=pepper value=''></br>
+        ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br></br>
+        <input type='submit' value='[(♥‿‿♥)]'>
+        </h2>
+</form>
+<br>
             <p>
             <b>Besoin d'aide ? Contactez support@qo-op.com</b>
             </p>
