@@ -39,7 +39,9 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS || $COINS -lt 0 ]] && echo "WARNING No $PLAYER in keystore or Missing $COINS G1 --" && ASTRONAUTENS=$ASTRONS
-    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" &&  continue
+
+    [[ ! -f ~/.zen/game/players/$PLAYER/enc.secret.dunikey ]] && echo "$PLAYER IPNS KEY NOT MINE CONTINUE -- " \
+                                                                                                            && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
 
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
