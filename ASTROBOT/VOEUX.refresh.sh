@@ -88,14 +88,14 @@ do
         for FRIENDTW in ${FINDEX[@]};
         do
             [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
-            PLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
+            APLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
 
-            rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json
+            rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json
             echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]tag[G1'${WISHNAME}']!tag[G1Voeu]]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
+                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]tag[G1'${WISHNAME}']!tag[G1Voeu]]'
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## WISHES FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             ######################################
@@ -103,10 +103,10 @@ do
             # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER
             # Reduce importation with extra filters days:created[-1]
             # Apply Extra filters... TODO LEARN https://talk.tiddlywiki.org/t/how-to-filter-and-delete-multiple-tiddlers/4950/2?u=papiche
-            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json"
+            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json"
 
             tiddlywiki --load $INDEX \
-                            --import "$HOME/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json" "application/json" \
+                            --import "$HOME/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json" "application/json" \
                             --output ~/.zen/tmp --render "$:/core/save/all" "${ASTRONAUTENS}.newindex.html" "text/plain"
 
             if [[ -s ~/.zen/tmp/${ASTRONAUTENS}.newindex.html ]]; then
