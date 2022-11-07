@@ -360,7 +360,7 @@ NEWIPFS=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${ME
 echo $NEWIPFS > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/.chain
 
 echo "ipfs name publish --quieter --key=${MEDIAKEY} $NEWIPFS"
-IPNS=$(ipfs name publish --quieter --key="${MEDIAKEY}" $NEWIPFS)
+IPNS=$(ipfs name publish  -t 720h --quieter --key="${MEDIAKEY}" $NEWIPFS)
 [[ "$IPNS" == "" ]] && \
 echo "~~~ PROBLEM ~~~ ipfs name publish --quieter --key=${MEDIAKEY} $NEWIPFS" && \
 IPNS="$(ipfs key list -l | grep -w ${MEDIAKEY} | cut -f 1 -d ' ')"
