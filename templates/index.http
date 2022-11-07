@@ -8,7 +8,7 @@ Content-Type: text/html; charset=UTF-8
 <!doctype html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="20; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="30; url='http://127.0.0.1:12345'" />
     <style>
     #reduce42 {
     width:42%;
@@ -24,6 +24,19 @@ Content-Type: text/html; charset=UTF-8
     input[type=submit] {
     width: 12em;  height: 4em;
     }
+
+    #countdown {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #0e2c4c;
+  font-size: 20px;
+  width: 60px;
+  height: 60px;
+  background-color: #e7d9fc;
+  border-radius: 50%;
+}
+
     </style>
 
     <title>[Astroport](_HOSTNAME_) - IPFS BIOS -  Interplanetray File System + Basic Input Output System +  Scuttlebut Confidence Layer Ŋ1 </title>
@@ -33,18 +46,9 @@ Content-Type: text/html; charset=UTF-8
 
 <center>
         <h2>Astronaute<br> - TW Astroport Ŋ1 -</h2>
-
 <div id="yellow">
 <h3><a href="http://127.0.0.1:12345"> >>>  (◕‿‿◕) <<< </a></h3>
 </div>
-   <script>
-const el = document.getElementById('yellow');
-
-setTimeout(() => {
-  el.style.visibility = 'visible';
-}, 3000); // 👈️ delay in milliseconds
-
-</script>
 
 <br>
 <a href="http://127.0.0.1:8080/ipns/_IPFSNODEID_" target="json" alt="Station Stomac"><img width=320 height=240 src='http://127.0.0.1:8080/ipfs/QmYjPCvbwTcvEpjvrcryCAAE1Ui73rsbJGbtZXpniddKDj' id='API'/></a>
@@ -54,8 +58,10 @@ setTimeout(() => {
     <h2>
         Phrase Une : <input name=salt value=''></br>
         Phrase Deux : <input name=pepper value=''></br>
-        ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br></br>
+        ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br>
+<div id="countdown"></div></br>
         <input type='submit' value='[(♥‿‿♥)]'>
+
         </h2>
 </form>
 <br>
@@ -64,5 +70,30 @@ setTimeout(() => {
             </p>
 
 </center>
+
+
+<script>
+const el = document.getElementById('yellow');
+
+setTimeout(() => {
+  el.style.visibility = 'visible';
+}, 3000); // 👈️ delay in milliseconds
+
+var timeLeft = 30;
+var elem = document.getElementById('countdown');
+var timerId = setInterval(countdown, 1000);
+
+function countdown() {
+    if (timeLeft == -1) {
+        clearTimeout(timerId);
+        doSomething();
+    } else {
+        elem.innerHTML = timeLeft + ' s';
+        timeLeft--;
+    }
+}
+
+
+</script>
 </body>
 </html>

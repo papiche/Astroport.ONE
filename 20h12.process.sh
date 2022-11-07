@@ -7,7 +7,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
-
+echo "20H12 (♥‿‿♥) $(hostname)"
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"

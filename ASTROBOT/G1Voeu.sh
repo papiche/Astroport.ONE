@@ -209,7 +209,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     echo "PLAYER TW Update..."
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
-        echo "Mise à jour $INDEX"
+        echo "$$$ Mise à jour $INDEX"
         cp -f ~/.zen/tmp/newindex.html $INDEX
     else
         echo "ERROR INTO ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json"

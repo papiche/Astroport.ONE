@@ -93,11 +93,11 @@ do
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json
             echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
+                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]tag[G1'${WISHNAME}']!tag[G1Voeu]]'
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
-            echo "## WISHES FOUND ;) MIAM "
+            echo "## WISHES FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             ######################################
             ## TODO ADD EXTRA TAG ?
             # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER
@@ -110,7 +110,7 @@ do
                             --output ~/.zen/tmp --render "$:/core/save/all" "${ASTRONAUTENS}.newindex.html" "text/plain"
 
             if [[ -s ~/.zen/tmp/${ASTRONAUTENS}.newindex.html ]]; then
-                echo "Updating $INDEX"
+                echo "$$$ Mise à jour $INDEX"
                 cp ~/.zen/tmp/${ASTRONAUTENS}.newindex.html $INDEX
             else
                 echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${ASTRONAUTENS}.newindex.html"

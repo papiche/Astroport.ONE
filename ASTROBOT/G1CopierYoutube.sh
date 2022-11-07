@@ -151,7 +151,7 @@ while read YID;
                         --output ~/.zen/tmp/$WISHKEY --render "$:/core/save/all" "newindex.html" "text/plain"
 
         if [[ -s ~/.zen/tmp/$WISHKEY/newindex.html ]]; then
-            echo "Updating $INDEX"
+            echo "$$$ Mise à jour $INDEX"
             cp ~/.zen/tmp/$WISHKEY/newindex.html $INDEX
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$WISHKEY/newindex.html"
