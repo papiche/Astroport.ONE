@@ -59,10 +59,11 @@ Content-Type: text/html; charset=UTF-8
         Phrase Une : <input name=salt value=''></br>
         Phrase Deux : <input name=pepper value=''></br>
         ( TW officiel <input type="checkbox" id="official" name="official"> - Visiteur <input type="checkbox" id="g1pub" name="g1pub" checked> )</br>
-<div id="countdown"></div></br>
+</br>
         <input type='submit' value='[(♥‿‿♥)]'>
 
         </h2>
+        <div id="countdown"></div>
 </form>
 <br>
             <p>
