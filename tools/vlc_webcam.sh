@@ -185,8 +185,10 @@ echo "PLAYER TW Update..."
 
     espeak "Hip Hip Hip Hurray"
 
+    xdg-open "http://$myIP:8080/ipns/$ASTRONAUTENS/#:[[days:created[-1]tag[G1Vlog]]"
+
     echo "================================================"
-    echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS/#:[[days:created[-1]tag[G1Vlog]]"
     echo "================================================"
     echo
 else
