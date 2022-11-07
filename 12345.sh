@@ -404,54 +404,40 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 sed -i "s~_TWLINK_~$LIBRA/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
             fi
-        else
-            echo "***** SEARVING $TWIP IN READER MODE *****"
 
-        fi ## official
-
-                ## 302 REDIRECT
+                            ## 302 REDIRECT
                 cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-        ## RESPONDING
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
-        echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        echo "${MOATS} -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
+        else
+            echo "***** NO OFFICIAL *****"
 
-        #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
-        ## CHECK IF ALREADY EXISTING ${WHAT}
-        # IF NOT = BATCH CREATE TW
-        end=`date +%s`
-        echo $type" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
-
-    fi ## END IF SALT
+        fi ## official
 
 
-###################################################################################################
-###################################################################################################
-# API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
+        ###################################################################################################
+        ###################################################################################################
+        # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
-        [[ $TYPE != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                [[ $TYPE != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
 
-        start=`date +%s`
+                start=`date +%s`
 
-        SALT=$(urldecode ${arr[1]} | xargs)
-        PEPPER=$(urldecode ${arr[3]} | xargs)
-        ${WHAT}=$(urldecode ${arr[7]} | xargs)
-        PSEUDO=$(urldecode ${arr[9]} | xargs)
+                SALT=$(urldecode ${arr[1]} | xargs)
+                PEPPER=$(urldecode ${arr[3]} | xargs)
+                ${WHAT}=$(urldecode ${arr[7]} | xargs)
+                PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-        [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
+                [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
 
-regex="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
-if [[ ${WHAT} =~ $regex ]] ; then
-    echo "VALID EMAIL OK"
-else
-    echo "BAD EMAIL"
-    (echo "$HTTPCORS KO ${WHAT} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-fi
+        regex="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
+        if [[ ${WHAT} =~ $regex ]] ; then
+            echo "VALID EMAIL OK"
+        else
+            echo "BAD EMAIL"
+            (echo "$HTTPCORS KO ${WHAT} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        fi
 
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo ${WHAT} | cut -d '@' -f 1)
@@ -486,6 +472,25 @@ fi
                 echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
 
     fi
+
+
+        ## RESPONDING
+        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
+        echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
+        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        echo "${MOATS} -----> PAGE AVAILABLE -----> http://$myIP:${PORT}"
+
+        #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+        ## CHECK IF ALREADY EXISTING ${WHAT}
+        # IF NOT = BATCH CREATE TW
+        end=`date +%s`
+        echo $type" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+
+    fi ## END IF SALT
+
+
+
 
 ###################################################################################################
 ###################################################################################################
