@@ -40,9 +40,14 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS || $COINS -lt 0 ]] && echo "WARNING No $PLAYER in keystore or Missing $COINS G1 --" && ASTRONAUTENS=$ASTRONS
 
+    ## VISA EMITER STATION MUST ACT ONLY
     [[ ! -f ~/.zen/game/players/$PLAYER/enc.secret.dunikey ]] && echo "$PLAYER IPNS KEY NOT MINE CONTINUE -- " \
                                                                                                             && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
 
+    ## MY PLAYER.
+    ipfs key rename $G1PUB $PLAYER
+
+    ## REFRESH CACHE
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
@@ -118,7 +123,6 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     fi
 
     ##################################################
-    IKEY=$G1PUB
     ##################################################
     ################## UPDATING PLAYER MOA
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -126,13 +130,14 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --allow-offline -t 72h --key=$IKEY /ipfs/$TW
+    ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
 
     [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
 
     echo "================================================"
     echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo " = /ipfs/$TW"
     echo "================================================"
 
 done
@@ -144,9 +149,9 @@ ls ~/.zen/tmp/${IPFSNODEID}/
 
 ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
 
-echo "PUBLISHING SELF"
+echo "PUBLISHING STATION INDEXES"
 ipfs name publish --allow-offline -t 72h /ipfs/$ROUTING
 
-echo "THANK YOU."
+echo "PLAYER.refresh DONE."
 
 exit 0

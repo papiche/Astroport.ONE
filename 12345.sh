@@ -86,7 +86,7 @@ while true; do
     ###############
 
     # RESET VARIABLES
-    SALT=""; PEPPER=""; TYPE=""
+    SALT=""; PEPPER=""; APPNAME=""
     echo "************************************************************************* "
     echo "ASTROPORT 1234 UP & RUNNING.......................... http://$myIP:1234 PORT"
     echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$myIP:${PORT}"
@@ -134,8 +134,8 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
 
-    # CHECK TYPE
-        TYPE=$(urldecode ${arr[4]})
+    # CHECK APPNAME
+        APPNAME=$(urldecode ${arr[4]})
         WHAT=$(urldecode ${arr[5]})
 
     [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "$HTTPCORS ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
@@ -146,14 +146,14 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
         ################### KEY GEN ###################################
-        echo ">>>>>>>>>>>>>> Application LaBureautique >><< TYPE = $TYPE <<<<<<<<<<<<<<<<<<<<"
+        echo ">>>>>>>>>>>>>> Application LaBureautique >><< APPNAME = $APPNAME <<<<<<<<<<<<<<<<<<<<"
 
         SALT=$(urldecode ${arr[1]} | xargs);
         [[ ! $SALT ]] && (echo "$HTTPCORS ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
         [[ ! $PEPPER ]] && (echo "$HTTPCORS ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
-        TYPE=$(urldecode ${arr[4]} | xargs)
+        APPNAME=$(urldecode ${arr[4]} | xargs)
         WHAT=$(urldecode ${arr[5]} | xargs)
 
         ## SAVE "salt" "pepper" DEBUG REMOVE OR PASS ENCRYPT FOR SECURITY REASON
@@ -195,9 +195,9 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             [[ $DTIME != ${MOATS} ]] && rm ~/.zen/tmp/coucou/$DTIME.*
         fi
 
-## TYPE SLECTION  ########################
+## APPNAME SLECTION  ########################
         # MESSAGING
-        if [[ $TYPE == "messaging" ]]; then
+        if [[ $APPNAME == "messaging" ]]; then
             ( ## SUB PROCESS
             echo "Extracting ${G1PUB} messages..."
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
@@ -226,7 +226,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo "$TYPE (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo "$APPNAME (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             ) &
 
             end=`date +%s`
@@ -238,7 +238,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 ########################################
 # G1PUB -> Open Gchange Profile
 ########################################
-        if [[ "$TYPE" == "g1pub" && ${arr[7]} == "" ]]; then
+        if [[ "$APPNAME" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
             sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
             ## https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
@@ -250,7 +250,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo $TYPE" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo $APPNAME" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             continue
         fi
 ########################################
@@ -259,7 +259,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 #TESTCRAFT=ON nodeid dataid
 ########################################
 ########################################
-        if [[ "$TYPE" == "testcraft" ]]; then
+        if [[ "$APPNAME" == "testcraft" ]]; then
         ( # SUB PROCESS
             ## RECORD DATA MADE IN BROWSER (JSON)
             SALT=$(urldecode ${arr[1]} | xargs)
@@ -268,58 +268,70 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             DATAID=$(urldecode ${arr[9]} | xargs)
 
             ## IS IT INDEX JSON
-            echo "$TYPE IS ${WHAT}"
+            echo "$APPNAME IS ${WHAT}"
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}
 
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}
+            [[ $WHAT == "on" ]] && WHAT="json" # data mimetype (default "on" = json)
 
             ## TODO : modify timeout if isLAN or NOT
             [[ $isLAN ]] && WAIT=3 || WAIT=6
-            echo "TRYING  ipfs --timeout 3s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json"
-            ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
+            echo "1ST TRY : ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}"
+            ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}
 echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
-            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ]]; then
+            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
 
-                echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID MISSING GATEWAY RUSH (°▃▃°)"
+                echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID STILL MISSING GATEWAY BANGING FOR IT (°▃▃°)"
+                array=(https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
+                # size=${#array[@]}; index=$(($RANDOM % $size)); echo ${array[$index]} ## TODO CHOOSE RANDOM
 
                 # official ipfs best gateway from https://luke.lol/ipfs.php
-                for nicegw in https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash; do
+                for nicegw in ${array[@]}; do
                     [[ $(cat ~/.zen/tmp/.ipfsgw.bad.twt | grep -w $nicegw) ]] && echo "<<< BAD GATEWAY >>>  $nicegw" && continue
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
-                    curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json "$gum"
+                    curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} "$gum"
                     [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw BYPASSING"; echo
 
-                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ]]; then
-                    if [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json | jq -r) ]]; then
-                        echo " (╥☁╥ ) - $nicegw ERROR - (╥☁╥ )"
+                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
+                    MIME=$(mimetype -b ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
+                    GOAL=$(ipfs add ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
+
+                    if [[ ${GOAL} != ${DATAID} ]]; then
+                        echo " (╥☁╥ ) - $nicegw ${WHAT} FORMAT ERROR - (╥☁╥ )"
+                        ipfs pin rm /ipfs/${GOAL}
                         # NOT A JSON AVOID BANISHMENT
                         echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
                         continue
                     else
                         ## GOT IT !! IPFS ADD
-                        ipfs add ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
+                        ipfs pin add /ipfs/${GOAL}
                         ## + TW ADD
                         echo "(♥‿‿♥) $nicegw OK"; echo
                         break
                     fi
-                    echo " (╥☁╥ ) - $nicegw TIMEOUT - (╥☁╥ )"
+                    echo " (⇀‿‿↼) - $nicegw TIMEOUT - (⇀‿‿↼)"
                     continue
                     fi
+
                 done
             fi ## NO DIRECT IPFS - GATEWAY TRY
 
            ## REALLY NO FILE FOUND !!!
-           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ]] && \
+           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]] && \
            echo "$HTTPCORS ERROR (╥☁╥ ) - $DATAID TIMEOUT - (╥☁╥ )" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
-            ## SPECIAL INDEX JSON
-            [[ ${WHAT} == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
+            ## SPECIAL  index.[json/html/...] MODE.
+            [[ ${WHAT} == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}.json
+## TODO MAKE MULTIFORMAT DATA & INDEX
+#            RWHAT=$(echo "$WHAT" | cut -d '.' -f 1)
+#            TWHAT=$(echo "$WHAT" | cut -d '.' -f 2)
+#            cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${RWHAT}.${TWHAT}
 
             ## REPONSE ON PORT
                 echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
                 cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
@@ -334,7 +346,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 ) &
 
             end=`date +%s`
-            echo "(|$TYPE|) Execution time was "`expr $end - $start` seconds.
+            echo "(|$APPNAME|) Execution time was "`expr $end - $start` seconds.
         ) &
 
             end=`date +%s`
@@ -347,7 +359,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ##############################################
         TWIP=$(hostname)
         # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
-        if [[ $TYPE == "official" ]]; then
+        if [[ $APPNAME == "official" ]]; then
 
             echo "SEARCHING FOR OFFICIAL TW GW... $LIBRA/ipns/${ASTRONAUTENS} ($YOU)"
 
@@ -420,7 +432,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
-                [[ $TYPE != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $TYPE" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                [[ $APPNAME != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $APPNAME" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
 
                 start=`date +%s`
 

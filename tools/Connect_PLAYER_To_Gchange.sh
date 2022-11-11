@@ -27,6 +27,7 @@ PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep ${PLAYER} | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No ${PLAYER} in keystore -- EXIT" && exit 1
+    [[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] && echo "NOT MY ${PLAYER} -- EXIT" && exit 1
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 

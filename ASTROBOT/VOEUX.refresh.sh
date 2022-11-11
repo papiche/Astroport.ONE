@@ -79,7 +79,7 @@ do
         ## Search for [tag[G1${WISHNAME}]] in all Friends TW.
         ## Copy tiddlers ...
         ##################################
-        echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=${WISHNAME}"
+        echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=G1${WISHNAME}"
         echo "ls ~/.zen/game/players/$PLAYER/FRIENDS/*/index.html"
         echo "*********************************"
         ## Search in Local World (NB! G1Voeu TW copied by Connect_PLAYER_To_Gchange.sh)
@@ -97,7 +97,7 @@ do
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
-            echo "## WISHES FOUND ;) MIAM >>> (◕‿‿◕) <<<"
+            echo "## NEW TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             ######################################
             ## TODO ADD EXTRA TAG ?
             # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER

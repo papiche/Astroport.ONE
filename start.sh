@@ -123,6 +123,8 @@ select fav in  "${choices[@]}"; do
         echo "EXPORT IDENTITE ASTRONAUTE"
         du -h ~/.zen/game/players/.current/
         echo  "MANUAL BACKUP ZIP ~/.zen/game/players/$PLAYER/"
+        ## EXPORT TW + VOEUX IPNS KEYS
+
 
         break
         ;;
