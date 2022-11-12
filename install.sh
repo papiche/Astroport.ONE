@@ -192,45 +192,6 @@ echo ">>> INFO : Ajoutez l'extension 'OpenWith' à votre navigateur !!
 # https://addons.mozilla.org/firefox/addon/open-with/
 # https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno"
 
-###########################################
-# ACTIVATE IPFS OPTIONS: #swarm0 INIT
-###########################################
-### IMPORTANT !!!!!!! IMPORTANT !!!!!!
-###########################################
-# DHT PUBSUB mode
-ipfs config Pubsub.Router gossipsub
-# MAXSTORAGE = 1/2 available
-availableDiskSize=$(df -P ~/ | awk 'NR>1{sum+=$4}END{print sum}')
-diskSize="$((availableDiskSize / 2))"
-ipfs config Datastore.StorageMax $diskSize
-## Activate Rapid "ipfs p2p"
-ipfs config --json Experimental.Libp2pStreamMounting true
-ipfs config --json Experimental.P2pHttpProxy true
-ipfs config --json Swarm.ConnMgr.LowWater 0
-ipfs config --json Swarm.ConnMgr.HighWater 0
-
-## For ipfs.js = https://github.com/ipfs/js-ipfs/blob/master/docs/DELEGATE_ROUTERS.md
-ipfs config --json Addresses.Swarm | jq '. += ["/ip4/0.0.0.0/tcp/30215/ws"]' > /tmp/30215.ws
-ipfs config --json Addresses.Swarm "$(cat /tmp/30215.ws)"
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $isLAN ]] && ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://127.0.1.1:8080" ]' \
-                         ||   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:8080", "http://127.0.1.1:8080" ]'
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
-ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
-
-## TODO ADPAT PERMISSIONS
-ipfs config Addresses.API "/ip4/0.0.0.0/tcp/5001"
-ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
-
-######### CLEAN DEFAULT BOOTSTRAP TO STAY INVISIBLE ###########
-ipfs bootstrap rm --all
-###########################################
-# BOOTSTRAP NODES ARE ADDED LATER
-###########################################
-[[ "$USER" != "xbian" ]] && sudo systemctl restart ipfs
-
 ### ADD 20h12.sh CRON ###############
 $MY_PATH/tools/cron_VRFY.sh ON
 
@@ -288,7 +249,6 @@ $(cat ~/.zen/game/players/.current/secret.june)
 
 http://astroport.com
 "
-
 # MAIN #
 fi
 }

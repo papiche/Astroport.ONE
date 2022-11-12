@@ -92,6 +92,11 @@ ipfs config --json Swarm.ConnMgr.HighWater 0
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
 
+## For ipfs.js = https://github.com/ipfs/js-ipfs/blob/master/docs/DELEGATE_ROUTERS.md
+ipfs config --json Addresses.Swarm | jq '. += ["/ip4/0.0.0.0/tcp/30215/ws"]' > /tmp/30215.ws
+ipfs config --json Addresses.Swarm "$(cat /tmp/30215.ws)"
+
+
 ipfs config Addresses.API "/ip4/0.0.0.0/tcp/5001"
 ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
 
