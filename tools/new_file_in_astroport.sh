@@ -434,7 +434,9 @@ then
     DESCRIPTION=$(awk -F ';' '{print $1}' <<<$OUTPUT)
     HASHTAG=$(awk -F ';' '{print $2}' <<<$OUTPUT)
 
-
+    ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
+    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
+    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png ]] && IPTHUMB=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png" | tail -n 1)
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
         TEXT="<video controls preload='none' width=100% poster='/ipfs/"${IPSCREEN}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
@@ -454,10 +456,6 @@ then
         TAGS="'$:/isAttachment $:/isIpfs ${CAT} $GENRE"
         CANON="/ipfs/"${IPFSID}
     fi
-
-    ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
-    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
-    [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png ]] && IPTHUMB=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png" | tail -n 1)
 
     echo "## Creation json tiddler"
     echo '[
