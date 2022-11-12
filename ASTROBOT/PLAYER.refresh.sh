@@ -25,9 +25,6 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     echo "+++ WALLET BALANCE _ $COINS (G1) _"
     ## DROP IF WALLET IS EMPTY : TODO
     echo "##################################################################"
-    echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
-    ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "$PLAYER"
-    echo "##################################################################"
     echo "##################################################################"
     echo "################### REFRESH ASTRONAUTE TW ###########################"
     echo "##################################################################"
@@ -88,6 +85,12 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         # WHO IS OFFICIAL TW GATEWAY.
         [[ $OLDIP != $myIP && $OLDIP != "_SECRET_" ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - (⌐■_■) - ***" && continue
         #############################################################
+
+        # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW
+        ##############################################################
+        echo "##################################################################"
+        echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
+        ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "$PLAYER"
 
         # VOEUX.create.sh
         ##############################################################
