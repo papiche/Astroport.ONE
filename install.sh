@@ -220,6 +220,8 @@ echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'E
 mkdir -p ~/.zen/tmp
 # MAIN # -f ~/.zen/secret.june (ISOConfig déjà lancé) ##
 
+## SYMLINK youtube-dl TO yt-dlp
+sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl
 
 echo "#############################################"
 echo "#############################################"
