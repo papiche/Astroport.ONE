@@ -138,6 +138,7 @@ TEXT="<video controls preload='none' poster='/ipfs/"${ANIMH}"'><source src='/ipf
 echo "## Creation json tiddler"
 echo '[
   {
+    "created": "'${MOATS}'",
     "title": "'VLOG_${MEDIAID} ${PSEUDO}'",
     "text": "'${TEXT}'",
     "type": "'text/vnd.tiddlywiki'",
