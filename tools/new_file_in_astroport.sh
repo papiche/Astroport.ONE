@@ -435,10 +435,13 @@ then
 
     ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
     [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/screen.png" | tail -n 1)
+    [[ $IPSCREEN ]] && POSTER=$IPSCREEN
+
     [[ -f $HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png ]] && IPTHUMB=$(ipfs add -q "$HOME/astroport/${TYPE}/${REFERENCE}/thumbnail.png" | tail -n 1)
+    [[ $IPTHUMB ]] && POSTER=$IPTHUMB
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
-        TEXT="<video controls preload='none' width=100% poster='/ipfs/"${IPSCREEN}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
+        TEXT="<video controls preload='none' width=100% poster='/ipfs/"${POSTER}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
         </video><h1>"${TITLE}"</h1>
         <h2>"$DESCRIPTION"</h2>
     <\$button class='tc-tiddlylink'>
@@ -461,13 +464,13 @@ then
   {
     "text": "'${TEXT}'",
     "title": "'${TITLE}'",
+    "created": "'${MOATS}'",
     "type": "'${MIME}'",
     "mime": "'${REAL}'",
     "cat": "'${CAT}'",
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",
-    "screencapture": "'/ipfs/${IPSCREEN}'",
-    "thumbnail": "'/ipfs/${IPTHUMB}'",
+    "poster": "'/ipfs/${POSTER}'",
     "ipfsroot": "'/ipfs/${IPFSREPFILEID}'",
     "file": "'${file}'",
     "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
