@@ -87,8 +87,9 @@ ipfs config Datastore.StorageMax $diskSize
 ## Activate Rapid "ipfs p2p"
 ipfs config --json Experimental.Libp2pStreamMounting true
 ipfs config --json Experimental.P2pHttpProxy true
-ipfs config --json Swarm.ConnMgr.LowWater 0
-ipfs config --json Swarm.ConnMgr.HighWater 0
+
+ipfs config --json Swarm.ConnMgr.LowWater 20
+ipfs config --json Swarm.ConnMgr.HighWater 40
 
 [[ ! $isLAN ]] && ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://127.0.1.1:8080" ]' \
                          ||   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:8080", "http://127.0.1.1:8080" ]'
@@ -120,3 +121,10 @@ ulimit -n 2048
 
 } # this ensures the entire script is downloaded #
 # IPFS CONFIG documentation: https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#addressesswarm
+# https://github.com/ipfs/kubo/blob/master/docs/config.md
+
+# VISUALISER DHT
+# ipfs stats dht wan
+
+# CONSUMING RESSOURCES
+# export DPID=26024; watch -n0 'printf "sockets: %s\nleveldb: %s\nflatfs: %s\n" $(ls /proc/${DPID}/fd/ -l | grep "socket:" | wc -l) $(ls /proc/${DPID}/fd/ -l | grep "\\/datastore\\/" | wc -l) $(ls /proc/${DPID}/fd/ -l | grep "\\/blocks\\/" | wc -l)'
