@@ -83,7 +83,9 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
         [[ ! $OLDIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IS BROKEN - (╥☁╥ ) " && continue
         # WHO IS OFFICIAL TW GATEWAY.
-        [[ $OLDIP != $myIP && $OLDIP != "_SECRET_" ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - (⌐■_■) - ***" && continue
+        if [[ $OLDIP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            [[ $OLDIP != $myIP && $OLDIP != "_SECRET_" ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - (⌐■_■) - ***" && continue
+        fi
         #############################################################
 
         # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW
