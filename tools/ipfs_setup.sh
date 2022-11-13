@@ -49,11 +49,15 @@ cat > /tmp/ipfs.service <<EOF
 [Unit]
 Description=IPFS daemon
 After=network.target
+Requires=network.target
 
 [Service]
+Type=simple
 User=_USER_
+RestartSec=1
+Restart=always
+Environment=IPFS_FD_MAX=8192
 ExecStart=/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
-Restart=on-failure
 CPUAccounting=true
 CPUQuota=60%
 
@@ -110,6 +114,9 @@ for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") 
     done
 
 sudo systemctl restart ipfs
+
+## Add ulimit "open files" (avoid ipfs hang)
+ulimit -n 2048
 
 } # this ensures the entire script is downloaded #
 # IPFS CONFIG documentation: https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#addressesswarm
