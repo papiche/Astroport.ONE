@@ -121,6 +121,7 @@ while read YID;
 
         echo '[
   {
+    "created": "'${MOATS}'",
     "title": "'$ZFILE'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
