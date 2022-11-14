@@ -77,7 +77,7 @@ do
     ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
     echo "==========================="
     echo "${liking_me} IS LIKING ME"
-    echo "TW ? http://tube.copylaradio?com:8080/ipns/$ASTRONAUTENS "
+    echo "TW ? http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     ################################## JAKLIS LIKING_ME stars

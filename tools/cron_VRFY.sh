@@ -13,7 +13,7 @@ echo '
 # qo-op
 ############# '$MY_PATH/$ME'
 ########################################################################
-# Activate / Desactivate ASTROPORT 20h12.sh job & IPFS daemon
+# Activate / Desactivate ASTROPORT 20h12.process.sh job & IPFS daemon
 ########################################################################'
 # Clean
 rm -f /tmp/mycron /tmp/newcron
@@ -26,7 +26,7 @@ crontab -l > /tmp/mycron
 awk -i inplace -v rmv="SHELL" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="PATH" '!index($0,rmv)' /tmp/mycron
 
-crontest=$(cat /tmp/mycron | grep -F '20h12.sh')
+crontest=$(cat /tmp/mycron | grep -F '20h12.process.sh')
 
 if [[ ! $crontest ]]; then
     ## HEADER
@@ -34,8 +34,8 @@ if [[ ! $crontest ]]; then
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
-    # ADD  20h12.sh line
-    echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
+    # ADD  20h12.process.sh line
+    echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
     crontab /tmp/newcron
     sudo systemctl enable ipfs
     sudo systemctl start ipfs
@@ -46,8 +46,8 @@ else
     [[ $1 == "ON" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
-    ## REMOVE 20h12.sh line
-    cat /tmp/mycron | grep -Ev '20h12.sh' >> /tmp/newcron
+    ## REMOVE 20h12.process.sh line
+    cat /tmp/mycron | grep -Ev '20h12.process.sh' >> /tmp/newcron
     crontab /tmp/newcron
     sudo systemctl stop ipfs
     sudo systemctl disable ipfs

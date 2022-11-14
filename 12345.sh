@@ -277,16 +277,18 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             [[ $isLAN ]] && WAIT=3 || WAIT=6
             echo "1ST TRY : ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}"
             ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}
+
 echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID STILL MISSING GATEWAY BANGING FOR IT (°▃▃°)"
-                array=(https://tube.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
+                array=(https://tube.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
                 # size=${#array[@]}; index=$(($RANDOM % $size)); echo ${array[$index]} ## TODO CHOOSE RANDOM
 
                 # official ipfs best gateway from https://luke.lol/ipfs.php
                 for nicegw in ${array[@]}; do
+
                     [[ $(cat ~/.zen/tmp/.ipfsgw.bad.twt | grep -w $nicegw) ]] && echo "<<< BAD GATEWAY >>>  $nicegw" && continue
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
@@ -294,27 +296,34 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw BYPASSING"; echo
 
                     if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
-                    MIME=$(mimetype -b ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
-                    GOAL=$(ipfs add ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
 
-                    if [[ ${GOAL} != ${DATAID} ]]; then
-                        echo " (╥☁╥ ) - $nicegw ${WHAT} FORMAT ERROR - (╥☁╥ )"
-                        ipfs pin rm /ipfs/${GOAL}
-                        # NOT A JSON AVOID BANISHMENT
-                        echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
+                        MIME=$(mimetype -b ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
+                        GOAL=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
+
+                        if [[ ${GOAL} != ${DATAID} ]]; then
+                            echo " (╥☁╥ ) - $nicegw ${WHAT} FORMAT ERROR - (╥☁╥ )"
+                            ipfs pin rm /ipfs/${GOAL}
+                            # NOT A JSON AVOID BANISHMENT
+                            echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
+                            continue
+
+                        else
+                            ## GOT IT !! IPFS ADD
+                            ipfs pin add /ipfs/${GOAL}
+                            ## + TW ADD (new_file_in_astroport.sh)
+
+                            echo "(♥‿‿♥) $nicegw OK"; echo
+                            break
+
+                        fi
+
+                        echo " (⇀‿‿↼) - $nicegw TIMEOUT - (⇀‿‿↼)"
                         continue
-                    else
-                        ## GOT IT !! IPFS ADD
-                        ipfs pin add /ipfs/${GOAL}
-                        ## + TW ADD
-                        echo "(♥‿‿♥) $nicegw OK"; echo
-                        break
-                    fi
-                    echo " (⇀‿‿↼) - $nicegw TIMEOUT - (⇀‿‿↼)"
-                    continue
+
                     fi
 
                 done
+
             fi ## NO DIRECT IPFS - GATEWAY TRY
 
            ## REALLY NO FILE FOUND !!!
