@@ -46,7 +46,7 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
-    players=("NOUVEAU VISA" "IMPORT GVISA" $(ls ~/.zen/game/players 2>/dev/null))
+    players=("NOUVEAU VISA" "IMPORT GCHANGE" $(ls ~/.zen/game/players 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
@@ -57,7 +57,7 @@ echo 'PRESS ENTER... '; read
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
             ;;
-        "IMPORT GVISA")
+        "IMPORT GCHANGE")
             echo "Saisissez votre 'identifiant Gchange'"
             read SALT
             echo "Saisissez votre 'mot de passe Gchange'"

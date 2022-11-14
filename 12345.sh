@@ -424,6 +424,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
         else
             echo "***** NO OFFICIAL *****"
+                ## 302 REDIRECT ROUND ROBIN GW
+                cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed -i "s~_TWLINK_~$LIBRA/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         fi ## official
 
