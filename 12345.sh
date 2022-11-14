@@ -282,7 +282,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID STILL MISSING GATEWAY BANGING FOR IT (°▃▃°)"
-                array=(https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
+                array=(https://tube.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.yt/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
                 # size=${#array[@]}; index=$(($RANDOM % $size)); echo ${array[$index]} ## TODO CHOOSE RANDOM
 
                 # official ipfs best gateway from https://luke.lol/ipfs.php

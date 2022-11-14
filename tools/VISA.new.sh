@@ -45,8 +45,8 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 ## GLOBAL
 ## GETTING LAST TW via IPFS or HTTP GW
-    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/TW/index.html
-    [[ ! -s ~/.zen/tmp/TW/index.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/TW/index.html
+    [[ ! -s ~/.zen/tmp/TW/index.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     if [ ! -s ~/.zen/tmp/TW/index.html ]; then
         rm -f ~/.zen/tmp/TW/index.html
@@ -61,6 +61,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/${ASTRONAUTENS}"
         if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
             echo "UPDATE $PLAYER LOCAL COPY ~/.zen/game/players/$PLAYER/ipfs/moa"
+            mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa
             [[ "$myIP" == "$OLDIP" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/
         fi
         # DO NOT CONTINUE

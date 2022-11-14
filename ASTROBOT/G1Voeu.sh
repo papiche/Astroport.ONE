@@ -185,6 +185,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
     echo '[
   {
+    "created": "'${MOATS}'",
     "title": "'${PEPPER}'",
     "type": "'text/vnd.tiddlywiki'",
     "astronautens": "'/ipns/$ASTRONAUTENS'",
@@ -244,9 +245,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
 
     echo
-    echo "Astronaute TW : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+    echo "Astronaute TW : http://$myIP:8080/ipns/$ASTRONAUTENS"
     echo "Nouveau G1Voeu : $PEPPER (document de contrôle de copie Ŋ1)"
-    echo "TW $PEPPER : http://127.0.0.1:8080/ipns/$VOEUNS"
+    echo "TW $PEPPER : http://$myIP:8080/ipns/$VOEUNS"
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUNS" #CESIUM+
