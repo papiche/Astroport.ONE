@@ -393,19 +393,20 @@ then
 #        echo "Annonce gchange : $(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.gchange.ad)"
 #
 #    fi
-    ########################################################################
-    # CREATION DU FICHIER ${PREFIX}ASTRXBIAN FILE : Add Header (TODO DEBUG Kodi Plugin !! )
-    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/
-    [[ ! -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN ]] \
-    && echo "CAT;TMDB;YEAR;TITLE;SAISON;GENRES;GROUPES;RES;URLS=http://${myIP}:8080" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
+    #~ ########################################################################
+    #~ # CREATION DU FICHIER ${PREFIX}ASTRXBIAN FILE : Add Header (TODO DEBUG Kodi Plugin !! )
+    #~ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/
+    #~ [[ ! -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN ]] \
+    #~ && echo "CAT;TMDB;YEAR;TITLE;SAISON;GENRES;GROUPES;RES;URLS=http://${myIP}:8080" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
+
+        FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
+        RES=${FILE_RES%?}0p
 
     # ADD NEW LINE TO INDEX
     if [[ -f ~/astroport/${TYPE}/${REFERENCE}/ajouter_video.txt ]]
     then
         line=$(cat ~/astroport/${TYPE}/${REFERENCE}/ajouter_video.txt | sed "s/_IPFSREPFILEID_/$IPFSREPFILEID/g" | sed "s/_IPNSKEY_/$IPNS/g" )
     else
-        FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
-        RES=${FILE_RES%?}0p
         line="$CAT;${REFERENCE};$YEAR;$TITLE;$SAISON;;${IPNS};$RES;/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
     fi
     echo "-------------------- UPDATE ${PREFIX}ASTRXBIAN INDEX -----------------------------"
