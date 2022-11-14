@@ -423,6 +423,9 @@ then
 
     echo "----------------- PREPARING TIDDLER ----------------------"
     CAT=$(echo "$CAT" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+    ## Adapt TMDB url
+    [[ $CAT == "Film" ]] && tdb="movie"
+    [[ $CAT == "Serie" ]] && tdb="tv"
 
     GENRE=$(cat ~/astroport/${TYPE}/${REFERENCE}/ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
     echo $GENRE
@@ -444,7 +447,7 @@ then
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
         TEXT="<video controls preload='none' width=100% poster='/ipfs/"${POSTER}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
-        </video><h1>"${TITLE}"</h1>
+        </video><h1><a href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${TITLE}"</a></h1>
         <h2>"$DESCRIPTION"</h2>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[G1${CAT}]]'>
