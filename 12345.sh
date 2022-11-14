@@ -406,6 +406,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
                     OLDIP=${myIP}
+                    TWIP=${myIP}
                 fi
 
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"

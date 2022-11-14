@@ -30,7 +30,7 @@ ME="${0##*/}"
 
 # Check who is .current PLAYER
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-[[ $PLAYER == "" ]] && espeak "ERROR CONNECT YOUR PLAYER - EXIT" && exit 1
+[[ ${PLAYER} == "" ]] && espeak "ERROR CONNECT YOUR PLAYER - EXIT" && exit 1
 PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
 G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G1 PUBLIC KEY FOUND - EXIT" && exit 1
@@ -139,7 +139,7 @@ case ${CAT} in
 
     espeak "vlog is video blogging"
 
-    zenity --warning --width 300 --text "$PLAYER. Prêt à enregistrer votre video ?"
+    zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
 
     ## RECORD WEBCAM VIDEO
     ~/.zen/Astroport.ONE/tools/vlc_webcam.sh
@@ -349,7 +349,7 @@ mv "${FILE_PATH}/${FILE_NAME}" "${FILE_PATH}/${YNAME}" && FILE_NAME="${YNAME}"
 
 MEDIAID="${YID}"
 TITLE="${YNAME%.*}"
-GENRES="[\"$PLAYER\"]"
+GENRES="[\"${PLAYER}\"]"
 GROUPES="_IPNSKEY_" # USE GROUPS TO  RECORD IPNS MEDIAKEY
 MEDIAKEY="MP3_$MEDIAID"
 
@@ -627,11 +627,11 @@ FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; 
 #fi
 ########################################################################
 
-zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY (ᵔ◡◡ᵔ)"
+zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
 
 bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
 
-zenity --warning --width 320 --text "Ajout à votre TW $PLAYER"
+zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
 
 
 ########################################################################
@@ -640,34 +640,34 @@ zenity --warning --width 320 --text "Ajout à votre TW $PLAYER"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GETTING LAST TW via IPFS or HTTP GW
 LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-[[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
-[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
+[[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
+[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. impossible to find your TW online"
-[[ ! -s ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
+[[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-[[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html && espeak "OK DONE"
-
+[[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
+espeak "Updating IPNS. Please wait..."
 ###############################
 
-    echo "Nouveau MEDIAKEY dans TW $PSEUDO / $PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
-    tiddlywiki --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+    echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    tiddlywiki --verbose --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                     --import ~/astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
-        cp ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
-                                        ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
+        cp ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+                                        ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
-        TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-        ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
+        TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
+        ipfs name publish --allow-offline -t 72h --key=${PLAYER} /ipfs/$TW
 
-        [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
-        echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+        [[ $DIFF ]] && echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
+        echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
         echo "================================================"
-        echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+        echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
         echo "================================================"
         echo
     fi
