@@ -486,6 +486,7 @@ then
     "mediakey": "'${MEDIAKEY}'",
     "ipns": "'/ipns/${IPNS}'",
     "tmdb": "'${REFERENCE}'",
+    "modified": "'${MOATS}'",
     "tags": "'${TAGS}'" ' > ~/astroport/${TYPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
     [[ ${CANON} != "" ]] && echo  ',

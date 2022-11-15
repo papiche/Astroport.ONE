@@ -149,7 +149,8 @@ echo '[
     "ipfs": "'/ipfs/${IPFSID}/output.mp4'",
     "gif_ipfs": "'/ipfs/${ANIMH}'",
     "player": "'${PLAYER}'",
-    "tags": "'${PLAYER} G1Vlog vlog ipfs'"
+    "tags": "'${PLAYER} G1Vlog vlog ipfs'",
+    "modified": "'${MOATS}'"
   }
 ]
 ' > ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json
