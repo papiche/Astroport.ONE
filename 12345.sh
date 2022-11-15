@@ -384,7 +384,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - OUT OF SWARM#0 TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - OUT OF SWARM#0 TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
                 echo "TW is on $OLDIP"
 
                 wasLAN=$(echo $OLDIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
@@ -397,20 +397,23 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
                     sed -i "s~$OLDIP~${myIP}~g" ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
-                    # GET PLAYER FORM Dessin de $PLAYER
+                    # GET PLAYER FORM Dessin de $PLAYER (LE NOM DE LA CLEF IPNS EST DANS LE TITRE DE "Dessin de Moa" forgé à la création du TW)
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                     PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].title | rev | cut -d ' ' -f 1 | rev)
 
-                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD moa TAG /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD moa TAG /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
                     [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]] && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
                     cp ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-                    echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/"
+                    echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/ &"
+                    (
                     IPUSH=$(ipfs add -Hq ~/.zen/tmp/coucou/${MOATS}.astroindex.html | tail -n 1)
                     [[ $IPUSH ]] && ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
+                    echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/ END"
+                    ) &
                     ## MEMORISE PLAYER Ŋ1 ZONE (TODO compare with VISA.new.sh)
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
@@ -424,13 +427,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 ## 302 REDIRECT CENTRAL GW
                 cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~_TWLINK_~$LIBRA/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $(date +%s) - $start` seconds. && continue
             fi
 
         ## 302 REDIRECT $TWIP
         cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $end - $start` seconds. && continue
+        (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
         fi ## official
 
@@ -440,7 +443,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
     if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
 
-                [[ $APPNAME != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $APPNAME" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. && continue
+                [[ $APPNAME != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $APPNAME" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
                 start=`date +%s`
 
@@ -449,7 +452,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 ${WHAT}=$(urldecode ${arr[7]} | xargs)
                 PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-                [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
+                [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
 
         regex="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
         if [[ ${WHAT} =~ $regex ]] ; then
@@ -484,7 +487,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     # ASTRONAUT EXISTING ${WHAT}
                     CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - ${WHAT} ${WHAT} ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds. &&  continue
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - ${WHAT} ${WHAT} ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
                fi
 
                  ###################################################################################################
