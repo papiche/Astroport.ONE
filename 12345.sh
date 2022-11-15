@@ -433,6 +433,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         ## 302 REDIRECT $TWIP
         cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+
         (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
         fi ## official

@@ -8,6 +8,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname)"
+espeak "Ding"
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"
@@ -21,6 +22,8 @@ mkdir -p ~/.zen/tmp
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 [[ -s /etc/sudoers.d/systemctl ]] && sudo systemctl restart ipfs && sleep 5
 
+espeak "Ding Ding"
+
 ## PROCESS TW BACKOFFICE TREATMENT
 cd ~/.zen/Astroport.ONE/
 git pull
@@ -33,8 +36,13 @@ git pull
 killall 12345.sh
 killall nc
 
+espeak "Ding Ding Ding"
+
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
+
+espeak "Bills Kills Bills"
+
 
 ## OPEN ENTRANCE AGAIN
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
@@ -55,5 +63,7 @@ echo "20H12 (♥‿‿♥) Execution time was "`expr $end - $start` seconds.
 
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log.txt"
+
+espeak "Byte Storm Over"
 
 exit 0
