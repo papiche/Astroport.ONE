@@ -35,18 +35,26 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
     ## GET GCHANGE
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+    NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title')
+    DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description')
+    VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city')
+    ADRESSE,=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address')
+    POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
+    SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials')
+
     ########################################################################
     echo "UPDATE ${PLAYER} GCHANGE+ PROFILE"
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set --site "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+    echo $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
+
 
     ## GET CESIUM
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
     ########################################################################
     echo "UPDATE ${PLAYER} CESIUM+ PROFILE"
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" set --site "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
 fi
 
