@@ -78,11 +78,11 @@ espeak "video transcoding" #-acodec aac
 # Ecran vert : ffmpeg -i input.mp4 -i greenscreen.mp4 -filter_complex '[1:v]colorkey=color=00FF00:similarity=0.85:blend=0.0[ckout];[0:v][ckout]overlay[out]' -map '[out]' output.mp4
 
 rm -f ~/.zen/tmp/output.mp4
-ffmpeg -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output.mp4
+ffmpeg -loglevel quiet -i ~/.zen/tmp/MyVid.mp4 -vcodec libx264 -loglevel quiet ~/.zen/tmp/output.mp4
 
 ## Create short gif
 rm -f ~/.zen/tmp/screen.gif
-ffmpeg -ss 1.0 -t 1.6 -loglevel quiet -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
+ffmpeg -loglevel quiet -ss 1.0 -t 1.6 -loglevel quiet -i ~/.zen/tmp/output.mp4 ~/.zen/tmp/screen.gif
 ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 
 # Conversion HLS

@@ -38,6 +38,8 @@ tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/tmp/$WISHKEY \
                     --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
+echo "cat ~/.zen/tmp/$WISHKEY/CopierYoutube.json"
+
 ###################################################################
 ## TEXT TREATMENT
 ## For this TAG, specific extract URL from text field and copy all video from links into tid.json
@@ -49,6 +51,8 @@ for YURL in $(cat ~/.zen/tmp/$WISHKEY/CopierYoutube.json | jq -r '.[].text' | gr
     yt-dlp --print "%(id)s" "${YURL}" >> ~/.zen/tmp/$WISHKEY/ytids.$MOATS
 
 done # FINISH YURL loop
+
+echo "cat ~/.zen/tmp/$WISHKEY/ytids.$MOATS"
 
 ###################################################################
 [[ ! -s  ~/.zen/tmp/$WISHKEY/ytids.$MOATS ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
@@ -92,7 +96,7 @@ while read YID;
 
         ############################################################################
         ### CHECK RESULT CONVERT MKV TO MP4
-        [[ ! -f "$HOME/.zen/tmp/$WISHKEY/$ZFILE"  ]] && ffmpeg -i "$HOME/.zen/tmp/$WISHKEY/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/$WISHKEY/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
+        [[ ! -f "$HOME/.zen/tmp/$WISHKEY/$ZFILE"  ]] && ffmpeg -loglevel quiet -i "$HOME/.zen/tmp/$WISHKEY/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/$WISHKEY/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
         [[ ! -f "$HOME/.zen/tmp/$WISHKEY/$ZFILE"  ]] && echo "No FILE -- CONTINUE --" && continue
         echo
 
