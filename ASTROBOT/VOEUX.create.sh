@@ -35,7 +35,8 @@ tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/pl
 [[ ! -s ~/.zen/tmp/voeu.json ]] && echo "AUCUN VOEU - EXIT -" && exit 0
 
 ## Tous les tiddlers comportant le tag "voeu" lancent la création d'un G1VOEU ayant le titre du Voeu comme génrateur de clef TW (pepper).
-for VOEU in "$(cat ~/.zen/tmp/voeu.json | jq -r '.[].title')"
+cat ~/.zen/tmp/voeu.json | jq -r '.[].title' >  ~/.zen/tmp/$PLAYER.voeux.create.list
+while read VOEU;
 do
     [[ ! $VOEU ]] && echo "AUCUN VOEU" && continue
     echo "NOUVEAU $VOEU"
@@ -44,5 +45,6 @@ do
     echo "CREATION G1Voeu G1$VOEU"
     ~/.zen/Astroport.ONE/ASTROBOT/G1Voeu.sh "$VOEU" "$PLAYER" "$INDEX"
 
-done
+done < ~/.zen/tmp/$PLAYER.voeux.create.list
+
 exit 0
