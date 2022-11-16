@@ -11,7 +11,7 @@ services:
       context: ../
       dockerfile: docker/Dockerfile
     network_mode: host
-    restart: always
+    restart: unless-stopped
     tty: true
     user: ${UID}:${GID}
     volumes:
