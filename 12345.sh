@@ -467,7 +467,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 SALT=$(urldecode ${arr[1]} | xargs)
                 PEPPER=$(urldecode ${arr[3]} | xargs)
-                ${WHAT}=$(urldecode ${arr[7]} | xargs)
+                WHAT=$(urldecode ${arr[7]} | xargs)
                 PSEUDO=$(urldecode ${arr[9]} | xargs)
 
                 [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
@@ -487,8 +487,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 # PASS CRYPTING KEY
                 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
-            echo "$SALT"
-            echo "$PEPPER"
+            echo "$SALT / $PEPPER ($PASS)"
 
                 if [[ ! -d ~/.zen/game/players/${WHAT} ]]; then
                     # ASTRONAUT NEW VISA Create VISA.new.sh in background
@@ -540,7 +539,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         ## Astroport.ONE local use QRCODE Contains ${WHAT} G1PUB
         QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "QRCODE : $QRCODE"
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
-        ${WHAT}=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
+        WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
         [[ ! -d ~/.zen/game/players/${WHAT} || ${WHAT} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO ${WHAT} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue

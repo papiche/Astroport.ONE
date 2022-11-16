@@ -172,7 +172,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         echo "***** Gestion du Canal TW Astronaute $PLAYER *****"
         mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
 
-        [[ -f ~/.zen/tmp/TW.html ]] && cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+        [[ -f ~/.zen/tmp/TW.html ]] && cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html && echo "Restoring TW...." \
                                                             || cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
@@ -203,18 +203,18 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or 127.0.1.1)
 
 #
-        # CRYPTO ENCODING myIP -> CRYPTIP
+        echo "# CRYPTO ENCODING myIP -> CRYPTIP"
         echo $myIP > ~/.zen/tmp/myIP
-        $MY_PATH/natools.py encrypt -p $G1PUB -i ~/.zen/tmp/myIP -o ~/.zen/tmp/myIP.$G1PUB.enc
+        $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/myIP -o $HOME/.zen/tmp/myIP.$G1PUB.enc
         CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base64)
         sed -i "s~_SECRET_~$CRYPTIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 #
-        # CRYPTO DECODING CRYPTIP -> myIP
+        echo "# CRYPTO DECODING CRYPTIP -> myIP"
         tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        CRYPTIP=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
-        echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        CRYPTIP2=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
+        echo "$CRYPTIP2" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
         rm -f ~/.zen/tmp/myIP.2
-        $MY_PATH/natools.py decrypt -f pubsec  -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2
+        $MY_PATH/natools.py decrypt -f pubsec  -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
 #
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/myIP.2 ]] && echo "$myIP _SECRET_ CRYPTIP SECURED" \

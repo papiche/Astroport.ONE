@@ -36,10 +36,15 @@ if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
     ## GET GCHANGE
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
     NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title')
+    [[ ! $NAME ]] &&  NAME="${PSEUDO}"
     DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description')
+    [[ ! $DESCR ]] &&  DESCR="Astronaute explorateur Ŋ1"
     VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city')
-    ADRESSE,=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address')
-    POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
+    [[ ! $VILLE ]] &&  VILLE="Paris, 75012"
+    ADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address')
+    [[ ! $ADRESSE ]] &&  ADRESSE="Elysée"
+
+    # POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
     SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials')
 
     ########################################################################
