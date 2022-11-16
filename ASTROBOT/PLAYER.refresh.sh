@@ -80,12 +80,36 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         #############################################################
         ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
         tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-        [[ ! $OLDIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IS BROKEN - (╥☁╥ ) " && continue
+        CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+        [[ ! $CRYPTIP ]] && echo "(╥☁╥ ) ERROR - SORRY - CRYPTIP IS BROKEN - (╥☁╥ ) " && continue
+#
+        # CRYPTO DECODING CRYPTIP -> myIP
+        rm -f ~/.zen/tmp/myIP.2
+        echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        $MY_PATH/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc -o ~/.zen/tmp/myIP.2
+        OLDIP=$(cat  ~/.zen/tmp/myIP.2)
+
+                [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW ?
+                echo "TW is on $OLDIP"
+                [[ ! $OLDIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IP IS BROKEN - (╥☁╥ ) " && continue
+
         # WHO IS OFFICIAL TW GATEWAY.
+    if [[ ! -s ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey ]]; then
         if [[ $OLDIP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-            [[ $OLDIP != $myIP && $OLDIP != "_SECRET_" ]] && ipfs key rm ${PLAYER} && echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS - (⌐■_■) - ***" && continue
+            if [[ $OLDIP != $myIP && $OLDIP != "_SECRET_" ]]; then
+                # NOT MY PLAYER
+                echo "REMOVING PLAYER $PLAYER"
+                rm -Rf ~/.zen/game/players/$PLAYER/
+                ipfs key rm ${PLAYER}
+                ipfs key rm ${G1PUB}
+                echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS  ***" && continue
+            fi
         fi
+    else
+        echo "OFFICIAL VISA - (⌐■_■) -"
+    fi
+        #############################################################
+        ## OLDIP == myIP or TUBE !!
         #############################################################
 
         # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW
@@ -108,10 +132,25 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         ##############################################################
 
         ####################
-        # REMOVE OFFCIAL : myIP becomes _SECRET_
-        sed -i "s~${myIP}~_SECRET_~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+        # PUT TUBE as 8080 & 5001
+        #sed -i "s~${OLDIP}~_SECRET_~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
-        sed -i "s~_SECRET_~$TUBE~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+        # sed -i "s~_SECRET_~$TUBE~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+
+                ###########################
+                # Modification Tiddlers de contrôle de GW & API
+            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://'$TUBE':5001"}]' > ~/.zen/tmp/5001.json
+            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$TUBE':8080"}]' > ~/.zen/tmp/8080.json
+
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                            --import "$HOME/.zen/tmp/5001.json" "application/json" \
+                            --import "$HOME/.zen/tmp/8080.json" "application/json" \
+                            --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
+
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ]] \
+                    && cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                    && rm ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html
+                ###########################
 
         ####################
 

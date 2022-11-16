@@ -45,8 +45,8 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 ## GLOBAL
 ## GETTING LAST TW via IPFS or HTTP GW
-    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/TW/index.html
-    [[ ! -s ~/.zen/tmp/TW/index.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 30s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/TW/index.html
+    [[ ! -s ~/.zen/tmp/TW/index.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 30 -so ~/.zen/tmp/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     if [ ! -s ~/.zen/tmp/TW/index.html ]; then
         rm -f ~/.zen/tmp/TW/index.html
@@ -54,10 +54,11 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     else
 
-        # EXTRACTION myIP
+        # EXTRACTION & UPDATE myIP
         rm -f ~/.zen/tmp/miz.json
         tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+
         echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/${ASTRONAUTENS}"
         if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
             echo "UPDATE $PLAYER LOCAL COPY ~/.zen/game/players/$PLAYER/ipfs/moa"
@@ -162,19 +163,24 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     PASsec=$(cat /tmp/enc.${PSEUDO}.sec | base58) && rm -f /tmp/${PSEUDO}.sec
     qrencode -s 12 -o $HOME/.zen/game/players/$PLAYER/QRsec.png $PASsec
 
-    echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
+    echo "Clef publique G1 est : $G1PUB"; sleep 1
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-if [ ! -f ~/.zen/tmp/TW.html ]; then
 
-        echo "Nouveau Canal TW Astronaute"
+        echo "***** Gestion du Canal TW Astronaute $PLAYER *****"
         mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
 
-        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        [[ -f ~/.zen/tmp/TW.html ]] && cp ~/.zen/tmp/TW.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+                                                            || cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
         sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        sed -i "s~_ASTROPORT_~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
+        # GET OLD VALUE
+        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+        ASTROPORT=$(cat ~/.zen/tmp/Astroport.json | jq -r .[].astroport)
+        sed -i "s~$ASTROPORT~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
@@ -194,9 +200,25 @@ if [ ! -f ~/.zen/tmp/TW.html ]; then
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        sed -i "s~_SECRET_~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # IP of the Astronaut KeyKeeper Gateway
+        sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or 127.0.1.1)
 
+#
+        # CRYPTO ENCODING myIP -> CRYPTIP
+        echo $myIP > ~/.zen/tmp/myIP
+        $MY_PATH/natools.py encrypt -p $G1PUB -i ~/.zen/tmp/myIP -o ~/.zen/tmp/myIP.$G1PUB.enc
+        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base64)
+        sed -i "s~_SECRET_~$CRYPTIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+#
+        # CRYPTO DECODING CRYPTIP -> myIP
+        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        CRYPTIP=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
+        echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        rm -f ~/.zen/tmp/myIP.2
+        $MY_PATH/natools.py decrypt -f pubsec  -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc -o ~/.zen/tmp/myIP.2
+#
+        ## CRYPTO PROCESS VALIDATED
+        [[ -s ~/.zen/tmp/myIP.2 ]] && echo "$myIP _SECRET_ CRYPTIP SECURED" \
+                                                        || sed -i "s~$CRYPTIP~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
 
         ## ADD SYSTEM TW
         tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -223,15 +245,6 @@ if [ ! -f ~/.zen/tmp/TW.html ]; then
         IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-else
-        echo "BYPASS ASTRONAUT TW INIT"
-        echo "WARNING  - TEMP TW EXISTING - COPYING AS OFFICIAL IPNS TW VAULT"
-        ASTRO="yes"
-
-fi
-
-    ## Copy Astro TW
-    [[ $ASTRO == "yes" ]] && cp ~/.zen/tmp/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
     echo "## PUBLISHING ${PLAYER} /ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)

@@ -58,11 +58,14 @@ do
     ## Get ${WISHNAME} TW
     WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
-    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns')
+
+    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
+    VOEUKEY=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wish')
 
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
 
-
+##########################################################################
+##########################################################################
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
     if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh program found !"
@@ -72,8 +75,10 @@ do
     else
         echo "......................... G1${WISHNAME} No special program found !"
     fi
+##########################################################################
+##########################################################################
 
-    ## RUN TW search & copy treatment
+    ## RUN TW Ŋ1 search & copy treatment
     echo "*********************************"
         ##################################
         ## Search for [tag[G1${WISHNAME}]] in all Friends TW.

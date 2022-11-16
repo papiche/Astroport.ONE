@@ -385,8 +385,16 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
-                [[ ! $OLDIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - OUT OF SWARM#0 TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                [[ ! $CRYPTIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - OUT OF SWARM#0 TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+#
+        # CRYPTO DECODING CRYPTIP -> myIP
+        rm -f ~/.zen/tmp/myIP.2
+        echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        $MY_PATH/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc -o ~/.zen/tmp/myIP.2
+        OLDIP=$(cat  ~/.zen/tmp/myIP.2)
+
+                [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW
                 echo "TW is on $OLDIP"
 
                 wasLAN=$(echo $OLDIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
@@ -394,16 +402,31 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                                             || TWIP=$myIP
 
                 # LOCKED TW BECOMING ACTIVE GATEWAY
-                TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
-                if [[ $OLDIP == "_SECRET_" || $OLDIP == "$TUBE" || "$TWIP" == "$myIP" ]]; then
-                    echo "_SECRET_ TW PUSHING TW" ## BECOMING OFFICIAL BECOME R/W TW
-                    sed -i "s~$OLDIP~${myIP}~g" ~/.zen/tmp/coucou/${MOATS}.astroindex.html
+                [[ $OLDIP ! =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
-                    # GET PLAYER FORM Dessin de $PLAYER (LE NOM DE LA CLEF IPNS EST DANS LE TITRE DE "Dessin de Moa" forgé à la création du TW)
+                if [[ $OLDIP == "_SECRET_" || $TUBE || "$TWIP" == "$myIP" ]]; then
+                    echo "WAS $OLDIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
+
+                ###########################
+                # Modification Tiddlers de contrôle de GW & API
+                echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://'$myIP':5001"}]' > ~/.zen/tmp/5001.json
+                echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$myIP':8080"}]' > ~/.zen/tmp/8080.json
+
+                tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html \
+                            --import "$HOME/.zen/tmp/5001.json" "application/json" \
+                            --import "$HOME/.zen/tmp/8080.json" "application/json" \
+                            --output ~/.zen/tmp/coucou --render "$:/core/save/all" "${MOATS}.newindex.html" "text/plain"
+
+                [[ -s ~/.zen/tmp/coucou/${MOATS}.newindex.html ]] \
+                    && cp ~/.zen/tmp/coucou/${MOATS}.newindex.html ~/.zen/tmp/coucou/${MOATS}.astroindex.html \
+                    && rm ~/.zen/tmp/coucou/${MOATS}.newindex.html
+                ###########################
+
+                    # GET PLAYER FROM Dessin de $PLAYER (LE NOM DE LA CLEF IPNS EST DANS LE TITRE DE "Dessin de Moa" forgé à la création du TW)
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
-                    PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].title | rev | cut -d ' ' -f 1 | rev)
+                    PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].president)
 
-                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD moa TAG /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD president TAG /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
@@ -419,6 +442,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     ## MEMORISE PLAYER Ŋ1 ZONE (TODO compare with VISA.new.sh)
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
+                    echo "${ASTRONAUTENS}" > ~/.zen/game/players/$PLAYER/.playerns
                     OLDIP=${myIP}
                     TWIP=${myIP}
                 fi
