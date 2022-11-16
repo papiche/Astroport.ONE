@@ -62,8 +62,8 @@ while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
-    portinuse=$(ps auxf --sort=+utime | grep -w ${PORT} | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-    [[ $portinuse ]] && echo "$portinuse" && continue
+    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
+    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $portinuse " && continue
                 ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
 
     ## CHECK 12345 PORT RUNNING (PUBLISHING IPNS SWARM MAP)
