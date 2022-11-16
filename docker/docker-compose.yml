@@ -1,0 +1,36 @@
+version: '3.6'
+
+services:
+  docker:
+    build:
+      args:
+      - DOCKER_BUILD_DIR=docker
+      - GID=${GID}
+      - IPFS_VERSION=${IPFS_VERSION:-0.16.0}
+      - UID=${UID}
+      context: ../
+      dockerfile: docker/Dockerfile
+    network_mode: host
+    restart: always
+    tty: true
+    user: ${UID}:${GID}
+    volumes:
+    - data:/home/zen/astroport:cached
+    - ipfs:/home/zen/.ipfs:cached,ro
+    - zen:/home/zen/.zen:delegated
+    working_dir: /home/zen/.zen
+
+volumes:
+  data:
+  ipfs:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${HOME}/.ipfs
+      o: bind
+  zen:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${HOME}/.zen
+      o: bind

@@ -21,7 +21,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 PORT=12345
 
-    YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1); ## $USER running ipfs
+    YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1); ## $USER running ipfs
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 mkdir -p ~/.zen/tmp/coucou/
@@ -61,7 +61,7 @@ while true; do
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
-    [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
+    [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
     portinuse=$(ps auxf --sort=+utime | grep -w ${PORT} | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
     [[ $portinuse ]] && echo "$portinuse" && continue
                 ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
