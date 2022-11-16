@@ -232,7 +232,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             ) &
 
             end=`date +%s`
-            echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo " Messaging launch (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
             continue
         fi
         ######################## MESSAGING END
@@ -262,7 +262,8 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 ########################################
 ########################################
         if [[ "$APPNAME" == "testcraft" ]]; then
-        ( # SUB PROCESS
+        ( # testcraft SUB PROCESS
+            start=`date +%s`
             ## RECORD DATA MADE IN BROWSER (JSON)
             SALT=$(urldecode ${arr[1]} | xargs)
             PEPPER=$(urldecode ${arr[3]} | xargs)
@@ -348,6 +349,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             ## REPONSE ON IPFSNODEID
                 (
+                    start=`date +%s`
                     echo "¯\_༼<O͡〰o>༽_/¯ $IPFSNODEID $PLAYER SIGNALING"
                     ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
                     ipfs name publish --allow-offline /ipfs/$ROUTING
@@ -358,7 +360,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             end=`date +%s`
             echo "(|$APPNAME|) Execution time was "`expr $end - $start` seconds.
-        ) &
+        ) & # testcraft SUB PROCESS
 
             end=`date +%s`
             echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
@@ -390,7 +392,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 #
         # CRYPTO DECODING CRYPTIP -> myIP
         rm -f ~/.zen/tmp/myIP.2
-        echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        echo "$CRYPTIP" > ~/.zen/tmp/myIP.$G1PUB.enc.2
         $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2 > /dev/null 2>&1
         OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
 

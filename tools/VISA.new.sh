@@ -206,13 +206,13 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         echo "# CRYPTO ENCODING myIP -> CRYPTIP"
         echo $myIP > ~/.zen/tmp/myIP
         $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/myIP -o $HOME/.zen/tmp/myIP.$G1PUB.enc
-        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base64)
+        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc)
         sed -i "s~_SECRET_~$CRYPTIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 #
         echo "# CRYPTO DECODING CRYPTIP -> myIP"
         tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         CRYPTIP2=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
-        echo "$CRYPTIP2" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        echo "$CRYPTIP2" > ~/.zen/tmp/myIP.$G1PUB.enc.2
         rm -f ~/.zen/tmp/myIP.2
         echo "$MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2"
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
