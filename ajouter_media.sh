@@ -106,7 +106,7 @@ if [[ $1 == "on" ]]; then
 fi
 
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
-YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
 
 ########################################################################

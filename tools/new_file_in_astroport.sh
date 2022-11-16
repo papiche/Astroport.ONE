@@ -14,7 +14,7 @@ countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|gr
 [[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
 start=`date +%s`
 
-YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 [[ ! $IPFSNODEID ]] && echo 'ERROR missing IPFS Node id !! IPFS is not responding !?' && exit 1
 

@@ -11,7 +11,7 @@ countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|gr
 [[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
 start=`date +%s`
 
-YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1) && [[ ! $YOU ]] && echo "ipfs NOT RUNNING. EXIT" && exit 1
+YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1) && [[ ! $YOU ]] && echo "ipfs NOT RUNNING. EXIT" && exit 1
 G1PUB=$(cat ~/.zen/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2) && [[ ! $G1PUB ]] && echo "ERREUR G1PUB. EXIT" && exit 1
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID) || ( echo "noipfsid" && exit 1 )
 ########################################################################
