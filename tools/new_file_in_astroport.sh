@@ -447,7 +447,7 @@ then
     [[ $IPTHUMB ]] && POSTER=$IPTHUMB
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
-        TEXT="<video controls preload='none' width=100% poster='/ipfs/"${POSTER}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
+        TEXT="<video controls width=100% poster='/ipfs/"${POSTER}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
         </video><h1><a href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${TITLE}"</a></h1>
         <h2>"$DESCRIPTION"</h2>
     <\$button class='tc-tiddlylink'>

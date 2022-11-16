@@ -132,7 +132,7 @@ cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4
 REAL=$(file --mime-type -b "$HOME/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4")
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
-TEXT="<video controls preload='none' width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>VLOG ("${MEDIAID}") Story</a></h1><br>
+TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>VLOG ("${MEDIAID}") Story</a></h1><br>
 <\$button class='tc-tiddlylink'><\$list filter='[tag[G1Vlog]]'><\$action-navigate \$to=<<currentTiddler>> \$scroll=no/></\$list>Afficher tous les G1Vlog</\$button>"
 
 echo "## Creation json tiddler"

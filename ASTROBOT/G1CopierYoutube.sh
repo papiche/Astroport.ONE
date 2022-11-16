@@ -118,7 +118,7 @@ while read YID;
         PLAYLIST=$(yt-dlp --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls preload='none' width=100%><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+        TEXT="<video controls width=100%><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
         echo "Creating Youtube ${YID} tiddler : G1CopierYoutube !"
         echo $TEXT
