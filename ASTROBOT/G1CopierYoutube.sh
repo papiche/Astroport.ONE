@@ -134,7 +134,7 @@ while read YID;
     "sec": "'${SEC}'",
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
-    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs G1CopierYoutube ${WISHKEY} ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/$WISHKEY/$YID.TW.json"
