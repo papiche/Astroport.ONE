@@ -391,21 +391,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         # CRYPTO DECODING CRYPTIP -> myIP
         rm -f ~/.zen/tmp/myIP.2
         echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
-        $MY_PATH/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc -o ~/.zen/tmp/myIP.2
-        OLDIP=$(cat  ~/.zen/tmp/myIP.2)
+        $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2 > /dev/null 2>&1
+        OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
 
                 [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW
                 echo "TW is on $OLDIP"
 
-                wasLAN=$(echo $OLDIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-                [[ ! $wasLAN && $OLDIP != "_SECRET_"  ]] && TWIP=$OLDIP \
-                                            || TWIP=$myIP
-
-                # LOCKED TW BECOMING ACTIVE GATEWAY
-                [[ $OLDIP ! =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
-
-                if [[ $OLDIP == "_SECRET_" || $TUBE || "$TWIP" == "$myIP" ]]; then
-                    echo "WAS $OLDIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
+                echo "WAS $OLDIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
@@ -445,9 +437,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "${ASTRONAUTENS}" > ~/.zen/game/players/$PLAYER/.playerns
                     OLDIP=${myIP}
                     TWIP=${myIP}
-                fi
-
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
+
             else
                 echo "NO TW FOUND - LAUNCHING CENTRAL"
                 ## 302 REDIRECT CENTRAL GW

@@ -86,8 +86,8 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         # CRYPTO DECODING CRYPTIP -> myIP
         rm -f ~/.zen/tmp/myIP.2
         echo "$CRYPTIP" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
-        $MY_PATH/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc -o ~/.zen/tmp/myIP.2
-        OLDIP=$(cat  ~/.zen/tmp/myIP.2)
+        $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2 > /dev/null 2>&1
+        OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
 
                 [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW ?
                 echo "TW is on $OLDIP"
