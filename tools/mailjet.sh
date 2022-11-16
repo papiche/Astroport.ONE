@@ -18,14 +18,14 @@ echo '
 ### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
 ## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
 mail="$1" # EMAIL DESTINATAIRE
-messfile="$2" # CORPS MESSAGE
+messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
 [[ ! $1 ]] && mail="support@qo-op.com"
 
-SUBJECT="[(♥‿‿♥)] message personnel. merci. "
-MESSAGE="( ◕‿◕) Bonjour $PLAYER\n\nBootez sur votre TW http://qo-op.com:1234 .\n\nAstroport"
+SUBJECT="[(♥‿‿♥)] Astronaute. Bonjour. "
+MESSAGE="( ◕‿◕)\n\n Salut $PLAYER\n\n\n Activez votre TW http://tube.copylaradio.com:1234 .\n\nAstroport"
 
-echo "From: fred@g1sms.fr
+echo "From: support@g1sms.fr
 To: EMAIL
 Bcc: support@qo-op.com
 Subject: SUBJECT
