@@ -33,16 +33,20 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
 ## Directory is created, So this script already run once.
 if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
-    ## GET GCHANGE
+    ## GET GCHANGE PROFIL
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+
     NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title')
-    [[ ! $NAME ]] &&  NAME="${PSEUDO}"
+    [[ ! $NAME || $NAME == "null" ]] &&  NAME="Astronaute ${PSEUDO}"
+
     DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description')
-    [[ ! $DESCR ]] &&  DESCR="Astronaute explorateur Ŋ1"
+    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR="Astronaute explorateur Ŋ1"
+
     VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city')
-    [[ ! $VILLE ]] &&  VILLE="Paris, 75012"
+    [[ ! $VILLE || $VILLE == "null" ]] &&  VILLE="Paris, 75012"
+
     ADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address')
-    [[ ! $ADRESSE ]] &&  ADRESSE="Elysée"
+    [[ ! $ADRESSE || $ADRESSE == "null" ]] &&  ADRESSE="Elysée"
 
     # POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
     SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials')
@@ -52,7 +56,6 @@ if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
     ########################################################################
     echo $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
-
 
     ## GET CESIUM
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json

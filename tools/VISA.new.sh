@@ -214,7 +214,8 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         CRYPTIP2=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
         echo "$CRYPTIP2" | base64 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
         rm -f ~/.zen/tmp/myIP.2
-        $MY_PATH/natools.py decrypt -f pubsec  -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
+        echo "$MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2"
+        $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
 #
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/myIP.2 ]] && echo "$myIP _SECRET_ CRYPTIP SECURED" \
