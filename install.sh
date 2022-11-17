@@ -19,7 +19,7 @@ start=`date +%s`
 echo "=== Clonage git CODE  'Astroport.ONE' depuis https://git.p2p.legal"
 mkdir -p ~/.zen
 cd ~/.zen
-git clone https://git.p2p.legal/qo-op/Astroport.ONE.git
+git clone --depth 1 https://git.p2p.legal/qo-op/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
 # MAIN # SI AUCUNE CLEF DE STATION...
