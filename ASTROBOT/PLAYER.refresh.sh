@@ -81,37 +81,34 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
      ## FOUND TW
         #############################################################
         ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
-        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d)
-        [[ ! $CRYPTIP ]] && echo "(╥☁╥ ) ERROR - SORRY - CRYPTIP IS BROKEN - (╥☁╥ ) " && continue
+                tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                SECRET=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                [[ ! $SECRET ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
-        rm -f ~/.zen/tmp/myIP.2
-        echo -n "$CRYPTIP" > ~/.zen/tmp/myIP.$G1PUB.enc.2
-        $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2 > /dev/null 2>&1
-        OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
+                cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+                $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
+                GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW ?
-                echo "TW is on $OLDIP"
-                [[ ! $OLDIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IP IS BROKEN - (╥☁╥ ) " && continue
+                [[ ! $GWIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IP IS BROKEN - (╥☁╥ ) " && continue
+
+                echo "TW is on $GWIP"
 
         # WHO IS OFFICIAL TW GATEWAY.
     if [[ ! -s ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey ]]; then
-        if [[ $OLDIP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-            if [[ $OLDIP != $myIP && $OLDIP != "_SECRET_" ]]; then
+            if [[ $GWIP != $myIP ]]; then
                 # NOT MY PLAYER
                 echo "REMOVING PLAYER $PLAYER"
                 rm -Rf ~/.zen/game/players/$PLAYER/
                 ipfs key rm ${PLAYER}
                 ipfs key rm ${G1PUB}
-                echo "*** OFFICIAL GATEWAY : http://$OLDIP:8080/ipns/$ASTRONAUTENS  ***" && continue
+                echo "*** OFFICIAL GATEWAY : http://$GWIP:8080/ipns/$ASTRONAUTENS  ***" && continue
             fi
-        fi
     else
         echo "OFFICIAL VISA - (⌐■_■) -"
     fi
         #############################################################
-        ## OLDIP == myIP or TUBE !!
+        ## GWIP == myIP or TUBE !!
         #############################################################
 
         # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW
@@ -135,7 +132,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
         ####################
         echo "# TUBE as 8080 & 5001"
-        #sed -i "s~${OLDIP}~_SECRET_~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+        #sed -i "s~${GWIP}~_SECRET_~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
         # sed -i "s~_SECRET_~$TUBE~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 

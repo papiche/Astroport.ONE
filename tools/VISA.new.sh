@@ -211,8 +211,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 #
         echo "# CRYPTO DECODING CRYPTIP -> myIP"
         tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        CRYPTIPENC=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d)
-        echo -n "$CRYPTIPENC" > ~/.zen/tmp/myIP.$G1PUB.enc.2 ### PAS DE RETOUR CHARIOT !
+        cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
 #
         ## CRYPTO PROCESS VALIDATED

@@ -387,19 +387,19 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d)
-                [[ ! $CRYPTIP ]] && (echo "$HTTPCORS CRYPTIP ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD CRYPTIP (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                SECRET=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                [[ ! $SECRET ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
-        rm -f ~/.zen/tmp/myIP.2
-        echo -n "$CRYPTIP" > ~/.zen/tmp/myIP.$G1PUB.enc.2
-        $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2 > /dev/null 2>&1
-        OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
+                cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+                $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
+                GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW
-                echo "TW is on $OLDIP ($CRYPTIP)"
+                [[ ! $GWIP ]] && (echo "$HTTPCORS GWIP ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD GWIP (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+#
+                echo "TW is on $GWIP"
 
-                echo "WAS $OLDIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
+                echo "WAS $GWIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
@@ -437,7 +437,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
                     echo "${ASTRONAUTENS}" > ~/.zen/game/players/$PLAYER/.playerns
-                    OLDIP=${myIP}
+                    GWIP=${myIP}
                     TWIP=${myIP}
                 echo "***********  OFFICIAL LOGIN GOES TO $TWIP"
 
