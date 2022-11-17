@@ -150,10 +150,11 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         ################### KEY GEN ###################################
         echo ">>>>>>>>>>>>>> Application LaBureautique >><< APPNAME = $APPNAME <<<<<<<<<<<<<<<<<<<<"
 
-        SALT=$(urldecode ${arr[1]} | xargs)
+        SALT=$(urldecode ${arr[1]} | xargs);
         [[ ! $SALT ]] && (echo "$HTTPCORS ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         PEPPER=$(urldecode ${arr[3]} | xargs)
         [[ ! $PEPPER ]] && (echo "$HTTPCORS ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
         APPNAME=$(urldecode ${arr[4]} | xargs)
         [[ ! $APPNAME ]] && (echo "$HTTPCORS ERROR - APPNAME MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
@@ -448,7 +449,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
                 cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                sed -i "s~_TWLINK_~$LIBRA/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed -i "s~_TWLINK_~https://$TUBE/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $(date +%s) - $start` seconds. && continue
             fi
 
