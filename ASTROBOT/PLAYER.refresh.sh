@@ -42,7 +42,9 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
                                                                                                             && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
 
     ## MY PLAYER.
-    ipfs key rename $G1PUB $PLAYER
+    ipfs key export $G1PUB -o ~/.zen/tmp/$PLAYER.key
+    ipfs key import $PLAYER ~/.zen/tmp/$PLAYER.key
+    rm -f ~/.zen/tmp/$PLAYER.key
 
     ## REFRESH CACHE
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
