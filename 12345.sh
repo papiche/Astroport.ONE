@@ -17,7 +17,7 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
+[[ ! $myIP || $isLAN ]] && myIP="astroport.localhost"
 
 PORT=12345
 
@@ -392,7 +392,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 #
         # CRYPTO DECODING CRYPTIP -> myIP
         rm -f ~/.zen/tmp/myIP.2
-        echo "$CRYPTIP" > ~/.zen/tmp/myIP.$G1PUB.enc.2
+        echo -n "$CRYPTIP" > ~/.zen/tmp/myIP.$G1PUB.enc.2
         $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.2 > /dev/null 2>&1
         OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
 

@@ -21,8 +21,8 @@ ipfs config --json Experimental.P2pHttpProxy true
 ipfs config --json Swarm.ConnMgr.LowWater 20
 ipfs config --json Swarm.ConnMgr.HighWater 40
 
-[[ ! $isLAN ]] && ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://127.0.0.1:8080", "http://127.0.1.1:8080" ]' \
-                         ||   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:8080", "http://127.0.1.1:8080" ]'
+[[ ! $isLAN ]] && ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://astroport.localhost:8080", "http://127.0.0.1:8080", "http://127.0.1.1:8080" ]' \
+                         ||   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://127.0.0.1:8080", "http://astroport.localhost:8080", "http://127.0.1.1:8080" ]'
 
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
