@@ -387,7 +387,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d)
                 [[ ! $CRYPTIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - OUT OF SWARM#0 TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
@@ -492,14 +492,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             echo "$SALT / $PEPPER ($PASS)"
 
                 if [[ ! -d ~/.zen/game/players/${WHAT} ]]; then
-                    # ASTRONAUT NEW VISA Create VISA.new.sh in background
+                    echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${WHAT}.${MOATS}.txt)"
                     (
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "${WHAT}" "$PSEUDO" > ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
                     $MY_PATH/tools/mailjet.sh "${WHAT}" ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
                     ) &
 
-                    echo "$HTTPCORS OK - ASTRONAUT $PSEUDO IPFS FILESYSTEM CREATION [$SALT + $PEPPER] (${WHAT})
-                    <br>- BUILDING TW - PLEASE 'ASK BIOS AGAIN' IN A WHILE http://$myIP:1234/ " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    echo "$HTTPCORS - BOOTING - ASTRONAUT $PSEUDO - IPFS FORMATING - [$SALT + $PEPPER] (${WHAT})
+                    <br>- TW - http://$myIP:8080/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                      echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
                     continue
                else

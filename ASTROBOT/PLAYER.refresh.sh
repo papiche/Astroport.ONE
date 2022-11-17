@@ -82,7 +82,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         #############################################################
         ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
         tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+        CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d)
         [[ ! $CRYPTIP ]] && echo "(╥☁╥ ) ERROR - SORRY - CRYPTIP IS BROKEN - (╥☁╥ ) " && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
