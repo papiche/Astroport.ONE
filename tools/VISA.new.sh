@@ -311,4 +311,8 @@ echo "Retenez votre PASS : $PASS"; sleep 2
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "cool $(${MY_PATH}/face.sh cool)"
 echo "$PASS"
+
+LP=$(ls /dev/usb/lp*)
+[[ $LP ]] && ${MY_PATH}/VISA.print.sh &
+
 exit 0
