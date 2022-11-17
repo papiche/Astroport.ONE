@@ -56,8 +56,8 @@ Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niv
 
 **Nous utilisons [la Ğ1](https://monnaie-libre.fr/) comme "la meilleure invention d'une crypto-monnaie"**
 
-N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" et des "G1Tags" ensemble.
-Vous pouvez rejoindre le swam#0 officiel d'Astroport, en devenant bootstrap et hôte dans http://copylaradio.com:1234 TestNet "DNS Round Robin".
+N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" selon leurs "G1Voeu".
+Vous pouvez rejoindre le swam#0 officiel d'Astroport, en devenant bootstrap et hôte dans http://tube.copylaradio.com:1234 TestNet "DNS Round Robin".
 
 Bien entendu, le mieux est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée dans ce cas), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent bit massif.
 
@@ -103,10 +103,14 @@ Après un passage par [ajouter_media.sh](/qo-op/Astroport.ONE/src/branch/master/
 Vos données son stockées [dans des Tiddlers](http://libra.copylaradio.com:8080/ipns/k51qzi5uqu5dioeckikst5f8jw1tbljom6acjbw9zerl3671921krs4nm1531r#:[tag[G1Films]])
 et des [Json](http://libra.copylaradio.com:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u/k51qzi5uqu5dgbyodfu8ojvcsbuq9b3x19ufwpb4mar1h6chwt0bkyok1gwmhl/CopierYoutube/g1wishtiddlers.json)
 
+### Foret Enchantée - PROJET ASTROPORT.pdf
+
+http://tube.copylaradio.com:8080/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 
 # API
 
-## hybride et asynchrone
+## Hybride et Asynchrone
+
 API du système
 
 
@@ -133,17 +137,19 @@ http://_ASTROIP_:8080/ipns/_APID_/
 
 _APID_ est la clef IPNS qui contient l'arborescence "json" en lecture
 
-Exemple pour l'application "G1Voeu" http://149.102.158.67:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+Exemple pour l'application "G1Voeu" http://tube.copylaradio.com:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 
 Application "messaging"
 http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&messaging=on
 
 
-Pour écrire une application utilisera "jsipfs"
+Pour écrire une application on utilisera "jsipfs"
 
 https://js.ipfs.tech/
+<script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
 
-et l'appel API "testcraft" ?salt=toto&pepper=toto&testcraft=on&nodeid=_IPFDNODEID_&DATAID=_IPDSID_
+Ajoutez l'appel API "testcraft" pour enregistrer vos json
+?salt=toto&pepper=toto&testcraft=on&nodeid=_IPFDNODEID_&DATAID=_IPDSID_
 
 http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
 
