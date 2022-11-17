@@ -105,7 +105,7 @@ et des [Json](http://libra.copylaradio.com:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5
 
 ### Foret Enchantée - PROJET ASTROPORT.pdf
 
-http://tube.copylaradio.com:8080/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
+http://tube.copylaradio.com:8080/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 
 # API
 
