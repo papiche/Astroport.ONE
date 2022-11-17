@@ -388,7 +388,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
                 CRYPTIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d)
-                [[ ! $CRYPTIP ]] && (echo "$HTTPCORS 501 ERROR - SORRY - OUT OF SWARM#0 TW - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                [[ ! $CRYPTIP ]] && (echo "$HTTPCORS CRYPTIP ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD CRYPTIP (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
         rm -f ~/.zen/tmp/myIP.2
@@ -397,7 +397,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         OLDIP=$(cat  ~/.zen/tmp/myIP.2 > /dev/null 2>&1)
 
                 [[ ! $OLDIP ]] && OLDIP=$CRYPTIP ## STILL CLEAR IP TW
-                echo "TW is on $OLDIP"
+                echo "TW is on $OLDIP ($CRYPTIP)"
 
                 echo "WAS $OLDIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
 
@@ -420,7 +420,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                     PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].president)
 
-                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD president TAG /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD [tag[moa]] president field /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
