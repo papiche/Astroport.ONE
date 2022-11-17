@@ -8,7 +8,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname)"
-espeak "Ding"
+espeak "Ding" > /dev/null 2>&1
+
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 [[ ! $myIP ]] && myIP="127.0.1.1"
@@ -22,7 +23,8 @@ mkdir -p ~/.zen/tmp
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 [[ -s /etc/sudoers.d/systemctl ]] && sudo systemctl restart ipfs && sleep 5
 
-espeak "Ding Ding"
+espeak "Ding Ding" > /dev/null 2>&1
+
 
 ## PROCESS TW BACKOFFICE TREATMENT
 cd ~/.zen/Astroport.ONE/
@@ -32,16 +34,16 @@ git pull
 # Refresh ~/.zen/game/world/G1VOEU
 # NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 
-## CLOSING 1234 REDIRECT
+## CLOSING 1234 API PORT
 killall 12345.sh
 killall nc
 
-espeak "Ding Ding Ding"
+espeak "Ding Ding Ding" > /dev/null 2>&1
 
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
-espeak "Bills Kills Bills"
+espeak "Bills Kills Bills" > /dev/null 2>&1
 
 
 ## OPEN ENTRANCE AGAIN
@@ -64,6 +66,6 @@ echo "20H12 (♥‿‿♥) Execution time was "`expr $end - $start` seconds.
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log.txt"
 
-espeak "Byte Storm Over"
+espeak "Byte Storm Over" > /dev/null 2>&1
 
 exit 0
