@@ -121,7 +121,7 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 # echo "Coffre personnel multimedia journalisé dans votre 'Astroport' (amis de niveau 3)"
 # echo "Votre clef moa_$PLAYER <=> $MOANS ($MOAKEYFILE)"; sleep 2
 ############################################################
-
+echo
 echo "Compte Gchange et portefeuille G1.
 Utilisez ces identifiants pour rejoindre le réseau JUNE
 
@@ -214,7 +214,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         CRYPTIPENC=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d)
         echo "$CRYPTIPENC" > ~/.zen/tmp/myIP.$G1PUB.enc.2
         rm -f ~/.zen/tmp/myIP.2
-        echo "$MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2"
+        # echo "$MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2"
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
 #
         ## CRYPTO PROCESS VALIDATED
@@ -276,8 +276,9 @@ qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://
 
 echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 
-echo; echo "*** Espace Astronaute Activé : ~/.zen/game/players/$PLAYER/"; sleep 1
-echo; echo "*** Votre TW Ŋ7 : $PLAYER"; echo "http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 2
+echo; echo "*** Astronaute GW : ~/.zen/game/players/$PLAYER/"; sleep 1
+echo; echo "*** TW Ŋ1 : $PLAYER";
+echo; echo "http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 2
 
 # PASS CRYPTING KEY
 echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
