@@ -221,7 +221,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         rm -f ~/.zen/tmp/myIP.2
 
         ## ADD SYSTEM TW
-        tiddlywiki  --verbose --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+        tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                             --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
