@@ -29,13 +29,22 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 
 # LANCEMENT
 
+## ./start.sh
+
+Gestion des Astronautes, de leurs VISA et VOEUX en mode CLI
+
 ```
 ~/.zen/Astroport.ONE/start.sh
 ```
+Lancement API (1234) et MAP (12345)
 
-Hommage au jeu des origines de la bureautique ludique, essayez, enrichissez le script ```~/.zen/Astroport.ONE/aventure.sh```
+## ./adventure/adventure.sh
+
+Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les environs du premier de ce nom.
 
 # USAGE
+
+Selon le modèle de votre TW,
 
 L'utilisation du cryptosystème signifie que tout hôte possédant une clé privée peut modifier "quelque chose", la clé publique étant l'adresse de cette "chose". Quand on se concentre sur le hachage des données comme le fait IPFS, on peut stocker n'importe quoi partout.
 

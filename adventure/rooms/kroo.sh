@@ -18,6 +18,7 @@ echo "Vous pénétrez à l'intérieur de l'Astroport."
 echo
 sleep 3
 echo "Une voix synthétique vous accueille."
+espeak "Welcome. Please Identify." > /dev/null 2>&1
 echo
 echo "Vous parcourez l'espace du regard"
 echo "Au nord, face à vous se trouve un foyer où brule un feu."

@@ -186,12 +186,14 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
 
 #######################################################################
 
-echo "## INSTALL open_with_linux.py ##
+    echo "#############################################"
 ## https://darktrojan.github.io/openwith/webextension.html"
 [[ $XDG_SESSION_TYPE == 'x11' ]] && ~/.zen/Astroport.ONE/open_with_linux.py install; \
-echo ">>> INFO : Ajoutez l'extension 'OpenWith' à votre navigateur !!
-# https://addons.mozilla.org/firefox/addon/open-with/
+
+    echo "# BLOB MODE avec 'OpenWith' depuis votre navigateur !!"
+    echo "# https://addons.mozilla.org/firefox/addon/open-with/
 # https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno"
+    echo "#############################################"
 
 ### ADD 20h12.sh CRON ###############
 $MY_PATH/tools/cron_VRFY.sh ON
@@ -227,17 +229,22 @@ sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl
 echo "#############################################"
 echo "#############################################"
 echo "#############################################"
-
     ## Desktop install
-    echo "INITIALISATION Astroport terminée"
+    echo "Astroport.ONE"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
+    echo "#############################################"
+    echo "# START ENGINE : ~/.zen/Astroport.ONE/start.sh"
+    echo "#############################################"
+    echo "## BLOB MODE -#################################"
+    echo "# Utilisez le lien <<< Astroport >>> sur votre Bureau"
+    echo "#############################################"
+
     echo
-    echo "Demarrage instantané ~/.zen/Astroport.ONE/start.sh"
-    echo "Souhaitez vous démarrer le mode aventure? Entrez OUI"
+    echo "Démarrer en mode Aventure. Tapez ENTRER."
     read ADVENTURE
-    [[ $ADVENTURE ]] && ~/.zen/Astroport.ONE/adventure/adventure.sh \
-                                        || ~/.zen/Astroport.ONE/start.sh
+    [[ $ADVENTURE ]] && ~/.zen/Astroport.ONE/start.sh \
+                                        || ~/.zen/Astroport.ONE/adventure/adventure.sh
 
 else
 

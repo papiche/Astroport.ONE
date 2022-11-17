@@ -24,7 +24,7 @@ while true; do
     read -p "> " nsewuh
     case $nsewuh in
         n ) echo "Vous êtes dans une cabine. Des QRCode sont collés à la parois nord" ;;
-        s ) echo "Cette paroie comprte un miroir. Pour se faire une beauté avant d'enregistrer une capsule vidéo." ;;
+        s ) echo "Cette paroie comporte un miroir. Pour se faire une beauté avant d'enregistrer une capsule vidéo." ;;
         w ) ./kroo.sh
             exit ;;
         e ) echo "Vous êtes face à l'écran. Au dessus des hauts parleurs, une webcam" ;;
@@ -40,10 +40,9 @@ while true; do
             echo
             sleep 2
             echo "INTERNET est dangereux. il vend vos information personnelles pour que vous deveniez un produit.  "
-            echo "Quittez INTERNET. Découvrez le Système de Fichiers Interplanétaire (IPFS)."
             sleep 2
             echo
-            echo "Nous remplissons IPFS des identités des Astronautes qui explorent le mode de vie en forêt jardin."
+            echo "Rebootez INTERNET. Activez votre TW sur le Système de Fichiers Interplanétaire (IPFS)."
             sleep 2
             echo
             echo "On y échange en pair à pair. La monnaie y est Libre."
@@ -55,16 +54,17 @@ while true; do
             done <"$file1"
             echo
             echo
-            echo "____ Astroport 20:12 est un programme qui permet de monter des ambassades de la 'présipauté pair à pair' MadeInZion....."
-            echo "Chaque Lieu porte l'Arbre des rêves de ses habitants"
-            echo "Chaque Astronaute fait des voeux et partage ses talents."
-            echo "Participez au JEu d'ingénierie DIY lancez la terraformation forêt jardin."
+            echo "____ Astroport déclenche à 20:12 la synchronisation de ses ambassades..."
+            echo "Rapport 2022 : /ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR"
             sleep 3
             echo
             echo "ASTROPORT ONE"
-            echo
-            read -p "Appuyez sur [ENTER] démarrez la Station Astroport.ONE"
+            echo "VISA pour le vaisseau spatial TERRE."
+            read -p "Appuyez sur [ENTER] pour activer votre Station Astroport.ONE"
+            espeak "Astronaut. TW activation" > /dev/null 2>&1
+
             ~/.zen/Astroport.ONE/start.sh
+
             fi
         exit
         ;;
