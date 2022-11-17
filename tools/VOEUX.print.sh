@@ -12,7 +12,7 @@ ME="${0##*/}"
 PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "G1PUB manquant" && exit 1
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w "${G1PUB}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
 
 
