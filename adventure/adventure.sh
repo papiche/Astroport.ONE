@@ -9,6 +9,7 @@
 # Thanks and gratitude to all living creatures and the whole creation.
 #                                                      - @Fred
 
+# $AGE×365,25×24×60×60×9,807÷299792458 = RELATIVE LIGHT GRAVITY SPEED
 # Here we check to see if uuidgen is installed - if not it will default to single-user mode. To run this on a server
 # and support multipe-users, check you have everthing set up correctly. Follow the instructions in the ReadMe file on GitHub.
 MY_PATH="`dirname \"$0\"`"              # relative
