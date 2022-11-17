@@ -48,8 +48,13 @@ sudo brother_ql_print /tmp/toprint.bin $LP
 ################################################################
 ### PRINT PLAYER TW myIP link
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+[[ ! $myIP || $isLAN ]] && myIP="astroport.localhost"
+
+TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
+
 playerns=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
-qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "http://$myIP:8080/ipns/$playerns"
+qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "http://$TUBE:8080/ipns/$playerns"
 convert $HOME/.zen/tmp/QR.ASTRO.png -resize 600 /tmp/playerns.png
 
 brother_ql_create --model QL-700 --label-size 62 /tmp/playerns.png > /tmp/toprint.bin 2>/dev/null

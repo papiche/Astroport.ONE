@@ -418,7 +418,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     && rm ~/.zen/tmp/coucou/${MOATS}.newindex.html
                 ###########################
 
-                    # GET PLAYER FROM Dessin de $PLAYER (LE NOM DE LA CLEF IPNS EST DANS LE TITRE DE "Dessin de Moa" forgé à la création du TW)
+                    # GET PLAYER FROM Dessin de $PLAYER
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
                     PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].president)
 
