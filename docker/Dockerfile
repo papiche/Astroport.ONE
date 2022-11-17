@@ -80,14 +80,14 @@ RUN set -x && buildDeps=' \
  && apt-get update \
  && apt-get install -y $buildDeps --no-install-recommends \
  && mkdir -p /usr/local/src/jaklis \
- && wget -qO - https://git.p2p.legal/axiom-team/jaklis/archive/master.tar.gz \
+ && wget -qO - https://github.com/aynicos/jaklis/archive/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/jaklis -xzf - \
  && pip3 install -r /usr/local/src/jaklis/requirements.txt \
  && ln -s /usr/local/src/jaklis/jaklis.py /usr/local/bin/jaklis \
  && chmod 0755 /usr/local/bin/jaklis \
  && /usr/local/bin/jaklis --help >/dev/null \
  && mkdir -p /usr/local/src/dpgpid \
- && wget -qO - https://git.p2p.legal/aya/dpgpid/archive/master.tar.gz \
+ && wget -qO - https://github.com/aynicos/dpgpid/archive/wip.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/dpgpid -xzf - \
  && pip3 install -r /usr/local/src/dpgpid/requirements.txt \
  && ln -s /usr/local/src/dpgpid/keygen /usr/local/bin/keygen \
