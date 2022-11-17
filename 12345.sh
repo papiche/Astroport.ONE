@@ -397,7 +397,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $GWIP ]] && (echo "$HTTPCORS GWIP ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD GWIP (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                [[ ! $GWIP ]] && GWIP=$SECRET ## CLEAR
 #
                 echo "TW is on $GWIP"
 
