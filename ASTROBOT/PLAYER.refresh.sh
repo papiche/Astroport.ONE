@@ -90,7 +90,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                 $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $GWIP ]] && echo "(╥☁╥ ) ERROR - SORRY - TW IP IS BROKEN - (╥☁╥ ) " && continue
+                [[ ! $GWIP ]] && GWIP=$SECRET ## CLEAR
 
                 echo "TW is on $GWIP"
 
@@ -132,9 +132,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
         ####################
         echo "# TUBE as 8080 & 5001"
-        #sed -i "s~${GWIP}~_SECRET_~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
-        # sed -i "s~_SECRET_~$TUBE~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
@@ -150,6 +148,13 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                     && cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                     && rm ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html
                 ###########################
+
+# [[ $GWIP == $SECRET ]]
+        echo "# CRYPTO ENCODING $GWIP -> CRYPTIP"
+        echo $GWIP > ~/.zen/tmp/GWIP
+        $MY_PATH/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/GWIP -o $HOME/.zen/tmp/myIP.$G1PUB.enc
+        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base16)
+        sed -i "s~$GWIP~$CRYPTIP~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 
         ####################
 
