@@ -16,7 +16,7 @@ start=`date +%s`
 
 #### GIT CLONE ###############################################################
 [[ ! $(which git) ]] && sudo apt install -y git
-echo "=== Clonage git CODE  'Astroport.ONE' depuis https://git.p2p.legal"
+echo "=== CLONAGE  '~/.zen/Astroport.ONE' depuis https://git.p2p.legal"
 mkdir -p ~/.zen
 cd ~/.zen
 git clone --depth 1 https://git.p2p.legal/qo-op/Astroport.ONE.git
@@ -28,11 +28,13 @@ then
 
 
 # Check requirements
-echo "Astroport.ONE installateur pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/) testées"
-echo "$USER appuyez sur ENTRER pour commencer installation"; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
+echo "Installateur Astroport.ONE pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/)"
+echo "$USER appuyez sur ENTRER."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
 echo "#############################################"
-echo "######### PATIENCE "
-echo "#############################################"
+echo "###### IPFS BIOS INSTALL ##############################"
+echo "################  CRYPTO TW Ŋ1 PROTOCOL #############"
+echo "##################################################"
+
 echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
@@ -141,11 +143,11 @@ echo "######### PATIENCE #########################"
 echo "#############################################"
 
 ## Scripts pour systemd ou InitV (xbian)
-echo "=== Astroport UPGRADE SYSTEM IPFS"
+echo "=== SETUP IPFS SYSTEM"
 ~/.zen/Astroport.ONE/tools/ipfs_setup.sh
 
 #### SETUP JAKLIS ###############################################################
-echo "=== Configuration jaklis: Centre de communication CESIUM+ GCHANGE+"
+echo "=== SETUP jaklis"
 cd $MY_PATH/tools/jaklis
 sudo ./setup.sh
 
@@ -215,18 +217,17 @@ echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visud
 ## brother_ql_print
 echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
 
-
-# ADD DESKTOP SHORTCUT
-[[ "$USER" != "xbian" && -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Bureau/astroport.desktop && chmod +x ~/Bureau/astroport.desktop
-[[ "$USER" != "xbian" && -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
+echo "#############################################"
+echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
+[[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Bureau/astroport.desktop && chmod +x ~/Bureau/astroport.desktop
+[[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
 
 mkdir -p ~/.zen/tmp
-# MAIN # -f ~/.zen/secret.june (ISOConfig déjà lancé) ##
+echo "#############################################"
 
 ## SYMLINK youtube-dl TO yt-dlp
 sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl
-
-echo "#############################################"
+which youtube-dl
 echo "#############################################"
 echo "#############################################"
     ## Desktop install
@@ -234,12 +235,8 @@ echo "#############################################"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
     echo "#############################################"
-    echo "# START ENGINE : ~/.zen/Astroport.ONE/start.sh"
+    echo "# START VISA ENGINE : ~/.zen/Astroport.ONE/start.sh"
     echo "#############################################"
-    echo "## BLOB MODE -#################################"
-    echo "# Utilisez le lien <<< Astroport >>> sur votre Bureau"
-    echo "#############################################"
-
     echo
     echo "Démarrer en mode Aventure. Tapez ENTRER."
     read ADVENTURE
