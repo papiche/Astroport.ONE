@@ -15,6 +15,28 @@ PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${G1PUB}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && exit 1
 
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+[[ ! $myIP || $isLAN ]] && myIP="astroport.localhost"
+
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+###############################
+## EXTRACT G1Voeu from PLAYER TW
+echo "Exporting $PLAYER TW [tag[G1Voeu]]"
+rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json
+tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
+
+cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
+echo "VOEUX : ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)
+
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
+
+exit
 
 for v in $(cat ~/.zen/game/players/*/voeux/*/.title); do
     g1pub=$(grep -r $v ~/.zen/game/players/*/voeux/ 2>/dev/null | rev | cut -d '/' -f 2 | rev )
@@ -37,10 +59,6 @@ select voeu in "${vlist[@]}"; do
     *) echo "IMPRESSION $voeu"
         voeu=$(echo $voeu | cut -d ':' -f2) ## Get G1PUB part
         TITLE=$(cat ~/.zen/game/world/$voeu/.pepper) ## Get Voeu title (pepper) = simple GUI form + Name collision => Voeu fusion
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="astroport.localhost"
 
         VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
 
