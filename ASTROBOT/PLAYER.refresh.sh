@@ -193,12 +193,18 @@ done
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
+# Scan local cache
 ls ~/.zen/tmp/${IPFSNODEID}/
+BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
-ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
+## Merge actual online version
+ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
+NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
-echo "PUBLISHING STATION INDEXES"
-ipfs name publish --allow-offline -t 72h /ipfs/$ROUTING
+[[ $BSIZE != $NSIZE ]] \
+&& ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
+&& echo "BALISE STATION /ipns/${IPFSNODEID} INDEXES = $NSIZE octets" \
+&& ipfs name publish --allow-offline -t 72h /ipfs/$ROUTING
 
 echo "PLAYER.refresh DONE."
 

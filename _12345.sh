@@ -9,69 +9,103 @@
 # Then publish map of json DApp data
 #
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(ipfs id -f='<id>\n')
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
+[[ ! $myIP || $isLAN ]] && myIP="astroport.localhost"
 
 PORT=12345
 
     YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1); ## $USER running ipfs
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
-ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "(≖‿‿≖) - API Server Already Running -  (≖‿‿≖) " && exit 1
+ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
+[[ $ncrunning ]] && echo "(≖‿‿≖) - API Server Already Running -  (≖‿‿≖) " && kill -9 $ncrunning
 
 ## RESET MEMORY
 rm -Rf ~/.zen/tmp/swarm/*
 ## NAME PUBLISH EMPTY !!!
-ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEePxy2oXJ
+# ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEePxy2oXJ
+## INDICATE IPFSNODEID IS RUNNING
+##############################################
 
-mkdir -p ~/.zen/tmp/swarm/${IPFSNODEID}
-echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
+mkdir -p ~/.zen/tmp/swarm
+mkdir -p ~/.zen/tmp/$IPFSNODEID
+
+echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
+
+## CREATE CHAN = MySwarm_$IPFSNODEID
+    CHAN=$(ipfs key list -l | grep -w "MySwarm_$IPFSNODEID" | cut -d ' ' -f 1)
+    [[ ! $CHAN ]] && CHAN=$(ipfs key gen "MySwarm_$IPFSNODEID")
+## PUBLISH CHANNEL IPNS
+    echo "/ipns/$CHAN" > ~/.zen/tmp/$IPFSNODEID/.MySwarm
+
 
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-    lastrun=$(cat ~/.zen/tmp/swarm/${IPFSNODEID}/.moats)
+    lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
+    ## FIXING TIC TAC FOR NODE & SWARM REFRESH
     if [[ duree -gt 3600000 ]]; then
 
     (
     start=`date +%s`
+
+    ############# GET BOOTSTRAP SWARM DATA
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
         echo "############# RUN LOOP #########"
 
         ipfsnodeid=${bootnode##*/}
         mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
-        echo "IPFS get  /ipns/$ipfsnodeid"
-        [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ipfsnodeid} ($YOU)" && ipfs --timeout 12s get -o ~/.zen/tmp/swarm /ipns/$ipfsnodeid
-    ##    [[ ! -s ~/.zen/tmp/swarm/$ipfsnodeid/index.json ]] && echo "$LIBRA/ipns/${ipfsnodeid}" && curl -m 6 -so ~/.zen/tmp/swarm/$ipfsnodeid/index.json "$LIBRA/ipns/${ipfsnodeid}"
 
-        ## TODO LOOP CREATE bootstrap json array
-        #
+        echo "IPFS get  /ipns/$ipfsnodeid"
+        [[ $YOU ]] && ipfs --timeout 12s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid/
 
         echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
+
         ls ~/.zen/tmp/swarm/$ipfsnodeid
+
     done
 
-    ls ~/.zen/tmp/swarm/
-    ROUTING=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 )
-    echo "SELF PUBLISHING SWARM STATUS"
-    ipfs name publish --allow-offline /ipfs/$ROUTING
+    ############### UPDATE MySwarm CHAN
+    ls ~/.zen/tmp/swarm
+    BSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
+
+    ## SIZE MODIFIED
+    [[ $BSIZE != $(cat ~/.zen/tmp/swarm/.bsize) ]] \
+    && echo $BSIZE > ~/.zen/tmp/swarm/.bsize \
+    && SWARMH=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
+    && ipfs name publish --key "MySwarm_$IPFSNODEID" --allow-offline /ipfs/$SWARMH
+
+
+    ############# PUBLISH IPFSNODEID BALISE
+    # Scan local cache
+    ls ~/.zen/tmp/${IPFSNODEID}/
+    BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+
+    ## Merge with actual online version
+    ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
+    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+
+    ## Local / IPNS size differ => Publish
+    [[ $BSIZE != $NSIZE ]] \
+    && ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
+    && echo "BALISE STATION /ipns/${IPFSNODEID} INDEXES = $NSIZE octets" \
+    && ipfs name publish --allow-offline /ipfs/$ROUTING
 
     end=`date +%s`
-    echo '(*__*) UPDATE & PUBLISH duration was '`expr $end - $start`' seconds.'
-
-    # last run recording
-    echo "${MOATS}" > ~/.zen/tmp/swarm/${IPFSNODEID}/.moats
+    echo '(*__*) MySwam Update ($BSIZE B) duration was '`expr $end - $start`' seconds.'
 
     ) &
+
+    # last run recording
+    echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
 
     else
         echo "$duree only cache life"
@@ -90,7 +124,8 @@ Content-Type: application/json; charset=UTF-8
     \"hostname\" : \"$(hostname)\",
     \"myIP\" : \"${myIP}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
-    \"url\" : \"http://${myIP}:8080/ipns/${IPFSNODEID}\"
+    \"url\" : \"http://${myIP}:8080/ipns/${IPFSNODEID}\",
+    \"myswarm\" : \"http://${myIP}:8080/ipns/${CHAN}\"
 }
 "
     ######################################################################################

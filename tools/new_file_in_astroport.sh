@@ -61,6 +61,7 @@ TITLE="${file%.*}"
 
 MIME=$(file --mime-type -b "${path}${file}")
 
+    ############# EXTEND MEDIAKEY IDENTIFATORS https://github.com/NapoleonWils0n/ffmpeg-scripts
     if [[ $(echo "$MIME" | grep 'video') ]]; then
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
         echo "(✜‿‿✜) GIFANIME (✜‿‿✜)"
@@ -80,12 +81,12 @@ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
 ### SOURCE IS ~/astroport/ !!
 [[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'astroport') ]] && er="Les fichiers sont à placer dans ~/astroport/ MERCI" && echo "$er" && exit 1
 
-### TyPE & type & T
+### TyPE & type & T = related to ~/astroport location of the infile (mimetype subdivision)
 TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/astroport/... TyPE(film, youtube, mp3, video, page)/ REFERENCE /
 type=$(echo "$TyPE" | awk '{ print tolower($0) }')
 PREFIX=$(echo "$TyPE" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, Y, M ou Y (all the alaphabet can address a data type
 
-# File is placed in ROOT ~/astroport ?
+# File cannot be without "TyPE" in ~/astroport
 if [[ $PREFIX == "" ]]
 then
     [[ ! $3 ]] && [[ "$USER" != "xbian" ]] && zenity --warning --width 300 --text "Désolé votre fichier ne peut pas être traité"
@@ -93,7 +94,7 @@ then
 fi
 
 ########################################################################
-# EXTRACT INDEX REFERENCE : TMDB or YOUTUBE (can be extended with new )
+# EXTRACT INDEX REFERENCE : TMDB or YOUTUBE (TODO : EXTEND)
 ########################################################################
 case ${type} in
     video)
@@ -126,7 +127,7 @@ case ${type} in
         REFERENCE=$(echo "$path" | cut -d '/' -f 6 ) # Path contains TMDB id
         if ! [[ "$REFERENCE" =~ ^[0-9]+$ ]] # ${REFERENCE} NOT A NUMBER
         then
-            er="$er | ERROR: $path BAD TMDB code. Get it from https://www.themoviedb.org/ or use your 06 phone number"
+            er="$er | ERROR: $path BAD TMDB code. Get it from https://www.themoviedb.org/ or use your a mobile phone number ;)"
             echo "$er"
             exit 1
         fi
@@ -139,16 +140,18 @@ case ${type} in
     ;;
 esac
 
+### SET MEDIAKEY
 MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
 echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 
+## RUBISH ??
 ########################################################################
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/
 echo "ADDING ${path}${file} to IPFS "
 echo "~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN"
 echo "-----------------------------------------------------------------"
 
-        echo "FOUND : ${path}${file}"
+       ### FILE SIZING ####
         FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
 
@@ -171,21 +174,13 @@ echo IPFS ADD time was $ipfsdur seconds.
 ###########################################################
 ############################################
 ################################
-
+APPNAME="KEY"
 echo "-----------------------------------------------------------------"
 echo "IPFS $file DIRECTORY: ipfs ls /ipfs/$IPFSREPFILEID"
-echo "-----------------------------------------------------------------"
-echo "New $TyPE INDEX ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN "
+echo "APP $APPNAME OUTPUT -----------------------------------------------------------------"
+echo "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${APPNAME}/${MIME}/${MEDIAKEY}/${G1PUB}/ "
 
 URLENCODE_FILE_NAME=$(echo ${file} | jq -Rr @uri)
-
-
-#~ ########################################################################
-## TODO : URL SWALLOW (MEDIAKEY=REVERSEURL moc/...)
-# ipfs add MEDIA + inode_json
-## ARCHIVE = Look & Listen = ScreenShot + Gif + Mazsah
-#~ ########################################################################
-#~ ########################################################################
 
 #~ ### MEDIAKEY FORGE
 #~ ########################################################################
@@ -436,7 +431,7 @@ then
         FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
         RES=${FILE_RES%?}0p
 
-    # ADD NEW LINE TO INDEX
+    # REFRESH ajouter_video.txt FILE
     if [[ -f ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt ]]
     then
         line=$(cat ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt | sed "s/_IPFSREPFILEID_/$IPFSREPFILEID/g" | sed "s/_IPNSKEY_/$IPNS/g" )
@@ -445,7 +440,6 @@ then
     fi
     echo "-------------------- UPDATE ${PREFIX}ASTRXBIAN INDEX -----------------------------"
     echo "$line"
-#    echo "$line" >> ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
     echo "UPDATE ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt"
     echo "$line" > ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt
 
@@ -457,7 +451,7 @@ then
 
 
     echo "----------------- PREPARING TIDDLER ----------------------"
-    CAT=$(echo "$CAT" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+    CAT=$(echo "$type" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
     ## Adapt TMDB url
     [[ $CAT == "Film" ]] && tdb="movie"
     [[ $CAT == "Serie" ]] && tdb="tv"
