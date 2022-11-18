@@ -86,7 +86,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                 [[ ! $SECRET ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
-                cat ~/.zen/tmp/miz.json | jq -r .[].secret | base32 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+                cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
                 $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
@@ -153,7 +153,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         echo "# CRYPTO ENCODING $GWIP -> CRYPTIP"
         echo $GWIP > ~/.zen/tmp/GWIP
         $MY_PATH/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/GWIP -o $HOME/.zen/tmp/myIP.$G1PUB.enc
-        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base32)
+        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base16)
         sed -i "s~$GWIP~$CRYPTIP~g" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 
         ####################
