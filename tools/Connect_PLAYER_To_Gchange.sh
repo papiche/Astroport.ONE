@@ -52,7 +52,7 @@ if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
     SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials')
 
     ########################################################################
-    echo "UPDATE ${PLAYER} GCHANGE+ PROFILE"
+    echo "${PLAYER} GCHANGE+ PROFILE https://gchange.fr"
     echo "set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}""
     ########################################################################
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
@@ -61,7 +61,7 @@ if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
     ## GET CESIUM
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
     ########################################################################
-    echo "UPDATE ${PLAYER} CESIUM+ PROFILE"
+    echo "${PLAYER} CESIUM+ PROFILE https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
     ########################################################################
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
