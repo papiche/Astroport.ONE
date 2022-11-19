@@ -146,6 +146,23 @@ esac
 MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
 echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 
+    # CapitalGluedTitle
+    CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+
+######################### Decimal convert
+    rm ~/.zen/tmp/decimal
+    echo "$CapitalGluedTitle" > ~/.zen/tmp/convert
+
+    # iteracte through each like
+    while read -r -n1 char; do
+        arr+=$(printf '%d+' "'$char");
+    done <<< ~/.zen/tmp/convert
+
+    printf '%s' "${arr[@]::-3}" > ~/.zen/tmp/decimal
+    ## TODO USE IT TO MAKE A MEDIAKEY IMAGE KEY "SONDE" FOR FILTERING ?
+    # ISSUE11 : https://git.p2p.legal/qo-op/Astroport.ONE/issues/11
+##########################
+
 ## RUBISH ??
 ########################################################################
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/
@@ -457,9 +474,6 @@ then
     ## Adapt TMDB url
     [[ $CAT == "Film" ]] && tdb="movie"
     [[ $CAT == "Serie" ]] && tdb="tv"
-
-    # CapitalGluedTitle
-    CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
 
     GENRE=$(cat ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
     echo $GENRE
