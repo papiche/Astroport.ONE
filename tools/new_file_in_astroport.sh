@@ -565,7 +565,9 @@ echo "NEW $TyPE ($file) ADDED. http://${myIP}:8080/ipfs/$IPFSREPFILEID/$URLENCOD
 echo "VIDEO IPNS LINK : http://${myIP}:8080/ipns/$KEY/$G1PUB/  = Create 'G1${CAT}.sh' to adapt 20H12 Ŋ1 process"
 echo "#### EXCECUTION TIME"
 end=`date +%s`
-echo Full Execution time was `expr $end - $start` seconds.
+dur=`expr $end - $start`
+echo ${MOATS}:${G1PUB}:${PLAYER}:NewFile:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
 echo "########################################################################"
 
 

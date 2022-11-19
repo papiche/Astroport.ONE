@@ -230,7 +230,9 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo "$APPNAME (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            dur=`expr $end - $start`
+            echo ${MOATS}:${G1PUB}:${PLAYER}:${APPNAME}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+            cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
             ) &
 
             end=`date +%s`
@@ -360,11 +362,15 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     ipfs name publish --allow-offline /ipfs/$ROUTING
                     echo "DONE"
                     end=`date +%s`
-                    echo "MAP PUBLISHING (o‿‿o) Execution time was "`expr $end - $start` seconds.
+                    dur=`expr $end - $start`
+                    echo ${MOATS}:${G1PUB}:${PLAYER}:SELF:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+                    cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
                 ) &
 
             end=`date +%s`
-            echo "(|$APPNAME|) Execution time was "`expr $end - $start` seconds.
+            dur=`expr $end - $start`
+            echo ${MOATS}:${G1PUB}:${PLAYER}:${APPNAME}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+            cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
         ) & # testcraft SUB PROCESS
 
             end=`date +%s`
@@ -434,9 +440,17 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                     # GET PLAYER FROM Dessin de $PLAYER
                     tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
-                    PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].president)
+                    PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].president | head -n 1) ## TRY WITH MULTI moa & G1Moa ?
 
-                    [[ ! $PLAYER ]] && (echo "$HTTPCORS ERROR - BAD [tag[moa]] president field /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                    [[ ! $PLAYER ]] \
+                    && (echo "$HTTPCORS ERROR - BAD [tag[moa]] president field /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+
+        if [[ "${PLAYER}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+            echo "VALID PLAYER OK"
+        else
+            echo "BAD EMAIL"
+            (echo "$HTTPCORS KO ${PLAYER} : IPNS key identification failed<br>please correct 'Dessin president field' with your email"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        fi
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
@@ -445,10 +459,16 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/ &"
                     (
+                    startipfs=`date +%s`
                     IPUSH=$(ipfs add -Hq ~/.zen/tmp/coucou/${MOATS}.astroindex.html | tail -n 1)
                     [[ $IPUSH ]] && ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
                     echo "## PUBLISHING ${PLAYER} /ipns/$ASTRONAUTENS/ END"
-                    ) &
+                    end=`date +%s`
+                    dur=`expr $end - $start`
+                    echo ${MOATS}:${G1PUB}:${PLAYER}:TWUPDATE:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+                    cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
+                    ) & # ~~bbbzzzzzz~~&
+
                     ## MEMORISE PLAYER Ŋ1 ZONE (TODO compare with VISA.new.sh)
                     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
                     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/.g1pub
@@ -461,18 +481,20 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 echo "NO TW FOUND - LAUNCHING CENTRAL"
                 ## 302 REDIRECT CENTRAL GW
                 TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
-
-                cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                sed -i "s~_TWLINK_~https://$TUBE/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                TWIP=${TUBE}
             fi
 
         ## 302 REDIRECT $TWIP
         cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
-        (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(0‿‿0) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+            end=`date +%s`
+            dur=`expr $end - $start`
+            echo ${MOATS}:${G1PUB}:${PLAYER}:${APPNAME}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+            cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
 
+            continue
         fi ## official
 
 
@@ -511,8 +533,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 if [[ ! -d ~/.zen/game/players/${WHAT} ]]; then
                     echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${WHAT}.${MOATS}.txt)"
                     (
+                    startvisa=`date +%s`
                     $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "${WHAT}" "$PSEUDO" > ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
                     $MY_PATH/tools/mailjet.sh "${WHAT}" ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
+                    end=`date +%s`
+                    dur=`expr $end - $startvisa`
+                    echo ${MOATS}:${G1PUB}:${PLAYER}:VISA:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+                    cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
                     ) &
 
                     echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\"http://"$myIP":8080/ipns/"$ASTRONAUTENS"\"'/>
