@@ -36,7 +36,7 @@ exit 2
 cycle=1
 for uqlink in $(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep 'play :' | rev | cut -d '/' -f 1 | rev);
 do
-    uqname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1 | cut -d '%' -f 1 | sed 's/\+/_/g')
+    uqname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1 | cut -d '%' -f 1 | sed 's/\+/_/g' | tail -n 1)
     cycle=$((cycle+1))
     echo "########################################################################"
     echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/astroport/$uqname.mp4\""
