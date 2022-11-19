@@ -85,9 +85,14 @@ while true; do
 
 
     ############# PUBLISH IPFSNODEID BALISE
+    # Clean Empty
+    du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
+    while read branch; do [[ $branch =~ "4096" ]] && rmdir $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
+
     # Scan local cache
     ls ~/.zen/tmp/${IPFSNODEID}/
     BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+
 
     ## Merge with actual online version
     ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
@@ -100,7 +105,7 @@ while true; do
     && ipfs name publish --allow-offline /ipfs/$ROUTING
 
     end=`date +%s`
-    echo '(*__*) MySwam Update ($BSIZE B) duration was '`expr $end - $start`' seconds.'
+    echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds.'
 
     ) &
 
