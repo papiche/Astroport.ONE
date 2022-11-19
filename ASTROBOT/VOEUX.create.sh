@@ -24,7 +24,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="astroport.localhost"
+[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 ## EXPORT [tag[voeu]]
 echo "## EXTRACTION DE NOUVEAUX VOEUX pour $PLAYER TW"

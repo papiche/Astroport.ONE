@@ -7,6 +7,9 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+
+
 echo '
 ########################################################################
 # \\///
@@ -22,8 +25,8 @@ messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
 [[ ! $1 ]] && mail="support@qo-op.com"
 
-SUBJECT="[(♥‿‿♥)] Astronaute. Bonjour. "
-MESSAGE="( ◕‿◕)\n\n Salut $PLAYER\n\n\n Activez votre TW http://tube.copylaradio.com:1234 .\n\nAstroport"
+SUBJECT="[(♥‿‿♥)] Astronaute. Message votre Station Astroport.ONE"
+MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n Activez votre TW http://tube.copylaradio.com:1234 .\n\nAstroport\n$IPFSNODEID"
 
 echo "From: support@g1sms.fr
 To: EMAIL
