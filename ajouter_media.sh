@@ -50,7 +50,7 @@ URL="$1"
 if [ $URL ]; then
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="Quel type de media voulez vous copier ?" --entry-text="Video" Page MP3 Web)
+    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" Page MP3 Web)
     [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
@@ -272,10 +272,17 @@ rm -Rf ${YTEMP}
 
     ## record one page to PDF
         [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
-        cd /tmp/ && rm -f output.pdf
+
+        cd ~/.zen/tmp/ && rm -f output.pdf
+
+        ${MY_PATH}/tools/timeout.sh -t 12 \
         chromium --headless --no-sandbox --print-to-pdf $URL
 
-        TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom de fichier à donner à cette page ? " --entry-text="${URL}")
+        [[ ! -s ~/.zen/tmp/output.pdf ]] && espeak "No file Sorry. Exit" > /dev/null 2>&1 && exit 1
+
+        CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
+
+        TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom de fichier à donner à cette page ? " --entry-text="${CTITLE}")
         [[ $TITLE == "" ]] && exit 1
         FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
 
@@ -660,7 +667,7 @@ espeak "Updating IPNS. Please wait..."
                                         ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
         TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-        ipfs name publish --allow-offline -t 72h --key=${PLAYER} /ipfs/$TW
+        ipfs name publish --allow-offline -t 24h --key=${PLAYER} /ipfs/$TW
 
         [[ $DIFF ]] && echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
         echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats

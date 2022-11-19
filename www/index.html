@@ -122,9 +122,9 @@
 <script>
 function cacheIt (appName, hash, nodeId = '') {
 
-    var gatewayProtocol = 'https';
+    var gatewayProtocol = 'http';
 
-    var gatewayDomain = 'tube.copylaradio.com';
+    var gatewayDomain = 'astroport.localhost';
 
     var gatewayPort = '1234';
 
@@ -137,10 +137,7 @@ function cacheIt (appName, hash, nodeId = '') {
         query += '&nodeid=' + nodeId
         query += '&dataid=' + hash;
 
-    var URL1234 = 'http://'+ gatewayDomain +':'+ gatewayPort + '/?' + query;
-    console.log(URL1234)
-
-    var fullURL = 'https://'+ gatewayDomain +'/'+ gatewayPort + '/?' + query;
+    var fullURL = 'http://'+ gatewayDomain +':'+ gatewayPort + '/?' + query;
     console.log(fullURL)
 
     const controller = new AbortController()
@@ -192,9 +189,21 @@ async function ipfs_init() {
                             '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
                         ]
                     }
-                }
+                },
+                "Discovery": {
+                        "MDNS": {
+                          "Enabled": false,
+                          "Interval": 10
+                        },
+                        "webRTCStar": {
+                          "Enabled": true
+                        }
+                },
+                "Bootstrap": [
+                        "/dns4/wss0.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmZMxNdpMkewiVZLMRxaNxUeZpDUb34pWjZ1kZvsd16Zic",
+                        "/dns4/wss1.bootstrap.libp2p.io/tcp/443/wss/ipfs/Qmbut9Ywz9YEDrz8ySBSgWyJk41Uvm2QJPhwDJzJyGFsD6"
+                      ]
             }
-
         );
 
     let nodeId = await node.id();
@@ -218,12 +227,15 @@ async function ipfs_init() {
         );
 
         const cid = fileAdded.cid.toString();
+        var salt = 'totodu56';
+        var pepper = 'totodu56';
+
         document.getElementById('informations').innerHTML = [
-            'The file has been added to IPFS!',
+            'Prêt à enregistrer !',
             '',
-            'Its hash (CID) is:',
-            `<a href="https://download-a-file-from-ipfs.com/?cid=${cid}" target="_blank">${cid}</a>`,
-            '(click to download it)'
+            'Son Hash (CID) est :',
+            `<a href="http://libra.copylaradio.com:1234/?salt=${salt}&pepper=${pepper}&testcraft=on&nodeid=${nodeId}&dataid=${cid}" target="reboot">${cid}</a>`,
+            '(cliquez pour demander enregistrement)'
         ].join('<br />');
 
         cacheIt('testcraft=on', cid, nodeId)

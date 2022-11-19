@@ -298,7 +298,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
                     curl -m 5 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} "$gum"
-                    [[ $? != 0 ]] && echo "(✜‿‿✜) BYPASSING"; echo
+                    [[ $? != 0 ]] && echo "(✜‿‿✜) BYPASSING"
 
                     if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
 
@@ -325,7 +325,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                     else
 
-                        echo " (⇀‿‿↼) - TIMEOUT - (⇀‿‿↼)"
+                        echo " (⇀‿‿↼) - NO FILE - (⇀‿‿↼)"
                         continue
 
                     fi
@@ -411,7 +411,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $GWIP ]] && GWIP=$SECRET ## CLEAR
+                [[ ! $GWIP ]] && GWIP=$myIP ## CLEAR
 #
                 echo "TW is on $GWIP"
 
