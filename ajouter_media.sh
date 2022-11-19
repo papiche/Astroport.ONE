@@ -419,6 +419,7 @@ RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
 # VIDEO SEASON or SAGA
 [[ "${CAT}" == "serie" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saison" --text "Indiquez SAISON et EPISODE. Exemple: S02E05" --entry-text="")
 [[ "${CAT}" == "film" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saga" --text "Indiquez une SAGA (optionnel). Exemple: James Bond" --entry-text="")
+[[ $SAISON ]] && SAISON=" - $SAISON"
 
 # VIDEO GENRES
 FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\

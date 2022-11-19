@@ -477,7 +477,7 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
-        </video><h1><a target='tmdb' href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${CapitalGluedTitle}"</a></h1>
+        </video><h1><a target='tmdb' href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${TITLE}"</a></h1>
         <h2>"$DESCRIPTION"</h2>
         <img src='/ipfs/"${POSTER}"' width=33%><br>
     <\$button class='tc-tiddlylink'>
