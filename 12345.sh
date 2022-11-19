@@ -323,6 +323,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                         fi
 
+                    else
+
                         echo " (⇀‿‿↼) - TIMEOUT - (⇀‿‿↼)"
                         continue
 
