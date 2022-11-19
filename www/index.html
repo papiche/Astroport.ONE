@@ -1,1 +1,263 @@
-<head><meta http-equiv='Refresh' content='0; URL=_REDIRLINK_'></head>
+<html class=" rrghhqet idc0_344 cadefrffwk ftnryedt"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <title>Upload files to Astroport</title>
+        <style>
+            a, a:hover, a:visited, a:active {
+                color: #fff;
+                text-decoration: none;
+            }
+
+            body {
+                border: 0;
+                margin: 0;
+
+                font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+
+                background-color: #041d2f;
+                color: #fff;
+
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+            }
+
+            input[type=text] {
+                width: 500px;
+                height: 50px;
+                text-align: center;
+                margin: 5px;
+            }
+
+            input[type=file] {
+                width: 0.1px;
+                height: 0.1px;
+                opacity: 0;
+                overflow: hidden;
+                position: absolute;
+                z-index: -1;
+            }
+
+            input[type=file] + label {
+                display: inline-block;
+
+                font-size: 1.25em;
+                font-weight: 700;
+
+                color: #333;
+                background-color: #fff;
+                border-radius: 5px;
+
+                padding: 20px;
+            }
+
+            input[type=file]:focus + label,
+            input[type=file] + label:hover {
+                background-color: #fff;
+            }
+
+            label {
+                cursor: pointer;
+            }
+
+            button {
+                width: 500px;
+                height: 50px;
+                text-align: center;
+                margin: 5px;
+                cursor: pointer;
+            }
+
+            .content {
+                flex: 1;
+                margin: 10px;
+                text-align: center;
+            }
+
+            .informations {
+                font-size: 24px;
+            }
+
+            .image {
+                display: block;
+                margin: 0 auto;
+                height: 300px;
+                margin-bottom: 40px;
+            }
+
+            .wrapWithDirectoryContainer {
+                font-size: 16px;
+            }
+
+            .footer {
+                text-align: center;
+                margin: 10px;
+            }
+        </style>
+        <script src="ipfs.js"></script>
+    </head>
+<body>
+    <div class="content">
+        <img src="./logo-astroport.png" class="image">
+
+        <div id="informations" class="informations">
+            Téléverser un fichier vers Astroport
+        </div>
+        <br>
+        <br>
+
+        <form>
+            <input id="file" type="file">
+            <label for="file">Choose a file</label>
+            <br>
+            <br>
+
+            <div class="wrapWithDirectoryContainer">
+                <input id="wrapWithDirectory" type="checkbox">
+                <label for="wrapWithDirectory">Wrap with a directory (recommended)</label>
+            </div>
+        </form>
+    </div>
+
+
+<script>
+function cacheIt (appName, hash, nodeId = '') {
+
+    var gatewayProtocol = 'https';
+
+    var gatewayDomain = 'tube.copylaradio.com';
+
+    var gatewayPort = '1234';
+
+    var salt = 'totodu56';
+    var pepper = 'totodu56';
+
+    var query  = 'salt='+ salt
+        query += '&pepper='+ pepper
+        query += '&' + appName
+        query += '&nodeid=' + nodeId
+        query += '&dataid=' + hash;
+
+    var URL1234 = 'http://'+ gatewayDomain +':'+ gatewayPort + '/?' + query;
+    console.log(URL1234)
+
+    var fullURL = 'https://'+ gatewayDomain +'/'+ gatewayPort + '/?' + query;
+    console.log(fullURL)
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout( () => {
+        controller.abort()
+    }, 15000)
+    var fetchOpts = {
+        method: 'GET',
+        headers: {
+            'Accept': 'text/html'
+            // ,'Content-Type': 'text/html'
+            // // ,'Access-Control-Allow-Origin': '*',
+            // ,'Origin': 'la-bureautique'
+            // ,'Referrer-Policy': 'unsafe-url'
+            // ,'Redirect': 'manual'
+        },
+        signal: controller.signal
+    }
+
+    fetch(fullURL, fetchOpts)
+        .then(reponse => {
+            return reponse.text()
+        })
+        .then(html => {
+            // console.log(html)
+
+            var regex = /url='([^']+)/i;
+            var redirectURL = html.match(regex)[1]
+
+            return redirectURL
+        })
+        .then(url => {
+
+            console.log(url)
+        })
+
+    // JSON.stringify(json)
+}
+
+async function ipfs_init() {
+
+    const node = await window.IpfsCore.create(
+
+            {
+                config: {
+                    Addresses: {
+                        Swarm: [
+                            '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+                            '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
+                        ]
+                    }
+                }
+            }
+
+        );
+
+    let nodeId = await node.id();
+    console.log('node id :', nodeId)
+    nodeId = nodeId.id
+    console.log(nodeId)
+    const version = await node.version();
+    console.log('Version:', version.version);
+
+    async function ipfs_upload(file, wrapWithDirectory) {
+
+        const fileAdded = await node.add(
+            {
+                path: file.name,
+                content: file
+            },
+            {
+                wrapWithDirectory,
+                progress: bytesAdded => document.getElementById('informations').innerHTML = `Sending... ${Math.round((bytesAdded / file.size) * 100)}%`
+            }
+        );
+
+        const cid = fileAdded.cid.toString();
+        document.getElementById('informations').innerHTML = [
+            'The file has been added to IPFS!',
+            '',
+            'Its hash (CID) is:',
+            `<a href="https://download-a-file-from-ipfs.com/?cid=${cid}" target="_blank">${cid}</a>`,
+            '(click to download it)'
+        ].join('<br />');
+
+        cacheIt('testcraft=on', cid, nodeId)
+    }
+
+    document.getElementById('file').disabled = false;
+
+    document.getElementById('file').addEventListener('change', async event => {
+
+        event.preventDefault();
+        document.getElementById('file').disabled = true;
+
+        const fileInput = document.getElementById('file');
+
+        if (!fileInput.files.length) {
+
+            alert('You have to select a file first');
+
+        } else {
+
+            const wrapWithDirectory = document.getElementById('wrapWithDirectory').checked;
+
+            await ipfs_upload(fileInput.files[0], wrapWithDirectory)
+                .catch(error => alert(error.toString()));
+        }
+
+        document.getElementById('file').disabled = false;
+    });
+
+}
+
+ipfs_init();
+
+
+</script>
+
+</body></html>

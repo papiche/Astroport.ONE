@@ -456,6 +456,9 @@ then
     [[ $CAT == "Film" ]] && tdb="movie"
     [[ $CAT == "Serie" ]] && tdb="tv"
 
+    # CapitalGluedTitle
+    CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+
     GENRE=$(cat ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
     echo $GENRE
 
@@ -474,9 +477,9 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
-        </video><h1><a href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${TITLE}"</a></h1>
+        </video><h1><a target='tmdb' href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${CapitalGluedTitle}"</a></h1>
         <h2>"$DESCRIPTION"</h2>
-        <img src='/ipfs/"${POSTER}"' width=72%></img><br>
+        <img src='/ipfs/"${POSTER}"' width=33%><br>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[G1${CAT}]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
@@ -484,14 +487,14 @@ then
     Afficher tous les G1${CAT}
     </\$button>"
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
-        TAGS="G1${CAT} ${PLAYER} $GENRE ipfs ${HASHTAG}"
+        TAGS="G1${CAT} ${PLAYER} ${CapitalGluedTitle} $GENRE ipfs ${HASHTAG}"
         # TyPE="$MIME"
         # CANON="/ipfs/"${IPFSID}
         CANON=''
     else
         TidType="${MIME}"
         TEXT='${MEDIAKEY}'
-        TAGS="'$:/isAttachment $:/isIpfs G1${CAT} $GENRE"
+        TAGS="'$:/isAttachment $:/isIpfs G1${CAT} ${PLAYER} ${CapitalGluedTitle} $GENRE ${HASHTAG}"
         CANON="/ipfs/"${IPFSID}
     fi
 
@@ -499,7 +502,7 @@ then
     echo '[
   {
     "text": "'${TEXT}'",
-    "title": "'${TITLE}'",
+    "title": "'${CapitalGluedTitle}'",
     "created": "'${MOATS}'",
     "resolution": "'${RES}'",
     "gifanime": "'/ipfs/${ANIMH}'",

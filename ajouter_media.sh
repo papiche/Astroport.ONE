@@ -484,15 +484,13 @@ fi
 mkdir -p ~/astroport/${CAT}/${MEDIAID}/
 mv /tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
 
-mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT}"
+mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
-if [ $? == 0 ]; then
-    zenity --warning --width ${large} --text "Votre fichier ~/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT} est prêt à embarquer. Cliquez sur OK, nous allons préparer son script d'ajout à Astroport..."
-else
+if [ $? != 0 ]; then
     zenity --warning --width ${large} --text "Impossible de déplacer votre fichier ${FILE_PATH}/${FILE_NAME} vers ~/astroport - EXIT -"
     exit 1
 fi
-FILE_NAME="${TITLE}.${FILE_EXT}"
+FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
 
 
 ## CREATE "~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt"
@@ -538,7 +536,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     ## CREATE SIMPLE JSON (REMOVE== it ?
     jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/astroport/${CAT}/${MEDIAID}/video.json
     ## MOVE FILE TO IMPORT ZONE
-    mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT}"
+    mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
     FILE_NAME="${TITLE}.${FILE_EXT}"
 
     ;;
@@ -556,9 +554,9 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 esac
 
 ## Extract thumbnail
-MIME=$(file --mime-type -b $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT})
+MIME=$(file --mime-type -b $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT})
 
-[[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
+[[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
 [[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
 
 ########################################################################

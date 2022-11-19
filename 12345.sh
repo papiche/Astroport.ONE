@@ -297,8 +297,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     [[ $(cat ~/.zen/tmp/.ipfsgw.bad.twt | grep -w $nicegw) ]] && echo "<<< BAD GATEWAY >>>  $nicegw" && continue
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
-                    curl -m 3 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} "$gum"
-                    [[ $? != 0 ]] && echo "(✜‿‿✜) $nicegw BYPASSING"; echo
+                    curl -m 5 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} "$gum"
+                    [[ $? != 0 ]] && echo "(✜‿‿✜) BYPASSING"; echo
 
                     if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
 
@@ -306,8 +306,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                         GOAL=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
 
                         if [[ ${GOAL} != ${DATAID} ]]; then
-                            echo " (╥☁╥ ) - $nicegw ${WHAT} FORMAT ERROR - (╥☁╥ )"
+                            echo " (╥☁╥ ) - BAD ${WHAT} FORMAT ERROR ${MIME} - (╥☁╥ )"
                             ipfs pin rm /ipfs/${GOAL}
+                            rm ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}
                             # NOT A JSON AVOID BANISHMENT
                             echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
                             continue
@@ -317,12 +318,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                             ipfs pin add /ipfs/${GOAL}
                             ## + TW ADD (new_file_in_astroport.sh)
 
-                            echo "(♥‿‿♥) $nicegw OK"; echo
+                            echo "(♥‿‿♥) FILE UPLOAD OK"; echo
                             break
 
                         fi
 
-                        echo " (⇀‿‿↼) - $nicegw TIMEOUT - (⇀‿‿↼)"
+                        echo " (⇀‿‿↼) - TIMEOUT - (⇀‿‿↼)"
                         continue
 
                     fi
