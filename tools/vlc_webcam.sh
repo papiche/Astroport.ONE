@@ -48,14 +48,15 @@ fi
 mkdir -p ~/.zen/tmp/
 
 espeak "Hello"
-espeak "Getting player latest TW. please wait."
-## GETTING LAST TW via IPFS or HTTP GW
-[[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 6s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/vlc_webcam.html
-[[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 6 -so ~/.zen/tmp/vlc_webcam.html "$LIBRA/ipns/${ASTRONAUTENS}"
-[[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && espeak "WARNING. impossible to find your TW online"
-[[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No local copy found !" && exit 1
-[[ -s ~/.zen/tmp/vlc_webcam.html ]] && cp -f ~/.zen/tmp/vlc_webcam.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "OK DONE"
-
+if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey ]]; then
+    espeak "Getting player latest TW. please wait."
+    ## GETTING LAST TW via IPFS or HTTP GW
+    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/vlc_webcam.html
+    [[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/vlc_webcam.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    [[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && espeak "WARNING. impossible to find your TW online"
+    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No local copy found !" && exit 1
+    [[ -s ~/.zen/tmp/vlc_webcam.html ]] && cp -f ~/.zen/tmp/vlc_webcam.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "OK DONE"
+fi
 espeak "Start Video recording. Press ENTER to stop !"
 # Find "input-slave" :: pactl list short sources
 

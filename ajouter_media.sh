@@ -105,9 +105,14 @@ if [[ $1 == "on" ]]; then
     REP=$(~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
 fi
 
+espeak "restart IPFS daemon"
+sudo systemctl restart ipfs
+
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
+
+espeak "Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
@@ -426,7 +431,7 @@ RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
 # VIDEO SEASON or SAGA
 [[ "${CAT}" == "serie" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saison" --text "Indiquez SAISON et EPISODE. Exemple: S02E05" --entry-text="")
 [[ "${CAT}" == "film" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saga" --text "Indiquez une SAGA (optionnel). Exemple: James Bond" --entry-text="")
-[[ $SAISON ]] && SAISON=" - $SAISON"
+[[ $SAISON ]] && SAISON="_$SAISON"
 
 # VIDEO GENRES
 FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
@@ -478,11 +483,9 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
 GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
 
 ########################################################################
-# Screen capture is used as thumbnail
+# Screen capture
 ########################################################################
 if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    zenity --warning --width 300 --text "Cliquez nous capturons votre écran comme vignette MEDIA"
-    sleep 1
     import -window root /tmp/screen.png
 fi
 
@@ -562,7 +565,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 esac
 
 ## Extract thumbnail
-MIME=$(file --mime-type -b $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT})
+MIME=$(file --mime-type -b "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}")
 
 [[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
 [[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
