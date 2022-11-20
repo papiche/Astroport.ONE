@@ -403,17 +403,17 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
             # DEBUG
-            # echo "tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
-            # echo "cat ~/.zen/tmp/miz.json | jq -r .[].secret"
+            # echo "tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
+            # echo "cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret"
 
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 echo "GOT TW CACHE !!"
-                tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                SECRET=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+                tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                SECRET=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
                 [[ ! $SECRET ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
-                cat ~/.zen/tmp/miz.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
+                cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
                 $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
@@ -423,12 +423,21 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 echo "WAS $GWIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
 
+        ####################
+        echo $GWIP > ~/.zen/tmp/GWIP
+        $MY_PATH/tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/GWIP -o $HOME/.zen/tmp/myIP.$G1PUB.enc
+        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base16)
+        ## WRITE CRYPTIP into MadeInZion tiddler
+        echo "# CRYPTO ENCODING $GWIP -> $CRYPTIP"
+        sed -i "s~$SECRET~$CRYPTIP~g" ~/.zen/tmp/MadeInZion.json
+
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
                 echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://'$myIP':5001"}]' > ~/.zen/tmp/5001.json
                 echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$myIP':8080"}]' > ~/.zen/tmp/8080.json
 
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html \
+                            --import "$HOME/.zen/tmp/MadeInZion.json" "application/json" \
                             --import "$HOME/.zen/tmp/5001.json" "application/json" \
                             --import "$HOME/.zen/tmp/8080.json" "application/json" \
                             --output ~/.zen/tmp/coucou --render "$:/core/save/all" "${MOATS}.newindex.html" "text/plain"
@@ -453,6 +462,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         fi
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
+                    ipfs key rm ${PLAYER}
                     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
                     [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]] && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
                     cp ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html

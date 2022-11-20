@@ -181,7 +181,7 @@ echo "PLAYER TW Update..."
                                     ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
     TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --allow-offline -t 72h --key=${PLAYER} /ipfs/$TW
+    ipfs name publish --allow-offline -t 24h --key=${PLAYER} /ipfs/$TW
 
     [[ $DIFF ]] && echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
     echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats

@@ -105,7 +105,7 @@ if [[ $1 == "on" ]]; then
     REP=$(~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
 fi
 
-espeak "restart IPFS daemon"
+espeak "restart I P F S daemon"
 sudo systemctl restart ipfs
 
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
@@ -386,7 +386,7 @@ exit 0
 ########################################################################
     film | serie)
 
-    espeak "thank you for sharing your best movies"
+    espeak "please select your file"
 
 # SELECT FILE TO ADD TO ASTROPORT/KODI
 FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
@@ -416,12 +416,20 @@ MEDIAID=$CMED
 MEDIAKEY="TMDB_$MEDIAID"
 
 # VIDEO TITLE
-TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="${FILE_TITLE}")
+### CHECK IF PREVIOUS ajouter_video (Serie case)
+[[ -f  ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
+&& PRE=$(cat ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 4) \
+|| PRE=${FILE_TITLE}
+###
+TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="${PRE}")
 [[ $TITLE == "" ]] && exit 1
 TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TITLE (NO ;)
 
 # VIDEO YEAR
-YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la vidéo. Exemple: 1985" --entry-text="")
+### CHECK IF PREVIOUS ajouter_video (Serie case)
+[[ -f  ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
+&& PRE=$(cat ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 3)
+YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la vidéo. Exemple: 1985" --entry-text="${PRE}")
 
 # VIDEO RESOLUTION
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE}" | cut -d "x" -f 2)
@@ -429,7 +437,10 @@ RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
 #RES=$(zenity --entry --width 300 --title="Résolution" --text="Résolution de la vidéo" --entry-text="${FILE_RES}" SD HD 4K 360p 480p 720p 1080p)
 
 # VIDEO SEASON or SAGA
-[[ "${CAT}" == "serie" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saison" --text "Indiquez SAISON et EPISODE. Exemple: S02E05" --entry-text="")
+### CHECK IF PREVIOUS ajouter_video (Serie case)
+[[ -f  ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
+&& PRE=$(cat ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2)
+[[ "${CAT}" == "serie" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saison" --text "Indiquez SAISON et EPISODE. Exemple: S02E05" --entry-text="${PRE}")
 [[ "${CAT}" == "film" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saga" --text "Indiquez une SAGA (optionnel). Exemple: James Bond" --entry-text="")
 [[ $SAISON ]] && SAISON="_$SAISON"
 
@@ -486,14 +497,15 @@ GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
 # Screen capture
 ########################################################################
 if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    import -window root /tmp/screen.png
+    sleep 1
+    import -window root ~/.zen/tmp/screen.png
 fi
 
 ###################################
 ### MOVING FILE TO ~/astroport ####
 ###################################
 mkdir -p ~/astroport/${CAT}/${MEDIAID}/
-mv /tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
+mv ~/.zen/tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
 
 mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
@@ -567,7 +579,8 @@ esac
 ## Extract thumbnail
 MIME=$(file --mime-type -b "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}")
 
-[[ $(echo $MIME | grep video) ]] && ffmpeg  -i $HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT} -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
+rm ~/astroport/${CAT}/${MEDIAID}/thumbnail.png
+[[ $(echo $MIME | grep video) ]] && ffmpeg  -i "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
 [[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
 
 ########################################################################
@@ -649,22 +662,24 @@ zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GETTING LAST TW via IPFS or HTTP GW
 LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-[[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
-[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
-[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. impossible to find your TW online"
+rm ~/.zen/tmp/ajouter_media.html
+[[ $YOU ]] && echo " ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
+[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
+[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
 [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
 [[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
-espeak "Updating IPNS. Please wait..."
 ###############################
 
     echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
-    tiddlywiki --verbose --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+    tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                     --import ~/astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
-
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
+
+        espeak "I P N S Publishing. Please wait..."
         cp ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
                                         ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
@@ -679,8 +694,13 @@ espeak "Updating IPNS. Please wait..."
         echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
         echo "================================================"
         echo
+
+    else
+
+        espeak "Warning. Could not import Tiddler. You must add it by hand."
+
     fi
 
- espeak "Well done my friend. You are feeding the blob. Happy TW"
+ espeak "Bye Bye"
 
 exit 0
