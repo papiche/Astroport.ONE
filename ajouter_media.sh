@@ -493,28 +493,14 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
 # FORMAT GENRES ["genre1","genre2"] # USE  IF YOU ACTIVATE KODI COMPATIBILITY
 GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
 
-########################################################################
-# Screen capture
-########################################################################
-if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    sleep 1
-    import -window root ~/.zen/tmp/screen.png
-fi
-
-###################################
-### MOVING FILE TO ~/astroport ####
-###################################
-mkdir -p ~/astroport/${CAT}/${MEDIAID}/
-mv ~/.zen/tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
-
 mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
 if [ $? != 0 ]; then
     zenity --warning --width ${large} --text "Impossible de déplacer votre fichier ${FILE_PATH}/${FILE_NAME} vers ~/astroport - EXIT -"
     exit 1
 fi
-FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
 
+FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
 
 ## CREATE "~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt"
 URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
@@ -575,6 +561,22 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     ;;
 
 esac
+
+########################################################################
+# Screen capture
+########################################################################
+if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
+    espeak "taking a screen shot"
+    sleep 1
+    import -window root ~/.zen/tmp/screen.png
+fi
+
+###################################
+### MOVING FILE TO ~/astroport ####
+###################################
+mkdir -p ~/astroport/${CAT}/${MEDIAID}/
+mv ~/.zen/tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
+
 
 ## Extract thumbnail
 MIME=$(file --mime-type -b "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}")
@@ -648,11 +650,12 @@ FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; 
     ZENBALANCE=0
 #fi
 ########################################################################
-
+espeak "Ready to eat"
 zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
 
 bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
 
+espeak "T W index recording"
 zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
 
 
@@ -662,12 +665,12 @@ zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GETTING LAST TW via IPFS or HTTP GW
 LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-rm ~/.zen/tmp/ajouter_media.html
+rm ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
 [[ $YOU ]] && echo " ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
 [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 [[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
 ###############################

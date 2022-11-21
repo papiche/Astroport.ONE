@@ -19,10 +19,12 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
+
 PORT=12345
 
     YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1); ## $USER running ipfs
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
+    TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
 mkdir -p ~/.zen/tmp/coucou/
 
@@ -42,7 +44,7 @@ Content-Type: text/html; charset=UTF-8
 "
 
 echo "_________________________________________________________"
-echo "LAUNCHING Astroport  API Server - TEST - "
+echo "LAUNCHING Astroport  API Server - $TUBE - "
 echo
 echo "CREATE GCHANGE + TW http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=fred@astroport.com"
 echo
@@ -106,7 +108,7 @@ while true; do
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
     ############################################################################
-    [[ $URL == "/test" ]] && continue
+    [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "************************************************************************* "
     echo "ASTROPORT 1234 UP & RUNNING.......................... http://$HOST:1234 PORT"
@@ -499,7 +501,6 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             else
                 echo "NO TW FOUND - LAUNCHING CENTRAL"
                 ## 302 REDIRECT CENTRAL GW
-                TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
                 TWIP=${TUBE}
             fi
 

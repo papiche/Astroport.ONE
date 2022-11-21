@@ -244,57 +244,34 @@ else
     echo "## ALREADY EXISTING IPNS KEY $KEYFILE ($KEY)"
 fi
 
+
 ########################################################################
-# POST TRAITEMENTS
-if [[ "${type}" == 'page' ]]; then
-    echo "PDF ??"
-fi
+# type TW PUBLISHING
 ########################################################################
-# film/serie PUBLISH
-########################################################################
-if [[ "${type}" =~ ^(film|serie|youtube|video)$ ]]
+if [[ "${type}" =~ ^(page|film|serie|youtube|video)$ ]]
 then
-    ## CREATE GCHANGE AD
-    ## STOP PUBLISHING TO GCHANGE, NOW PLAYER TW ONLY
-    ## ACTIVATE AGAIN TO MAKE ADVERTISMENT OF YOUR MEDIAKEY ACCES
 
-#    if [[ ! -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.gchange.ad && ( "${type}" == "film" || "${type}" == "serie") ]]
-#    then
-#
-#     GOFFER=$(~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" setoffer -t "${TITLE} #astroport #${MEDIAKEY}" -d "${TITLE} https://tube.copylaradio.com/ipns/$IPNS/ Faites un don à son portefeuille pour le conserver dans le Mediacenter des Amis - https://CopyLaRadio.com - https://astroport.com" -p $HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/QR.png)
-#        echo $GOFFER > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.gchange.ad
-#        NEWIPFS=$(ipfs add -rHq ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/ | tail -n 1 )
-#        IPNS=$(ipfs name publish --quieter --key="${MEDIAKEY}" $NEWIPFS)
-#        [[ "$IPNS" == "" ]] && IPNS="$(ipfs key list -l | grep -w ${MEDIAKEY} | cut -f 1 -d ' ')"
-#        echo "Annonce gchange : $(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.gchange.ad)"
-#
-#    fi
-    #~ ########################################################################
-    #~ # CREATION DU FICHIER ${PREFIX}ASTRXBIAN FILE : Add Header (TODO DEBUG Kodi Plugin !! )
-    #~ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/
-    #~ [[ ! -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN ]] \
-    #~ && echo "type;TMDB;YEAR;TITLE;SAISON;GENRES;GROUPES;RES;URLS=http://${myIP}:8080" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
+    ## ASK FOR EXTRA METADATA
+[[ ! $3 ]] && OUTPUT=$(zenity --forms --width 480 --title="METADATA" --text="Metadonnées (séparateur espace)" --separator="~" --add-entry="Description" --add-entry="extra tag(s)")
+[[ ! $3 ]] && DESCRIPTION=$(awk -F '~' '{print $1}' <<<$OUTPUT)
+[[ ! $3 ]] && HASHTAG=$(awk -F '~' '{print $2}' <<<$OUTPUT)
 
-    # REFRESH ${MOATS}_ajouter_video.txt FILE
+    # # # # ${MOATS}_ajouter_video.txt DATA # # # #
     if [[ -f ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt ]]
     then
         line=$(cat ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt | sed "s/_IPFSREPFILEID_/$IPFSREPFILEID/g" | sed "s/_IPNSKEY_/$IPNS/g" )
     else
         line="$type;${REFERENCE};$YEAR;$TITLE;$SAISON;;${IPNS};$RES;/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
     fi
-    echo "-------------------- UPDATE ${PREFIX}ASTRXBIAN INDEX -----------------------------"
+    echo "-------------------- ${MOATS}_ajouter_video.txt  -----------------------------"
     echo "$line"
     echo "UPDATE ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt"
     echo "$line" > ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt
+
+    ## MOATS TIMESTAMPING
     cp ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt ~/astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt
 
-    ########################################################################
-    ## TODO: ACTIVATE SUB DEFCON 4 MODE = encrypt/decrypt file in $G1DEST subdirectory
-    ########################################################################
-#    echo "----------------- REFRESH LOCAL KODI INDEX ----------------------"
-#    cat ~/.zen/game/players/$PLAYER/ipfs*/.*/astroport/kodi/vstream/${PREFIX}ASTRXBIAN | sort | uniq > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${PREFIX}ASTRXBIAN
-
-    echo "----------------- PREPARING TIDDLER ----------------------"
+    echo "----------------- GETTING  METADATA ----------------------"
     CAT=$(echo "$type" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
     GENRE=$(cat ~/astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
 
@@ -307,11 +284,6 @@ then
     && FILETAG=$(echo "$CapitalGluedTitle" | cut -d '_' -f 1)
 
     echo $GENRE $SAISON
-
-    ## ASK FOR EXTRA METADATA
-[[ ! $3 ]] && OUTPUT=$(zenity --forms --width 480 --title="METADATA" --text="Metadonnées (séparateur espace)" --separator="~" --add-entry="Description" --add-entry="extra tag(s)")
-[[ ! $3 ]] && DESCRIPTION=$(awk -F '~' '{print $1}' <<<$OUTPUT)
-[[ ! $3 ]] && HASHTAG=$(awk -F '~' '{print $2}' <<<$OUTPUT)
 
     ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
     [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
@@ -333,7 +305,7 @@ then
     Afficher tous les G1${CAT}
     </\$button>"
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
-        TAGS="G1${CAT} ${PLAYER} ${FILETAG} $GENRE ipfs ${HASHTAG}"
+        TAGS="G1${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG}"
         # TyPE="$MIME"
         # CANON="/ipfs/"${IPFSID}
         CANON=''
