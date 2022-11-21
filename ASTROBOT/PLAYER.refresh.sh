@@ -82,9 +82,8 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         #############################################################
         ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
                 tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                SECRET=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
-                [[ ! $SECRET ]] && echo "$HTTPCORS SECRET ERROR - CONTINUE " && continue
-#
+                [[ ! -s ~/.zen/tmp/MadeInZion.json ]] && echo "MadeInZion ERROR - DROPPING  " && continue
+
         # CRYPTO DECODING CRYPTIP -> myIP
                 cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
                 $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
@@ -92,7 +91,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
                 [[ ! $GWIP ]] && GWIP=$myIP ## CLEAR
 
-                echo "TW is on $GWIP"
+                echo "THIS TW is on $GWIP"
 
         # WHO IS OFFICIAL TW GATEWAY.
     if [[ ! -s ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey ]]; then

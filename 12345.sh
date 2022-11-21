@@ -420,8 +420,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                [[ ! -s ~/.zen/tmp/MadeInZion.json ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
                 SECRET=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
-                [[ ! $SECRET ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 #
         # CRYPTO DECODING CRYPTIP -> myIP
                 cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
