@@ -106,7 +106,7 @@ echo
 ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
 echo "$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) TW/Moa"
-echo "http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
+echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
 echo "Activation Réseau P2P Astroport !"
 
 echo

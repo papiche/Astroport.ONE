@@ -42,6 +42,7 @@ path="$1"
 if [[ "$path" == "" ]]; then
     echo "## BATCH RUN. READ FIFO FILE."
 fi
+
 # Add trailing / if needed
 length=${#path}
 last_char=${path:length-1:1}
@@ -58,6 +59,9 @@ echo "$MY_PATH/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\" G1PUB \"$
 ## FILE ANALYSE & IDENTIFICATION TAGGINGS
 extension="${file##*.}"
 TITLE="${file%.*}"
+    # CapitalGluedTitle
+    CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+
 # .part file false flag correcting (in case inotify has launched script)
 [[ ! -f "${path}${file}" ]] && file="${TITLE%.*}" && extension="${TITLE##*.}" && [[ ! -f "${path}${file}" ]] && er="NO FILE" && echo "$er" && exit 1
 
@@ -65,12 +69,23 @@ MIME=$(file --mime-type -b "${path}${file}")
 
     ############# EXTEND MEDIAKEY IDENTIFATORS https://github.com/NapoleonWils0n/ffmpeg-scripts
     if [[ $(echo "$MIME" | grep 'video') ]]; then
+
+        FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
+        RES=${FILE_RES%?}0p
+
+        DURATION=$(ffprobe -i "${path}${file}" -show_entries format=duration -v quiet -of csv="p=0" | cut -d '.' -f 1)
+        DUREE=$(ffprobe -i "${path}${file}" -show_entries format=duration -sexagesimal -v quiet -of csv="p=0"| cut -d '.' -f 1)
+
+        PROBETIME=$(echo "0.618 * $DURATION" | bc -l | cut -d '.' -f 1)
+        [[ ! $PROBETIME ]] && PROBETIME="1.0"
+
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
         echo "(✜‿‿✜) GIFANIME (✜‿‿✜)"
         rm -f ~/.zen/tmp/screen.gif
-        ffmpeg -loglevel quiet -ss 1.0 -t 1.6 -loglevel quiet -i "${path}${file}" ~/.zen/tmp/screen.gif
+        ffmpeg -loglevel quiet -ss $PROBETIME -t 1.6 -loglevel quiet -i "${path}${file}" ~/.zen/tmp/screen.gif
         ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
-        echo "/ipfs/$ANIMH"
+        echo "GIFANIM $PROBETIME : /ipfs/$ANIMH"
+
     fi
 
 # GET PLAYER
@@ -145,9 +160,6 @@ esac
 ### SET MEDIAKEY
 MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
 echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
-
-    # CapitalGluedTitle
-    CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
 
 ######################### Decimal convert
     rm ~/.zen/tmp/decimal
@@ -234,10 +246,13 @@ fi
 
 ########################################################################
 # POST TRAITEMENTS
+if [[ "${type}" == 'page' ]]; then
+    echo "PDF ??"
+fi
 ########################################################################
 # film/serie PUBLISH
 ########################################################################
-if [[ "${type}" =~ ^(film|serie|youtube|page|video)$ ]]
+if [[ "${type}" =~ ^(film|serie|youtube|video)$ ]]
 then
     ## CREATE GCHANGE AD
     ## STOP PUBLISHING TO GCHANGE, NOW PLAYER TW ONLY
@@ -260,9 +275,6 @@ then
     #~ [[ ! -f ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN ]] \
     #~ && echo "type;TMDB;YEAR;TITLE;SAISON;GENRES;GROUPES;RES;URLS=http://${myIP}:8080" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/astroport/kodi/vstream/${PREFIX}ASTRXBIAN
 
-        FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
-        RES=${FILE_RES%?}0p
-
     # REFRESH ${MOATS}_ajouter_video.txt FILE
     if [[ -f ~/astroport/${TyPE}/${REFERENCE}/ajouter_video.txt ]]
     then
@@ -282,15 +294,18 @@ then
 #    echo "----------------- REFRESH LOCAL KODI INDEX ----------------------"
 #    cat ~/.zen/game/players/$PLAYER/ipfs*/.*/astroport/kodi/vstream/${PREFIX}ASTRXBIAN | sort | uniq > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${PREFIX}ASTRXBIAN
 
-
     echo "----------------- PREPARING TIDDLER ----------------------"
     CAT=$(echo "$type" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
-    ## Adapt TMDB url
-    [[ $CAT == "Film" ]] && tdb="movie"
-    [[ $CAT == "Serie" ]] && tdb="tv"
-
     GENRE=$(cat ~/astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
-    SAISON=$(cat ~/astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 5)
+
+    ## Adapt TMDB url for season & tag naming
+    [[ $CAT == "Film" ]] && tdb="movie"\
+    && FILETAG="$CapitalGluedTitle"
+
+    [[ $CAT == "Serie" ]] && tdb="tv" \
+    && SAISON=$(cat ~/astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2) \
+    && FILETAG=$(echo "$CapitalGluedTitle" | cut -d '_' -f 1)
+
     echo $GENRE $SAISON
 
     ## ASK FOR EXTRA METADATA
@@ -318,7 +333,7 @@ then
     Afficher tous les G1${CAT}
     </\$button>"
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
-        TAGS="G1${CAT} ${PLAYER} ${CapitalGluedTitle} $GENRE ipfs ${HASHTAG}"
+        TAGS="G1${CAT} ${PLAYER} ${FILETAG} $GENRE ipfs ${HASHTAG}"
         # TyPE="$MIME"
         # CANON="/ipfs/"${IPFSID}
         CANON=''
@@ -338,9 +353,12 @@ then
   {
     "text": "'${TEXT}'",
     "title": "'${CapitalGluedTitle}'",
+    "season": "'${SAISON}'",
     "created": "'${MOATS}'",
     "resolution": "'${RES}'",
-    "season": "'${SAISON}'",
+    "duree": "'${DUREE}'",
+    "duration": "'${DURATION}'",
+    "giftime": "'${PROBETIME}'",
     "gifanime": "'/ipfs/${ANIMH}'",
     "type": "'${TidType}'",
     "mime": "'${MIME}'",

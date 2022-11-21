@@ -62,6 +62,8 @@ while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
+
+    ## CHECK PORT IS FREE
     pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $portinuse " && continue
                 ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
@@ -87,9 +89,6 @@ while true; do
 
     # RESET VARIABLES
     SALT=""; PEPPER=""; APPNAME=""
-    echo "************************************************************************* "
-    echo "ASTROPORT 1234 UP & RUNNING.......................... http://$myIP:1234 PORT"
-    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$myIP:${PORT}"
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myIP in http response template (fixing next API meeting point)
@@ -102,21 +101,31 @@ while true; do
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myIP.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
-    URL=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myIP.http | nc -l -p 1234 -q 1 | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    REQ=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myIP.http | nc -l -p 1234 -q 1) ## # WAIT FOR 1234 CONTACT
+    URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
+    HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
     ############################################################################
+    [[ $URL == "/test" ]] && continue
+
+    echo "************************************************************************* "
+    echo "ASTROPORT 1234 UP & RUNNING.......................... http://$HOST:1234 PORT"
+    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$HOST:${PORT}"
+
     espeak "Ding" > /dev/null 2>&1
 
     echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
+
     ############################################################################
     start=`date +%s`
 
     ############################################################################
     ## / CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
     if [[ $URL == "/" ]]; then
-        echo "/ CONTACT :  http://$myIP:1234"
+        echo "/ CONTACT :  http://$HOST:1234"
         echo "___________________________ Preparing register.html"
         echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
-sed "s~127.0.0.1~$myIP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+sed "s~127.0.0.1~$HOST~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
@@ -175,7 +184,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         rm -f ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
         ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key )
-        echo "ASTRONAUTE TW : http://$myIP:8080/ipns/${ASTRONAUTENS}"
+        echo "ASTRONAUTE TW : http://$HOST:8080/ipns/${ASTRONAUTENS}"
         echo
         ################### KEY GEN ###################################
     # Get PLAYER wallet amount
@@ -226,7 +235,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
 
             ### REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
             ###   ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-            ###   echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+            ###   echo "SESSION http://$HOST:8080/ipns/$SESSIONNS "
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
@@ -399,8 +408,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             echo "SEARCHING FOR OFFICIAL TW GW... $LIBRA/ipns/${ASTRONAUTENS} ($YOU)"
 
             ## GETTING LAST TW via IPFS or HTTP GW
-            [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
-            [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$LIBRA/ipns/${ASTRONAUTENS}"
+            [[ $YOU ]] && echo "ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
+            [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] && echo "$HOST/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$HOST/ipns/${ASTRONAUTENS}"
 
             # DEBUG
             # echo "tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'"
@@ -417,7 +426,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $GWIP ]] && GWIP=$myIP ## CLEAR
+                [[ ! $GWIP ]] && GWIP=$HOST ## CLEAR
 #
                 echo "TW is on $GWIP"
 
@@ -433,8 +442,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-                echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://'$myIP':5001"}]' > ~/.zen/tmp/5001.json
-                echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$myIP':8080"}]' > ~/.zen/tmp/8080.json
+                echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://'$HOST':5001"}]' > ~/.zen/tmp/5001.json
+                echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$HOST':8080"}]' > ~/.zen/tmp/8080.json
 
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html \
                             --import "$HOME/.zen/tmp/MadeInZion.json" "application/json" \

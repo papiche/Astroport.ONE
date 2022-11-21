@@ -168,7 +168,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-
+        echo
         echo "***** Gestion du Canal TW Astronaute $PLAYER *****"
         mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
 
@@ -242,13 +242,17 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-
-    echo "## PUBLISHING ${PLAYER} /ipns/${ASTRONAUTENS}/"
+    echo
+    echo "## PUBLISHING ${PLAYER}"
+    echo "/ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
     echo "/ipfs/$IPUSH"
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH 2>/dev/null
+
+    (
+    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH >/dev/null 2>&1
+    ) &
 
     ## MEMORISE PLAYER Ŋ1 ZONE
     echo "$PLAYER" > ~/.zen/game/players/$PLAYER/.player
@@ -272,9 +276,9 @@ qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://
 
 echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
 
-echo; echo "*** Astronaute GW : ~/.zen/game/players/$PLAYER/"; sleep 1
-echo; echo "*** TW Ŋ1 : $PLAYER";
-echo; echo "http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 2
+echo; echo "*** HOME : ~/.zen/game/players/$PLAYER/"; sleep 1
+echo "*** IPNS Ŋ0 KEY : $PLAYER";
+echo; echo "GW : http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 1
 
 # PASS CRYPTING KEY
 echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
@@ -283,6 +287,7 @@ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.dunik
 openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -out" "$HOME/.zen/game/players/$PLAYER/enc.$KEYFILE" -k $PASS 2>/dev/null
 ## TODO MORE SECURE ?! USE opengpg, natools, etc ...
 # ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/$PLAYER/secret.dunikey -o "$HOME/.zen/game/players/$PLAYER/enc.secret.dunikey"
+echo
 
 #################################################
 # !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
@@ -299,17 +304,21 @@ ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
 ${MY_PATH}/Connect_PLAYER_To_Gchange.sh "$PLAYER"
 
+### IF PRINTER -> PRINT VISA
+LP=$(ls /dev/usb/lp*)
+[[ $LP ]] && ${MY_PATH}/VISA.print.sh &
+
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
+echo "$(${MY_PATH}/face.sh cool)"
 echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
-echo "Retenez votre PASS : $PASS"; sleep 2
+echo "Votre PASS"; sleep 1
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
-echo "cool $(${MY_PATH}/face.sh cool)"
+
 echo "$PASS"
 
-LP=$(ls /dev/usb/lp*)
-[[ $LP ]] && ${MY_PATH}/VISA.print.sh &
+
 
 exit 0

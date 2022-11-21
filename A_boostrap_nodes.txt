@@ -1,7 +1,14 @@
 # CONTAINS Address of 1st Bootstrap Stations (24/24 Public IP) - DO NOT EDIT MANUALY -
-# http://libra.copylaradio.com:8080 tube.copylaradio.com
+# http://tube.copylaradio.com:8080 ipfs.copylaradio.com
+#################################################################
+# libra.astroport.com
 /ip4/149.102.158.67/udp/4001/quic/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 # cancer.astroport.com
 /ip4/185.202.238.69/tcp/4001/p2p/12D3KooWSnxRBuoeCZGdXBbSKiW8qM4HxLp3RLypW9dg82o41ZqM
 # aries.copylaradio.com
 /ip4/37.187.127.175/tcp/4001/p2p/12D3KooWSQYTxeoZZ39SNosEKxi7RUdGTtAQAqpKeZJxjzqqrZTx
+
+#################################################################
+###### WISHING TO ADD YOUR NODE TO OFFICIAL ASTROPORT BOOSTRAP LIST ?
+###### ===> CONTACT support@qo-op.com
+#################################################################
