@@ -614,8 +614,8 @@ esac
 # Screen capture
 ########################################################################
 if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    espeak "taking a screen shot"
-    sleep 1
+    espeak "beware taking screen shot in 3 seconds"
+    sleep 3
     import -window root ~/.zen/tmp/screen.png
 fi
 
@@ -624,14 +624,6 @@ fi
 ###################################
 mkdir -p ~/astroport/${CAT}/${MEDIAID}/
 mv ~/.zen/tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
-
-
-## Extract thumbnail
-MIME=$(file --mime-type -b "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}")
-
-mv ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ~/astroport/${CAT}/${MEDIAID}/${MOATS}.thumbnail.png >/dev/null 2>&1
-[[ $(echo $MIME | grep video) ]] && ffmpeg  -i "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
-[[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "(╥☁╥ ) THUMBNAIL FAILED"
 
 ########################################################################
 # ADD $FILE to IPFS / ASTROPORT / KODI
@@ -670,9 +662,7 @@ echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIA
 
 #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
-echo "rm -f /tmp/\${MEDIAKEY}.pass
-rm -f /tmp/\${MEDIAKEY}.dunikey ## REMOVE KEYS
-mv ~/astroport/Add_${MEDIAKEY}_script.sh \"$HOME/astroport/Done_${FILE_NAME}.sh\"
+echo "mv ~/astroport/Add_${MEDIAKEY}_script.sh \"$HOME/astroport/Done_${FILE_NAME}.sh\"
 " >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
 chmod +x ~/astroport/Add_${MEDIAKEY}_script.sh
@@ -680,7 +670,7 @@ chmod +x ~/astroport/Add_${MEDIAKEY}_script.sh
 ########################################################################
 ## USE PLAYER G1PUB AS MEDIA WALLET
 MEDIAPUBKEY=$(cat ~/.zen/game/players/.current/.g1pub)
-G1BALANCE=$(${MY_PATH}/tools/jaklis/jaklis.py balance -p $G1PUB)
+G1BALANCE=$(${MY_PATH}/tools/jaklis/jaklis.py balance -p $G1PUB 2>/dev/null )
 
 ########################################################################
 echo "# ZENBALANCE for ${MEDIAKEY} , WALLET $MEDIAPUBKEY"
@@ -698,13 +688,13 @@ FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; 
     ZENBALANCE=0
 #fi
 ########################################################################
-espeak "Ready to eat"
 zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
+espeak "Adding $CAT to I P F S. Please Wait"
 
 bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
 
-espeak "T W index recording"
 zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
+espeak "Updating T W Index"
 
 
 ########################################################################

@@ -300,18 +300,14 @@ then
     echo $GENRE $SAISON
 
     ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
-    [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
-    [[ $IPSCREEN ]] && POSTER=$IPSCREEN
-
-    [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/thumbnail.png ]] && IPTHUMB=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/thumbnail.png" | tail -n 1)
-    [[ $IPTHUMB ]] && POSTER=$IPTHUMB
+    [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/screen.png ]] && SCREENSHOT=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
         </video><h1><a target='tmdb' href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${TITLE}"</a></h1>
         <h2>"$DESCRIPTION"</h2>
-        <img src='/ipfs/"${POSTER}"' width=33%><br>
+        <br>{{!!duree}}<br>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[G1${CAT}]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
@@ -352,7 +348,7 @@ then
     "cat": "'${CAT}'",
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",
-    "poster": "'/ipfs/${POSTER}'",
+    "screenshot": "'/ipfs/${POSTER}'",
     "ipfsroot": "'/ipfs/${IPFSREPFILEID}'",
     "file": "'${file}'",
     "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
