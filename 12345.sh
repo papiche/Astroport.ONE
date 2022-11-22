@@ -253,7 +253,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         ######################## MESSAGING END
 
 ########################################
-# G1PUB -> Open Gchange Profile
+# G1PUB -> Open Gchange Profile & Update TW cache
 ########################################
         if [[ "$APPNAME" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
