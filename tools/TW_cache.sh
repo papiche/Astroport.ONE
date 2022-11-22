@@ -2,6 +2,8 @@
 ASTRONAUTENS="$1"
 MOATS="$2"
 
+[[ ! $ASTRONAUTENS || ! $MOATS ]] && echo "ASTRONAUTENS & MOATS needed" && exit 1
+
 start=$(date +%s)
 IPFSNODEID=$(ipfs id -f='<id>\n') || ( echo "IPFSNODEID MISSING" && exit 1 )
 TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
