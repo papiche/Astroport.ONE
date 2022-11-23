@@ -126,11 +126,11 @@ echo "NEW VIDEO http://$myIP:8080/ipfs/$IPFSROOT"
 ###########################
 
 MEDIAID=$(date -u +"%Y%m%d%H%M%S%4N")
-mkdir -p ~/astroport/video/vlog/
+mkdir -p ~/Astroport/video/vlog/
 MEDIAKEY="VLOG_${PLAYER}_${MEDIAID}"
-cp ~/.zen/tmp/output.mp4 ~/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4
+cp ~/.zen/tmp/output.mp4 ~/Astroport/video/vlog/${PLAYER}_$MEDIAID.mp4
 
-REAL=$(file --mime-type -b "$HOME/astroport/video/vlog/${PLAYER}_$MEDIAID.mp4")
+REAL=$(file --mime-type -b "$HOME/Astroport/video/vlog/${PLAYER}_$MEDIAID.mp4")
 
 ## TW not displaying direct ipfs video link (only image, pdf, ...) so insert <video> html tag
 TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"/output.mp4' type='"${REAL}"'></video><h1><a href='/ipfs/"${IPFSROOT}"'>VLOG ("${MEDIAID}") Story</a></h1><br>
@@ -158,7 +158,7 @@ echo '[
 
 # LOG
 cat ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json | jq
-cp ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json ~/astroport/video/vlog/
+cp ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json ~/Astroport/video/vlog/
 
 ## Adding tiddler to PLAYER TW
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
@@ -201,7 +201,7 @@ fi
 
 echo "${PSEUDO} TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#VLOG_${MEDIAID}"
 
-# ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
+# ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/Astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 
 # https://stackoverflow.com/questions/49846400/raspberry-pi-use-vlc-to-stream-webcam-logitech-c920-h264-video-without-tran
 # record to MKV cvlc v4l2:///dev/video0:chroma=h264 :input-slave=alsa://hw:1,0 --sout '#transcode{acodec=mpga,ab=128,channels=2,samplerate=44100,threads=4,audio-sync=1}:standard{access=file,mux=mkv,dst='~/.zen/tmp/Webcam_Record/MyVid.mkv'}'

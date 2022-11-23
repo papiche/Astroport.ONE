@@ -180,10 +180,10 @@ fi
 
 ########################################################################
 # CREATE ~/astroport FILESYSTEM GATE
-mkdir -p ~/astroport/film
-mkdir -p ~/astroport/serie
-mkdir -p ~/astroport/anime
-echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME' > ~/astroport/ajouter_video.modele.txt
+mkdir -p ~/Astroport/film
+mkdir -p ~/Astroport/serie
+mkdir -p ~/Astroport/anime
+echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME' > ~/Astroport/ajouter_video.modele.txt
 
 
 #######################################################################

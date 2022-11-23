@@ -4,7 +4,7 @@
 # Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
-# COPY ~/astroport/mp3/artist/song files to IPFS
+# COPY ~/Astroport/mp3/artist/song files to IPFS
 ######## #### ### ## #
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -38,7 +38,7 @@ TITLE="${YNAME%.*}"
 FILE_EXT="${file##*.}"
 [[ "$FILE_EXT" != "mp3" ]] && echo "Extension inconnue. Seul le format mp3 est accepté ... EXIT" && exit 1
 
-[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'astroport') ]] && echo "Les fichiers sont à placer dans ~/astroport/mp3/ MERCI" && exit 1
+[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'astroport') ]] && echo "Les fichiers sont à placer dans ~/Astroport/mp3/ MERCI" && exit 1
 CAT=$(echo "$path" | cut -d '/' -f 5 ) # mp3
 ARTIST=$(echo "$path" | cut -d '/' -f 6 ) # artist || YID
 ALBUM=$(echo "$path" | cut -d '/' -f 7 ) # album || _o-o_ || EMPTY

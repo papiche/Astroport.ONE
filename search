@@ -11,6 +11,6 @@ fi
 echo "------------------------------------------------------------------------------"
 if [ "$2" != "" ]; then
 	echo "  To replace \"$1\" whith \"$2\", please run"
-	echo "  grep -rl '$1' ./  | xargs sed -i 's/$1/$2/g'"
+	echo "  grep -rl '$1' ./  | xargs sed -i 's~$1~$2~g'"
 fi
 ## THIS IS A GREAT RETRO ENGINEERING AND CODING TOOLS

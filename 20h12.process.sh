@@ -16,8 +16,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 ## CLEANING  ~/.zen/tmp
-rm -Rf ~/.zen/tmp
-mkdir -p ~/.zen/tmp
+rm -Rf ~/.zen/tmp/*
 
 ## RESTART IPFS DAEMON
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')

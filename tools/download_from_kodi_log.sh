@@ -39,7 +39,7 @@ do
     uqname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1 | cut -d '%' -f 1 | sed 's/\+/_/g' | tail -n 1)
     cycle=$((cycle+1))
     echo "########################################################################"
-    echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/astroport/$uqname.mp4\""
+    echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
 
     ## ADD TO ASTROPORT
     # IPFSNODEID=$(ipfs id -f='<id>\n')
@@ -54,21 +54,21 @@ do
     && cat ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/keygen.ipns.key.enc | base16 > ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/keygen.ipns.key.enc.b16
 
     [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo | grep -w "$uqname.mp4") ]] && \
-    echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo || \
+    echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo || \
     echo "$uqname.mp4 conflict"
 
     ## CHECK & MANAGE COPY
     if [[ $(find $HOME/astroport -name "$uqname*" -type f -print) ]];
     then
-        echo "COPY ALREADY IN $HOME/astroport/"
+        echo "COPY ALREADY IN $HOME/Astroport/"
     else
         echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
         echo "WANT TO COPY ? Yes? Write any character + enter, else just hit enter."
         read YESNO
         if [[ "$YESNO" != "" ]]; then
             ## COPY STREAMING
-            uqload_downloader https://uqload.com/$uqlink "$HOME/astroport/$uqname.mp4"
-            echo "COPY ~/astroport/$uqname.mp4 DONE"
+            uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
+            echo "COPY ~/Astroport/$uqname.mp4 DONE"
             ## ARE WE ASTROPORT STATION? https://astroport.com
             [[ "$USER" != "xbian" && ${IPFSNODEID} ]] && ~/.zen/astrXbian/ajouter_video.sh
         else
