@@ -1,20 +1,23 @@
 version: '3.6'
 
 services:
-  docker:
+  astroport:
+    build:
+      args:
+      - DOCKER_REPOSITORY=${DOCKER_REPOSITORY}
+      - GID=${NODE_GID}
+      - UID=${NODE_UID}
+    container_name: ${COMPOSE_PROJECT_NAME}-astroport
     environment:
     - ENV=${ENV}
     - SHELL=${DOCKER_SHELL}
-    image: ${DOCKER_REPOSITORY}/docker:${DOCKER_IMAGE_TAG}
+    image: ${DOCKER_REPOSITORY}/astroport:${DOCKER_IMAGE_TAG}
     labels:
-    - SERVICE_1234_CHECK_HTTP=/
-    - SERVICE_1234_NAME=${COMPOSE_SERVICE_NAME}-docker-1234
-    - SERVICE_1234_TAGS=${DOCKER_SERVICE_1234_TAGS}
+    - SERVICE_1234_CHECK_HTTP=/test
+    - SERVICE_1234_NAME=${COMPOSE_SERVICE_NAME}-astroport-1234
+    - SERVICE_1234_TAGS=${NODE_ASTROPORT_SERVICE_1234_TAGS}
 
-networks:
-  private:
+volumes:
+  ipfs:
     external: true
-    name: ${DOCKER_NETWORK_PRIVATE}
-  public:
-    external: true
-    name: ${DOCKER_NETWORK_PUBLIC}
+    name: ${COMPOSE_SERVICE_NAME}_ipfs
