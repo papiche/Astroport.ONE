@@ -59,6 +59,7 @@ fi
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
+alias espeak='espeak 1>&2>/dev/null'
 
 # GET SCREEN DIMENSIONS
 screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
@@ -98,16 +99,16 @@ fi
 ## DES/ACTIVATION ASTROPORT
 if [[ $1 == "on" ]]; then
     STRAP=$(ipfs bootstrap)
-    BOOT=$(zenity --entry --width 300 --title="Catégorie" --text="$STRAP Changez de Bootstrap" --entry-text="Aucun" astrXbian Public)
+    BOOT=$(zenity --entry --width 300 --title="Catégorie" --text="$STRAP Changez de Bootstrap" --entry-text="Aucun" Astroport Public)
     [[ $BOOT == "Aucun" ]] && ipfs bootstrap rm --all
-    [[ $BOOT == "astrXbian" ]] && for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_nodes.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
-    [[ $BOOT == "Public" ]] && for bootnode in $(cat ~/.zen/astrXbian/A_boostrap_public.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
-    REP=$(~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
+    [[ $BOOT == "Astroport" ]] && for bootnode in $(cat ${MY_PATH}/A_boostrap_nodes.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
+    [[ $BOOT == "Public" ]] && for bootnode in $(cat ${MY_PATH}/A_boostrap_public.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
+    REP=$(${MY_PATH}/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
 fi
 
 espeak "restart I P F S daemon"
 sudo systemctl restart ipfs
-
+sleep 1
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
@@ -116,7 +117,7 @@ espeak "Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre media" --entry-text="Vlog" Film Serie Youtube Video)
+[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre media" --entry-text="Vlog" Film Serie Page Youtube Video)
 [[ $CHOICE == "" ]] && exit 1
 
 # LOWER CARACTERS
@@ -132,12 +133,12 @@ PREFIX=$(echo "${CAT}" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, S, A
 case ${CAT} in
 ########################################################################
 # CASE ## ASTRONAUTE
-#                  _                                             _
-#   __ _ ___| |_ _ __ ___  _ __   __ _ _   _| |_ ___
-#  / _` / __| __| '__/ _ \| '_ \ / _` | | | | __/ _ \
-# | (_| \__ \ |_| | | (_) | | | | (_| | |_| | ||  __/
-#  \__,_|___/\__|_|  \___/|_| |_|\__,_|\__,_|\__\___|
-#
+#~ __     ___
+#~ \ \   / / | ___   __ _
+ #~ \ \ / /| |/ _ \ / _` |
+  #~ \ V / | | (_) | (_| |
+   #~ \_/  |_|\___/ \__, |
+                        #~ |___/
 #
 ########################################################################
     vlog)
@@ -147,7 +148,7 @@ case ${CAT} in
     zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
 
     ## RECORD WEBCAM VIDEO
-    ~/.zen/Astroport.ONE/tools/vlc_webcam.sh
+    ${MY_PATH}/tools/vlc_webcam.sh
 
 
     exit 0
@@ -243,16 +244,20 @@ rm -Rf ${YTEMP}
 
 ########################################################################
 # CASE ## WEB
+#~ __        __     _
+#~ \ \       / /__ | |__
+#~  \ \ /\ / / _ \ '_ \
+#~   \ V  V /__/ |_) |
+#~    \_/\_/ \_|_.__/
+#~
+
     web)
 
-        espeak "web : clone web site. Please help debugging"
+        espeak "Clone a web site and make it better"
+        [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien du site web à copier" --text "Indiquez le lien (URL)" --entry-text="")
 
-    ## wget current URL -> index.html ## TEST ## TEST httrack ??
-        [[ ! $(which httrack) ]] && espeak "Plase install httrack software - EXIT" && \
-                                                zenity --warning --width ${large} --text "Utilitaire de copie de site web absent.. Lancez la commande 'sudo apt install httrack'" && \
-                                                exit 1
+        espeak "NOT READY. Please Help Debug. EXIT" && exit 0
 
-        echo "httrack --mirror $URL" # TODO : FOR NOW NOT WORKING
         FILE_NAME="index.html"
         REVSOURCE="$(echo "$URL" | rev | sha256sum | cut -d ' ' -f 1)_"; echo $REVSOURCE # URL="https://discuss.ipfs.io/t/limit-ipfs-get-command/3573/6"
         MEDIAID="$REVSOURCE" # MEDIAID=1252ff59950395070a0cc56bb058cbb1ccfd2f8d8a32476acaf472f62b14d97d_
@@ -260,7 +265,9 @@ rm -Rf ${YTEMP}
         FILE_PATH="$HOME/astroport/web/$MEDIAID";
         mkdir -p $FILE_PATH
 
-        wget -mpck --user-agent="" -e robots=off --wait 1 "$URL" > ${FILE_PATH}/
+        wget -mpck --html-extension  --recursive --convert-links --user-agent="Astroport.One" -e robots=off --wait 1 -P ${FILE_PATH} "$URL"
+        # wget --recursive --convert-links -mpck --html-extension --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36." -e robots=off -P ${FILE_PATH} "$URL"
+        # wget \ --mirror \ --warc-file=$MEDIAID \ --no-verbose \ --warc-cdx \ --page-requisites \ --adjust-extension \ --convert-links \ --no-warc-compression \ --no-warc-keep-log \ --append-output="$MEDIAID" \ --execute robots=off \  -P ${FILE_PATH} "$URL"
 
         echo "web;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt
 
@@ -271,17 +278,46 @@ rm -Rf ${YTEMP}
 
 ########################################################################
 # CASE ## PAGE
+ #~ ____
+#~ |  _ \ __ _  __ _  ___
+#~ | |_) / _` |/ _` |/ _ \
+#~ |  __/ (_| | (_| |  __/
+#~ |_|   \__,_|\__, |\___|
+                #~ |___/
+
     page)
 
-        espeak "page : convert into portable digital document"
+        espeak "page : import P D F"
 
+        [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien de la page à convertir en PDF" --text "Indiquez le lien (URL)" --entry-text="")
+
+        if [[ $URL != "" ]]; then
     ## record one page to PDF
-        [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
+            [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
 
-        cd ~/.zen/tmp/ && rm -f output.pdf
+            cd ~/.zen/tmp/ && rm -f output.pdf
 
-        ${MY_PATH}/tools/timeout.sh -t 12 \
-        chromium --headless --no-sandbox --print-to-pdf $URL
+            # https://peter.sh/experiments/chromium-command-line-switches
+            ${MY_PATH}/tools/timeout.sh -t 12 \
+            chromium --headless --use-mobile-user-agent --no-sandbox --print-to-pdf "$URL"
+        fi
+
+        if [[ $URL == "" ]]; then
+
+            # SELECT FILE TO ADD TO ASTROPORT/KODI
+            FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
+            echo "${FILE}"
+            [[ $FILE == "" ]] && exit 1
+
+            # Remove file extension to get file name => STITLE
+            FILE_PATH="$(dirname "${FILE}")"
+            FILE_NAME="$(basename "${FILE}")"
+            FILE_EXT="${FILE_NAME##*.}"
+            FILE_TITLE="${FILE_NAME%.*}"
+            cat "${FILE}" > ~/.zen/tmp/output.pdf
+            URL="/ipfs.localhost/$FILE_TITLE"
+        fi
+
 
         [[ ! -s ~/.zen/tmp/output.pdf ]] && espeak "No file Sorry. Exit" > /dev/null 2>&1 && exit 1
 
@@ -291,12 +327,16 @@ rm -Rf ${YTEMP}
         [[ $TITLE == "" ]] && exit 1
         FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
 
+        REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev | detox --inline)_"
+
         MEDIAID="$REVSOURCE$(echo "${TITLE}" | detox --inline)"
         MEDIAKEY="PAGE_${MEDIAID}"
         FILE_PATH="$HOME/astroport/page/$MEDIAID"
-        mkdir -p ${FILE_PATH} && mv output.pdf ${FILE_PATH}/${FILE_NAME}
+        mkdir -p ${FILE_PATH} && mv ~/.zen/tmp/output.pdf ${FILE_PATH}/${FILE_NAME}
 
         echo "page;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+
+        espeak 'Document ready'
 
     ;;
 
@@ -367,8 +407,8 @@ MEDIAKEY="MP3_$MEDIAID"
 
 rm -Rf ${YTEMP}
 # zenity --warning --width ${large} --text "MP3 copié"
-echo "~/.zen/Astroport.ONE/tools/new_mp3_in_astroport.sh \"${FILE_PATH}/\" \"${FILE_NAME}\""
-~/.zen/Astroport.ONE/tools/new_mp3_in_astroport.sh "${FILE_PATH}/" "${FILE_NAME}" > /tmp/${CHOICE}_${MEDIAID}.log 2>&1
+echo "${MY_PATH}/tools/new_mp3_in_astroport.sh \"${FILE_PATH}/\" \"${FILE_NAME}\""
+${MY_PATH}/tools/new_mp3_in_astroport.sh "${FILE_PATH}/" "${FILE_NAME}" > /tmp/${CHOICE}_${MEDIAID}.log 2>&1
 
 cat /tmp/${CHOICE}_${MEDIAID}.log
 
@@ -377,11 +417,12 @@ exit 0
     ;;
 
 ########################################################################
-#   __ _ _
-# / _(_) |_ __ ___
-#| |_| | | '_ ` _ \
-#|  _| | | | | | | |
-#|_| |_|_|_| |_| |_| THE MOVIE DATABASE INDEX
+#   Film                 __ _ _ Serie
+#~ _____ _ _              ___     ____            _
+#~ |  ___(_) |_ __ ___    ( _ )   / ___|  ___ _ __(_) ___
+#~ | |_  | | | '_ ` _ \   / _ \/\ \___ \ / _ \ '__| |/ _ \
+#~ |  _| | | | | | | | | | (_>  <  ___) |  __/ |  | |  __/
+#~ |_|   |_|_|_| |_| |_|  \___/\/ |____/ \___|_|  |_|\___|
 #
 ########################################################################
     film | serie)
@@ -405,6 +446,7 @@ zenity --question --width 300 --text "Ouvrir https://www.themoviedb.org pou réc
 
 MEDIAID=$(zenity --entry --title="Identification TMDB" --text="Copiez le nom de la page du film. Ex: 301528-toy-story-4 pour une adresse https://www.themoviedb.org/movie/301528-toy-story-4)" --entry-text="")
 [[ $MEDIAID == "" ]] && exit 1
+MEDIAID=$(echo $MEDIAID | rev | cut -d '/' -f 1 | rev) ## REmoving/That/Part/keeping/MEDIAID
 CMED=$(echo $MEDIAID | cut -d '-' -f 1)
 TMTL=$(echo $MEDIAID | cut -d '-' -f 2-) # contient la fin du nom de fichier tmdb (peut servir?)
 
@@ -416,7 +458,7 @@ MEDIAID=$CMED
 MEDIAKEY="TMDB_$MEDIAID"
 
 # VIDEO TITLE
-### CHECK IF PREVIOUS ajouter_video (Serie case)
+### CHECK IF PREVIOUS ajouter_video (usefull for Serie)
 [[ -f  ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
 && PRE=$(cat ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 4) \
 || PRE=${FILE_TITLE}
@@ -446,7 +488,7 @@ RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
 
 # VIDEO GENRES
 FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
-    --text="Choisissez le(s) genre(s) de la vidéo \"${TITLE}\""\
+    --text="Choisissez le(s) genre(s) de \"${TITLE}\""\
     --column="Use"\
     --column="Feature"\
     FALSE '+18'\
@@ -508,7 +550,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 # _IPFSREPFILEID_ is replaced later
 
     ;;
-#       _     _
+# video       _     _
 #__   _(_) __| | ___  ___
 #\ \ / / |/ _` |/ _ \/ _ \
 # \ V /| | (_| |  __/ (_) |
@@ -563,11 +605,17 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 esac
 
 ########################################################################
+
+########################################################################
+########################################################################
+
+########################################################################
+########################################################################
 # Screen capture
 ########################################################################
 if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    espeak "taking a screen shot"
-    sleep 1
+    espeak "beware taking screen shot in 3 seconds"
+    sleep 3
     import -window root ~/.zen/tmp/screen.png
 fi
 
@@ -577,17 +625,9 @@ fi
 mkdir -p ~/astroport/${CAT}/${MEDIAID}/
 mv ~/.zen/tmp/screen.png ~/astroport/${CAT}/${MEDIAID}/screen.png
 
-
-## Extract thumbnail
-MIME=$(file --mime-type -b "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}")
-
-rm ~/astroport/${CAT}/${MEDIAID}/thumbnail.png
-[[ $(echo $MIME | grep video) ]] && ffmpeg  -i "$HOME/astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" -r 1/300 -vf scale=-1:120 -vcodec png $HOME/astroport/${CAT}/${MEDIAID}/thumbnail.png
-[[ ! -f ~/astroport/${CAT}/${MEDIAID}/thumbnail.png ]] && echo "DEFAULT THUMBNAIL NEEDED"
-
 ########################################################################
 # ADD $FILE to IPFS / ASTROPORT / KODI
-echo "new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" $3
+echo "(♥‿‿♥) new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" "$3"
 [[ -f ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] && cat ~/astroport/${CAT}/${MEDIAID}/ajouter_video.txt
 # LOG NOISE # [[ -f ~/astroport/${CAT}/${MEDIAID}/video.json ]] && cat ~/astroport/${CAT}/${MEDIAID}/video.json
 ########################################################################
@@ -614,17 +654,15 @@ echo "MEDIAKEY=${MEDIAKEY}" > ~/astroport/Add_${MEDIAKEY}_script.sh
 #    ffmpeg -i \"$HOME/astroport/${CAT}/${MEDIAID}/${FILE_NAME}\" -vcodec libx265 -crf 28 $HOME/astroport/${MEDIAID}.mp4
 #    mv \"$HOME/astroport/${CAT}/${MEDIAID}/${FILE_NAME}\" \"$HOME/astroport/${CAT}/${MEDIAID}/${FILE_NAME}.old\"
 #    mv $HOME/astroport/${MEDIAID}.mp4 \"$HOME/astroport/${CAT}/${MEDIAID}/${FILE_NAME}.mp4\"
-#    ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}.mp4\"
+#    ${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}.mp4\"
 #else" >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
 # $3 is the G1PUB of the PLAYER
-echo "~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\"" >> ~/astroport/Add_${MEDIAKEY}_script.sh
+echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\"" >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
 #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
-echo "rm -f /tmp/\${MEDIAKEY}.pass
-rm -f /tmp/\${MEDIAKEY}.dunikey ## REMOVE KEYS
-mv ~/astroport/Add_${MEDIAKEY}_script.sh \"$HOME/astroport/Done_${FILE_NAME}.sh\"
+echo "mv ~/astroport/Add_${MEDIAKEY}_script.sh \"$HOME/astroport/Done_${FILE_NAME}.sh\"
 " >> ~/astroport/Add_${MEDIAKEY}_script.sh
 
 chmod +x ~/astroport/Add_${MEDIAKEY}_script.sh
@@ -632,7 +670,7 @@ chmod +x ~/astroport/Add_${MEDIAKEY}_script.sh
 ########################################################################
 ## USE PLAYER G1PUB AS MEDIA WALLET
 MEDIAPUBKEY=$(cat ~/.zen/game/players/.current/.g1pub)
-G1BALANCE=$(~/.zen/Astroport.ONE/tools/jaklis/jaklis.py balance -p $G1PUB)
+G1BALANCE=$(${MY_PATH}/tools/jaklis/jaklis.py balance -p $G1PUB 2>/dev/null )
 
 ########################################################################
 echo "# ZENBALANCE for ${MEDIAKEY} , WALLET $MEDIAPUBKEY"
@@ -640,23 +678,23 @@ echo "# ZENBALANCE for ${MEDIAKEY} , WALLET $MEDIAPUBKEY"
 FILE_BSIZE=$(du -b "$HOME/astroport/${CAT}/${MEDIAID}/${FILE_NAME}" | awk '{print $1}')
 FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
 
-#G1BALANCE=$(~/.zen/Astroport.ONE/tools/jaklis/jaklis.py balance -p $G1PUB) && [[ "$G1BALANCE" == "null" ]] && G1BALANCE=0 || G1BALANCE=$(echo "$G1BALANCE" | cut -d '.' -f 1)
+#G1BALANCE=$(${MY_PATH}/tools/jaklis/jaklis.py balance -p $G1PUB) && [[ "$G1BALANCE" == "null" ]] && G1BALANCE=0 || G1BALANCE=$(echo "$G1BALANCE" | cut -d '.' -f 1)
 #if [[ $G1BALANCE -gt 0 ]]; then
 #    [ ! $2 ] && G1AMOUNT=$(zenity --entry --width 400 --title "VIRER DE LA MONNAIE LIBRE AU MEDIAKEY (MAX $G1BALANCE)" --text "Combien de JUNE (G1) souhaitez-vous offrir à ce MEDIA ($FILE_SIZE)" --entry-text="")
 #    [[ ! "$G1AMOUNT" =~ ^[0-9]+$ ]] && G1AMOUNT=0
-#    ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/secret.dunikey pay -p ${MEDIAPUBKEY} -a $G1AMOUNT -c "#ASTROPORT:${MEDIAKEY} DON"
+#    ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/secret.dunikey pay -p ${MEDIAPUBKEY} -a $G1AMOUNT -c "#ASTROPORT:${MEDIAKEY} DON"
 #    ZENBALANCE=$(echo "100 * $G1AMOUNT" | bc -l | cut -d '.' -f 1)
 #else
     ZENBALANCE=0
 #fi
 ########################################################################
-espeak "Ready to eat"
 zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
+espeak "Adding $CAT to I P F S. Please Wait"
 
 bash ~/astroport/Add_${MEDIAKEY}_script.sh "noh265"
 
-espeak "T W index recording"
 zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
+espeak "Updating T W Index"
 
 
 ########################################################################
@@ -664,7 +702,7 @@ zenity --warning --width 320 --text "Ajout à votre TW ${PLAYER}"
 ########################################################################
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GETTING LAST TW via IPFS or HTTP GW
-LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 rm ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
 [[ $YOU ]] && echo " ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
@@ -704,6 +742,6 @@ echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
     fi
 
- espeak "Bye Bye"
+ espeak "Yes We did it"
 
 exit 0

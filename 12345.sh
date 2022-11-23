@@ -254,7 +254,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         ######################## MESSAGING END
 
 ########################################
-# G1PUB -> Open Gchange Profile
+# G1PUB -> Open Gchange Profile & Update TW cache
 ########################################
         if [[ "$APPNAME" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
@@ -265,10 +265,12 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
             ### echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
-
-            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            (
+            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+            ${MY_PATH}/tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
+            ) &
             end=`date +%s`
-            echo $APPNAME" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo $APPNAME" (0‿‿0) Execution time was "`expr $end - $start` seconds.
             continue
         fi
 ########################################

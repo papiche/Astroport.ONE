@@ -88,9 +88,23 @@ MIME=$(file --mime-type -b "${path}${file}")
 
     fi
 
-# GET PLAYER
+########################################################################
+# GET CONNECTED PLAYER
+########################################################################
+[[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
+
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
-[[ ! $PLAYER ]] && echo "No current player. Please Login" && exit 1
+[[ ! $PLAYER ]] && echo "(╥☁╥ ) No current player. Please Login" && exit 1
+
+# NOT CURRENT PLAYER (CHECK FOR TW & KEY
+[[ $G1PUB != $(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ]] \
+&& [[ $(ipfs key list -l | grep -v $G1PUB) ]] \
+&& echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
+&& ASTRONS=$($MY_PATH/tools/g1_to_ipfs.py "$G1PUB") \
+&& $MY_PATH/tools/TW.cache.sh $ASTRONS $MOATS \
+|| echo "(╥☁╥ ) I cannot help you"
+
+########################################################################
 
 ## Indicate IPFSNODEID copying
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
@@ -286,18 +300,14 @@ then
     echo $GENRE $SAISON
 
     ## Add screenshot (TODO : Make it better. Check what to put; if used & usefull
-    [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/screen.png ]] && IPSCREEN=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
-    [[ $IPSCREEN ]] && POSTER=$IPSCREEN
-
-    [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/thumbnail.png ]] && IPTHUMB=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/thumbnail.png" | tail -n 1)
-    [[ $IPTHUMB ]] && POSTER=$IPTHUMB
+    [[ -f $HOME/astroport/${TyPE}/${REFERENCE}/screen.png ]] && SCREENSHOT=$(ipfs add -q "$HOME/astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'>
         </video><h1><a target='tmdb' href='https://www.themoviedb.org/"${tdb}"/"${REFERENCE}"'>"${TITLE}"</a></h1>
         <h2>"$DESCRIPTION"</h2>
-        <img src='/ipfs/"${POSTER}"' width=33%><br>
+        <br>{{!!duree}}<br>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[G1${CAT}]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
@@ -338,7 +348,7 @@ then
     "cat": "'${CAT}'",
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",
-    "poster": "'/ipfs/${POSTER}'",
+    "screenshot": "'/ipfs/${POSTER}'",
     "ipfsroot": "'/ipfs/${IPFSREPFILEID}'",
     "file": "'${file}'",
     "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",
