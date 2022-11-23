@@ -183,10 +183,14 @@ RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
  && echo "12  20  *  *  *   /bin/bash /home/zen/.zen/Astroport.ONE/20h12.process.sh > /tmp/20h12.log 2>&1" >> "/var/spool/cron/crontabs/$USER" \
  && chown "$USER" "/var/spool/cron/crontabs/$USER"
 
-HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
-
 VOLUME "/home/$USER/.ipfs"
 VOLUME "/home/$USER/.zen"
 VOLUME "/home/$USER/Astroport"
+
+# homedir
+RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen" "/home/$USER/Astroport" \
+ && chown "$USER" "/home/$USER/.ipfs" "/home/$USER/.zen" "/home/$USER/Astroport"
+
+HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
 
 WORKDIR "/home/$USER"
