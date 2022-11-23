@@ -9,9 +9,6 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 
 all: install tests
 
-install:
-	./install.sh
-
 tests: shellcheck
 
 shellcheck:

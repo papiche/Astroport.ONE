@@ -100,6 +100,7 @@ while true; do
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## NODE PUBLISH HOSTED ${WHAT}'S JSON
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## HOSTNAME
     ###############    ###############    ###############    ###############
+
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myIP.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################

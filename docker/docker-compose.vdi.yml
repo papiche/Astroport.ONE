@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  astroport:
+    build:
+      args:
+      - SSH_PORT=${NODE_VDI_PORT:-22}
+    cap_add:
+    - IPC_LOCK # ecryptfs
+    - NET_ADMIN # iptables
+    - NET_RAW # iptables
+    - SYS_ADMIN # ecryptfs
+    environment:
+    - DEBUG=${VDI_DEBUG:-}
+    - ECRYPTERS=${NODE_VDI_ECRYPTERS:-}
+    - LANG=${NODE_VDI_LANG:-}
+    - SSH_AUTHORIZED_KEYS=${SSH_AUTHORIZED_KEYS:-}
+    - SSH_PORT=${NODE_VDI_PORT:-22}
+    - SSH_PUBLIC_HOSTS=${SSH_PUBLIC_HOSTS:-}
+    - SUDOERS=${NODE_VDI_SUDOERS:-}
+    security_opt:
+    - apparmor=unconfined # ecryptfs
+    - seccomp=unconfined # ecryptfs
+    tty: true
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - /etc/default/console-setup:/etc/default/console-setup:ro
+    - /etc/default/keyboard:/etc/default/keyboard:ro
+    - home:/home:delegated
+    - shared:/shared:cached
+    - shm:/dev/shm:delegated
+
+volumes:
+  home:
+  shared:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/shared
+      o: bind
+  shm:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: mode=1777,size=2147483648 # 2GB
