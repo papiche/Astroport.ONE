@@ -10,7 +10,7 @@ cron() {
 }
 
 log() {
-  tail -F /var/log/fail2ban.log /var/log/syslog /var/log/auth.log /var/log/pam-script.log >&2
+  tail -F /var/log/auth.log /var/log/pam-script.log >&2
 }
 
 zen() {
