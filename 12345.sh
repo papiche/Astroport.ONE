@@ -13,12 +13,15 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+shopt -s expand_aliases
+alias espeak='espeak 1>&2>/dev/null' ## SPEAKING LOG SHUT UP
+
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
-
+[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost" && myIPort="ipfs.localhost:8080" && myHTTP="http://" ## LAN STATION
+[[ ! $isLAN ]] && myIP="astroport.copylaradio.com" && myIPort="ipfs.copylaradio.com" && myHTTP="https://" ## WAN STATION
 
 PORT=12345
 
@@ -30,7 +33,7 @@ mkdir -p ~/.zen/tmp/coucou/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  http://$myIP:1234/?salt=totodu56&pepper=totodu56&getipns " && exit 1
+[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  ${myHTTP}$myIP:1234/?salt=totodu56&pepper=totodu56&getipns " && exit 1
 ## NOT RUNNING TWICE
 
 # Some client needs to respect that
@@ -42,50 +45,54 @@ Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 
 "
-
 echo "_________________________________________________________"
-echo "LAUNCHING Astroport  API Server - $TUBE - "
+echo "LAUNCHING Astroport  API Server - TUBE : $TUBE - "
 echo
-echo "CREATE GCHANGE + TW http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=fred@astroport.com"
+echo "NEW TW ${myHTTP}$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
 echo
-echo "OPEN TW R/W http://$myIP:1234/?salt=totodu56&pepper=totodu56&official"
+echo "TW R/W MODE ${myHTTP}$myIP:1234/?salt=totodu56&pepper=totodu56&official"
 echo
-echo "GCHANGE MESSAGING http://$myIP:1234/?salt=totodu56&pepper=totodu56&messaging"
-echo "GCHANGE PLAYER URL http://$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub"
+echo "GCHANGE MESSAGING ${myHTTP}$myIP:1234/?salt=totodu56&pepper=totodu56&messaging"
+echo "OPEN GCHANGE ${myHTTP}$myIP:1234/?salt=totodu56&pepper=totodu56&g1pub"
 echo
-echo "TESTCRAFT http://$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
+echo "TESTCRAFT ${myHTTP}$myIP:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
+#############################
+########## MAIN ###############
+#############################
 while true; do
+
     start=`date +%s`
-
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    ## CHANGE NEXT PORT (HERE YOU CREATE A SOCKET QUEUE)
+
+    # EACH VISITOR RECEIVE COMMAND RESPONSE ON
+    ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
+
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
+                    ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
 
-    ## CHECK PORT IS FREE
+    ## CHECK PORT IS FREE & KILL OLD ONE
     pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
-    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $portinuse " && continue
-                ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
+    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $portinuse" && continue
 
-    ## CHECK 12345 PORT RUNNING (PUBLISHING IPNS SWARM MAP)
+    ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-    #maprunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING http://'$myIP:'12345 (ᵔ◡◡ᵔ)'
+    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING ${myHTTP}'$myIP:'12345 (ᵔ◡◡ᵔ)'
 
-    ############### IPNS SESSION KEY TRY LATER
+    ############### ACTIVATE USE ON QUICK IPFS DRIVE
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
-        ### echo
-        ### ipfs key rm ${PORT} > /dev/null 2>&1
-        ### SESSIONNS=$(ipfs key gen ${PORT})
-        ### echo "IPNS SESSION http://$myIP:8080/ipns/$SESSIONNS CREATED"
+    echo
+    ipfs key rm ${PORT} > /dev/null 2>&1
+    SESSIONNS=$(ipfs key gen ${PORT})
+    echo "IPNS SESSION ${myHTTP}$myIPort/ipns/$SESSIONNS CREATED"
+
+        ### # USE IT #
         ### MIAM=$(echo ${PORT} | ipfs add -q)
-        ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$MIAM
-        ### end=`date +%s`
-        ### echo ${PORT} initialisation time was `expr $end - $start` seconds.
-        ### echo
+        ### ipfs name publish --allow-offline -t 180s --key=${PORT} /ipfs/$MIAM &
+
     ###############
     ###############
 
@@ -97,14 +104,18 @@ while true; do
     sed "s~127.0.0.1:12345~$myIP:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/coucou/${MOATS}.myIP.http
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http
     sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http
-    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## NODE PUBLISH HOSTED ${WHAT}'S JSON
+
+    sed -i "s~_SESSIONLNK_~${myHTTP}${myIPort}/ipns/${SESSIONNS}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http
+
+    sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## NODE PUBLISH
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.myIP.http ## HOSTNAME
     ###############    ###############    ###############    ###############
 
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myIP.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
-    REQ=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myIP.http | nc -l -p 1234 -q 1) ## # WAIT FOR 1234 CONTACT
+    REQ=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myIP.http | nc -l -p 1234 -q 1) ## # WAIT FOR 1234 PORT CONTACT
+
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
@@ -112,10 +123,10 @@ while true; do
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "************************************************************************* "
-    echo "ASTROPORT 1234 UP & RUNNING.......................... http://$HOST:1234 PORT"
-    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$HOST:${PORT}"
+    echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOST:1234 PORT"
+    echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOST:${PORT}"
 
-    espeak "Ding" > /dev/null 2>&1
+    espeak "Ding"
 
     echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
@@ -123,27 +134,32 @@ while true; do
     start=`date +%s`
 
     ############################################################################
-    ## / CONTACT - PUBLISH HTML HOMEPAGE (ADD HTTP HEADER)
+    ## / CONTACT
     if [[ $URL == "/" ]]; then
-        echo "/ CONTACT :  http://$HOST:1234"
-        echo "___________________________ Preparing register.html"
+        echo "/ CONTACT :  ${myHTTP}$HOSTP"
+        echo "___________________________ Preparing default return register.html"
         echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
-sed "s~127.0.0.1~$HOST~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-## Random Background image ;)
-sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed "s~http://127.0.0.1:1234~${myHTTP}$HOSTP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed -i "s~http://127.0.0.1:8080~$(MyIPort)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+
+
+        ## Random Background image ;)
+        sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
-        echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+        echo " (‿/‿) ${myHTTP}$HOSTP / Execution time was "`expr $end - $start` seconds.
         continue
     fi
-    ############################################################################
-    ############################################################################
+
 
     ############################################################################
+    # URL DECODING
+    ############################################################################
+
     echo "=================================================="
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
@@ -152,18 +168,22 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         APPNAME=$(urldecode ${arr[4]})
         WHAT=$(urldecode ${arr[5]})
 
-    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "$HTTPCORS ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-
 ########## CHECK GET PARAM NAMES
 ###################################################################################################
+    [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "$HTTPCORS ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
 ###################################################################################################
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
+        ############################################################################
+        # WRITING API : SALT # PEPPER # APPNAME=WHAT # EXTRA PARAM
+
         ################### KEY GEN ###################################
         echo ">>>>>>>>>>>>>> Application LaBureautique >><< APPNAME = $APPNAME <<<<<<<<<<<<<<<<<<<<"
 
         SALT=$(urldecode ${arr[1]} | xargs);
         [[ ! $SALT ]] && (echo "$HTTPCORS ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
         PEPPER=$(urldecode ${arr[3]} | xargs)
         [[ ! $PEPPER ]] && (echo "$HTTPCORS ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
@@ -179,26 +199,30 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         # CALCULATING ${MOATS}.secret.key + G1PUB
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/coucou/${MOATS}.secret.key  "$SALT" "$PEPPER"
         G1PUB=$(cat ~/.zen/tmp/coucou/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
-        [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         echo "G1PUB : ${G1PUB}"
 
-        ## CALCULATING IPNS ADDRESS
+        ## CALCULATING ${MOATS}.${G1PUB}.ipns.key ADDRESS
         ipfs key rm ${G1PUB} > /dev/null 2>&1
         rm -f ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
         ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key )
-        echo "ASTRONAUTE TW : http://$HOST:8080/ipns/${ASTRONAUTENS}"
+        echo "ASTRONAUTE TW : ${myHTTP}$HOSTP/ipns/${ASTRONAUTENS}"
         echo
         ################### KEY GEN ###################################
-    # Get PLAYER wallet amount
-    ( ## SUB PROCESS
-        COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
-        echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        end=`date +%s`
-        echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
-    ) &
+
+    #~ # Get PLAYER wallet amount
+    #~ ( ## SUB PROCESS
+        #~ COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
+        #~ echo "+++ WALLET BALANCE _ $COINS (G1) _"
+        #~ end=`date +%s`
+        #~ echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+    #~ ) &
 ########################################
-        ## ARCHIVE TOCTOC ${WHAT}S & KEEPS LOGS CLEAN
+
+########################################
+        ## ARCHIVE TOCTOC ${WHAT}S KEEP LOG
+########################################
         mkdir -p ~/.zen/game/players/.toctoc/
         ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
@@ -211,10 +235,14 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             [[ $DTIME != ${MOATS} ]] && rm ~/.zen/tmp/coucou/$DTIME.*
         fi
 
-## APPNAME SLECTION  ########################
+########################################
+## APPNAME SELECTION  ########################
+########################################
         # MESSAGING
         if [[ $APPNAME == "messaging" || $APPNAME == "email" ]]; then
-            ( ## SUB PROCESS
+
+            ( ## & SUB PROCESS
+
             echo "Extracting ${G1PUB} messages..."
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
             ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/coucou/messin.${G1PUB}.json
@@ -236,16 +264,20 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
             cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-            ### REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
-            ###   ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-            ###   echo "SESSION http://$HOST:8080/ipns/$SESSIONNS "
+            ## SEND REPONSE PROCESS IN BACKGROUD
+                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                (
+                REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
+                ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
+                echo "SESSION ${myHTTP}$HOSTP/ipns/$SESSIONNS "
+                ) &
 
-            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             dur=`expr $end - $start`
             echo ${MOATS}:${G1PUB}:${PLAYER}:${APPNAME}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
             cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
-            ) &
+
+            ) & ## & SUB PROCESS
 
             end=`date +%s`
             echo " Messaging launch (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
@@ -254,7 +286,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
         ######################## MESSAGING END
 
 ########################################
-# G1PUB -> Open Gchange Profile & Update TW cache
+# G1PUB WITH NO EMAIL -> Open Gchange Profile & Update TW cache
 ########################################
         if [[ "$APPNAME" == "g1pub" && ${arr[7]} == "" ]]; then
             ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
@@ -264,7 +296,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             echo "GCHANGE REDIRECTING https://www.gchange.fr/#/app/user/"${G1PUB}"/"
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-            ### echo "SESSION http://$myIP:8080/ipns/$SESSIONNS "
+            ### echo "SESSION ${myHTTP}$myIP:8080/ipns/$SESSIONNS "
             (
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
             ${MY_PATH}/tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
@@ -274,13 +306,16 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             continue
         fi
 ########################################
+
 ########################################
 ########################################
 #TESTCRAFT=ON nodeid dataid
 ########################################
 ########################################
         if [[ "$APPNAME" == "testcraft" ]]; then
-        ( # testcraft SUB PROCESS
+
+        ( # testcraft & SUB PROCESS
+
             start=`date +%s`
             ## RECORD DATA MADE IN BROWSER (JSON)
             SALT=$(urldecode ${arr[1]} | xargs)
@@ -295,7 +330,7 @@ sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/cou
             [[ $WHAT == "on" ]] && WHAT="json" # data mimetype (default "on" = json)
 
             ## TODO : modify timeout if isLAN or NOT
-            [[ $isLAN ]] && WAIT=3 || WAIT=6
+            [[ $isLAN ]] && WAIT=3 || WAIT=12
             echo "1ST TRY : ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}"
             ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}
 
@@ -304,7 +339,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID STILL MISSING GATEWAY BANGING FOR IT (°▃▃°)"
-                array=(https://tube.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
+                array=(https://ipfs.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
                 # size=${#array[@]}; index=$(($RANDOM % $size)); echo ${array[$index]} ## TODO CHOOSE RANDOM
 
                 # official ipfs best gateway from https://luke.lol/ipfs.php
@@ -385,7 +420,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             dur=`expr $end - $start`
             echo ${MOATS}:${G1PUB}:${PLAYER}:${APPNAME}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
             cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
-        ) & # testcraft SUB PROCESS
+
+        ) & # testcraft & SUB PROCESS
 
             end=`date +%s`
             echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
@@ -398,7 +434,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         if [[ $APPNAME == "getipns" ]]; then
             echo "$HTTPCORS /ipns/${ASTRONAUTENS}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo $APPNAME" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+            echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
             continue
         fi
 
@@ -406,7 +442,6 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ##############################################
 # DEFAULT (NO REDIRECT DONE YET) CHECK OFFICIAL GATEWAY
 ##############################################
-        TWIP=$(hostname)
         # OFFICIAL Gateway ( increase waiting time ) - MORE SECURE
         if [[ $APPNAME == "official" ]]; then
 
@@ -423,19 +458,22 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
                 echo "GOT TW CACHE !!"
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                [[ ! -s ~/.zen/tmp/MadeInZion.json ]] && (echo "$HTTPCORS SECRET ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD SECRET (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+                [[ ! -s ~/.zen/tmp/MadeInZion.json ]] && (echo "$HTTPCORS MadeInZion ERROR - SORRY - CANNOT CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && echo "BAD MadeInZion.json (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
                 SECRET=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
+                PLAYER=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].player)
+                [[ ! $PLAYER ]] \
+                && (echo "$HTTPCORS ERROR - BAD MadeInZion PLAYER in /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MadeInZion PLAYER (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
+
 #
         # CRYPTO DECODING CRYPTIP -> myIP
                 cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
                 $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $GWIP ]] && GWIP=$HOST ## CLEAR
+                [[ ! $GWIP ]] && GWIP=$myIP ## CLEAR
 #
-                echo "TW is on $GWIP"
-
-                echo "WAS $GWIP ($TUBE) BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
+                echo "TW is on ${myHTTP}$GWIP"
+                echo "BECOMING TW GATEWAY : $myIP" ## BECOMING OFFICIAL BECOME R/W TW
 
         ####################
         echo $GWIP > ~/.zen/tmp/GWIP
@@ -447,8 +485,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-                echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://'$HOST':5001"}]' > ~/.zen/tmp/5001.json
-                echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$HOST':8080"}]' > ~/.zen/tmp/8080.json
+                [[ $isLAN ]] \
+                && echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'${myHTTP}$myIP':5001"}]' > ~/.zen/tmp/5001.json \
+                && echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'${myHTTP}$myIP':8080"}]' > ~/.zen/tmp/8080.json
+
+                [[ ! $isLAN ]] \
+                && echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'${myHTTP}$myIP'/api"}]' > ~/.zen/tmp/5001.json \
+                && echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'${myHTTP}$myIP'"}]' > ~/.zen/tmp/8080.json
 
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html \
                             --import "$HOME/.zen/tmp/MadeInZion.json" "application/json" \
@@ -461,18 +504,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     && rm ~/.zen/tmp/coucou/${MOATS}.newindex.html
                 ###########################
 
-                    # GET PLAYER FROM Dessin de $PLAYER
-                    tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html --output ~/.zen/tmp --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
-                    PLAYER=$(cat ~/.zen/tmp/MOA.json | jq -r .[].president | head -n 1) ## TRY WITH MULTI moa & G1Moa ?
-
-                    [[ ! $PLAYER ]] \
-                    && (echo "$HTTPCORS ERROR - BAD [tag[moa]] president field /ipns/${ASTRONAUTENS} - CONTINUE " | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "BAD MOA (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
         if [[ "${PLAYER}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
             echo "VALID PLAYER OK"
         else
             echo "BAD EMAIL"
-            (echo "$HTTPCORS KO ${PLAYER} : IPNS key identification failed<br>please correct 'Dessin president field' with your email"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+            (echo "$HTTPCORS KO ${PLAYER} : BAD EMAIL"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
                     ##  CREATE $PLAYER IPNS KEY (for next 20h12)
@@ -509,7 +546,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
         ## 302 REDIRECT $TWIP
         cat ~/.zen/Astroport.ONE/templates/index.302 >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        sed -i "s~_TWLINK_~http://$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed -i "s~_TWLINK_~${myHTTP}$TWIP:8080/ipns/${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
             end=`date +%s`
@@ -537,21 +574,19 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
 
-        if [[ "${WHAT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-            echo "VALID EMAIL OK"
-        else
-            echo "BAD EMAIL"
-            (echo "$HTTPCORS KO ${WHAT} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-        fi
+                ## CHECK WHAT IS EMAIL
+                if [[ "${WHAT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+                    echo "VALID EMAIL OK"
+                else
+                    echo "BAD EMAIL"
+                    (echo "$HTTPCORS KO ${WHAT} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                fi
 
+                ## CREATE PSEUDO FROM
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo ${WHAT} | cut -d '@' -f 1)
                     PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:3}
                 fi
-                # PASS CRYPTING KEY
-                PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
-
-            echo "$SALT / $PEPPER ($PASS)"
 
                 if [[ ! -d ~/.zen/game/players/${WHAT} ]]; then
                     echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${WHAT}.${MOATS}.txt)"
@@ -574,7 +609,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     # ASTRONAUT EXISTING ${WHAT}
                     CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "$HTTPCORS ERROR - ${WHAT} ${WHAT} ALREADY EXISTS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS - WARNING - PLAYER ${WHAT} ALREADY HERE"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
                fi
 
                  ###################################################################################################
