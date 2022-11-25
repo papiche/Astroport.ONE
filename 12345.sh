@@ -84,10 +84,10 @@ while true; do
 
     ############### ACTIVATE USE ON QUICK IPFS DRIVE
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
-    echo
-    ipfs key rm ${PORT} > /dev/null 2>&1
-    SESSIONNS=$(ipfs key gen ${PORT})
-    echo "IPNS SESSION ${myHTTP}$myIPort/ipns/$SESSIONNS CREATED"
+    #~ echo
+    #~ ipfs key rm ${PORT} > /dev/null 2>&1
+    #~ SESSIONNS=$(ipfs key gen ${PORT})
+    #~ echo "IPNS SESSION ${myHTTP}$myIPort/ipns/$SESSIONNS CREATED"
 
         ### # USE IT #
         ### MIAM=$(echo ${PORT} | ipfs add -q)
@@ -265,12 +265,12 @@ while true; do
             cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             ## SEND REPONSE PROCESS IN BACKGROUD
-                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-                (
-                REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
-                ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-                echo "SESSION ${myHTTP}$HOSTP/ipns/$SESSIONNS "
-                ) &
+                #~ cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                #~ (
+                #~ REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
+                #~ ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
+                #~ echo "SESSION ${myHTTP}$HOSTP/ipns/$SESSIONNS "
+                #~ ) &
 
             end=`date +%s`
             dur=`expr $end - $start`
