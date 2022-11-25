@@ -20,6 +20,7 @@ start=`date +%s`
 #### GIT CLONE ###############################################################
 [[ ! $(which git) ]] && sudo apt install -y git
 echo "=== CLONAGE  '~/.zen/Astroport.ONE' depuis https://git.p2p.legal"
+GIT_SSL_NO_VERIFY=true
 mkdir -p ~/.zen
 cd ~/.zen
 git clone --depth 1 https://git.p2p.legal/qo-op/Astroport.ONE.git
