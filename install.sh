@@ -12,7 +12,10 @@ start=`date +%s`
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
 
 ########################################################################
-[[ ! $(which ipfs) ]] && echo "=== Installez IPFS KUBO !!" && echo "https://docs.ipfs.io/install/command-line/#official-distributions" && exit 1
+[[ ! $(which ipfs) ]] \
+&& echo "=== Installez IPFS KUBO puis relancez Install ===" \
+&& echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)" \
+&& exit 1
 
 #### GIT CLONE ###############################################################
 [[ ! $(which git) ]] && sudo apt install -y git
