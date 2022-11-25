@@ -15,7 +15,9 @@ start=`date +%s`
 [[ ! $(which ipfs) ]] \
 && echo "=== Installez IPFS KUBO puis relancez Install ===" \
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)" \
-&& exit 1
+&& [[ $(uname -p) == "x86_64" ]] \
+&& bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)
+
 
 #### GIT CLONE ###############################################################
 [[ ! $(which git) ]] && sudo apt install -y git
@@ -156,7 +158,7 @@ echo "=== SETUP IPFS SYSTEM"
 
 #### SETUP JAKLIS ###############################################################
 echo "=== SETUP jaklis"
-cd $MY_PATH/tools/jaklis
+cd ~/.zen/Astroport.ONE/tools/jaklis
 sudo ./setup.sh
 
 ## XBIAN fail2ban ERROR correction ##
@@ -209,7 +211,7 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
     echo "#############################################"
 
 ### ADD 20h12.sh CRON ###############
-$MY_PATH/tools/cron_VRFY.sh ON
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
 ########################################################################
 # SUDO permissions

@@ -31,7 +31,7 @@ MACHINE_TYPE=`uname -m`
 # CHECK if daemon is already running
 if [[ $YOU ]]; then
     echo "ipfs daemon already running...! Run by $YOU $MACHINE_TYPE"
-    [[ $YOU == $USER]] && echo "Stopping ipfs daemon" && killall ipfs \
+    [[ $YOU == $USER ]] && echo "Stopping ipfs daemon" && killall ipfs \
                                         || (echo "ERROR $YOU is running ipfs, must be $USER" && exit 1)
 else
     # INIT ipfs
