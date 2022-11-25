@@ -33,6 +33,7 @@ echo "$USER appuyez sur ENTRER."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTI
 echo "#############################################"
 echo "###### IPFS BIOS INSTALL ##############################"
 echo "################  CRYPTO TW Ŋ1 PROTOCOL #############"
+echo "tail -f /tmp/install.errors.log"
 echo "##################################################"
 
 echo ; echo "Mise à jour des dépots de votre distribution..."
@@ -43,7 +44,7 @@ sudo apt-get update
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo apt install -y $i;
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
     fi
 done
 
@@ -55,7 +56,7 @@ for i in git fail2ban npm netcat-traditional inotify-tools curl net-tools libsod
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
 
     fi
 done
@@ -67,7 +68,7 @@ for i in qrencode basez jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.failed.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
 
     fi
 done
@@ -78,7 +79,7 @@ echo "#############################################"
 ##########################################################
 echo "### INSTALL TW node.js"
 sudo npm install -g tiddlywiki sjcl-cli
-[[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.failed.log && continue
+[[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log && continue
 
 echo "#############################################"
 echo "######### PATIENCE #################"
@@ -116,8 +117,10 @@ echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo
 for i in pip setuptools wheel cryptography==3.4.8 Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo python3 -m pip install -U $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python3 -m pip install -U $i FAILED." >> /tmp/install.failed.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python3 -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
 done
+
+cat /tmp/install.errors.log
 
 echo "#############################################"
 echo "######### PATIENCE ######################"
@@ -183,6 +186,9 @@ fi
 mkdir -p ~/Astroport/film
 mkdir -p ~/Astroport/serie
 mkdir -p ~/Astroport/anime
+mkdir -p ~/Astroport/page
+mkdir -p ~/Astroport/web
+mkdir -p ~/Astroport/video
 echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME' > ~/Astroport/ajouter_video.modele.txt
 
 
@@ -223,6 +229,7 @@ echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
 
 mkdir -p ~/.zen/tmp
+
 echo "#############################################"
 
 ## SYMLINK youtube-dl TO yt-dlp

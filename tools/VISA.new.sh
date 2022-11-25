@@ -32,12 +32,10 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
     ASTRO=""
-    echo "$SALT"
-    echo "$PEPPER"
     ipfs key rm gchange 2>/dev/null
     rm -f ~/.zen/tmp/gchange.key
-    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER"
-    ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key )
+    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/gchange.key "$SALT" "$PEPPER" 2>/dev/null
+    ASTRONAUTENS=$(ipfs key import gchange -f pem-pkcs8-cleartext ~/.zen/tmp/gchange.key 2>/dev/null)
     echo "/ipns/${ASTRONAUTENS}"
 
     mkdir -p ~/.zen/tmp/TW
@@ -55,9 +53,9 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     else
 
         # EXTRACTION & UPDATE myIP
-        rm -f ~/.zen/tmp/miz.json
-        tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'miz.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        OLDIP=$(cat ~/.zen/tmp/miz.json | jq -r .[].secret)
+        rm -f ~/.zen/tmp/MadeInZion.json
+        tiddlywiki --load ~/.zen/tmp/TW/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        OLDIP=$(cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret)
 
         echo "TW OFFICIAL GATEWAY : http://$OLDIP:8080//ipns/${ASTRONAUTENS}"
         if [[ ! -d ~/.zen/game/players/$PLAYER/ipfs/moa ]]; then
@@ -77,7 +75,7 @@ echo "=============================================
 MadeInZion DIPLOMATIC PASSPORT
 =============================================
 A cryptographic key pair to control your P2P Digital Life.
-Solar Punk garden forest terraforming game.
++ Solar Punk garden forest terraforming game.
 =============================================
 Bienvenue 'Astronaute'"; sleep 1
 

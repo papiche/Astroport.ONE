@@ -80,7 +80,7 @@ while true; do
 
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING ${myHTTP}'$myIP:'12345 (ᵔ◡◡ᵔ)'
+    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myHTTP}$myIP:'12345 (ᵔ◡◡ᵔ)'
 
     ############### ACTIVATE USE ON QUICK IPFS DRIVE
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
