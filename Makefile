@@ -9,8 +9,17 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 
 all: install tests
 
+install: myos-node player-build up
+
+player: STACK := User
 player:
-	$(call make,stack-ipfs-$(if $(DELETE),down,up) USER=$(PLAYER),$(MYOS),IPFS_IDENTITY_PEERID IPFS_IDENTITY_PRIVKEY)
+	$(call make,stack-User-$(if $(DELETE),down,up),$(MYOS),COMPOSE_PROJECT_NAME MAIL)
+
+player-%: STACK := User
+player-%:
+	$(if $(filter $*,$(filter-out %-%,$(patsubst docker-compose-%,%,$(filter docker-compose-%,$(MAKE_TARGETS))))), \
+	  $(call make,stack-User-$*,$(MYOS),COMPOSE_PROJECT_NAME MAIL) \
+	)
 
 tests: shellcheck
 

@@ -42,6 +42,12 @@ Lancement API (1234) et MAP (12345)
 
 Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les environs du premier de ce nom.
 
+# INSTALLATION (Docker)
+
+```
+make install
+```
+
 # USAGE
 
 Selon le modèle de votre TW,
