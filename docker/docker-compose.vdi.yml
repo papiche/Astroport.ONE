@@ -33,11 +33,6 @@ services:
 volumes:
   home:
   shared:
-    driver: local
-    driver_opts:
-      type: none
-      device: /mnt/shared
-      o: bind
   shm:
     driver: local
     driver_opts:
