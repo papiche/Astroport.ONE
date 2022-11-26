@@ -202,12 +202,17 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
 #######################################################################
 
     echo "#############################################"
-## https://darktrojan.github.io/openwith/webextension.html"
-[[ $XDG_SESSION_TYPE == 'x11' ]] && ~/.zen/Astroport.ONE/open_with_linux.py install; \
-
-    echo "# BLOB MODE avec 'OpenWith' depuis votre navigateur !!"
+    ## https://darktrojan.github.io/openwith/webextension.html"
+    [[ $XDG_SESSION_TYPE == 'x11' ]] && ~/.zen/Astroport.ONE/open_with_linux.py install; \
+    echo "#############################################" \
+    echo "# NOURRIR SON BLOB" \
+    echo "# avec 'OpenWith' depuis votre navigateur !!" \
     echo "# https://addons.mozilla.org/firefox/addon/open-with/
-# https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno"
+# https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno" \
+    echo "#############################################" \
+    echo \
+    echo "   ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##" \
+    echo \
     echo "#############################################"
 
 ### ADD 20h12.sh CRON ###############
@@ -245,7 +250,7 @@ which youtube-dl
 echo "#############################################"
 echo "#############################################"
     ## Desktop install
-    echo "Astroport.ONE"
+    echo "Astroport.ONE INSTALL"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
     echo "#############################################"
@@ -267,7 +272,7 @@ Connectez-vous sur https://gchange.fr avec vos identifiants
 
 $(cat ~/.zen/game/players/.current/secret.june)
 
-http://astroport.com
+Powered by https://astroport.com
 "
 # MAIN #
 fi
