@@ -9,7 +9,7 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 
 all: install tests
 
-install: myos-node player-build up
+install: myos-node build player-build docker-network-create-$(USER) player up
 
 player: STACK := User
 player:

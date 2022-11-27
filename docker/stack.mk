@@ -1,9 +1,12 @@
+DOCKER_IMAGES_MYOS              := x2go:xfce-debian
+ENV_VARS                        += NODE_ASTROPORT_SERVICE_1234_TAGS
 COMPOSE_FILE_VDI                := true
-MAKE_VARS                       += NODE_VDI_PORT User node
+MAKE_VARS                       += SSH_PORT User node
+NODE_ASTROPORT_SERVICE_1234_TAGS ?= urlprefix-astroport.$(DOMAIN)/
 SERVICE                         := astroport
-SSH_PORT                        := $(NODE_VDI_PORT)
+SSH_PORT                        := 45720
 SSH_PUBLIC_HOSTS                += git.p2p.legal
 STACK                           := node
-UFW_UPDATE                      := $(SERVICE)
+UFW_UPDATE_ASTROPORT            := 1234/tcp 12245:12445/tcp 45720/tcp
 User                            := User/ipfs
 node                            := node/ipfs

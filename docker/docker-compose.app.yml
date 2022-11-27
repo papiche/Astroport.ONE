@@ -15,9 +15,12 @@ services:
     labels:
     - SERVICE_1234_CHECK_HTTP=/test
     - SERVICE_1234_NAME=${COMPOSE_SERVICE_NAME}-astroport-1234
-    - SERVICE_1234_TAGS=${NODE_ASTROPORT_SERVICE_1234_TAGS}
+    - SERVICE_1234_TAGS=${NODE_ASTROPORT_SERVICE_1234_TAGS:-}
+    volumes:
+    - dns:/dns
 
 volumes:
+  dns:
   ipfs:
     external: true
     name: ${COMPOSE_SERVICE_NAME}_ipfs

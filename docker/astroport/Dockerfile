@@ -8,6 +8,7 @@ ARG DOCKER_SYSTEM=Linux
 RUN apt-get update \
  && apt-get -fy upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get -fy install \
+        basez \
         bash \
         bc \
         cron \
