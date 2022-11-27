@@ -198,10 +198,10 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
 #
-        echo "# CRYPTO ENCODING myIP -> CRYPTIP"
+        echo "# CRYPTO ENCODING secret.dunikey -> TW _SECRET_ "
         echo $myIP > ~/.zen/tmp/myIP
-        $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/myIP -o $HOME/.zen/tmp/myIP.$G1PUB.enc
-        CRYPTIP=$(cat ~/.zen/tmp/myIP.$G1PUB.enc | base16)
+        $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/$PLAYER/secret.dunikey -o $HOME/.zen/tmp/secret.dunikey.$G1PUB.enc
+        CRYPTIP=$(cat ~/.zen/tmp/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$CRYPTIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 #
         echo "# CRYPTO DECODING CRYPTIP -> myIP"
@@ -279,10 +279,10 @@ echo "*** IPNS Ŋ0 KEY : $PLAYER";
 echo; echo "GW : http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 1
 
 # PASS CRYPTING KEY
-echo; echo "Sécurisation de vos clefs par chiffrage SSL... "; sleep 1
-openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
-openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.dunikey" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.dunikey" -k $PASS 2>/dev/null
-openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -out" "$HOME/.zen/game/players/$PLAYER/enc.$KEYFILE" -k $PASS 2>/dev/null
+#~ echo; echo "Sécurisation de vos clefs... "; sleep 1
+#~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
+#~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.dunikey" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.dunikey" -k $PASS 2>/dev/null
+#~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/$KEYFILE -out" "$HOME/.zen/game/players/$PLAYER/enc.$KEYFILE" -k $PASS 2>/dev/null
 ## TODO MORE SECURE ?! USE opengpg, natools, etc ...
 # ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/$PLAYER/secret.dunikey -o "$HOME/.zen/game/players/$PLAYER/enc.secret.dunikey"
 echo

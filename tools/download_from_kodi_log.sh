@@ -26,6 +26,9 @@ $(basename "$0") old scraping"
 exit 2
 }
 
+# IPFSNODEID=$(ipfs id -f='<id>\n')
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/
 
 ## CHOOSE kodi.${OLD}log
 [[ $1 == "old" ]] && OLD='old.' || OLD=''
@@ -41,44 +44,26 @@ do
     echo "########################################################################"
     echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
 
-    ## ADD TO ASTROPORT
-    # IPFSNODEID=$(ipfs id -f='<id>\n')
-    IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-    NODEG1PUB=$(${MY_PATH}/ipfs_to_g1.py ${IPFSNODEID})
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/
-
-    ## CREATE APPNAME IPNS KEY (CREATE ONE BY FRIENDS SHARING COPY TASK) HACKING_QUEST TODO Make a better key generation
-    [[ ! -f ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/keygen.ipns.key.enc.b16 ]] \
-    && ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/publish.key "$uqlink" "$IPFSNODEID" \
-    && ${MY_PATH}/natools.py encrypt -p ${NODEG1PUB} -i ~/.zen/tmp/publish.key -o ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/keygen.ipns.key.enc \
-    && cat ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/keygen.ipns.key.enc | base16 > ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/keygen.ipns.key.enc.b16
-
-    [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo | grep -w "$uqname.mp4") ]] && \
+    ! cat ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo | grep -w "$uqname.mp4" && \
     echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo || \
     echo "$uqname.mp4 conflict"
 
     ## CHECK & MANAGE COPY
-    if [[ $(find $HOME/astroport -name "$uqname*" -type f -print) ]];
+    if [[ $(find $HOME/Astroport -name "$uqname*" -type f -print) ]];
     then
         echo "COPY ALREADY IN $HOME/Astroport/"
+        continue
     else
-        echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
-        echo "WANT TO COPY ? Yes? Write any character + enter, else just hit enter."
-        read YESNO
-        if [[ "$YESNO" != "" ]]; then
-            ## COPY STREAMING
+            echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
             uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
-            echo "COPY ~/Astroport/$uqname.mp4 DONE"
-            ## ARE WE ASTROPORT STATION? https://astroport.com
-            [[ "$USER" != "xbian" && ${IPFSNODEID} ]] && ~/.zen/astrXbian/ajouter_video.sh
-        else
-            continue
-        fi
+            echo "COPY ~/astroport/$uqname.mp4 DONE"
+            ## ARE WE RUNNING ON ASTROPORT STATION?
+            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
     fi
 done
 echo
 echo "########################################################################"
 [[ $cycle == 1 && ! ${OLD} ]] && echo "NOTHING IN CURRENT LOG, TRY old ?" && read OLD && [[ "$OLD" != "" ]] && $MY_PATH/$SCRIPT old
-echo "DONE... VideoClub Datacenter Virtuel entre amis. https://copylaradio.com"
+echo "DONE... VideoClub Datacenter Virtuel entre amis."
 echo "ASTROPORT. Le web des gens."
 exit 0

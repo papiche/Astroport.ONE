@@ -5,16 +5,13 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 ################################################################################
-## ASTROPORT API SERVER http://$myHOST:1234
+## ASTROPORT API SERVER http://${myHOST}:1234
 ## ATOMIC GET REDIRECT TO ONE SHOT WEB SERVICE THROUGH PORTS
 ## ASYNCHRONOUS IPFS API
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-
-shopt -s expand_aliases
-alias espeak='espeak 1>&2>/dev/null' ## SPEAKING LOG SHUT UP
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
@@ -34,7 +31,7 @@ mkdir -p ~/.zen/tmp/coucou/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  ${myHTTP}$myHOST:1234/?salt=totodu56&pepper=totodu56&getipns " && exit 1
+[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&getipns " && exit 1
 ## NOT RUNNING TWICE
 
 # Some client needs to respect that
@@ -49,14 +46,14 @@ Content-Type: text/html; charset=UTF-8
 echo "_________________________________________________________"
 echo "LAUNCHING Astroport  API Server - TUBE : $TUBE - "
 echo
-echo "NEW TW ${myHTTP}$myHOST:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
+echo "NEW TW ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
 echo
-echo "TW R/W MODE ${myHTTP}$myHOST:1234/?salt=totodu56&pepper=totodu56&official"
+echo "TW R/W MODE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&official"
 echo
-echo "GCHANGE MESSAGING ${myHTTP}$myHOST:1234/?salt=totodu56&pepper=totodu56&messaging"
-echo "OPEN GCHANGE ${myHTTP}$myHOST:1234/?salt=totodu56&pepper=totodu56&g1pub"
+echo "GCHANGE MESSAGING ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&messaging"
+echo "OPEN GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
 echo
-echo "TESTCRAFT ${myHTTP}$myHOST:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
+echo "TESTCRAFT ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
@@ -81,14 +78,14 @@ while true; do
 
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myHTTP}$myHOST:'12345 (ᵔ◡◡ᵔ)'
+    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myHTTP}${myHOST}:'12345 (ᵔ◡◡ᵔ)'
 
     ############### ACTIVATE USE ON QUICK IPFS DRIVE
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
     #~ echo
     #~ ipfs key rm ${PORT} > /dev/null 2>&1
     #~ SESSIONNS=$(ipfs key gen ${PORT})
-    #~ echo "IPNS SESSION ${myHTTP}$myHOSTPort/ipns/$SESSIONNS CREATED"
+    #~ echo "IPNS SESSION ${myHTTP}${myHOST}Port/ipns/$SESSIONNS CREATED"
 
         ### # USE IT #
         ### MIAM=$(echo ${PORT} | ipfs add -q)
@@ -102,8 +99,8 @@ while true; do
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
-    sed "s~127.0.0.1:12345~$myHOST:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i "s~127.0.0.1~$myHOST~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed "s~127.0.0.1:12345~${myHOST}:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i "s~127.0.0.1~${myHOST}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     sed -i "s~_SESSIONLNK_~${myHTTP}${myHOSTPort}/ipns/${SESSIONNS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
@@ -127,7 +124,7 @@ while true; do
     echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOST:1234 PORT"
     echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOST:${PORT}"
 
-    espeak "Ding"
+    espeak "Ding" >/dev/null 1>&2
 
     echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
@@ -144,7 +141,7 @@ while true; do
         sed "s~http://127.0.0.1:1234~${myHTTP}$HOSTP~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        sed -i "s~http://127.0.0.1:8080~$(MyIPort)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed -i "s~http://127.0.0.1:8080~${myHTTP}${myHOSTPort}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
 
         ## Random Background image ;)
@@ -297,7 +294,7 @@ while true; do
             echo "GCHANGE REDIRECTING https://www.gchange.fr/#/app/user/"${G1PUB}"/"
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-            ### echo "SESSION ${myHTTP}$myHOST:8080/ipns/$SESSIONNS "
+            ### echo "SESSION ${myHTTP}${myHOST}:8080/ipns/$SESSIONNS "
             (
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
             ${MY_PATH}/tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
@@ -471,10 +468,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 $MY_PATH/tools/natools.py decrypt -f pubsec -k ~/.zen/tmp/coucou/${MOATS}.secret.key -i ~/.zen/tmp/myHOST.$G1PUB.enc.2 -o ~/.zen/tmp/myHOST.$G1PUB > /dev/null 2>&1
                 GWIP=$(cat  ~/.zen/tmp/myHOST.$G1PUB > /dev/null 2>&1)
 
-                [[ ! $GWIP ]] && GWIP=$myHOST ## CLEAR
+                [[ ! $GWIP ]] && GWIP=${myHOST} ## CLEAR
 #
                 echo "TW is on ${myHTTP}$GWIP"
-                echo "BECOMING TW GATEWAY : $myHOST" ## BECOMING OFFICIAL BECOME R/W TW
+                echo "BECOMING TW GATEWAY : ${myHOST}" ## BECOMING OFFICIAL BECOME R/W TW
 
         ####################
         echo $GWIP > ~/.zen/tmp/GWIP
@@ -487,12 +484,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
                 [[ $isLAN ]] \
-                && echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'${myHTTP}$myHOST':5001"}]' > ~/.zen/tmp/5001.json \
-                && echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'${myHTTP}$myHOST':8080"}]' > ~/.zen/tmp/8080.json
+                && echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'${myHTTP}${myHOST}':5001"}]' > ~/.zen/tmp/5001.json \
+                && echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'${myHTTP}${myHOST}':8080"}]' > ~/.zen/tmp/8080.json
 
                 [[ ! $isLAN ]] \
-                && echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'${myHTTP}$myHOST'/api"}]' > ~/.zen/tmp/5001.json \
-                && echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'${myHTTP}$myHOST'"}]' > ~/.zen/tmp/8080.json
+                && echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'${myHTTP}${myHOST}'/api"}]' > ~/.zen/tmp/5001.json \
+                && echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'${myHTTP}${myHOST}'"}]' > ~/.zen/tmp/8080.json
 
                 tiddlywiki --load ~/.zen/tmp/coucou/${MOATS}.astroindex.html \
                             --import "$HOME/.zen/tmp/MadeInZion.json" "application/json" \
@@ -601,9 +598,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
                     ) &
 
-                    echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\"http://"$myHOST":8080/ipns/"$ASTRONAUTENS"\"'/>
+                    echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\"http://"${myHOST}":8080/ipns/"$ASTRONAUTENS"\"'/>
                     <h1>BOOTING - ASTRONAUT $PSEUDO </h1> IPFS FORMATING - [$SALT + $PEPPER] (${WHAT})
-                    <br>- TW - http://$myHOST:8080/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    <br>- TW - http://${myHOST}:8080/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                      echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
                     continue
                else
@@ -624,7 +621,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        echo "${MOATS} -----> PAGE AVAILABLE -----> http://$myHOST:${PORT}"
+        echo "${MOATS} -----> PAGE AVAILABLE -----> http://${myHOST}:${PORT}"
 
         #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
