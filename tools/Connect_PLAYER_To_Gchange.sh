@@ -142,7 +142,7 @@ do
                         # # # # # # # # # # # # # # #
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "SALUT. Je suis sur Astroport. Tu viens." -m "Active ton TW avec moi : http://libra.copylaradio.com:1234 - DEV MODE -"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "BRO !" -m ">>> (◕‿‿◕) <<< https://astroport.copylaradio.com >>> (◕‿‿◕) <<<"
 
         else
 
