@@ -84,7 +84,7 @@ echo "Getting received stars"
 -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
 -n "https://data.gchange.fr" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
 
-cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
+cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
 echo "cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r"
 
 for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me | sort | uniq);
