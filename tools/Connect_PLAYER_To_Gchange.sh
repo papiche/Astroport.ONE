@@ -175,8 +175,8 @@ do
 
     else
 
-        echo "$my_star_level ETOILES RECUES ($gscore). Relayons sa politesse."
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "$my_star_level ETOILES RECUES ($gscore)" -m "https://www.gchange.fr/#/app/user/${liking_me}/ VOTRE RETOUR ?"
+        echo "$my_star_level ETOILES RECUES ($gscore). Etablir un lien retour."
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Bro ?" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
         echo "LIKING LATER."
 
     fi
