@@ -60,6 +60,9 @@ if [[ ! $isLAN ]]; then
     done
 fi
 
+## Updating yt-dlp
+sudo youtube-dl -U
+
 ########################################################################
 end=`date +%s`
 echo "20H12 (♥‿‿♥) Execution time was "`expr $end - $start` seconds.
