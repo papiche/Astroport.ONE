@@ -20,7 +20,7 @@ services:
     - SSH_AUTHORIZED_KEYS=${SSH_AUTHORIZED_KEYS:-}
     - SSH_PORT=${SSH_PORT:-22}
     - SSH_PUBLIC_HOSTS=${SSH_PUBLIC_HOSTS:-}
-    - SUDOERS=${NODE_VDI_SUDOERS:-:-${USER}}
+    - SUDOERS=${NODE_VDI_SUDOERS:-zen}
     - TZ=${NODE_VDI_TZ:-:-{TZ}}
     - USERS=${NODE_VDI_USERS:-zen}
     security_opt:

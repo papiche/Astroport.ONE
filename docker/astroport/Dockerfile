@@ -127,6 +127,7 @@ EXPOSE 1234 12345
 
 COPY install.sh /install.sh
 COPY ${DOCKER_BUILD_DIR}/*.sh /app/
+COPY ${DOCKER_BUILD_DIR}/.*aliases /etc/skel/
 CMD ["/app/astroport.sh", "start"]
 
 FROM dist as master
