@@ -7,7 +7,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
-echo "20H12 (♥‿‿♥) $(hostname)"
+echo "20H12 (♥‿‿♥) $(hostname) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
 
@@ -35,7 +35,9 @@ git pull
 
 ## CLOSING 1234 API PORT
 killall 12345.sh
+killall _12345.sh
 killall nc
+killall tail
 
 espeak "Ding Ding Ding" > /dev/null 2>&1
 
@@ -45,7 +47,7 @@ espeak "Ding Ding Ding" > /dev/null 2>&1
 espeak "Bills Kills Bills" > /dev/null 2>&1
 
 
-## OPEN ENTRANCE AGAIN
+## OPEN API ENGINE
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 
 if [[ ! $isLAN ]]; then
