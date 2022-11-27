@@ -196,5 +196,5 @@ while read LINE;
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
         fi
 
-done  < ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache # FINISH YID loop 1
+done  < ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY # FINISH YID loop 1
 exit 0

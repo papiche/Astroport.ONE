@@ -128,7 +128,7 @@ do
 
         ## GET FRIEND GCHANGE PROFILE
         ${MY_PATH}/timeout.sh -t 20 \
-        ${MY_PATH}/jaklis/jaklis.py \
+        ${MY_PATH}/jaklis/jaklis.py get \
         -p ${liking_me} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
 
         FRIENDTITLE=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json | jq -r '.title')
