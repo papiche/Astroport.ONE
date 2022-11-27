@@ -13,9 +13,6 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-shopt -s expand_aliases
-alias espeak='espeak 1>&2>/dev/null' ## SPEAKING LOG SHUT UP
-
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
@@ -127,7 +124,7 @@ while true; do
     echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOST:1234 PORT"
     echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOST:${PORT}"
 
-    espeak "Ding"
+    espeak "Ding" >/dev/null 1>&2
 
     echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
