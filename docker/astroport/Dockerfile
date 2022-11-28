@@ -186,12 +186,12 @@ RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
  && chown "$USER" "/var/spool/cron/crontabs/$USER"
 
 VOLUME "/home/$USER/.ipfs"
-VOLUME "/home/$USER/.zen"
+VOLUME "/home/$USER/.zen/game/players"
 VOLUME "/home/$USER/Astroport"
 
 # homedir
-RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen" "/home/$USER/Astroport" \
- && chown "$USER" "/home/$USER/.ipfs" "/home/$USER/.zen" "/home/$USER/Astroport"
+RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport" \
+ && chown "$USER" "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport"
 
 HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
 

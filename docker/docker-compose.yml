@@ -13,11 +13,11 @@ services:
     tty: true
     volumes:
     - data:/home/zen/Astroport:cached
+    - home:/home/zen/.zen/game/players:delegated
     - ipfs:/home/zen/.ipfs:cached,ro
-    - zen:/home/zen/.zen:delegated
     working_dir: /home/zen
 
 volumes:
   data:
+  home:
   ipfs:
-  zen:
