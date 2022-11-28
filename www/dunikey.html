@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>idSec+password or seed or keys => file.dunikey</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon.png">
+    <link rel="canonical" href="https://gsper.duniter.io/dunikey.html"/>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="idSec+password or seed or keys => file.dunikey" />
+    <meta property="og:site_name" content="gsper.duniter.io" />
+    <meta property="og:url" content="https://gsper.duniter.io/dunikey.html" />
+    <meta property="og:image" content="https://gsper.duniter.io/img/gsper-logo.png" />
+    <meta property="og:description" content="Converti vos secrets d'authentification pour générer un fichier d'authentification file.dunikey" />
+    <style>
+        * {font-family: sans-serif; box-sizing: border-box; margin: 0; padding: 0}
+        h1{font-weight: normal; width: 100%; text-align: center; line-height: 70px;}
+        fieldset {margin: 10px;}
+        .logic {margin-left: 50px;}
+        input{border: 0; padding: 5px;width: 100%; line-height: 60px; font-size: 16px;}
+        button {width: 100%; height: 32px}
+        .gift {position: absolute; top: 10px; left: 10px;}
+        .gift a{text-decoration-color: rgba(0%,0%,100%,0.2); color: rgba(0%,0%,100%,0.7);}
+    </style>
+</head>
+<body>
+<h1>DunikeyMaker</h1>
+<fieldset>
+    <fieldset>
+    <input id="idSec" type="password" placeholder="Identifiant secret"/>
+    <input id="pass" type="password" placeholder="Mot de passe"/>
+</fieldset>
+    <div class="logic">ou</div>
+<fieldset>
+    <input id="seed" type="text" placeholder="Seed"/>
+</fieldset>
+    <div class="logic">ou</div>
+<fieldset>
+    <input id="secretkey" type="text" placeholder="Clef privée (ou secrète)"/>
+    <input id="pubkey" type="text" placeholder="Clef publique"/>
+</fieldset>
+</fieldset>
+<div class="logic">et</div>
+<fieldset>
+    <input id="filename" type="text" placeholder="Nom du fichier à générer"/>
+    <button id="compute">Générer le fichier .dunikey.yml</button>
+</fieldset>
+    <div class="gift">
+        <a href="https://cesium.g1.1000i100.fr/#/app/wot/2sZF6j2PkxBDNAqUde7Dgo5x3crkerZpQ4rBqqJGn8QT/1000i100" target="_blank">Ǧ'spère vous avoir été utile.<br/>
+            Soutenez mon travail avec un don !<br/>
+            👤 : 1000i100 🔑 : 2sZF6j2P
+        </a>
+    </div>
+<footer>
+    <a href="https://git.duniter.org/tools/gsper" id="sourceRibbon" title="Fork me !">
+        <span>AGPL-3.0</span>
+        <span>Logiciel Libre</span>
+        <span>Remonter aux sources</span>
+        <style>
+            #sourceRibbon {position: fixed; top: 15px; right: -110px; z-index: 500; transform: rotate(45deg); text-align: center;width: 300px; box-shadow: 0 0 5px #000; text-decoration: none;}
+            #sourceRibbon span {background-color: #0A0; color: white; font-family: sans-serif; display: block; padding: 1px 30px; font-size: 9pt; margin: -1px; text-shadow: 0 0 3px rgba(0,0,0,.5);}
+            #sourceRibbon span + span {background-color:  #06A; font-size: 11pt;}
+            #sourceRibbon span + span + span {background-color: #E80; font-size: 10pt;}
+        </style>
+    </a>
+</footer>
+<script type="module" src="dunikey.js"></script>
+</body>
+</html>

@@ -14,8 +14,8 @@ log() {
 }
 
 zen() {
-  rm -rf /home/zen/.zen/tmp \
-   && mkdir -p /dev/shm/tmp \
+  mkdir -p /dev/shm/tmp \
+   && rm -rf /home/zen/.zen/tmp \
    && ln -s /dev/shm/tmp /home/zen/.zen/tmp
   [ -d "$ASTROPORT_DIR" ] && cd "$ASTROPORT_DIR" && git pull -q || git clone -q "$ASTROPORT_REPO" "$ASTROPORT_DIR"
 }

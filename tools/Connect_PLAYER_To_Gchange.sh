@@ -84,7 +84,7 @@ echo "Getting received stars"
 -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
 -n "https://data.gchange.fr" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
 
-cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
+cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
 echo "cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r"
 
 for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me | sort | uniq);
@@ -97,14 +97,13 @@ do
     echo "TW ? http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
+    echo "Receiving Stars : cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r"
     ################################## JAKLIS LIKING_ME stars
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
     ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
     -n "https://data.gchange.fr" \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
-
-    echo "Got Stars - DEBUG - cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r"
     ## ZOMBIE PROTECTION
     [[ "$?" == "0" && ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json ]] && rm -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me} && echo "${liking_me} is a ZOMBIE..." && continue
 
@@ -127,8 +126,15 @@ do
         cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
         echo "$my_star_level" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level && echo "***** $my_star_level STARS *****"
 
+        ## GET FRIEND GCHANGE PROFILE
+        ${MY_PATH}/timeout.sh -t 20 \
+        ${MY_PATH}/jaklis/jaklis.py get \
+        -p ${liking_me} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
+
+        FRIENDTITLE=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json | jq -r '.title')
+
         ## GET FRIEND TW !!
-        echo "Getting latest online TW..."
+        echo "Getting $FRIENDTITLE latest online TW..."
         YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
         echo "$LIBRA/ipns/$ASTRONAUTENS"
@@ -139,18 +145,14 @@ do
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
 
-                        # # # # # # # # # # # # # # #
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "BRO !" -m ">>> (◕‿‿◕) <<< https://astroport.copylaradio.com >>> (◕‿‿◕) <<<"
 
         else
 
-            echo "COOL MON AMI PUBLIE SUR IPFS"
+            echo "COOL MON AMI EST SUR IPFS"
             ls -al ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
-            # # # # # # # # # # # # # # # TODO
-                 # CHECK Dessin de Moa ?? (DIS)CONNECT PLAYERS
-                        # # # # # # # # # # # # # # #
 
         fi
 
@@ -158,15 +160,14 @@ do
 # SCRAPING DONNE LE BON COIN
 # https://www.leboncoin.fr/recherche?text=donne&locations=Toulouse__43.59743304757555_1.4471155185604894_10000_5000&owner_type=private&sort=time&donation=1
 
-
-
         ## Get Ŋ2 LEVEL
         echo "(°▃▃°) (°▃▃°) (°▃▃°) Ŋ2 scraping  ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/friend_of_friend.json"
         for nid in $(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[].issuer');
         do
+
             echo "Ami(s) de cet Ami $linking_me : $nid"
             friend_of_friend=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$nid'"))')
-            echo "$friend_of_friend" | jq -r > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/friend_of_friend.json
+            echo "$friend_of_friend" | jq -r > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/FoF_$nid.json
 
         done
 
