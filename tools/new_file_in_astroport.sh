@@ -98,7 +98,7 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 
 # NOT CURRENT PLAYER (CHECK FOR TW & KEY
 [[ $G1PUB != $(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ]] \
-&& [[ $(ipfs key list -l | grep -v $G1PUB) ]] \
+&& [[ $(ipfs key list -l | grep -w $G1PUB) ]] \
 && echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
 && ASTRONS=$($MY_PATH/tools/g1_to_ipfs.py "$G1PUB") \
 && $MY_PATH/tools/TW.cache.sh $ASTRONS $MOATS \

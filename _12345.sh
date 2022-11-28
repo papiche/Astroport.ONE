@@ -77,7 +77,7 @@ while true; do
     ls ~/.zen/tmp/swarm
     BSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
 
-    ## SIZE MODIFIED
+    ## SIZE MODIFIED => PUBLISH MySwarm_$IPFSNODEID
     [[ $BSIZE != $(cat ~/.zen/tmp/swarm/.bsize) ]] \
     && echo $BSIZE > ~/.zen/tmp/swarm/.bsize \
     && SWARMH=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
@@ -85,7 +85,7 @@ while true; do
 
 
     ############# PUBLISH IPFSNODEID BALISE
-    # Clean Empty
+    # Clean Empty Directory (inode dependancy BUG ??)
     du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
     while read branch; do [[ $branch =~ "4096" ]] && rmdir $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
 

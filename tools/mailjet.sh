@@ -25,8 +25,8 @@ messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
 [[ ! $1 ]] && mail="support@qo-op.com"
 
-SUBJECT="[(♥‿‿♥)] Astronaute. Message Station Astroport.ONE"
-MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n Activez votre TW https://astroport.copylaradio.com .\n\nAstroport\n$IPFSNODEID"
+SUBJECT="[(♥‿‿♥)] Message Station Astroport : $(hostname)"
+MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n Activez votre TW https://astroport.copylaradio.com .\n\nAstroport\n($IPFSNODEID)"
 
 echo "From: support@g1sms.fr
 To: EMAIL
