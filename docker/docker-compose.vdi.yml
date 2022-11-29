@@ -9,8 +9,8 @@ services:
     - SYS_ADMIN # ecryptfs
     environment:
     - DEBUG=${VDI_DEBUG:-}
-    - ECRYPTERS=${NODE_VDI_ECRYPTERS:-zen}
-    - LANG=${NODE_VDI_LANG:-}
+    - ECRYPTERS=${HOST_VDI_ECRYPTERS:-zen}
+    - LANG=${HOST_VDI_LANG:-}
     - RC_00_SOURCE=${USER_RC_SOURCE:-/etc/profile.d/rc_functions.sh}
     - RC_01_PS1_SET=${USER_RC_PS1_SET:-true}
     - RC_02_PROMPT_SET=${USER_RC_PROMPT_SET:-true}
@@ -20,9 +20,9 @@ services:
     - SSH_AUTHORIZED_KEYS=${SSH_AUTHORIZED_KEYS:-}
     - SSH_PORT=${SSH_PORT:-22}
     - SSH_PUBLIC_HOSTS=${SSH_PUBLIC_HOSTS:-}
-    - SUDOERS=${NODE_VDI_SUDOERS:-zen}
-    - TZ=${NODE_VDI_TZ:-:-{TZ}}
-    - USERS=${NODE_VDI_USERS:-zen}
+    - SUDOERS=${HOST_VDI_SUDOERS:-zen}
+    - TZ=${HOST_VDI_TZ:-:-{TZ}}
+    - USERS=${HOST_VDI_USERS:-zen}
     security_opt:
     - apparmor=unconfined # ecryptfs
     - seccomp=unconfined # ecryptfs
