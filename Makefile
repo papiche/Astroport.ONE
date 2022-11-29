@@ -9,10 +9,10 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 
 all: install tests
 
-install: myos-node player-build up
+install: build myos-node up player
 
 player: STACK := User
-player:
+player: docker-network-create-$(USER)
 	$(call make,stack-User-$(if $(DELETE),down,up),$(MYOS),COMPOSE_PROJECT_NAME MAIL)
 
 player-%: STACK := User

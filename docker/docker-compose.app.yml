@@ -5,8 +5,8 @@ services:
     build:
       args:
       - DOCKER_REPOSITORY=${DOCKER_REPOSITORY}
-      - GID=${NODE_GID}
-      - UID=${NODE_UID}
+      - GID=${HOST_GID}
+      - UID=${HOST_UID}
     container_name: ${COMPOSE_PROJECT_NAME}-astroport
     environment:
     - ENV=${ENV}
@@ -15,9 +15,12 @@ services:
     labels:
     - SERVICE_1234_CHECK_HTTP=/test
     - SERVICE_1234_NAME=${COMPOSE_SERVICE_NAME}-astroport-1234
-    - SERVICE_1234_TAGS=${NODE_ASTROPORT_SERVICE_1234_TAGS}
+    - SERVICE_1234_TAGS=${HOST_ASTROPORT_SERVICE_1234_TAGS:-}
+    volumes:
+    - dns:/dns
 
 volumes:
+  dns:
   ipfs:
     external: true
     name: ${COMPOSE_SERVICE_NAME}_ipfs

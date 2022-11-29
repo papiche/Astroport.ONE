@@ -2,9 +2,6 @@ version: '3.8'
 
 services:
   astroport:
-    build:
-      args:
-      - SSH_PORT=${NODE_VDI_PORT:-22}
     cap_add:
     - IPC_LOCK # ecryptfs
     - NET_ADMIN # iptables
@@ -12,12 +9,20 @@ services:
     - SYS_ADMIN # ecryptfs
     environment:
     - DEBUG=${VDI_DEBUG:-}
-    - ECRYPTERS=${NODE_VDI_ECRYPTERS:-}
-    - LANG=${NODE_VDI_LANG:-}
+    - ECRYPTERS=${HOST_VDI_ECRYPTERS:-zen}
+    - LANG=${HOST_VDI_LANG:-}
+    - RC_00_SOURCE=${USER_RC_SOURCE:-/etc/profile.d/rc_functions.sh}
+    - RC_01_PS1_SET=${USER_RC_PS1_SET:-true}
+    - RC_02_PROMPT_SET=${USER_RC_PROMPT_SET:-true}
+    - RC_03_SSH_ADD=${USER_RC_SSH_ADD:-true}
+    - RC_04_TMUX_ATTACH=${USER_RC_TMUX_ATTACH:-false}
+    - RC_05_SCREEN_ATTACH=${USER_RC_SCREEN_ATTACH:-true}
     - SSH_AUTHORIZED_KEYS=${SSH_AUTHORIZED_KEYS:-}
-    - SSH_PORT=${NODE_VDI_PORT:-22}
+    - SSH_PORT=${SSH_PORT:-22}
     - SSH_PUBLIC_HOSTS=${SSH_PUBLIC_HOSTS:-}
-    - SUDOERS=${NODE_VDI_SUDOERS:-}
+    - SUDOERS=${HOST_VDI_SUDOERS:-zen}
+    - TZ=${HOST_VDI_TZ:-:-{TZ}}
+    - USERS=${HOST_VDI_USERS:-zen}
     security_opt:
     - apparmor=unconfined # ecryptfs
     - seccomp=unconfined # ecryptfs
@@ -26,6 +31,7 @@ services:
     - /etc/localtime:/etc/localtime:ro
     - /etc/default/console-setup:/etc/default/console-setup:ro
     - /etc/default/keyboard:/etc/default/keyboard:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     - home:/home:delegated
     - shared:/shared:cached
     - shm:/dev/shm:delegated
