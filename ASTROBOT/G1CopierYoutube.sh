@@ -17,7 +17,8 @@ echo "$ME RUNNING"
 
 # ASTROBOT FIRST PROCESS
 # "Copier youtube" + (voeu) => CopierYoutube (G1Voeu G1CopierYoutube) = ASTROBOT copy Ŋ1 "(G1CopierYoutube)"
-IPFSNODEID=$(ipfs id -f='<id>\n')
+# IPFSNODEID=$(ipfs id -f='<id>\n')
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 INDEX="$1"
 [[ ! $INDEX ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
@@ -90,11 +91,12 @@ cp ~/.zen/tmp/yt-dlp.cache ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY
 while read LINE;
         do
 
-        YID=$(echo "$LINE" | cut -d '&' -f 2)
+        YID=$(echo "$LINE" | cut -d '&' -f 1)
+
         [[ -s ~/.zen/tmp/$IPFSNODEID/$YID.TW.json ]] && echo "Tiddler json already existing : ~/.zen/tmp/$IPFSNODEID/$YID.TW.json" && continue ## TODO :: CHECK IF ALREADY YOURS OR NOT :: THEN ADD2TW / SEND MESSAGE ?
 
         # SINGLE VIDEO YURL
-        ZYURL=$(echo "$LINE" | cut -d '&' -f 3-)
+        ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
         echo "COPIE : $ZYURL"
 
         TITLE="$(yt-dlp --print "%(title)s" "${ZYURL}")"
@@ -137,6 +139,22 @@ while read LINE;
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
         echo "FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
 
+        #~ ## PREPARE FOR new_file_in_astroport.sh
+        #~ mkdir -p "$HOME/Astroport/youtube/$YID"
+        #~ REVSOURCE="$(echo "$ZYURL" | awk -F/ '{print $3}' | rev)_"
+        #~ MEDIAID="$REVSOURCE${YID}"
+        #~ URLENCODE_FILE_NAME=$(echo ${ZFILE} | jq -Rr @uri)
+        #~ echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/youtube/$YID/ajouter_video.txt
+        #~ mv "$HOME/.zen/tmp/yt-dlp/$ZFILE" "$HOME/Astroport/youtube/$YID/"
+        ###
+        #~ ${MY_PATH}/../tools/new_file_in_astroport.sh "$HOME/Astroport/youtube/$YID" "${ZFILE}" "$G1PUB"
+        path="$HOME/.zen/tmp/yt-dlp"
+        file="$ZFILE"
+        $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1)
+        echo "/ipfs/$ANIMH"
+        ## Create gifanime ##  TODO Search for similarities BEFORE ADD
+
+
         echo "Adding to IPFS"
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/yt-dlp/$ZFILE" | tail -n 1)
         echo "/ipfs/$ILINK <=> $ZFILE"
@@ -149,7 +167,7 @@ while read LINE;
         PLAYLIST=$(yt-dlp --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls width=100%><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+        TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
         echo "Creating Youtube ${YID} tiddler : G1CopierYoutube !"
         echo $TEXT
@@ -157,11 +175,16 @@ while read LINE;
         echo '[
   {
     "created": "'${MOATS}'",
+    "resolution": "'${RES}'",
+    "duree": "'${DUREE}'",
+    "duration": "'${DURATION}'",
+    "giftime": "'${PROBETIME}'",
+    "gifanime": "'/ipfs/${ANIMH}'",
     "modified": "'${MOATS}'",
     "title": "'$ZFILE'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
-    "mime": "'$MIME'",
+    "mime": "'${MIME}'",
     "size": "'${FILE_BSIZE}'",
     "sec": "'${SEC}'",
     "ipfs": "'/ipfs/${ILINK}'",

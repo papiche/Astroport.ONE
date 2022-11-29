@@ -30,18 +30,28 @@ ME="${0##*/}"
 
 # Check who is .current PLAYER
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-[[ ${PLAYER} == "" ]] && espeak "ERROR CONNECT YOUR PLAYER - EXIT" && exit 1
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null)
-G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
+
+[[ ${PLAYER} == "" ]] \
+&& espeak "ERROR NO CONNECTED PLAYER" \
+&& OUTPUT=$(zenity --forms --width 480 --title="CONNEXION" --text="Vos Clés ?" --separator="~" --add-entry="Phrase 1" --add-entry="Phrase 2") \
+&& SALT=$(awk -F '~' '{print $1}' <<<$OUTPUT) \
+&& PEPPER=$(awk -F '~' '{print $2}' <<<$OUTPUT) \
+&& PLAYER=$(zenity --entry --width 300 --title "PLAYER" --text "Indiquez votre email" --entry-text="")
+
+[[ ${PLAYER} == "" ]] && exit 1
+
+PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-PLAYERNS=$(cat ~/.zen/game/players/.current/.playerns 2>/dev/null) || ( echo "noplayerns" && exit 1 )
+PLAYERNS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null) || ( echo "noplayerns" && exit 1 )
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
@@ -71,7 +81,7 @@ haut=$((height-200))
 ########################################################################
 ## CADRE EXCEPTION COPIE PRIVE
 # https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006278917/2008-12-11/
-if [[ ! -f ~/.zen/game/players/.current/legal ]]; then
+if [[ ! -f ~/.zen/game/players/${PLAYER}/legal ]]; then
 zenity --width ${large} --height=${haut} --text-info \
        --title="Action conforme avec le Code de la propriété intellectuelle" \
        --html \
@@ -81,12 +91,12 @@ zenity --width ${large} --height=${haut} --text-info \
 case $? in
     0)
         echo "AUTORISATION COPIE PRIVE ASTROPORT OK !"
-        echo "$G1PUB" > ~/.zen/game/players/.current/legal
+        echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/legal
     # next step
     ;;
     1)
         echo "Refus conditions"
-        rm -f ~/.zen/game/players/.current/legal
+        rm -f ~/.zen/game/players/${PLAYER}/legal
         exit 1
     ;;
     -1)
@@ -669,7 +679,7 @@ chmod +x ~/Astroport/Add_${MEDIAKEY}_script.sh
 
 ########################################################################
 ## USE PLAYER G1PUB AS MEDIA WALLET
-MEDIAPUBKEY=$(cat ~/.zen/game/players/.current/.g1pub)
+MEDIAPUBKEY=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 G1BALANCE=$(${MY_PATH}/tools/jaklis/jaklis.py balance -p $G1PUB 2>/dev/null )
 
 ########################################################################

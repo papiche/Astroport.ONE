@@ -20,9 +20,9 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
-    # Get PLAYER wallet amount
-    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _"
+    #~ # Get PLAYER wallet amount
+    #~ COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    #~ echo "+++ WALLET BALANCE _ $COINS (G1) _"
     ## DROP IF WALLET IS EMPTY : TODO
     echo "##################################################################"
     echo "##################################################################"
@@ -71,8 +71,8 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         echo "MANUAL PROCEDURE NEEDED"
         echo "------------------------------------------------"
         echo "http://$myIP:8080/ipfs/"
-        cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.*
-        echo "ipfs name publish  -t 24h --key=$PLAYER /ipfs/"
+        echo "/ipfs/"$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.* | tail -n 1)
+        echo "ipfs name publish  -t 24h --key=$PLAYER ..."
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
         continue
