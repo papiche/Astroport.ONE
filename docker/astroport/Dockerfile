@@ -8,6 +8,7 @@ ARG DOCKER_SYSTEM=Linux
 RUN apt-get update \
  && apt-get -fy upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get -fy install \
+        basez \
         bash \
         bc \
         cron \
@@ -126,6 +127,7 @@ EXPOSE 1234 12345
 
 COPY install.sh /install.sh
 COPY ${DOCKER_BUILD_DIR}/*.sh /app/
+COPY ${DOCKER_BUILD_DIR}/.*aliases /etc/skel/
 CMD ["/app/astroport.sh", "start"]
 
 FROM dist as master
@@ -184,12 +186,12 @@ RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
  && chown "$USER" "/var/spool/cron/crontabs/$USER"
 
 VOLUME "/home/$USER/.ipfs"
-VOLUME "/home/$USER/.zen"
+VOLUME "/home/$USER/.zen/game/players"
 VOLUME "/home/$USER/Astroport"
 
 # homedir
-RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen" "/home/$USER/Astroport" \
- && chown "$USER" "/home/$USER/.ipfs" "/home/$USER/.zen" "/home/$USER/Astroport"
+RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport" \
+ && chown "$USER" "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport"
 
 HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
 
