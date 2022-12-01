@@ -142,6 +142,8 @@ while true; do
         sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~http://127.0.0.1:8080~${myHTTP}${myHOSTPort}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+
+
         ## Random Background image ;)
         sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 

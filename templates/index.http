@@ -8,29 +8,7 @@ Content-Type: text/html; charset=UTF-8
 <!doctype html>
 <html>
   <head>
-
     <meta http-equiv="refresh" content="30; url='http://127.0.0.1:12345'" />
-
-    <style>
-    body {
-    background-image:url("http://127.0.0.1:8080/ipfs/QmSFgatcq3q898J56epa8SyGbH651vRBFnv93kQSwfoi83/background.000.jpg");
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    }
-    html {
-        height: 100%
-    }
-    input[type=submit] {
-    width: 12em;  height: 4em;
-    }
-    input[type=checkbox] {
-    width: 2em;  height: 2em;
-    }
-    input {
-    width: 20em;  height: 2em;
-    }
-    </style>
-
     <style>
     #reduce42 {
     width:42%;
@@ -61,101 +39,15 @@ Content-Type: text/html; charset=UTF-8
 
     </style>
 
-    <title>[Astroport](_HOSTNAME_) - IPFS BIOS - TW Ŋ1 FORMAT </title>
+    <title>[Astroport](_HOSTNAME_) - IPFS BIOS -  Interplanetray File System + Basic Input Output System +  Scuttlebut Confidence Layer Ŋ1 </title>
 
   </head>
 <body>
 
-<header>
-    <h6>
-        <a href="http://127.0.0.1:1234/"> <span>"/ipfs/</span>TW<span>"</span></a>
-    </h6>
-</header>
-
-<main>
-
-<center>
-<b>--- Welkom - Mirë se vini -  Willkommen - Welkomma - Welcome - Marhaban - Bari galoust - Xos gelmissiniz - Welkum -  Ongi etorri- Swagata - Ansuf yiswen - ščyra zaprašajem - Kyo tzo pa eit - Ani kié - Dobro došli - Dagemer mat - Dobre doshŭl - Benvinguts - Ulihebisdi - Huān yíng - Karibu - Eoso eoseyo - Benvenuti - Bel bonjou - Bienvini - Dobrodošli - Velkommen - Bienvenido -  Bonvenon - Tere tulemast - Gabitê - Vælkomin -  Tervetuloa - Welkom - Wìllkòmme - Binvignut - Fàilte - Benvido - Croeso - Planvenguda - Mikouabô - Kalos irthate - -Eguahé porá - Baroukh habaim - ... ----</b><br>
-<h1>Astroport</h1>
-
-<h2>Internet Reboot !<br>Inscrivez-vous<br>
-<form id="formlink" action = "http://127.0.0.1:1234" method = "GET">
-    <br>
-     <b>Associez 2 phrases clefs et votre adresse email</b></br></br>
-        Phrase 1 : <input name=salt value=''></br>
-        Phrase 2 : <input name=pepper value=''></br></br>
-        Bitswap Ŋ1 (délégation de clef à 20h12) : <input type="checkbox" id="g1pub" name="g1pub" checked></br>
-        - Email -</br><input name=email value=''></br></br>
-        <input type='submit' value='(☼‿‿☼)'>
-</form>
-</h2>
-            <p>
-            <b>Besoin d'aide ? Contactez support@qo-op.com</b>
-            </p>
-</center>
-
-<article>
-    <div class="row justify-center">
-            <h1 class="video-title">
-                <a href="https://git.p2p.legal/qo-op/Astroport.ONE" target="code">'ASTROŊAUTE'. Insérez vos clefs. Activez le niveau Ŋ1. Explorez les toiles confiances.</a>. <br>
-                <a target="code" href="http://opencollective.com/monnaie-libre/projects/bunker-box">Copiez, conservez, partagez, diffusez vos chaines multimédia et json dans IPFS, entre amis!<br>
-                Prenez possession de votre TW. Rendez in-censurable, in-arrêtable la liberté d'expression.</a>
-        </h1>
-    </div>
-</article>
-<article>
-    <div class="row justify-center">
-    </div>
-</article>
-<article>
-    <div class="row justify-center">
-            <p><h3>Devenez INTERNET - Installez IPFS - Activez >>> <a href="https://git.p2p.legal/qo-op/Astroport.ONE" target="code"><b>Astroport.ONE</b></a> <<< </h3>
-             <ul>
-                 <li>Installez 'go-ipfs' <a href="https://docs.ipfs.tech/install/command-line/#official-distributions" target="code">KUBO</a> sur votre système</li>
-                 <li>Ajoutez <a href="https://docs.ipfs.tech/install/ipfs-companion/" target="code"><b>ipfs-companion</b></a> à votre navigateur</li>
-
-            </ul>
-        </p>
-    </div>
-</article>
-
-BECOME ASTROŊAUTE
-explore
-Astroport Ŋ1 Swarm#0
-
-Associate your key phrases with an email address
-
-Phrase One ("login")
-Phrase Two ("password")
-
-Accept delegation of your key (Ŋ1 20h12 bitswap) :
-
-Email :
-
-Need help? Contact support@qo-op.com
-Astroport' operates a 100% blockchain digitalization.
-Copy, store, share, broadcast your multimedia and json channels in IPFS, between friends!
-Take possession of your TW. Make freedom of expression uncensurable, unstoppable.
-
->>> Let's reboot the INTERNET - Install IPFS - Activate Astroport.ONE <<<
-
-    Install 'go-ipfs' KUBO on your system
-    Add ipfs-companion to your browser
-
-
-<center>
-    <h6>
-        <a href="http://madeinzion.org"> Made In Zion _\/_ </a> powered by <a href="http://astroport.com"><span>"</span>Astroport<span>"</span></a>
-    </h6>
-</center>
-</main>
-
-
-
 <center>
         <h2>IPFS BIOS<br> - TW Astroport Ŋ1 -</h2>
 <div id="yellow">
-<h3><a href="http://127.0.0.1:12345"> >>> TW (◕‿‿◕) TW <<< </a></h3>
+<h3><a href="http://127.0.0.1:12345"> >>> IPFS  (◕‿‿◕) FORMAT <<< </a></h3>
 </div>
 
 <br>
@@ -178,8 +70,6 @@ Take possession of your TW. Make freedom of expression uncensurable, unstoppable
             <p>
             <b>Besoin d'aide ? Contactez support@qo-op.com</b>
             </p>
-<br>
-_SESSIONLNK_
 
 </center>
 
@@ -204,47 +94,8 @@ function countdown() {
         timeLeft--;
     }
 }
-</script>
 
-<script>
-var arrTimes = [];
-var i = 0; // start
-var timesToTest = 3;
-var tThreshold = 300; //ms
-var testImage = "http://libra.copylaradio.com:8080/ipfs/QmUUyiuCM4yXgaeGyqC2SVUUXZksuxhDfHQYpUpZPuL2oS/astroport.jpg"; // small image in your server
-var dummyImage = new Image();
-var isConnectedFast = false;
-
-testLatency(function(avg){
-  isConnectedFast = (avg <= tThreshold);
-  /** output */
-  document.body.appendChild(
-    document.createTextNode("Time: " + (avg.toFixed(2)) + "ms - Bunker BOX ready ? " + isConnectedFast)
-  );
-});
-
-/** test and average time took to download image from server, called recursively timesToTest times */
-function testLatency(cb) {
-  var tStart = new Date().getTime();
-  if (i<timesToTest-1) {
-    dummyImage.src = testImage + '?t=' + tStart;
-    dummyImage.onload = function() {
-      var tEnd = new Date().getTime();
-      var tTimeTook = tEnd-tStart;
-      arrTimes[i] = tTimeTook;
-      testLatency(cb);
-      i++;
-    };
-  } else {
-    /** calculate average of array items then callback */
-    var sum = arrTimes.reduce(function(a, b) { return a + b; });
-    var avg = sum / arrTimes.length;
-    cb(avg);
-  }
-}
 
 </script>
-
-
 </body>
 </html>
