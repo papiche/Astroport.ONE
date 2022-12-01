@@ -84,11 +84,10 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 [[ ! $PLAYER ]] && echo "(╥☁╥ ) No current player. Please Login" && exit 1
 
 # NOT CURRENT PLAYER (CHECK FOR TW & KEY
-[[ $G1PUB != $(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ]] \
-&& [[ $(ipfs key list -l | grep -w $G1PUB) ]] \
+[[ $(ipfs key list -l | grep -w $G1PUB) ]] \
 && echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
 && ASTRONS=$($MY_PATH/tools/g1_to_ipfs.py "$G1PUB") \
-&& $MY_PATH/tools/TW.cache.sh $ASTRONS $MOATS \
+&& $MY_PATH/TW.cache.sh $ASTRONS $MOATS \
 || echo "(╥☁╥ ) I cannot help you"
 
 ########################################################################
@@ -97,7 +96,7 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
 
 ### SOURCE IS ~/Astroport/ !!
-[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/ MERCI" && echo "$er" && exit 1
+[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/ MERCI" && echo "$er" && exit 1
 
 ### TyPE & type & T = related to ~/astroport location of the infile (mimetype subdivision)
 TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/Astroport/... TyPE(film, youtube, mp3, video, page)/ REFERENCE /
@@ -297,14 +296,7 @@ then
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video>
         <br>{{!!duree}}<br>
         "$H1"
-        <h2>"$DESCRIPTION"</h2>
-
-        <\$button class='tc-tiddlylink'>
-        <\$list filter='[tag[G1${CAT}]]'>
-       <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
-        </\$list>
-        Afficher G1${CAT}
-        </\$button>"
+        <h2>"$DESCRIPTION"</h2>"
 
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
         TAGS="G1${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG}"

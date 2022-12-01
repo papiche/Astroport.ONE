@@ -9,14 +9,14 @@ IPFSNODEID=$(ipfs id -f='<id>\n') || ( echo "IPFSNODEID MISSING" && exit 1 )
 TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
             ## GETTING LAST TW via IPFS
-            echo "ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS}"\
+            echo "IPFS : ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS}"\
             && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
              ## GETTING LAST TW via HTTP
             [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] \
-            && echo "$TUBE/ipns/${ASTRONAUTENS}" \
+            && echo "WWW : $TUBE/ipns/${ASTRONAUTENS}" \
             && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$TUBE/ipns/${ASTRONAUTENS}"
-            || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$TUBE/ipns/${ASTRONAUTENS}"
+            || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$TUBE/ipns/${ASTRONAUTENS}" ## Ask caching
 
         ### GOT TW !!
         if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
@@ -35,6 +35,7 @@ TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d 
                 [[ ! -s ~/.zen/tmp/${MOATS}Astroport.json ]] && echo "BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && exit 1
                 espeak "Hello. $(cat ~/.zen/tmp/${MOATS}Astroport.json | jq -r .[].pseudo) Happy to Help you."
 
+                export PLAYER=$PLAYER
 
             else
                 echo "BAD PLAYER"

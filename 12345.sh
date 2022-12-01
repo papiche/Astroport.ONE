@@ -46,12 +46,12 @@ Content-Type: text/html; charset=UTF-8
 echo "_________________________________________________________"
 echo "LAUNCHING Astroport  API Server - TUBE : $TUBE - "
 echo
-echo "NEW TW ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
-echo
-echo "TW R/W MODE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&official"
-echo
-echo "GCHANGE MESSAGING ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&messaging"
 echo "OPEN GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
+echo "VISA.new ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
+echo "GCHANGE MESSAGING ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&messaging"
+echo
+echo "VIDEO URL COPY ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&videourl=https://"
+
 echo
 echo "TESTCRAFT ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
@@ -142,8 +142,6 @@ while true; do
         sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~http://127.0.0.1:8080~${myHTTP}${myHOSTPort}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-
-
         ## Random Background image ;)
         sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
@@ -163,8 +161,8 @@ while true; do
     arr=(${URL//[=&]/ })
 
     # CHECK APPNAME
-        APPNAME=$(urldecode ${arr[4]})
-        WHAT=$(urldecode ${arr[5]})
+        APPNAME=$(urldecode ${arr[4]} | xargs)
+        WHAT=$(urldecode ${arr[5]} | xargs)
 
 ########## CHECK GET PARAM NAMES
 ###################################################################################################
@@ -617,18 +615,26 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
     fi
 
 
+##############################################
+# VIDEOURL
+##############################################
+        if [[ $APPNAME == "videourl" ]]; then
+            echo "$HTTPCORS /ipns/${ASTRONAUTENS} ADDING ${WHAT}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo $APPNAME "(☉_☉ ) ${WHAT} Execution time was "`expr $end - $start` seconds.
+            continue
+        fi
+
+
         ## RESPONDING
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect
         echo "${MOATS} -----> PAGE AVAILABLE -----> http://${myHOST}:${PORT}"
 
-        #echo "${ASTRONAUTENS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
-        ## CHECK IF ALREADY EXISTING ${WHAT}
-        # IF NOT = BATCH CREATE TW
         end=`date +%s`
-        echo $type" (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+        echo $type" (J‿‿J) Execution time was "`expr $end - $start` seconds.
+
+
 
     fi ## END IF SALT
 
