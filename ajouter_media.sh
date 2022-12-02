@@ -852,6 +852,7 @@ echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
 
+        mv ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ~/Astroport/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
         espeak "I P N S Publishing. Please wait..."
         cp ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
