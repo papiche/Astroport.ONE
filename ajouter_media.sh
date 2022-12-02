@@ -134,7 +134,7 @@ espeak "Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre media" --entry-text="Vlog" Film Serie Web Page Youtube Mp3 Video)
+[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
 [[ $CHOICE == "" ]] && exit 1
 
 # LOWER CARACTERS
@@ -148,6 +148,7 @@ PREFIX=$(echo "${CAT}" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, S, A
 ########################################################################
 ########################################################################
 case ${CAT} in
+########################################################################
 ########################################################################
 ########################################################################
 # CASE ## VLOG
@@ -675,12 +676,9 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
 GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
 
 [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
-&& cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
-
-if [ $? != 0 ]; then
-    zenity --warning --width ${large} --text "(☓‿‿☓) ${FILE_PATH}/${FILE_NAME} vers ~/Astroport - EXIT -"
-    exit 1
-fi
+&& cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" \
+&& [ $? != 0 ] \
+        && zenity --warning --width ${large} --text "(☓‿‿☓) ${FILE_PATH}/${FILE_NAME} vers ~/Astroport - EXIT -" && exit 1
 
 FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
 
@@ -697,15 +695,15 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 #  \_/ |_|\__,_|\___|\___/
 #                           TIMESTAMP INDEX
 
-    video)
+    video | obs)
 
-    espeak "Simply adds your personnal video in TW"
+    espeak "Add your personnal video in TW"
 
     zenity --warning --width 600 --text 'DEV ZONE - HELP US - REGISTER - https://git.p2p.legal'
 
     ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
     # SELECT FILE TO ADD TO ASTROPORT/KODI
-    FILE=$(zenity --file-selection --title="Sélectionner le fichier vidéo à ajouter")
+    FILE=$(zenity --file-selection --title="Sélectionner votre vidéo")
     echo "${FILE}"
     [[ $FILE == "" ]] && exit 1
 
@@ -714,8 +712,14 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     FILE_NAME="$(basename "${FILE}")"
     FILE_EXT="${FILE_NAME##*.}"
     FILE_TITLE="${FILE_NAME%.*}"
+
+    # MUST CONVERT MKV TO MP4
+    [[ $FILE_EXT != "mp4"  ]] \
+    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
+    && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4"
+
     # VIDEO TITLE
-    TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="${FILE_TITLE}")
+    TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez un titre pour cette vidéo" --entry-text="${FILE_TITLE}")
     [[ $TITLE == "" ]] && exit 1
     TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TITLE (NO ;)
 
@@ -726,10 +730,11 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     ## CREATE SIMPLE JSON (REMOVE== it ?
     jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/Astroport/${CAT}/${MEDIAID}/video.json
+
     ## MOVE FILE TO IMPORT ZONE
     [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
     && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
-    # mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
+
     FILE_NAME="${TITLE}.${FILE_EXT}"
 
     ;;
@@ -812,7 +817,7 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     chmod +x ~/Astroport/Add_${MEDIAKEY}_script.sh
 
     ########################################################################
-
+    echo "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
 #    zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
 
     espeak "Adding $CAT to I P F S. Please Wait"

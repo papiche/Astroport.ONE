@@ -15,7 +15,7 @@ TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d 
              ## GETTING LAST TW via HTTP
             [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] \
             && echo "WWW : $TUBE/ipns/${ASTRONAUTENS}" \
-            && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$TUBE/ipns/${ASTRONAUTENS}"
+            && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$TUBE/ipns/${ASTRONAUTENS}" \
             || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$TUBE/ipns/${ASTRONAUTENS}" ## Ask caching
 
         ### GOT TW !!

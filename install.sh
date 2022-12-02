@@ -44,10 +44,11 @@ echo "tail -f /tmp/install.errors.log"
 echo "##################################################"
 
 echo ; echo "Mise à jour des dépots de votre distribution..."
+[[ $XDG_SESSION_TYPE == 'x11' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
 sudo apt-get update
 
 
- for i in x11-utils xclip zenity; do
+ for i in x11-utils xclip zenity obs-studio kodi; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo apt install -y $i;

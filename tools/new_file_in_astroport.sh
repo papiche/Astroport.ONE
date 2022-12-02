@@ -253,10 +253,7 @@ then
     echo "-------------------- ${MOATS}_ajouter_video.txt  -----------------------------"
     echo "$line"
     echo "UPDATE ~/Astroport/${TyPE}/${REFERENCE}/ajouter_video.txt"
-    echo "$line" > ~/Astroport/${TyPE}/${REFERENCE}/ajouter_video.txt
-
-    ## MOATS TIMESTAMPING
-    cp ~/Astroport/${TyPE}/${REFERENCE}/ajouter_video.txt ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt
+    echo "$line" > ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt
 
     echo "----------------- GETTING  METADATA ----------------------"
     CAT=$(echo "$type" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
