@@ -129,15 +129,6 @@ case ${type} in
         REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
         TITLE="${file%.*}"
     ;;
-    mp3)
-        ## DIFFERENT TREATMENT
-        INDEXPREFIX="MP3_"
-        REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
-        TITLE=$(echo "$file" | cut -d "&" -f 2-)
-        er="$er | Please use new_mp3_in_astroport.sh ... EXIT"
-        echo "$er"
-        exit 1
-    ;;
     film | serie)
         INDEXPREFIX="TMDB_"
         REFERENCE=$(echo "$path" | cut -d '/' -f 6 ) # Path contains TMDB id

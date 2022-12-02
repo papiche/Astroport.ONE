@@ -18,3 +18,7 @@ for friendnode in $(cat ~/.zen/game/players/*/FRIENDS/*/.astronautens | uniq);
                         || echo "UNCONNECTED $friendnode"
          ipfs swarm peers | grep $friendnode
     done
+
+ipfs stats dht wan
+
+echo "TODO : search for bootstrap and friends better connectivity"

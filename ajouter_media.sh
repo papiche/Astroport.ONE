@@ -134,7 +134,7 @@ espeak "Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre media" --entry-text="Vlog" Film Serie Web Page Youtube Video)
+[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Choisissez la catégorie de votre media" --entry-text="Vlog" Film Serie Web Page Youtube Mp3 Video)
 [[ $CHOICE == "" ]] && exit 1
 
 # LOWER CARACTERS
@@ -312,8 +312,9 @@ rm -Rf ${YTEMP}
 
             espeak "Let's go. " ###################### HTTRACK COPYING
 
-            httrack -wxY --sockets=99 −−max−rate=0 --disable-security-limits −−keep−alive --ext-depth=0 --stay-on-same-domain --keep-links=0 -V "echo \$0 >> $FILE_PATH/files" "$URL" -* +*/$DOMAIN/* -*wget* -%l "fr"
+            httrack -wxY --sockets=99 −−max−rate=0 --disable-security-limits −−keep−alive --ext-depth=0 --stay-on-same-domain --keep-links=0 -V "echo \$0 >> $FILE_PATH/files" "$URL" -* +*/$DOMAIN/* -*wget* # -%l "fr"
 
+            mv $FILE_PATH/external.html $FILE_PATH/$DOMAIN/
             ## G1PUB ENCODE.16 MEDIAKEY
             ${MY_PATH}/tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/$MEDIAKEY.ipns -o $HOME/.zen/tmp/$MEDIAKEY.ipns.enc
             cat $HOME/.zen/tmp/$MEDIAKEY.ipns.enc | base16 > $FILE_PATH/$DOMAIN/.ipnskey.$G1PUB.enc.16
@@ -327,7 +328,7 @@ rm -Rf ${YTEMP}
             ipfs name publish -k $MEDIAKEY /ipfs/$IPFSREPFILEID   # PUBLISH $MEDIAKEY
 
             ## CREATE ajouter_video.txt
-            echo "web;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};$IPNSKEY;${RES};/ipfs/$IPFSREPFILEID" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+            echo "web;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$IPNSKEY;${RES};/ipfs/$IPFSREPFILEID" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
 
             ## DURATION LOG
             end=`date +%s`
@@ -340,14 +341,14 @@ rm -Rf ${YTEMP}
             FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
 
             TEXT="<iframe src={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}} height='360' width='100%'></iframe>
-            <a href={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}}}><<currentTiddler>></a>
+             Web : $URL ----> <a href={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}}}><<currentTiddler>></a>
             <br>$FILE_SIZE"
 
 echo '[
   {
     "created": "'${MOATS}'",
     "modified": "'${MOATS}'",
-    "title": "'$TITLE'",
+    "title": "'${NIAMOD}'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
     "size": "'${FILE_BSIZE}'",
@@ -356,7 +357,7 @@ echo '[
     "mediakey": "'${MEDIAKEY}'",
     "ipnskey16": "'$(cat $HOME/.zen/tmp/$MEDIAKEY.ipns.enc | base16)'",
     "ipns": "'/ipns/${IPNSKEY}'",
-    "tags": "'ipfs G1Web'"
+    "tags": "'ipfs G1Web $PLAYER $DOMAIN'"
   }
 ]
 ' > ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
@@ -445,16 +446,16 @@ echo '[
 ########################################################################
     mp3)
 
-        espeak "mp3 is music copying. Please help..."
+        espeak " Youtube music copying. Please help us to make the Web your Web"
 
-zenity --warning --width 600 --text 'DEVELOPPER ZONE ONLY - https://git.p2p.legal'
-exit 0
+zenity --warning --width 600 --text 'DEVELOPPEMENT ZONE - https://git.p2p.legal - P2P INTERNET FACTORY'
 
 # Create TEMP directory
 YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
 mkdir -p ${YTEMP}
 
-artist=$(zenity --entry --width 400 --title "Extraction MP3 depuis Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
+YTURL="$URL"
+[[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Extraction MP3 depuis Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
 [[ $artist == "" ]] && exit 1
 
 ## CHECK if artist is LINK or ID
@@ -464,17 +465,23 @@ if [[ ! $islink && $length != 11 ]]
 then
     # Ask for song name
     song=$(zenity --entry --width 300 --title "Titre à chercher sur Youtube" --text "Titre recherché" --entry-text="")
-    [[ $song == "" ]] && exit 1
-else
-    song=$(zenity --entry --width 300 --title "Confirmer ID" --text "Titre recherché (ou confirmer la saisie précédente)" --entry-text="$artist")
-    [[ "$song" == "$artist" ]] && song=""
-fi
+    [[ $song == "" ]] && espeak "I was expecting a song name. Sorry. I Am out." && exit 1
 
-# Download mp3 from 1st youtube search video result (--write-info-json)
-/usr/local/bin/youtube-dl --default-search ytsearch1: \
+    # Download mp3 from 1st youtube search video result (--write-info-json)
+    /usr/local/bin/youtube-dl --default-search ytsearch1: \
+    --ignore-errors --no-mtime \
+    --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
+    --extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist $song"
+
+else
+
+# artist is the URL ot the song
+/usr/local/bin/youtube-dl \
 --ignore-errors --no-mtime \
 --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
---extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist $song"
+--extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist"
+
+fi
 
 ls ${YTEMP}
 # Get filename, extract ID, make destination dir and move copy.
@@ -486,8 +493,7 @@ YID=$(echo "${FILE_NAME}" | cut -d "&" -f 1)
 YNAME=$(echo "${FILE_NAME}" | cut -d "&" -f 2- | sed "s/[(][^)]*[)]//g" | sed -e 's/[^A-Za-z0-9._-]/_/g' | sed -e 's/__/_/g') # Remove YoutubeID_ and (what is in perentheses)
 [[ $(which detox) ]] && YNAME="$(echo "${FILE_NAME}" | cut -d "&" -f 2- | detox --inline)"
 
-[[ ! $islink && "$song" != "" ]] && FILE_PATH="$HOME/Astroport/$CAT/$artist/_o-o_" \
-|| FILE_PATH="$HOME/Astroport/$CAT/${YID}"
+FILE_PATH="$HOME/Astroport/$CAT/${YID}"
 
 mkdir -p "${FILE_PATH}" && mv -f ${YTEMP}/* "${FILE_PATH}/"
 # Remove "&" from FILE_NAME rename to YNAME
@@ -501,12 +507,51 @@ MEDIAKEY="MP3_$MEDIAID"
 
 rm -Rf ${YTEMP}
 # zenity --warning --width ${large} --text "MP3 copié"
-echo "${MY_PATH}/tools/new_mp3_in_astroport.sh \"${FILE_PATH}/\" \"${FILE_NAME}\""
-${MY_PATH}/tools/new_mp3_in_astroport.sh "${FILE_PATH}/" "${FILE_NAME}" > /tmp/${CHOICE}_${MEDIAID}.log 2>&1
+echo "new_mp3_in_astroport  \"${FILE_PATH}/\" \"${FILE_NAME}\""
+# ${MY_PATH}/tools/new_mp3_in_astroport.sh "${FILE_PATH}/" "${FILE_NAME}"
 
-cat /tmp/${CHOICE}_${MEDIAID}.log
+## BLOCKCHAIN IT
+            start=`date +%s`
 
-exit 0
+            echo "$MOATS" > $FILE_PATH/.moats        # TIMESTMAPING
+
+            ### ADD TO IPFS
+            IPFSREPFILEID=$(ipfs add -q $FILE_PATH/$FILE_NAME | tail -n 1)  # ADDIN TO IPFS
+
+            ## CREATE ajouter_video.txt
+            echo "mp3;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$GROUPES;${RES};/ipfs/$IPFSREPFILEID" > ${FILE_PATH}/ajouter_video.txt
+
+            ## DURATION LOG
+            end=`date +%s`
+            dur=`expr $end - $start`
+            echo ${MOATS}:${G1PUB}:${PLAYER}:${MEDIAID}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+            cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
+            ## TIDDLER CREATION
+            FILE_BSIZE=$(du -b "$FILE_PATH/$FILE_NAME" | awk '{print $1}' | tail -n 1)
+            FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
+
+            TEXT=""
+
+mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
+
+echo '[
+  {
+    "created": "'${MOATS}'",
+    "modified": "'${MOATS}'",
+    "_canonical_uri": "'${MOATS}'",
+    "title": "'$TITLE'",
+    "artist": "'$artist'",
+    "song": "'$song'",
+    "type": "'audio/mpeg'",
+    "text": "'$TEXT'",
+    "size": "'${FILE_BSIZE}'",
+    "g1pub": "'${G1PUB}'",
+    "ipfs": "'/ipfs/${IPFSREPFILEID}'",
+    "mediakey": "'${MEDIAKEY}'",
+    "tags": "'$:/isAttachment $:/isIpfs ipfs mp3 G1Mp3 $artist $song $PLAYER'"
+  }
+]
+' > ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
 
     ;;
 
@@ -629,10 +674,11 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
 # FORMAT GENRES ["genre1","genre2"] # USE  IF YOU ACTIVATE KODI COMPATIBILITY
 GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
 
-mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
+[[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
+&& cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
 if [ $? != 0 ]; then
-    zenity --warning --width ${large} --text "Impossible de déplacer votre fichier ${FILE_PATH}/${FILE_NAME} vers ~/astroport - EXIT -"
+    zenity --warning --width ${large} --text "(☓‿‿☓) ${FILE_PATH}/${FILE_NAME} vers ~/Astroport - EXIT -"
     exit 1
 fi
 
@@ -681,7 +727,9 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     ## CREATE SIMPLE JSON (REMOVE== it ?
     jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/Astroport/${CAT}/${MEDIAID}/video.json
     ## MOVE FILE TO IMPORT ZONE
-    mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
+    [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
+    && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
+    # mv -f "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
     FILE_NAME="${TITLE}.${FILE_EXT}"
 
     ;;
@@ -765,7 +813,7 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
     ########################################################################
 
-    zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
+#    zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
 
     espeak "Adding $CAT to I P F S. Please Wait"
 
@@ -781,11 +829,12 @@ espeak "Updating T W"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GETTING LAST TW via IPFS or HTTP GW
 LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-rm ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
-[[ $YOU ]] && echo " ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
+rm -f ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
+[[ $YOU ]] && echo " ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
 [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
 [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
+## TODO : CHECK CACHE LAST MODIFIED
 echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 [[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
