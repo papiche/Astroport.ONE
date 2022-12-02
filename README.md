@@ -48,6 +48,8 @@ Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les enviro
 make install
 ```
 
+# https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com : IPNS : TW index du PLAYER support@qo-op.com
+
 # USAGE
 
 Selon le modèle de votre TW,

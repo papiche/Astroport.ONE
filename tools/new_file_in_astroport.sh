@@ -86,7 +86,7 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 # NOT CURRENT PLAYER (CHECK FOR TW & KEY
 [[ $(ipfs key list -l | grep -w $G1PUB) ]] \
 && echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
-&& ASTRONS=$($MY_PATH/tools/g1_to_ipfs.py "$G1PUB") \
+&& ASTRONS=$($MY_PATH/g1_to_ipfs.py "$G1PUB") \
 && $MY_PATH/TW.cache.sh $ASTRONS $MOATS \
 || echo "(╥☁╥ ) I cannot help you"
 
@@ -125,7 +125,6 @@ case ${type} in
         TITLE="${file%.*}"
     ;;
     page)
-        ## DIFFERENT TREATMENT
         INDEXPREFIX="PAGE_"
         REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
         TITLE="${file%.*}"
@@ -175,11 +174,8 @@ echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
     # ISSUE11 : https://git.p2p.legal/qo-op/Astroport.ONE/issues/11
 ##########################
 
-## RUBISH ??
 ########################################################################
-mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/kodi/vstream/
 echo "ADDING ${path}${file} to IPFS "
-echo "~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/kodi/vstream/${PREFIX}ASTRXBIAN"
 echo "-----------------------------------------------------------------"
 
        ### FILE SIZING ####
