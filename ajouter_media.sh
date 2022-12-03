@@ -21,7 +21,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-
+start=`date +%s`
 ########################################################################
 [[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && echo "wget https://git.p2p.legal/axiom-team/astrXbian/raw/master/.install/ipfs_alone.sh -O /tmp/ipfs_install.sh && chmod +x /tmp/ipfs_install.sh && /tmp/ipfs_install.sh" && exit 1
 [[ $(which zenity) == "" ]] && echo "ERREUR! Installez zenity" && echo "sudo apt install zenity" && exit 1
@@ -539,7 +539,7 @@ echo '[
   {
     "created": "'${MOATS}'",
     "modified": "'${MOATS}'",
-    "_canonical_uri": "'${MOATS}'",
+    "_canonical_uri": "'/ipfs/${IPFSREPFILEID}'",
     "title": "'$TITLE'",
     "artist": "'$artist'",
     "song": "'$song'",
@@ -869,12 +869,16 @@ echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
         echo "================================================"
         echo
 
+        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://$myIP:8080/ipns/$ASTRONAUTENS"
+
     else
 
         espeak "Warning. Could not import Tiddler. You must add it by hand."
 
     fi
 
- espeak "OK We did it."
+end=`date +%s`
+dur=`expr $end - $start`
+espeak "OK We did it and It tooks $dur seconds to acomplish"
 
 exit 0
