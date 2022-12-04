@@ -169,8 +169,8 @@ do
 
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## PUSH DATA TO 12345 SWARM KEY
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${FPLAYER}/
-            cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${FPLAYER}/rss.json
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
+            cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
         fi
 
