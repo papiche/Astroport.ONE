@@ -168,7 +168,9 @@ do
             [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ]] && echo "NO ${FPLAYER} RSS - CONTINUE -" && continue
 
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
-            ## TODO CREATE 20H12 TIDDLER TO ADD TO MY W
+            ## PUSH DATA TO 12345 SWARM KEY
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${FPLAYER}/
+            cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${FPLAYER}/rss.json
 
         fi
 
@@ -187,14 +189,10 @@ do
 
         done
 
-        echo "***** Keep G1/IPNS conversion *****"
-        echo ${G1PUB} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/${ASTRONAUTENS}
-
     else
 
-        echo "$my_star_level ETOILES RECUES ($gscore). Etablir un lien retour."
+        echo "ARE WE BRO?"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Bro ?" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
-        echo "LIKING LATER."
 
     fi
 
