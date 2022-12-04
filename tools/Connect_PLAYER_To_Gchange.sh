@@ -172,6 +172,9 @@ do
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
             cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
+            echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
+            echo "~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json"
+
         fi
 
         ## ACTIVER RECUP ANNONCES...
