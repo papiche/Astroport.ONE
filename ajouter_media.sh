@@ -22,6 +22,10 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
+# REMOVE GtkDialog errors for zenity
+shopt -s expand_aliases
+alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
+alias espeak='espeak 1>&2>/dev/null'
 ########################################################################
 [[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && echo "wget https://git.p2p.legal/axiom-team/astrXbian/raw/master/.install/ipfs_alone.sh -O /tmp/ipfs_install.sh && chmod +x /tmp/ipfs_install.sh && /tmp/ipfs_install.sh" && exit 1
 [[ $(which zenity) == "" ]] && echo "ERREUR! Installez zenity" && echo "sudo apt install zenity" && exit 1
@@ -69,10 +73,6 @@ if [ $URL ]; then
     CHOICE="$IMPORT"
 fi
 
-# REMOVE GtkDialog errors for zenity
-shopt -s expand_aliases
-alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
-alias espeak='espeak 1>&2>/dev/null'
 
 # GET SCREEN DIMENSIONS
 screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
@@ -162,7 +162,7 @@ case ${CAT} in
 ########################################################################
     vlog)
 
-    espeak "vlog is video blogging"
+    espeak "Ready to record your webcam"
 
     zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
 
@@ -212,10 +212,15 @@ JSON_FILE=$(echo ${FILE_NAME} | sed "s/${FILE_EXT}/json/g")
 YID=$(echo "${FILE_NAME}" | cut -d "&" -f 1)
 YNAME=$(echo "${FILE_NAME}" | cut -d "&" -f 2- | sed "s/[(][^)]*[)]//g" | sed -e 's/[^A-Za-z0-9._-]/_/g' | sed -e 's/__/_/g' ) # Remove YoutubeID_ and (what is in perentheses)
 [[ $(which detox) ]] && YNAME=$(echo "${FILE_NAME}" | cut -d "&" -f 2- | detox --inline)
+
+espeak "OK $YNAME copied"
+
 MEDIAID="$REVSOURCE${YID}"
 TITLE="${YNAME%.*}"
 MEDIAKEY="YOUTUBE_${MEDIAID}"
 ## CORRECT PARAMETERS to Make Kodi compatible YASTRXBIAN FILE
+
+espeak "Please. Choose your tags"
 
 [ ! $2 ] && GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut} \
     --text="Choisissez le(s) genre(s) d'information(s) contenue(s) dans cette vidéo \"${TITLE}\" publiée sur OASIS" \
@@ -291,7 +296,7 @@ rm -Rf ${YTEMP}
 
         espeak "${ARR[@]}"
 
-        ## CREATE IPNS KEY HOOK
+        ## CREATE IPNS KEY HOOK JUST FOR FUN
         REVSOURCE="$(echo "$NIAMOD" | rev | sha256sum | cut -d ' ' -f 1)"; echo $REVSOURCE
         MEDIAKEY="$REVSOURCE" # MEDIAKEY=435582881619ee4df9e2723fb9e20bb173b32818094a3e40c9536068ae3730ac
 
@@ -324,6 +329,8 @@ rm -Rf ${YTEMP}
             echo "$MOATS" > $FILE_PATH/$DOMAIN/.moats        # TIMESTMAPING
             echo "$IPNSKEY" > $FILE_PATH/$DOMAIN/.ipnshook       # SELF REFERING
 
+            espeak "OK Web is copied. Adding to I P F S now..."
+
             ### ADD TO IPFS
             IPFSREPFILEID=$(ipfs add -qHwr $FILE_PATH/$DOMAIN/* | tail -n 1)  # ADDING $DOMAIN TO IPFS
             ipfs name publish -k $MEDIAKEY /ipfs/$IPFSREPFILEID   # PUBLISH $MEDIAKEY
@@ -341,9 +348,10 @@ rm -Rf ${YTEMP}
             FILE_BSIZE=$(du -b "$FILE_PATH/$DOMAIN/" | awk '{print $1}' | tail -n 1)
             FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
 
+            ## NB TEXT IS MADE WITH TIDDLERS FIELDS VALUES (LEARN TODO)
             TEXT="<iframe src={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}} height='360' width='100%'></iframe>
              Web : $URL ----> <a href={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}}}><<currentTiddler>></a>
-            <br>$FILE_SIZE"
+            <br>$FILE_SIZE - $dur sec"
 
 echo '[
   {
@@ -359,14 +367,14 @@ echo '[
     "mediakey": "'${MEDIAKEY}'",
     "ipnskey16": "'$(cat $HOME/.zen/tmp/$MEDIAKEY.ipns.enc | base16)'",
     "ipns": "'/ipns/${IPNSKEY}'",
-    "tags": "'ipfs G1Web $PLAYER $DOMAIN'"
+    "tags": "'ipfs G1Web $PLAYER webmaster@$DOMAIN'"
   }
 ]
 ' > ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
 
 #        zenity --warning --width ${large} --text "Copie $URL dans ${FILE_PATH}/ et /ipns/$IPNSKEY"
 
-        espeak "Your web site is ready"
+        espeak "Done. Tiddler is ready"
 
     ;;
 
@@ -382,7 +390,7 @@ echo '[
 
     page)
 
-        espeak "page : import P D F"
+        espeak "Converting any web page into P D F"
         ## EVOLVE TO ARTICLE
         # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
@@ -395,7 +403,7 @@ echo '[
             cd ~/.zen/tmp/ && rm -f output.pdf
 
             # https://peter.sh/experiments/chromium-command-line-switches
-            ${MY_PATH}/tools/timeout.sh -t 12 \
+            ${MY_PATH}/tools/timeout.sh -t 30 \
             chromium --headless --use-mobile-user-agent --no-sandbox --print-to-pdf "$URL"
         fi
 
@@ -417,6 +425,8 @@ echo '[
 
 
         [[ ! -s ~/.zen/tmp/output.pdf ]] && espeak "No file Sorry. Exit" && exit 1
+
+        espeak "OK Page copied. Give it a title please"
 
         CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
 
@@ -691,6 +701,11 @@ FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
 URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
 echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
 # _IPFSREPFILEID_ is replaced later
+#######################################################
+######## NOT CREATING TIDDLER JSON... SWALLOW IS POST-PROCESSED
+## new_file_in_astroport.sh ACTIVATES CONTRACT MODE !!
+#######################################################
+#######################################################
 
     ;;
 # video       _     _
@@ -741,6 +756,13 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
     FILE_NAME="${TITLE}.${FILE_EXT}"
+
+#######################################################
+######## NOT CREATING TIDDLER JSON... SWALLOW IS POST-PROCESSED
+## new_file_in_astroport.sh FOR OWN CREATION CONTRACTING MODE !!
+#######################################################
+#######################################################
+
 
     ;;
 

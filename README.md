@@ -112,7 +112,7 @@ Vos données son stockées [dans des Tiddlers](http://libra.copylaradio.com:8080
 
 ### Foret Enchantée - PROJET ASTROPORT.pdf
 
-http://tube.copylaradio.com:8080/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
+https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 
 # API
 
@@ -144,13 +144,13 @@ http://_ASTROIP_:8080/ipns/_APID_/
 
 _APID_ est la clef IPNS qui contient l'arborescence "json" en lecture
 
-Exemple pour l'application "G1Voeu" http://tube.copylaradio.com:8080/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+Exemple pour l'application "G1Voeu" https://ipfs.copylaradio.com/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 
 Application "messaging"
 http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&messaging=on
 
 
-Pour écrire une application on utilisera "jsipfs"
+Pour écrire une application on pourra utiliser "jsipfs"
 
 https://js.ipfs.tech/
 <script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
@@ -161,8 +161,8 @@ Ajoutez l'appel API "testcraft" pour enregistrer vos json
 http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
 
 ```
-# TYPE = official, g1pub, messaging, testcraft, ....
-http://127.0.0.1:1234/?salt=${SALT}&pepper=${PEPPER}&${TYPE}=?&...
+# APP = g1pub, messaging, testcraft, ....
+http://127.0.0.1:1234/?salt=${SALT}&pepper=${PEPPER}&${APP}=?&...
 ```
 [12345.sh](/qo-op/Astroport.ONE/src/branch/master/12345.sh)
 
@@ -171,7 +171,6 @@ IPFSNODEID JSON CACHE
 DATA ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
 INDEX ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
 ```
-
 
 # TIDDLYWIKI
 
