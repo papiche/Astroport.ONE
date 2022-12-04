@@ -21,10 +21,10 @@ echo "$ME RUNNING"
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 INDEX="$1"
-[[ ! $INDEX ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
-[[ ! -f $INDEX ]] && echo "ERROR - Fichier TW absent. $INDEX" && exit 1
+[[ ! ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
+[[ ! -f ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 
-WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
+WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER - WISHKEY...
 [[ ! $WISHKEY ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
 TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
 [[ ! $TWNS ]] && echo "ERROR - Clef IPNS $WISHKEY introuvable!"  && exit 1
@@ -34,36 +34,17 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/$IPFSNODEID
 
 ###################################################################
-## TODO BOUCLER SUR LES INDEX des G1Astronautes G1Ami
+## tag[CopierYoutube] EXTRACT ~/.zen/tmp/CopierYoutube.json FROM TW
 ###################################################################
 rm -f ~/.zen/tmp/CopierYoutube.json
 tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/tmp \
                     --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
-echo "cat ~/.zen/tmp/CopierYoutube.json | jq -r"
-
-### MAKE CACHE REFRESH FUNCTION
-#~ #############################
-#~ ## Refresh _12345.sh IPNS Memories
-#~ # ipfs name publish --key "MySwarm_$IPFSNODEID" --allow-offline /ipfs/$SWARMH
-#~ MySwarm=$(ipfs key list -l | grep "MySwarm_$IPFSNODEID" | cut -d ' ' -f 1)
-#~ if [[ $MySwarm ]]; then
-#~ #############################
-    #~ mkdir -p ~/.zen/tmp/$MySwarm && rm -Rf ~/.zen/tmp/$MySwarm/*.*
-
-    #~ echo "## Getting Station MySwarm /ipns/$MySwarm"
-    #~ ipfs --timeout 12s get -o ~/.zen/tmp/$MySwarm /ipns/$MySwarm
-
-    #~ echo "## Rebuild  ~/.zen/tmp/$IPFSNODEID/yt-dlp.command & yt-dlp.cache"
-    #~ cat ~/.zen/tmp/$MySwarm/*/yt-dlp.command  ~/.zen/tmp/$IPFSNODEID/yt-dlp.command | sort | uniq > ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
-    #~ cat ~/.zen/tmp/$MySwarm/*/yt-dlp.cache ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache | sort | uniq > ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache
-
-#~ #############################
-#~ fi
+echo "DEBUG : cat ~/.zen/tmp/CopierYoutube.json | jq -r"
 
 ###################################################################
-## TEXT TREATMENT
+## URL EXTRACTION & TREATMENT
 ## For this TAG, specific extract URL from text field and copy all video from links into tid.json
 for YURL in $(cat ~/.zen/tmp/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
     echo "Detected $YURL"
@@ -93,11 +74,28 @@ while read LINE;
 
         YID=$(echo "$LINE" | cut -d '&' -f 1)
 
-        ## SEARCH IN 12345 MySwarm !!
-        [[ ls ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/*/$YID.TW.json ]] && echo "NODE existing : ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" && continue
-        [[ ls ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json ]] && echo "SWARM existing : ls ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json" && continue ## TODO :: CHECK IF ALREADY YOURS OR NOT :: THEN ADD2TW / SEND MESSAGE ?
+###################################################################
+## Search for $YID.TW.json TIDDLER in local & MySwarm cache
+        MATCH=$(ls -t ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
+        [[ $MATCH ]] \
+        && TIDDLER="$MATCH" \
+        || MATCH=$(ls -t ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
 
-        # SINGLE VIDEO YURL
+        [[ $MATCH ]] \
+        && TIDDLER="$MATCH"
+###################################################################
+
+###################################################################
+## CREATE APP PUBLICATION
+###################################################################
+mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
+
+
+if [[ ! ${TIDDLER} ]]; then
+###################################################################
+# COPY VIDEO AND MAKE TIDDLER
+###################################################################
+
         ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
         echo "COPIE : $ZYURL"
 
@@ -152,7 +150,7 @@ while read LINE;
         #~ ${MY_PATH}/../tools/new_file_in_astroport.sh "$HOME/Astroport/youtube/$YID" "${ZFILE}" "$G1PUB"
         path="$HOME/.zen/tmp/yt-dlp"
         file="$ZFILE"
-        $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1)
+        $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1) ## export ANIMH
         echo "/ipfs/$ANIMH"
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
 
@@ -170,8 +168,6 @@ while read LINE;
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><br>{{!!duree}}<br><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
-
-mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
 
         echo "Creating Youtube ${YID} tiddler : G1CopierYoutube !"
         echo $TEXT
@@ -198,6 +194,15 @@ mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
+else
+###################################################################
+# TIDDLER WAS IN CACHE
+###################################################################
+
+    cp "${TIDDLER}" "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
+
+fi
+
 
 #################################################################
 ### ADDING $YID.TW.json to TWNS INDEX.html
@@ -209,15 +214,15 @@ mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
 
         echo  ">>> Importing $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
-        tiddlywiki --load $INDEX \
+        tiddlywiki --load ${INDEX} \
                         --import "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" "application/json" \
                         --output ~/.zen/tmp/$IPFSNODEID --render "$:/core/save/all" "newindex.html" "text/plain"
 
 # --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
 
         if [[ -s ~/.zen/tmp/$IPFSNODEID/newindex.html ]]; then
-            echo "$$$ Mise à jour $INDEX"
-            cp ~/.zen/tmp/$IPFSNODEID/newindex.html $INDEX
+            echo "$$$ Mise à jour ${INDEX}"
+            cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX}
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$IPFSNODEID/newindex.html"
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
