@@ -93,7 +93,9 @@ while read LINE;
 
         YID=$(echo "$LINE" | cut -d '&' -f 1)
 
-        [[ -s ~/.zen/tmp/$IPFSNODEID/$YID.TW.json ]] && echo "Tiddler json already existing : ~/.zen/tmp/$IPFSNODEID/$YID.TW.json" && continue ## TODO :: CHECK IF ALREADY YOURS OR NOT :: THEN ADD2TW / SEND MESSAGE ?
+        ## SEARCH IN 12345 MySwarm !!
+        [[ ls ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/*/$YID.TW.json ]] && echo "NODE existing : ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" && continue
+        [[ ls ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json ]] && echo "SWARM existing : ls ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json" && continue ## TODO :: CHECK IF ALREADY YOURS OR NOT :: THEN ADD2TW / SEND MESSAGE ?
 
         # SINGLE VIDEO YURL
         ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
@@ -169,6 +171,8 @@ while read LINE;
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><br>{{!!duree}}<br><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
+mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
+
         echo "Creating Youtube ${YID} tiddler : G1CopierYoutube !"
         echo $TEXT
 
@@ -192,7 +196,7 @@ while read LINE;
     "tags": "'ipfs G1CopierYoutube ${WISHKEY} ${EXTRATAG} ${MIME}'"
   }
 ]
-' > "$HOME/.zen/tmp/$IPFSNODEID/$YID.TW.json"
+' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
 
 #################################################################
@@ -203,10 +207,10 @@ while read LINE;
 
         rm -f ~/.zen/tmp/$IPFSNODEID/newindex.html
 
-        echo  ">>> Importing $HOME/.zen/tmp/$IPFSNODEID/$YID.TW.json"
+        echo  ">>> Importing $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
         tiddlywiki --load $INDEX \
-                        --import "$HOME/.zen/tmp/$IPFSNODEID/$YID.TW.json" "application/json" \
+                        --import "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" "application/json" \
                         --output ~/.zen/tmp/$IPFSNODEID --render "$:/core/save/all" "newindex.html" "text/plain"
 
 # --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
