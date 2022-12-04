@@ -164,8 +164,8 @@ do
 
             ## CREATING 30 DAYS RSS STREAM
             tiddlywiki --load ${FTW} \
-                                --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
-            [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.tiddlers.json ]] && echo "NO ${FPLAYER} RSS - CONTINUE -" && continue
+                                --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
+            [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ]] && echo "NO ${FPLAYER} RSS - CONTINUE -" && continue
 
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## TODO CREATE 20H12 TIDDLER TO ADD TO MY W
