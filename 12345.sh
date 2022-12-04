@@ -207,6 +207,7 @@ while true; do
         ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key )
         echo "ASTRONAUTE TW : ${myHTTP}$HOSTP/ipns/${ASTRONAUTENS}"
         echo
+
         ################### KEY GEN ###################################
 
     #~ # Get PLAYER wallet amount
@@ -264,7 +265,7 @@ while true; do
 
             ## SEND REPONSE PROCESS IN BACKGROUD
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-                #~ (
+                #~ ( ## USING IPNS SESSION KEY
                 #~ REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
                 #~ ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
                 #~ echo "SESSION ${myHTTP}$HOSTP/ipns/$SESSIONNS "
@@ -321,20 +322,23 @@ while true; do
             NODEID=$(urldecode ${arr[7]} | xargs)
             DATAID=$(urldecode ${arr[9]} | xargs)
 
+            ## export PLAYER
+            ${MY_PATH}/tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
+
             ## IS IT INDEX JSON
-            echo "$APPNAME IS ${WHAT}"
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}
+            echo "${PLAYER} $APPNAME IS ${WHAT}"
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}
 
             [[ $WHAT == "on" ]] && WHAT="json" # data mimetype (default "on" = json)
 
             ## TODO : modify timeout if isLAN or NOT
             [[ $isLAN ]] && WAIT=3 || WAIT=12
-            echo "1ST TRY : ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}"
-            ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}
+            echo "1ST TRY : ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}"
+            ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}
 
 echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
-            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
+            if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID STILL MISSING GATEWAY BANGING FOR IT (°▃▃°)"
                 array=(https://ipfs.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
@@ -346,18 +350,18 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     [[ $(cat ~/.zen/tmp/.ipfsgw.bad.twt | grep -w $nicegw) ]] && echo "<<< BAD GATEWAY >>>  $nicegw" && continue
                     gum=$(echo  "$nicegw" | sed "s~:hash~$DATAID~g")
                     echo "LOADING $gum"
-                    curl -m 5 -so ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} "$gum"
+                    curl -m 5 -so ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} "$gum"
                     [[ $? != 0 ]] && echo "(✜‿‿✜) BYPASSING"
 
-                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]]; then
+                    if [[ -s ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ]]; then
 
-                        MIME=$(mimetype -b ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
-                        GOAL=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT})
+                        MIME=$(mimetype -b ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT})
+                        GOAL=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT})
 
                         if [[ ${GOAL} != ${DATAID} ]]; then
                             echo " (╥☁╥ ) - BAD ${WHAT} FORMAT ERROR ${MIME} - (╥☁╥ )"
                             ipfs pin rm /ipfs/${GOAL}
-                            rm ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT}
+                            rm ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}
                             # NOT A JSON AVOID BANISHMENT
                             echo $nicegw >> ~/.zen/tmp/.ipfsgw.bad.twt
                             continue
@@ -384,20 +388,20 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             fi ## NO DIRECT IPFS - GATEWAY TRY
 
            ## REALLY NO FILE FOUND !!!
-           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ]] && \
+           [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ]] && \
            echo "$HTTPCORS ERROR (╥☁╥ ) - $DATAID TIMEOUT - (╥☁╥ )" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
             ## SPECIAL  index.[json/html/...] MODE.
-            [[ ${WHAT} == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}.json
+            [[ ${WHAT} == "index" ]] && cp ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/index.json
 ## TODO MAKE MULTIFORMAT DATA & INDEX
 #            RWHAT=$(echo "$WHAT" | cut -d '.' -f 1)
 #            TWHAT=$(echo "$WHAT" | cut -d '.' -f 2)
-#            cp ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${RWHAT}.${TWHAT}
+#            cp ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${RWHAT}.${TWHAT}
 
             ## REPONSE ON PORT
                 echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                cat ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${APPNAME}/${MOATS}.data.${WHAT} >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                cat ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
                 cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
