@@ -31,16 +31,17 @@ PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
-## Directory is created, So this script already run once.
-if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
+## VERIFY IT HAS ALREADY RUN
+if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     ## GET GCHANGE PROFIL
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
 
+    ## KEEPING ALREADY EXISTING PROFILE DATA
     NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title')
     [[ ! $NAME || $NAME == "null" ]] &&  NAME="Astronaute ${PSEUDO}"
 
     DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description')
-    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR="Astronaute explorateur Ŋ1"
+    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR="ASTROPORT Ŋ1 https://g1jeu.ml"
 
     VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city')
     [[ ! $VILLE || $VILLE == "null" ]] &&  VILLE="Paris, 75012"
@@ -55,16 +56,18 @@ if [[ ! -d ~/.zen/game/players/${PLAYER}/FRIENDS/ ]]; then
     echo "${PLAYER} GCHANGE+ PROFILE https://gchange.fr"
     echo "set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}""
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS" #GCHANGE+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
 
-    ## GET CESIUM
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
+    ## SET CESIUM WALLET
     ########################################################################
     echo "${PLAYER} CESIUM+ PROFILE https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://127.0.0.1:8080/ipns/$ASTRONAUTENS" #CESIUM+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
+    ## GET IT BACK
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.presles.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
+
 fi
 
 ########################################################################
@@ -152,7 +155,20 @@ do
         else
 
             echo "COOL MON AMI EST SUR IPFS"
-            ls -al ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+            FTW="~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html"
+
+            tiddlywiki --load ${FTW}  --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            [[ ! -s ~/.zen/tmp/${liking_me}.MadeInZion.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) ~~~" && continue
+            FPLAYER=$(cat ~/.zen/tmp/${liking_me}.MadeInZion.json | jq -r .[].player)
+            [[ ! $FPLAYER ]] && echo "NO PLAYER = BAD MadeInZion Tiddler" && continue
+
+            ## CREATING 30 DAYS RSS STREAM
+            tiddlywiki --load ${FTW} \
+                                --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
+            [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.tiddlers.json ]] && echo "NO ${FPLAYER} RSS - CONTINUE -" && continue
+
+            ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
+            ## TODO CREATE 20H12 TIDDLER TO ADD TO MY W
 
         fi
 
