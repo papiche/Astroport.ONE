@@ -325,7 +325,7 @@ rm -Rf ${YTEMP}
             echo "$IPNSKEY" > $FILE_PATH/$DOMAIN/.ipnshook       # SELF REFERING
 
             ### ADD TO IPFS
-            IPFSREPFILEID=$(ipfs add -qwr $FILE_PATH/$DOMAIN/* | tail -n 1)  # ADDING $DOMAIN TO IPFS
+            IPFSREPFILEID=$(ipfs add -qHwr $FILE_PATH/$DOMAIN/* | tail -n 1)  # ADDING $DOMAIN TO IPFS
             ipfs name publish -k $MEDIAKEY /ipfs/$IPFSREPFILEID   # PUBLISH $MEDIAKEY
 
             ## CREATE ajouter_video.txt
@@ -349,6 +349,7 @@ echo '[
   {
     "created": "'${MOATS}'",
     "modified": "'${MOATS}'",
+    "dur": "'$dur'",
     "title": "'${NIAMOD}'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$TEXT'",
@@ -543,6 +544,7 @@ echo '[
     "title": "'$TITLE'",
     "artist": "'$artist'",
     "song": "'$song'",
+    "dur": "'$dur'",
     "type": "'audio/mpeg'",
     "text": "'$TEXT'",
     "size": "'${FILE_BSIZE}'",
@@ -610,7 +612,8 @@ TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TI
 # VIDEO YEAR
 ### CHECK IF PREVIOUS ajouter_video (Serie case)
 [[ -f  ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 3)
+&& PRE=$(cat ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 3) \
+|| PRE=""
 YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la vidéo. Exemple: 1985" --entry-text="${PRE}")
 
 # VIDEO RESOLUTION
@@ -674,6 +677,8 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
 
 # FORMAT GENRES ["genre1","genre2"] # USE  IF YOU ACTIVATE KODI COMPATIBILITY
 GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
+
+mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
 
 [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
 && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" \

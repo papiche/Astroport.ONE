@@ -120,13 +120,12 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
-        $MY_PATH/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html $PLAYER
-
+        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$PLAYER"
         # VOEUX.refresh.sh
         ##############################################################
-        ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC AND STANDARD Ŋ1 SYNC)
+        ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)
         ##############################################################
-        $MY_PATH/VOEUX.refresh.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html $PLAYER
+        ${MY_PATH}/VOEUX.refresh.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$PLAYER"
         ##############################################################
 
         ####################
@@ -143,7 +142,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http:/ipfs.localhost:5001"}]' > ~/.zen/tmp/5001.json
+            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://ipfs.localhost:5001"}]' > ~/.zen/tmp/5001.json
             echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$TUBE':8080"}]' > ~/.zen/tmp/8080.json
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
