@@ -48,9 +48,18 @@ Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les enviro
 make install
 ```
 
-# https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com : IPNS : TW index du PLAYER support@qo-op.com
+Plus de connexion officielle.
+L'UTILISATEUR devient un JOUEUR, en semant son propre IPFS, en utilisant un Docker sur un nœud Astroport géré par un autre JOUEUR.
 
-# USAGE
+Ainsi, les AMIS peuvent héberger d'autres AMIS.
+
+# RESULTAT
+
+TW du PLAYER support@qo-op.com
+
+https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com
+
+# TW
 
 Selon le modèle de votre TW,
 
@@ -148,7 +157,6 @@ Exemple pour l'application "G1Voeu" https://ipfs.copylaradio.com/ipns/12D3KooWL2
 
 Application "messaging"
 http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&messaging=on
-
 
 Pour écrire une application on pourra utiliser "jsipfs"
 

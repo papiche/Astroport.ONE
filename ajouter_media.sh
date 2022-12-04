@@ -36,13 +36,12 @@ alias espeak='espeak 1>&2>/dev/null'
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 [[ ${PLAYER} == "" ]] \
-&& espeak "PLEASE RUN START AND CONNECT PLAYER" \
-&& OUTPUT=$(zenity --forms --width 480 --title="CONNEXION" --text="Vos Clés ?" --separator="~" --add-entry="Phrase 1" --add-entry="Phrase 2") \
+&& espeak "YOU MUST CONNECT A PLAYER" \
+&& OUTPUT=$(zenity --forms --width 480 --title="CONNEXION" --text="Ecrivez la formule magique" --separator="~" --add-entry="Phrase 1" --add-entry="Phrase 2") \
 && SALT=$(awk -F '~' '{print $1}' <<<$OUTPUT) \
 && PEPPER=$(awk -F '~' '{print $2}' <<<$OUTPUT) \
-&& PLAYER=$(zenity --entry --width 300 --title "PLAYER" --text "Indiquez votre email" --entry-text="")
-
-[[ ${PLAYER} == "" ]] && espeak "Who are you?" && exit 1
+&& PLAYER=$(zenity --entry --width 300 --title "PLAYER" --text "Indiquez votre email" --entry-text="user@domain.tld") \
+&& ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER"
 
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 espeak "Hello $PSEUDO"
@@ -119,6 +118,12 @@ if [[ $1 == "on" ]]; then
     REP=$(${MY_PATH}/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
 fi
 
+###
+# IS THERE ANY RUNNING IPFS ADD
+ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+[[ $ISADDING || $ISPUBLISHING ]] \
+&& espeak "I P F S progressing. Please try again later" && exit 1
 
 ########################################################################
 espeak "restart I P F S daemon"

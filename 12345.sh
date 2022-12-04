@@ -43,8 +43,8 @@ Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 
 "
-echo "_________________________________________________________"
-echo "LAUNCHING Astroport  API Server - TUBE : $TUBE - "
+echo "_________________________________________________________ $(date)"
+echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
 echo "OPEN GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
 echo "VISA.new ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
@@ -486,7 +486,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\"http://"${myHOST}":8080/ipns/"$ASTRONAUTENS"\"'/>
                     <h1>BOOTING - ASTRONAUT $PSEUDO </h1> IPFS FORMATING - [$SALT + $PEPPER] (${WHAT})
                     <br>- TW - http://${myHOST}:8080/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-                     echo "(☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+
                     continue
                else
                     # ASTRONAUT EXISTING ${WHAT}
@@ -556,14 +556,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
     "title": "'${MOATS}'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$(urldecode $wsource)'",
-    "tags": "'CopierYoutube ${${WHAT}}'"
+    "tags": "'CopierYoutube ${WHAT}'"
   }
 ]
-' > ~/.zen/tmp/${${WHAT}}.${MOATS}.import.json
+' > ~/.zen/tmp/${WHAT}.${MOATS}.import.json
 
-            ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${${WHAT}}.${MOATS}.import.json
+            ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
 
-            (echo "$HTTPCORS OK - ~/.zen/tmp/${${WHAT}}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+            (echo "$HTTPCORS OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         fi
 
     fi

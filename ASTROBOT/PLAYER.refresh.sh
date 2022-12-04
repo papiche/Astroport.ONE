@@ -57,8 +57,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo "Getting latest online TW..."
     YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    echo "$LIBRA/ipns/$ASTRONAUTENS"
-    echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
+    echo "($YOU) /ipns/$ASTRONAUTENS $LIBRA"
     [[ $YOU ]] && ipfs --timeout 30s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                         || curl -m 30 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
@@ -143,7 +142,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
             echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://ipfs.localhost:5001"}]' > ~/.zen/tmp/5001.json
-            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"http://'$TUBE':8080"}]' > ~/.zen/tmp/8080.json
+            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"https://ipfs.copylaradio.com"}]' > ~/.zen/tmp/8080.json
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                             --import "$HOME/.zen/tmp/MadeInZion.json" "application/json" \

@@ -258,9 +258,12 @@ then
     echo "----------------- GETTING  METADATA ----------------------"
     CAT=$(echo "$type" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
     GENRE=$(cat ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
+    YEAR=$(cat ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 3 )
 
     ## Adapt TMDB url for season & tag naming
-    [[ $CAT == "Film" ]] &&  H1="<h1><a target='tmdb' href='https://www.themoviedb.org/movie/"${REFERENCE}"'>"${TITLE}"</a></h1>" \
+    [[ $CAT == "Film" ]] \
+    && TITLE="$TITLE ($YEAR)"
+    &&  H1="<h1><a target='tmdb' href='https://www.themoviedb.org/movie/"${REFERENCE}"'>"${TITLE}"</a></h1>" \
     && FILETAG="$CapitalGluedTitle"
 
     [[ $CAT == "Serie" ]] && H1="<h1><a target='tmdb' href='https://www.themoviedb.org/tv/"${REFERENCE}"'>"${TITLE}"</a></h1>" \
@@ -302,7 +305,7 @@ then
     echo '[
   {
     "text": "'${TEXT}'",
-    "title": "'${CapitalGluedTitle}'",
+    "title": "'${TITLE}'",
     "season": "'${SAISON}'",
     "created": "'${MOATS}'",
     "resolution": "'${RES}'",
