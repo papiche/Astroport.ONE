@@ -286,7 +286,7 @@ then
         <h2>"$DESCRIPTION"</h2>"
 
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
-        TAGS="G1${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG}"
+        TAGS="G1${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR"
         # TyPE="$MIME"
         # CANON="/ipfs/"${IPFSID}
         CANON=''
