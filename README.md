@@ -50,6 +50,11 @@ Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les enviro
 
 ```
 sudo apt install git make docker.io
+sudo adduser $USER docker
+
+## REBOOT
+
+cd ~/.zen/Astroport.ONE
 make
 make install
 ```
