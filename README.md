@@ -38,13 +38,19 @@ Gestion des Astronautes, de leurs VISA et VOEUX en mode CLI
 ```
 Lancement API (1234) et MAP (12345)
 
-## ./adventure/adventure.sh
+MODE AVENTURE : Activez votre VISA Astronaute sur une Station !
+
+```
+~/.zen/Astroport.ONE/adventure/adventure.sh
+```
 
 Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les environs du premier de ce nom.
 
 # INSTALLATION (Docker)
 
 ```
+sudo apt install git make docker.io
+make
 make install
 ```
 
