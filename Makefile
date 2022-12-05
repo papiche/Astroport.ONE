@@ -9,7 +9,17 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 
 all: install tests
 
-install: build myos-host up player
+install: upgrade build myos-host up player
+
+upgrade: migrate-ipfs migrate-zen
+	echo "Welcome to myos docker land - make a user - make a player -"
+
+migrate-%:
+	[ ! -f /var/lib/docker/volumes/$(HOSTNAME)_$*/_data ] \
+	&& $(RUN) $(SUDO) mkdir -p /var/lib/docker/volumes/$(HOSTNAME)_$*/_data \
+	&& $(RUN) $(SUDO) cp -a ~/.$* /var/lib/docker/volumes/$(HOSTNAME)_$*/_data \
+	&& $(RUN) $(SUDO) chown -R $(USER) /var/lib/docker/volumes/$(HOSTNAME)_$* \
+	|| :
 
 player: STACK := User
 player: docker-network-create-$(USER)
