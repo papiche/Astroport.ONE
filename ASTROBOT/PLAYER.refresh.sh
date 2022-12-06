@@ -201,7 +201,7 @@ ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
 NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
 [[ $BSIZE != $NSIZE ]] \
-&& ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
+&& ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
 && echo "BALISE STATION /ipns/${IPFSNODEID} INDEXES = $NSIZE octets" \
 && ipfs name publish --allow-offline -t 24h /ipfs/$ROUTING
 

@@ -262,8 +262,8 @@ then
 
     ## Adapt TMDB url for season & tag naming
     [[ $CAT == "Film" ]] \
-    && TITLE="$TITLE ($YEAR)"
-    &&  H1="<h1><a target='tmdb' href='https://www.themoviedb.org/movie/"${REFERENCE}"'>"${TITLE}"</a></h1>" \
+    && TITLE="$TITLE ($YEAR)" \
+    && H1="<h1><a target='tmdb' href='https://www.themoviedb.org/movie/"${REFERENCE}"'>"${TITLE}"</a></h1>" \
     && FILETAG="$CapitalGluedTitle"
 
     [[ $CAT == "Serie" ]] && H1="<h1><a target='tmdb' href='https://www.themoviedb.org/tv/"${REFERENCE}"'>"${TITLE}"</a></h1>" \

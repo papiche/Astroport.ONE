@@ -14,11 +14,14 @@ ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+echo "(RE)STARTING 12345.sh"
 ###################################################
-killall 12345.sh; killall "_12345.sh"; killall nc; killall tail; mkdir -p ~/.zen/tmp
+killall 12345.sh; killall "_12345.sh"; killall nc
+mkdir -p ~/.zen/tmp
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
-tail -f ~/.zen/tmp/12345.log &
-echo "1234 PORT SPIDER http://$myIP:1234"
+
+echo "HTTP API :  http://$myIP:1234"
+echo "MONITORING : tail -f ~/.zen/tmp/12345.log"
 ###################################################
 
 echo '
@@ -45,7 +48,7 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
-    PS3='Créez VISA ou connectez-vous à votre compte Astronaute ___ '
+    PS3='Créez votre VISA PLAYER ou connectez-vous avec un compte Astronaute ___ '
     players=("NOUVEAU VISA" "IMPORT GCHANGE" $(ls ~/.zen/game/players 2>/dev/null))
     ## MULTIPLAYER
 
@@ -58,11 +61,13 @@ echo 'PRESS ENTER... '; read
             exit
             ;;
         "IMPORT GCHANGE")
-            echo "Saisissez votre 'identifiant Gchange'"
+            echo "'Identifiant Gchange'"
             read SALT
-            echo "Saisissez votre 'mot de passe Gchange'"
+            echo "'Mot de passe Gchange'"
             read PEPPER
-            ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER"
+            echo "'Adresse Email'"
+            read EMAIL
+            ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav heureux de vous acceuillir"
             exit
