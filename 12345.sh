@@ -73,8 +73,8 @@ while true; do
                     ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
 
     ## CHECK PORT IS FREE & KILL OLD ONE
-    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
-    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $portinuse" && continue
+    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $pidportinuse" && continue
 
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
