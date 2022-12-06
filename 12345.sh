@@ -124,7 +124,7 @@ while true; do
     echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOST:1234 PORT"
     echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOST:${PORT}"
 
-    espeak "Ding" >/dev/null 1>&2
+    [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2
 
     echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
