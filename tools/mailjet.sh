@@ -24,7 +24,7 @@ mail="$1" # EMAIL DESTINATAIRE
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
 SUBJECT="[(♥‿‿♥)] Station Astroport : $(hostname)"
-MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n REBOOT https://astroport.copylaradio.com .\n\nAstroport\n($IPFSNODEID)"
+MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n UN MESSAGE POUR VOUS.\n\nAstroport\n/ipns/$IPFSNODEID"
 
 echo "
 ########################################################################
@@ -38,7 +38,7 @@ Bcc: support@qo-op.com
 Subject: SUBJECT
 MESSAGE
 " > ~/.zen/tmp/email.txt
-[[ ! -s $messfile ]] && [[ $(file --mime-type -b $messfile) == 'text/plain' ]] && cat $messfile >> ~/.zen/tmp/email.txt
+[[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt
 
 
 cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | ssmtp -v ${mail}

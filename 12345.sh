@@ -225,7 +225,7 @@ while true; do
         ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
         if [[ ! $ISTHERE ]]; then
-            echo "${WHAT} 1ST TOCTOC : ${MOATS}"
+            echo "${APPNAME} 1ST TOCTOC : ${MOATS}"
             cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/.toctoc/
         else ## KEEP 1ST CONTACT ONLY
             OLDONE=$(ls -t ~/.zen/tmp/coucou/*.${G1PUB}.ipns.key | tail -n 1)

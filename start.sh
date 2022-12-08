@@ -86,25 +86,24 @@ echo 'PRESS ENTER... '; read
     PLAYER=$fav
 
 
-rm -f ~/.zen/game/players/.current
-ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
-
 pass=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
-
 ########################################## DEVEL
-echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read pass
+echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read PASS
 
 ## DECODE CURRENT PLAYER CRYPTO
-echo "********* DECODAGE SecuredSocketLayer *********"
-rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
-openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
-[[ ! $? == 0 ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
+# echo "********* DECODAGE SecuredSocketLayer *********"
+# rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
+# openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
+[[ $PASS != $pass ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
+
+rm -f ~/.zen/game/players/.current
+ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
 echo "________LOGIN OK____________";
 echo
 echo "DECHIFFRAGE CLEFS ASTRONAUTE"
-echo "Votre Pass Astroport.ONE  : $(cat ~/.zen/game/players/.current/.pass 2>/dev/null)"
-G1PUB=$(cat ~/.zen/tmp/${PLAYER}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+echo "Votre Pass Astroport.ONE  : $(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)"
+G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 [ ! ${G1PUB} ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 echo "Clef Publque Astronaute : $G1PUB"
@@ -145,11 +144,13 @@ select fav in  "${choices[@]}"; do
             ipfs key rm $voeu
             [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done
+        echo "REMOVE GCHANGE PROFILE"
+        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://data.gchange.fr erase
+        echo "REMOVE CESIUM+"
+        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
-        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://data.gchange.fr erase
-#        ~/.zen/astrXbian/zen/jaklis/jaklis.py -k $HOME/.zen/tmp/${PLAYER}.dunikey -n https://g1.data.e-is.pro erase
-
         rm -Rf ~/.zen/game/players/$PLAYER
+
         break
         ;;
 

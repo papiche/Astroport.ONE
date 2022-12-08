@@ -42,7 +42,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/player.key "$SALT" "$PEPPER" 2>/dev/null
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
-    echo "/ipns/${ASTRONAUTENS}"
+    # echo "/ipns/${ASTRONAUTENS}"
 
     ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
 
@@ -50,12 +50,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     ## GETTING LAST TW via IPFS or HTTP GW
     [[ $YOU ]] \
-    && echo "ipfs --timeout 30s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html ($YOU)" \
-    && ipfs --timeout 30s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
+    && ipfs --timeout 20s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
     [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    && echo "TRYING $LIBRA/ipns/${ASTRONAUTENS}" \
-    && curl -m 30 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    && curl -m 20 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     #############################################
     ## AUCUN RESULTAT
@@ -295,7 +293,7 @@ qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https:/
 echo; echo "Création de votre Clef et QR codes d'accès au niveau Astroport Ŋ1"; sleep 1
 
 echo; echo "*** HOME : ~/.zen/game/players/$PLAYER/"; sleep 1
-echo "*** IPNS Ŋ0 KEY : $PLAYER";
+echo "*** PLAYER : $PLAYER";
 echo; echo "GW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"; sleep 1
 
 # PASS CRYPTING KEY
