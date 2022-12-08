@@ -91,6 +91,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
+TWMODEL="/ipfs/bafybeidxavdjadjyvxf7mdebuniy5vzbma7r7pkceimqdb6zw3mkgupzhm"
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 echo "=============================================
@@ -193,6 +194,9 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         ASTROPORT=$(cat ~/.zen/tmp/Astroport.json | jq -r .[].astroport)
         sed -i "s~$ASTROPORT~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
+         # TW CHAIN INIT WITH TWMODEL
+         sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
         # INSERT PLAYER DATA
         sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
@@ -207,7 +211,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         # La Clef IPNS porte comme nom G1PUB
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        sed -i "s~ipfs.infura.io~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~ipfs.infura.io~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # USELESS
 
 #
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
@@ -283,15 +287,15 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
 
     rm -f ~/.zen/game/players/.current
-    ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+    ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current # LOCAL LOGIN
 
-qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "http://127.0.0.1:8080/ipns/${ASTRONAUTENS}"
+qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
 
-echo; echo "Création de votre clef et QR codes de votre réseau Astroport Ŋ1"; sleep 1
+echo; echo "Création de votre Clef et QR codes d'accès au niveau Astroport Ŋ1"; sleep 1
 
 echo; echo "*** HOME : ~/.zen/game/players/$PLAYER/"; sleep 1
 echo "*** IPNS Ŋ0 KEY : $PLAYER";
-echo; echo "GW : http://$myIP:8080/ipns/${ASTRONAUTENS}"; sleep 1
+echo; echo "GW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"; sleep 1
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
