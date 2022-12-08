@@ -142,8 +142,8 @@ do
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
         echo "$LIBRA/ipns/$ASTRONAUTENS"
         echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
-        [[ $YOU ]] && ipfs --timeout 12s cat  /ipns/$ASTRONAUTENS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
-        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 12 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
+        [[ $YOU ]] && ipfs --timeout 17s cat  /ipns/$ASTRONAUTENS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 17 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then

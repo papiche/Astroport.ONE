@@ -47,11 +47,12 @@ echo "_________________________________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
 echo "OPEN GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
-echo "VISA.new ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
+echo "OPEN TW ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=astro"
+echo "CREATE PLAYER ON GW : ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
+echo
 echo "GCHANGE MESSAGING ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&messaging"
 echo
-echo "VIDEO URL COPY ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&videourl=https://"
-
+echo "VIDEO URL COPY ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&CopierYoutube=https://"
 echo
 echo "TESTCRAFT ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
@@ -173,9 +174,9 @@ while true; do
 ###################################################################################################
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
+        [[ ! $APPNAME ]] && echo "NO APPNAME - CONTINUE" && continue
         ############################################################################
-        # WRITING API : SALT # PEPPER # APPNAME=WHAT # EXTRA PARAM
-
+        # WRITING API # SALT # PEPPER # MAKING THE KEY EXIST #########
         ################### KEY GEN ###################################
         echo ">>>>>>>>>>>>>> Application LaBureautique >><< APPNAME = $APPNAME <<<<<<<<<<<<<<<<<<<<"
 
@@ -185,13 +186,8 @@ while true; do
         PEPPER=$(urldecode ${arr[3]} | xargs)
         [[ ! $PEPPER ]] && (echo "$HTTPCORS ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
-        APPNAME=$(urldecode ${arr[4]} | xargs)
-        [[ ! $APPNAME ]] && (echo "$HTTPCORS ERROR - APPNAME MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-
-        WHAT=$(urldecode ${arr[5]} | xargs)
-
         ## SAVE "salt" "pepper" DEBUG REMOVE OR PASS ENCRYPT FOR SECURITY REASON
-        echo "PLAYER CREDENTIALS : \"$SALT\" \"$PEPPER\""
+        echo "PLAYER : \"$SALT\" \"$PEPPER\" : $APPNAME ($WHAT)"
         echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/coucou/${MOATS}.secret.june
 
         # CALCULATING ${MOATS}.secret.key + G1PUB
@@ -205,22 +201,24 @@ while true; do
         rm -f ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
         ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key )
-        echo "ASTRONAUTE TW : ${myHTTP}$HOSTP/ipns/${ASTRONAUTENS}"
+        [[ ! ${ASTRONAUTENS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - ASTRONAUTENS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
+        echo "TW ADDRESS : ${myHTTP}$HOSTP/ipns/${ASTRONAUTENS}"
         echo
 
         ################### KEY GEN ###################################
 
-    #~ # Get PLAYER wallet amount
-    #~ ( ## SUB PROCESS
-        #~ COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
-        #~ echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        #~ end=`date +%s`
-        #~ echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
-    #~ ) &
+    # Get PLAYER wallet amount
+    ( ## SUB PROCESS
+        COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
+        echo "+++ WALLET BALANCE _ $COINS (G1) _"
+        end=`date +%s`
+        echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+    ) &
 ########################################
 
 ########################################
-        ## ARCHIVE TOCTOC ${WHAT}S KEEP LOG
+        ## ARCHIVE TOCTOC ${WHAT}S KEEP LOG (TODO : ERASE)
 ########################################
         mkdir -p ~/.zen/game/players/.toctoc/
         ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
@@ -288,11 +286,16 @@ while true; do
 # G1PUB WITH NO EMAIL -> Open Gchange Profile & Update TW cache
 ########################################
         if [[ "$APPNAME" == "g1pub" && ${arr[7]} == "" ]]; then
-            ## NO EMAIL = REDIRECT TO GCHANGE PROFILE
-            sed "s~_TWLINK_~https://www.gchange.fr/#/app/user/${G1PUB}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            ## https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
-            echo "url='https://www.gchange.fr/#/app/user/"${G1PUB}"/'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            echo "GCHANGE REDIRECTING https://www.gchange.fr/#/app/user/"${G1PUB}"/"
+
+            [[ ${WHAT} == "astro" ]] && REPLACE="$LIBRA/ipns/$ASTRONAUTENS" \
+            || REPLACE="https://www.gchange.fr/#/app/user/${G1PUB}"
+            echo ${REPLACE}
+
+            ## REDIRECT TO TW OR GCHANGE PROFILE
+            sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            ## USED BY https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
+            echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
             ### echo "SESSION ${myHTTP}${myHOST}:8080/ipns/$SESSIONNS "
@@ -301,7 +304,7 @@ while true; do
             ${MY_PATH}/tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
             ) &
             end=`date +%s`
-            echo $APPNAME" (0‿‿0) Execution time was "`expr $end - $start` seconds.
+            echo $APPNAME" (0‿‿0) ${WHAT} Execution time was "`expr $end - $start` seconds.
             continue
         fi
 ########################################
@@ -443,8 +446,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
         ###################################################################################################
         ###################################################################################################
-        # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email/elastic=ELASTICID&pseudo=PROFILENAME
-    if [[ (${arr[6]} == "email" || ${arr[6]} == "elastic") && ${arr[7]} != "" ]]; then
+        # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email=EMAIL&pseudo=PROFILENAME
+    if [[ ${arr[6]} == "email" && ${arr[7]} != "" ]]; then
 
                 [[ $APPNAME != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $APPNAME" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
@@ -452,31 +455,33 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 SALT=$(urldecode ${arr[1]} | xargs)
                 PEPPER=$(urldecode ${arr[3]} | xargs)
-                WHAT=$(urldecode ${arr[7]} | xargs)
+                # WHAT can contain urlencoded FullURL
+                EMAIL=$(urldecode ${arr[7]} | xargs)
                 PSEUDO=$(urldecode ${arr[9]} | xargs)
 
-                [[ ! ${WHAT} ]] && (echo "$HTTPCORS ERROR - MISSING ${WHAT} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
+                [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
 
                 ## CHECK WHAT IS EMAIL
-                if [[ "${WHAT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+                if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
                     echo "VALID EMAIL OK"
                 else
                     echo "BAD EMAIL"
-                    (echo "$HTTPCORS KO ${WHAT} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+                    (echo "$HTTPCORS KO ${EMAIL} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
                 fi
 
                 ## CREATE PSEUDO FROM
                 if [[ ! $PSEUDO ]]; then
-                    PSEUDO=$(echo ${WHAT} | cut -d '@' -f 1)
+                    PSEUDO=$(echo ${EMAIL} | cut -d '@' -f 1)
                     PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:3}
                 fi
 
-                if [[ ! -d ~/.zen/game/players/${WHAT} ]]; then
-                    echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${WHAT}.${MOATS}.txt)"
+                if [[ ! -d ~/.zen/game/players/${EMAIL} ]]; then
+                    echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)"
                     (
                     startvisa=`date +%s`
-                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "${WHAT}" "$PSEUDO" > ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
-                    $MY_PATH/tools/mailjet.sh "${WHAT}" ~/.zen/tmp/email.${WHAT}.${MOATS}.txt
+                    $MY_PATH/tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" > ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+                    $MY_PATH/tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+
                     end=`date +%s`
                     dur=`expr $end - $startvisa`
                     echo ${MOATS}:${G1PUB}:${PLAYER}:VISA:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
@@ -484,15 +489,15 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     ) &
 
                     echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\"http://"${myHOST}":8080/ipns/"$ASTRONAUTENS"\"'/>
-                    <h1>BOOTING - ASTRONAUT $PSEUDO </h1> IPFS FORMATING - [$SALT + $PEPPER] (${WHAT})
+                    <h1>BOOTING - ASTRONAUT $PSEUDO </h1> IPFS FORMATING - [$SALT + $PEPPER] (${EMAIL})
                     <br>- TW - http://${myHOST}:8080/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
                     continue
                else
-                    # ASTRONAUT EXISTING ${WHAT}
-                    CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$SALT")
-                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${WHAT}/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "$HTTPCORS - WARNING - PLAYER ${WHAT} ALREADY HERE"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
+                    # ASTRONAUT EXISTING ${EMAIL}
+                    CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$SALT")
+                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$PEPPER")
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS - WARNING - PLAYER ${EMAIL} ALREADY HERE"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
                fi
 
                  ###################################################################################################
@@ -503,9 +508,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
 
 ##############################################
-# VIDEOURL
+# VIDEOURL : ADD URL TO 'CopierYoutube' tagged Tiddler : TODO
 ##############################################
-        if [[ $APPNAME == "videourl" ]]; then
+        if [[ $APPNAME == "CopierYoutube" ]]; then
             echo "$HTTPCORS /ipns/${ASTRONAUTENS} ADDING ${WHAT}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) ${WHAT} Execution time was "`expr $end - $start` seconds.
