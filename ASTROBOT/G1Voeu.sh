@@ -76,14 +76,8 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     ## A la fois Titre du tag et Pepper construction de clef
     echo $PEPPER > ~/.zen/game/world/$WISHKEY/.pepper
 
-    echo "# CREATION TW"
+    echo "# INIT WISH TW"
     ##########################################################################################
-    # ipfs key import _MEDIAKEY_ ~/.zen/Astroport.ONE/templates/_MEDIAKEY_.keystore.key
-    ##############
-    #
-    # ipfs cat /ipfs/bafybeibqdoegifzejykmc3qw3e3drgsa5i7az6xwjlfcx7rbtcoj5unpkq > ~/.zen/Astroport.ONE/templates/twdefault.html
-    # INTRODUCE HIDING CONTROL (read only from https) https $:/tags/Stylesheet
-    # ipfs cat /ipfs/bafybeidkur2tfbmqwscgmkfh76vmbcqay2m4gznxv5emkenxeffmrgywky > ~/.zen/Astroport.ONE/templates/twdefault.html
     ##########################################################################################
     cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/world/$WISHKEY/index.html
     # TODO : CREATE ONE TEMPLATE / REMOVE USELESS TID
@@ -96,7 +90,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     sed -i "s~_WISHKEY_~${WISHKEY}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_NUMBER_~${SALT}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_SECRET_~${PEPPER}~g" ~/.zen/game/world/$WISHKEY/index.html
-    sed -i "s~_ASTROPORT_~${ASTRONAUTENS}~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~_ASTROPORT_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~_QRSEC_~${myIP}~g" ~/.zen/game/world/$WISHKEY/index.html
 
     # IPNS KEY is WISHKEY / VOEUNS
@@ -116,6 +110,9 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
                         --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                         --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                         --deletetiddlers '"Dessin de _PLAYER_"' \
+                        --deletetiddlers '"BunkerBOX"' \
+                        --deletetiddlers '"CopierYoutube"' \
+                        --deletetiddlers '"Bienvenue"' \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
     [[ -s ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/world/$WISHKEY/index.html
@@ -124,7 +121,6 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo "# CREATION QR CODE"
 
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    LIBRA="http://qo-op.com:8080"
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
@@ -145,7 +141,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 composite -compose Over -gravity NorthWest -geometry +350+10 ~/.zen/tmp/ASTROLOGO.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/astroport.png ~/.zen/tmp/one.png
-convert -gravity northwest -pointsize 35 -fill black -draw "text 320,250 \"$PLAYER\"" ~/.zen/tmp/one.png ~/.zen/tmp/hop.png
+convert -gravity northwest -pointsize 20 -fill black -draw "text 320,250 \"$PLAYER\"" ~/.zen/tmp/one.png ~/.zen/tmp/hop.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 20,320 \"$PEPPER\"" ~/.zen/tmp/hop.png ~/.zen/tmp/pseudo.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 320,300 \"$SALT\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/salt.png
 convert -gravity northwest -pointsize 33 -fill black -draw "text 320,350 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/player.png

@@ -38,10 +38,10 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
 
     ## VISA EMITER STATION MUST ACT ONLY
-    [[ ! -f ~/.zen/game/players/$PLAYER/enc.secret.dunikey ]] && echo "$PLAYER IPNS KEY NOT MINE CONTINUE -- " \
+    [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && echo "$PLAYER secret.dunikey NOT HERE CONTINUE -- " \
                                                                                                             && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
 
-    ## MY PLAYER.
+    ## MY PLAYER
     ipfs key export $G1PUB -o ~/.zen/tmp/$PLAYER.key
     ipfs key import $PLAYER ~/.zen/tmp/$PLAYER.key
     rm -f ~/.zen/tmp/$PLAYER.key

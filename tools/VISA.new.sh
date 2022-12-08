@@ -290,9 +290,6 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
 
-    rm -f ~/.zen/game/players/.current
-    ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current # LOCAL LOGIN
-
 qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
 
 echo; echo "Création de votre Clef et QR codes d'accès au niveau Astroport Ŋ1"; sleep 1
