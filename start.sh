@@ -20,8 +20,10 @@ killall 12345.sh; killall "_12345.sh"; killall nc
 mkdir -p ~/.zen/tmp
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 
+sleep 1
 echo "HTTP API :  http://$myIP:1234"
-echo "MONITORING : tail -f ~/.zen/tmp/12345.log"
+cat ~/.zen/tmp/12345.log
+echo "API DEBUG : tail -f ~/.zen/tmp/12345.log"
 ###################################################
 
 echo '
@@ -48,8 +50,8 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
-    PS3='Créez votre VISA PLAYER ou connectez-vous avec un compte Astronaute ___ '
-    players=("NOUVEAU VISA" "IMPORT GCHANGE" $(ls ~/.zen/game/players 2>/dev/null))
+    PS3='Astronaute connectez votre PLAYER  ___ '
+    players=("NOUVEAU VISA" "IMPORT PLAYER" $(ls ~/.zen/game/players 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
@@ -60,10 +62,10 @@ echo 'PRESS ENTER... '; read
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
             ;;
-        "IMPORT GCHANGE")
-            echo "'Identifiant Gchange'"
+        "IMPORT PLAYER")
+            echo "'Identifiant'"
             read SALT
-            echo "'Mot de passe Gchange'"
+            echo "'Mot de passe'"
             read PEPPER
             echo "'Adresse Email'"
             read EMAIL

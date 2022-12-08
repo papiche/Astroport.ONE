@@ -46,13 +46,14 @@ Content-Type: text/html; charset=UTF-8
 echo "_________________________________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
-echo "OPEN GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
+echo "GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
 echo "OPEN TW ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=astro"
-echo "CREATE PLAYER ON GW : ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
-echo
 echo "GCHANGE MESSAGING ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&messaging"
+echo "CREATE SAME PLAYER : ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
 echo
-echo "VIDEO URL COPY ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&CopierYoutube=https://"
+echo "NEW PLAYER : ${myHTTP}${myHOST}:1234/?salt=${RANDOM}&pepper=${RANDOM}&g1pub=on&email=astro${RANDOM}@yopmail.com"
+echo
+echo "BunkerBOX : ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=_URL_&email=totodu56@yopmail.com"
 echo
 echo "TESTCRAFT ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"

@@ -15,18 +15,21 @@ echo '
 # \\///
 # qo-op
 ############# '$MY_PATH/$ME'
-########################################################################
-# SEND EMAIL FORGE IT YOUR WAY
 ########################################################################'
 ### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
 ## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
 mail="$1" # EMAIL DESTINATAIRE
-messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
-
 [[ ! $1 ]] && mail="support@qo-op.com"
 
+messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
+
+echo '
+########################################################################
+# EMAIL $messfile TO $mail
+########################################################################'
+
 SUBJECT="[(♥‿‿♥)] Message Station Astroport : $(hostname)"
-MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n Activez votre TW https://astroport.copylaradio.com .\n\nAstroport\n($IPFSNODEID)"
+MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n https://astroport.copylaradio.com .\n\nAstroport\n($IPFSNODEID)"
 
 echo "From: support@g1sms.fr
 To: EMAIL
@@ -34,7 +37,7 @@ Bcc: support@qo-op.com
 Subject: SUBJECT
 MESSAGE
 " > ~/.zen/tmp/email.txt
-[[ $messfile && -f $messfile ]] && [[ $(file --mime-type -b $messfile) == 'text/plain' ]] && cat $messfile >> ~/.zen/tmp/email.txt
+[[ ! -s $messfile ]] && [[ $(file --mime-type -b $messfile) == 'text/plain' ]] && cat $messfile >> ~/.zen/tmp/email.txt
 
 
 cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | ssmtp -v ${mail}
