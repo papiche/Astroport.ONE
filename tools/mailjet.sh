@@ -23,13 +23,14 @@ mail="$1" # EMAIL DESTINATAIRE
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
-echo '
-########################################################################
-# EMAIL $messfile TO $mail
-########################################################################'
+SUBJECT="[(♥‿‿♥)] Station Astroport : $(hostname)"
+MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n REBOOT https://astroport.copylaradio.com .\n\nAstroport\n($IPFSNODEID)"
 
-SUBJECT="[(♥‿‿♥)] Message Station Astroport : $(hostname)"
-MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n\n https://astroport.copylaradio.com .\n\nAstroport\n($IPFSNODEID)"
+echo "
+########################################################################
+# EMAIL $SUBJECT $messfile TO $mail
+########################################################################"
+
 
 echo "From: support@g1sms.fr
 To: EMAIL

@@ -91,7 +91,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeifnanmthip6iv3jhgm7cmtd3qld3ppqbizhypft32j7p7lrmflpuq"
+TWMODEL="/ipfs/bafybeihk2xserdii7wcnvojbyuyxx6qzlcgtzvraeucpyrhcfwy2ssvbhu"
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 echo "=============================================
