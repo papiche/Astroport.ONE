@@ -91,7 +91,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeihtuyyjepcdpyqxrrdmsfsk24i6x47i74dkupxpamcnu6ffrqng3y"
+TWMODEL="/ipfs/bafybeifnanmthip6iv3jhgm7cmtd3qld3ppqbizhypft32j7p7lrmflpuq"
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 echo "=============================================
@@ -195,7 +195,10 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~$ASTROPORT~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
          # TW CHAIN INIT WITH TWMODEL
+         sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
+         sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         # INSERT PLAYER DATA
         sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
