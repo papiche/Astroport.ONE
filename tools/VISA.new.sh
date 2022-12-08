@@ -91,7 +91,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeidxavdjadjyvxf7mdebuniy5vzbma7r7pkceimqdb6zw3mkgupzhm"
+TWMODEL="/ipfs/bafybeihtuyyjepcdpyqxrrdmsfsk24i6x47i74dkupxpamcnu6ffrqng3y"
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 echo "=============================================
@@ -211,7 +211,8 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         # La Clef IPNS porte comme nom G1PUB
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        sed -i "s~ipfs.infura.io~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # USELESS
+
+        sed -i "s~ipfs.infura.io~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # USELESS ?!
 
 #
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
