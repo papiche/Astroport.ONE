@@ -16,14 +16,14 @@ IPFSNODEID=$(ipfs id -f='<id>\n')
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls -t ~/.zen/game/players/); do
-    [[ $PLAYER == '.toctoc' ]] && echo ".toctoc users " && continue
+    [[ $PLAYER == "user" || $PLAYER == "zen" ]] && continue
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
-    #~ # Get PLAYER wallet amount
-    #~ COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
-    #~ echo "+++ WALLET BALANCE _ $COINS (G1) _"
-    ## DROP IF WALLET IS EMPTY : TODO
+    # Get PLAYER wallet amount
+    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    echo "+++ WALLET BALANCE _ $COINS (G1) _"
+    #~ ## IF WALLET IS EMPTY : WHAT TODO ?
     echo "##################################################################"
     echo "##################################################################"
     echo "################### REFRESH ASTRONAUTE TW ###########################"
