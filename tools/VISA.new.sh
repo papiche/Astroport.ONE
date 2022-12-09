@@ -231,7 +231,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
 #
         ## CRYPTO PROCESS VALIDATED
-        [[ -s ~/.zen/tmp/myIP.2 ]] && echo "NATOOLS ENCODED secret LAODED" \
+        [[ -s ~/.zen/tmp/myIP.2 ]] && echo "NATOOLS ENCODED secret LOADED" \
                                                         || sed -i "s~$ENCODING~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
 
         rm -f ~/.zen/tmp/myIP.2
