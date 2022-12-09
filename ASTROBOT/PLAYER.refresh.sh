@@ -17,8 +17,8 @@ IPFSNODEID=$(ipfs id -f='<id>\n')
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls -t ~/.zen/game/players/); do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-
     [[ $PLAYER == "user" || $PLAYER == "zen" ]] && continue
+    mkdir -p ~/.zen/tmp/${MOATS}
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
@@ -44,9 +44,9 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
                                                                                                             && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
 
     ## MY PLAYER
-    ipfs key export $G1PUB -o ~/.zen/tmp/$PLAYER.key
-    ipfs key import $PLAYER ~/.zen/tmp/$PLAYER.key
-    rm -f ~/.zen/tmp/$PLAYER.key
+    ipfs key export $G1PUB -o ~/.zen/tmp/${MOATS}/$PLAYER.key
+    ipfs key import $PLAYER ~/.zen/tmp/${MOATS}/$PLAYER.key
+    rm -f ~/.zen/tmp/${MOATS}/$PLAYER.key
 
     ## REFRESH CACHE
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
@@ -82,10 +82,10 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
      ## FOUND TW
         #############################################################
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp --render '.' ${MOATS}'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-            [[ ! -s ~/.zen/tmp/${MOATS}MadeInZion.json ]] && echo "MadeInZion : BAD TW (☓‿‿☓) " && continue
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "MadeInZion : BAD TW (☓‿‿☓) " && continue
 
-            player=$(cat ~/.zen/tmp/${MOATS}MadeInZion.json | jq -r .[].player)
+            player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
             [[ $player == $PLAYER ]] \
             && echo "$PLAYER OFFICIAL TW - (⌐■_■) -" \
@@ -119,16 +119,16 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://ipfs.localhost:5001"}]' > ~/.zen/tmp/5001.json
-            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"https://ipfs.copylaradio.com"}]' > ~/.zen/tmp/8080.json
+            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://ipfs.localhost:5001"}]' > ~/.zen/tmp/${MOATS}/5001.json
+            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"https://ipfs.copylaradio.com"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
                 ## UPDATE LightBeam Plugin Tiddler
-            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","tags":"","text":""}]' > ~/.zen/tmp/friends.json
+            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","tags":"","text":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
-                            --import "$HOME/.zen/tmp/5001.json" "application/json" \
-                            --import "$HOME/.zen/tmp/8080.json" "application/json" \
-                            --import "$HOME/.zen/tmp/friends.json" "application/json" \
+                            --import "$HOME/.zen/tmp/${MOATS}/5001.json" "application/json" \
+                            --import "$HOME/.zen/tmp/${MOATS}/8080.json" "application/json" \
+                            --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \
                             --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
             [[ -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ]] \
@@ -180,7 +180,7 @@ NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
 [[ $BSIZE != $NSIZE ]] \
 && ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
-&& echo "BALISE STATION /ipns/${IPFSNODEID} INDEXES = $NSIZE octets" \
+&& echo "PUBLISH BALISE STATION /ipns/${IPFSNODEID} = $NSIZE octets" \
 && ipfs name publish --allow-offline -t 24h /ipfs/$ROUTING
 
 echo "PLAYER.refresh DONE."
