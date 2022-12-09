@@ -22,7 +22,7 @@ rm -Rf ~/.zen/tmp/*
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 [[ -s /etc/sudoers.d/systemctl ]] && sudo systemctl restart ipfs && sleep 5
 
-espeak "Ding Ding" > /dev/null 2>&1
+espeak "Code Updating" > /dev/null 2>&1
 
 
 ## PROCESS TW BACKOFFICE TREATMENT
@@ -37,16 +37,12 @@ git pull
 killall 12345.sh
 killall _12345.sh
 killall nc
-killall tail
 
-espeak "Ding Ding Ding" > /dev/null 2>&1
-
+espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
-espeak "Bills Kills Bills" > /dev/null 2>&1
-
-
+espeak "Restarting API" > /dev/null 2>&1
 ## OPEN API ENGINE
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 
@@ -60,16 +56,18 @@ if [[ ! $isLAN ]]; then
     done
 fi
 
+espeak "Tube Up" > /dev/null 2>&1
 ## Updating yt-dlp
 sudo youtube-dl -U
 
 ########################################################################
 end=`date +%s`
-echo "20H12 (♥‿‿♥) Execution time was "`expr $end - $start` seconds.
+dur=`expr $end - $start`
+echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
-espeak "Byte Storm Over" > /dev/null 2>&1
+espeak "Byte Strom End. $dur seconds" > /dev/null 2>&1
 
 exit 0

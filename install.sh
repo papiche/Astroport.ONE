@@ -247,8 +247,8 @@ mkdir -p ~/.zen/tmp
 
 echo "#############################################"
 
-## SYMLINK youtube-dl TO yt-dlp
-sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl
+## INSTALL yt-dlp & SYMLINK youtube-dl
+${MY_PATH}/youtube-dl.sh
 which youtube-dl
 echo "#############################################"
 echo "#############################################"
