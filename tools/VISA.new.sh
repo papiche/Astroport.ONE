@@ -93,7 +93,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeibkf3yc5pqppwcw5n2vnzcvtkh6sml3bhb2h44cxnkwhtrmtx3oxu"
+TWMODEL="/ipfs/bafybeigr4w6q2fxdgy7is7k4kp6awddipwcoutvz4l7osgzyuoofcos24e"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
