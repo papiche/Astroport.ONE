@@ -153,8 +153,8 @@ do
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
-            echo "AUCUN TW ACTIF. ENVOYONS LUI UN MESSAGE..."
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m ">>> (◕‿‿◕) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (◕‿‿◕) <<< ACTIVE TON TW ICI : https://astroport.copylaradio.com"
+            echo "AUCUN TW ACTIF. PREVENONS LE"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m ">>> (◕‿‿◕) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (◕‿‿◕) <<< TW BunkerBOX  : https://qo-op.com"
 
         else
 
@@ -201,7 +201,7 @@ do
 
     else
 
-        echo "ARE WE BRO?"
+        echo "BRO?"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Bro ?" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
 
     fi
