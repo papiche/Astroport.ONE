@@ -122,7 +122,7 @@ select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
         echo "IMPRESSION"
-        ${MY_PATH}/tools/VISA.print.sh
+        ${MY_PATH}/tools/VISA.print.sh "$PLAYER"
         ;;
 
     "EXPORTER VISA")

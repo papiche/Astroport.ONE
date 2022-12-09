@@ -34,7 +34,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 ## CHECK if PLAYER resolve any ASTRONAUTENS
 [[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-[[ ${ASTRONAUTENS} ]] && echo "IPNS $PLAYER EXISTANT http://$myIP:8080/${ASTRONAUTENS} !! DO NOTHING - EXIT -" && exit 0
+[[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS $PLAYER EXISTANT https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
@@ -48,6 +48,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     mkdir -p ~/.zen/tmp/${MOATS}/TW
 
+    echo "SEARCHING FOR ONLINE /ipns/${ASTRONAUTENS}"
     ## GETTING LAST TW via IPFS or HTTP GW
     [[ $YOU ]] \
     && ipfs --timeout 20s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
@@ -69,17 +70,20 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
 
-        IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev)
-        echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
+        if [[ $ASTROPORT ]]; then
+            IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev)
+            echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
-        [[ $IPNSTAIL == $IPFSNODEID ]] \
-        && echo "UPDATING $PLAYER LOCAL CACHE ~/.zen/game/players/$PLAYER/ipfs/moa" \
-        && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa \
-        && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/ \
-        || echo "PLAYER on $ASTROPORT Station"
+            [[ $IPNSTAIL == $IPFSNODEID ]] \
+            && echo "UPDATING $PLAYER LOCAL CACHE ~/.zen/game/players/$PLAYER/ipfs/moa" \
+            && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa \
+            && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/ \
+            || echo "PLAYER on $ASTROPORT Station"
+
+        fi
 
         # DO NOT CONTINUE
-        echo "VISA ALREADY EXISTING"
+        echo "TW ADDRESS IN USE"
 
         rm -Rf ~/.zen/tmp/${MOATS}
 
@@ -89,7 +93,8 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeihk2xserdii7wcnvojbyuyxx6qzlcgtzvraeucpyrhcfwy2ssvbhu"
+TWMODEL="/ipfs/bafybeibkf3yc5pqppwcw5n2vnzcvtkh6sml3bhb2h44cxnkwhtrmtx3oxu"
+# ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 echo "=============================================
@@ -145,18 +150,17 @@ Rendez-vous sur https://gchange.fr"; sleep 3
 echo; echo "Création de votre clef multi-accès..."; sleep 2
 echo;
 
-${MY_PATH}/keygen -t duniter -o /tmp/secret.dunikey "$SALT" "$PEPPER"
+${MY_PATH}/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey "$SALT" "$PEPPER"
 
-G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
 [[ ! $G1PUB ]] && echo "Désolé. clef Cesium absente." && exit 1
 
 
     ## CREATE Player personnal files storage and IPFS publish directory
     mkdir -p ~/.zen/game/players/$PLAYER # Prepare PLAYER datastructure
-    mkdir -p ~/.zen/tmp/
 
-    mv /tmp/secret.dunikey ~/.zen/game/players/$PLAYER/
+    mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
     # Create Player "IPNS Key" (key import)
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.player "$SALT" "$PEPPER"
@@ -169,17 +173,17 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
+    ## SEC PASS PROTECTED QRCODE
     secFromDunikey=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep "sec" | cut -d ' ' -f2)
-    echo "$secFromDunikey" > /tmp/${PSEUDO}.sec
-    openssl enc -aes-256-cbc -salt -in /tmp/${PSEUDO}.sec -out "/tmp/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
-    PASsec=$(cat /tmp/enc.${PSEUDO}.sec | base58) && rm -f /tmp/${PSEUDO}.sec
+    echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
+    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58) && rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     qrencode -s 12 -o $HOME/.zen/game/players/$PLAYER/QRsec.png $PASsec
 
     echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
         echo
         echo "***** Activation du Canal TW Astronaute $PLAYER *****"
         mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
@@ -188,13 +192,17 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         # INSERT ASTROPORT ADRESS
-        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-        ASTROPORT=$(cat ~/.zen/tmp/Astroport.json | jq -r .[].astroport)
+        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
         sed -i "s~$ASTROPORT~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
          # TW CHAIN INIT WITH TWMODEL
          sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
+         sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+         sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+         sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
          sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
@@ -218,44 +226,44 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 #
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
-#
-        echo "# CRYPTO ENCODING secret.dunikey -> TW _SECRET_ "
-        echo $myIP > ~/.zen/tmp/myIP
-        $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/$PLAYER/secret.dunikey -o $HOME/.zen/tmp/secret.dunikey.$G1PUB.enc
-        ENCODING=$(cat ~/.zen/tmp/secret.dunikey.$G1PUB.enc | base16)
+###########
+        echo "# CRYPTO SELFT ENCODING secret.dunikey put in Tiddler MadeInZion._SECRET_ "
+        echo $myIP > ~/.zen/tmp/${MOATS}/myIP
+        $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/$PLAYER/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
+        ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-#
+###########
         echo "# CRYPTO DECODING TEST"
-        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
-        $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/myIP.2
-#
+        tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/${MOATS}/myIP.$G1PUB.enc.2
+        $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/myIP.2
+###########
         ## CRYPTO PROCESS VALIDATED
-        [[ -s ~/.zen/tmp/myIP.2 ]] && echo "NATOOLS ENCODED secret LOADED" \
+        [[ -s ~/.zen/tmp/${MOATS}/myIP.2 ]] && echo "NATOOLS ENCODED secret LOADED" \
                                                         || sed -i "s~$ENCODING~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
-
-        rm -f ~/.zen/tmp/myIP.2
+        rm -f ~/.zen/tmp/${MOATS}/myIP.2
+###########
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
-                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-        [[ -f ~/.zen/tmp/newindex.html ]] && cp ~/.zen/tmp/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+                            --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+        [[ -f ~/.zen/tmp/${MOATS}/newindex.html ]] && cp ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        ## ID CARD
-        convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 /tmp/QR.png
-        convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
+        ## ID CARD & QRCODE
+        convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
+        convert ${MY_PATH}/../images/astroport.jpg  -resize 300 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 
-        composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
-        composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
-        # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
+        composite -compose Over -gravity SouthWest -geometry +280+20 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/astroport.png
+        composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/one.png
+        # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
 
-        convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" /tmp/one.png /tmp/image.png
-        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
-        convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" /tmp/pseudo.png /tmp/pass.png
-        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" /tmp/pass.png /tmp/salt.png
-        convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" /tmp/salt.png ~/.zen/game/players/$PLAYER/ID.png
+        convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
+        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
+        convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
+        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
+        convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/$PLAYER/ID.png
 
         # INSERTED IMAGE IPFS
         IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
@@ -281,7 +289,7 @@ G1PUB=$(cat /tmp/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     # astrXbian compatible IPFS sub structure =>$XZUID
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/_xbian.zuid
     cp ~/.zen/game/players/$PLAYER/.player ~/.zen/game/players/$PLAYER/ipfs/
-    # PUBLIC Ŋ7 ZONE
+    # PUBLIC Ŋ0 ZONE
 
     echo "${ASTRONAUTENS}" > ~/.zen/game/players/$PLAYER/.playerns
 
@@ -294,7 +302,7 @@ echo; echo "Création de votre Clef et QR codes d'accès au niveau Astroport Ŋ1
 
 echo; echo "*** HOME : ~/.zen/game/players/$PLAYER/"; sleep 1
 echo "*** PLAYER : $PLAYER";
-echo; echo "GW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"; sleep 1
+echo; echo "VOTRE TW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"; sleep 1
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
@@ -314,15 +322,15 @@ echo "$PASS" > ~/.zen/game/players/$PLAYER/.pass
 #####################################################
 
 ## DISCONNECT AND CONNECT CURRENT PLAYER
-rm -f ~/.zen/game/players/.current
-ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+#~ rm -f ~/.zen/game/players/.current
+#~ ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
 ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
 ${MY_PATH}/Connect_PLAYER_To_Gchange.sh "$PLAYER"
 
 ### IF PRINTER -> PRINT VISA
-LP=$(ls /dev/usb/lp*)
-[[ $LP ]] && ${MY_PATH}/VISA.print.sh &
+LP=$(ls /dev/usb/lp* 2>/dev/null)
+[[ $LP ]] && ${MY_PATH}/VISA.print.sh "$PLAYER" &
 
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
@@ -335,6 +343,7 @@ echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 
 echo "$PASS"
 
-
+## CLEANING CACHE
+rm -Rf ~/.zen/tmp/${MOATS}
 
 exit 0

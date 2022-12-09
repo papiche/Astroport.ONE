@@ -11,30 +11,32 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+PLAYER="$1"
+
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-[[ ! -f ~/.zen/game/players/.current/QR.png ]] &&\
-        echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/.current/" && exit 1
+[[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] &&\
+        echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/${PLAYER}/" && exit 1
 
 # Check who is .current PLAYER
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
-PSEUDO=$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
-G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
+PLAYER=$(cat ~/.zen/game/players/${PLAYER}/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
+PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
 
 
-PASS=$(cat ~/.zen/game/players/.current/.pass)
+PASS=$(cat ~/.zen/game/players/${PLAYER}/.pass)
 
-SALT=$(cat ~/.zen/game/players/.current/secret.june | head -n 1)
-PEPPER=$(cat ~/.zen/game/players/.current/secret.june | tail -n 1)
+SALT=$(cat ~/.zen/game/players/${PLAYER}/secret.june | head -n 1)
+PEPPER=$(cat ~/.zen/game/players/${PLAYER}/secret.june | tail -n 1)
 
 LP=$(ls /dev/usb/lp*)
 
-convert ~/.zen/game/players/.current/QR.png -resize 300 /tmp/QR.png
+convert ~/.zen/game/players/${PLAYER}/QR.png -resize 300 /tmp/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 300 /tmp/ASTROPORT.png
 
 composite -compose Over -gravity SouthWest -geometry +280+20 /tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png /tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 /tmp/QR.png /tmp/astroport.png /tmp/one.png
-# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png /tmp/one.png /tmp/image.png
+# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/${PLAYER}/QRsec.png /tmp/one.png /tmp/image.png
 
 convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" /tmp/one.png /tmp/image.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 300,40 \"$PLAYER\"" /tmp/image.png /tmp/pseudo.png
