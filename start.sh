@@ -86,14 +86,14 @@ echo 'PRESS ENTER... '; read
     PLAYER=$fav
 
 
-pass=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
+pass=$(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)
 ########################################## DEVEL
 echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read PASS
 
 ## DECODE CURRENT PLAYER CRYPTO
 # echo "********* DECODAGE SecuredSocketLayer *********"
 # rm -f ~/.zen/tmp/${PLAYER}.dunikey 2>/dev/null
-# openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/.current/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
+# openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
 [[ $PASS != $pass ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 rm -f ~/.zen/game/players/.current
@@ -111,7 +111,7 @@ echo "ENTREE ACCORDEE"
 echo
 ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
-echo "$(cat ~/.zen/game/players/.current/.pseudo 2>/dev/null) TW/Moa"
+echo "$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) TW/Moa"
 echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
 echo "Activation Réseau P2P Astroport !"
 
@@ -127,7 +127,7 @@ select fav in  "${choices[@]}"; do
 
     "EXPORTER VISA")
         echo "EXPORT IDENTITE ASTRONAUTE"
-        du -h ~/.zen/game/players/.current/
+        du -h ~/.zen/game/players/$PLAYER/
         echo  "MANUAL BACKUP ZIP ~/.zen/game/players/$PLAYER/"
         ## EXPORT TW + VOEUX IPNS KEYS
 
@@ -181,7 +181,7 @@ select fav in  "${choices[@]}"; do
         ;;
 
     "IMPRIMER QRVOEU")
-        ${MY_PATH}/tools/VOEUX.print.sh
+        ${MY_PATH}/tools/VOEUX.print.sh $PLAYER
         ;;
 
     "QUITTER")

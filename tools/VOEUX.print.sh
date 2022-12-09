@@ -7,6 +7,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+PLAYER=$1
+
 [[ $PLAYER == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ $PLAYER == "" ]] && echo "PLAYER manquant" && exit 1
 PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
