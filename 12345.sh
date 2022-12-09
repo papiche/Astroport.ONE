@@ -18,8 +18,8 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-[[ $isLAN ]] && myHOST="ipfs.localhost" && myHOSTPort="ipfs.localhost:8080" && myHTTP="http://" ## LAN STATION
-[[ ! $isLAN ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" ## WAN STATION
+[[ $isLAN ]] && myHOST="ipfs.localhost" && myHOSTPort="ipfs.localhost:8080" && myHTTP="http://" && myASTROPORT="http://astroport.localhost:1234" ## LAN STATION
+[[ ! $isLAN ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
 
 PORT=12345
 
@@ -46,16 +46,16 @@ Content-Type: text/html; charset=UTF-8
 echo "_________________________________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
-echo "GCHANGE ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub"
-echo "OPEN TW ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=astro"
-echo "GCHANGE MESSAGING ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&messaging"
-echo "CREATE SAME PLAYER : ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
+echo "GCHANGE ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub"
+echo "OPEN TW ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub=astro"
+echo "GCHANGE MESSAGING ${myASTROPORT}/?salt=totodu56&pepper=totodu56&messaging"
+echo "CREATE SAME PLAYER : ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
 echo
-echo "NEW PLAYER : ${myHTTP}${myHOST}:1234/?salt=${RANDOM}&pepper=${RANDOM}&g1pub=on&email=astro${RANDOM}@yopmail.com"
+echo "NEW PLAYER : ${myASTROPORT}/?salt=${RANDOM}&pepper=${RANDOM}&g1pub=on&email=astro${RANDOM}@yopmail.com"
 echo
-echo "BunkerBOX : ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&g1pub=_URL_&email=totodu56@yopmail.com"
+echo "BunkerBOX : ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub=_URL_&email=totodu56@yopmail.com"
 echo
-echo "TESTCRAFT ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
+echo "TESTCRAFT ${myASTROPORT}/?salt=totodu56&pepper=totodu56&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
