@@ -16,6 +16,8 @@ IPFSNODEID=$(ipfs id -f='<id>\n')
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in $(ls -t ~/.zen/game/players/); do
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+
     [[ $PLAYER == "user" || $PLAYER == "zen" ]] && continue
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
@@ -79,31 +81,15 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     else
      ## FOUND TW
         #############################################################
-        ## CHECK IF myIP IS ACTUAL OFFICIAL GATEWAY
-                tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-                [[ ! -s ~/.zen/tmp/MadeInZion.json ]] && echo "MadeInZion ERROR - DROPPING  " && continue
+        ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp --render '.' ${MOATS}'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            [[ ! -s ~/.zen/tmp/${MOATS}MadeInZion.json ]] && echo "MadeInZion : BAD TW (☓‿‿☓) " && continue
 
-        # CRYPTO DECODING CRYPTIP -> myIP
-                cat ~/.zen/tmp/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/myIP.$G1PUB.enc.2
-                $MY_PATH/../tools/natools.py decrypt -f pubsec -k ~/.zen/game/players/$PLAYER/secret.dunikey -i ~/.zen/tmp/myIP.$G1PUB.enc.2 -o ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1
-                GWIP=$(cat  ~/.zen/tmp/myIP.$G1PUB > /dev/null 2>&1)
+            player=$(cat ~/.zen/tmp/${MOATS}MadeInZion.json | jq -r .[].player)
 
-                [[ ! $GWIP ]] && GWIP=$myIP ## CLEAR
-
-                echo "THIS TW is on $GWIP"
-
-        # WHO IS OFFICIAL TW GATEWAY.
-    if [[ ! -s ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey ]]; then
-            if [[ $GWIP != $myIP ]]; then
-                # NOT MY PLAYER
-                echo "REMOVING PLAYER $PLAYER"
-                rm -Rf ~/.zen/game/players/$PLAYER/
-                ipfs key rm ${PLAYER}
-                ipfs key rm ${G1PUB}
-                echo "*** OFFICIAL GATEWAY : http://$GWIP:8080/ipns/$ASTRONAUTENS  ***" && continue
-            fi
-    else
-        echo "OFFICIAL VISA - (⌐■_■) -"
+            [[ $player == $PLAYER ]] \
+            && echo "$PLAYER OFFICIAL TW - (⌐■_■) -" \
+            || ( echo "BAD PLAYER=$player in TW" && continue)
     fi
         #############################################################
         ## GWIP == myIP or TUBE !!
@@ -144,6 +130,9 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
             echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://ipfs.localhost:5001"}]' > ~/.zen/tmp/5001.json
             echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"https://ipfs.copylaradio.com"}]' > ~/.zen/tmp/8080.json
 
+                ## UPDATE LightBeam Plugin Tiddler
+            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","tags":"","text":""}]' > ~/.zen/tmp/friends.json
+
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                             --import "$HOME/.zen/tmp/MadeInZion.json" "application/json" \
                             --import "$HOME/.zen/tmp/5001.json" "application/json" \
@@ -172,7 +161,6 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     ##################################################
     ##################################################
     ################## UPDATING PLAYER MOA
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
                                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
