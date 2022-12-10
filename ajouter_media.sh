@@ -206,6 +206,7 @@ mkdir -p ${YTEMP}
 echo "VIDEO $YTURL"
 
 /usr/local/bin/youtube-dl -f '[ext=mp4]+best[height<=480]+[filesize<300M]' \
+--cookies-from-browser $BROWSER \
 --no-playlist --write-info-json \
 --no-mtime -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" $YTURL
 
@@ -497,6 +498,7 @@ else
 
 # artist is the URL ot the song
 /usr/local/bin/youtube-dl \
+--cookies-from-browser $BROWSER \
 --ignore-errors --no-mtime \
 --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
 --extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist"
