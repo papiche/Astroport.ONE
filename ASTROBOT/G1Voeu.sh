@@ -178,7 +178,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     </\$button>"
 
     # NEW IVEU TIDDLER
-    echo "## Creation json tiddler : Qr${PEPPER} /ipfs/${IVOEU}"
+    echo "## Creation json tiddler : G1${PEPPER} /ipfs/${IVOEU}"
     echo '[
   {
     "created": "'${MOATS}'",

@@ -26,12 +26,18 @@ INDEX="$1"
 
 WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER - WISHKEY...
 [[ ! $WISHKEY ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
+PLAYER=$WISHKEY
+
 TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
 [[ ! $TWNS ]] && echo "ERROR - Clef IPNS $WISHKEY introuvable!"  && exit 1
 
 # Extract tag=tube from TW
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-mkdir -p ~/.zen/tmp/$IPFSNODEID
+
+###################################################################
+## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
+###################################################################
+mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
 
 ###################################################################
 ## tag[CopierYoutube] EXTRACT ~/.zen/tmp/CopierYoutube.json FROM TW
@@ -58,7 +64,7 @@ for YURL in $(cat ~/.zen/tmp/CopierYoutube.json | jq -r '.[].text' | grep 'http'
 
 done # FINISH YURL loop
 
-## SORT UNIQ CACHE
+## SORT UNIQ ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY
 cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY | sort | uniq > ~/.zen/tmp/yt-dlp.cache
 cp ~/.zen/tmp/yt-dlp.cache ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY
 
@@ -78,17 +84,12 @@ while read LINE;
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
         MATCH=$(ls -t ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
         [[ $MATCH ]] \
-        && TIDDLER="$MATCH" \
+        && echo "Local Found Tiddler" && TIDDLER="$MATCH" \
         || MATCH=$(ls -t ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
 
         [[ $MATCH ]] \
-        && TIDDLER="$MATCH"
+        && echo "Swarm Found Tiddler" && TIDDLER="$MATCH"
 ###################################################################
-
-###################################################################
-## CREATE APP PUBLICATION
-###################################################################
-mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
 
 
 if [[ ! ${TIDDLER} ]]; then
