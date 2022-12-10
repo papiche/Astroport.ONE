@@ -58,6 +58,8 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 [[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
 
+BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
+
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
@@ -486,6 +488,7 @@ then
 
     # Download mp3 from 1st youtube search video result (--write-info-json)
     /usr/local/bin/youtube-dl --default-search ytsearch1: \
+     --cookies-from-browser $BROWSER \
     --ignore-errors --no-mtime \
     --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
     --extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist $song"

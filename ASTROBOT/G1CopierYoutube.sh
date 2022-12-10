@@ -108,7 +108,7 @@ if [[ ! ${TIDDLER} ]]; then
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
 
         echo ".... Downloading $TITLE.mp4"
-
+        espeak "$TITLE" > /dev/null 1>&2
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # (bv*[height<=720][vcodec~='^((he|a)vc|h26[45])']+ba)
@@ -141,6 +141,7 @@ if [[ ! ${TIDDLER} ]]; then
 
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         boucle=$((boucle+1))
+        espeak "$bouche video" > /dev/null 1>&2
         [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED" && break
 
 ####################################################
