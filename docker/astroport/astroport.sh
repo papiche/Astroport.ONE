@@ -14,8 +14,9 @@ log() {
 }
 
 zen() {
+  mkdir -p /home/zen/Astroport
+  sudo chown zen:users /home/zen /home/zen/.zen /home/zen/.zen/game /home/zen/.zen/game/players
   [ -d "$ASTROPORT_DIR" ] && cd "$ASTROPORT_DIR" && git pull -q || git clone -q "$ASTROPORT_REPO" "$ASTROPORT_DIR"
-  sudo chown zen /home/zen/.zen/game/players
 }
 
 case "${1:-${cmd:-start}}" in

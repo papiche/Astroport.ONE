@@ -1,5 +1,7 @@
-MYOS                            ?= ../myos
-MYOS_REPOSITORY                 ?= https://github.com/aynicos/myos
+MYOS                                      ?= ../myos
+MYOS_REPOSITORY                           ?= $(patsubst %/$(APP),%/myos,$(APP_REPOSITORY))
+APP                                       ?= $(lastword $(subst /, ,$(APP_REPOSITORY)))
+APP_REPOSITORY                            ?= $(shell git config --get remote.origin.url 2>/dev/null)
 -include $(MYOS)/make/include.mk
 $(MYOS):
 	-@git clone $(MYOS_REPOSITORY) $(MYOS)
@@ -10,7 +12,8 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 all: install tests
 
 .PHONY: install
-install: build myos up player
+install: myos build up player
+	echo "Welcome to myos docker land - make a user - make a player -"
 
 .PHONY: migrate
 migrate-%: home := ~/.zen/game/players
@@ -47,4 +50,3 @@ tests: shellcheck
 
 .PHONY: upgrade
 upgrade: migrate-home migrate-ipfs install
-	echo "Welcome to myos docker land - make a user - make a player -"

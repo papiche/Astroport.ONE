@@ -12,12 +12,10 @@ services:
     restart: unless-stopped
     tty: true
     volumes:
-    - data:/home/zen/Astroport:cached
     - home:/home/zen/.zen/game/players:delegated
     - ipfs:/home/zen/.ipfs:cached,ro
     working_dir: /home/zen
 
 volumes:
-  data:
   home:
   ipfs:
