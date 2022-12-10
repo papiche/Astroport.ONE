@@ -24,12 +24,11 @@ INDEX="$1"
 [[ ! ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
 [[ ! -f ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 
-WISHKEY="$2" ## IPNS KEY NAME - G1PUB - PLAYER - WISHKEY...
-[[ ! $WISHKEY ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
-PLAYER=$WISHKEY
+PLAYER="$2"
+[[ ! $PLAYER ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
 
-TWNS=$(ipfs key list -l | grep -w $WISHKEY | cut -d ' ' -f1)
-[[ ! $TWNS ]] && echo "ERROR - Clef IPNS $WISHKEY introuvable!"  && exit 1
+ASTONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+[[ ! $ASTONAUTENS ]] && echo "ERROR - Clef IPNS $PLAYER introuvable!"  && exit 1
 
 # Extract tag=tube from TW
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -50,26 +49,29 @@ tiddlywiki  --load ${INDEX} \
 echo "DEBUG : cat ~/.zen/tmp/CopierYoutube.json | jq -r"
 
 ###################################################################
-## URL EXTRACTION & TREATMENT
-## For this TAG, specific extract URL from text field and copy all video from links into tid.json
+## URL EXTRACTION & yt-dlp.cache.$PLAYER upgrade
 for YURL in $(cat ~/.zen/tmp/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
     echo "Detected $YURL"
     echo "Extracting video playlist"
 
         ### yt-dlp.command
     [[ ! $(cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.command 2>/dev/null | grep "$YURL") ]] \
-    && echo "$WISHKEY&$YURL" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
+    && echo "$PLAYER&$YURL" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
 
-    yt-dlp --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY
+    yt-dlp --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
 
 done # FINISH YURL loop
 
-## SORT UNIQ ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY
-cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY | sort | uniq > ~/.zen/tmp/yt-dlp.cache
-cp ~/.zen/tmp/yt-dlp.cache ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY
+## SORT UNIQ ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER | sort | uniq > ~/.zen/tmp/yt-dlp.cache
+cp ~/.zen/tmp/yt-dlp.cache ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+
+## UPDATE GLOBAL WITH PLAYER & SWARM yt-dlp NEEDS
+cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER > ~/.zen/tmp/yt-dlp.${PLAYER}.global ## PUT MINE FIRST
+cat ~/.zen/tmp/swarm/*/yt-dlp.cache.*  | sort | uniq >> ~/.zen/tmp/yt-dlp.${PLAYER}.global ## ADD SWARM TO GLOBAL
 
 ###################################################################
-[[ ! -s  ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
+[[ ! -s  ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
 ###################################################################
 
 ###################################################################
@@ -91,6 +93,7 @@ while read LINE;
         && echo "Swarm Found Tiddler" && TIDDLER="$MATCH"
 ###################################################################
 
+boucle=0
 
 if [[ ! ${TIDDLER} ]]; then
 ###################################################################
@@ -133,6 +136,10 @@ if [[ ! ${TIDDLER} ]]; then
         [[ ! -f "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] && ffmpeg -loglevel quiet -i "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
         [[ ! -f "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] && echo "No FILE -- CONTINUE --" && continue
         echo
+
+        ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
+        boucle=$((boucle+1))
+        [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED" && break
 
 ####################################################
         echo "FOUND : ~/.zen/tmp/yt-dlp/$ZFILE"
@@ -190,7 +197,7 @@ if [[ ! ${TIDDLER} ]]; then
     "sec": "'${SEC}'",
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
-    "tags": "'ipfs G1CopierYoutube ${WISHKEY} ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
   }
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
@@ -199,17 +206,17 @@ else
 ###################################################################
 # TIDDLER WAS IN CACHE
 ###################################################################
-
+    ## TODO : ADD EMAIL TO TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
     cp "${TIDDLER}" "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
 fi
 
 
 #################################################################
-### ADDING $YID.TW.json to TWNS INDEX.html
+### ADDING $YID.TW.json to ASTONAUTENS INDEX.html
 #################################################################
         echo "=========================="
-        echo "Adding $YID tiddler to TW /ipns/$TWNS "
+        echo "Adding $YID tiddler to TW /ipns/$ASTONAUTENS "
 
         rm -f ~/.zen/tmp/$IPFSNODEID/newindex.html
 
@@ -229,5 +236,7 @@ fi
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
         fi
 
-done  < ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$WISHKEY # FINISH YID loop 1
+done  < ~/.zen/tmp/yt-dlp.${PLAYER}.global # FINISH YID loop 1
+
+
 exit 0
