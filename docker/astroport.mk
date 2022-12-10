@@ -1,7 +1,10 @@
 COMPOSE_FILE_VDI                          := true
+COMPOSE_IGNORE_ORPHANS                    := true
 DOCKER_IMAGES_MYOS                        := x2go:xfce-debian
 ENV_VARS                                  += HOST_ASTROPORT_SERVICE_1234_TAGS
-HOST_ASTROPORT_SERVICE_1234_TAGS          ?= urlprefix-astroport.$(DOMAIN)/
+HOST_ASTROPORT_SERVICE_URIS               ?= $(patsubst %,astroport.%,$(APP_URIS))
+HOST_ASTROPORT_SERVICE_1234_TAGS          ?= $(call urlprefix,,$(HOST_ASTROPORT_SERVICE_1234_URIS))
+HOST_ASTROPORT_SERVICE_1234_URIS          ?= $(HOST_ASTROPORT_SERVICE_URIS)
 HOST_ASTROPORT_UFW_UPDATE                 := 1234/tcp 12245:12445/tcp 45720/tcp
 MAKE_VARS                                 += SSH_PORT User host
 SERVICE                                   := astroport
