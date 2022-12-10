@@ -8,6 +8,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 IPFSNODEID=$(ipfs id -f='<id>\n')
+export PLAYERFEEDS=""
 
 ME="${0##*/}"
 ######################################################################### CONNECT PLAYER WITH GCHANGE
