@@ -177,7 +177,7 @@ do
             cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
             ## TODO INSERT INTO $:/plugins/astroport/lightbeams/state/subscriptions
-
+            export PLAYERFEEDS="$ASTRONAUTENS\n$PLAYERFEEDS"
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
             echo "~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json"

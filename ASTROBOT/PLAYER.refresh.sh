@@ -119,11 +119,14 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"http://ipfs.localhost:5001"}]' > ~/.zen/tmp/${MOATS}/5001.json
-            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"https://ipfs.copylaradio.com"}]' > ~/.zen/tmp/${MOATS}/8080.json
+            [[ $isLAN ]] && APIGW="http://ipfs.localhost:5001" && IPFSGW="https://ipfs.copylaradio.com" \
+            || ( APIGW="https://$(hostname)/api" && IPFSGW="https://ipfs.copylaradio.com" )
+            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$APIGW'"}]' > ~/.zen/tmp/${MOATS}/5001.json
+            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$IPFSGW'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
                 ## UPDATE LightBeam Plugin Tiddler
-            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","tags":"","text":""}]' > ~/.zen/tmp/${MOATS}/friends.json
+            ## export PLAYERFEEDS from Gchange stars
+            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${PLAYERFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                             --import "$HOME/.zen/tmp/${MOATS}/5001.json" "application/json" \
