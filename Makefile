@@ -10,16 +10,17 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 all: install tests
 
 .PHONY: install
-install: upgrade build myos up player
+install: build myos up player
 
 .PHONY: migrate
 migrate-%: home := ~/.zen/game/players
 migrate-%:
-	[ ! -d /var/lib/docker/volumes/$(HOSTNAME)_$* ] \
-	&& $(RUN) $(SUDO) mkdir -p /var/lib/docker/volumes/$(HOSTNAME)_$* \
-	&& $(RUN) $(SUDO) cp -a $(if $($*),$($*)/,~/.$*/) /var/lib/docker/volumes/$(HOSTNAME)_$*/_data \
-	&& $(RUN) $(SUDO) chown -R $(HOST_UID):$(HOST_GID) /var/lib/docker/volumes/$(HOSTNAME)_$*/_data \
-	|| :
+	if $(SUDO) test ! -d /var/lib/docker/volumes/$(HOSTNAME)_$*; then \
+	  $(RUN) $(SUDO) mkdir -p /var/lib/docker/volumes/$(HOSTNAME)_$* \
+	   && $(RUN) $(SUDO) cp -a $(if $($*),$($*)/,~/.$*/) /var/lib/docker/volumes/$(HOSTNAME)_$*/_data \
+	   && $(RUN) $(SUDO) chown -R $(HOST_UID):$(HOST_GID) /var/lib/docker/volumes/$(HOSTNAME)_$*/_data \
+	  ; \
+	fi
 
 .PHONY: player
 player: STACK := User
@@ -45,5 +46,5 @@ shellcheck-%:
 tests: shellcheck
 
 .PHONY: upgrade
-upgrade: migrate-home migrate-ipfs
+upgrade: migrate-home migrate-ipfs install
 	echo "Welcome to myos docker land - make a user - make a player -"
