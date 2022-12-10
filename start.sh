@@ -140,7 +140,7 @@ select fav in  "${choices[@]}"; do
         echo  "Enter to continue. Ctrl+C to stop"
         read
         ipfs key rm $PLAYER; ipfs key rm $G1PUB;
-        for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
+        for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/ 2>/dev/null); do
             ipfs key rm $voeu
             [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done

@@ -117,10 +117,12 @@ if [[ ! ${TIDDLER} ]]; then
 
         #############################################################################
         ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
+        BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
         ## EXTRA PARAM TO TRY
         # --cookies-from-browser browser (xdg-settings get default-web-browser) allow member copies
         # --dateafter DATE --download-archive myarchive.txt
         yt-dlp  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+                    --cookies-from-browser $BROWSER \
                     --download-archive $HOME/.zen/.yt-dlp.list \
                     -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
                     --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \

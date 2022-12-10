@@ -45,7 +45,7 @@ for PLAYER in $(ls -t ~/.zen/game/players/); do
 
     ## MY PLAYER
     ipfs key export $G1PUB -o ~/.zen/tmp/${MOATS}/$PLAYER.key
-    ipfs key import $PLAYER ~/.zen/tmp/${MOATS}/$PLAYER.key
+    [[ ! $(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1) ]] && ipfs key import $PLAYER ~/.zen/tmp/${MOATS}/$PLAYER.key
     rm -f ~/.zen/tmp/${MOATS}/$PLAYER.key
 
     ## REFRESH CACHE
@@ -57,11 +57,10 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
     echo "Getting latest online TW..."
-    YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    echo "($YOU) /ipns/$ASTRONAUTENS $LIBRA"
-    [[ $YOU ]] && ipfs --timeout 30s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
-                        || curl -m 30 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
+    echo "/ipns/$ASTRONAUTENS on $LIBRA"
+    ipfs --timeout 60s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+    || curl -m 30 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
 
     ## PLAYER TW IS ONLINE ?
     if [ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html ]; then
