@@ -105,7 +105,7 @@ Nous utilisons TW comme table d'allocation et interface d'administration et de d
 
 TW bénéficie automatiquement d'un "service d'hébergement collectif distribué".
 
-Depuis la page de connexion (BIOS) de la "phase alpha" http://qwantic.com:1234
+Depuis la page de connexion (BIOS) de la "phase alpha" https://astroport.copylaradio.com
 cliquez sur le lien dans le "pop jaune (MBR)" pour atteindre le formulaire de création d'un nouveau.
 Cliquez sur le pop "jaune suivant (DApp)" (et rafraîchissez car cela peut prendre 30s pour être prêt).
 
@@ -124,11 +124,11 @@ Lignes de commandes
 
 ```
 ipfs ls Qme6a6RscGHTg4e1XsRrpRoNbfA6yojC6XNCBrS8nPSEox/
-ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG /tmp/vdoc.pub_the-barefoot-architect.pdf
+ipfs cat QmbfVUAyX6hsxTMAZY7MhvUmB3AkfLS7KqWihjGfu327yG > /tmp/vdoc.pub_the-barefoot-architect.pdf && xdg-open /tmp/vdoc.pub_the-barefoot-architect.pdf
 ```
 Après un passage par [ajouter_media.sh](/qo-op/Astroport.ONE/src/branch/master/ajouter_media.sh)
 
-Vos données son stockées [dans des Tiddlers](http://libra.copylaradio.com:8080/ipns/k51qzi5uqu5dioeckikst5f8jw1tbljom6acjbw9zerl3671921krs4nm1531r#:[tag[G1Films]])
+Vos données son stockées [dans des Tiddlers](https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dioeckikst5f8jw1tbljom6acjbw9zerl3671921krs4nm1531r#:[tag[G1Films]])
 
 ### Foret Enchantée - PROJET ASTROPORT.pdf
 
@@ -147,7 +147,7 @@ Comme un client qui commande, à qui on attribue un point relai qu'il devra cont
 
 chaque passerelle de l'essaim sert toujours la même page (voir "templates/index.http")
 
-http://tube.copylaradio.com:1234, informe où trouver la suite qui permet de découvrir la suite.
+https://astroport.copylaradio.com, informe où trouver la suite qui permet de découvrir la suite.
 
 ici pour informer de l'état de la commande (OK, ERROR)
 ```
@@ -167,7 +167,7 @@ _APID_ est la clef IPNS qui contient l'arborescence "json" en lecture
 Exemple pour l'application "G1Voeu" https://ipfs.copylaradio.com/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 
 Application "messaging"
-http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&messaging=on
+https://astroport.copylaradio.com/?salt=toto&pepper=toto&messaging=on
 
 Pour écrire une application on pourra utiliser "jsipfs"
 
@@ -177,7 +177,7 @@ https://js.ipfs.tech/
 Ajoutez l'appel API "testcraft" pour enregistrer vos json
 ?salt=toto&pepper=toto&testcraft=on&nodeid=_IPFDNODEID_&DATAID=_IPDSID_
 
-http://tube.copylaradio.com:1234/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
+https://astroport.copylaradio.com/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
 
 ```
 # APP = g1pub, messaging, testcraft, ....
@@ -215,7 +215,7 @@ Proposez vos "Templates"
 
 > [Simulateur Astronaute/Voeux](https://ncase.me/loopy/v1.1/?data=[[[3,646,229,0.5,%22Astronaute%22,5],[4,806,372,0.16,%22G1Voeu%22,3],[5,449,133,0.83,%22G1Talent%22,1],[6,928,124,0.5,%22Astronaute%22,0],[7,1055,293,0.5,%22Astronaute%22,0],[8,883,587,0.5,%22Astronaute%22,0],[10,691,54,0.5,%22G1Voeu%22,3]],[[3,5,82,1,0],[3,4,-87,1,0],[6,4,83,1,0],[4,5,176,1,0],[8,8,85,1,12],[8,4,-45,1,0],[7,4,34,1,0],[5,3,49,1,0],[7,7,101,1,225],[6,6,113,1,-84],[3,3,90,1,75],[5,4,-293,1,0],[3,10,34,1,0]],[],10%5D)
 
-> [Essaim Astroport.ONE](https://ncase.me/loopy/v1.1/?data=[[[1,419,351,1,%22Astroport.ONE%22,3],[2,506,530,1,%22Terrien%22,5],[3,499,95,1,%22IPFS%22,1],[4,272,225,1,%22Astroport.ONE%22,3],[5,620,297,0.16,%22Astroport.ONE%22,4],[7,927,69,0.66,%22Astroport.ONE%22,3],[8,798,175,0.66,%22Astroport.ONE%22,3]],[[2,1,94,-1,0],[1,2,89,1,0],[2,5,-122,1,0],[5,3,58,1,0],[3,5,25,1,0],[4,3,117,1,0],[3,4,-152,1,0],[1,3,60,1,0],[3,1,-18,1,0],[7,3,-44,1,0],[3,7,15,1,0],[8,3,37,1,0],[3,8,-47,1,0]],[[798,557,%22http%253A%252F%252Ftube.copylaradio.com%253A1234%250A(salt%2520%252F%2520pepper%2520%252F%2520email)%2520%253D%2520TW%2520%252B%2520AstroBot%2520API%22],[256,141,%22Station%2520Officielle%250A(Bootstrap%2520%252B%2520RoundRobin%2520DNS)%22],[868,332,%22D%25C3%25A9l%25C3%25A9gation%2520de%2520clef%250A(Tiers%2520de%2520confiance)%22]],9%5D)
+> [Essaim Astroport.ONE](https://ncase.me/loopy/v1.1/?data=[[[1,419,351,1,%22Astroport.ONE%22,3],[2,506,530,1,%22Terrien%22,5],[3,499,95,1,%22IPFS%22,1],[4,272,225,1,%22Astroport.ONE%22,3],[5,620,297,0.16,%22Astroport.ONE%22,4],[7,927,69,0.66,%22Astroport.ONE%22,3],[8,798,175,0.66,%22Astroport.ONE%22,3]],[[2,1,94,-1,0],[1,2,89,1,0],[2,5,-122,1,0],[5,3,58,1,0],[3,5,25,1,0],[4,3,117,1,0],[3,4,-152,1,0],[1,3,60,1,0],[3,1,-18,1,0],[7,3,-44,1,0],[3,7,15,1,0],[8,3,37,1,0],[3,8,-47,1,0]],[[798,557,%22https%253A%252F%252Fipfs.copylaradio.com%253A1234%250A(salt%2520%252F%2520pepper%2520%252F%2520email)%2520%253D%2520TW%2520%252B%2520AstroBot%2520API%22],[256,141,%22Station%2520Officielle%250A(Bootstrap%2520%252B%2520RoundRobin%2520DNS)%22],[868,332,%22D%25C3%25A9l%25C3%25A9gation%2520de%2520clef%250A(Tiers%2520de%2520confiance)%22]],9%5D)
 
 
 
