@@ -693,6 +693,14 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
 # FORMAT GENRES ["genre1","genre2"] # USE  IF YOU ACTIVATE KODI COMPATIBILITY
 GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
 
+    # CONVERT INPUT TO MP4 #######################
+    [[ $FILE_EXT != "mp4"  ]] \
+    && espeak "Converting to M P 4. Please wait" \
+    && echo "CONVERT TO MP4 : ffmpeg -loglevel quiet -i ${FILE_PATH}/${FILE_NAME} -c:v libx264 -c:a aac ${FILE_PATH}/$FILE_TITLE.mp4" \
+    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
+    && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4" \
+    && espeak "M P 4 ready"
+
 mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
 
 [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \

@@ -122,7 +122,7 @@ while true; do
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
     ############################################################################
-    [[ $URL == "/test"  || $URL == "" ]] && echo "test" && continue
+    [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "************************************************************************* "
     echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOST:1234 PORT"
