@@ -99,7 +99,8 @@ echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
 sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
-sudo chmod 600 /etc/ssmtp/ssmtp.conf
+sudo chmod 640 /etc/ssmtp/ssmtp.conf
+sudo chgrp mail /etc/ssmtp/ssmtp.conf
 
 echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
 

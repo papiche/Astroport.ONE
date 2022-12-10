@@ -121,7 +121,7 @@ RUN chmod +rx /usr/local/bin/cronlock
 
 # config ssmtp
 COPY templates/.ssmtprc /etc/ssmtp/ssmtp.conf
-RUN chmod 600 /etc/ssmtp/ssmtp.conf
+RUN chmod 640 /etc/ssmtp/ssmtp.conf && chgrp mail /etc/ssmtp/ssmtp.conf
 
 EXPOSE 1234 12345
 
