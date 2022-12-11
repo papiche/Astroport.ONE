@@ -14,8 +14,12 @@ ME="${0##*/}"
 echo "## RUNNING PLAYER.refresh"
 IPFSNODEID=$(ipfs id -f='<id>\n')
 
+PLAYERONE="$1"
+[[ ! $PLAYERONE ]] && PLAYERONE=$(ls -t ~/.zen/game/players/)
+
 ## RUNING FOR ALL LOCAL PLAYERS
-for PLAYER in $(ls -t ~/.zen/game/players/); do
+for PLAYER in $PLAYERONE; do
+    [[ ! -d ~/.zen/game/players/$PLAYERONE ]] && echo "BAD $PLAYERONE" && continue
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $PLAYER == "user" || $PLAYER == "zen" ]] && continue
     mkdir -p ~/.zen/tmp/${MOATS}
@@ -123,9 +127,11 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
             echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$APIGW'"}]' > ~/.zen/tmp/${MOATS}/5001.json
             echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$IPFSGW'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
-                ## UPDATE LightBeam Plugin Tiddler
-            ## export PLAYERFEEDS from Gchange stars
-            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${PLAYERFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
+                ## UPDATE LightBeam Plugin Tiddler $PLAYER_feed
+                # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name
+                # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
+            ## export FRIENDSFEEDS from Gchange stars
+            echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                             --import "$HOME/.zen/tmp/${MOATS}/5001.json" "application/json" \

@@ -172,13 +172,18 @@ do
                                 --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
             [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ]] && echo "NO ${FPLAYER} RSS - CONTINUE -" && continue
 
+            tiddlywiki --load ${FTW} \
+                                --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.lightbeam-key.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key'
+            [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json ]] && echo "NO ${FPLAYER} lightbeam-key - CONTINUE -" && continue
+            ASTRONAUTEFEED=$(cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json | jq -r .[].text)
+
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## PUSH DATA TO 12345 SWARM KEY
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
             cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
             ## TODO INSERT INTO $:/plugins/astroport/lightbeams/state/subscriptions
-            export PLAYERFEEDS="$ASTRONAUTENS\n$PLAYERFEEDS"
+            export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
             echo "~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json"
