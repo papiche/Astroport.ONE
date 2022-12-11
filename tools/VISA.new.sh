@@ -244,8 +244,18 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         rm -f ~/.zen/tmp/${MOATS}/myIP.2
 ###########
 
+    # Create"$PLAYER_feed" Key
+    ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.feed "$SALT" "Feed"
+    FEEDNS=$(ipfs key import  "$PLAYER_feed" -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.feed)
+
+    ## MAKE LightBeam Plugin Tiddler $PLAYER_feed
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
+
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+                            --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
