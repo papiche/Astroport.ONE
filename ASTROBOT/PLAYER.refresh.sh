@@ -15,10 +15,10 @@ echo "## RUNNING PLAYER.refresh"
 IPFSNODEID=$(ipfs id -f='<id>\n')
 
 PLAYERONE="$1"
-[[ ! $PLAYERONE ]] && PLAYERONE=$(ls -t ~/.zen/game/players/)
+[[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/))
 
 ## RUNING FOR ALL LOCAL PLAYERS
-for PLAYER in $PLAYERONE; do
+for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/$PLAYERONE ]] && echo "BAD $PLAYERONE" && continue
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $PLAYER == "user" || $PLAYER == "zen" ]] && continue
