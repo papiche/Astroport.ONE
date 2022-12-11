@@ -127,9 +127,6 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
             echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$APIGW'"}]' > ~/.zen/tmp/${MOATS}/5001.json
             echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$IPFSGW'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
-                ## UPDATE LightBeam Plugin Tiddler $PLAYER_feed
-                # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name
-                # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
             ## export FRIENDSFEEDS from Gchange stars
             echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 

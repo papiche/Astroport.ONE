@@ -107,6 +107,8 @@ if [[ ! ${TIDDLER} ]]; then
         TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
 
+        start=`date +%s`
+
         echo ".... Downloading $TITLE.mp4"
         espeak "$TITLE" > /dev/null 1>&2
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
@@ -180,6 +182,9 @@ if [[ ! ${TIDDLER} ]]; then
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><br>{{!!duree}}<br><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
+        end=`date +%s`
+        dur=`expr $end - $start`
+
         echo "Creating Youtube ${YID} tiddler : G1CopierYoutube !"
         echo $TEXT
 
@@ -198,6 +203,7 @@ if [[ ! ${TIDDLER} ]]; then
     "mime": "'${MIME}'",
     "size": "'${FILE_BSIZE}'",
     "sec": "'${SEC}'",
+    "dur": "'${dur}'",
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
     "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
