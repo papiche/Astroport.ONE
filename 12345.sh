@@ -555,7 +555,8 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
              [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
 
             ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
-            # /.zen/Astropor.ONE/ajouter_media.sh "$(urldecode $wsource)" "$wtype" "$QRCODE" &
+            # CHOICE = "Video" Page MP3 Web
+            # /.zen/Astropor.ONE/ajouter_media.sh "$(urldecode $wsource)" "$PLAYER" "$CHOICE" &
             echo "## Insertion tiddler : G1CopierYoutube"
             echo '[
   {

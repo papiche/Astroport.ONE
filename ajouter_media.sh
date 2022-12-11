@@ -32,8 +32,12 @@ alias espeak='espeak 1>&2>/dev/null'
 [[ $(which ffmpeg) == "" ]] && echo "ERREUR! Installez ffmpeg" && echo "sudo apt install ffmpeg" && exit 1
 [[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
 
+URL="$1"
+PLAYER="$2"
+CHOICE="$3"
+
 # Check who is .current PLAYER
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 [[ ${PLAYER} == "" ]] \
 && espeak "YOU MUST CONNECT A PLAYER" \
@@ -64,11 +68,10 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
-URL="$1"
 if [ $URL ]; then
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" Page MP3 Web)
+    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" Page MP3 Web) || IMPORT="$CHOICE"
     [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
@@ -141,8 +144,8 @@ espeak "Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
-[[ $CHOICE == "" ]] && exit 1
+[ ! $2 ] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
+[[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
 CAT=$(echo "${CHOICE}" | awk '{print tolower($0)}')
@@ -171,7 +174,7 @@ case ${CAT} in
 
     espeak "Ready to record your webcam"
 
-    zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
+    [ ! $2 ] && zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
 
     ## RECORD WEBCAM VIDEO
     ${MY_PATH}/tools/vlc_webcam.sh
@@ -193,8 +196,8 @@ case ${CAT} in
     espeak "youtube : video copying"
 
 YTURL="$URL"
-[[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 300 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
-[[ $YTURL == "" ]] && exit 1
+[ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 300 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
+[[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
 
 REVSOURCE="$(echo "$YTURL" | awk -F/ '{print $3}' | rev)_"
 
@@ -205,10 +208,13 @@ mkdir -p ${YTEMP}
 # youtube-dl $YTURL
 echo "VIDEO $YTURL"
 
-/usr/local/bin/youtube-dl -f '[ext=mp4]+best[height<=480]+[filesize<300M]' \
---cookies-from-browser $BROWSER \
---no-playlist --write-info-json \
---no-mtime -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" $YTURL
+/usr/local/bin/youtube-dl  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+                --cookies-from-browser $BROWSER \
+                --download-archive $HOME/.zen/.yt-dlp.list \
+                -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
+                --no-playlist --write-info-json --write-description --no-get-comments \
+                --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
+                --no-mtime -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" $YTURL
 
 # Get filename, extract ID, make destination dir and move copy.
 YFILE=$(ls -S ${YTEMP} | head -n 1)
@@ -290,7 +296,7 @@ rm -Rf ${YTEMP}
         cd ~/.zen/tmp/
 
         URL=$(echo $URL | grep -Eo '^http[s]?://[^/]+')
-        [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien du site Web à copier" --text "Indiquez le lien (URL)" --entry-text="")
+        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien du site Web à copier" --text "Indiquez le lien (URL)" --entry-text="")
 
         ## Extract http(s)://domain.tld
         URL=$(echo $URL | grep -Eo '^http[s]?://[^/]+')     # URL="https://discuss.ipfs.io"
@@ -402,11 +408,11 @@ echo '[
         ## EVOLVE TO ARTICLE
         # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
-        [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien de la page à convertir en PDF" --text "Indiquez le lien (URL)" --entry-text="")
+        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien de la page à convertir en PDF" --text "Indiquez le lien (URL)" --entry-text="")
 
         if [[ $URL != "" ]]; then
     ## record one page to PDF
-            [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
+            [ ! $2 ] && [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
 
             cd ~/.zen/tmp/ && rm -f output.pdf
 
@@ -418,9 +424,9 @@ echo '[
         if [[ $URL == "" ]]; then
 
             # SELECT FILE TO ADD TO ASTROPORT/KODI
-            FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
+            [ ! $2 ] && FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
             echo "${FILE}"
-            [[ $FILE == "" ]] && exit 1
+            [[ $FILE == "" ]] && echo "NO FILE" && exit 1
 
             # Remove file extension to get file name => STITLE
             FILE_PATH="$(dirname "${FILE}")"
@@ -438,10 +444,10 @@ echo '[
 
         CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
 
-        TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom de fichier à donner à cette page ? " --entry-text="${CTITLE}")
-        [[ $TITLE == "" ]] && exit 1
-        FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
+        [ ! $2 ] && TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom de fichier à donner à cette page ? " --entry-text="${CTITLE}") || TITLE="$CTITLE"
+        [[ "$TITLE" == "" ]] && echo "NO TITLE" && exit 1
 
+        FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
         REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev | detox --inline)_"
 
         MEDIAID="$REVSOURCE$(echo "${TITLE}" | detox --inline)"
@@ -468,15 +474,15 @@ echo '[
 
         espeak " Youtube music copying. Please help us to make the Web your Web"
 
-zenity --warning --width 600 --text 'DEVELOPPEMENT ZONE - https://git.p2p.legal - P2P INTERNET FACTORY'
+[ ! $2 ] && zenity --warning --width 600 --text 'DEVELOPPEMENT ZONE - https://git.p2p.legal - P2P INTERNET FACTORY'
 
 # Create TEMP directory
 YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
 mkdir -p ${YTEMP}
 
 YTURL="$URL"
-[[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Extraction MP3 depuis Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
-[[ $artist == "" ]] && exit 1
+[ ! $2 ] && [[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Extraction MP3 depuis Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
+[[ $artist == "" ]] && echo "NO COPY TO MAKE" && exit 1
 
 ## CHECK if artist is LINK or ID
 length=${#artist}
@@ -484,7 +490,7 @@ islink=$(echo "$artist" | grep "http")
 if [[ ! $islink && $length != 11 ]]
 then
     # Ask for song name
-    song=$(zenity --entry --width 300 --title "Titre à chercher sur Youtube" --text "Titre recherché" --entry-text="")
+    [ ! $2 ] && song=$(zenity --entry --width 300 --title "Titre à chercher sur Youtube" --text "Titre recherché" --entry-text="")
     [[ $song == "" ]] && espeak "I was expecting a song name. Sorry. I Am out." && exit 1
 
     # Download mp3 from 1st youtube search video result (--write-info-json)
@@ -733,11 +739,11 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 #  \_/ |_|\__,_|\___|\___/
 #                           TIMESTAMP INDEX
 
-    video | obs)
+    video)
 
     espeak "Add your personnal video in TW"
 
-    zenity --warning --width 600 --text 'DEV ZONE - HELP US - REGISTER - https://git.p2p.legal'
+    zenity --warning --width 600 --text 'DEV ZONE - HELP US - https://git.p2p.legal'
 
     ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
     # SELECT FILE TO ADD TO ASTROPORT/KODI
@@ -789,7 +795,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 ########################################################################
     *)
 
-    zenity --warning --width ${large} --text "Impossible d'interpréter votre commande $CAT"
+    [ ! $2 ] && zenity --warning --width ${large} --text "Impossible d'interpréter votre commande $CAT"
     exit 1
 
     ;;
@@ -871,24 +877,25 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
 fi
 
-espeak "Updating T W"
+if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
+    espeak "Updating T W"
 
-########################################################################
-## ADD TIDDLER TO TW
-########################################################################
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-## GETTING LAST TW via IPFS or HTTP GW
-LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-rm -f ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
-[[ $YOU ]] && echo " ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
-[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
-[[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
-[[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
-## TODO : CHECK CACHE LAST MODIFIED
-echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
+    ########################################################################
+    ## ADD TIDDLER TO TW
+    ########################################################################
+    echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    ## GETTING LAST TW via IPFS or HTTP GW
+    LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    rm -f ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
+    [[ $YOU ]] && echo " ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
+    [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
+    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
+    ## TODO : CHECK CACHE LAST MODIFIED
+    echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
-[[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
-###############################
+    [[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
+    ###############################
 
     echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
     tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
@@ -922,8 +929,16 @@ echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
     fi
 
+    espeak "OK We did it"
+
+else
+
+    espeak "Sorry. No Tiddler found"
+
+fi
+
 end=`date +%s`
 dur=`expr $end - $start`
-espeak "OK We did it and It tooks $dur seconds to acomplish"
+espeak "It tooks $dur seconds to acomplish"
 
 exit 0

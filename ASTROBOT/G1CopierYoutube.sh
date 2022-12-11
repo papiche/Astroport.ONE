@@ -232,7 +232,7 @@ fi
 # --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
 
         if [[ -s ~/.zen/tmp/$IPFSNODEID/newindex.html ]]; then
-            echo "$$$ Mise à jour ${INDEX}"
+            echo "===> Mise à jour ${INDEX}"
             cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX}
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$IPFSNODEID/newindex.html"
