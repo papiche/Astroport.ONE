@@ -93,7 +93,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeianfzhqxzj3gaftabguuapp3qcmauuk7jnqwywihur2a42cwgzcie"
+TWMODEL="/ipfs/bafybeigkzns3u2aq2smcmaomhz6n35d2icstty3geqibf2ho4ysljvbcmq"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -118,7 +118,7 @@ PSEUDO=${PLAYER%%[0-9]*}
 [[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO
 PSEUDO=${PSEUDO,,}
 PSEUDO=${PSEUDO%%[0-9]*}
-[[ $(ls ~/.zen/game/players/$PSEUDO* 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
+[[ $(ls ~/.zen/game/players/$PSEUDO 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 
 # PSEUDO=${PSEUDO,,} #lowercase
 [[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2} \
@@ -227,30 +227,34 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
 ###########
-        echo "# CRYPTO SELFT ENCODING secret.dunikey put in Tiddler MadeInZion._SECRET_ "
+        echo "# CRYPTO ENCODING  _SECRET_ "
         echo $myIP > ~/.zen/tmp/${MOATS}/myIP
         $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/$PLAYER/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 ###########
-        echo "# CRYPTO DECODING TEST"
+        echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/${MOATS}/myIP.$G1PUB.enc.2
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/myIP.2
 ###########
         ## CRYPTO PROCESS VALIDATED
-        [[ -s ~/.zen/tmp/${MOATS}/myIP.2 ]] && echo "NATOOLS ENCODED secret LOADED" \
+        [[ -s ~/.zen/tmp/${MOATS}/myIP.2 ]] && echo "NATOOLS LOADED" \
                                                         || sed -i "s~$ENCODING~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
         rm -f ~/.zen/tmp/${MOATS}/myIP.2
 ###########
 
     # Create"$PLAYER_feed" Key
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.feed "$SALT" "Feed"
-    FEEDNS=$(ipfs key import  "$PLAYER_feed" -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.feed)
+    FEEDNS=$(ipfs key import "$PLAYER_feed" -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.feed)
 
     ## MAKE LightBeam Plugin Tiddler $PLAYER_feed
+    # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
+
+    echo "$PLAYER_feed"
+    cat ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -259,7 +263,7 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
                             --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
                             --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
-        [[ -f ~/.zen/tmp/${MOATS}/newindex.html ]] && cp ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         ## ID CARD & QRCODE
         convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
@@ -308,11 +312,12 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
 qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
 
-echo; echo "Création de votre Clef et QR codes d'accès au niveau Astroport Ŋ1"; sleep 1
+echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
-echo; echo "*** HOME : ~/.zen/game/players/$PLAYER/"; sleep 1
-echo "*** PLAYER : $PLAYER";
-echo; echo "VOTRE TW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"; sleep 1
+echo "--- PLAYER : $PLAYER";
+echo; echo "VISA : https://ipfs.copylaradio.com/ipns/${IASTRO}"
+echo; echo "+ TW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
+echo; echo "+ RSS : https://ipfs.copylaradio.com/ipns/${FEEDNS}"; sleep 1
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1

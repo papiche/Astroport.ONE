@@ -54,15 +54,17 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     # SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials' 2>/dev/null)
 
     ########################################################################
-    echo "${PLAYER} GCHANGE+ PROFILE https://gchange.fr"
+    echo "GCHANGE+ PROFILE https://gchange.fr"
     # echo "set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}""
     ########################################################################
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
 
+echo
+
     ## SET CESIUM WALLET
     ########################################################################
-    echo "${PLAYER} CESIUM+ PROFILE https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
+    echo "CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
     ########################################################################
     $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
@@ -75,8 +77,8 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "ht
 
 ########################################################################
 
-echo "### ${PLAYER}  ##########################################################"
-echo "SCANNING - $G1PUB Gchange FRIENDS"
+echo "### ${PLAYER}  #################"
+echo "SCANNING - $G1PUB STAR FRIENDS"
 echo "########################################################################"
 ################## CHECKING WHO GAVE ME STARS
 ################## BOOTSTRAP LIKES THEM BACK
@@ -90,7 +92,7 @@ echo "Checking received stars"
 -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
 -n "https://data.gchange.fr" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
 
-[[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Niveau Ŋ0 - Activez le niveau de confiance Ŋ1" && exit 0
+[[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1 sur GChange" && exit 0
 
 cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
 # echo "cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r" # DEBUG

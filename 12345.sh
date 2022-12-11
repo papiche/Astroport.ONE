@@ -471,7 +471,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 ## CREATE PSEUDO FROM
                 if [[ ! $PSEUDO ]]; then
                     PSEUDO=$(echo ${EMAIL} | cut -d '@' -f 1)
-                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:3}
+                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:4}
                 fi
 
                 if [[ ! -d ~/.zen/game/players/${EMAIL} ]]; then
@@ -556,7 +556,6 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
             # CHOICE = "Video" Page MP3 Web
             ~/.zen/Astropor.ONE/ajouter_media.sh "$(urldecode $wsource)" "$PLAYER" "$CHOICE" &
-
 
             echo "## Insertion tiddler : G1CopierYoutube"
             echo '[
