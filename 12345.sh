@@ -541,22 +541,23 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         ## Astroport.ONE local use QRCODE Contains ${WHAT} G1PUB
         QRCODE=$(echo $URL | cut -d ' ' -f2 | cut -d '=' -f 2 | cut -d '&' -f 1)   && echo "QRCODE : $QRCODE"
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
-        WHAT=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
+        PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/${WHAT} || ${WHAT} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO ${WHAT} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+        [[ ! -d ~/.zen/game/players/${PLAYER} || ${PLAYER} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO ${PLAYER} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
         ## USE SECOND HTTP SERVER TO RECEIVE PASS
 
-        [[ ${arr[2]} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - MISSING ACTION"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
         ## Demande de copie d'une URL reçue.
         if [[ ${arr[2]} == "url" ]]; then
             wsource="${arr[3]}"
-             [[ ${arr[4]} == "type" ]] && wtype="${arr[5]}" || wtype="Youtube"
+             [[ ${arr[4]} == "type" ]] && CHOICE="${arr[5]}" || CHOICE="Youtube"
 
             ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
             # CHOICE = "Video" Page MP3 Web
-            # /.zen/Astropor.ONE/ajouter_media.sh "$(urldecode $wsource)" "$PLAYER" "$CHOICE" &
+            ~/.zen/Astropor.ONE/ajouter_media.sh "$(urldecode $wsource)" "$PLAYER" "$CHOICE" &
+
+
             echo "## Insertion tiddler : G1CopierYoutube"
             echo '[
   {
@@ -571,6 +572,11 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
 
             (echo "$HTTPCORS OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
+        else
+
+            (echo "$HTTPCORS ERROR - ${arr[2]} - ${arr[3]} UNKNOWN"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
         fi
 
     fi
