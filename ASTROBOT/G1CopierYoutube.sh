@@ -52,13 +52,21 @@ echo "DEBUG : cat ~/.zen/tmp/CopierYoutube.json | jq -r"
 ## URL EXTRACTION & yt-dlp.cache.$PLAYER upgrade
 for YURL in $(cat ~/.zen/tmp/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
     echo "Detected $YURL"
-    echo "Extracting video playlist"
+    echo "Extracting video playlist into yt-dlp.cache.$PLAYER"
 
-        ### yt-dlp.command
-    [[ ! $(cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.command 2>/dev/null | grep "$YURL") ]] \
-    && echo "$PLAYER&$YURL" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
-
-    yt-dlp --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+    ### yt-dlp.command
+    CMD=$(cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
+    if [[ ! $CMD ]]; then
+        echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
+    else
+        lastrun=$(echo "$CMD" | rev | cut -d ':' -f 1 | rev) && echo "$CMD"
+        duree=$(expr ${MOATS} - $lastrun)
+        [[ ! $lastrun ]] && echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command && duree=604800000
+        # ONE WEEK NEW SCAN
+        if [[ duree -ge 604800000 ]]; then
+            yt-dlp --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+        fi
+    fi
 
 done # FINISH YURL loop
 
