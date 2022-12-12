@@ -14,6 +14,10 @@ ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+echo "cron_VRFY.sh ON"
+###################################################
+${MY_PATH}/tools/cron_VRFY.sh ON
+
 echo "(RE)STARTING 12345.sh"
 ###################################################
 killall 12345.sh; killall "_12345.sh"; killall nc
