@@ -58,6 +58,7 @@ for YURL in $(cat ~/.zen/tmp/CopierYoutube.json | jq -r '.[].text' | grep 'http'
     CMD=$(cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
     if [[ ! $CMD ]]; then
         echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
+        echo "NOUVEAU CANAL $PLAYER&$YURL:$MOATS"
     else
         lastrun=$(echo "$CMD" | rev | cut -d ':' -f 1 | rev) && echo "$CMD"
         duree=$(expr ${MOATS} - $lastrun)
@@ -81,7 +82,7 @@ cat ~/.zen/tmp/swarm/*/yt-dlp.cache.*  | sort | uniq >> ~/.zen/tmp/yt-dlp.${PLAY
 ###################################################################
 [[ ! -s  ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
 ###################################################################
-
+boucle=0
 ###################################################################
 # PROCESS YOUTUBEID VIDEO DOWNLOAD AND CREATE TIDDLER in TW
 ###################################################################
@@ -101,15 +102,13 @@ while read LINE;
         && echo "Swarm Found Tiddler" && TIDDLER="$MATCH"
 ###################################################################
 
-boucle=0
-
 if [[ ! ${TIDDLER} ]]; then
 ###################################################################
 # COPY VIDEO AND MAKE TIDDLER
 ###################################################################
-
         ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
         echo "COPIE : $ZYURL"
+        [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED" && continue
 
         TITLE="$(yt-dlp --print "%(title)s" "${ZYURL}")"
         TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
@@ -117,8 +116,7 @@ if [[ ! ${TIDDLER} ]]; then
 
         start=`date +%s`
 
-        echo ".... Downloading $TITLE.mp4"
-        espeak "$TITLE" > /dev/null 1>&2
+        echo ".... Trying to download $TITLE.mp4"
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # (bv*[height<=720][vcodec~='^((he|a)vc|h26[45])']+ba)
@@ -151,8 +149,7 @@ if [[ ! ${TIDDLER} ]]; then
 
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         boucle=$((boucle+1))
-        espeak "$bouche video" > /dev/null 1>&2
-        [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED" && break
+        espeak "video copy number $bouche" > /dev/null 1>&2
 
 ####################################################
         echo "FOUND : ~/.zen/tmp/yt-dlp/$ZFILE"

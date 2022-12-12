@@ -49,7 +49,7 @@ do
     echo "$uqname.mp4 conflict"
 
     ## CHECK & MANAGE COPY
-    if [[ $(find $HOME/Astroport -name "$uqname*" -type f -print) ]];
+    if [[ $(find $HOME/Astroport -name "$uqname.mp4" -type f -print) ]];
     then
         echo "COPY ALREADY IN $HOME/Astroport/"
         continue
@@ -58,7 +58,10 @@ do
             uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
             echo "COPY ~/astroport/$uqname.mp4 DONE"
             ## ARE WE RUNNING ON ASTROPORT STATION?
-            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
+            # [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
+            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] \
+            && mkdir -p ~/Astroport/film/$uqlink && mv "$HOME/Astroport/$uqname.mp4" ~/Astroport/film/$uqlink/ \
+            && ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh "$HOME/Astroport/film/$uqlink" "$uqname.mp4" "$(cat ~/.zen/game/players/.current/.g1pub)"
     fi
 done
 echo
