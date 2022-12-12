@@ -44,9 +44,14 @@ espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
-espeak "Restarting API" > /dev/null 2>&1
+
 ## OPEN API ENGINE
-~/.zen/Astroport.ONE/start.sh > ~/.zen/tmp/12345.log &
+espeak "Restarting API" > /dev/null 2>&1
+[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
+
+~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+PID=$!
+echo $PID > ~/.zen/.pid
 
 if [[ ! $isLAN ]]; then
     ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
