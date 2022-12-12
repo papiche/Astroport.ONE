@@ -151,8 +151,8 @@ select fav in  "${choices[@]}"; do
         done
         echo "REMOVE GCHANGE PROFILE"
         $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://data.gchange.fr erase
-        echo "REMOVE CESIUM+"
-        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
+        #~ echo "REMOVE CESIUM+"
+        #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
         rm -Rf ~/.zen/game/players/$PLAYER
 

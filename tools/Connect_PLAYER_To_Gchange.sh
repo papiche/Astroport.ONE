@@ -61,19 +61,20 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
 
 echo
+    ## TODO : GET THE MEMBER KEY TO SEND MESSAGE THROUGH CESIUM+
 
-    ## SET CESIUM WALLET
-    ########################################################################
-    echo "CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
-    ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" #CESIUM+
-    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
+    #~ ## SET CESIUM WALLET
+    #~ ########################################################################
+    #~ echo "CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
+    #~ ########################################################################
+    #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" #CESIUM+
+    #~ [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
 
 fi
 
 ## GET PROFILE BACK
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
+#~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
 

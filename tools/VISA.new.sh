@@ -160,6 +160,14 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     ## CREATE Player personnal files storage and IPFS publish directory
     mkdir -p ~/.zen/game/players/$PLAYER # Prepare PLAYER datastructure
 
+        # PLAYER=geg-la_debrouille@super.chez-moi.com
+YUSER=$(echo $PLAYER | cut -d '@' -f1)    # YUSER=geg-la_debrouille
+LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
+CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
+YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
+NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME"
+echo "$NID"
+
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
     # Create Player "IPNS Key" (key import)
@@ -221,7 +229,8 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        sed -i "s~ipfs.infura.io~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # USELESS ?!
+        sed -i "s~tube.copylaradio.com~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~ipfs.copylaradio.com~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 #
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
@@ -245,23 +254,23 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 ###########
 
     # Create"$PLAYER_feed" Key
-    ${MY_PATH}/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/secret.feed "$SALT" "Feed"
-    FEEDNS=$(ipfs key import "$PLAYER_feed" -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/secret.feed)
+    FEEDNS=$(ipfs key gen "$PLAYER_feed")
 
     ## MAKE LightBeam Plugin Tiddler $PLAYER_feed
     # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
-    echo "$PLAYER_feed"
-    cat ~/.zen/tmp/${MOATS}/lightbeam-key.json
+    ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
+    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~$NID~g" > ~/.zen/tmp/${MOATS}/local.api.json
+    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed -i "s~_NID_~https://ipfs.copylaradio.com~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
-                            --import ~/.zen/Astroport.ONE/templates/data/local.api.json "application/json" \
-                            --import ~/.zen/Astroport.ONE/templates/data/local.gw.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
         [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
