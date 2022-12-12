@@ -191,7 +191,7 @@ VOLUME "/home/$USER/Astroport"
 
 # homedir
 RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport" \
- && chown "$USER" "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport"
+ && chown -R "$USER" "/home/$USER"
 
 HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
 
