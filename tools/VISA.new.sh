@@ -29,7 +29,8 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 ################################################################################
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+[[ ! $myIP || $isLAN ]] && myIP="localhost"
+
 ################################################################################
 
 ## CHECK if PLAYER resolve any ASTRONAUTENS
@@ -165,8 +166,12 @@ YUSER=$(echo $PLAYER | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME"
-echo "$NID"
+[[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
+[[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
+
+    ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
+    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~$WID~g" > ~/.zen/tmp/${MOATS}/local.api.json
+    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed -i "s~_NID_~$NID~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
@@ -237,33 +242,28 @@ echo "$NID"
 
 ###########
         echo "# CRYPTO ENCODING  _SECRET_ "
-        echo $myIP > ~/.zen/tmp/${MOATS}/myIP
         $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/$PLAYER/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/${MOATS}/myIP.$G1PUB.enc.2
-        $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/myIP.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/myIP.2
+        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
+        $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
 ###########
         ## CRYPTO PROCESS VALIDATED
-        [[ -s ~/.zen/tmp/${MOATS}/myIP.2 ]] && echo "NATOOLS LOADED" \
+        [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
                                                         || sed -i "s~$ENCODING~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
-        rm -f ~/.zen/tmp/${MOATS}/myIP.2
+        rm -f ~/.zen/tmp/${MOATS}/crypto.2
 ###########
 
     # Create"$PLAYER_feed" Key
-    FEEDNS=$(ipfs key gen "$PLAYER_feed")
+    FEEDNS=$(ipfs key gen "${PLAYER}_feed")
 
     ## MAKE LightBeam Plugin Tiddler $PLAYER_feed
     # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
-
-    ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
-    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~$NID~g" > ~/.zen/tmp/${MOATS}/local.api.json
-    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed -i "s~_NID_~https://ipfs.copylaradio.com~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -324,7 +324,7 @@ qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https:/
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
 echo "--- PLAYER : $PLAYER";
-echo; echo "VISA : https://ipfs.copylaradio.com/ipns/${IASTRO}"
+echo; echo "VISA : https://ipfs.copylaradio.com/ipfs/${IASTRO}"
 echo; echo "+ TW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
 echo; echo "+ RSS : https://ipfs.copylaradio.com/ipns/${FEEDNS}"; sleep 1
 

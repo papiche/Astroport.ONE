@@ -28,7 +28,7 @@ MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n UN MESSAGE POUR VOUS.\n\nAstroport
 
 echo "
 ########################################################################
-# EMAIL $SUBJECT $messfile TO $mail
+# $SUBJECT + $messfile -> $mail
 ########################################################################"
 
 

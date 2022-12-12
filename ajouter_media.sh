@@ -40,12 +40,12 @@ CHOICE="$3"
 [[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 [[ ${PLAYER} == "" ]] \
-&& espeak "YOU MUST CONNECT A PLAYER" \
-&& OUTPUT=$(zenity --forms --width 480 --title="CONNEXION" --text="Ecrivez la formule magique" --separator="~" --add-entry="Phrase 1" --add-entry="Phrase 2") \
-&& SALT=$(awk -F '~' '{print $1}' <<<$OUTPUT) \
-&& PEPPER=$(awk -F '~' '{print $2}' <<<$OUTPUT) \
-&& PLAYER=$(zenity --entry --width 300 --title "PLAYER" --text "Indiquez votre email" --entry-text="user@domain.tld") \
-&& ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER" "$PLAYER"
+&& players=($(ls ~/.zen/game/players 2>/dev/null)) \
+&& espeak "PLEASE CONNECT A PLAYER" \
+&& OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
+&& [[ $OUTPUT ]] && PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
+
+[[ ${PLAYER} == "" ]] && exit 1
 
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 espeak "Hello $PSEUDO"
@@ -144,7 +144,7 @@ espeak "Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[ ! $2 ] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
@@ -482,12 +482,13 @@ mkdir -p ${YTEMP}
 
 YTURL="$URL"
 [ ! $2 ] && [[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Extraction MP3 depuis Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
-[[ $artist == "" ]] && echo "NO COPY TO MAKE" && exit 1
+[[ $YTURL == "" ]] && [[ $artist == "" ]] && echo "NO COPY TO MAKE" && exit 1
 
 ## CHECK if artist is LINK or ID
 length=${#artist}
 islink=$(echo "$artist" | grep "http")
-if [[ ! $islink && $length != 11 ]]
+
+if [[ $YTURL == "" && $islink == "" && $length != 11 ]]
 then
     # Ask for song name
     [ ! $2 ] && song=$(zenity --entry --width 300 --title "Titre à chercher sur Youtube" --text "Titre recherché" --entry-text="")
@@ -502,12 +503,13 @@ then
 
 else
 
-# artist is the URL ot the song
+[[ $YTURL == "" ]] && YTURL="$artist"
+
 /usr/local/bin/youtube-dl \
 --cookies-from-browser $BROWSER \
 --ignore-errors --no-mtime \
 --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
---extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist"
+--extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$YTURL"
 
 fi
 
