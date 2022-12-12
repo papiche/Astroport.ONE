@@ -19,7 +19,7 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
 [[ $isLAN ]] && myHOST="ipfs.localhost" && myHOSTPort="ipfs.localhost:8080" && myHTTP="http://" && myASTROPORT="http://astroport.localhost:1234" ## LAN STATION
-[[ ! $isLAN ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
+[[ ! $isLAN || $USER="zen" ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
 
 PORT=12345
 
@@ -80,7 +80,9 @@ while true; do
 
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-    [[ ! $maprunning ]] && ($MY_PATH/_12345.sh &) && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myHTTP}${myHOST}:'12345 (ᵔ◡◡ᵔ)'
+    [[ ! $maprunning ]] \
+    && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myHTTP}${myHOST}:'12345 (ᵔ◡◡ᵔ)' \
+    && exec $MY_PATH/_12345.sh &
 
     ############### ACTIVATE USE ON QUICK IPFS DRIVE
     ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP

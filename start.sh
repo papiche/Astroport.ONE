@@ -22,7 +22,8 @@ echo "(RE)STARTING 12345.sh"
 ###################################################
 killall 12345.sh; killall "_12345.sh"; killall nc
 mkdir -p ~/.zen/tmp
-~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+exec ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+PID=$!
 
 sleep 1
 echo "HTTP API :  http://$myIP:1234"
