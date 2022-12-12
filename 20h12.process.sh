@@ -37,6 +37,8 @@ git pull
 killall 12345.sh
 killall _12345.sh
 killall nc
+killall command.sh
+killall start.sh
 
 espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
@@ -44,7 +46,7 @@ espeak "Players refresh" > /dev/null 2>&1
 
 espeak "Restarting API" > /dev/null 2>&1
 ## OPEN API ENGINE
-~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+~/.zen/Astroport.ONE/start.sh > ~/.zen/tmp/12345.log &
 
 if [[ ! $isLAN ]]; then
     ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)

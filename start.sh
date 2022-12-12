@@ -20,15 +20,19 @@ ${MY_PATH}/tools/cron_VRFY.sh ON
 
 echo "(RE)STARTING 12345.sh"
 ###################################################
-killall 12345.sh; killall "_12345.sh"; killall nc
+[[ ~/.zen/.pid ]] && killall "command.sh"; kill -9 $(cat ~/.zen/.pid)
+# killall "12345.sh"; killall "_12345.sh"; killall "nc";
 mkdir -p ~/.zen/tmp
+
 exec ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 PID=$!
+echo $PID > ~/.zen/.pid
 
-sleep 1
 echo "HTTP API :  http://$myIP:1234"
+sleep 2
 cat ~/.zen/tmp/12345.log
 echo "API DEBUG : tail -f ~/.zen/tmp/12345.log"
 ###################################################
 
 ${MY_PATH}/command.sh
+

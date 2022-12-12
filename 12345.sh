@@ -19,7 +19,7 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
 [[ $isLAN ]] && myHOST="ipfs.localhost" && myHOSTPort="ipfs.localhost:8080" && myHTTP="http://" && myASTROPORT="http://astroport.localhost:1234" ## LAN STATION
-[[ ! $isLAN || $USER="zen" ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
+[[ ! $isLAN || $USER == "zen" ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
 
 PORT=12345
 
@@ -31,7 +31,7 @@ mkdir -p ~/.zen/tmp/coucou/
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  ${myHTTP}${myHOST}:1234/?salt=totodu56&pepper=totodu56&getipns " && exit 1
+[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  ${myASTROPORT}/?salt=totodu56&pepper=totodu56&getipns " && exit 1
 ## NOT RUNNING TWICE
 
 # Some client needs to respect that
