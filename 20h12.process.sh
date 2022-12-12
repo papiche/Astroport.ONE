@@ -58,6 +58,7 @@ fi
 
 espeak "Tube Up" > /dev/null 2>&1
 ## Updating yt-dlp
+$MY_PATH/youtube-dl.sh
 sudo youtube-dl -U
 
 ########################################################################

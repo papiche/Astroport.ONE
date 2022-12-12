@@ -49,7 +49,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     mkdir -p ~/.zen/tmp/${MOATS}/TW
 
-    echo "SEARCHING FOR ONLINE /ipns/${ASTRONAUTENS}"
+    echo "SCANNING /ipns/${ASTRONAUTENS}"
     ## GETTING LAST TW via IPFS or HTTP GW
     [[ $YOU ]] \
     && ipfs --timeout 20s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html

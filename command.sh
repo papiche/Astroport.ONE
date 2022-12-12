@@ -33,7 +33,7 @@ echo
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
 YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP sudo systemctl start ipfs" && exit 1
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+export IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 echo 'PRESS ENTER... '; read
 
@@ -91,13 +91,13 @@ echo "________LOGIN OK____________";
 echo
 echo "DECHIFFRAGE CLEFS ASTRONAUTE"
 echo "Votre Pass Astroport.ONE  : $(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)"
-G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+export G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 [ ! ${G1PUB} ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 echo "Clef Publque Astronaute : $G1PUB"
 echo "ENTREE ACCORDEE"
 echo
-ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
+export ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
 echo "$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) TW/Moa"
 echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
