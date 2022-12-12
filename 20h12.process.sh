@@ -33,22 +33,15 @@ git pull
 # Refresh ~/.zen/game/world/G1VOEU
 # NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 
-## CLOSING 1234 API PORT
-killall 12345.sh
-killall _12345.sh
-killall nc
-killall command.sh
-killall start.sh
+## CLOSING API PORT
+[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
 
 espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
-
 ## OPEN API ENGINE
 espeak "Restarting API" > /dev/null 2>&1
-[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
-
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 PID=$!
 echo $PID > ~/.zen/.pid
