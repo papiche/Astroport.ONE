@@ -221,7 +221,8 @@ else
 # TIDDLER WAS IN CACHE
 ###################################################################
     ## TODO : ADD EMAIL TO TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
-    cp "${TIDDLER}" "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
+    [[ "${TIDDLER}" != "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" ]] \
+    && cp "${TIDDLER}" "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
 fi
 
@@ -243,8 +244,7 @@ fi
 # --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
 
         if [[ -s ~/.zen/tmp/$IPFSNODEID/newindex.html ]]; then
-            echo "===> Mise à jour ${INDEX}"
-            cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX}
+            [[ $(diff ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} ) ]] && cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} && echo "===> Mise à jour ${INDEX}"
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$IPFSNODEID/newindex.html"
             echo "XXXXXXXXXXXXXXXXXXXXXXX"

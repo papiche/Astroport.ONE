@@ -185,9 +185,14 @@ do
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
             cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
-            ## TODO INSERT INTO $:/plugins/astroport/lightbeams/state/subscriptions
-            export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
-            export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$$FRIENDTITLE</a>$IFRIENDHEAD"
+                export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
+
+            echo "(☉_☉ ) (☉_☉ ) (☉_☉ )" $FRIENDSFEEDS
+
+                export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$$FRIENDTITLE</a>$IFRIENDHEAD"
+
+            echo "(☉_☉ ) (☉_☉ ) (☉_☉ )" $IFRIENDHEAD
+
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
             echo "~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json"

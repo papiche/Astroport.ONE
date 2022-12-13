@@ -12,7 +12,8 @@ ME="${0##*/}"
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING PLAYER.refresh"
-IPFSNODEID=$(ipfs id -f='<id>\n')
+# IPFSNODEID=$(ipfs id -f='<id>\n')
+IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 PLAYERONE="$1"
 [[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/))
@@ -184,10 +185,12 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo "IFRIENDHEAD :" ${IFRIENDHEAD}
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
-    cat ${MY_PATH}/../www/iframe.html | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g"  | sed "s~_ME_~${IPFSGW}/ipns/${ASTRONAUTENS}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
+    [[ -d ~/.zen/game/players/$PLAYER/FRIENDS ]] \
+    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${IPFSGW}/ipns/${ASTRONAUTENS}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
 
-    FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1)
-    ipfs name publish --allow-offline -t 24h --key="${PLAYER}_feed" /ipfs/$FRAME
+    [[ -s ~/.zen/game/players/$PLAYER/FRIENDS/index.html ]] \
+    && FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1) \
+    && ipfs name publish --allow-offline -t 24h --key="${PLAYER}_feed" /ipfs/$FRAME
 
 done
 
@@ -195,7 +198,7 @@ done
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
 # Scan local cache
-ls ~/.zen/tmp/${IPFSNODEID}/
+# ls ~/.zen/tmp/${IPFSNODEID}/
 BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
 ## Merge actual online version
