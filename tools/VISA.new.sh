@@ -31,11 +31,14 @@ myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="localhost"
 
+[[ $isLAN ]] && myIPFSGW="http://ipfs.localhost:8080" && myASTROPORT="http://astroport.localhost:1234" ## LAN STATION
+[[ ! $isLAN || $USER == "zen" ]] && myIPFSGW="https://ipfs.copylaradio.com" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
+
 ################################################################################
 
 ## CHECK if PLAYER resolve any ASTRONAUTENS
 [[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-[[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS $PLAYER EXISTANT https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
+[[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS $PLAYER EXISTANT ${myIPFSGW}/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
@@ -167,9 +170,9 @@ YUSER=$(echo $PLAYER | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-[[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
 #~ [[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
-[[ ! $isLAN ]] && NID="https://ipfs.copylaradio.com" && WID="$NID/api"
+NID="${myIPFSGW}" && WID="$NID/api"
+[[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
 
     ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
     cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~$WID~g" > ~/.zen/tmp/${MOATS}/local.api.json
@@ -326,9 +329,9 @@ qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https:/
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
 echo "--- PLAYER : $PLAYER";
-echo; echo "VISA : https://ipfs.copylaradio.com/ipfs/${IASTRO}"
-echo; echo "+ TW : https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
-echo; echo "+ RSS : https://ipfs.copylaradio.com/ipns/${FEEDNS}"; sleep 1
+echo; echo "VISA : ${myIPFSGW}/ipfs/${IASTRO}"
+echo; echo "+ TW : ${myIPFSGW}/ipns/${ASTRONAUTENS}"
+echo; echo "+ RSS : ${myIPFSGW}/ipns/${FEEDNS}"; sleep 1
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
