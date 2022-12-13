@@ -335,6 +335,8 @@ echo; echo "+ RSS : ${myIPFSGW}/ipns/${FEEDNS}"; sleep 1
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFSGW}/ipns/${ASTRONAUTENS}"
 
+[[ ! -L ~/.zen/game/players/.current ]] && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
 #~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
