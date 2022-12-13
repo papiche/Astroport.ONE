@@ -267,8 +267,19 @@ echo "#############################################"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
+echo "%%%%%%%%%%%%%%%%%%%%"
+echo "VOUS AVEZ DEJA UN COMPTE SUR GCHANGE ?"
+echo "          Saisissez vos identifiants"
+echo "%%%%%%%%%%%%%%%%%%%%"
+echo
+echo "Sinon Tapez 2 fois sur ENTRER."
+read SALT
+[[ $SALT ]] && echo "Entrez votre mot de passe : "
+read PEPPER
+[[ $SALT && ! $PEPPER ]] && SALT=""
 
-    ~/.zen/Astroport.ONE/tools/VISA.new.sh
+    ~/.zen/Astroport.ONE/tools/VISA.new.sh "$SALT" "$PEPPER"
+
 echo "#############################################"
 
     #~ ~/.zen/Astroport.ONE/adventure/adventure.sh
