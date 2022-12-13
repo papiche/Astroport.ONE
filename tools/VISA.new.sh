@@ -333,6 +333,8 @@ echo; echo "VISA : ${myIPFSGW}/ipfs/${IASTRO}"
 echo; echo "+ TW : ${myIPFSGW}/ipns/${ASTRONAUTENS}"
 echo; echo "+ RSS : ${myIPFSGW}/ipns/${FEEDNS}"; sleep 1
 
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFSGW}/ipns/${ASTRONAUTENS}"
+
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
 #~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/$PLAYER/secret.june" -out "$HOME/.zen/game/players/$PLAYER/enc.secret.june" -k $PASS 2>/dev/null
@@ -366,7 +368,8 @@ LP=$(ls /dev/usb/lp* 2>/dev/null)
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 echo "$(${MY_PATH}/face.sh cool)"
 echo "Bienvenue 'Astronaute' $PSEUDO ($PLAYER)"
-echo "Votre PASS"; sleep 1
+echo
+echo "Notez vos PHRASES et votre PASS"; sleep 1
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 
