@@ -102,10 +102,10 @@ for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me | sort | uni
 do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
     echo "........................."
-    ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
+    FRIENDNS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
     echo "==========================="
     echo "${liking_me} IS LIKING ME"
-    echo "TW ? http://tube.copylaradio.com:8080/ipns/$ASTRONAUTENS "
+    echo "TW ? https://ipfs.copylaradio.com/ipns/$FRIENDNS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     echo "Receiving Stars : cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r"
@@ -148,17 +148,17 @@ do
         echo "Getting $FRIENDTITLE latest online TW..."
         YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-        echo "$LIBRA/ipns/$ASTRONAUTENS"
-        echo "http://$myIP:8080/ipns/$ASTRONAUTENS ($YOU)"
-        [[ $YOU ]] && ipfs --timeout 17s cat  /ipns/$ASTRONAUTENS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
-        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 17 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$ASTRONAUTENS"
+        echo "$LIBRA/ipns/$FRIENDNS"
+        echo "http://$myIP:8080/ipns/$FRIENDNS ($YOU)"
+        [[ $YOU ]] && ipfs --timeout 17s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 17 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
 
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m ">>> (◕‿‿◕) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (◕‿‿◕) <<< TW BunkerBOX  : https://qo-op.com"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m ">>> (◕‿‿◕) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (◕‿‿◕) <<< Mon TW BunkerBOX"
 
         else
 
@@ -187,6 +187,7 @@ do
 
             ## TODO INSERT INTO $:/plugins/astroport/lightbeams/state/subscriptions
             export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
+            export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$$FRIENDTITLE</a>$IFRIENDHEAD"
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
             echo "~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json"

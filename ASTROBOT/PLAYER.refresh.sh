@@ -179,6 +179,16 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo " = /ipfs/$TW"
     echo "================================================"
 
+######################### PLAYER_feed
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+    echo "IFRIENDHEAD :" ${IFRIENDHEAD}
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+    # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
+    cat ${MY_PATH}/../www/iframe.html | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g"  | sed "s~_ME_~${IPFSGW}/ipns/${ASTRONAUTENS}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
+
+    FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1)
+    ipfs name publish --allow-offline -t 24h --key="${PLAYER}_feed" /ipfs/$FRAME
+
 done
 
 #################################################################
