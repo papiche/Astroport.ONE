@@ -19,16 +19,6 @@ start=`date +%s`
 && bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)
 
 
-#### GIT CLONE ###############################################################
-[[ ! $(which git) ]] && sudo apt install -y git
-echo "=== CLONAGE  '~/.zen/Astroport.ONE' depuis https://git.p2p.legal"
-mkdir -p ~/.zen
-cd ~/.zen
-
-export GIT_SSL_NO_VERIFY=true
-git clone --depth 1 https://git.p2p.legal/qo-op/Astroport.ONE.git
-# TODO INSTALL FROM IPFS / IPNS
-
 # MAIN # SI AUCUNE CLEF DE STATION...
 if [[ ! -d ~/.zen/game/players/ ]];
 then
@@ -72,7 +62,7 @@ echo "#############################################"
 echo "######### PATIENCE ######"
 echo "#############################################"
 # removed : sqlite
-for i in qrencode basez jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
+for i in qrencode ca-certificates basez jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -80,6 +70,13 @@ for i in qrencode basez jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils
 
     fi
 done
+
+#### GIT CLONE ###############################################################
+echo "=== CLONAGE CODE  '~/.zen/Astroport.ONE' depuis https://git.p2p.legal"
+mkdir -p ~/.zen
+cd ~/.zen
+git clone --depth 1 https://git.p2p.legal/qo-op/Astroport.ONE.git
+# TODO INSTALL FROM IPFS / IPNS
 
 echo "#############################################"
 echo "######### PATIENCE ############"
