@@ -83,22 +83,26 @@ echo "######### PATIENCE ############"
 echo "#############################################"
 ##########################################################
 echo "### INSTALL TW node.js"
-sudo npm install -g tiddlywiki sjcl-cli
+sudo npm install -g tiddlywiki
 [[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log && continue
 
 echo "#############################################"
 echo "######### PATIENCE #################"
 echo "#############################################"
 
-##########################################################
-echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
+# echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
+
+##########################################################
+echo "## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION"
 
 ## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION
 [[ $(which kodi) ]] \
 && cp -Rf ~/.zen/Astroport.ONE/templates/.kodi ~/ \
-&& cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld && ./configure && make && sudo make install \
-&& sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log
+&& sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
+&& cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
+&& g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
+&& [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/
 
 cd $MY_PATH
 
