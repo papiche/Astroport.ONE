@@ -9,7 +9,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 
-[ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
+[ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" : su -; usermod -aG sudo $USER" && exit 1
 
 ########################################################################
 [[ ! $(which ipfs) ]] \
@@ -38,7 +38,7 @@ echo ; echo "Mise à jour des dépots de votre distribution..."
 sudo apt-get update
 
 
- for i in x11-utils xclip zenity kodi; do
+ for i in x11-utils xclip zenity chromium kodi; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo apt install -y $i;
@@ -270,21 +270,26 @@ read PEPPER
 
 echo "#############################################"
 
+if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ##########################################################
 echo "EXPERIMENTAL ### INIT KODI PAR IPFS ## "
 read KODI
     if [[ $KODI ]]; then
+    mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
-    ipfs get -o ~/.zen/tmp /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
+    ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
     echo '## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
-    [[ $(which kodi) ]] \
-    && cp -Rf ~/.zen/tmp/.kodi ~/ \
-    && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
+
+    cp -Rf ~/.zen/tmp/kodi/* ~/.kodi/ \
     && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
     && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
-    && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/
+    && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
+    && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log
+
     cd $MY_PATH
+
     fi
+fi
 
 else
 
