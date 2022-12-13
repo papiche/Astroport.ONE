@@ -13,10 +13,10 @@ start=`date +%s`
 
 ########################################################################
 [[ ! $(which ipfs) ]] \
-&& echo "=== Installez IPFS KUBO puis relancez Install ===" \
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)" \
 && [[ $(uname -p) == "x86_64" ]] \
-&& bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)
+&& bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh) \
+|| echo "=== Installez IPFS KUBO puis relancez Install ==="
 
 
 # MAIN # SI AUCUNE CLEF DE STATION...
@@ -92,19 +92,6 @@ echo "#############################################"
 
 # echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
 # sudo apt-get install python3-opencv -y
-
-##########################################################
-echo "## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION"
-
-## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION
-[[ $(which kodi) ]] \
-&& cp -Rf ~/.zen/Astroport.ONE/templates/.kodi ~/ \
-&& sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
-&& cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
-&& g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
-&& [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/
-
-cd $MY_PATH
 
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
 sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
@@ -255,11 +242,12 @@ echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
 
 mkdir -p ~/.zen/tmp
 
-echo "#############################################"
 
+echo "#############################################"
 ## INSTALL yt-dlp & SYMLINK youtube-dl
-${MY_PATH}/youtube-dl.sh
-which youtube-dl
+~/.zen/Astroport.ONE/youtube-dl.sh
+
+
 echo "#############################################"
 echo "#############################################"
     ## Desktop install
@@ -282,17 +270,21 @@ read PEPPER
 
 echo "#############################################"
 
-    #~ ~/.zen/Astroport.ONE/adventure/adventure.sh
-
-    echo "#############################################"
-    echo "# START API ENGINE ? ~/.zen/Astroport.ONE/start.sh"
-    echo "#############################################"
-    echo
-    echo "Pour démarrer. Tapez ENTRER. "
-    read ENGINE
-    [[ $ENGINE ]] && ~/.zen/Astroport.ONE/start.sh
-
-
+##########################################################
+echo "EXPERIMENTAL ### INIT KODI PAR IPFS ## "
+read KODI
+    if [[ $KODI ]]; then
+    echo "PATIENTEZ..."
+    ipfs get -o ~/.zen/tmp /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
+    echo '## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
+    [[ $(which kodi) ]] \
+    && cp -Rf ~/.zen/tmp/.kodi ~/ \
+    && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
+    && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
+    && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
+    && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/
+    cd $MY_PATH
+    fi
 
 else
 
