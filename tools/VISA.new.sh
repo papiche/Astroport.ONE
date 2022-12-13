@@ -124,9 +124,10 @@ PSEUDO=${PSEUDO%%[0-9]*}
 # PSEUDO=${PSEUDO,,} #lowercase
 [[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2} \
                             && echo "ADRESSE EMAIL ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
+
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
-[[ ! $PSEUDO ]] && PSEUDO=$PLAYER
+[[ ! $PSEUDO ]] && PSEUDO="Anonymous"
 echo; echo "Génération de votre crypto identité PLAYER :"; sleep 1; echo "$PLAYER"; sleep 2
 
 # 6 DIGIT PASS CODE TO PROTECT QRSEC
