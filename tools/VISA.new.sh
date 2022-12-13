@@ -123,11 +123,11 @@ PSEUDO=${PSEUDO%%[0-9]*}
 
 # PSEUDO=${PSEUDO,,} #lowercase
 [[ ! $PLAYER ]] && PLAYER=${PSEUDO}${RANDOM:0:2}$(${MY_PATH}/diceware.sh 1 | xargs)${RANDOM:0:2} \
-                            && echo "$PLAYER ! VOTRE EMAIL SVP ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
+                            && echo "ADRESSE EMAIL ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
 [[ -d ~/.zen/game/players/$PLAYER ]] && echo "FATAL ERROR $PLAYER NAME COLLISION. TRY AGAIN." && exit 1
 
 [[ ! $PSEUDO ]] && PSEUDO=$PLAYER
-echo; echo "Génération de vos identités Astronaute (PLAYER):"; sleep 1; echo "$PLAYER"; sleep 2
+echo; echo "Génération de votre crypto identité PLAYER :"; sleep 1; echo "$PLAYER"; sleep 2
 
 # 6 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -140,8 +140,8 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 # echo "Votre clef moa_$PLAYER <=> $MOANS ($MOAKEYFILE)"; sleep 2
 ############################################################
 echo
-echo "Compte Gchange et portefeuille G1.
-Utilisez ces identifiants pour rejoindre le réseau JUNE
+echo "Votre compte Gchange et portefeuille G1.
+Utilisez ces identifiants pour rejoindre la Monnaie Libre
 
     $SALT
     $PEPPER

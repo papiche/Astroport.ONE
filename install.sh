@@ -262,14 +262,22 @@ echo "#############################################"
     echo "Astroport.ONE INSTALL"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
+echo "#############################################"
+
+    ~/.zen/Astroport.ONE/tools/VISA.new.sh
+echo "#############################################"
+
+    #~ ~/.zen/Astroport.ONE/adventure/adventure.sh
+
     echo "#############################################"
-    echo "# START VISA ENGINE : ~/.zen/Astroport.ONE/start.sh"
+    echo "# START API ENGINE ? ~/.zen/Astroport.ONE/start.sh"
     echo "#############################################"
     echo
-    echo "Démarrer en mode Aventure. Tapez ENTRER."
-    read ADVENTURE
-    [[ $ADVENTURE ]] && ~/.zen/Astroport.ONE/start.sh \
-                                        || ~/.zen/Astroport.ONE/adventure/adventure.sh
+    echo "Pour démarrer. Tapez ENTRER. "
+    read ENGINE
+    [[ $ENGINE ]] && ~/.zen/Astroport.ONE/start.sh
+
+
 
 else
 
