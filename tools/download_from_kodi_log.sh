@@ -28,12 +28,12 @@ exit 2
 
 # IPFSNODEID=$(ipfs id -f='<id>\n')
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqdl/
 
 ## CHOOSE kodi.${OLD}log
 [[ $1 == "old" ]] && OLD='old.' || OLD=''
 
-[[ ! $(which kodi) ]] && echo "KODI IS MISSING. VISIT https://copylaradio.com" && exit 1
+[[ ! $(which kodi) ]] && echo "KODI IS MISSING." && exit 1
 
 ## LOOP
 cycle=1
@@ -42,10 +42,10 @@ do
     uqname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1 | cut -d '%' -f 1 | sed 's/\+/_/g' | tail -n 1)
     cycle=$((cycle+1))
     echo "########################################################################"
-    echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
+    echo "MANUAL : uqdl https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
 
-    ! cat ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo | grep -w "$uqname.mp4" && \
-    echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqload_downloader/commands.fifo || \
+    ! cat ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo | grep -w "$uqname.mp4" && \
+    echo "uqdl https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo || \
     echo "$uqname.mp4 conflict"
 
     ## CHECK & MANAGE COPY
@@ -55,7 +55,7 @@ do
         continue
     else
             echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
-            uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
+            uqdl https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
             echo "COPY ~/astroport/$uqname.mp4 DONE"
             ## ARE WE RUNNING ON ASTROPORT STATION?
             # [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
