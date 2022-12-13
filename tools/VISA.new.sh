@@ -167,7 +167,8 @@ LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouill
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
-[[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
+#~ [[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
+[[ ! $isLAN ]] && NID="https://ipfs.copylaradio.com" && WID="$NID/api"
 
     ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
     cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~$WID~g" > ~/.zen/tmp/${MOATS}/local.api.json

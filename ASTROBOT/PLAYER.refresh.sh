@@ -117,9 +117,14 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
         ${MY_PATH}/VOEUX.refresh.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$PLAYER"
         ##############################################################
 
-        ####################
-        echo "# TUBE as 8080 & 5001"
+        ##################################
+        echo "# TW : GW API + LightBeam Feed + Friends"
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
+
+        FEEDNS=$(ipfs key list -l  | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
+        [[ ! $FEEDNS ]] && FEEDNS=$(ipfs key gen "${PLAYER}_feed")
+        echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
+        echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
@@ -128,10 +133,13 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
             echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$APIGW'"}]' > ~/.zen/tmp/${MOATS}/5001.json
             echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$IPFSGW'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
+            echo "FRIENDS FEEDS : "${FRIENDSFEEDS}
             ## export FRIENDSFEEDS from Gchange stars
             echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                            --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import "$HOME/.zen/tmp/${MOATS}/5001.json" "application/json" \
                             --import "$HOME/.zen/tmp/${MOATS}/8080.json" "application/json" \
                             --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \
