@@ -315,7 +315,7 @@ then
     "gifanime": "'/ipfs/${ANIMH}'",
     "type": "'${TidType}'",
     "mime": "'${MIME}'",
-    "ipfsdur": "'${ipfsdur}'",
+    "dur": "'${ipfsdur}'",
     "cat": "'${CAT}'",
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",

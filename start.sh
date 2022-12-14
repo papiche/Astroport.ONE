@@ -25,14 +25,4 @@ echo "(RE)STARTING 12345.sh"
 mkdir -p ~/.zen/tmp
 
 exec ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
-PID=$!
-echo $PID > ~/.zen/.pid
-
-echo "HTTP API :  http://$myIP:1234"
-sleep 2
-cat ~/.zen/tmp/12345.log
-echo "API DEBUG : tail -f ~/.zen/tmp/12345.log"
-###################################################
-
-${MY_PATH}/command.sh
-
+PID=$! && echo $PID > ~/.zen/.pid && wait
