@@ -9,15 +9,19 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 
-[ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" : su -; usermod -aG sudo $USER" && exit 1
-
+##################################################################  SUDO
+########################################################################
+[ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. " && exit 1
+[[ ! $(groups | grep -w sudo) ]] && echo "AUCUN GROUPE \"sudo\" : su -; usermod -aG sudo $USER" && exit 1
+################################################################### IPFS
 ########################################################################
 [[ ! $(which ipfs) ]] \
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh)" \
 && [[ $(uname -p) == "x86_64" ]] \
 && bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux-amd64.install.sh) \
 || echo "=== Installez IPFS KUBO puis relancez Install ==="
-
+[[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
+#################################################################### TEST
 
 # MAIN # SI AUCUNE CLEF DE STATION...
 if [[ ! -d ~/.zen/game/players/ ]];
