@@ -24,5 +24,5 @@ echo "(RE)STARTING 12345.sh"
 # killall "12345.sh"; killall "_12345.sh"; killall "nc"; killall "command.sh"
 mkdir -p ~/.zen/tmp
 
-exec ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 PID=$! && echo $PID > ~/.zen/.pid && wait
