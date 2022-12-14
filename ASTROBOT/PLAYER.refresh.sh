@@ -134,7 +134,9 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
             echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$APIGW'"}]' > ~/.zen/tmp/${MOATS}/5001.json
             echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$IPFSGW'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
+            FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
             echo "FRIENDS FEEDS : "${FRIENDSFEEDS}
+
             ## export FRIENDSFEEDS from Gchange stars
             echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
@@ -181,12 +183,13 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo "================================================"
 
 ######################### PLAYER_feed
+    IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     echo "IFRIENDHEAD :" ${IFRIENDHEAD}
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
     [[ -d ~/.zen/game/players/$PLAYER/FRIENDS ]] \
-    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${IPFSGW}/ipns/${ASTRONAUTENS}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
+    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${IPFSGW}/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
 
     [[ -s ~/.zen/game/players/$PLAYER/FRIENDS/index.html ]] \
     && FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1) \

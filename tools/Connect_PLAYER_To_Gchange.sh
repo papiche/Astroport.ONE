@@ -150,6 +150,10 @@ do
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
         echo "$LIBRA/ipns/$FRIENDNS"
         echo "http://$myIP:8080/ipns/$FRIENDNS ($YOU)"
+
+        # DISPLAY TIMER
+        ${MY_PATH}/displaytimer.sh 17 &
+
         [[ $YOU ]] && ipfs --timeout 17s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
         [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 17 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
 
@@ -158,7 +162,7 @@ do
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m ">>> (◕‿‿◕) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (◕‿‿◕) <<< Mon TW BunkerBOX"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW BunkerBOX >>> (⌐■_■) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (ᵔ◡◡ᵔ) <<< "
 
         else
 
@@ -186,10 +190,12 @@ do
             cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
                 export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
+                echo "$FRIENDSFEEDS" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS
 
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ )" $FRIENDSFEEDS
 
                 export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$$FRIENDTITLE</a>$IFRIENDHEAD"
+                echo "$IFRIENDHEAD" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD
 
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ )" $IFRIENDHEAD
 
