@@ -42,10 +42,10 @@ do
     uqname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1 | cut -d '%' -f 1 | sed 's/\+/_/g' | tail -n 1)
     cycle=$((cycle+1))
     echo "########################################################################"
-    echo "MANUAL : uqdl https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
+    echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
 
     ! cat ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo | grep -w "$uqname.mp4" && \
-    echo "uqdl https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo || \
+    echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo || \
     echo "$uqname.mp4 conflict"
 
     ## CHECK & MANAGE COPY
@@ -55,13 +55,11 @@ do
         continue
     else
             echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
-            uqdl https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
-            echo "COPY ~/astroport/$uqname.mp4 DONE"
+            uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
+            echo "COPY ~/Astroport/$uqname.mp4 DONE"
             ## ARE WE RUNNING ON ASTROPORT STATION?
-            # [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
-            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] \
-            && mkdir -p ~/Astroport/film/$uqlink && mv "$HOME/Astroport/$uqname.mp4" ~/Astroport/film/$uqlink/ \
-            && ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh "$HOME/Astroport/film/$uqlink" "$uqname.mp4" "$(cat ~/.zen/game/players/.current/.g1pub)"
+            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
+
     fi
 done
 echo

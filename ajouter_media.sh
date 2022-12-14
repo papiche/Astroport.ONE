@@ -208,12 +208,13 @@ mkdir -p ${YTEMP}
 # youtube-dl $YTURL
 echo "VIDEO $YTURL"
 
+#                 --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
+
 /usr/local/bin/youtube-dl  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                 --cookies-from-browser $BROWSER \
                 --download-archive $HOME/.zen/.yt-dlp.list \
-                -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
+                -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
                 --no-playlist --write-info-json --write-description --no-get-comments \
-                --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
                 --no-mtime -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" $YTURL
 
 # Get filename, extract ID, make destination dir and move copy.
