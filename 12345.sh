@@ -123,6 +123,10 @@ while true; do
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
+
+    ## TODO APPLY GENERAL isLAN or zen !isLAN CALACULA>TONS
+    [[ ! $isLAN || $USER == "zen" ]] && myHOST="$HOST" && myHOSTPort="ipfs.$HOST" && myHTTP="https://" && myASTROPORT="https://$HOST" ## WAN STATION
+
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
