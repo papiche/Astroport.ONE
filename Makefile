@@ -12,7 +12,7 @@ SHELL_FILES ?= $(wildcard .*/*.sh */*.sh */*/*.sh)
 all: install tests
 
 .PHONY: install
-install: myos build up player
+install: myos build player up
 	echo "Welcome to myos docker land - make a user - make a player -"
 
 .PHONY: migrate
