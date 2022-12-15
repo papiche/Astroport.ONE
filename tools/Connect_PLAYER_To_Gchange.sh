@@ -115,8 +115,12 @@ do
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
     -n "https://data.gchange.fr" \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
-    ## ZOMBIE PROTECTION
-    [[ "$?" == "0" && ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json ]] && rm -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me} && echo "${liking_me} is a ZOMBIE..." && continue
+
+    ## ZOMBIE PROTECTION - TODO PURGE EVERY 60 DAYS
+    find ~/.zen/game/players/${PLAYER}/FRIENDS/*.try -mtime +60 -type f -exec rm -f '{}' \;
+
+    try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null)
+    [[ $try > 3 ]] && echo "${liking_me} TOO MANY TRY" && continue
 
 #### RECUP ANNONCES Gchange
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
@@ -163,6 +167,8 @@ do
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW BunkerBOX >>> (⌐■_■) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (ᵔ◡◡ᵔ) <<< "
+
+            try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
         else
 
@@ -224,6 +230,7 @@ do
 
         echo "BRO?"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Bro ?" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
+        try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
     fi
 

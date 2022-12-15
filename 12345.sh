@@ -125,14 +125,14 @@ while true; do
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
 
     ## TODO APPLY GENERAL isLAN or zen !isLAN CALACULA>TONS
-    [[ ! $isLAN || $USER == "zen" ]] && myHOST="$HOST" && myHOSTPort="ipfs.$HOST" && myHTTP="https://" && myASTROPORT="https://$HOST" ## WAN STATION
+    [[ ! $isLAN || $USER == "zen" ]] && myHOST="$HOSTNAME" && myHOSTPort="ipfs.$HOSTNAME" && myHTTP="https://" && myASTROPORT="https://$HOSTNAME" ## WAN STATION
 
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "************************************************************************* "
-    echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOST:1234 PORT"
-    echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOST:${PORT}"
+    echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOSTNAME:1234 PORT"
+    echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOSTNAME:${PORT}"
 
     [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2
 
