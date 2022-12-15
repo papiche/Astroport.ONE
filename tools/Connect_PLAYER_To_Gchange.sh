@@ -116,7 +116,7 @@ do
     -n "https://data.gchange.fr" \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
 
-    ## ZOMBIE PROTECTION - TODO PURGE EVERY 60 DAYS
+    ## ZOMBIE PROTECTION - PURGE AFTER 60 DAYS
     find ~/.zen/game/players/${PLAYER}/FRIENDS/*.try -mtime +60 -type f -exec rm -f '{}' \;
 
     try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null)
@@ -153,13 +153,13 @@ do
         YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
         echo "$LIBRA/ipns/$FRIENDNS"
-        echo "http://$myIP:8080/ipns/$FRIENDNS ($YOU)"
+        echo "http://$myIP:8080/ipns/$FRIENDNS ($FRIENDTITLE)"
 
         # DISPLAY TIMER
-        ${MY_PATH}/displaytimer.sh 17 &
+        ${MY_PATH}/displaytimer.sh 60 &
 
-        [[ $YOU ]] && ipfs --timeout 17s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
-        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 17 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
+        [[ $YOU ]] && ipfs --timeout 60s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 60 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
 
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
@@ -168,27 +168,33 @@ do
             echo "AUCUN TW ACTIF. PREVENONS LE"
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW BunkerBOX >>> (⌐■_■) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (ᵔ◡◡ᵔ) <<< "
 
+            ## I TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
         else
 
-            echo "COOL MON AMI EST SUR IPFS"
             FTW="~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html"
+            echo "COOL MON AMI PUBLIE SUR IPFS : $FTW"
 
-            tiddlywiki --load ${FTW}  --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-            [[ ! -s ~/.zen/tmp/${liking_me}.MadeInZion.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) ~~~" && continue
+            tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            [[ ! -s ~/.zen/tmp/${liking_me}.MadeInZion.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) BAD ~/.zen/tmp/${liking_me}.MadeInZion.json ~~~" && continue
             FPLAYER=$(cat ~/.zen/tmp/${liking_me}.MadeInZion.json | jq -r .[].player)
             [[ ! $FPLAYER ]] && echo "NO PLAYER = BAD MadeInZion Tiddler" && continue
 
             ## CREATING 30 DAYS RSS STREAM
             tiddlywiki --load ${FTW} \
                                 --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
-            [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ]] && echo "NO ${FPLAYER} RSS - CONTINUE -" && continue
+            [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ]] && echo "NO ${FPLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json -" && continue
 
+            echo "DEBUG RSS : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json | jq -r"
+            echo
             tiddlywiki --load ${FTW} \
                                 --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.lightbeam-key.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key'
             [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json ]] && echo "NO ${FPLAYER} lightbeam-key - CONTINUE -" && continue
             ASTRONAUTEFEED=$(cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json | jq -r .[].text)
+
+            echo "DEBUG LIGHTBEAM : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json | jq -r"
+            echo
 
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## PUSH DATA TO 12345 SWARM KEY
@@ -198,12 +204,12 @@ do
                 export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
                 echo "$FRIENDSFEEDS" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS
 
-            echo "(☉_☉ ) (☉_☉ ) (☉_☉ )" $FRIENDSFEEDS
+            echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : FRIENDSFEEDS=" $FRIENDSFEEDS
 
                 export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$$FRIENDTITLE</a>$IFRIENDHEAD"
                 echo "$IFRIENDHEAD" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD
 
-            echo "(☉_☉ ) (☉_☉ ) (☉_☉ )" $IFRIENDHEAD
+            echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : IFRIENDHEAD=" $IFRIENDHEAD
 
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
@@ -212,7 +218,7 @@ do
         fi
 
         ## ACTIVER RECUP ANNONCES...
-# SCRAPING DONNE LE BON COIN
+# SCRAPING DONNE LE BON COIN - DIFFICILE - UTILISER COOKIE NAVIGATEUR
 # https://www.leboncoin.fr/recherche?text=donne&locations=Toulouse__43.59743304757555_1.4471155185604894_10000_5000&owner_type=private&sort=time&donation=1
 
         ## Get Ŋ2 LEVEL
@@ -227,7 +233,9 @@ do
         done
 
     else
-
+        #########################################
+        ## COOL FEATURE FOR GCHANGE ACCOUNT CONFIDENCE
+        ## IS IT REALLY A FRIEND I LIKE ?
         echo "BRO?"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://data.gchange.fr" send -d "${G1PUB}" -t "Bro ?" -m "https://www.gchange.fr/#/app/user/${liking_me}/"
         try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try

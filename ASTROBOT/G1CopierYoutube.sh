@@ -37,44 +37,45 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 ## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
 ###################################################################
 mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
+mkdir -p $HOME/.zen/game/players/$PLAYER/G1CopierYoutube/
 
 ###################################################################
 ## tag[CopierYoutube] EXTRACT ~/.zen/tmp/CopierYoutube.json FROM TW
 ###################################################################
-rm -f ~/.zen/tmp/CopierYoutube.json
+rm -f ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
 tiddlywiki  --load ${INDEX} \
-                    --output ~/.zen/tmp \
+                    --output ~/.zen/game/players/$PLAYER/G1CopierYoutube \
                     --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
-echo "DEBUG : cat ~/.zen/tmp/CopierYoutube.json | jq -r"
+echo "DEBUG : cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r"
 
         BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
 
 ###################################################################
 ## URL EXTRACTION & yt-dlp.cache.$PLAYER upgrade
-for YURL in $(cat ~/.zen/tmp/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
+for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
     echo "Detected $YURL"
     echo "Extracting video playlist into yt-dlp.cache.$PLAYER"
 
     ### yt-dlp.command
-    CMD=$(cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
+    CMD=$(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
     if [[ ! $CMD ]]; then
-        echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command
+        echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command
         echo "NOUVEAU CANAL $PLAYER&$YURL:$MOATS"
     else
         lastrun=$(echo "$CMD" | rev | cut -d ':' -f 1 | rev) && echo "$CMD"
         duree=$(expr ${MOATS} - $lastrun)
-        [[ ! $lastrun ]] && echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.command && duree=604800000
+        [[ ! $lastrun ]] && echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command && duree=604800000
         # ONE WEEK NEW SCAN
         if [[ duree -ge 604800000 ]]; then
-            yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+            yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
         fi
     fi
 
 done # FINISH YURL loop
 
-## SORT UNIQ ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
-cat ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER | sort | uniq > ~/.zen/tmp/yt-dlp.cache
+## CREATE SORT UNIQ ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER (12345 ONLINE)
+cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER | sort | uniq > ~/.zen/tmp/yt-dlp.cache
 cp ~/.zen/tmp/yt-dlp.cache ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
 
 ## UPDATE GLOBAL WITH PLAYER & SWARM yt-dlp NEEDS
@@ -110,7 +111,7 @@ if [[ ! ${TIDDLER} ]]; then
 ###################################################################
         ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
         echo "COPIE : $ZYURL"
-        [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED" && continue
+        [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
 
         TITLE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(title)s" "${ZYURL}")"
         TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
@@ -128,14 +129,14 @@ if [[ ! ${TIDDLER} ]]; then
         #############################################################################
         ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
         ## EXTRA PARAM TO TRY
-        # --cookies-from-browser browser (xdg-settings get default-web-browser) allow member copies
-        # --dateafter DATE --download-archive myarchive.txt
+        #  --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
+
         yt-dlp  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                     --cookies-from-browser $BROWSER \
                     --download-archive $HOME/.zen/.yt-dlp.list \
-                    -S "filesize:700M" --no-mtime --embed-thumbnail --add-metadata \
-                    --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs \
+                    -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
                     -o "$HOME/.zen/tmp/yt-dlp/$TITLE.%(ext)s" ${ZYURL}
+
         ################################################################################
         ### ADAPT TO TW RYTHM (DELAY COPY?)
         echo
