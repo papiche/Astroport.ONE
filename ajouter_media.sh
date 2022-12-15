@@ -50,6 +50,8 @@ CHOICE="$3"
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 espeak "Hello $PSEUDO"
 
+(cd $MY_PATH && git pull && espeak "code ok") &
+
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
@@ -233,30 +235,6 @@ espeak "OK $YNAME copied"
 MEDIAID="$REVSOURCE${YID}"
 TITLE="${YNAME%.*}"
 MEDIAKEY="YOUTUBE_${MEDIAID}"
-## CORRECT PARAMETERS to Make Kodi compatible YASTRXBIAN FILE
-
-espeak "Please. Choose your tags"
-
-[ ! $2 ] && GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut} \
-    --text="Choisissez le(s) genre(s) d'information(s) contenue(s) dans cette vidéo \"${TITLE}\" publiée sur OASIS" \
-    --column="Use" \
-    --column="Feature" \
-    FALSE Savoir \
-    FALSE Nature \
-    FALSE Habiter \
-    FALSE Nourrir \
-    FALSE Deplacer \
-    FALSE Guerir \
-    FALSE Divertir \
-    FALSE Musique \
-    FALSE DIY \
-    FALSE Science \
-    FALSE Humain \
-    FALSE Animal \
-    TRUE Eveil \
-    TRUE ${PLAYER// /-}) || GENRES="${PLAYER// /-}"
-
-# FORMAT GENRES genre1|genre2|genre3
 
 FILE_PATH="$HOME/Astroport/youtube/$MEDIAID"
 mkdir -p ${FILE_PATH} && mv -f ${YTEMP}/* ${FILE_PATH}/
@@ -410,7 +388,7 @@ echo '[
         ## EVOLVE TO ARTICLE
         # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
-        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien de la page à convertir en PDF" --text "Indiquez le lien (URL)" --entry-text="")
+        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "URL à convertir en PDF (VIDE POUR UN FICHIER LOCAL)" --text "Indiquez le lien (URL)" --entry-text="")
 
         if [[ $URL != "" ]]; then
     ## record one page to PDF
@@ -446,7 +424,7 @@ echo '[
 
         CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
 
-        [ ! $2 ] && TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom de fichier à donner à cette page ? " --entry-text="${CTITLE}") || TITLE="$CTITLE"
+        [ ! $2 ] && TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom donner à ce fichier ? " --entry-text="${CTITLE}") || TITLE="$CTITLE"
         [[ "$TITLE" == "" ]] && echo "NO TITLE" && exit 1
 
         FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
@@ -476,7 +454,7 @@ echo '[
 
         espeak " Youtube music copying. Please help us to make the Web your Web"
 
-[ ! $2 ] && zenity --warning --width 600 --text 'DEVELOPPEMENT ZONE - https://git.p2p.legal - P2P INTERNET FACTORY'
+# [ ! $2 ] && zenity --warning --width 600 --text 'DEVELOPPEMENT ZONE - https://git.p2p.legal - P2P INTERNET FACTORY'
 
 # Create TEMP directory
 YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
@@ -768,7 +746,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4"
 
     # VIDEO TITLE
-    TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez un titre pour cette vidéo" --entry-text="${FILE_TITLE}")
+    TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de cette vidéo" --entry-text="${FILE_TITLE}")
     [[ $TITLE == "" ]] && exit 1
     TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TITLE (NO ;)
 
@@ -777,10 +755,10 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
     MEDIAKEY="VIDEO_${MEDIAID}"
 
-    ## CREATE SIMPLE JSON (REMOVE== it ?
+    ## CREATE SIMPLE JSON (EXPERIENCE WITH it)
     jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/Astroport/${CAT}/${MEDIAID}/video.json
 
-    ## MOVE FILE TO IMPORT ZONE
+    ## MOVE FILE FOR new_file_in_astroport POST TREATMENT
     [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
     && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
@@ -846,8 +824,7 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
     timestamp=$(date -u +%s%N | cut -b1-13)
 
-    ## OLD CODE !!! ADD TO ASTROPORT SCRIPT
-    ## NOW CREATE TIDDLER INTO PLAYER TW
+    ## CREATE BASH SCRIPT
 
     echo "MEDIAKEY=${MEDIAKEY}" > ~/Astroport/Add_${MEDIAKEY}_script.sh
 
@@ -878,10 +855,22 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
     espeak "Adding $CAT to I P F S. Please Wait"
 
+    ## RUN BASH SCRIPT
     bash ~/Astroport/Add_${MEDIAKEY}_script.sh "noh265"
+
+    ## OR PUT IN YOUR QUEUE
+    ## CREATING TIMELINE FOR BATCH TREATMENT
+    #~ mkdir -p ~/.zen/tmp/${IPFSNODEID}/ajouter_media.sh/
+    #~ echo "${MEDIAKEY}" > ~/.zen/tmp/${IPFSNODEID}/ajouter_media.sh/${MOATS}
+
+    ##
+
 
 fi
 
+#######################################
+########################## TIDDLER JSON READY
+#######################################
 if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     espeak "Updating T W"
 
@@ -899,7 +888,10 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     ## TODO : CHECK CACHE LAST MODIFIED
     echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
-    [[ -s ~/.zen/tmp/ajouter_media.html ]] && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && espeak "TW Found"
+    [[ -s ~/.zen/tmp/ajouter_media.html ]] \
+    && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+    && espeak "TW Found" \
+    || espeak "USING LOCAL COPY"
     ###############################
 
     echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
