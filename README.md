@@ -64,9 +64,9 @@ L'UTILISATEUR devient un JOUEUR, en semant son propre IPFS, en utilisant un Dock
 
 Ainsi, les AMIS peuvent héberger d'autres AMIS.
 
-# RESULTAT
+# TW
 
-TW du PLAYER support@qo-op.com
+PLAYER support@qo-op.com
 
 https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com
 
@@ -94,31 +94,17 @@ Bien entendu, le mieux est que chacun héberge et publie ses propres données su
 TW est la première application disponible pour les personnes décentralisées.
 L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de commande" pour activer la copie des tiddlers entre les TW d'amis et exécuter des pré et/ou post traitements.
 
-Le "pays de la cryptographie" n'est plus un endroit structuré par des répertoires et des fichiers, il devient un hachage perdu dans un échange de bits, où les clés mémorisent des chaînes (hachage + horodatage + signature).
-
-IPFS l'amène au niveau du réseau et crée un "lecteur virtuel fluide" à partir de tous les nœuds ou d'un groupe de nœuds en fonctionnement.
-En fait, les CDN l'utilisent, mais il s'agit d'une technologie pour les personnes qui utilisent IPFS pour s'éloigner des centres de données, la plupart d'entre elles ne comprennent toujours pas.
-
-Par rapport à la sémantique du "disque dur".
-Astroport.ONE crée un "BIOS" pour le lecteur IPFS utilisé avec une paire de clés.
-
-Le port 1234 redirige vers le "Master Boot Record" (ip:port) redirigeant vers la "Table d'allocation" montrant les fichiers au "Système d'exploitation".
-Nous utilisons TW comme table d'allocation et interface d'administration et de débogage pour aider à développer une application distribuée au-dessus.
-
-TW bénéficie automatiquement d'un "service d'hébergement collectif distribué".
-
-Depuis la page de connexion (BIOS) de la "phase alpha" https://astroport.copylaradio.com
-cliquez sur le lien dans le "pop jaune (MBR)" pour atteindre le formulaire de création d'un nouveau.
-Cliquez sur le pop "jaune suivant (DApp)" (et rafraîchissez car cela peut prendre 30s pour être prêt).
-
-À partir de deux phrases de passe et d'un courriel, le système génère la paire de clés et l'adresse IPN permanente du TW (seuls ceux qui ont installé la clé dans leur keystore ipfs peuvent la modifier).
-
-J'espère que cela vous aidera.
+# 20H12
 
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
+Ce rendez-vous permet à toutes les Stations de raffraichir leurs TW.
+Cette horaire garantie à la "Blockchain" d'être à jour au maximum.
 
-# DEMO
+Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
+
+
+# - ESSAYEZ IPFS - UN SOCKAGE INALTERABLE ET INTELLIGENT
 
 ### "The Barefoot Architect" de Johan Van Lengen.
 

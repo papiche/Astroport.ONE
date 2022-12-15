@@ -170,6 +170,7 @@ YUSER=$(echo $PLAYER | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
+echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME"
 #~ [[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
 NID="${myIPFSGW}" && WID="$NID/api"
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"

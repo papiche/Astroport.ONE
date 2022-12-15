@@ -20,7 +20,7 @@ PLAYERONE="$1"
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
-    [[ ! -d ~/.zen/game/players/$PLAYERONE ]] && echo "BAD $PLAYERONE" && continue
+    [[ ! -d ~/.zen/game/players/$PLAYER ]] && echo "BAD $PLAYERONE" && continue
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ $PLAYER == "user" || $PLAYER == "zen" ]] && continue
     mkdir -p ~/.zen/tmp/${MOATS}
@@ -64,7 +64,8 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
     echo "Getting latest online TW..."
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "/ipns/$ASTRONAUTENS ON $LIBRA"
-    ipfs --timeout 60s cat /ipns/$ASTRONAUTENS > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+
+    ipfs --timeout 60s -o ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html /ipns/$ASTRONAUTENS \
     || curl -m 30 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS" \
     || cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 

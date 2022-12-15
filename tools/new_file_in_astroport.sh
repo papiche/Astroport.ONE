@@ -281,7 +281,7 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video>
-        <br>{{!!duree}}<br>
+        <br>{{!!duree}} - {{!!filesize}} - {{!!dur}} sec.<br>
         "$H1"
         <h2>"$DESCRIPTION"</h2>"
 
@@ -317,6 +317,7 @@ then
     "mime": "'${MIME}'",
     "dur": "'${ipfsdur}'",
     "cat": "'${CAT}'",
+    "filesize": "'${FILE_SIZE}'",
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",
     "screenshot": "'/ipfs/${POSTER}'",

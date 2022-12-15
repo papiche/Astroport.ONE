@@ -99,6 +99,7 @@ echo "#############################################"
 
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
 sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
+sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
 sudo chmod 640 /etc/ssmtp/ssmtp.conf
 sudo chgrp mail /etc/ssmtp/ssmtp.conf
 
