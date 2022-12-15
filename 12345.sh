@@ -18,8 +18,15 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-[[ $isLAN ]] && myHOST="ipfs.localhost" && myHOSTPort="ipfs.localhost:8080" && myHTTP="http://" && myASTROPORT="http://astroport.localhost:1234" ## LAN STATION
-[[ ! $isLAN || $USER == "zen" ]] && myHOST="astroport.copylaradio.com" && myHOSTPort="ipfs.copylaradio.com" && myHTTP="https://" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
+myDOMAINName=$(hostname -d 2>/dev/null)
+myHOSTName=$(hostname |sed 's/.'${myDOMAINName}'$//')
+[ -n "$myDOMAINName" ] && myHOSTName="${myHOSTName}.${myDOMAINName}" || myDOMAINName=${myHOSTName#*.}
+[ -z "$myDOMAINName" ] && myDOMAINName=localhost
+myHOST="astroport.${myDOMAINName}"
+myIPFS="http://ipfs.${myDOMAINName}:8080"
+myASTROPORT="http://astroport.${myDOMAINName}:1234"
+
+[[ ! $isLAN || $USER == "zen" ]] && myIPFS="https://ipfs.${myDOMAINName}" && myASTROPORT="https://astroport.${myDOMAINName}" ## WAN STATION
 
 PORT=12345
 
@@ -36,7 +43,7 @@ ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=
 
 # Some client needs to respect that
 HTTPCORS="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: \*
+Access-Control-Allow-Origin: ${myASTROPORT}
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
@@ -81,7 +88,7 @@ while true; do
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
     [[ ! $maprunning ]] \
-    && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myHTTP}${myHOST}:'12345 (ᵔ◡◡ᵔ)' \
+    && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myASTROPORT}:'12345 (ᵔ◡◡ᵔ)' \
     && exec $MY_PATH/_12345.sh &
 
     ############### ACTIVATE USE ON QUICK IPFS DRIVE
@@ -89,7 +96,7 @@ while true; do
     #~ echo
     #~ ipfs key rm ${PORT} > /dev/null 2>&1
     #~ SESSIONNS=$(ipfs key gen ${PORT})
-    #~ echo "IPNS SESSION ${myHTTP}${myHOST}Port/ipns/$SESSIONNS CREATED"
+    #~ echo "IPNS SESSION ${myIPFS}/ipns/$SESSIONNS CREATED"
 
         ### # USE IT #
         ### MIAM=$(echo ${PORT} | ipfs add -q)
@@ -105,11 +112,11 @@ while true; do
     # REPLACE myHOST in http response template (fixing next API meeting point)
     sed "s~127.0.0.1:12345~${myHOST}:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~http://127.0.0.1:1234~${myASTROPORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i "s~http://127.0.0.1:8080~${myHTTP}${myHOSTPort}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
-    sed -i "s~_SESSIONLNK_~${myHTTP}${myHOSTPort}/ipns/${SESSIONNS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i "s~_SESSIONLNK_~${myIPFS}/ipns/${SESSIONNS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http ## NODE PUBLISH
     sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http ## HOSTNAME
@@ -131,8 +138,8 @@ while true; do
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "************************************************************************* "
-    echo "ASTROPORT 1234 UP & RUNNING.......................... ${myHTTP}$HOSTNAME:1234 PORT"
-    echo "${MOATS} NEXT COMMAND DELIVERY PAGE ${myHTTP}$HOSTNAME:${PORT}"
+    echo "ASTROPORT 1234 UP & RUNNING.......................... http://$HOST:1234 PORT"
+    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$HOST:${PORT}"
 
     [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2
 
@@ -144,14 +151,14 @@ while true; do
     ############################################################################
     ## / CONTACT
     if [[ $URL == "/" ]]; then
-        echo "/ CONTACT :  ${myHTTP}$HOSTP"
+        echo "/ CONTACT :  $HOSTP"
         echo "___________________________ Preparing default return register.html"
         echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
 
         sed "s~http://127.0.0.1:1234~${myASTROPORT}~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
         sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        sed -i "s~http://127.0.0.1:8080~${myHTTP}${myHOSTPort}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+        sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
 
         ## Random Background image ;)
@@ -307,7 +314,7 @@ while true; do
 
             ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-            ### echo "SESSION ${myHTTP}${myHOST}:8080/ipns/$SESSIONNS "
+            ### echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
             (
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
             ${MY_PATH}/tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
@@ -495,9 +502,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
                     ) &
 
-                    echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\"http://"${myHOST}":8080/ipns/"$ASTRONAUTENS"\"'/>
+                    echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\""${myIPFS}"/ipns/"$ASTRONAUTENS"\"'/>
                     <h1>BOOTING - ASTRONAUT $PSEUDO </h1> IPFS FORMATING - [$SALT + $PEPPER] (${EMAIL})
-                    <br>- TW - http://${myHOST}:8080/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    <br>- TW - ${myIPFS}/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
                     continue
                else
