@@ -76,7 +76,7 @@ p=0;Ei(69,e|0,28,i|0,r|0);Be=p;p=0;if(Be&1)break;p=0;Ge(45,u|0,18,f|0,a|0,t|0,n|
       scanner.addListener('scan', function (content) {
 
         $.ajax({
-            url: "http://127.0.0.1:1234",
+            url: "http://astroport.localhost:1234",
             data: "qrcode="+content,
             type: 'GET'
         });
@@ -105,11 +105,12 @@ p=0;Ei(69,e|0,28,i|0,r|0);Be=p;p=0;if(Be&1)break;p=0;Ge(45,u|0,18,f|0,a|0,t|0,n|
 
     </script>
 
-    <h2>Astronaute - Activez votre TW - </h2>
-<form action = "http://127.0.0.1:1234" method = "GET">
+    <h2> - Activez TW - </h2>
+<form action = "http://astroport.localhost:1234" method = "GET" >
+        Phrase Une : <input name=salt value=''></br>
+        Phrase Deux : <input name=pepper value=''></br>
+        URL : <input name=g1pub value=''></br>
         Email : <input name=email value=''></br>
-        Phrase Une : <input name=ph1 value=''></br>
-        Phrase Deux : <input name=ph2 value=''></br>
         <input type='submit' value='OK'>
     </form>
 
