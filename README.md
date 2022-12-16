@@ -98,12 +98,16 @@ L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de comm
 
 # 20H12
 
+ASTROBOT exécute le protocole de synchronisation Ŋ1
+
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
-Ce rendez-vous permet à toutes les Stations de raffraichir leurs TW.
-Cette horaire garantie à la "Blockchain" d'être à jour au maximum.
+Cet horaire commun invite chaque propriétaire de TW à publier leur version avant cette heure.
 
-Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
+A cette heure les Stations raffraichissent vos canaux TW communs...
+
+
+NB: Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
 
 
 # - ESSAYEZ IPFS - UN SOCKAGE INALTERABLE ET INTELLIGENT
