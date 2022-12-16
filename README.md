@@ -210,3 +210,7 @@ Proposez vos "Templates"
 # TODO
 * Ajouter des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
 
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
