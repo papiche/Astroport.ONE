@@ -87,7 +87,9 @@ Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niv
 N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" selon leurs "G1Voeu".
 Vous pouvez rejoindre le swam#0 officiel d'Astroport, en devenant bootstrap et hôte dans https://astroport.copylaradio.com TestNet "DNS Round Robin".
 
-Qma9zvrYHGcUPisLKBcG9U9sktThX5VfVci8jfM8D9RspT
+
+![](https://ipfs.copylaradio.com/ipfs/Qma9zvrYHGcUPisLKBcG9U9sktThX5VfVci8jfM8D9RspT)
+
 
 Bien entendu, le mieux est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée dans ce cas), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent bit massif.
 
