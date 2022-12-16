@@ -388,7 +388,7 @@ echo '[
         ## EVOLVE TO ARTICLE
         # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
-        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "URL à convertir en PDF (VIDE POUR UN FICHIER LOCAL)" --text "Indiquez le lien (URL)" --entry-text="")
+        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "URL à convertir en PDF (LAISSER VIDE POUR CHOISIR UN FICHIER LOCAL)" --text "Indiquez le lien (URL)" --entry-text="")
 
         if [[ $URL != "" ]]; then
     ## record one page to PDF
@@ -420,7 +420,7 @@ echo '[
 
         [[ ! -s ~/.zen/tmp/output.pdf ]] && espeak "No file Sorry. Exit" && exit 1
 
-        espeak "OK Page copied. Give it a title please"
+        espeak "OK P D F received"
 
         CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
 
@@ -454,14 +454,14 @@ echo '[
 
         espeak " Youtube music copying. Please help us to make the Web your Web"
 
-# [ ! $2 ] && zenity --warning --width 600 --text 'DEVELOPPEMENT ZONE - https://git.p2p.legal - P2P INTERNET FACTORY'
+[ ! $2 ] && zenity --warning --width 600 --text 'DEV-DEBUG : INSCRIVEZ VOUS SUR https://git.p2p.legal'
 
 # Create TEMP directory
 YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
 mkdir -p ${YTEMP}
 
 YTURL="$URL"
-[ ! $2 ] && [[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Extraction MP3 depuis Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
+[ ! $2 ] && [[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Copie MP3 Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
 [[ $YTURL == "" ]] && [[ $artist == "" ]] && echo "NO COPY TO MAKE" && exit 1
 
 ## CHECK if artist is LINK or ID
@@ -628,7 +628,6 @@ YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la
 # VIDEO RESOLUTION
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
-#RES=$(zenity --entry --width 300 --title="Résolution" --text="Résolution de la vidéo" --entry-text="${FILE_RES}" SD HD 4K 360p 480p 720p 1080p)
 
 # VIDEO SEASON or SAGA
 ### CHECK IF PREVIOUS ajouter_video (Serie case)
@@ -726,7 +725,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     espeak "Add your personnal video in TW"
 
-    zenity --warning --width 600 --text 'DEV ZONE - HELP US - https://git.p2p.legal'
+    zenity --warning --width 600 --text 'DEV-DEBUG : REGISTER https://git.p2p.legal'
 
     ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
     # SELECT FILE TO ADD TO ASTROPORT/KODI

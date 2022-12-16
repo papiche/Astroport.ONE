@@ -348,7 +348,7 @@ cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.zen/game/p
 
 ## TODO : Do we keep that ?
 # echo "SEND TW LINK to GCHANGE MESSAGE"
-[[ $3 ]] && ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : http://astroport.com:8080/ipfs/${IPFSREPFILEID}"
+[[ $3 ]] && ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : https://ipfs.copylaradio.com/ipfs/${IPFSREPFILEID}"
 
 # Couldl be used by caroussel.html template
 # CAROUSSEL=$(ipfs add -wq ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json | head-n 1)
