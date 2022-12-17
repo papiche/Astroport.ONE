@@ -212,7 +212,7 @@ echo "VIDEO $YTURL"
 
 #                 --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
 
-/usr/local/bin/youtube-dl  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+/usr/local/bin/youtube-dl  -f "(bv*[ext=mp4][height<=480]+ba/b[height<=480])" \
                 --cookies-from-browser $BROWSER \
                 --download-archive $HOME/.zen/.yt-dlp.list \
                 -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
@@ -645,21 +645,21 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
     FALSE '+18'\
     FALSE Action\
     FALSE Animation\
-    FALSE 'Arts martiaux'\
+    FALSE 'Arts Martiaux'\
     FALSE Aventure\
     FALSE Autre\
     FALSE Biographie\
     FALSE Biopic\
     FALSE Comedie\
-    FALSE 'Comedie dramatique'\
-    FALSE 'Comedie musicale'\
+    FALSE 'Comedie Dramatique'\
+    FALSE 'Comedie Musicale'\
     FALSE Crime\
     FALSE Documentaire\
     FALSE Drame\
     FALSE Divers\
     FALSE Educatif\
     FALSE Enfant\
-    FALSE 'Epouvante horreur'\
+    FALSE Horreur\
     FALSE Espionnage\
     FALSE Famille\
     FALSE Fantastique\
@@ -674,7 +674,7 @@ FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
     FALSE Peplum\
     FALSE Policier\
     FALSE Romance\
-    FALSE 'Science fiction'\
+    FALSE 'Science Fiction'\
     FALSE Soap\
     FALSE Spectacle\
     FALSE Sport\
@@ -689,8 +689,8 @@ GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
     # CONVERT INPUT TO MP4 #######################
     [[ $FILE_EXT != "mp4"  ]] \
     && espeak "Converting to M P 4. Please wait" \
-    && echo "CONVERT TO MP4 : ffmpeg -loglevel quiet -i ${FILE_PATH}/${FILE_NAME} -c:v libx264 -c:a aac ${FILE_PATH}/$FILE_TITLE.mp4" \
-    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
+    && echo "CONVERT TO MP4 : ffmpeg -loglevel quiet -i ${FILE_PATH}/${FILE_NAME} -vf scale=-1:360  -c:v libx264 -c:a aac ${FILE_PATH}/$FILE_TITLE.mp4" \
+    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -vf scale=-1:480 -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
     && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4" \
     && espeak "M P 4 ready"
 
