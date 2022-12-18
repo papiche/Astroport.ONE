@@ -30,6 +30,11 @@ cd ~/.zen/Astroport.ONE/
 git pull
 ## SOON /ipns/ Address !!!
 
+espeak "Tube Up" > /dev/null 2>&1
+## Updating yt-dlp
+$MY_PATH/youtube-dl.sh
+sudo youtube-dl -U
+
 # Refresh ~/.zen/game/world/G1VOEU
 # NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 
@@ -55,11 +60,6 @@ if [[ ! $isLAN ]]; then
         ipfs bootstrap add $bootnode
     done
 fi
-
-espeak "Tube Up" > /dev/null 2>&1
-## Updating yt-dlp
-$MY_PATH/youtube-dl.sh
-sudo youtube-dl -U
 
 ########################################################################
 end=`date +%s`
