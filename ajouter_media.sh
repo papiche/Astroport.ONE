@@ -67,7 +67,7 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
 
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+isLAN=$(echo $(ip route list match 0/0 | awk '{print $3}') | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 if [ $URL ]; then
@@ -274,12 +274,11 @@ rm -Rf ${YTEMP}
         espeak "Mirror web site"
         cd ~/.zen/tmp/
 
-        URL=$(echo $URL | grep -Eo '^http[s]?://[^/]+')
         [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien du site Web à copier" --text "Indiquez le lien (URL)" --entry-text="")
 
         ## Extract http(s)://domain.tld
-        URL=$(echo $URL | grep -Eo '^http[s]?://[^/]+')     # URL="https://discuss.ipfs.io"
-        DOMAIN=$(echo $URL | rev | cut -d '/' -f1 | rev)    # DOMAIN=discuss.ipfs.io
+        URLSOURCE=$(echo $URL | grep -Eo '^http[s]?://[^/]+')     # URL="https://discuss.ipfs.io"
+        DOMAIN=$(echo $URLSOURCE | rev | cut -d '/' -f1 | rev)    # DOMAIN=discuss.ipfs.io
         ARR=($(echo $DOMAIN | sed "s~\.~ ~g")) # ARR=discuss ipfs io
         NIAMOD=$(printf '%s\n' "${ARR[@]}" | tac | tr '\n' '.' ) # NIAMOD=io.ipfs.discuss.
         NIAPATH=$(echo $NIAMOD | sed "s~\.~\/~g") # NIAPATH=io/ipfs/discuss/
@@ -311,7 +310,7 @@ rm -Rf ${YTEMP}
 
             espeak "Let's go. " ###################### HTTRACK COPYING
 
-            httrack -wxY --sockets=99 −−max−rate=0 --disable-security-limits −−keep−alive --ext-depth=0 --stay-on-same-domain --keep-links=0 -V "echo \$0 >> $FILE_PATH/files" "$URL" -* +*/$DOMAIN/* -*wget* # -%l "fr"
+            httrack -wxY --sockets=99 −−max−rate=0 --disable-security-limits −−keep−alive --ext-depth=0 --stay-on-same-domain --robots=0 --keep-links=0 -V "echo \$0 >> $FILE_PATH/files" "$URL" -* +*/$DOMAIN/* -*wget* # -%l "fr"
 
             mv $FILE_PATH/external.html $FILE_PATH/$DOMAIN/
             ## G1PUB ENCODE.16 MEDIAKEY

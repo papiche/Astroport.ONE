@@ -50,7 +50,7 @@ sudo brother_ql_print /tmp/toprint.bin $LP
 ################################################################
 ### PRINT PLAYER TW myIP link
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+isLAN=$(echo $(ip route list match 0/0 | awk '{print $3}') | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)

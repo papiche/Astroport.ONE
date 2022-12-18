@@ -92,12 +92,19 @@ sudo npm install -g tiddlywiki
 
 echo "#############################################"
 echo "######### PATIENCE #################"
-echo "#############################################"
-
-# echo "## INSTALLATION AstroGEEK OpenCV = 'Intelligence Amie' - DEV - "
+echo "#############################################
+### PROPOSITION DE LOGICIELS COMPLEMETAIRES
+#############################################
+## OpenCV = 'Vision par Ordinateur en Intelligence Amie'
 # sudo apt-get install python3-opencv -y
 ## CONVERT AUDIO TO MIDI
 # pip install basic-pitch
+## CACHER LES VISAGES
+# python3 -m pip install 'git+https://github.com/ORB-HD/deface'
+## ...
+## DES SUGGESTIONS ?
+## CONTACTER support@qo-op.com
+#################################################"
 
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
 sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
