@@ -18,7 +18,7 @@ IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-myDOMAINName=$(hostname -d 2>/dev/null || domainname 2>/dev/null)
+myDOMAINName=$(hostname -d 2>/dev/null) && [ -z "$myDOMAINName" ] && myDOMAINName=$(domainname 2>/dev/null)
 myHOSTName=$(hostname |sed 's/\.'${myDOMAINName}'$//')
 [ -n "$myDOMAINName" ] && myHOSTName="${myHOSTName}.${myDOMAINName}" || myDOMAINName=${myHOSTName#*.}
 [ -z "$myDOMAINName" ] && myDOMAINName=localhost
