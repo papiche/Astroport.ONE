@@ -188,7 +188,7 @@ if [[ ! ${TIDDLER} ]]; then
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video>
-        <br>{{!!filesize}} - {{!!dur}} sec. - vtratio ="${VTRATIO}"<br>
+        <br>{{!!filesize}} - {{!!dur}} sec. - vtratio =  {{!!vtratio}}<br>
         <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
         end=`date +%s`
