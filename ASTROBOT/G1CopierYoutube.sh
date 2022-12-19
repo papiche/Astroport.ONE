@@ -187,7 +187,7 @@ if [[ ! ${TIDDLER} ]]; then
         PLAYLIST=$(yt-dlp --cookies-from-browser $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><br>{{!!duree}} - {{!!filesize}} - {{!!dur}} sec. (${$VTRATIO})<br><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+        TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><br>{{!!filesize}} - {{!!dur}} sec. - vtratio ="${$VTRATIO}"<br><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
         end=`date +%s`
         dur=`expr $end - $start`

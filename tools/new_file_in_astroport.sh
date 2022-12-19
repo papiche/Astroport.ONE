@@ -289,7 +289,7 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video>
-        <br>{{!!duree}} - {{!!filesize}} - {{!!dur}} sec. (${$VTRATIO})<br>
+        <br>{{!!filesize}} - {{!!dur}} sec. - vtratio ="${$VTRATIO}"<br>
         "$H1"
         <h2>"$DESCRIPTION"</h2>"
 
