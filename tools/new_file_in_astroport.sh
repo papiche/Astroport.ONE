@@ -289,9 +289,8 @@ then
     if [[ $(echo "$MIME" | grep 'video') ]]; then
 
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></video>
-        <br>{{!!filesize}} - {{!!dur}} sec. - vtratio ="${$VTRATIO}"<br>
-        "$H1"
-        <h2>"$DESCRIPTION"</h2>"
+        <br>{{!!filesize}} - {{!!dur}} sec. - vtratio ="${VTRATIO}"<br>
+        "$H1"<h2>"$DESCRIPTION"</h2>"
 
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
         TAGS="G1${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR $MIME"
