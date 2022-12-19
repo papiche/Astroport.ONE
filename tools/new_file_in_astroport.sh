@@ -319,7 +319,7 @@ then
     "duree": "'${DUREE}'",
     "duration": "'${DURATION}'",
     "giftime": "'${PROBETIME}'",
-    "vtratio": "'${$VTRATIO}'",
+    "vtratio": "'${VTRATIO}'",
     "gifanime": "'/ipfs/${ANIMH}'",
     "type": "'${TidType}'",
     "mime": "'${MIME}'",

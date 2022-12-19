@@ -208,7 +208,7 @@ if [[ ! ${TIDDLER} ]]; then
     "modified": "'${MOATS}'",
     "title": "'$ZFILE'",
     "type": "'text/vnd.tiddlywiki'",
-    "vtratio": "'${$VTRATIO}'",
+    "vtratio": "'${VTRATIO}'",
     "text": "'$TEXT'",
     "mime": "'${MIME}'",
     "size": "'${FILE_BSIZE}'",
