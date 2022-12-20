@@ -13,13 +13,13 @@ IPFSNODEID=$(ipfs id -f='<id>\n') || ( echo "${ME} : IPFSNODEID MISSING" && exit
 TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
             ## GETTING LAST TW via IPFS
-            echo "${ME} : IPFS : ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS}"\
-            && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
+            echo "${ME} : IPFS : ipfs --timeout 60s cat  /ipns/${ASTRONAUTENS}"\
+            && ipfs --timeout 60s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
              ## GETTING LAST TW via HTTP
             [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] \
             && echo "${ME} : WWW : $TUBE/ipns/${ASTRONAUTENS}" \
-            && curl -m 12 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$TUBE/ipns/${ASTRONAUTENS}" \
+            && curl -m 60 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$TUBE/ipns/${ASTRONAUTENS}" \
             || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$TUBE/ipns/${ASTRONAUTENS}" ## Ask caching
 
         ### GOT TW !!

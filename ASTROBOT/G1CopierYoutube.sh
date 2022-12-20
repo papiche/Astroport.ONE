@@ -187,7 +187,9 @@ if [[ ! ${TIDDLER} ]]; then
         PLAYLIST=$(yt-dlp --cookies-from-browser $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video><br>{{!!duree}} - {{!!filesize}} - {{!!dur}} sec. (${$VTRATIO})<br><h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+        TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video>
+        <br>{{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})<br>
+        <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
 
         end=`date +%s`
         dur=`expr $end - $start`
@@ -206,10 +208,11 @@ if [[ ! ${TIDDLER} ]]; then
     "modified": "'${MOATS}'",
     "title": "'$ZFILE'",
     "type": "'text/vnd.tiddlywiki'",
-    "vtratio": "'${$VTRATIO}'",
+    "vtratio": "'${VTRATIO}'",
     "text": "'$TEXT'",
     "mime": "'${MIME}'",
     "size": "'${FILE_BSIZE}'",
+    "filesize": "'${FILE_SIZE}'",
     "sec": "'${SEC}'",
     "dur": "'${dur}'",
     "ipfs": "'/ipfs/${ILINK}'",

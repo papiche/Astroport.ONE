@@ -792,12 +792,12 @@ esac
 ########################################################################
 # Screen capture
 ########################################################################
-if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    espeak "beware taking screen shot in 3 seconds"
-    sleep 3
-    espeak "smile"
-    import -window root ~/.zen/tmp/screen.png
-fi
+#~ if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
+    #~ espeak "beware taking screen shot in 3 seconds"
+    #~ sleep 3
+    #~ espeak "smile"
+    #~ import -window root ~/.zen/tmp/screen.png
+#~ fi
 
 ###################################
 ### MOVING FILE TO ~/astroport ####

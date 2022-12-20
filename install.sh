@@ -270,25 +270,21 @@ echo "#############################################"
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
 echo "%%%%%%%%%%%%%%%%%%%%"
-echo "VOUS AVEZ DEJA UN COMPTE SUR GCHANGE ?"
+echo "SI VOUS AVEZ DEJA UN COMPTE SUR GCHANGE ?"
 echo "          Saisissez vos identifiants"
 echo "%%%%%%%%%%%%%%%%%%%%"
-echo
-echo "Sinon Tapez 2 fois sur ENTRER."
-read SALT
-[[ $SALT ]] && echo "Entrez votre mot de passe : "
-read PEPPER
-[[ $SALT && ! $PEPPER ]] && SALT=""
-
-    ~/.zen/Astroport.ONE/tools/VISA.new.sh "$SALT" "$PEPPER"
-
 echo "#############################################"
 
 if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ##########################################################
-echo "EXPERIMENTAL ### INIT KODI PAR IPFS ## "
+    ## ON BOARDING PLAYER
+    ~/.zen/Astroport.ONE/start.sh &
+    xdg-open "http://astroport.localhost:1234"
+
+echo "EXPERIMENTAL ### RECOPIEZ VOS VSTREAM KODI DANS IPFS ## "
 read KODI
     if [[ $KODI ]]; then
+
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
     ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
@@ -303,6 +299,8 @@ read KODI
     cd $MY_PATH
 
     fi
+
+
 fi
 
 else
