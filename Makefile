@@ -16,7 +16,7 @@ install: myos build player up
 	echo "Welcome to myos docker land - make a user - make a player -"
 
 .PHONY: migrate
-migrate-%: home := ~/.zen/game/players
+migrate-%: home                           := ~/.zen/game/players
 migrate-%:
 	if $(SUDO) test ! -d /var/lib/docker/volumes/$(HOSTNAME)_$*; then \
 	  $(RUN) $(SUDO) mkdir -p /var/lib/docker/volumes/$(HOSTNAME)_$* \
@@ -26,15 +26,15 @@ migrate-%:
 	fi
 
 .PHONY: player
-player: STACK := User
+player: STACK                             := User
 player: docker-network-create-$(USER)
-	$(call make,stack-User-$(if $(DELETE),down,up),$(MYOS),COMPOSE_PROJECT_NAME MAIL)
+	$(call make,stack-User-$(if $(DELETE),down,up),$(MYOS),$(PLAYER_MAKE_VARS))
 
 .PHONY: player-%
-player-%: STACK := User
+player-%: STACK                           := User
 player-%:
 	$(if $(filter $*,$(filter-out %-%,$(patsubst docker-compose-%,%,$(filter docker-compose-%,$(MAKE_TARGETS))))), \
-	  $(call make,stack-User-$*,$(MYOS),COMPOSE_PROJECT_NAME MAIL) \
+	  $(call make,stack-User-$*,$(MYOS),$(PLAYER_MAKE_VARS)) \
 	)
 
 .PHONY: shellcheck
