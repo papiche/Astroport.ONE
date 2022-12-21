@@ -1,18 +1,17 @@
 COMPOSE_FILE_VDI                          := true
 COMPOSE_IGNORE_ORPHANS                    := true
 DOCKER_IMAGES_MYOS                        := x2go:xfce-debian
-ENV_VARS                                  += HOST_ASTROPORT_SERVICE_DOMAIN HOST_ASTROPORT_SERVICE_NAME HOST_ASTROPORT_SERVICE_1234_TAGS
-HOST_ASTROPORT_SERVICE_DOMAIN             ?= $(firstword $(DOMAIN))
+ENV_VARS                                  += HOST_ASTROPORT_SERVICE_1234_TAGS
 HOST_ASTROPORT_SERVICE_NAME               ?= astroport
 HOST_ASTROPORT_SERVICE_1234_TAGS          ?= $(call tagprefix,HOST_ASTROPORT,1234)
 HOST_ASTROPORT_UFW_UPDATE                 := 1234/tcp 12245:12445/tcp 45720/tcp
 MAKE_VARS                                 += SSH_PORT User host
-PLAYER_MAKE_VARS                          := COMPOSE_PROJECT_NAME MAIL IPFS_UFW_DOCKER IPFS_UFW_UPDATE USER_IPFS_SERVICE_PROXY_TCP USER_IPFS_SERVICE_5001_ENVS USER_PATH_PREFIX
+PLAYER_MAKE_VARS                          := COMPOSE_PROJECT_NAME MAIL IPFS_UFW_DOCKER IPFS_UFW_UPDATE USER_IPFS_SERVICE_PROXY_TCP USER_IPFS_SERVICE_5001_ENVS USER_RESU_HOST
 SERVICE                                   := astroport
 SSH_PORT                                  := 45720
 SSH_PUBLIC_HOSTS                          := git.p2p.legal
 STACK                                     := host
-USER_PATH_PREFIX                          := player/
+USER_RESU_HOST                            := true
 User                                      := User/ipfs
 host                                      := host/ipfs
 ifeq ($(PLAYER_API_ONLINE),true)
