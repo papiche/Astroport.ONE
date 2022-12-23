@@ -278,8 +278,9 @@ echo "#############################################"
 if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ##########################################################
     ## ON BOARDING PLAYER
-    ~/.zen/Astroport.ONE/start.sh &
-    sleep 1
+    ~/.zen/Astroport.ONE/start.sh
+    ~/.zen/Astroport.ONE/tools/displaytimer.sh 3
+    espeak "Create your TW keys"
     xdg-open "http://astroport.localhost:1234"
 
 echo "EXPERIMENTAL ### RECOPIEZ VOS VSTREAM KODI DANS IPFS ## OUI ? ENTER sinon Ctrl+C"

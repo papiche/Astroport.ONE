@@ -25,7 +25,7 @@ case "${1:-${cmd:-start}}" in
     cron
     log &
     zen
-    exec "$ASTROPORT_DIR/start.sh"
+    exec "$ASTROPORT_DIR/launch.sh"
   ;;
 
   install)

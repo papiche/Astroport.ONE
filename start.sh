@@ -26,4 +26,4 @@ echo "(RE)STARTING 12345.sh"
 mkdir -p ~/.zen/tmp
 
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
-echo $! > ~/.zen/.pid && wait
+echo $! > ~/.zen/.pid
