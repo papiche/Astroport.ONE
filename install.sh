@@ -30,7 +30,7 @@ then
 
 # Check requirements
 echo "Installateur Astroport.ONE pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/)"
-echo "$USER appuyez sur ENTRER."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
+# echo "$USER appuyez sur ENTRER."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
 echo "#############################################"
 echo "###### IPFS BIOS INSTALL ##############################"
 echo "################  CRYPTO TW Ŋ1 PROTOCOL #############"

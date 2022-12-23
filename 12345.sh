@@ -231,6 +231,7 @@ while true; do
     ( ## SUB PROCESS
         COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
+        [[ $COIN == "" || $COIN == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -n "https://data.gchange.fr" send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
         end=`date +%s`
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
@@ -260,6 +261,7 @@ while true; do
 ##############################################
         if [[ $APPNAME == "pay" ]]; then
             echo "$APPNAME : $WHAT $OBJ $VAL"
+            echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -a ${WHAT} -p ${VAL} -c 'Bro'"
             echo "$HTTPCORS $(${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -a ${WHAT} -p ${VAL} -c 'Bro')" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo "(G_G ) PAYING Execution time was "`expr $end - $start` seconds.
@@ -270,7 +272,7 @@ while true; do
 ##############################################
 # MESSAGING
 ##############################################
-        if [[ $APPNAME == "messaging" || $APPNAME == "email" ]]; then
+        if [[ $APPNAME == "messaging" ]]; then
 
             ( ## & SUB PROCESS
 
@@ -319,7 +321,7 @@ while true; do
 ########################################
 # G1PUB WITH NO EMAIL -> Open Gchange Profile & Update TW cache
 ########################################
-        if [[ "$APPNAME" == "g1pub" && ${arr[7]} == "" ]]; then
+        if [[ "$APPNAME" == "g1pub" && "$OBJ" != "email" ]]; then
 
             [[ ${WHAT} == "astro" ]] && REPLACE="$LIBRA/ipns/$ASTRONAUTENS" \
             || REPLACE="https://www.gchange.fr/#/app/user/${G1PUB}"
@@ -480,14 +482,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         ###################################################################################################
         ###################################################################################################
         # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email=EMAIL&pseudo=PROFILENAME
-    if [[ ${arr[6]} == "email" && ${arr[7]} != "" ]]; then
+    if [[ ${OBJ} == "email" && "${VAL}" != "" ]]; then
 
                 [[ $APPNAME != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $APPNAME" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && continue
 
                 start=`date +%s`
 
                 # WHAT can contain urlencoded FullURL
-                EMAIL=$(urldecode ${arr[7]} | xargs)
+                EMAIL="${VAL}"
                 PSEUDO=$(urldecode ${arr[9]} | xargs)
 
                 [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  continue
@@ -538,17 +540,6 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
 
     fi
-
-
-##############################################
-# VIDEOURL : ADD URL TO 'CopierYoutube' tagged Tiddler : TODO
-##############################################
-        if [[ $APPNAME == "CopierYoutube" ]]; then
-            echo "$HTTPCORS /ipns/${ASTRONAUTENS} ADDING ${WHAT}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-            end=`date +%s`
-            echo $APPNAME "(☉_☉ ) ${WHAT} Execution time was "`expr $end - $start` seconds.
-            continue
-        fi
 
 
         ## RESPONDING

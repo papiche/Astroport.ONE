@@ -210,39 +210,30 @@ mkdir -p ${YTEMP}
 # youtube-dl $YTURL
 echo "VIDEO $YTURL"
 
-#                 --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
+LINE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(title)s" "${YTURL}")"
+YID=$(echo "$LINE" | cut -d '&' -f 1)
+TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
 
-/usr/local/bin/youtube-dl  -f "(bv*[ext=mp4][height<=480]+ba/b[height<=480])" \
-                --cookies-from-browser $BROWSER \
+/usr/local/bin/youtube-dl -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+                --cookies-from-browser $BROWSER --verbose --audio-format mp3\
                 --download-archive $HOME/.zen/.yt-dlp.list \
-                -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
-                --no-playlist --write-info-json --write-description --no-get-comments \
-                --no-mtime -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" $YTURL
+                 -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
+                 -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
 
-# Get filename, extract ID, make destination dir and move copy.
-YFILE=$(ls -S ${YTEMP} | head -n 1)
-FILE_NAME="$(basename "${YFILE}")"
+        ZFILE="$TITLE.mp4"
+        echo "$ZFILE"
+
+FILE_NAME="$(basename "${ZFILE}")"
 FILE_EXT="${FILE_NAME##*.}"
 
-JSON_FILE=$(echo ${FILE_NAME} | sed "s/${FILE_EXT}/json/g")
-
-YID=$(echo "${FILE_NAME}" | cut -d "&" -f 1)
-YNAME=$(echo "${FILE_NAME}" | cut -d "&" -f 2- | sed "s/[(][^)]*[)]//g" | sed -e 's/[^A-Za-z0-9._-]/_/g' | sed -e 's/__/_/g' ) # Remove YoutubeID_ and (what is in perentheses)
-[[ $(which detox) ]] && YNAME=$(echo "${FILE_NAME}" | cut -d "&" -f 2- | detox --inline)
-
-espeak "OK $YNAME copied"
+echo "OK $ZFILE copied"
+espeak "OK $TITLE copied"
 
 MEDIAID="$REVSOURCE${YID}"
-TITLE="${YNAME%.*}"
 MEDIAKEY="YOUTUBE_${MEDIAID}"
 
 FILE_PATH="$HOME/Astroport/youtube/$MEDIAID"
 mkdir -p ${FILE_PATH} && mv -f ${YTEMP}/* ${FILE_PATH}/
-# rename FILE_NAME to YNAME (URL clean)
-mv "${FILE_PATH}/${FILE_NAME}" "${FILE_PATH}/${YNAME}" && FILE_NAME="${YNAME}"
-# get & rename video.json
-jsonfile=$(ls ${FILE_PATH}/*.json)
-mv "${jsonfile}" "${FILE_PATH}/video.json"
 
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE_PATH}/${FILE_NAME}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p

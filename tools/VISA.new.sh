@@ -295,7 +295,8 @@ NID="${myIPFSGW}" && WID="$NID/api"
         convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/$PLAYER/ID.png
 
         # INSERTED IMAGE IPFS
-        IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1)
+        # IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1) ## G1VISA PUBLIC / PRIVATE
+        IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/pseudo.png | tail -n 1) ## G1VISA PUBLIC ONLY
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
     echo

@@ -113,8 +113,7 @@ if [[ ! ${TIDDLER} ]]; then
         echo "COPIE : $ZYURL"
         [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
 
-        TITLE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(title)s" "${ZYURL}")"
-        TITLE=${TITLE//[^A-zÀ-ÿ0-9 ]/}
+        TITLE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
 
         start=`date +%s`
