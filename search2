@@ -1,0 +1,16 @@
+#!/bin/bash
+clear
+echo "------------------------------------------------------------------------------"
+if [ "$1" == "" ]; then
+    echo "  Nothing to search for!"
+else
+    echo "  Searching for "$1" recursively. Please Wait..."
+    echo "------------------------------------------------------------------------------"
+    grep -h -r --exclude=B00 -H --colour=always "$1" ./
+fi
+echo "------------------------------------------------------------------------------"
+if [ "$2" != "" ]; then
+    echo "  To replace \"$1\" whith \"$2\", please run"
+    echo "  grep -rl '$1' ./  | while read file; do sed -i 's~$1~$2~g' \$file; done"
+fi
+## THIS IS A GREAT RETRO ENGINEERING AND CODING TOOLS
