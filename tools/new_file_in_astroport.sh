@@ -189,6 +189,7 @@ echo "-----------------------------------------------------------------"
 startipfs=`date +%s`
 
 echo "ADDING FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
+espeak "Adding $FILE_SIZE file" 2>&1 > /dev/null
 IPFS=$(ipfs add -wq "${path}${file}")
 IPFSREPFILEID=$(echo $IPFS | cut -d ' ' -f 2)
 IPFSID=$(echo $IPFS | cut -d ' ' -f 1)

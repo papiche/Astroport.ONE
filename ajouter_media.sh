@@ -32,6 +32,8 @@ alias espeak='espeak 1>&2>/dev/null'
 [[ $(which ffmpeg) == "" ]] && echo "ERREUR! Installez ffmpeg" && echo "sudo apt install ffmpeg" && exit 1
 [[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
 
+exec 2>&1 >> ~/.zen/tmp/ajouter_media.error.log
+
 URL="$1"
 PLAYER="$2"
 CHOICE="$3"
