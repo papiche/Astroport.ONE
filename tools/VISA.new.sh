@@ -296,7 +296,7 @@ NID="${myIPFSGW}" && WID="$NID/api"
 
         # INSERTED IMAGE IPFS
         # IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1) ## G1VISA PUBLIC / PRIVATE
-        IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/pseudo.png | tail -n 1) ## G1VISA PUBLIC ONLY
+        IASTRO=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/pseudo.png | tail -n 1) ## G1VISA PUBLIC ONLY
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
     echo
