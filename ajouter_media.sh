@@ -45,7 +45,7 @@ CHOICE="$3"
 && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
 && [[ $OUTPUT ]] && PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
 
-[[ ${PLAYER} == "" ]] && exit 1
+[[ ${PLAYER} == "" ]] && xdg-open "http://astroport.localhost:1234" && exit 1
 
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 espeak "Hello $PSEUDO"
