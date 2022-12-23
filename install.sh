@@ -279,11 +279,12 @@ if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ##########################################################
     ## ON BOARDING PLAYER
     ~/.zen/Astroport.ONE/start.sh &
+    sleep 1
     xdg-open "http://astroport.localhost:1234"
 
-echo "EXPERIMENTAL ### RECOPIEZ VOS VSTREAM KODI DANS IPFS ## "
+echo "EXPERIMENTAL ### RECOPIEZ VOS VSTREAM KODI DANS IPFS ## OUI ? ENTER sinon Ctrl+C"
 read KODI
-    if [[ $KODI ]]; then
+    if [[ ! $KODI ]]; then
 
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."

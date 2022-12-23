@@ -53,7 +53,7 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH
     if [[ duree -gt 3600000 ]]; then
 
-    (
+    ( ##### SUB-PROCESS
     start=`date +%s`
 
     ############# GET BOOTSTRAP SWARM DATA
@@ -107,7 +107,7 @@ while true; do
     end=`date +%s`
     echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds.'
 
-    ) &
+    ) & ##### SUB-PROCESS
 
     # last run recording
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
