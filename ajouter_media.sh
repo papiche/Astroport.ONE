@@ -474,7 +474,7 @@ then
     # Ask for song name
     [ ! $2 ] && song=$(zenity --entry --width 300 --title "Titre à chercher sur Youtube" --text "Titre recherché" --entry-text="")
     [[ $song == "" ]] && espeak "I was expecting a song name. Sorry. I Am out." && exit 1
-
+    espeak "Searching $artist $song"
     # Download mp3 from 1st youtube search video result (--write-info-json)
     /usr/local/bin/youtube-dl --default-search ytsearch1: \
      --cookies-from-browser $BROWSER \
@@ -485,7 +485,7 @@ then
 else
 
 [[ $YTURL == "" ]] && YTURL="$artist"
-
+    espeak "Copying Link"
 /usr/local/bin/youtube-dl \
 --cookies-from-browser $BROWSER \
 --ignore-errors --no-mtime \
