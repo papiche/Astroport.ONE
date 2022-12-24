@@ -56,7 +56,7 @@ CHOICE="$3"
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 espeak "Hello $PSEUDO"
 
-(cd $MY_PATH && git pull && espeak "code ok") &
+( cd $MY_PATH && git pull ) &
 
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
@@ -85,6 +85,11 @@ if [ $URL ]; then
     CHOICE="$IMPORT"
 fi
 
+    ( ## SUB PROCESS
+        # Get PLAYER wallet amount
+        COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+        [[ $COINS == "" || $COINS == "null" ]] && espeak "Missing coins. Free Run." || espeak "You have $COINS Coins"
+    )
 
 # GET SCREEN DIMENSIONS
 screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
@@ -136,7 +141,7 @@ fi
 ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
-&& espeak "I P F S progressing. Please try again later" && exit 1
+&& espeak "I P F S not ready. Wait and try again" && exit 1
 
 ########################################################################
 espeak "restart I P F S daemon"

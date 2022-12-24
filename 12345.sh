@@ -231,7 +231,7 @@ while true; do
     ( ## SUB PROCESS
         COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        [[ $COIN == "" || $COIN == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -n "https://data.gchange.fr" send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
+        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -n "https://data.gchange.fr" send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
         end=`date +%s`
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
@@ -241,7 +241,7 @@ while true; do
         ## ARCHIVE TOCTOC ${WHAT}S KEEP LOG (TODO : ERASE)
 ########################################
         mkdir -p ~/.zen/game/players/.toctoc/
-        ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1)
+        ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1 | cut -d '.' -f 1)
         TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
         if [[ ! $ISTHERE ]]; then
             echo "${APPNAME} 1ST TOCTOC : ${MOATS}"
