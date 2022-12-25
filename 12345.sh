@@ -110,12 +110,15 @@ while true; do
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
-    sed "s~127.0.0.1:12345~${myHOST}:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/register.html > ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    cat $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i "s~127.0.0.1:12345~${myHOST}:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~http://127.0.0.1:1234~${myASTROPORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-
+    ## Random Background image ;)
+    sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~_SESSIONLNK_~${myIPFS}/ipns/${SESSIONNS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http ## NODE PUBLISH

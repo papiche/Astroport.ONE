@@ -25,6 +25,13 @@ html {
     input {
     width: 20em;  height: 2em;
     }
+#yellow {
+      background: yellow;
+      position: absolute;
+      top: 40%;
+      left: 60%;
+      visibility: hidden;
+    }
     </style>
 
 </head>
@@ -44,12 +51,15 @@ html {
 <form id="formlink" action = "http://127.0.0.1:1234" method = "GET" enctype="application/x-www-form-urlencoded">
     <br>
      <b>Activez votre BunkedBOX</b></br></br>
-        Phrase 1 : <input name=salt value=''></br>
-        Phrase 2 : <input name=pepper value=''></br></br>
-        <b>COPIEZ VOS VIDEOS YOUTUBE FAVORITES</b><input type="hidden" name=g1pub value='https://www.youtube.com/playlist?list=LL'></br>
+        <input type='hidden' name=salt value='0'></br>
+        <input type='hidden' name=pepper value='0'></br></br>
+        <h1>ENREGISTREZ VOS VIDEOS FAVORITES DANS IPFS</h1><input type="hidden" name=g1pub value='https://www.youtube.com/playlist?list=LL'></br>
         Email : <input name=email value=''></br></br>
         <input type='submit' value='(☼‿‿☼)'>
 </form>
+<div id="yellow">
+<h3><a href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+</div>
 </h2>
             <p>
             <b>Besoin d'aide ? Contactez support@qo-op.com</b>
@@ -60,8 +70,8 @@ html {
     <div class="row justify-center">
             <h1 class="video-title">
                 <a href="https://git.p2p.legal/qo-op/Astroport.ONE" target="code">CODE : Astroport.ONE - BunkedBOX edition -</a><br>
-                <a target="code" href="http://opencollective.com/monnaie-libre/projects/bunker-box">Recopiez les vidéos que vous aimez dans les capsules multimédia de votre TW, dans IPFS et les partager entre amis!
-                Devenez propriétaire d'INTERNET. Rendez in-censurable, in-arrêtable la liberté d'expression. LE PROJET!</a>
+                <a target="code" href="http://opencollective.com/monnaie-libre/projects/bunker-box">Recopiez les vidéos que vous aimez dans les capsules multimédia de votre TW!
+                <br>Une fois votre G1Visa obtenu, direction <a target="gchange" href="https://gchange.fr">https://gchange.fr</a> !</a>
         </h1>
     </div>
 </article>
@@ -115,11 +125,17 @@ Take possession of your TW. Make freedom of expression uncensurable, unstoppable
 
 
 <script>
+const el = document.getElementById('yellow');
+
+setTimeout(() => {
+  el.style.visibility = 'visible';
+}, 23456); // 👈️ delay in milliseconds
+
 var arrTimes = [];
 var i = 0; // start
 var timesToTest = 3;
 var tThreshold = 300; //ms
-var testImage = "http://libra.copylaradio.com:8080/ipfs/QmUUyiuCM4yXgaeGyqC2SVUUXZksuxhDfHQYpUpZPuL2oS/astroport.jpg"; // small image in your server
+var testImage = "https://ipfs.copylaradio.com/ipfs/QmUUyiuCM4yXgaeGyqC2SVUUXZksuxhDfHQYpUpZPuL2oS/astroport.jpg"; // small image in your server
 var dummyImage = new Image();
 var isConnectedFast = false;
 
