@@ -179,7 +179,7 @@ while true; do
 ###################################################################################################
 # API ZERO ## Made In Zion & La Bureautique
     if [[ ${arr[0]} == "salt" ]]; then
-        [[ ! $APPNAME ]] && echo "NO APPNAME - CONTINUE" && continue
+        [[ ! $APPNAME || $SALT == "pepper" ]] && echo "NO APPNAME - BAD APP - CONTINUE" && continue
         ############################################################################
         # WRITING API # SALT # PEPPER # MAKING THE KEY EXIST #########
         ################### KEY GEN ###################################
