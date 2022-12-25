@@ -128,7 +128,7 @@ select fav in  "${choices[@]}"; do
         echo  "Enter to continue. Ctrl+C to stop"
         read
         echo "REPLACE $IPFSNODEID WITH _ASTROPORT_"
-        sed "s~${IPFSNODEID}~_ASTROPORT_~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
+        sed "s~${IPFSNODEID}~_ASTROPORT_~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html > ~/.zen/tmp/$PLAYER.html
         TW=$(ipfs add -Hq ~/.zen/tmp/$PLAYER.html | tail -n 1)
         ipfs name publish --allow-offline --key=$PLAYER /ipfs/$TW
         espeak "TW dropped in cyberspace..."
