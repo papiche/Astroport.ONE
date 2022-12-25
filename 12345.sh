@@ -110,7 +110,7 @@ while true; do
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
-    sed "s~127.0.0.1:12345~${myHOST}:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/index.http > ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed "s~127.0.0.1:12345~${myHOST}:${PORT}~g" $HOME/.zen/Astroport.ONE/templates/register.html > ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~http://127.0.0.1:1234~${myASTROPORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
