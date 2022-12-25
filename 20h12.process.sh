@@ -51,7 +51,7 @@ espeak "Restarting API" > /dev/null 2>&1
 PID=$!
 echo $PID > ~/.zen/.pid
 
-if [[ ! $isLAN ]]; then
+    ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
     ipfs bootstrap rm --all > /dev/null 2>&1
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
@@ -59,7 +59,7 @@ if [[ ! $isLAN ]]; then
         ipfsnodeid=${bootnode##*/}
         ipfs bootstrap add $bootnode
     done
-fi
+    ## fi
 
 ########################################################################
 end=`date +%s`

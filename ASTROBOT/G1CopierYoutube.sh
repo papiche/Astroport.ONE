@@ -150,7 +150,7 @@ if [[ ! ${TIDDLER} ]]; then
 
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         boucle=$((boucle+1))
-        espeak "video copy number $bouche" > /dev/null 1>&2
+        espeak "Video Number $boucle" > /dev/null 1>&2
 
 ####################################################
         echo "FOUND : ~/.zen/tmp/yt-dlp/$ZFILE"
