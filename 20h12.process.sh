@@ -24,13 +24,12 @@ rm -Rf ~/.zen/tmp/*
 
 espeak "Code Updating" > /dev/null 2>&1
 
-
 ## PROCESS TW BACKOFFICE TREATMENT
 cd ~/.zen/Astroport.ONE/
 git pull
 ## SOON /ipns/ Address !!!
 
-espeak "Tube Up" > /dev/null 2>&1
+espeak "Updating yt-dlp" > /dev/null 2>&1
 ## Updating yt-dlp
 $MY_PATH/youtube-dl.sh
 sudo youtube-dl -U
@@ -38,21 +37,14 @@ sudo youtube-dl -U
 # Refresh ~/.zen/game/world/G1VOEU
 # NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
 
-## CLOSING API PORT
-[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
-
 espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
 
-## OPEN API ENGINE
-espeak "Restarting API" > /dev/null 2>&1
-~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
-PID=$!
-echo $PID > ~/.zen/.pid
-
     ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
+    espeak "bootstrap refresh" > /dev/null 2>&1
+
     ipfs bootstrap rm --all > /dev/null 2>&1
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
@@ -69,6 +61,14 @@ echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
-espeak "Byte Strom End. $dur seconds" > /dev/null 2>&1
+espeak "20 12 duration was $dur seconds" > /dev/null 2>&1
+
+## CLOSING API PORT
+[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
+## OPEN API ENGINE
+espeak "Restarting API" > /dev/null 2>&1
+~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+PID=$!
+echo $PID > ~/.zen/.pid
 
 exit 0
