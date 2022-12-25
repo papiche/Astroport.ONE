@@ -22,7 +22,7 @@ PORT=12345
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
     TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
-mkdir -p ~/.zen/tmp/coucou/
+mkdir -p ~/.zen/tmp/coucou/ ~/.zen/game/players/localhost
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
