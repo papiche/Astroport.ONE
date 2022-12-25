@@ -100,7 +100,9 @@ while true; do
     # REPLACE myHOST in http response template (fixing next API meeting point)
     echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     template_register >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i "s~:http://127.0.0.1:12345~http://${myHOST}:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i -e "s~\"${myIPFS}/\"~\"$(myIpfs)\"~g" \
+        -e "s~http://${myHOST}:12345~http://${myHOST}:${PORT}~g" \
+        ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
