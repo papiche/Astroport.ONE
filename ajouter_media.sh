@@ -50,7 +50,7 @@ CHOICE="$3"
 [[ ${PLAYER} == "" ]] \
 && ${MY_PATH}/start.sh \
 && espeak "Astroport Empty. Enter your magic email" \
-&& xdg-open "http://astroport.localhost:1234" \
+&& xdg-open "https://qo-op.com" \
 && exit 1
 
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)

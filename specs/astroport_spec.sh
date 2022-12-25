@@ -39,5 +39,12 @@ Describe 'Astroport'
       The status should be success
       The stderr should equal ""
     End
+    It 'does localhost html register page'
+      When call template_register_localhost
+      The stdout should include "input name='salt' value=''"
+      The stdout should include "input name='pepper' value=''"
+      The status should be success
+      The stderr should equal ""
+    End
   End
 End
