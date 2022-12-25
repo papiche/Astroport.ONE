@@ -37,16 +37,25 @@ player-%:
 	  $(call make,stack-User-$*,$(MYOS),$(PLAYER_MAKE_VARS)) \
 	)
 
-.PHONY: shellcheck
-shellcheck:
+.PHONY: upgrade
+upgrade: migrate-home migrate-ipfs install
+
+## TESTS
+
+.PHONY: check
+check:
 	shellcheck $(SHELL_FILES) ||:
 
 .PHONY: shellcheck-%
 shellcheck-%:
 	shellcheck $*/*.sh
 
-.PHONY: tests
-tests: shellcheck
+.PHONY: shellspec
+specs: shellspec-specs;
 
-.PHONY: upgrade
-upgrade: migrate-home migrate-ipfs install
+.PHONY: shellspec-%
+shellspec-%:
+	shellspec -f tap $*
+
+.PHONY: tests
+tests: check specs
