@@ -19,7 +19,7 @@ Describe 'Astroport'
       echo $myHOST
       echo $myIPFS
     }
-    It 'hydrates host env variables'
+    It 'does my env variables'
       When call myhost
       The output should include astroport.
       The output should include ipfs.
@@ -30,9 +30,12 @@ Describe 'Astroport'
   Describe 'tools/template.sh'
     Include ./tools/myhost.sh
     Include ./tools/template.sh
-    It 'creates host html register page'
+    It 'does host html register page'
       When call template_register
-      The output should include $(hostname)
+      The stdout should include $(hostname)
+      The stdout should include $IPFSNODEID
+      The stdout should include $myASTROPORT
+      The stdout should include $myIPFS
       The status should be success
       The stderr should equal ""
     End

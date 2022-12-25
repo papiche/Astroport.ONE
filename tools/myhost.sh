@@ -1,8 +1,4 @@
-#!/bin/bash
-set -eu
-
-MY_PATH="$(pwd -P)" # absolute
-ME="${0##*/}"
+#shellcheck shell=sh
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(jq -r .Identity.PeerID ~/.ipfs/config)
