@@ -127,12 +127,17 @@ select fav in  "${choices[@]}"; do
         echo "ATTENTION ${PLAYER} SUPPRESSION DEFINITIVE !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
+        echo "REPLACE $IPFSNODEID WITH _ASTROPORT_"
+        sed "s~${IPFSNODEID}~_ASTROPORT_~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
+        TW=$(ipfs add -Hq ~/.zen/tmp/$PLAYER.html | tail -n 1)
+        ipfs name publish --allow-offline --key=$PLAYER /ipfs/$TW
+        espeak "TW dropped in cyberspace..."
         ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm $G1PUB;
         for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/ 2>/dev/null); do
             ipfs key rm $voeu
             [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done
-        echo "REMOVE GCHANGE PROFILE"
+        echo "REMOVING GCHANGE+ PROFILE"
         $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://data.gchange.fr erase
         #~ echo "REMOVE CESIUM+"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase

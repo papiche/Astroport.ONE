@@ -78,11 +78,14 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
             IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev)
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
+            [[ $IPNSTAIL == "_ASTROPORT_" ]] \
+            && echo "GET CYBERSPACE TW : TODO CONNECT TO DOCK"
+
             [[ $IPNSTAIL == $IPFSNODEID ]] \
             && echo "UPDATING $PLAYER LOCAL CACHE ~/.zen/game/players/$PLAYER/ipfs/moa" \
             && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa \
             && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/ \
-            || echo "PLAYER on $ASTROPORT Station"
+            || echo "PLAYER CONNECTED TO $ASTROPORT STATION"
 
         fi
 
