@@ -41,7 +41,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
 
     ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
 
     ## VISA EMITER STATION MUST ACT ONLY
