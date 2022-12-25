@@ -192,6 +192,9 @@ NID="${myIPFSGW}" && WID="$NID/api"
     cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
+    qrencode -s 12 -o ~/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png "https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
+
+
     ## SEC PASS PROTECTED QRCODE
     secFromDunikey=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep "sec" | cut -d ' ' -f2)
     echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
@@ -282,14 +285,20 @@ NID="${myIPFSGW}" && WID="$NID/api"
 
         ## ID CARD & QRCODE
         convert ~/.zen/game/players/$PLAYER/QR.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
-        convert ${MY_PATH}/../images/astroport.jpg  -resize 300 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+        convert ~/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png -resize 240 ~/.zen/tmp/${MOATS}/TW.png
+        convert ${MY_PATH}/../images/astroport.jpg  -resize 240 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+
 
         composite -compose Over -gravity SouthWest -geometry +280+20 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/astroport.png
-        composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/one.png
+        composite -compose Over -gravity East -geometry +0+0 ~/.zen/tmp/${MOATS}/TW.png ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/astroport2.png
+        composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/astroport2.png ~/.zen/tmp/${MOATS}/one.png
         # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
 
         convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
         convert -gravity northwest -pointsize 25 -fill black -draw "text 300,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
+
+
+
         convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
         convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
         convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/$PLAYER/ID.png
@@ -325,8 +334,6 @@ NID="${myIPFSGW}" && WID="$NID/api"
 
     echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
     echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
-
-qrencode -s 12 -o "$HOME/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png" "https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
 
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 

@@ -65,8 +65,8 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "/ipns/$ASTRONAUTENS ON $LIBRA"
 
-    ipfs --timeout 60s -o ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html /ipns/$ASTRONAUTENS \
-    || curl -m 30 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS" \
+    ipfs --timeout 60s get -o ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html /ipns/$ASTRONAUTENS \
+    || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS" \
     || cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 
     ## PLAYER TW IS ONLINE ?

@@ -13,6 +13,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+. "${MY_PATH}/tools/myhash.sh"
 . "${MY_PATH}/tools/myhost.sh"
 . "${MY_PATH}/tools/template.sh"
 
@@ -36,7 +37,6 @@ Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
-
 "
 echo "_________________________________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
@@ -99,14 +99,8 @@ while true; do
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
     echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    [[ $isLAN ]] \
-    && template_register_localhost >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http \
-    || template_register >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-
-    sed -i "s~:12345~:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i "s~_SESSIONLNK_~${myIPFS}/ipns/${SESSIONNS}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i "s~127.0.0.1:12345~${myHOST}:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    ###############    ###############    ###############    ###############
+    template_register >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i "s~:http://127.0.0.1:12345~http://${myHOST}:${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
@@ -117,8 +111,7 @@ while true; do
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
 
-    ## TODO APPLY GENERAL isLAN or zen !isLAN CALACULA>TONS
-    [[ ! $isLAN || $USER == "zen" ]] && myHOST="$HOSTNAME" && myHOSTPort="ipfs.$HOSTNAME" && myHTTP="https://" && myASTROPORT="https://$HOSTNAME" ## WAN STATION
+    ###############    ###############    ###############    ###############
 
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
@@ -138,21 +131,9 @@ while true; do
     ## / CONTACT
     if [[ $URL == "/" ]]; then
         echo "/ CONTACT :  $HOSTP"
-        echo "___________________________ Preparing default return register.html"
-        echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect ## HTTP 1.1 HEADER + HTML BODY
 
-        sed "s~http://127.0.0.1:1234~${myASTROPORT}~g" $HOME/.zen/Astroport.ONE/templates/register.html >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        sed -i "s~_IPFSNODEID_~${IPFSNODEID}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        sed -i "s~_HOSTNAME_~$(hostname)~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-
-
-        ## Random Background image ;)
-        sed -i "s~.000.~.$(printf '%03d' $(echo ${RANDOM} % 18 | bc)).~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
-        echo " (‿/‿) ${myHTTP}$HOSTP / Execution time was "`expr $end - $start` seconds.
+        echo " (‿/‿) $myHOST:$PORT / Execution time was "`expr $end - $start` seconds.
         continue
     fi
 
@@ -208,7 +189,7 @@ while true; do
         ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key )
         [[ ! ${ASTRONAUTENS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - ASTRONAUTENS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
 
-        echo "TW ADDRESS : ${myHTTP}$HOSTP/ipns/${ASTRONAUTENS}"
+        echo "TW ADDRESS : $myIPFS/ipns/${ASTRONAUTENS}"
         echo
 
         ################### KEY GEN ###################################
@@ -288,7 +269,7 @@ while true; do
                 #~ ( ## USING IPNS SESSION KEY
                 #~ REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
                 #~ ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-                #~ echo "SESSION ${myHTTP}$HOSTP/ipns/$SESSIONNS "
+                #~ echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
                 #~ ) &
 
             end=`date +%s`
