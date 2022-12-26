@@ -34,11 +34,10 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 Gestion des Astronautes, de leurs VISA et VOEUX en mode CLI
 
 ```
-~/.zen/Astroport.ONE/start.sh
+~/.zen/Astroport.ONE/command.sh
 ```
-Lancement API (1234) et MAP (12345)
 
-MODE AVENTURE : Activez votre VISA Astronaute sur une Station !
+## MODE AVENTURE : Activez votre VISA Astronaute sur une Station !
 
 ```
 ~/.zen/Astroport.ONE/adventure/adventure.sh
@@ -64,7 +63,7 @@ L'UTILISATEUR devient un JOUEUR, en semant son propre IPFS, en utilisant un Dock
 
 Ainsi, les AMIS peuvent héberger d'autres AMIS.
 
-# TW
+# EXEMPLE DE TW
 
 PLAYER support@qo-op.com
 
@@ -110,7 +109,7 @@ A cette heure les Stations raffraichissent vos canaux TW communs...
 NB: Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
 
 
-# - ESSAYEZ IPFS - UN SOCKAGE INALTERABLE ET INTELLIGENT
+# IPFS : UN STOCKAGE INALTERABLE ET INTELLIGENT
 
 ### "The Barefoot Architect" de Johan Van Lengen.
 
@@ -130,78 +129,44 @@ https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 
 # API
 
-## Hybride et Asynchrone
+# "Code qui Peut"
 
-API du système
+## API & MAP
 
-
-En utilisant netcat comme "serveur web minimal", la première page que renvoi le serveur est un rendez-vous vers la prochaine adresse IP et port où trouver la réponse à l'appel de l'API.
-
-Comme un client qui commande, à qui on attribue un point relai qu'il devra contrôler lui même pour en connaitre la livraison.
-
-chaque passerelle de l'essaim sert toujours la même page (voir "templates/index.http")
-
-https://astroport.copylaradio.com, informe où trouver la suite qui permet de découvrir la suite.
-
-ici pour informer de l'état de la commande (OK, ERROR)
-```
-<meta http-equiv="refresh" content="12; url='http://_ASTROIP_:_ASTROPORT_'" />
-
-```
-http://_ASTROIP_:_ASTROPORT_
-
-ici pour récupérer les éventuels colis
-```
-<a href="http://_ASTROIP_:8080/ipns/_APID_" target="json">
-```
-http://_ASTROIP_:8080/ipns/_APID_/
-
-_APID_ est la clef IPNS qui contient l'arborescence "json" en lecture
-
-Exemple pour l'application "G1Voeu" https://ipfs.copylaradio.com/ipns/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
-
-Application "messaging"
-https://astroport.copylaradio.com/?salt=toto&pepper=toto&messaging=on
-
-Pour écrire une application on pourra utiliser "jsipfs"
-
-https://js.ipfs.tech/
-<script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
-
-Ajoutez l'appel API "testcraft" pour enregistrer vos json
-?salt=toto&pepper=toto&testcraft=on&nodeid=_IPFDNODEID_&DATAID=_IPDSID_
-
-https://astroport.copylaradio.com/?salt=toto&pepper=toto&testcraft=on&nodeid=12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j&dataid=QmZXo87nn34i54HhuMrbuXM5fKXymhV3Zj9exeZDK6s4WD
-
-```
-# APP = g1pub, messaging, testcraft, ....
-http://127.0.0.1:1234/?salt=${SALT}&pepper=${PEPPER}&${APP}=?&...
-```
-[12345.sh](/qo-op/Astroport.ONE/src/branch/master/12345.sh)
-
-```
-IPFSNODEID JSON CACHE
-DATA ~/.zen/tmp/${IPFSNODEID}/${ASTRONAUTENS}/${TYPE}/${MOATS}.data.json
-INDEX ~/.zen/tmp/${IPFSNODEID}/${TYPE}.json
-```
-
-# TIDDLYWIKI
-
-Les données produites par chaque clef sont stockées en tant que tiddlers dans des Tiddlywiki.
-Le tag "voeu" déclenche la transformation du tiddler en "G1Voeu".
-Son Titre  devient un tag qui permet d'échanger les tiddlers correspondant au même voeu que ses TW amis.
+Une fois votre Station Astroport démarrée (```~/.start.sh```):
+* le port 1234 publie API
+* le port 12345 publie MAP(*)
 
 
-## COME TO TALK TW ? https://talk.tiddlywiki.org
+### PRIVATE ZONE
+### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
-```
-# TiddlyWiki #
-sudo apt install npm
-sudo npm install -g tiddlywiki
-added 1 package, and audited 2 packages in 10s
-found 0 vulnerabilities
-```
-Proposez vos "Templates"
+* Créer TW BunkerBOX
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=$URLENCODEDURL&email=$PLAYER```
+
+* Lire Messagerie Gchange
+```/?salt=${SALT}&pepper=${PEPPER}&messaging=on```
+
+* Convertir vers adresse IPNS
+```/?salt=${SALT}&pepper=${PEPPER}&getipns=on```
+
+* AppName=testcraft : Enregistrer JSON
+```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=&dataid=$QRHASH```
+
+
+* Déclencher un Payement (G1)
+```/?salt=${SALT}&pepper=${PEPPER}&pay=$MONTANT&to=$G1PUB```
+
+Redirections
+* vers Gchange
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=on```
+
+* vers TW
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
+
+
+### PUBLIC
+### ```/?qrcode=$G1PUB/$IPNS/$...```
 
 ---
 
