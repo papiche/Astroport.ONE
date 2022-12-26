@@ -8,7 +8,8 @@ L'avantage de ce système, une consommation énergétique divisé par 100, une r
 S'il vous plaît arrêtons cet Internet Supermarché de nous même...
 C'est une bibliothèque du savoir à la base.
 
-## http://astroport.com
+## https://astroport.com
+
 Avec cette technologie, nous devenons chacun hébergeur et fournisseur d'accès, souverain monétaire et médiatique.
 Avec cette technologie, nous établissons une "Crypto Nation" dont la carte relie les territoires au delà des frontières et des pays.
 
@@ -64,6 +65,45 @@ make install
 L'UTILISATEUR devient un JOUEUR, en semant son propre IPFS, en utilisant un Docker sur un nœud Astroport géré par un autre JOUEUR.
 
 Ainsi, les AMIS peuvent héberger d'autres AMIS.
+
+
+# API : "Code qui Peut"
+## https://astroport.localhost:1234
+
+Une fois votre Station Astroport démarrée (```~/.start.sh```):
+* le port 1234 publie API
+* le port 12345 publie MAP(*)
+
+
+### PRIVATE ZONE
+### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
+
+* Créer TW BunkerBOX
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=$URLENCODEDURL&email=$PLAYER```
+
+* Lire Messagerie Gchange
+```/?salt=${SALT}&pepper=${PEPPER}&messaging=on```
+
+* Convertir vers adresse IPNS
+```/?salt=${SALT}&pepper=${PEPPER}&getipns=on```
+
+* AppName=testcraft : Enregistrer JSON
+```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=&dataid=$QRHASH```
+
+
+* Déclencher un Payement (G1)
+```/?salt=${SALT}&pepper=${PEPPER}&pay=$MONTANT&to=$G1PUB```
+
+Redirections
+* vers Gchange
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=on```
+
+* vers TW
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
+
+
+### PUBLIC
+### ```/?qrcode=$G1PUB/$IPNS/$...```
 
 
 # TW : TiddlyWiki
@@ -123,47 +163,6 @@ Vos données son stockées [dans des Tiddlers](https://ipfs.copylaradio.com/ipns
 ### Foret Enchantée - PROJET ASTROPORT.pdf
 
 https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
-
-# API
-
-# "Code qui Peut"
-
-## API & MAP
-
-Une fois votre Station Astroport démarrée (```~/.start.sh```):
-* le port 1234 publie API
-* le port 12345 publie MAP(*)
-
-
-### PRIVATE ZONE
-### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
-
-* Créer TW BunkerBOX
-```/?salt=${SALT}&pepper=${PEPPER}&g1pub=$URLENCODEDURL&email=$PLAYER```
-
-* Lire Messagerie Gchange
-```/?salt=${SALT}&pepper=${PEPPER}&messaging=on```
-
-* Convertir vers adresse IPNS
-```/?salt=${SALT}&pepper=${PEPPER}&getipns=on```
-
-* AppName=testcraft : Enregistrer JSON
-```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=&dataid=$QRHASH```
-
-
-* Déclencher un Payement (G1)
-```/?salt=${SALT}&pepper=${PEPPER}&pay=$MONTANT&to=$G1PUB```
-
-Redirections
-* vers Gchange
-```/?salt=${SALT}&pepper=${PEPPER}&g1pub=on```
-
-* vers TW
-```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
-
-
-### PUBLIC
-### ```/?qrcode=$G1PUB/$IPNS/$...```
 
 ---
 
