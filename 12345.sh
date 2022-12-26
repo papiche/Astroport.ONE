@@ -13,9 +13,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "${MY_PATH}/tools/myhash.sh"
-. "${MY_PATH}/tools/myhost.sh"
-. "${MY_PATH}/tools/template.sh"
+. "${MY_PATH}/tools/my.sh"
 
 PORT=12345
 
