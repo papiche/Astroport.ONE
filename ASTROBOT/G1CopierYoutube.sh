@@ -148,15 +148,15 @@ if [[ ! ${TIDDLER} ]]; then
         [[ ! -f "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] && echo "No FILE -- CONTINUE --" && continue
         echo
 
-        ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
-        boucle=$((boucle+1))
-        espeak "Video Number $boucle" > /dev/null 1>&2
-
 ####################################################
         echo "FOUND : ~/.zen/tmp/yt-dlp/$ZFILE"
         FILE_BSIZE=$(du -b "$HOME/.zen/tmp/yt-dlp/$ZFILE" | awk '{print $1}')
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
         echo "FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
+
+        ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
+        boucle=$((boucle+1))
+        espeak "Video Number $boucle FILE SIZE = $FILE_SIZE" > /dev/null 1>&2
 
         #~ ## PREPARE FOR new_file_in_astroport.sh
         #~ mkdir -p "$HOME/Astroport/youtube/$YID"
@@ -221,13 +221,13 @@ if [[ ! ${TIDDLER} ]]; then
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
+
 else
 ###################################################################
 # TIDDLER WAS IN CACHE
 ###################################################################
     ## TODO : ADD EMAIL TO TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
-    [[ "${TIDDLER}" != "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" ]] \
-    && cp "${TIDDLER}" "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
+    cp "${TIDDLER}" "$HOME/.zen/game/$PLAYER/G1CopierYoutube/"
 
 fi
 
@@ -249,6 +249,9 @@ fi
 # --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
 
         if [[ -s ~/.zen/tmp/$IPFSNODEID/newindex.html ]]; then
+            ## COPY JSON TIDDLER TO PLAYER
+            cp "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" "$HOME/.zen/game/$PLAYER/G1CopierYoutube/"
+            ln -s "$HOME/.zen/game/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/$PLAYER/G1CopierYoutube/$ZFILE.json"
             [[ $(diff ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} ) ]] && cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} && echo "===> Mise à jour ${INDEX}"
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$IPFSNODEID/newindex.html"
