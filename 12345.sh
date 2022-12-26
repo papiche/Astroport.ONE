@@ -97,7 +97,7 @@ while true; do
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
     echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    template_register >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    myTmpl >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i -e "s~\"${myIPFS}/\"~\"$(myIpfs)\"~g" \
         -e "s~http://${myHOST}:12345~http://${myHOST}:${PORT}~g" \
         ~/.zen/tmp/coucou/${MOATS}.myHOST.http

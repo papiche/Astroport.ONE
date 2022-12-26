@@ -1,5 +1,4 @@
 #shellcheck shell=sh
-set -eu
 
 Describe 'Dependency'
   Describe 'ipfs:'
@@ -13,25 +12,21 @@ Describe 'Dependency'
 End
 
 Describe 'Astroport'
-  Describe 'tools/myhost.sh'
-    Include ./tools/myhost.sh
-    myhost() {
-      echo $myHOST
-      echo $myIPFS
-    }
+  Describe 'tools/my.sh'
+  Include ./tools/my.sh
     It 'does my env variables'
+      myhost() {
+	echo $myHOST
+	echo $myIPFS
+      }
       When call myhost
       The output should include astroport.
       The output should include ipfs.
       The status should be success
       The stderr should equal ""
     End
-  End
-  Describe 'tools/template.sh'
-    Include ./tools/myhost.sh
-    Include ./tools/template.sh
     It 'does host html register page'
-      When call template_register
+      When call myTmpl
       The stdout should include $(hostname)
       The stdout should include $IPFSNODEID
       The stdout should include $myASTROPORT
@@ -40,7 +35,8 @@ Describe 'Astroport'
       The stderr should equal ""
     End
     It 'does localhost html register page'
-      When call template_register_localhost
+      isLAN=true
+      When call myTmpl
       The stdout should include "input name='salt' value=''"
       The stdout should include "input name='pepper' value=''"
       The status should be success
