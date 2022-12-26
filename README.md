@@ -21,7 +21,7 @@ Ce programme introduit des données multimédia (page web, audio, vidéo) en tan
 que les joueurs échangent au travers des Oasis.
 
 
-# INSTALLATION (Debian/Ubuntu/Mint ou Xbian)
+# INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
 ```
 bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
@@ -31,19 +31,22 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 
 ## ./start.sh
 
-Gestion des Astronautes, de leurs VISA et VOEUX en mode CLI
+Gestion des VISA PLAYER (et gestion des VOEUX) en mode CLI
 
 ```
 ~/.zen/Astroport.ONE/command.sh
 ```
 
-## MODE AVENTURE : Activez votre VISA Astronaute sur une Station !
+## MODE AVENTURE : Activez une Ambassade "Astroport" !
 
 ```
 ~/.zen/Astroport.ONE/adventure/adventure.sh
 ```
 
-Trouvez le moyen d'accéder à votre "Station Astroport" en explorant les environs du premier de ce nom.
+Trouvez le moyen d'accéder à une "Station Astroport" installée en forêt...
+
+NB: Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
+
 
 # INSTALLATION (Docker)
 
@@ -58,20 +61,12 @@ make
 make install
 ```
 
-Plus de connexion officielle.
 L'UTILISATEUR devient un JOUEUR, en semant son propre IPFS, en utilisant un Docker sur un nœud Astroport géré par un autre JOUEUR.
 
 Ainsi, les AMIS peuvent héberger d'autres AMIS.
 
-# EXEMPLE DE TW
 
-PLAYER support@qo-op.com
-
-https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com
-
-# TW
-
-Selon le modèle de votre TW,
+# TW : TiddlyWiki
 
 L'utilisation du cryptosystème signifie que tout hôte possédant une clé privée peut modifier "quelque chose", la clé publique étant l'adresse de cette "chose". Quand on se concentre sur le hachage des données comme le fait IPFS, on peut stocker n'importe quoi partout.
 
@@ -105,9 +100,11 @@ Cet horaire commun invite chaque propriétaire de TW à publier leur version ava
 
 A cette heure les Stations raffraichissent vos canaux TW communs...
 
+# EXEMPLE DE TW
 
-NB: Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
+PLAYER support@qo-op.com
 
+https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com
 
 # IPFS : UN STOCKAGE INALTERABLE ET INTELLIGENT
 
