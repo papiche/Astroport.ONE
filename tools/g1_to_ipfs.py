@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, re, base58, base64, crypto_pb2
+import sys, re, base58, base64
 import cryptography.hazmat.primitives.asymmetric.ed25519 as ed25519
 from cryptography.hazmat.primitives import serialization
 

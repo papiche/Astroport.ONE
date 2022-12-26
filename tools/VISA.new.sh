@@ -178,6 +178,13 @@ echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME"
 NID="${myIPFSGW}" && WID="$NID/api"
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
 
+####
+[[ $USER="zen" || $isLAN == "" ]] \
+&& make player MAIL=$PLAYER PLAYER_API_ONLINE=true \
+&& NID="https://ipfs.$HOSTNAME" && WID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME/api"
+
+####
+
     ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
     cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed -i "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
