@@ -91,15 +91,17 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 ```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=&dataid=$QRHASH```
 
 
-* Déclencher un Payement (G1)
-```/?salt=${SALT}&pepper=${PEPPER}&pay=$MONTANT&to=$G1PUB```
-
 Redirections
 * vers Gchange
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=on```
 
 * vers TW
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
+
+### PLAYER
+
+* Déclencher un Payement (G1)
+```/?player=${PLAYER}&pay=99&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech```
 
 
 ### PUBLIC
