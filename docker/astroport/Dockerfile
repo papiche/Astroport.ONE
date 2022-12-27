@@ -101,6 +101,14 @@ RUN set -x && buildDeps=' \
 
 RUN npm install -g tiddlywiki sjcl-cli
 
+ARG COMPOSE_REMOTE=https://github.com/docker/compose
+ARG COMPOSE_VERSION=2.5.0
+
+RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
+    ARCH="$(echo ${DOCKER_MACHINE})"; \
+    wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
+ && chmod +x /usr/bin/docker-compose
+
 ARG IPFS_VERSION=0.16.0
 
 RUN { OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \

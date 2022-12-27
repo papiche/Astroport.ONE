@@ -1,29 +1,34 @@
 #shellcheck shell=sh disable=SC2034
 
-ipfsNodeId() {
-	ipfsNodeId=$(jq -r .Identity.PeerID ~/.ipfs/config)
-	[ -n "$ipfsNodeId" ] && echo "$ipfsNodeId"
-}
-
 isLan() {
 	isLan=$(ip route |awk '$1 == "default" {print $3}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
 	     || route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
 		 || true)
-	[ -n "$isLan" ] && echo "$isLan" ||:
+	[ -n "$isLan" ] && echo "$isLan" || true
 } 2>/dev/null
+
+isPlayerLegal() {
+	isPlayerLegal=$(cat "$(myPlayerPath)"/.legal 2>/dev/null || true)
+	[ -n "$isPlayerLegal" ] && echo "$isPlayerLegal" || true
+}
+
+myAstronauteKey() {
+	myAstronauteKey=$(ipfs --api "$(myIpfsApi)" key list -l | awk '$2 == "'"$(myPlayer)"'" {print $1}')
+	 [ -n "$myAstronauteKey" ] && echo "$myAstronauteKey"
+}
 
 myDomainName() {
 	myDomainName=$(hostname -d 2>/dev/null) && [ -z "$myDomainName" ] && myDomainName=$(domainname 2>/dev/null) && [ "$myDomainName" = "(none)" ] && myDomainName="localhost"
 	[ -n "$myDomainName" ] && echo "$myDomainName"
 }
 
-myHash() {
-	[ -f ~/.zen/game/players/localhost/latest ] \
-	 && myHash=$(cat ~/.zen/game/players/localhost/latest) \
-	 || myHash=$(myTmpl |ipfs add -q)
-	[ ! -f ~/.zen/game/players/localhost/latest ] \
-	 && echo "$myHash" > ~/.zen/game/players/localhost/latest
-	[ -n "$myHash" ] && echo "$myHash"
+myIpfsHash() {
+	[ -f "$(myPath)"/localhost/latest ] \
+	 && myIpfsHash=$(cat "$(myPath)"/localhost/latest) \
+	 || myIpfsHash=$(myTmpl |ipfs add -q)
+	[ ! -f "$(myPath)"/localhost/latest ] \
+	 && echo "$myIpfsHash" > "$(myPath)"/localhost/latest
+	[ -n "$myIpfsHash" ] && echo "$myIpfsHash"
 }
 
 myHttp() {
@@ -38,23 +43,28 @@ myHttp() {
 }
 
 myHttpContent() {
-	[ -n "$(myHash)" ] \
+	[ -n "$(myIpfsHash)" ] \
 	 && myHttpContent="<html><head><title>302 Found</title></head><body><h1>Found</h1>
-<p>The document is <a href=\"ipfs/$(myHash)\">here</a> in IPFS.</p></body></html>" \
+<p>The document is <a href=\"ipfs/$(myIpfsHash)\">here</a> in IPFS.</p></body></html>" \
 	 && echo "$myHttpContent"
 }
 
 myHttpHeader() {
-	[ -n "$(myHash)" ] \
+	[ -n "$(myIpfsHash)" ] \
 	 && myHttpHeader="HTTP/1.0 302 Found
 Content-Type: text/html; charset=UTF-8
 Content-Length: $(myHttpContent |wc -c)
 Date: $(date -R)
-Location: ipfs/$(myHash)
+Location: ipfs/$(myIpfsHash)
 Server: and"
-	[ -n "$(myKey)" ] && myHttpHeader="${myHttpHeader}
-set-cookie: AND=$(myKey); expires=$(date -R -d "+1 month"); path=/; domain=.$(myDomainName); Secure; SameSite=lax"
+	[ -n "$(myIpfsKey)" ] && myHttpHeader="${myHttpHeader}
+set-cookie: AND=$(myIpfsKey); expires=$(date -R -d "+1 month"); path=/; domain=.$(myDomainName); Secure; SameSite=lax"
 	[ -n "$myHttpHeader" ] && echo "$myHttpHeader"
+}
+
+myHome() {
+	myHome=$(cd ~ && pwd -P)
+	[ -n "$myHome" ] && echo "$myHome"
 }
 
 myHostName() {
@@ -69,25 +79,93 @@ myIp() {
 }
 
 myIpfs() {
-	[ -n "$(myHash)" ] \
-	 && myIpfs="${myIPFS}/ipfs/$(myHash)" \
+	[ -n "$(myIpfsHash)" ] \
+	 && myIpfs="${myIPFS}/ipfs/$(myIpfsHash)" \
 	 && echo "$myIpfs"
 }
 
+myIpfsApi() {
+	ipfs --api "$(cat "$(myHome)"/.ipfs/api)" swarm peers >/dev/null 2>&1 \
+	 && myIpfsApi=$(cat "$(myHome)"/.ipfs/api) \
+	 && echo "$myIpfsApi"
+}
+
+myIpfsKey() {
+	myIpfsKey=$(ipfs --api "$(myIpfsApi)" key list -l | awk '$2 == "self" {print $1}')
+	[ -n "$myIpfsKey" ] && echo "$myIpfsKey"
+}
+
+myIpfsKeystore() {
+	myIpfsKeystore=$(cd "$(myHome)"/.ipfs/keystore && pwd -P)
+	[ -n "$myIpfsKeystore" ] && echo "$myIpfsKeystore"
+}
+
+myIpfsPeerId() {
+	myIpfsPeerId=$(jq -r .Identity.PeerID "$(myHome)"/.ipfs/config)
+	[ -n "$myIpfsPeerId" ] && echo "$myIpfsPeerId"
+}
+
 myIpns() {
-	[ -n "$(myKey)" ] \
-	 && myIpns="${myIPFS}/ipns/$(myKey)" \
+	[ -n "$(myIpfsKey)" ] \
+	 && myIpns="${myIPFS}/ipns/$(myIpfsKey)" \
 	 && echo "$myIpns"
 }
 
-myKey() {
-	myKey=$(ipfs key list -l | awk '$2 == "self" {print $1}')
-	[ -n "$myKey" ] && echo "$myKey"
+myPath() {
+	myPath=$(cd ~/.zen/game/players/ && pwd -P)
+	[ -n "$myPath" ] && echo "$myPath"
 }
 
-myPath() {
-	myPath=$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)
-	[ -n "$myPath" ] && echo "$myPath"
+myPlayer() {
+	myPlayer=$(cat "$(myPath)"/.current/.player 2>/dev/null)
+	[ -n "$myPlayer" ] && echo "$myPlayer"
+}
+
+myPlayerApi() {
+	ipfs --api "$(cat "$(myPlayerPath)"/.ipfs/api )" swarm peers >/dev/null 2>&1 \
+	 && myPlayerApi=$(cat "$(myPlayerPath)"/.ipfs/api) \
+	 && echo "$myPlayerApi"
+}
+
+myPlayerBrowser() {
+	myPlayerBrowser=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1)
+	[ -n "$myPlayerBrowser" ] && echo "$myPlayerBrowser"
+}
+
+myPlayerFeedKey() {
+	myPlayerFeedKey=$(ipfs --api "$(myPlayerApi)" key list -l | awk '$2 == "'"$(myPlayer)"'_feed" {print $1}')
+	 [ -n "$myPlayerFeedKey" ] && echo "$myPlayerFeedKey"
+}
+
+myPlayerG1Pub() {
+	myPlayerG1Pub=$(cat "$(myPlayerPath)"/.g1pub 2>/dev/null)
+	[ -n "$myPlayerG1Pub" ] && echo "$myPlayerG1Pub"
+}
+
+myPlayerKey() {
+	myPlayerKey=$(ipfs --api "$(myPlayerApi)" key list -l | awk '$2 == "'"$(myPlayer)"'" {print $1}')
+	 [ -n "$myPlayerKey" ] && echo "$myPlayerKey"
+}
+
+myPlayerKeystore() {
+	myPlayerKeystore=$(cd "$(myPlayerPath)"/.ipfs/keystore && pwd -P)
+	[ -n "$myPlayerKeystore" ] && echo "$myPlayerKeystore"
+}
+
+myPlayerNs() {
+	myPlayerNs=$(cat "$(myPlayerPath)"/.playerns 2>/dev/null)
+	[ -n "$myPlayerNs" ] && echo "$myPlayerNs"
+}
+
+myPlayerPath() {
+	[ -n "$myPlayer" ] \
+	 && myPlayerPath=$(cd "$(myPath)"/"$(myPlayer)" && pwd -P) \
+	 && echo "$myPlayerPath"
+}
+
+myPlayerPseudo() {
+	myPlayerPseudo=$(cat "$(myPlayerPath)"/.pseudo 2>/dev/null)
+	[ -n "$myPlayerPseudo" ] && echo "$myPseudo"
 }
 
 myTmpl() {
@@ -113,7 +191,7 @@ myTs() {
 }
 
 MOATS="$(myTs)"
-IPFSNODEID="$(ipfsNodeId)"
+IPFSNODEID="$(myIpfsPeerId)"
 myIP="$(myIp)"
 isLAN="$(isLan)"
 myHOST="astroport.$(myDomainName)" \

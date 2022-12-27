@@ -20,7 +20,10 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "${MY_PATH}/tools/my.sh"
+
+[[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
+
 start=`date +%s`
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases
@@ -39,7 +42,7 @@ PLAYER="$2"
 CHOICE="$3"
 
 # Check who is .current PLAYER
-[[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ ${PLAYER} == "" ]] && PLAYER=$(myPlayer)
 
 [[ ${PLAYER} == "" ]] \
 && players=($(ls ~/.zen/game/players 2>/dev/null)) \
@@ -53,28 +56,18 @@ CHOICE="$3"
 && xdg-open "https://qo-op.com" \
 && exit 1
 
-PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
+PSEUDO=$(myPlayerPseudo)
 espeak "Hello $PSEUDO"
 
-( cd $MY_PATH && git pull ) &
-
-G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+G1PUB=$(myPlayerG1Pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-PLAYERNS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null) || ( echo "noplayerns" && exit 1 )
+PLAYERNS=$(myPlayerNs) || ( echo "noplayerns" && exit 1 )
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+ASTRONAUTENS=$(myAstronauteKey)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-[[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
-
-BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+BROWSER=$(myPlayerBrowser) ## GET cookies-from-browser
 
 if [ $URL ]; then
     echo "URL: $URL"
@@ -145,10 +138,9 @@ ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 
 
 ########################################################################
 espeak "restart I P F S daemon"
-sudo systemctl restart ipfs
-sleep 1
+[[ "$isLAN" ]] && sudo systemctl restart ipfs && sleep 1
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
 
 ########################################################################

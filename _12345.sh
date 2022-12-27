@@ -8,16 +8,13 @@
 # This script scan Swarm API layer from official bootstraps
 # Then publish map of json DApp data
 #
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "${MY_PATH}/tools/my.sh"
 
 PORT=12345
 
-    YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1); ## $USER running ipfs
+    YOU=$(myIpfsApi); ## API of $USER running ipfs
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
@@ -126,11 +123,11 @@ Content-Type: application/json; charset=UTF-8
 
 {
     \"created\" : \"${MOATS}\",
-    \"hostname\" : \"$(hostname)\",
+    \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
-    \"url\" : \"http://${myIP}:8080/ipns/${IPFSNODEID}\",
-    \"myswarm\" : \"http://${myIP}:8080/ipns/${CHAN}\"
+    \"url\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
+    \"myswarm\" : \"${myIPFS}/ipns/${CHAN}\"
 }
 "
     ######################################################################################
