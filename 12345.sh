@@ -224,19 +224,6 @@ while true; do
 ########################################
 
 ##############################################
-# PAY
-##############################################
-        if [[ $APPNAME == "pay" ]]; then
-            echo "$APPNAME : $WHAT $OBJ $VAL"
-            echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -a ${WHAT} -p ${VAL} -c 'Bro'"
-            echo "$HTTPCORS $(${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -a ${WHAT} -p ${VAL} -c 'Bro')" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-            end=`date +%s`
-            echo "(G_G ) PAYING Execution time was "`expr $end - $start` seconds.
-            continue
-        fi
-
-
-##############################################
 # MESSAGING
 ##############################################
         if [[ $APPNAME == "messaging" ]]; then
@@ -521,8 +508,38 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
     fi ## END IF SALT
 
+##############################################
+# /?player=PLAYER&APPNAME=WHAT&OBJ=VAL
+##############################################
+ if [[ ${arr[0]} == "player" ]]; then
 
+        PLAYER=$(urldecode ${arr[1]} | xargs)
+        APPNAME=$(urldecode ${arr[2]} | xargs)
+        WHAT=$(urldecode ${arr[3]} | xargs)
 
+        OBJ=$(urldecode ${arr[4]} | xargs)
+        VAL=$(urldecode ${arr[5]} | xargs)
+
+        echo "- $PLAYER - $APPNAME : $WHAT $OBJ $VAL"
+
+        ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+        [[ ! $ASTRONAUTENS ]] && (echo "$HTTPCORS UNKNOWN PLAYER $PLAYER - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+
+##############################################
+# PAY : /?player=PLAYER&pay=1&dest=G1PUB
+##############################################
+        if [[ $APPNAME == "pay" ]]; then
+            echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro'"
+            echo "$HTTPCORS $(${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro')" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo "(G_G ) PAYING Execution time was "`expr $end - $start` seconds.
+            continue
+        fi
+
+fi
+##############################################
+# /?player=PLAYER&APPNAME=WHAT&OBJ=VAL
+##############################################
 
 ###################################################################################################
 ###################################################################################################
