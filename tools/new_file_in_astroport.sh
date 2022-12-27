@@ -330,6 +330,7 @@ then
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",
     "screenshot": "'/ipfs/${POSTER}'",
+    "g1pub": "'${G1PUB}'",
     "ipfsroot": "'/ipfs/${IPFSREPFILEID}'",
     "file": "'${file}'",
     "ipfs": "'/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}'",

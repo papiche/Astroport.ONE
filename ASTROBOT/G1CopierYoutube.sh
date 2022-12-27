@@ -30,6 +30,8 @@ PLAYER="$2"
 ASTONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 [[ ! $ASTONAUTENS ]] && echo "ERROR - Clef IPNS $PLAYER introuvable!"  && exit 1
 
+G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
+
 # Extract tag=tube from TW
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
@@ -209,6 +211,7 @@ if [[ ! ${TIDDLER} ]]; then
     "type": "'text/vnd.tiddlywiki'",
     "vtratio": "'${VTRATIO}'",
     "text": "'$TEXT'",
+    "g1pub": "'${G1PUB}'",
     "mime": "'${MIME}'",
     "size": "'${FILE_BSIZE}'",
     "filesize": "'${FILE_SIZE}'",
