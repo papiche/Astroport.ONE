@@ -179,15 +179,15 @@ NID="${myIPFSGW}" && WID="$NID/api"
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
 
 ####
-[[ $USER="zen" || $isLAN == "" ]] \
+[[ $USER == "zen" || $isLAN == "" ]] \
 && make player MAIL=$PLAYER PLAYER_API_ONLINE=true \
 && NID="https://ipfs.$HOSTNAME" && WID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME/api"
 
 ####
 
     ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
-    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed -i "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
-    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed -i "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
+    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
+    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
@@ -283,6 +283,11 @@ NID="${myIPFSGW}" && WID="$NID/api"
     # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
+
+    echo "TW IPFS GATEWAY"
+    cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
+    echo "TW IPFS API"
+    cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
