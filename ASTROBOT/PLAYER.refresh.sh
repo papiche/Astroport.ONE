@@ -22,7 +22,7 @@ PLAYERONE="$1"
 for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/$PLAYER ]] && echo "BAD $PLAYERONE" && continue
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ !$(echo "$PLAYER" | grep '@') ]] && continue
+    [[ ! $(echo "$PLAYER" | grep '@') ]] && continue
     mkdir -p ~/.zen/tmp/${MOATS}
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
