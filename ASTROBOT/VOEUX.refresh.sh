@@ -48,7 +48,7 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ## GET VoeuTitle LIST
 while read WISH
 do
-    [[ ${WISH} = "" ]] && continue
+    [[ ${WISH} == "" || ${WISH} == "null" ]] && continue
     echo "==============================="
     echo "G1Voeu ${WISH}"
     ## Get ${WISHNAME} TW
