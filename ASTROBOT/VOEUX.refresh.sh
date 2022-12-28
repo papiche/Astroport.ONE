@@ -43,7 +43,7 @@ echo "Exporting $PLAYER TW [tag[G1Voeu]]"
 rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
 
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 1
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 0
 
 cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 echo "VOEUX : ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)
@@ -99,34 +99,33 @@ do
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json
             echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]tag[G1'${WISHNAME}']!tag[G1Voeu]]'
+                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' ${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
-            echo "## NEW TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
-            ######################################
-            ## TODO ADD EXTRA TAG ?
-            # Remove G1${WISHNAME} with WISHNAME Initial TIDDLER
-            # Reduce importation with extra filters days:created[-1]
-            # Apply Extra filters... TODO LEARN https://talk.tiddlywiki.org/t/how-to-filter-and-delete-multiple-tiddlers/4950/2?u=papiche
-            echo  ">>> Importing ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json"
-
-            tiddlywiki --load $INDEX \
-                            --import "$HOME/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json" "application/json" \
-                            --output ~/.zen/tmp --render "$:/core/save/all" "${ASTRONAUTENS}.newindex.html" "text/plain"
-
-            if [[ -s ~/.zen/tmp/${ASTRONAUTENS}.newindex.html ]]; then
-                echo "$$$ Mise à jour $INDEX"
-                cp ~/.zen/tmp/${ASTRONAUTENS}.newindex.html $INDEX
-            else
-                echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${ASTRONAUTENS}.newindex.html"
-                echo "XXXXXXXXXXXXXXXXXXXXXXX"
-            fi
+            echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
+            echo  ">>> YEAH § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json"
 
         done
 
+        echo  ">>> MOA § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json"
+        tiddlywiki --load $INDEX \
+                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
+                 --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
+
+        ### ADD TO IPFS
+        echo "++++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
+        JSONIPFS=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
+        ipfs name publish -k $VOEUKEY /ipfs/$JSONIPFS   # PUBLISH $VOEUKEY
+
+        ## MOVE INTO PLAYER AREA
+        echo "MOVING INTO ~/.zen/game/players/$PLAYER/G1${WISHNAME}"
+        rm -Rf ~/.zen/game/players/$PLAYER/G1${WISHNAME}
+        mv ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} ~/.zen/game/players/$PLAYER/G1${WISHNAME}
+
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
+~/.zen/game/players/$PLAYER/G1CopierYoutube
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 

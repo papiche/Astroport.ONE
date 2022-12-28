@@ -7,13 +7,12 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+    . "${MY_PATH}/tools/my.sh"
 ################################################################################
 ## Publish All PLAYER TW,
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING PLAYER.refresh"
-# IPFSNODEID=$(ipfs id -f='<id>\n')
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 PLAYERONE="$1"
 [[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/))
@@ -21,6 +20,7 @@ PLAYERONE="$1"
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/$PLAYER ]] && echo "BAD $PLAYERONE" && continue
+
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ ! $(echo "$PLAYER" | grep '@') ]] && continue
     mkdir -p ~/.zen/tmp/${MOATS}
