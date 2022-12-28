@@ -58,7 +58,7 @@ do
             uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
             echo "COPY ~/Astroport/$uqname.mp4 DONE"
             ## ARE WE RUNNING ON ASTROPORT STATION?
-            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && ~/.zen/Astroport.ONE/ajouter_media.sh
+            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && espeak "Download $uqname from Kodi done"
 
     fi
 done

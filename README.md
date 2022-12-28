@@ -100,8 +100,11 @@ Redirections
 
 ### PLAYER
 
-* Déclencher un Payement (G1)
+* Déclencher un Payement de 99 Ğ1 à Fred
 ```/?player=${PLAYER}&pay=99&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech```
+
+* Export TW json TAG=G1CopierYoutube
+```/?player=${PLAYER}&moa=json&tag=G1CopierYoutube```
 
 
 ### PUBLIC

@@ -16,6 +16,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 PORT=12345
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
+    echo "YOU=$YOU"
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
     TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
@@ -536,6 +537,24 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             continue
         fi
 
+##############################################
+# MOATUBE : /?player=PLAYER&moa=json&tag=FILTER
+##############################################
+        if [[ $APPNAME == "moa" ]]; then
+
+                [[ ! $VAL ]] && VAL="G1CopierYoutube"
+                echo "EXPORT MOATUBE $PLAYER $VAL"
+
+                echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}.$PLAYER.http
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.$PLAYER.http
+
+                tiddlywiki --load ~/.zen/game/players/support@qo-op.com/ipfs/moa/index.html --output ~/.zen/tmp/ --render '.' "$PLAYER.moatube.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "[tag[$VAL]]"
+
+                cat ~/.zen/tmp/$PLAYER.moatube.json >> ~/.zen/tmp/${MOATS}.$PLAYER.http
+                cat ~/.zen/tmp/${MOATS}.$PLAYER.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+                continue
+        fi
 fi
 ##############################################
 # /?player=PLAYER&APPNAME=WHAT&OBJ=VAL
