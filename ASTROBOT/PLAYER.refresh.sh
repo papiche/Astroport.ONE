@@ -116,7 +116,7 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
         ##############################################################
         ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)
         ##############################################################
-        ${MY_PATH}/VOEUX.refresh.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$PLAYER"
+        ${MY_PATH}/VOEUX.refresh.sh "$PLAYER"
         ##############################################################
 
         ##################################

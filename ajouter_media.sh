@@ -35,7 +35,7 @@ alias espeak='espeak 1>&2>/dev/null'
 [[ $(which ffmpeg) == "" ]] && echo "ERREUR! Installez ffmpeg" && echo "sudo apt install ffmpeg" && exit 1
 [[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
 
-exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+# exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
 
 URL="$1"
 PLAYER="$2"
@@ -48,7 +48,7 @@ CHOICE="$3"
 && players=($(ls ~/.zen/game/players 2>/dev/null)) \
 && espeak "PLEASE CONNECT A PLAYER" \
 && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
-&& [[ $OUTPUT ]] && PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
+&& [[ $OUTPUT ]] && PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
 [[ ${PLAYER} == "" ]] \
 && ${MY_PATH}/start.sh \

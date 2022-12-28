@@ -10,11 +10,7 @@ ME="${0##*/}"
 ################################################################################
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
-INDEX="$1"
-[[ ! $INDEX ]] && echo "Please provide path to source TW index.html - EXIT -" && exit 1
-[[ ! -f $INDEX ]] && echo "Fichier TW absent. $INDEX - EXIT -" && exit 1
-
-PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
+PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
 
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
@@ -30,9 +26,8 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 # IPFSNODEID=$(ipfs id -f='<id>\n')
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+[[ ! $INDEX ]] && INDEX="$HOME/.zen/game/players/$PLAYER/ipfs/moa/index.html"
+[[ ! -s $INDEX ]] && echo "TW $PLAYER manquant" && exit 1
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu
 

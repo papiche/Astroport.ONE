@@ -230,7 +230,7 @@ else
 # TIDDLER WAS IN CACHE
 ###################################################################
     ## TODO : ADD EMAIL TO TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
-    cp "${TIDDLER}" "$HOME/.zen/game/$PLAYER/G1CopierYoutube/"
+    cp "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/"
 
 fi
 
@@ -253,8 +253,8 @@ fi
 
         if [[ -s ~/.zen/tmp/$IPFSNODEID/newindex.html ]]; then
             ## COPY JSON TIDDLER TO PLAYER
-            cp "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" "$HOME/.zen/game/$PLAYER/G1CopierYoutube/"
-            ln -s "$HOME/.zen/game/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/$PLAYER/G1CopierYoutube/$ZFILE.json"
+            cp "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/"
+            ln -s "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json"
             [[ $(diff ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} ) ]] && cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} && echo "===> Mise à jour ${INDEX}"
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$IPFSNODEID/newindex.html"

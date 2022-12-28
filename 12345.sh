@@ -528,22 +528,33 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 # PAY : /?player=PLAYER&pay=1&dest=G1PUB
 ##############################################
         if [[ $APPNAME == "pay" ]]; then
-            echo "$HTTPCORS" > ~/.zen/tmp/$PLAYER.pay.$VAL.http
+            echo "$HTTPCORS" > ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
-            if [[ $VAL =~ [0-9] ]]; then
+            if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
                 echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$VAL.http
-
-            elif [[ $VAL == "balance" || $VAL == "history"  || $VAL == "get" ]]; then
-
-                echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey $VAL"
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey $VAL 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$VAL.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
             fi
-            cat ~/.zen/tmp/$PLAYER.pay.$VAL.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+            if [[ "$WHAT" == "history" ]]; then
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            fi
+
+            if [[ "$WHAT" == "get" ]]; then
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+             fi
+
+            if [[ "$WHAT" == "balance" ]]; then
+                    ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+             fi
+
+            cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
-            echo "(G_G ) PAYING Execution time was "`expr $end - $start` seconds.
+            echo "(G_G ) G1BANK Operation time was "`expr $end - $start` seconds.
             continue
         fi
 
