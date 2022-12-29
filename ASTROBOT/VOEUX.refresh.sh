@@ -6,7 +6,8 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
+
 ################################################################################
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
@@ -25,14 +26,6 @@ PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
     [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" && exit 1
-
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-# IPFSNODEID=$(ipfs id -f='<id>\n')
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu
 

@@ -10,16 +10,11 @@ mkdir -p ~/.zen/bunkerbox  # BunkerBOX temp directory
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
 TS=$(date -u +%s%N | cut -b1-13)
 
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1) || echo " warning ipfs daemon not running"
-isLAN=$(hostname -I | awk '{print $1}' | head -n 1 | cut -f3 -d '/' | grep -E "(^127\.)|(^192\.168\.)|(^fd42\:)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-
-IPFSGWESC="https:\/\/tube.copylaradio.com" && IPFSNGW="https://tube.copylaradio.com"
-IPFSGWESC="http:\/\/127.0.0.1:8080" && IPFSNGW="http://127.0.0.1:8080"
-
-[[ ! $isLAN ]] && IPFSGWESC="https:\/\/$(hostname)" && IPFSNGW="https://$(hostname)"
+IPFSGWESC="${myIPFS/\//\\/\\}"
+IPFSNGW="$myIPFS"
 echo "IPFS GATEWAY $IPFSNGW"
 
 ## GET LATEST VIDEOS

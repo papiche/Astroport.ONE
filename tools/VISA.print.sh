@@ -9,11 +9,9 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/my.sh"
 
 PLAYER="$1"
-
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 [[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] &&\
         echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/${PLAYER}/" && exit 1
@@ -49,14 +47,9 @@ sudo brother_ql_print /tmp/toprint.bin $LP
 
 ################################################################
 ### PRINT PLAYER TW myIP link
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
-
-TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
 playerns=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
-qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "http://$TUBE:8080/ipns/$playerns"
+qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "$myIPFSGW/ipns/$playerns"
 convert $HOME/.zen/tmp/QR.ASTRO.png -resize 600 /tmp/playerns.png
 
 brother_ql_create --model QL-700 --label-size 62 /tmp/playerns.png > /tmp/toprint.bin 2>/dev/null

@@ -18,6 +18,7 @@ read
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "$MY_PATH/../tools/my.sh"
 
 # Get Player Name
 PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
@@ -28,9 +29,7 @@ mkdir -p ~/.zen/tmp/gchange
 [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && echo "Astronaute inconnu. Connectez-vous"
 g1pub=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
-CESIUM="https://g1.data.presles.fr"
-GCHANGE="https://data.gchange.fr" # /user/profile/2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH?&_source_exclude=avatar._content
-
+# /user/profile/2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH?&_source_exclude=avatar._content
 
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'carte.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Carte'
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'gchange.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Gchange'
@@ -57,7 +56,7 @@ echo $LON
 RAD="$DIST"
 [[ ! $RAD ]] && RAD="50km"
 
-echo curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_source=title' -d '
+echo curl -sk -XPOST "$myDATA/market/record/_search?pretty&_source=title" -d '
    {
      "size": 200,
      "query": {
@@ -77,7 +76,7 @@ echo curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_sour
 
 
 if [[ "$LON" != "null" ]]; then
-curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_source=title' -d '
+curl -sk -XPOST "$myDATA/market/record/_search?pretty&_source=title" -d '
    {
      "size": 200,
      "query": {
@@ -116,7 +115,7 @@ for gID in $(cat /tmp/gchange.json | jq -r .hits.hits[]._id); do
 
     [[ ! -f ~/.zen/tmp/gchange/$gID.json ]] &&
     NEW="true" \
-    && curl -s --create-dirs -o ~/.zen/tmp/gchange/$gID.json -s https://data.gchange.fr/market/record/$gID?_source=category,title,description,issuer,time,creationTime,location,address,city,price,unit,currency,thumbnail._content_type,thumbnail._content,picturesCount,type,stock,fees,feesCurrency,geoPoint \
+    && curl -s --create-dirs -o ~/.zen/tmp/gchange/$gID.json -s "$myDATA/market/record/$gID?_source=category,title,description,issuer,time,creationTime,location,address,city,price,unit,currency,thumbnail._content_type,thumbnail._content,picturesCount,type,stock,fees,feesCurrency,geoPoint" \
     && sleep $((1 + RANDOM % 3))
 
     type=$(cat ~/.zen/tmp/gchange/$gID.json | jq -r ._source.type)
@@ -135,8 +134,8 @@ for gID in $(cat /tmp/gchange.json | jq -r .hits.hits[]._id); do
     [[ $price == null ]] && price="0"
     love="$price $currency"
 
-    [[ $type == "offer" ]] && LINE="___OFFRE___[$title](https://data.gchange.fr/market/record/$gID/_share)_$love"
-    [[ $type == "need" ]] && LINE="__DEMANDE__[$title](https://data.gchange.fr/market/record/$gID/_share)_$love"
+    [[ $type == "offer" ]] && LINE="___OFFRE___[$title]($myDATA/market/record/$gID/_share)_$love"
+    [[ $type == "need" ]] && LINE="__DEMANDE__[$title]($myDATA/market/record/$gID/_share)_$love"
 
     [[ $NEW == "true" ]] && echo "$LINE" >> ~/.zen/tmp/gchange.txt && chunk=$((chunk+1)) && echo $chunk
 

@@ -6,7 +6,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
 ################################################################################
 # Create G1VOEU TW for PLAYER
 # Mon Titre => G1MonTitre => PEPPER
@@ -63,10 +63,6 @@ echo
     [[ -s ~/.zen/tmp/$VOEUNS.html ]] && echo "HEY !!! UN TW EXISTE POUR CE VOEU !  ~/.zen/tmp/$VOEUNS.html  - EXIT -" && exit 1
 
     # CRYPTO BUG. TODO use natools to protect and share key with Ŋ1 only ;)
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
-
     echo " Passerelle : $myIP"
 
     echo "# UPGRADING WORLD WHISHKEY DATABASE"
@@ -98,7 +94,7 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
     sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${VOEUNS}~g" ~/.zen/game/world/$WISHKEY/index.html
 
     # ASTROPORT LOCAL IP RELAY == Smartphone doesn't resolve LAN DNS. So using Astroport Station IP
-    sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$WISHKEY/index.html
+    sed -i "s~ipfs.infura.io~$myTUBE~g" ~/.zen/game/world/$WISHKEY/index.html
     sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/world/$WISHKEY/index.html
 
     # ADD API GW TIDDLERS for IPFS SAVE
@@ -227,7 +223,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     # COPY QR CODE TO PLAYER ZONE
     cp ~/.zen/tmp/player.png ~/.zen/tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
     echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.title
-    echo "http://$myIP:8080/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
+    echo "$myIPFS/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
     cp ~/.zen/game/world/$WISHKEY/QR.WISHLINK.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
 
     # PUBLISHING
@@ -241,20 +237,20 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo $MOATS > ~/.zen/game/world/$WISHKEY/.moats
 
     echo
-    echo "Astronaute TW : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "Astronaute TW : $myIPFS/ipns/$ASTRONAUTENS"
     echo "Nouveau G1Voeu : $PEPPER (document de contrôle de copie Ŋ1)"
-    echo "TW $PEPPER : http://$myIP:8080/ipns/$VOEUNS"
+    echo "TW $PEPPER : $myIPFS/ipns/$VOEUNS"
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "https://g1.data.presles.fr" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "https://astroport.com/ipns/$VOEUNS" #CESIUM+
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey -n "$myDATA" set --name "G1Voeu $PEPPER" --avatar "/home/$USER/.zen/Astroport.ONE/images/logojune.jpg" --site "$myIPFSGW/ipns/$VOEUNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
     echo "Hop, UNE JUNE pour le Voeu $PEPPER"
-    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUNS G1Voeu $PEPPER"\' -m
+    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" pay -a 1 -p $WISHKEY -c \'"$VOEUNS G1Voeu $PEPPER"\' -m
     echo "************************************************************"
 
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
     echo "************************************************************"
 
 exit 0

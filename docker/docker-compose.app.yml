@@ -8,7 +8,8 @@ services:
       - GID=${HOST_GID}
       - UID=${HOST_UID}
     container_name: ${COMPOSE_PROJECT_NAME}-astroport
-    hostname: ${HOSTNAME:-astroport}.${DOMAINNAME:-localhost}
+    domainname: ${DOMAINNAME:-localhost}
+    hostname: ${HOSTNAME:-astroport}
     image: ${DOCKER_REPOSITORY}/astroport:${DOCKER_IMAGE_TAG}
     labels:
     - SERVICE_1234_CHECK_HTTP=/test

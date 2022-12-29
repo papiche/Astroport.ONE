@@ -6,7 +6,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/my.sh"
 
 PLAYER="$1"
 
@@ -20,14 +20,8 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "${PLAYER} CLEF IPNS INTROUVABLE - EXIT -" && exit 1
 
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+YOU=$(myIpfsApi)
+LIBRA=$(myIpfsGw)
 
 mkdir -p ~/.zen/game/players/${PLAYER}/vlog
 
@@ -51,7 +45,7 @@ espeak "Hello"
 if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey ]]; then
     espeak "Getting player latest TW. please wait."
     ## GETTING LAST TW via IPFS or HTTP GW
-    [[ $YOU ]] && echo "http://$myIP:8080/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/vlc_webcam.html
+    [[ $YOU ]] && echo "$myIPFS/ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 12s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/vlc_webcam.html
     [[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && echo "$LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/vlc_webcam.html "$LIBRA/ipns/${ASTRONAUTENS}"
     [[ ! -s ~/.zen/tmp/vlc_webcam.html ]] && espeak "WARNING. impossible to find your TW online"
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No local copy found !" && exit 1
@@ -119,7 +113,7 @@ mv ~/.zen/game/players/${PLAYER}/vlog/${MOATS}.index.html ~/.zen/game/players/${
 IPFSROOT=$(ipfs add -rHq ~/.zen/game/players/${PLAYER}/vlog | tail -n 1)
 echo $IPFSROOT > ~/.zen/game/players/${PLAYER}/.vlog.index
 
-echo "NEW VIDEO http://$myIP:8080/ipfs/$IPFSROOT"
+echo "NEW VIDEO $myIPFS/ipfs/$IPFSROOT"
 
 ###########################
 ## AJOUT VIDEO ASTROPORT TW
@@ -165,7 +159,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 
 rm -f ~/.zen/tmp/newindex.html
 
-echo "Nouveau TID dans TW ${PSEUDO} : http://$myIP:8080/ipns/$ASTRONAUTENS"
+echo "Nouveau TID dans TW ${PSEUDO} : $myIPFS/ipns/$ASTRONAUTENS"
 tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                    --import ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json "application/json" \
                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
@@ -188,10 +182,10 @@ echo "PLAYER TW Update..."
 
     espeak "Hip Hip Hip Hurray"
 
-    xdg-open "http://$myIP:8080/ipns/$ASTRONAUTENS/#:[days:created[-1]tag[G1Vlog]]"
+    xdg-open "$myIPFS/ipns/$ASTRONAUTENS/#:[days:created[-1]tag[G1Vlog]]"
 
     echo "================================================"
-    echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS/#:[days:created[-1]tag[G1Vlog]]"
+    echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS/#:[days:created[-1]tag[G1Vlog]]"
     echo "================================================"
     echo
 else
@@ -199,7 +193,7 @@ else
     echo "Une erreur est survenue lors de l'ajout du tiddler VLOG à votre TW"
 fi
 
-echo "${PSEUDO} TW VLOG : http://$myIP:8080/ipns/$ASTRONAUTENS/#VLOG_${MEDIAID}"
+echo "${PSEUDO} TW VLOG : $myIPFS/ipns/$ASTRONAUTENS/#VLOG_${MEDIAID}"
 
 # ~/.zen/astrXbian/zen/new_file_in_astroport.sh "$HOME/Astroport/video/${MEDIAID}/" "output.mp4"  "$G1PUB"
 

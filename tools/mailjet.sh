@@ -6,9 +6,8 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "$MY_PATH/my.sh"
 ME="${0##*/}"
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-
 
 echo '
 ########################################################################
@@ -23,7 +22,7 @@ mail="$1" # EMAIL DESTINATAIRE
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
-SUBJECT="[(♥‿‿♥)] Station Astroport : $(hostname)"
+SUBJECT="[(♥‿‿♥)] Station Astroport : $(hostname -f)"
 MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n UN MESSAGE POUR VOUS.\n\nAstroport\n/ipns/$IPFSNODEID"
 
 echo "

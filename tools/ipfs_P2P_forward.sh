@@ -7,14 +7,15 @@
 # Activate SUPPORT MODE: open ssh over IPFS
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "$MY_PATH/my.sh"
 ########################################################################
-YOU=$(ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1) || er+=" ipfs daemon not running"
+YOU=$(myIpfsApi) || er+=" ipfs daemon not running"
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID) || er+=" ipfs id problem"
 [[ "$YOU" == "" || "$IPFSNODEID" == "" ]] && echo "ERROR : $er " && exit 1
 ########################################################################
 
 # Make Station publish SSH port on "/x/ssh-$(hostname)"
-zuid="$(hostname)"
+zuid="$(hostname -f)"
 if [[ $zuid ]]
 then
     if [[ ! $(cat ~/.ssh/authorized_keys | grep "fred@ONELOVE") ]]

@@ -6,7 +6,7 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
 
 # Need TW index.html path + IPNS publication Key (available in IPFS keystore)
 # Search for "voeu" tagged tiddlers to get URL
@@ -21,10 +21,6 @@ PLAYER="$2" ## IPNS KEY NAME - G1PUB - PLAYER ...
 ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "$PLAYER IPNS INTROUVABLE" && exit 1
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 ## EXPORT [tag[voeu]]
 echo "## EXTRACTION DE NOUVEAUX VOEUX pour $PLAYER TW"

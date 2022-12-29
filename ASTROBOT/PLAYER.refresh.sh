@@ -6,14 +6,12 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
 ################################################################################
 ## Publish All PLAYER TW,
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING PLAYER.refresh"
-# IPFSNODEID=$(ipfs id -f='<id>\n')
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 PLAYERONE="$1"
 [[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/))
@@ -57,10 +55,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
-
     echo "Getting latest online TW..."
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "/ipns/$ASTRONAUTENS ON $LIBRA"
@@ -77,7 +71,7 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
         echo "------------------------------------------------"
         echo "MANUAL PROCEDURE NEEDED"
         echo "------------------------------------------------"
-        echo "http://$myIP:8080/ipfs/"
+        echo "$myIPFS/ipfs/"
         echo "/ipfs/"$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.* | tail -n 1)
         echo "ipfs name publish  -t 24h --key=$PLAYER ..."
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -130,10 +124,8 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-            [[ $isLAN ]] && APIGW="http://ipfs.localhost:5001" && IPFSGW="https://ipfs.copylaradio.com" \
-            || ( APIGW="https://$(hostname)/api" && IPFSGW="https://ipfs.copylaradio.com" )
-            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$APIGW'"}]' > ~/.zen/tmp/${MOATS}/5001.json
-            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$IPFSGW'"}]' > ~/.zen/tmp/${MOATS}/8080.json
+            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
+            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
             FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
             echo "FRIENDS FEEDS : "${FRIENDSFEEDS}
@@ -179,7 +171,7 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
 
     echo "================================================"
-    echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
     echo " = /ipfs/$TW"
     echo "================================================"
 
@@ -190,7 +182,7 @@ isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.1
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
     [[ -d ~/.zen/game/players/$PLAYER/FRIENDS ]] \
-    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${IPFSGW}/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
+    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${myIPFS}/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
 
     [[ -s ~/.zen/game/players/$PLAYER/FRIENDS/index.html ]] \
     && FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1) \
