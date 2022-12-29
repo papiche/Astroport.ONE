@@ -16,8 +16,8 @@ Describe 'Astroport'
   Include ./tools/my.sh
     It 'does my env variables'
       myhost() {
-	echo $myHOST
-	echo $myIPFS
+        echo $myHOST
+        echo $myIPFS
       }
       When call myhost
       The output should include astroport.
@@ -26,7 +26,7 @@ Describe 'Astroport'
       The stderr should equal ""
     End
     It 'does host html register page'
-      When call myTmpl
+      When call myHtml
       The stdout should include $(hostname)
       The stdout should include $IPFSNODEID
       The stdout should include $myASTROPORT
@@ -36,7 +36,7 @@ Describe 'Astroport'
     End
     It 'does localhost html register page'
       isLAN=true
-      When call myTmpl
+      When call myHtml
       The stdout should include "input name='salt' value=''"
       The stdout should include "input name='pepper' value=''"
       The status should be success

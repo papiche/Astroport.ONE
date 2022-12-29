@@ -6,7 +6,8 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
+
 ################################################################################
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
@@ -21,10 +22,6 @@ PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
     ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
     [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" && exit 1
-
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-# IPFSNODEID=$(ipfs id -f='<id>\n')
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 [[ ! $INDEX ]] && INDEX="$HOME/.zen/game/players/$PLAYER/ipfs/moa/index.html"
 [[ ! -s $INDEX ]] && echo "TW $PLAYER manquant" && exit 1

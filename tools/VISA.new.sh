@@ -7,11 +7,10 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "${MY_PATH}/my.sh"
 
 ! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
 ################################################################################
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
 SALT="$1"
@@ -22,23 +21,15 @@ PSEUDO="$4"
 ## Fill UP TW with VIDEO URL
 URL="$5"
 ################################################################################
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+YOU=$(myIpfsApi);
 LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 ################################################################################
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-################################################################################
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="localhost"
-
-[[ $isLAN ]] && myIPFSGW="http://ipfs.localhost:8080" && myASTROPORT="http://astroport.localhost:1234" ## LAN STATION
-[[ ! $isLAN || $USER == "zen" ]] && myIPFSGW="https://ipfs.copylaradio.com" && myASTROPORT="https://astroport.copylaradio.com" ## WAN STATION
 
 ################################################################################
 
 ## CHECK if PLAYER resolve any ASTRONAUTENS
 [[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-[[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS $PLAYER EXISTANT ${myIPFSGW}/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
+[[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS $PLAYER EXISTANT ${myIPFS}/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
@@ -175,13 +166,13 @@ CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouill
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME"
 #~ [[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
-NID="${myIPFSGW}" && WID="$NID/api"
-[[ $isLAN ]] && NID="http://ipfs.localhost:8080" && WID="http://ipfs.localhost:5001"
+echo "MY PLAYER API GW : $(myPlayerApiGw)"
+NID="${myIPFS}"
+WID="$(myPlayerApiGw)"
 
 ####
-[[ $USER == "zen" || $isLAN == "" ]] \
-&& make player MAIL=$PLAYER PLAYER_API_ONLINE=true \
-&& NID="https://ipfs.$HOSTNAME" && WID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME/api"
+[[ $USER == "zen" ]] \
+&& make player MAIL=$PLAYER
 
 ####
 
@@ -202,7 +193,7 @@ NID="${myIPFSGW}" && WID="$NID/api"
     cp ~/.zen/game/players/$PLAYER/QR.png ~/.zen/game/players/$PLAYER/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/$PLAYER/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
-    qrencode -s 12 -o ~/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png "https://ipfs.copylaradio.com/ipns/${ASTRONAUTENS}"
+    qrencode -s 12 -o ~/.zen/game/players/$PLAYER/QR.ASTRONAUTENS.png "$LIBRA/ipns/${ASTRONAUTENS}"
 
 
     ## SEC PASS PROTECTED QRCODE
@@ -253,8 +244,8 @@ NID="${myIPFSGW}" && WID="$NID/api"
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
-        sed -i "s~tube.copylaradio.com~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
-        sed -i "s~ipfs.copylaradio.com~ipfs.copylaradio.com~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
 #
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
@@ -353,11 +344,11 @@ NID="${myIPFSGW}" && WID="$NID/api"
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
 echo "--- PLAYER : $PLAYER";
-echo; echo "VISA : ${myIPFSGW}/ipfs/${IASTRO}"
-echo; echo "+ TW : ${myIPFSGW}/ipns/${ASTRONAUTENS}"
-echo; echo "+ RSS : ${myIPFSGW}/ipns/${FEEDNS}"; sleep 1
+echo; echo "VISA : ${myIPFS}/ipfs/${IASTRO}"
+echo; echo "+ TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo; echo "+ RSS : ${myIPFS}/ipns/${FEEDNS}"; sleep 1
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFSGW}/ipns/${ASTRONAUTENS}"
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}"
 
 [[ ! -L ~/.zen/game/players/.current ]] && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 

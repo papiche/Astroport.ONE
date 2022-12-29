@@ -64,10 +64,10 @@ G1PUB=$(myPlayerG1Pub)
 
 PLAYERNS=$(myPlayerNs) || ( echo "noplayerns" && exit 1 )
 
-ASTRONAUTENS=$(myAstronauteKey)
+ASTRONAUTENS=$(myAstroKey)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
-BROWSER=$(myPlayerBrowser) ## GET cookies-from-browser
+BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
 
 if [ $URL ]; then
     echo "URL: $URL"
@@ -886,7 +886,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     || espeak "USING LOCAL COPY"
     ###############################
 
-    echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
     tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                     --import ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
@@ -906,11 +906,11 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
         echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
         echo "================================================"
-        echo "${PLAYER} : http://$myIP:8080/ipns/$ASTRONAUTENS"
+        echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
         echo "================================================"
         echo
 
-        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://$myIP:8080/ipns/$ASTRONAUTENS"
+        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "$myIPFS/ipns/$ASTRONAUTENS"
 
     else
 

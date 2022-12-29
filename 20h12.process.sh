@@ -5,15 +5,10 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
+. "$MY_PATH/tools/my.sh"
 start=`date +%s`
-echo "20H12 (♥‿‿♥) $(hostname) $(date)"
+echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
-
-
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 ## CLEANING  ~/.zen/tmp
 rm -Rf ~/.zen/tmp/*
@@ -29,7 +24,7 @@ cd ~/.zen/Astroport.ONE/
 git pull
 ## SOON /ipns/ Address !!!
 
-espeak "Updating yt-dlp" > /dev/null 2>&1
+espeak "Updating downloads" > /dev/null 2>&1
 ## Updating yt-dlp
 $MY_PATH/youtube-dl.sh
 sudo youtube-dl -U
@@ -63,10 +58,10 @@ $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
 espeak "20 12 duration was $dur seconds" > /dev/null 2>&1
 
+espeak "Restarting API" > /dev/null 2>&1
 ## CLOSING API PORT
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
 ## OPEN API ENGINE
-espeak "Restarting API" > /dev/null 2>&1
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 PID=$!
 echo $PID > ~/.zen/.pid

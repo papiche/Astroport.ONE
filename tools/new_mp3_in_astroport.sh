@@ -8,12 +8,12 @@
 ######## #### ### ## #
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "$MY_PATH/my.sh"
 ME="${0##*/}"
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-IPFSNODEID=$(ipfs id -f='<id>\n')
+YOU=$(myIpfsApi)
 G1PUB=$(cat ~/.zen/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 # GET XZUID
-[[ -f ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title ]] && XZUID=$(cat ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title) || XZUID=$(cat /etc/hostname)
+[[ -f ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title ]] && XZUID=$(cat ~/.zen/ipfs/.$IPFSNODEID/G1SSB/_g1.gchange_title) || XZUID=$(hostname -f)
 ########################################################################
 path="$1"
 # Add trailing / if needed
@@ -23,7 +23,7 @@ last_char=${path:length-1:1}
 
 file="$2"
 
-echo "~/.zen/astrXbian/zen/new_mp3_in_astroport.sh PATH/ \"$path\" FILE \"$file\""
+echo "$0 PATH/ \"$path\" FILE \"$file\""
 [[ ! -f "${path}${file}" ]] && echo "Fichier introuvable ... EXIT" && exit 1
 
 echo '#### NEED REWRITING #####' && exit 0

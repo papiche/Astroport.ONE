@@ -1,7 +1,7 @@
 #!/bin/bash
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "$MY_PATH/my.sh"
 # Controle par Scanner de QRCode
 # Scan G1PUB
 # Scan QRSec + PASS
@@ -24,7 +24,7 @@ sudo cat /dev/ttyACM0 | while read line; do
     echo "__SUB:tag_READ.sh: SCAN /dev/ttyACM0 ($lon) :: $line"
 
     if [[ $inet == 'ipns' ]]; then
-        xdg-open "http://127.0.0.1:8080/ipns/$hash" &
+        xdg-open "$myIPFS/ipns/$hash" &
     fi
 
     if [[ $lon != 43 && $lon != 44 ]]; then
@@ -39,7 +39,7 @@ sudo cat /dev/ttyACM0 | while read line; do
         PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
         echo "ASTRONAUTE $PLAYER : Ŋ1 exploration"
         PLAYERNS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
-        echo "MOA : http://127.0.0.1:8080/ipns/$PLAYERNS"
+        echo "MOA : $myIPFS/ipns/$PLAYERNS"
 
         ## Lancer vlc_webcam
         ## Ajouter vlog au TW
@@ -96,7 +96,7 @@ sudo cat /dev/ttyACM0 | while read line; do
         # La Clef IPNS porte comme nom G1PUB.
         sed -i "s~_MOAKEY_~${G1PUB}~g" ~/.zen/game/world/$G1PUB/index.html
         sed -i "s~k2k4r8opmmyeuee0xufn6txkxlf3qva4le2jlbw6da7zynhw46egxwp2~${IPNSK}~g" ~/.zen/game/world/$G1PUB/index.html
-        sed -i "s~ipfs.infura.io~tube.copylaradio.com~g" ~/.zen/game/world/$G1PUB/index.html
+        sed -i "s~ipfs.infura.io~${myTUBE}~g" ~/.zen/game/world/$G1PUB/index.html
 
         IPUSH=$(ipfs add -Hq ~/.zen/game/world/$G1PUB/index.html | tail -n 1)
         ipfs name publish --key=${G1PUB} /ipfs/$IPUSH 2>/dev/null
@@ -111,13 +111,13 @@ sudo cat /dev/ttyACM0 | while read line; do
     if [[ ! -f ~/.zen/game/world/.gchange.$G1PUB ]]
     then
         echo "CREATION ANNONCE CROWDFUNDING"
-        echo $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.dunikey -n "https://data.gchange.fr" setoffer -t "${TITLE} #ASTROMIZ" -d "http://127.0.0.1:8080/ipns/$RESSOURCENS - Gratitude Astronaute $PLAYER" -p $HOME/.zen/Astroport.ONE/images/moa_net.png
+        echo $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.dunikey -n "$myDATA" setoffer -t "${TITLE} #ASTROMIZ" -d "$myIPFS/ipns/$RESSOURCENS - Gratitude Astronaute $PLAYER" -p $HOME/.zen/Astroport.ONE/images/moa_net.png
         # echo $GOFFER > ~/.zen/game/world/.gchange.$G1PUB
     fi
 
     ## OPEN
     echo "OUVERTURE TW"
-    xdg-open "http://127.0.0.1:8080/ipns/$IPNSK" &
+    xdg-open "$myIPFS/ipns/$IPNSK" &
 
 
 done

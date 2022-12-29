@@ -11,24 +11,19 @@ start=`date +%s`
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+. "$MY_PATH/my.sh"
+
 ME="${0##*/}"
 countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|grep' | wc -l)
 [[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
 
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+YOU=$(myIpfsApi);
 [[ ! $IPFSNODEID ]] && echo 'ERROR missing IPFS Node id !! IPFS is not responding !?' && exit 1
-
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
 
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
 
 # ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/kodi/vstream/${PREFIX}ASTRXBIAN
-# Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from http://${myIP}:8080/.$IPFNODEID/
+# Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from $myIPFS/.$IPFNODEID/
 # Index File Format (could be enhanced) is using Kodi TMDB enhancement
 # https://github.com/Kodi-vStream/venom-xbmc-addons/wiki/Voir-et-partager-sa-biblioth%C3%A8que-priv%C3%A9e#d%C3%A9clarer-des-films
 ########################################################################
@@ -46,7 +41,7 @@ fi
 # Add trailing / if needed
 length=${#path}
 last_char=${path:length-1:1}
-[[ $last_char != "/" ]] && path="$path/"; :
+[[ $last_char != "/" ]] && path="$path/" || true
 
 file="$2"
 
@@ -358,7 +353,7 @@ cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.zen/game/p
 
 ## TODO : Do we keep that ?
 # echo "SEND TW LINK to GCHANGE MESSAGE"
-[[ $3 ]] && ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "https://data.gchange.fr" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : https://ipfs.copylaradio.com/ipfs/${IPFSREPFILEID}"
+[[ $3 ]] && ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
 
 # Couldl be used by caroussel.html template
 # CAROUSSEL=$(ipfs add -wq ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json | head-n 1)
@@ -372,13 +367,13 @@ fi
 ########################################################################
 ## COPY LOCALHOST IPFS URL TO CLIPBOARD
 [[ $(which xclip) ]] &&\
-        echo "http://${myIP}:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME" | xclip -selection c
+        echo "$myIPFS/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME" | xclip -selection c
 ########################################################################
 
 ########################################################################
 # echo "DUNIKEY PASS $PASS"
-echo "NEW $TyPE ($file) ADDED. http://${myIP}:8080/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
-echo "VIDEO IPNS LINK : http://${myIP}:8080/ipns/$KEY/$G1PUB/  = Create 'G1${CAT}.sh' to adapt 20H12 Ŋ1 process"
+echo "NEW $TyPE ($file) ADDED. $myIPFS/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
+echo "VIDEO IPNS LINK : $myIPFS/ipns/$KEY/$G1PUB/  = Create 'G1${CAT}.sh' to adapt 20H12 Ŋ1 process"
 echo "#### EXCECUTION TIME"
 end=`date +%s`
 dur=`expr $end - $start`

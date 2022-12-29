@@ -6,13 +6,9 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+. "$MY_PATH/tools/my.sh"
 
-ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 echo "cron_VRFY.sh ON"
 ###################################################

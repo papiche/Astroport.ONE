@@ -6,13 +6,9 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-[[ ! $myIP || $isLAN ]] && myIP="ipfs.localhost"
+. "${MY_PATH}/tools/my.sh"
 
-ME="${0##*/}"
 TS=$(date -u +%s%N | cut -b1-13)
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 echo '
     _    ____ _____ ____   ___  ____   ___  ____ _____    ___  _   _ _____
@@ -31,9 +27,8 @@ echo
 
 ## VERIFY SOFTWARE DEPENDENCIES
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
+YOU=$(myIpfsApi);
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP sudo systemctl start ipfs" && exit 1
-export IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
 echo 'PRESS ENTER... '; read
 
@@ -100,7 +95,7 @@ echo
 export ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
 
 echo "$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) TW/Moa"
-echo "http://$myIP:8080/ipns/$ASTRONAUTENS"
+echo "$myIPFS/ipns/$ASTRONAUTENS"
 echo "Activation Réseau P2P Astroport !"
 
 echo
@@ -138,7 +133,7 @@ select fav in  "${choices[@]}"; do
             [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done
         echo "REMOVING GCHANGE+ PROFILE"
-        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://data.gchange.fr erase
+        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
         #~ echo "REMOVE CESIUM+"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
@@ -169,7 +164,7 @@ select fav in  "${choices[@]}"; do
             echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
         fi
     echo "================================================"
-    echo "$PLAYER : http://$myIP:8080/ipns/$ASTRONAUTENS"
+    echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
     echo "================================================"
         ;;
 

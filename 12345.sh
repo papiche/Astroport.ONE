@@ -17,8 +17,10 @@ PORT=12345
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
     echo "YOU=$YOU"
-    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
-    TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
+    LIBRA=$(myIpfsGw) ## SWARM#0 ENTRANCE URL
+    echo "LIBRA=$LIBRA"
+    TUBE=$(myTube)
+    echo "TUBE=$TUBE"
 
 mkdir -p ~/.zen/tmp/coucou/ ~/.zen/game/players/localhost
 
@@ -96,7 +98,7 @@ while true; do
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
     echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    myTmpl >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    myHtml >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     sed -i -e "s~\"${myIPFS}/\"~\"$(myIpfs)\"~g" \
         -e "s~http://${myHOST}:12345~http://${myHOST}:${PORT}~g" \
         ~/.zen/tmp/coucou/${MOATS}.myHOST.http
@@ -197,7 +199,7 @@ while true; do
     ( ## SUB PROCESS
         COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -n "https://data.gchange.fr" send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
+        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -n "$myDATA" send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
         end=`date +%s`
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
@@ -277,7 +279,7 @@ while true; do
         if [[ "$APPNAME" == "g1pub" && "$OBJ" != "email" ]]; then
 
             [[ ${WHAT} == "astro" ]] && REPLACE="$LIBRA/ipns/$ASTRONAUTENS" \
-            || REPLACE="https://www.gchange.fr/#/app/user/${G1PUB}"
+            || REPLACE="$myGCHANGE/#/app/user/${G1PUB}"
             echo ${REPLACE}
 
             ## REDIRECT TO TW OR GCHANGE PROFILE
@@ -285,7 +287,7 @@ while true; do
             ## USED BY https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
             echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-            ###  REPONSE=$(echo https://www.gchange.fr/#/app/user/${G1PUB}/ | ipfs add -q)
+            ###  REPONSE=$(echo $myGCHANGE/#/app/user/${G1PUB}/ | ipfs add -q)
             ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
             ### echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
             (
@@ -331,7 +333,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ]]; then
 
                 echo "IPFS TIMEOUT >>> (°▃▃°) $DATAID STILL MISSING GATEWAY BANGING FOR IT (°▃▃°)"
-                array=(https://ipfs.copylaradio.com/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
+                array=(${myIPFSGW}/ipfs/:hash https://ipns.co/:hash https://dweb.link/ipfs/:hash https://ipfs.io/ipfs/:hash https://ipfs.fleek.co/ipfs/:hash https://ipfs.best-practice.se/ipfs/:hash https://gateway.pinata.cloud/ipfs/:hash https://gateway.ipfs.io/ipfs/:hash https://cf-ipfs.com/ipfs/:hash https://cloudflare-ipfs.com/ipfs/:hash)
                 # size=${#array[@]}; index=$(($RANDOM % $size)); echo ${array[$index]} ## TODO CHOOSE RANDOM
 
                 # official ipfs best gateway from https://luke.lol/ipfs.php
@@ -532,23 +534,23 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
-                echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n $myDATA pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
             fi
 
             if [[ "$WHAT" == "history" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             if [[ "$WHAT" == "get" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
              fi
 
             if [[ "$WHAT" == "balance" ]]; then
-                    ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                    ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
              fi
 
             cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http
