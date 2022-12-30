@@ -164,14 +164,17 @@ YUSER=$(echo $PLAYER | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME"
-#~ [[ ! $isLAN ]] && NID="https://ipfs.$CLYUSER$YOMAIN.$HOSTNAME" && WID="$NID/api"
-echo "MY PLAYER API GW : $(myPlayerApiGw)"
+echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$(myHostName)"
+# echo "MY PLAYER API GW : $(myPlayerApiGw)"
+
 NID="${myIPFS}"
-WID="$(myPlayerApiGw)"
+WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
+
+[[ $isLAN ]] && NID="http://astroport.localhost:8080" \
+                        && WID="http://astroport.localhost:5001"
 
 #### player ipfs docker
-[[ $USER == "zen" ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)
+echo "[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)"
 
 ####
 

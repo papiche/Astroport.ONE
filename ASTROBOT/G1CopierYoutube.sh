@@ -66,7 +66,7 @@ for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
         duree=$(expr ${MOATS} - $lastrun)
         [[ ! $lastrun ]] && echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command && duree=604800000
         # ONE WEEK NEW SCAN
-        if [[ duree -ge 604800000 ]]; then
+        if [[ duree -ge 604800000 || ! -s ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER ]]; then
             yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
             sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
         fi

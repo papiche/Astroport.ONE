@@ -27,7 +27,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
     # Get PLAYER wallet amount
-    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" balance)
+    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
     echo "+++ WALLET BALANCE _ $COINS (G1) _"
     #~ ## IF WALLET IS EMPTY : WHAT TODO ?
     echo "##################################################################"

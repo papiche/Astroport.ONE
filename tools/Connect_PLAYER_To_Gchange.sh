@@ -31,7 +31,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 ## VERIFY IT HAS ALREADY RUN
 if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     ## GET GCHANGE PROFIL
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
 
     ## KEEPING ALREADY EXISTING PROFILE DATA
     NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
@@ -53,7 +53,7 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     echo "GCHANGE+ PROFILE https://gchange.fr"
     # echo "set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}""
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS" #GCHANGE+
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS" #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
 
 echo
@@ -69,7 +69,7 @@ echo
 fi
 
 ## GET PROFILE BACK
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
 #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
@@ -85,9 +85,7 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/my_star_level
 echo "Checking received stars"
 ################################## JAKLIS PLAYER stars
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
--k ~/.zen/game/players/${PLAYER}/secret.dunikey \
--n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
+~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
 
 [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1 sur GChange" && exit 0
 
@@ -109,7 +107,7 @@ do
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
     ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
-    -n "$myDATA" \
+    \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
 
     ## ZOMBIE PROTECTION - PURGE AFTER 60 DAYS
@@ -140,7 +138,7 @@ do
         ## GET FRIEND GCHANGE PROFILE
         ${MY_PATH}/timeout.sh -t 20 \
         ${MY_PATH}/jaklis/jaklis.py get \
-        -n "$myDATA" \
+        \
         -p ${liking_me} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
 
         FRIENDTITLE=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json | jq -r '.title')
@@ -163,7 +161,7 @@ do
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW BunkerBOX >>> (⌐■_■) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (ᵔ◡◡ᵔ) <<< "
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW BunkerBOX >>> (⌐■_■) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (ᵔ◡◡ᵔ) <<< "
 
             ## I TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
@@ -234,7 +232,7 @@ do
         ## COOL FEATURE FOR GCHANGE ACCOUNT CONFIDENCE
         ## IS IT REALLY A FRIEND I LIKE ?
         echo "BRO?"
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
         try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
     fi

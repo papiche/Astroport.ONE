@@ -147,12 +147,23 @@ while true; do
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
 
+    #####################################################################
+    ### GIT PULL ??
+    #####################################################################
+    if [[ ${arr[0]} == "poule" ]]; then
+        echo "UPDATING CODE git pull > ~/.zen/tmp/.lastpull"
+        echo "$HTTPCORS" > ~/.zen/tmp/.lastpull
+        git pull >> ~/.zen/tmp/.lastpull
+        (cat ~/.zen/tmp/.lastpull | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+    fi
+
     # CHECK APPNAME
         APPNAME=$(urldecode ${arr[4]} | xargs)
         WHAT=$(urldecode ${arr[5]} | xargs)
 
         OBJ=$(urldecode ${arr[6]} | xargs)
         VAL=$(urldecode ${arr[7]} | xargs)
+
 
 ########## CHECK GET PARAM NAMES
 ###################################################################################################
@@ -199,7 +210,7 @@ while true; do
     ( ## SUB PROCESS
         COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key -n "$myDATA" send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
+        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
         end=`date +%s`
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
@@ -535,23 +546,23 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
                 echo "${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n $myDATA pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
             fi
 
             if [[ "$WHAT" == "history" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             if [[ "$WHAT" == "get" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-             fi
+                ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            fi
 
             if [[ "$WHAT" == "balance" ]]; then
-                    ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-             fi
+                    ${MY_PATH}/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            fi
 
             cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
@@ -628,6 +639,7 @@ fi
         fi
 
     fi
+
 
 
 done

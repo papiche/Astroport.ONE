@@ -12,6 +12,9 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
+## LOG IN
+exec 2>&1 >> ~/.zen/tmp/_12345.log
+
 PORT=12345
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
