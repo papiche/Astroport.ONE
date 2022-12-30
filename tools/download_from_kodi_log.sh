@@ -35,18 +35,23 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqdl/
 
 [[ ! $(which kodi) ]] && echo "KODI IS MISSING." && exit 1
 
+    function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
+
 ## LOOP
 cycle=1
 for uqlink in $(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep 'play :' | rev | cut -d '/' -f 1 | rev);
 do
-    uqname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1 | cut -d '%' -f 1 | sed 's/\+/_/g' | tail -n 1)
+    proname=$(cat ~/.kodi/temp/kodi.${OLD}log | grep uqload | grep $uqlink | grep VideoPlayer | cut -d '=' -f 4 | cut -d '&' -f 1)
+    uqname=$(urldecode $proname | detox --inline)
+
+    [[ ! $uqname ]] && echo "$uqlink is BAD" && continue
     cycle=$((cycle+1))
     echo "########################################################################"
     echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
 
     ! cat ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo | grep -w "$uqname.mp4" && \
     echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo || \
-    echo "$uqname.mp4 conflict"
+    echo "$uqname.mp4 conflict in ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo"
 
     ## CHECK & MANAGE COPY
     if [[ $(find $HOME/Astroport -name "$uqname.mp4" -type f -print) ]];

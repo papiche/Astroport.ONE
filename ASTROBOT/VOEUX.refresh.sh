@@ -14,6 +14,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
 
+MOATS="$2"
+
     PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
     G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
@@ -63,7 +65,7 @@ do
     if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh program found !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "$PLAYER"
+        ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "$PLAYER" "$MOATS"
         echo "________________________________   Finished ******"
     else
         echo "......................... G1${WISHNAME} No special program found !"
@@ -117,7 +119,6 @@ do
 
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
-~/.zen/game/players/$PLAYER/G1CopierYoutube
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 

@@ -35,7 +35,7 @@ alias espeak='espeak 1>&2>/dev/null'
 [[ $(which ffmpeg) == "" ]] && echo "ERREUR! Installez ffmpeg" && echo "sudo apt install ffmpeg" && exit 1
 [[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
 
-# exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
 
 URL="$1"
 PLAYER="$2"
@@ -138,7 +138,7 @@ ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 
 
 ########################################################################
 espeak "restart I P F S daemon"
-[[ "$isLAN" ]] && sudo systemctl restart ipfs && sleep 1
+[[ "$isLAN" ]] && sudo systemctl restart ipfs && sleep 3
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
