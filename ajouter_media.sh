@@ -42,18 +42,16 @@ PLAYER="$2"
 CHOICE="$3"
 
 # Check who is .current PLAYER
-[[ ${PLAYER} == "" ]] && PLAYER=$(myPlayer)
-
 [[ ${PLAYER} == "" ]] \
-&& players=($(ls ~/.zen/game/players 2>/dev/null)) \
+&& players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null)) \
 && espeak "PLEASE CONNECT A PLAYER" \
 && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
 && [[ $OUTPUT ]] && PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 
 [[ ${PLAYER} == "" ]] \
 && ${MY_PATH}/start.sh \
-&& espeak "Astroport Empty. Enter your magic email" \
-&& xdg-open "https://qo-op.com" \
+&& espeak "Astroport Empty. Create your TW" \
+&& xdg-open "http://astroport.localhost" \
 && exit 1
 
 PSEUDO=$(myPlayerPseudo)

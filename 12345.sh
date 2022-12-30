@@ -132,7 +132,8 @@ while true; do
     ## / CONTACT
     if [[ $URL == "/" ]]; then
         echo "/ CONTACT :  $HOSTP"
-
+        echo "$HTTPCORS
+        DING $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
         echo " (‿/‿) $myHOST:$PORT / Execution time was "`expr $end - $start` seconds.
         continue

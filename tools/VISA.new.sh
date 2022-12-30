@@ -164,7 +164,7 @@ YUSER=$(echo $PLAYER | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo $PLAYER | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$(myHostName)"
+# echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$(myHostName)"
 # echo "MY PLAYER API GW : $(myPlayerApiGw)"
 
 NID="${myIPFS}"
@@ -172,9 +172,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
 
 [[ $isLAN ]] && NID="http://astroport.localhost:8080" \
                         && WID="http://astroport.localhost:5001"
-
-#### player ipfs docker
-echo "[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)"
 
 ####
 
@@ -277,10 +274,10 @@ echo "[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerH
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
-    echo "TW IPFS GATEWAY"
-    cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
-    echo "TW IPFS API"
-    cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
+    echo "TW IPFS GATEWAY : $NID"
+    # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
+    echo "TW IPFS API : $WID"
+    # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -340,8 +337,8 @@ echo "[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerH
 
     echo "${ASTRONAUTENS}" > ~/.zen/game/players/$PLAYER/.playerns
 
-    echo "$SALT" > ~/.zen/game/players/$PLAYER/secret.june
-    echo "$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
+    echo "SALT=$SALT" > ~/.zen/game/players/$PLAYER/secret.june
+    echo "PEPPER=$PEPPER" >> ~/.zen/game/players/$PLAYER/secret.june
 
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
@@ -352,7 +349,13 @@ echo; echo "+ RSS : ${myIPFS}/ipns/${FEEDNS}"; sleep 1
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}"
 
-[[ ! -L ~/.zen/game/players/.current ]] && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+################# PREPARE DOCKERIZATION
+rm ~/.zen/game/players/.current
+ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+. "$MY_PATH/my.sh"
+
+#### make player ipfs docker
+[[ ! $isLAN || $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
