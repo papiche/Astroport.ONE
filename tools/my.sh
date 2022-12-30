@@ -1,7 +1,11 @@
 #shellcheck shell=sh disable=SC2034
 
+Base32Normalize() {
+	awk '{printf $0}' | basenc --base32 | Normalize
+}
+
 Normalize() {
-	awk '{print tolower($1)}' | sed 's/\(_\|+\)/./g;'
+	awk '{print tolower($1)}' | sed 's/\(_\|+\)/./g; s/=//g;'
 }
 
 Revert() {
@@ -10,8 +14,8 @@ Revert() {
 
 isLan() {
 	local isLan=$(ip route |awk '$1 == "default" {print $3}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
-	     || route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
-		 || true)
+	           || route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
+	           || true)
 	[ -n "$isLan" ] && echo "$isLan" || true
 } 2>/dev/null
 
@@ -20,9 +24,24 @@ isPlayerLegal() {
 	[ -n "$isPlayerLegal" ] && echo "$isPlayerLegal" || true
 }
 
+myAstroFeedKey() {
+	local myAstroFeedKey=$(ipfs --api "$(myIpfsApi)" key list -l | awk '$2 == "'"$(myPlayerFeed)"'" {print $1}')
+	[ -n "$myAstroFeedKey" ] && echo "$myAstroFeedKey"
+}
+
+myAstroFeedKeyFile() {
+	local myAstroFeedKeyFile="$(myIpfsKeyStore)/key_$(myPlayerFeed | Base32Normalize)"
+	[ -f "$myAstroFeedKeyFile" ] && echo "$myAstroFeedKeyFile"
+}
+
 myAstroKey() {
 	local myAstroKey=$(ipfs --api "$(myIpfsApi)" key list -l | awk '$2 == "'"$(myPlayer)"'" {print $1}')
 	[ -n "$myAstroKey" ] && echo "$myAstroKey"
+}
+
+myAstroKeyFile() {
+	local myAstroKeyFile="$(myIpfsKeyStore)/key_$(myPlayer | Base32Normalize)"
+	[ -f "$myAstroKeyFile" ] && echo "$myAstroKeyFile"
 }
 
 myAstroPath() {
@@ -136,9 +155,9 @@ myIpfsKey() {
 	[ -n "$myIpfsKey" ] && echo "$myIpfsKey"
 }
 
-myIpfsKeystore() {
-	local myIpfsKeystore=$(cd "$(myHome)"/.ipfs/keystore && pwd -P)
-	[ -n "$myIpfsKeystore" ] && echo "$myIpfsKeystore"
+myIpfsKeyStore() {
+	local myIpfsKeyStore=$(cd "$(myHome)"/.ipfs/keystore && pwd -P)
+	[ -n "$myIpfsKeyStore" ] && echo "$myIpfsKeyStore"
 }
 
 myIpfsPeerId() {
@@ -183,9 +202,20 @@ myPlayerDomain() {
 	[ -n "$myPlayerDomain" ] && echo "$myPlayerDomain"
 }
 
+myPlayerFeed() {
+	[ -n "$(myPlayer)" ] \
+	 && local myPlayerFeed="$(myPlayer)_feed"
+	[ -n "$myPlayerFeed" ] && echo "$myPlayerFeed"
+}
+
 myPlayerFeedKey() {
-	local myPlayerFeedKey=$(ipfs --api "$(myPlayerApi)" key list -l | awk '$2 == "'"$(myPlayer)"'_feed" {print $1}')
+	local myPlayerFeedKey=$(ipfs --api "$(myPlayerApi)" key list -l | awk '$2 == "'"$(myPlayerFeed)"'" {print $1}')
 	[ -n "$myPlayerFeedKey" ] && echo "$myPlayerFeedKey"
+}
+
+myPlayerFeedKeyFile() {
+	local myPlayerFeedKeyFile="$(myIpfsKeyStore)/key_$(myPlayerFeed | Base32Normalize)"
+	[ -f "$myPlayerFeedKeyFile" ] && echo "$myPlayerFeedKeyFile"
 }
 
 myPlayerG1Pub() {
@@ -199,14 +229,28 @@ myPlayerHome() {
 	[ -n "$myPlayerHome" ] && echo "$myPlayerHome"
 }
 
+myPlayerHost() {
+	[ -n "$(myReyalp)" ] \
+	 && { [ -n "$isLAN" ] \
+	   && local myPlayerHost="$(myHostName)" \
+	   || local myPlayerHost="$(myReyalp).$(myHostName)" \
+	 ;}
+	[ -n "$myPlayerHost" ] && echo "$myPlayerHost"
+}
+
 myPlayerKey() {
 	local myPlayerKey=$(ipfs --api "$(myPlayerApi)" key list -l | awk '$2 == "'"$(myPlayer)"'" {print $1}')
 	[ -n "$myPlayerKey" ] && echo "$myPlayerKey"
 }
 
-myPlayerKeystore() {
-	local myPlayerKeystore=$(cd "$(myPlayerPath)"/.ipfs/keystore && pwd -P)
-	[ -n "$myPlayerKeystore" ] && echo "$myPlayerKeystore"
+myPlayerKeyFile() {
+	local myPlayerKeyFile="$(myPlayerKeyStore)/key_$(myPlayer | Base32Normalize)"
+	[ -f "$myPlayerKeyFile" ] && echo "$myPlayerKeyFile"
+}
+
+myPlayerKeyStore() {
+	local myPlayerKeyStore=$(cd "$(myPlayerPath)"/.ipfs/keystore && pwd -P)
+	[ -n "$myPlayerKeyStore" ] && echo "$myPlayerKeyStore"
 }
 
 myPlayerNs() {

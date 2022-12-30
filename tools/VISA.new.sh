@@ -170,9 +170,8 @@ echo "MY PLAYER API GW : $(myPlayerApiGw)"
 NID="${myIPFS}"
 WID="$(myPlayerApiGw)"
 
-####
-[[ $USER == "zen" ]] \
-&& make player MAIL=$PLAYER
+#### player ipfs docker
+[[ $USER == "zen" ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)
 
 ####
 
