@@ -65,7 +65,7 @@ while true; do
         mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
 
         echo "IPFS get  /ipns/$ipfsnodeid"
-        [[ $YOU ]] && ipfs --timeout 12s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid/
+        [[ $YOU ]] && ipfs --timeout 120s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid/
 
         echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
 
