@@ -155,6 +155,7 @@ while true; do
         echo "UPDATING CODE git pull > ~/.zen/tmp/.lastpull"
         echo "$HTTPCORS" > ~/.zen/tmp/.lastpull
         git pull >> ~/.zen/tmp/.lastpull
+        rm ~/.zen/game/players/localhost/latest
         (cat ~/.zen/tmp/.lastpull | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
     fi
 
