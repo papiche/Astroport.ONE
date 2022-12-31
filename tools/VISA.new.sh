@@ -179,6 +179,9 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
     cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
+    ## $:/ipfs/saver/gateway
+    ## $:/ipfs/saver/api
+
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
     # Create Player "IPNS Key" (key import)
@@ -355,7 +358,7 @@ ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 . "$MY_PATH/my.sh"
 
 #### make player ipfs docker
-[[ ! $isLAN || $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)
+[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
