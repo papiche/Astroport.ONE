@@ -359,8 +359,15 @@ rm ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
 . "$MY_PATH/my.sh"
 
+#################################################################
 #### make player ipfs docker
-[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost)
+[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost) DEBUG=true
+
+#################################################################
+#################################################################
+#################################################################
+#################################################################
+
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
