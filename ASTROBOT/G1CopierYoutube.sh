@@ -149,7 +149,7 @@ if [[ ! ${TIDDLER} ]]; then
 
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         boucle=$((boucle+1))
-        espeak "Video Number $boucle FILE SIZE = $FILE_SIZE" > /dev/null 2>&1
+        espeak "GOOD! Video Number $boucle = $FILE_SIZE" > /dev/null 2>&1
 
 
         ### CREATE GIF ANIM

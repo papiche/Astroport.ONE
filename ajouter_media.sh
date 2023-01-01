@@ -50,8 +50,8 @@ CHOICE="$3"
 
 [[ ${PLAYER} == "" ]] \
 && ${MY_PATH}/start.sh \
-&& espeak "Astroport Empty. Create your TW" \
-&& xdg-open "http://astroport.localhost" \
+&& espeak "Astronaut. Please enter pass phrase and email of your TW" \
+&& xdg-open "http://astroport.localhost:1234" \
 && exit 1
 
 PSEUDO=$(myPlayerPseudo)
