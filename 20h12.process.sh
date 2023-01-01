@@ -17,14 +17,14 @@ rm -Rf ~/.zen/tmp/*
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 [[ -s /etc/sudoers.d/systemctl ]] && sudo systemctl restart ipfs && sleep 5
 
-espeak "Code Updating" > /dev/null 2>&1
+espeak "CODE git pull" > /dev/null 2>&1
 
 ## PROCESS TW BACKOFFICE TREATMENT
 cd ~/.zen/Astroport.ONE/
 git pull
 ## SOON /ipns/ Address !!!
 
-espeak "Updating downloads" > /dev/null 2>&1
+espeak "20 HOURS 12 MINUTES. START NU ONE UPDATE" > /dev/null 2>&1
 ## Updating yt-dlp
 $MY_PATH/youtube-dl.sh
 sudo youtube-dl -U

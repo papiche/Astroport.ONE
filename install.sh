@@ -156,6 +156,9 @@ if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
         sudo usermod -aG lpadmin $USER
         sudo usermod -a -G tty $USER
         sudo usermod -a -G lp $USER
+
+        ## brother_ql_print
+        echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
     fi
 fi
 
@@ -242,11 +245,9 @@ echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/apt-get" | (sudo su -c 'EDITOR="tee" vis
 echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/apt" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/apt')
 ## USED FOR "systemctl restart ipfs"
 echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
-## USED FOR "systemctl restart ipfs"
+## USED FOR "sudo youtube-dl -U"
 echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/youtube-dl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/youtube-dl')
 
-## brother_ql_print
-echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
 
 echo "#############################################"
 echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
