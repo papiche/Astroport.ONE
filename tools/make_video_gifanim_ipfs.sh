@@ -14,6 +14,16 @@ MIME=$(file --mime-type -b "${path}${file}")
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p
 
+#################################################################################################################
+############# VIDEO LINES MAX IS 720p
+LINES=$(echo $RES | tr -dc '0-9')
+[ $LINES -gt 720 ] \
+&& ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
+&& [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
+&& echo "VIDEO RESIZED" \
+&& FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) && RES=${FILE_RES%?}0p
+#################################################################################################################
+
 FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
 
 DURATION=$(ffprobe -v error -i "${path}${file}" -show_entries format=duration -v quiet -of csv="p=0" | cut -d '.' -f 1)
@@ -24,6 +34,9 @@ PROBETIME=$(echo "0.618 * $DURATION" | bc -l | cut -d '.' -f 1)
 
 ## How many seconds are encoded by Mo ?
 VTRATIO=$(echo "$DURATION / $FILE_BSIZE * 1024 * 1024" | bc -l | xargs printf "%.2f")
+
+
+
 
 ## CREATE SOME INDEX HOOKS
 # ffmpeg -skip_frame nokey -i ${path}${file} -vsync 0 -r 30 -f image2 thumbnails-%02d.jpeg
