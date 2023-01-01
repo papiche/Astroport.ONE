@@ -11,6 +11,13 @@ last_char=${path:length-1:1}
 
 MIME=$(file --mime-type -b "${path}${file}")
 
+#################################################################################################################
+############# CONVERT NOT MP4
+        [[ ! $MIME == "video/mp4"  ]] \
+        && echo "MP4 CONVERT... WAIT" \
+        && ffmpeg -loglevel error -i "${path}${file}" -vf scale=-1:720 -preset slow -crf 18 -c:v libx264 -c:a aac "${path}4${file}" \
+        && [[ -s "${path}4${file}" ]] && rm "${path}${file}" && mv "${path}4${file}" "${path}${file}.mp4" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}")
+
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p
 
@@ -34,9 +41,6 @@ PROBETIME=$(echo "0.618 * $DURATION" | bc -l | cut -d '.' -f 1)
 
 ## How many seconds are encoded by Mo ?
 VTRATIO=$(echo "$DURATION / $FILE_BSIZE * 1024 * 1024" | bc -l | xargs printf "%.2f")
-
-
-
 
 ## CREATE SOME INDEX HOOKS
 # ffmpeg -skip_frame nokey -i ${path}${file} -vsync 0 -r 30 -f image2 thumbnails-%02d.jpeg

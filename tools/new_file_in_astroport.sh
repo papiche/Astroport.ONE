@@ -66,12 +66,6 @@ MIME=$(file --mime-type -b "${path}${file}")
 
     ############# EXTEND MEDIAKEY IDENTIFATORS https://github.com/NapoleonWils0n/ffmpeg-scripts
     if [[ $(echo "$MIME" | grep 'video') ]]; then
-        # CONVERT TO MP4
-        [[ ! $MIME == "video/mp4"  ]] \
-        && echo "MP4 CONVERT... WAIT" \
-        && ffmpeg -loglevel error -i "${path}${file}" -vf scale=-1:480 -c:v libx264 -c:a aac "${path}$TITLE.mp4" \
-        && rm "${path}${file}" && file="$TITLE.mp4"  && extension="mp4"
-
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
         echo "(✜‿‿✜) GIFANIME (✜‿‿✜)"
         $(${MY_PATH}/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1)
