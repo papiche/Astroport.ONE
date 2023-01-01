@@ -55,7 +55,7 @@ myDate() {
 }
 
 myDomainName() {
-	local myDomainName=$(hostname -d 2>/dev/null) && [ -z "$myDomainName" ] && myDomainName=$(domainname 2>/dev/null) && [ "$myDomainName" = "(none)" ] && myDomainName="localhost"
+	local myDomainName=$(domainname 2>/dev/null) && [ "$myDomainName" = "(none)" ] && myDomainName=$(hostname -d 2>/dev/null) && [ -z "$myDomainName" ] && myDomainName="localhost"
 	[ -n "$myDomainName" ] && echo "$myDomainName"
 }
 
@@ -95,7 +95,7 @@ myHome() {
 
 myHostName() {
 	local myHostName=$(hostname |sed 's/\.'"$(myDomainName)"'$//')
-	[ -n "$(myDomainName)" ] && myHostName="${myHostName}.$(myDomainName)" || myDomainName=${myHostName#*.}
+	[ -n "$(myDomainName)" ] && myHostName="${myHostName}.$(myDomainName)"
 	[ -n "$myHostName" ] && echo "$myHostName"
 }
 
