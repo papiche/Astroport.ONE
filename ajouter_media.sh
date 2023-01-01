@@ -730,10 +730,10 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     FILE_EXT="${FILE_NAME##*.}"
     FILE_TITLE="${FILE_NAME%.*}"
 
-    # MUST CONVERT MKV TO MP4
-    [[ $FILE_EXT != "mp4"  ]] \
-    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
-    && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4"
+    #~ # MUST CONVERT MKV TO MP4
+    #~ [[ $FILE_EXT != "mp4"  ]] \
+    #~ && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
+    #~ && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4"
 
     # VIDEO TITLE
     TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de cette vidéo" --entry-text="${FILE_TITLE}")
