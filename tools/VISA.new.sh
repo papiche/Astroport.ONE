@@ -175,10 +175,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
 
 ####
 
-    ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
-    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
-    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
-
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
     # Create Player "IPNS Key" (key import)
@@ -266,6 +262,10 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
         rm -f ~/.zen/tmp/${MOATS}/crypto.2
 ###########
 
+    ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
+    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
+    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
+
     # Create"$PLAYER_feed" Key
     FEEDNS=$(ipfs key gen "${PLAYER}_feed")
 
@@ -280,9 +280,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
     # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
 
     ## CHANGE SELECTED GW & API
-    ## ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_api.json
-    ## ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_gateway.json
-
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
@@ -290,8 +287,8 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
-                            --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_api.json "application/json" \
-                            --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_gateway.json "application/json" \
+    --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_api.json "application/json" \
+    --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_gateway.json "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
@@ -314,7 +311,7 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
 
         convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
         convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
-        convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/$PLAYER/ID.png
+        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/$PLAYER/ID.png
 
         # INSERTED IMAGE IPFS
         # IASTRO=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ID.png | tail -n 1) ## G1VISA PUBLIC / PRIVATE
