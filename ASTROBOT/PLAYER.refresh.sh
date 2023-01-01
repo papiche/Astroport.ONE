@@ -14,7 +14,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 echo "## RUNNING PLAYER.refresh"
 
 PLAYERONE="$1"
-[[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/))
+[[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player)
+[[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
