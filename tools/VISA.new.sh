@@ -179,9 +179,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
     cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
-    ## $:/ipfs/saver/gateway
-    ## $:/ipfs/saver/api
-
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/$PLAYER/
 
     # Create Player "IPNS Key" (key import)
@@ -282,13 +279,21 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
     echo "TW IPFS API : $WID"
     # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
 
+    ## CHANGE SELECTED GW & API
+    ## ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_api.json
+    ## ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_gateway.json
+
+
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
+                            --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_api.json "application/json" \
+                            --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_gateway.json "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+
         [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         ## ID CARD & QRCODE

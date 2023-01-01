@@ -61,21 +61,22 @@ for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
     if [[ ! $CMD ]]; then
         echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command
         echo "NOUVEAU CANAL $PLAYER&$YURL:$MOATS"
+        lastrun=$MOATS
+        duree=604800000
     else
         lastrun=$(echo "$CMD" | rev | cut -d ':' -f 1 | rev) && echo "$CMD"
         duree=$(expr ${MOATS} - $lastrun)
-        [[ ! $lastrun ]] && echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command && duree=604800000
+    fi
         # ONE WEEK NEW SCAN
-        if [[ duree -ge 604800000 || ! -s ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER ]]; then
+        if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER ]]; then
             yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
             sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
         fi
-    fi
 
 done # FINISH YURL loop
 
 ## CREATE SORT UNIQ SHUFFLED ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER (12345 ONLINE)
-cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER | sort | uniq | shuf > ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER 2>/dev/null | sort | uniq | shuf > ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
 
 ###################################################################
 [[ ! -s  ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
@@ -91,9 +92,9 @@ while read LINE;
 
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
-        echo "CACHE SEARCH..." && TIDDLER=$(ls -t ~/.zen/game/players/*/G1CopierYoutube/$YID.TW.json 2>/dev/null | head -n 1)
-        [[ ! $TIDDLER]] && TIDDLER=$(ls -t ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
-        [[ ! $TIDDLER]] && TIDDLER=$(ls -t ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
+        echo "--- CACHE SEARCH FOR $YID ---" && TIDDLER=$(ls -t ~/.zen/game/players/*/G1CopierYoutube/$YID.TW.json 2>/dev/null | head -n 1)
+        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t ~/.zen/tmp/$IPFSNODEID/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
+        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t ~/.zen/tmp/swarm/*/G1CopierYoutube/*/$YID.TW.json 2>/dev/null | head -n 1)
         [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" || echo "EMPTY."
 ###################################################################
 
@@ -205,6 +206,7 @@ if [[ ! ${TIDDLER} ]]; then
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
+    TIDDLER="$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
 else
     ###################################################################

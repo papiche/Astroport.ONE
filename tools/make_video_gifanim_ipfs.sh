@@ -16,8 +16,8 @@ RES=${FILE_RES%?}0p
 
 FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
 
-DURATION=$(ffprobe -i "${path}${file}" -show_entries format=duration -v quiet -of csv="p=0" | cut -d '.' -f 1)
-DUREE=$(ffprobe -i "${path}${file}" -show_entries format=duration -sexagesimal -v quiet -of csv="p=0"| cut -d '.' -f 1)
+DURATION=$(ffprobe -v error -i "${path}${file}" -show_entries format=duration -v quiet -of csv="p=0" | cut -d '.' -f 1)
+DUREE=$(ffprobe -v error -i "${path}${file}" -show_entries format=duration -sexagesimal -v quiet -of csv="p=0"| cut -d '.' -f 1)
 
 PROBETIME=$(echo "0.618 * $DURATION" | bc -l | cut -d '.' -f 1)
 [[ ! $PROBETIME ]] && PROBETIME="1.0"

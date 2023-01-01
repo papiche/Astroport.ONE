@@ -136,7 +136,7 @@ ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 
 
 ########################################################################
 espeak "restart I P F S daemon"
-[[ "$isLAN" ]] && sudo systemctl restart ipfs && sleep 3
+[[ "$isLAN" ]] && sudo systemctl restart ipfs && sleep 7
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
