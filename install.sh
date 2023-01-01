@@ -282,7 +282,7 @@ if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
     espeak "Enter your magic TW keys"
     xdg-open "http://astroport.localhost:1234"
 
-echo "EXPERIMENTAL ### RECOPIEZ VOS VSTREAM KODI DANS IPFS ## OUI ? ENTER sinon Ctrl+C"
+echo "EXPERIMENTAL ### INITIALISER VSTREAM KODI DEPUIS IPFS ## OUI ? ENTER sinon Ctrl+C"
 read KODI
     if [[ ! $KODI ]]; then
 
@@ -291,12 +291,13 @@ read KODI
     ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
     echo '## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
 
-    mv ~/.kodi ~/.kodi.bkp
+    mv ~/.kodi ~/.kodi.bkp 2>/dev/null
     mv ~/.zen/tmp/kodi ~/.kodi \
     && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
     && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
     && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
     && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log
+    || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE ISSSUE"
 
     cd $MY_PATH
 
