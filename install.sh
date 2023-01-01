@@ -147,16 +147,15 @@ echo "#############################################"
 
 ########### PRINTER ##############
 if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
-    echo "Ambassade? Ajouter imprimante 'brother_ql'? Saisissez OUI, sinon laissez vide et tapez sur ENTRER"
+    echo "ENTER TO INSTALL AMBASSADE PRINTER. Ajouter imprimante compatible 'brother_ql' pour imprimer vos QRCODE"
     read saisie
     if [[ $saisie != "" ]]; then
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
         sudo pip3 install brother_ql
         sudo cupsctl --remote-admin
-        sudo usermod -aG lpadmin pi
-        sudo usermod -a -G tty pi
-        sudo usermod -a -G lp pi
-
+        sudo usermod -aG lpadmin $USER
+        sudo usermod -a -G tty $USER
+        sudo usermod -a -G lp $USER
     fi
 fi
 
@@ -292,7 +291,8 @@ read KODI
     ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
     echo '## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
 
-    cp -Rf ~/.zen/tmp/kodi/* ~/.kodi/ \
+    mv ~/.kodi ~/.kodi.bkp
+    mv ~/.zen/tmp/kodi ~/.kodi \
     && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
     && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
     && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
