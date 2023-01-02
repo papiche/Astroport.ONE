@@ -25,6 +25,7 @@ MOATS="$2"
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
     [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" && exit 1
 
+INDEX="$3"
 [[ ! $INDEX ]] && INDEX="$HOME/.zen/game/players/$PLAYER/ipfs/moa/index.html"
 [[ ! -s $INDEX ]] && echo "TW $PLAYER manquant" && exit 1
 
@@ -57,6 +58,7 @@ do
     VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
     VOEUKEY=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wish')
 
+    ## SIGNALING WISH G1PUB
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
 
 ##########################################################################
@@ -68,7 +70,7 @@ do
         ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "$PLAYER" "$MOATS"
         echo "________________________________   Finished ******"
     else
-        echo "......................... G1${WISHNAME} No special program found !"
+        echo "......................... G1${WISHNAME} REGULAR Ŋ1 RSS JSON"
     fi
 ##########################################################################
 ##########################################################################
@@ -98,9 +100,10 @@ do
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
-            echo  ">>> YEAH § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json"
+            echo  ">>> RSS YEAH § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json"
 
         done
+        ##################################
 
         echo  ">>> MOA § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
@@ -108,14 +111,14 @@ do
                  --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
 
         ### ADD TO IPFS
-        echo "++++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
+        echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
         JSONIPFS=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$JSONIPFS   # PUBLISH $VOEUKEY
 
         ## MOVE INTO PLAYER AREA
         echo "MOVING INTO ~/.zen/game/players/$PLAYER/G1${WISHNAME}"
-        rm -Rf ~/.zen/game/players/$PLAYER/G1${WISHNAME}
-        mv ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} ~/.zen/game/players/$PLAYER/G1${WISHNAME}
+        mkdir -p ~/.zen/game/players/$PLAYER/G1${WISHNAME}
+        mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/$PLAYER/G1${WISHNAME}/
 
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 

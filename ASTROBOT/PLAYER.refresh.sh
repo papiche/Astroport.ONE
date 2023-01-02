@@ -112,7 +112,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ##############################################################
         ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)
         ##############################################################
-        ${MY_PATH}/VOEUX.refresh.sh "$PLAYER" "$MOATS"
+        ${MY_PATH}/VOEUX.refresh.sh "$PLAYER" "$MOATS" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
         ##############################################################
 
         ##################################
