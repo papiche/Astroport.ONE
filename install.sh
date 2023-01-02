@@ -297,7 +297,7 @@ echo " ### EXPERIMENTAL ### KODI VSTREAM IPFS INIT ## OUI ? ENTER sinon Ctrl+C"
     && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
     && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
     && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
-    && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log
+    && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
     || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE AN ISSSUE"
 
     ########################################################################
