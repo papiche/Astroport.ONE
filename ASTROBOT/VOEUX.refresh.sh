@@ -116,9 +116,8 @@ do
         ipfs name publish -k $VOEUKEY /ipfs/$JSONIPFS   # PUBLISH $VOEUKEY
 
         ## MOVE INTO PLAYER AREA
-        echo "MOVING INTO ~/.zen/game/players/$PLAYER/G1${WISHNAME}"
-        mkdir -p ~/.zen/game/players/$PLAYER/G1${WISHNAME}
-        mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/$PLAYER/G1${WISHNAME}/
+        echo "Ŋ1 FLUX ~/.zen/game/players/$PLAYER/G1${WISHNAME}/${G1PUB}"
+        mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} ~/.zen/game/players/$PLAYER/G1${WISHNAME}/${G1PUB}
 
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
