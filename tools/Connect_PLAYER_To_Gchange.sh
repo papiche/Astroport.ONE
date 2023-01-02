@@ -161,7 +161,7 @@ do
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW BunkerBOX >>> (⌐■_■) <<< https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS >>> (ᵔ◡◡ᵔ) <<< "
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
             ## I TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try

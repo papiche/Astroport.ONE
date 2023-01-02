@@ -212,7 +212,7 @@ while true; do
     ( ## SUB PROCESS
         COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO." -m "TAPA DE JUNE ? VA AVEC >>> https://cesium.app >>> (ᵔ◡◡ᵔ) FLASHER TON G1VISA "
+        [[ $COINS == "" || $COINS == "null" ]] && $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO" -m "0 G1 (ᵔ◡◡ᵔ) FLASH TON G1VISA"
         end=`date +%s`
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &
