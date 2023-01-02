@@ -283,22 +283,40 @@ if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
     espeak "Enter your magic TW keys"
     xdg-open "http://astroport.localhost:1234"
 
-echo "EXPERIMENTAL ### INITIALISER VSTREAM KODI DEPUIS IPFS ## OUI ? ENTER sinon Ctrl+C"
-read KODI
+echo " ### EXPERIMENTAL ### KODI VSTREAM IPFS INIT ## OUI ? ENTER sinon Ctrl+C"
+[[ -d ~/.kodi ]] && read KODI || KODI=""
     if [[ ! $KODI ]]; then
 
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
     ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
-    echo '## KODI INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
+    echo '## PLUGIN INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
 
-    mv ~/.kodi ~/.kodi.bkp 2>/dev/null
+    mv ~/.kodi ~/.kodi.back 2>/dev/null
     mv ~/.zen/tmp/kodi ~/.kodi \
     && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
     && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
     && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
     && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log
-    || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE ISSSUE"
+    || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE AN ISSSUE"
+
+    ########################################################################
+    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf" # Avoid provider restrictions
+    ########################################################################
+    ACTUAL=$(cat /etc/resolv.conf | grep nameserver | head -n 1)
+
+    sudo chattr -i /etc/resolv.conf
+    sudo cat > /tmp/resolv.conf <<EOF
+domain home
+search home
+nameserver 1.1.1.1
+$ACTUAL
+# ASTROPORT.ONE
+EOF
+
+    sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+    sudo mv /tmp/resolv.conf /etc/resolv.conf
+    sudo chattr +i /etc/resolv.conf
 
     cd $MY_PATH
 
