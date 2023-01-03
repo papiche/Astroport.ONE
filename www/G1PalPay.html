@@ -66,14 +66,21 @@
       position:absolute;
       z-index: -1;
     }
-</style>
-    <script type="text/javascript"></script>
-    <title>Page not found</title>
+    </style>
+    <script type="text/javascript">
+    window.onload = function() {
+     document.getElementById('urltag').innerHTML = document.location; // location.protocol + '//' + location.host; //
+     setTimeout(function(){document.getElementById('pic').style.visibility = "visible";},800);
+     setTimeout(function(){document.getElementById('urltag').style.visibility = "visible";},2000);
+     setTimeout(function(){document.getElementById('reason').style.visibility = "visible";},2000);
+    }
+    </script>
+    <title>Ğ1 PalPay - Offrez de la JUNE et un TW à vos amis -</title>
   </head>
   <body>
     <div id="pic" style="visibility:hidden;"><img src="/localhost/404.png" alt="Light bulb"/></div>
     <div class="infotxt">
-      <div id="head">Hey, who turned off the lights?</div>
+      <div id="head">?</div>
       <div id="urltag" style="visibility:hidden;">proxerror</div>
       <div id="reason" style="visibility:hidden;">You are looking for the sun? ask IPFS.</div>
     </div>

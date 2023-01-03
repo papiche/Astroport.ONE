@@ -57,6 +57,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
         rm -f ~/.zen/tmp/${MOATS}/TW/index.html
         echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
+        echo
+        echo "***** Activation du Canal TW Astronaute $PLAYER *****"
+        mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
+        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
     else
     #############################################
@@ -66,26 +70,30 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
 
         if [[ $ASTROPORT ]]; then
+
             IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev)
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
             [[ $IPNSTAIL == "_ASTROPORT_" ]] \
-            && echo "GET CYBERSPACE TW : TODO CONNECT TO DOCK"
+            && echo "_ASTROPORT_ TW : CONNECT TO DOCK" \
+            && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/ \
+            && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+            && echo "- WARNING - WARNING - WARNING - WARNING - PLEASE VERIFY TW -"
 
             [[ $IPNSTAIL == $IPFSNODEID ]] \
             && echo "UPDATING $PLAYER LOCAL CACHE ~/.zen/game/players/$PLAYER/ipfs/moa" \
             && mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa \
             && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/ \
-            || echo "PLAYER CONNECTED TO $ASTROPORT STATION"
+            || ( echo "PLAYER ALREADY CONNECTED TO $ASTROPORT STATION" && exit 1)
+
+        else
+
+            echo "ERROR BAD TW - Missing Astroport Tiddler ?"
+            exit 1
 
         fi
 
-        # DO NOT CONTINUE
-        echo "TW ADDRESS IN USE"
-
         rm -Rf ~/.zen/tmp/${MOATS}
-
-        exit 1
 
     fi
 
@@ -202,10 +210,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
-        echo
-        echo "***** Activation du Canal TW Astronaute $PLAYER *****"
-        mkdir -p ~/.zen/game/players/$PLAYER/ipfs/moa/
-        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
         sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
 
