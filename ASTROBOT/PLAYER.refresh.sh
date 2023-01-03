@@ -115,6 +115,9 @@ for PLAYER in ${PLAYERONE[@]}; do
         ${MY_PATH}/VOEUX.refresh.sh "$PLAYER" "$MOATS" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
         ##############################################################
 
+        ## CHECK G1PALPAY TO MAKE
+        ${MY_PATH}/G1PalPay.sh
+
         ##################################
         echo "# TW : GW API + LightBeam Feed + Friends"
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
@@ -126,8 +129,8 @@ for PLAYER in ${PLAYERONE[@]}; do
 
                 ###########################
                 # Modification Tiddlers de contrôle de GW & API
-            echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
-            echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
+            #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
+            #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
             FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
             echo "FRIENDS FEEDS : "${FRIENDSFEEDS}
@@ -138,8 +141,6 @@ for PLAYER in ${PLAYERONE[@]}; do
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
-                            --import "$HOME/.zen/tmp/${MOATS}/5001.json" "application/json" \
-                            --import "$HOME/.zen/tmp/${MOATS}/8080.json" "application/json" \
                             --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \
                             --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 

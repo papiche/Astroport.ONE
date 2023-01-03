@@ -26,18 +26,19 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ## EXTRACT DATA FROM TW
     mkdir -p ~/.zen/tmp/${MOATS}
     rm -f ~/.zen/tmp/${MOATS}/Astroport.json
-    tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+    tiddlywiki --load $INDEX --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
     ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].g1pub)
     rm -Rf ~/.zen/tmp/${MOATS}
+    # cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r
 
 else
 
-    echo "NO PLAYER WITH ${EMAIL} FOUND"
+    echo "ASTROTW="" # ${EMAIL} NOT FOUND"
+    exit 0
 
 fi
 
 
-echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
-
+echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
 exit 0
