@@ -363,7 +363,7 @@ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 #################################################################
 #### make player ipfs docker
-[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost) DEBUG=true
+[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost) > /dev/null 2>&1
 
 #################################################################
 #################################################################
