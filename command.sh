@@ -132,8 +132,12 @@ select fav in  "${choices[@]}"; do
             ipfs key rm $voeu
             [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done
+
+        [[ $USER == "zen" ]] && make player MAIL=$PLAYER DELETE=true
+
         echo "REMOVING GCHANGE+ PROFILE"
         $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
+
         #~ echo "REMOVE CESIUM+"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"

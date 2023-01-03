@@ -407,7 +407,7 @@ echo "Notez vos PHRASES et votre PASS"; sleep 1
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 
-echo "$PASS"
+echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}

@@ -7,10 +7,10 @@
 mkdir -p ~/.zen/bunkerbox  # BunkerBOX temp directory
 # Fred MadeInZion, [20/03/2022 23:03]
 # Script qui capture et transfert dans IPFS le flux des nouvelles vidéos de https://crowdbunker.com/
-
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
+
 TS=$(date -u +%s%N | cut -b1-13)
 
 IPFSGWESC="${myIPFS/\//\\/\\}"
@@ -92,10 +92,10 @@ ls ~/.zen/bunkerbox/$VUID/media/
 echo "##########################################################################"
     echo ">>>>>>>>>>>>>>>> ADDING index.html"
     # COPY index, style, js AND data
-    cp -R ${MY_PATH}/templates/styles ~/.zen/bunkerbox/$VUID/media/
-    cp -R ${MY_PATH}/templates/js ~/.zen/bunkerbox/$VUID/media/
-    cp ${MY_PATH}/templates/videojs.html ~/.zen/bunkerbox/$VUID/media/index.html
-    cp ${MY_PATH}/images/astroport.jpg ~/.zen/bunkerbox/$VUID/media/
+    cp -R ${MY_PATH}/../templates/styles ~/.zen/bunkerbox/$VUID/media/
+    cp -R ${MY_PATH}/../templates/js ~/.zen/bunkerbox/$VUID/media/
+    cp ${MY_PATH}/../templates/videojs.html ~/.zen/bunkerbox/$VUID/media/index.html
+    cp ${MY_PATH}/../images/astroport.jpg ~/.zen/bunkerbox/$VUID/media/
 
     # Add current reversed history
     if [[ -f ~/.zen/bunkerbox/history.json ]]; then
@@ -104,10 +104,10 @@ echo "##########################################################################
         cat ~/.zen/bunkerbox/history.json  | jq '.[] | reverse' >> ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
         echo '}' >> ~/.zen/bunkerbox/$VUID/media/$VUID.history.json
     else
-        cp ${MY_PATH}/templates/data/history.json ~/.zen/bunkerbox/history.json
+        cp ${MY_PATH}/../templates/data/history.json ~/.zen/bunkerbox/history.json
     fi
     # Using relative links
-    sed "s/_IPFSROOT_/./g" ${MY_PATH}/templates/videojs.html > ~/.zen/bunkerbox/$VUID/media/index.html
+    sed "s/_IPFSROOT_/./g" ${MY_PATH}/../templates/videojs.html > ~/.zen/bunkerbox/$VUID/media/index.html
     sed -i "s/_VUID_/$VUID/g" ~/.zen/bunkerbox/$VUID/media/index.html
     sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g ~/.zen/bunkerbox/$VUID/media/index.html
     sed -i "s~_TITLE_~$TITLE~g"  ~/.zen/bunkerbox/$VUID/media/index.html
