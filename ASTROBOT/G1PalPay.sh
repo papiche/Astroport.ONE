@@ -71,6 +71,8 @@ while read LINE; do
     IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -gt $IDATE ]]  && echo "OLD EVENT"&& continue
+
     ICOMMENT=($COMMENT)
     ## IF MULTIPLE WORDS OR EMAILS : DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#ICOMMENT[@]}"
@@ -91,10 +93,11 @@ while read LINE; do
                 echo "# NEW VISA $(date)"
                 SALT="" && PEPPER=""
                 echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
-                #~ $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
+                ## $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
                 ## CREATE new PLAYER IN myASTROTUBE
-                curl -x ${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL} -o ~/.zen/tmp/${MOATS}/astro.port
+                echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                curl -x -o ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
 
                 TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
                 TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
@@ -105,7 +108,7 @@ while read LINE; do
 
                 ######################################################
 
-                ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT UN TW : $(myIpfsGw)/$ASTROTW et " ## WELCOME NEW PLAYER
+                ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS OFFRE CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
 
 
             fi
@@ -120,6 +123,7 @@ while read LINE; do
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
             ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m 2>&1
 
+            echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate
             ## COULD SEND STARS ??
 
 
