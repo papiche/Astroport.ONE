@@ -54,43 +54,49 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json ]] && echo "NO PAYMENT HISTORY" && exit 1
 
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
+## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
 
 ## GET @ in
-PLINES=("$(cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r .[].comment | grep 'Financement du JEu')")
+for LINE in $(cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep 'Bro'); do
 
-for LINE in "${PLINES[@]}"; do
-
-    echo "MATCHING INCOMING COMMENT : $LINE"
-    JSON=$(cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq .[] | jq -r 'select(.comment=="'"$LINE"'")')
+    echo "MATCHING IN COMMENT"
+    JSON=$LINE
     IDATE=$(echo $JSON | jq -r .date)
     IPUBKEY=$(echo $JSON | jq -r .pubkey)
     IAMOUNT=$(echo $JSON | jq -r .amount)
     IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
+    ICOMMENT=$(echo $JSON | jq -r .comment)
 
-    echo $IDATE $IPUBKEY $IAMOUNT [$IAMOUNTUD]
+    echo $IDATE $IPUBKEY $IAMOUNT [$IAMOUNTUD] $ICOMMENT
 
-    EMAILS=("${LINE}")
-    for EMAIL in "${EMAILS[@]}"; do
+    for EMAIL in "${ICOMMENT[@]}";
 
           if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
                 echo "VALID EMAIL : ${EMAIL}"
 
-                $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export FOUND
+                $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW
 
-                if [[ ! ${FOUND} ]]; then
+                if [[ ! ${ASTROTW} ]]; then
 
                     echo "# NEW VISA $(date)"
                     SALT="" && PEPPER=""
                     echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
-                    $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
+                    #~ $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
-                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. VOILA TO TW. $PLAYER" ## WELCOME NEW PLAYER
+                    ## CREATE new PLAYER IN myASTROTUBE
+                    curl -x ${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL&email=${EMAIL}
+
+                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. TON TW $PLAYER $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
 
 
                 fi
 
-                ## MAKE FRIEND & SEND PROPORTIONNAL G1
+                ## MAKE FRIENDS & SEND G1
+                echo "My PalPay Friend $ASTROMAIL
+                TW : $ASTROTW
+                G1 : $ASTROG1
+                RSS : $ASTROFEED"
+
 
 
           else

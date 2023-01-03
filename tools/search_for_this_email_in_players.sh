@@ -7,7 +7,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "${MY_PATH}/tools/my.sh"
+. "${MY_PATH}/my.sh"
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

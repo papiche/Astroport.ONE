@@ -36,7 +36,8 @@ header {
       visibility: hidden;
     }
     </style>
-
+    <!-- Typed text animation -->
+    <script src="http://127.0.0.1:8080/ipfs/QmYyJmAT3cUbjk4vVWQG7LdpY3HkFH9phFD1VzzetHrgpa"></script>
 </head>
 <body>
 <header>
@@ -55,7 +56,14 @@ header {
     <br>
         <input type='hidden' name='salt' value='0'></br></br>
         <input type='hidden' name='pepper' value='0'></br></br>
-        <h2><span>Vos Vidéos  &#128077; et plus encore...</span></h2><input type="hidden" name=g1pub value='https://www.youtube.com/playlist?list=LL'></br>
+        <h2>
+        <div id="typed-strings">
+            <p><span>Vos vidéos favorites &#128077; ^3223 et plus encore ...</span>^2222</p>
+            <p>Créez votre <strong><em><u>👉<a href="https://astroport.copylaradio.com">TW</a>👈 </u></em></strong>^5112</p>
+        </div>
+        <span id="typed"></span>
+        </h2>
+        <input type="hidden" name=g1pub value='https://www.youtube.com/playlist?list=LL'></br>
         <span>Email : </span><input name=email value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 </form>
@@ -120,6 +128,15 @@ Take possession of your TW. Make freedom of expression uncensurable, unstoppable
 </main>
 </body>
 
+<script>
+  var typed = new Typed('#typed', {
+    stringsElement: '#typed-strings',
+    smartBackspace: true,
+    backDelay: 700,
+    loop: true,
+    typeSpeed: 40
+  });
+</script>
 
 <script>
 const el = document.getElementById('yellow');
