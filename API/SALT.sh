@@ -16,6 +16,7 @@ Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
+
 "
 
 start=`date +%s`
@@ -138,7 +139,7 @@ PEPPER=$THIS
 ########################################
         if [[ "$APPNAME" == "g1pub" && "$OBJ" != "email" ]]; then
 
-            [[ ${WHAT} == "astro" ]] && REPLACE="$LIBRA/ipns/$ASTRONAUTENS" \
+            [[ ${WHAT} == "astro" ]] && REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
             || REPLACE="$myGCHANGE/#/app/user/${G1PUB}"
             echo ${REPLACE}
 
@@ -321,7 +322,9 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 fi
 
                 if [[ ! -d ~/.zen/game/players/${EMAIL} ]]; then
+
                     echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)"
+
                     (
                     startvisa=`date +%s`
                     [[ "$SALT" == "0" && "$PEPPER" == "0" ]] && SALT="" && PEPPER="" # "0" "0" means random salt pepper
@@ -335,16 +338,23 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
                     ) &
 
-                    echo "$HTTPCORS -    <meta http-equiv='refresh' content='3; url=\""${myIPFS}"/ipns/"$ASTRONAUTENS"\"'/>
-                    <h1>BOOTING - ASTRONAUT $PSEUDO </h1> IPFS FORMATING - [$SALT + $PEPPER] (${EMAIL})
-                    <br>- TW - ${myIPFS}/ipns/$ASTRONAUTENS <br> - GW - /ipns/$IPFSNODEID" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                    echo "$HTTPCORS
+                    <meta http-equiv='refresh' content='30; url=\""${myIPFS}"/ipns/"${ASTRONAUTENS}"\"'/>
+                    <h1>ASTRONAUTE $PSEUDO</h1>
+                    <br>KEY : $SALT:$PEPPER:${EMAIL}
+                    <br>TW : ${myIPFS}/ipns/${ASTRONAUTENS}
+                    <br>STATION : ${myIPFS}/ipns/$IPFSNODEID<br><br>please wait....<br>
+                    export ASTROTW=/ipns/${ASTRONAUTENS} ASTROG1=${G1PUB} ASTROMAIL=${EMAIL} ASTROIPFS=${myIPFS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
                     exit 0
+
                else
+
                     # ASTRONAUT EXISTING ${EMAIL}
                     CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$SALT")
                     [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$PEPPER")
                     [[ ! $CHECK ]] && (echo "$HTTPCORS - WARNING - PLAYER ${EMAIL} ALREADY HERE"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+
                fi
 
                  ###################################################################################################

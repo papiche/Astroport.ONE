@@ -141,7 +141,7 @@ select fav in  "${choices[@]}"; do
         #~ echo "REMOVE CESIUM+"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
-        rm -Rf ~/.zen/game/players/$PLAYER
+        sudo rm -Rf ~/.zen/game/players/$PLAYER
 
         break
         ;;

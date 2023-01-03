@@ -48,11 +48,14 @@ MOATS="$3"
 ###################################################################
 mkdir -p $HOME/.zen/tmp/${IPFSNODEID}/G1PalPay/${PLAYER}/
 mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
+mkdir -p $HOME/.zen/tmp/${MOATS}
 
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
 
-[[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json ]] && echo "NO PAYMENT HISTORY" && exit 1
+[[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json ]] \
+&& echo "NO PAYMENT HISTORY" \
+&& exit 1
 
 ## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
 
@@ -71,38 +74,48 @@ for LINE in $(cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.jso
 
     for EMAIL in "${ICOMMENT[@]}";
 
-          if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-                echo "VALID EMAIL : ${EMAIL}"
+        if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+            echo "VALID EMAIL : ${EMAIL}"
 
-                $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW
+            $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW
 
-                if [[ ! ${ASTROTW} ]]; then
+            if [[ ! ${ASTROTW} ]]; then
 
-                    echo "# NEW VISA $(date)"
-                    SALT="" && PEPPER=""
-                    echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
-                    #~ $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
+                echo "# NEW VISA $(date)"
+                SALT="" && PEPPER=""
+                echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
+                #~ $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
-                    ## CREATE new PLAYER IN myASTROTUBE
-                    curl -x ${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL&email=${EMAIL}
+                ## CREATE new PLAYER IN myASTROTUBE
+                curl -x ${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL} -o ~/.zen/tmp/${MOATS}/astro.port
 
-                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. TON TW $PLAYER $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
+                TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
+                TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
+                sleep 12
+
+                curl -x http://$TELETUBE:$TELEPORT -o ~/.zen/tmp/${MOATS}/astro.rep
+                $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1)
+
+                ######################################################
+
+                ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT UN TW : $(myIpfsGw)/$ASTROTW et " ## WELCOME NEW PLAYER
 
 
-                fi
+            fi
 
-                ## MAKE FRIENDS & SEND G1
-                echo "My PalPay Friend $ASTROMAIL
-                TW : $ASTROTW
-                G1 : $ASTROG1
-                RSS : $ASTROFEED"
+            ## MAKE FRIENDS & SEND G1
+            echo "My PalPay Friend $ASTROMAIL
+            TW : $ASTROTW
+            G1 : $ASTROG1
+            RSS : $ASTROFEED"
 
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
 
-
-          else
-                    echo "BAD EMAIL : ${EMAIL}"
-                    continue
-           fi
+        else
+                echo "BAD EMAIL : ${EMAIL}"
+                continue
+        fi
 
     done
 
@@ -191,5 +204,6 @@ done
             #~ echo "XXXXXXXXXXXXXXXXXXXXXXX"
         #~ fi
 
+rm -Rf $HOME/.zen/tmp/${MOATS}
 
 exit 0

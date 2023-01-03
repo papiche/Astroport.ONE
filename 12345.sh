@@ -182,31 +182,37 @@ while true; do
 
     case $CMD in
         "salt")
-        exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
         ;;
 
         "player")
-        exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
         ;;
 
         "qrcode")
-        exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
-        ;;
-
-        ### USED TO TRY NEW API
-        "sandbox")
-        exec ${MY_PATH}/API/SANDBOX.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
         ;;
 
         "")
-        echo "ERROR UNKNOWN $CMD"
-        echo "$HTTPCORS
-        ERROR UNKNOWN $CMD : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-        end=`date +%s`
-        echo " ($CMD) $myHOST:$PORT / Execution time was "`expr $end - $start` seconds.
+            echo "$HTTPCORS
+            ERROR UNKNOWN $CMD : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+        ;;
+
+        ### ADD API SCRIPT INTO /API
+        *)
+
+            [[ ! -s ${MY_PATH}/API/${CMD^^}.sh ]] \
+            && ( echo "$HTTPCORS
+            ERROR UNKNOWN $CMD : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
+            || exec ${MY_PATH}/API/${CMD^^}.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+
         ;;
 
     esac
+
+    end=`date +%s`
+    echo " ($CMD) $myHOST:$PORT / Launching time was "`expr $end - $start` seconds.
 
 done
 exit 0

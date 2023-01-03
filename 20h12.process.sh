@@ -56,9 +56,11 @@ echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
-espeak "20 12 duration was $dur seconds" > /dev/null 2>&1
+espeak "20 12 Storm & Thunder duration was $dur seconds" > /dev/null 2>&1
 
-espeak "Restarting API" > /dev/null 2>&1
+sleep 12
+
+espeak "Restarting Astroport Station API" > /dev/null 2>&1
 ## CLOSING API PORT
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
 ## OPEN API ENGINE
