@@ -58,7 +58,7 @@ $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
 espeak "20 12 Storm & Thunder duration was $dur seconds" > /dev/null 2>&1
 
-sleep 12
+sleep 360
 
 espeak "Restarting Astroport Station API" > /dev/null 2>&1
 ## CLOSING API PORT
