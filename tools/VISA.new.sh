@@ -289,11 +289,11 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
-    --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_api.json "application/json" \
-    --import ~/.zen/Astroport.ONE/templates/tw/$ _ipfs_saver_gateway.json "application/json" \
+    --import "$HOME/.zen/Astroport.ONE/templates/tw/$_ipfs_saver_api.json" "application/json" \
+    --import "$HOME/.zen/Astroport.ONE/templates/tw/$_ipfs_saver_gateway.json" "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
 
-        [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && echo "NEWINDEX OK"
 
         ## ID CARD & QRCODE
         convert ~/.zen/game/players/${PLAYER}/QR.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
