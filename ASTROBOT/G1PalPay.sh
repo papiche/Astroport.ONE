@@ -58,9 +58,10 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 && exit 1
 
 ## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
 
 ## GET @ in JSON INLINE
-for LINE in $(cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep '@'); do
+while read LINE; do
 
     echo "MATCHING IN COMMENT"
     JSON=$LINE
@@ -129,7 +130,7 @@ for LINE in $(cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.jso
 
     done
 
-done
+done < ~/.zen/tmp/${MOATS}/myPalPay.json
 
 
 ### NEXT #####
