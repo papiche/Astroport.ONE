@@ -85,8 +85,9 @@ while read LINE; do
 
         if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
             echo "VALID EMAIL : ${EMAIL}"
+            ASTROTW=""
 
-            $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW
+            $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
 
             if [[ ! ${ASTROTW} ]]; then
 
@@ -125,7 +126,6 @@ while read LINE; do
 
             echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate
             ## COULD SEND STARS ??
-
 
         else
                 echo "BAD EMAIL : ${EMAIL}"
