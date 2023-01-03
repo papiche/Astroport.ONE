@@ -133,7 +133,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
             FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
-            echo "FRIENDS FEEDS : "${FRIENDSFEEDS}
+            echo "FRIENDS qo-op FEEDS : "${FRIENDSFEEDS}
 
             ## export FRIENDSFEEDS from Gchange stars
             echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
