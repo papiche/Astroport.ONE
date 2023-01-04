@@ -85,7 +85,7 @@ while read LINE; do
 
         if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
             echo "VALID EMAIL : ${EMAIL}"
-            ASTROTW=""
+            ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
 
             $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
 
@@ -121,16 +121,26 @@ while read LINE; do
             ASTROIPFS : $ASTROIPFS
             RSS : $ASTROFEED"
 
-            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m 2>&1
+            [[ ! $ASTROG1 ]] \
+            && echo "MISSING ASTROG1" \
+            && continue
 
-            echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate
+            if [[ ${ASTROG1} != ${G1PUB} ]]; then
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m 2>&1
+                STAMP=$?
+            else
+                STAMP=0
+            fi
             ## COULD SEND STARS ??
 
         else
                 echo "BAD EMAIL : ${EMAIL}"
                 continue
         fi
+
+        ## DONE STAMP IT
+        [[ $STAMP == 0 ]] && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate
 
     done
 
