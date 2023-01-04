@@ -170,6 +170,8 @@ echo "#############################################"
 echo "=== SETUP IPFS SYSTEM"
 ~/.zen/Astroport.ONE/tools/ipfs_setup.sh
 
+echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
+
 #### SETUP JAKLIS ###############################################################
 echo "=== SETUP jaklis"
 cd ~/.zen/Astroport.ONE/tools/jaklis
