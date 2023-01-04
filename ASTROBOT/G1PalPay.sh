@@ -71,7 +71,7 @@ while read LINE; do
     IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -gt $IDATE ]]  && echo "OLD EVENT"&& continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "DONE OLD EVENT"&& continue
 
     ICOMMENT=($COMMENT)
     ## IF MULTIPLE WORDS OR EMAILS : DIVIDE INCOMING AMOUNT TO SHARE
