@@ -98,7 +98,7 @@ while read LINE; do
 
                 ## CREATE new PLAYER IN myASTROTUBE
                 echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-                curl -x -o ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                curl -x ${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL} -o ~/.zen/tmp/${MOATS}/astro.port
 
                 TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
                 TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
