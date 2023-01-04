@@ -104,7 +104,7 @@ while read LINE; do
                 TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
                 sleep 12
 
-                curl -x http://$TELETUBE:$TELEPORT -o ~/.zen/tmp/${MOATS}/astro.rep
+                curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
                 $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
 
                 ######################################################
