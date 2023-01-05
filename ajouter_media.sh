@@ -42,19 +42,24 @@ PLAYER="$2"
 CHOICE="$3"
 
 # Check who is .current PLAYER
-[[ ${PLAYER} == "" ]] \
-&& players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null)) \
-&& espeak "PLEASE CONNECT A PLAYER" \
-&& OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
-&& [[ $OUTPUT ]] && PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
+
+[[ ${#players[@]} -ne 1 ]] \
+&& espeak "PLEASE CONNECT A PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
+|| OUTPUT="${players}"
+
+echo "PLAYER = $OUTPUT"
+
+[[ $OUTPUT ]] && ( PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current ) \
+|| espeak "NO PLAYER"
 
 [[ ${PLAYER} == "" ]] \
 && ${MY_PATH}/start.sh \
-&& espeak "Astronaut. Please enter pass phrase and email of your TW" \
+&& espeak "Astronaut. Please register." \
 && xdg-open "http://astroport.localhost:1234" \
 && exit 1
 
-PSEUDO=$(myPlayerPseudo)
+PSEUDO=$(myPlayerUser)
 espeak "Hello $PSEUDO"
 
 G1PUB=$(myPlayerG1Pub)
@@ -67,14 +72,22 @@ ASTRONAUTENS=$(myAstroKey)
 
 BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
 
+###
 if [ $URL ]; then
+
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
     [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" Page MP3 Web) || IMPORT="$CHOICE"
     [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
+
+else
+
+    xdg-open "$myIPFS/ipns/$ASTRONAUTENS"
+
 fi
+###
 
     ( ## SUB PROCESS
         # Get PLAYER wallet amount
@@ -82,13 +95,14 @@ fi
         [[ $COINS == "" || $COINS == "null" ]] && espeak "Missing coins. Free Run." || espeak "You have $COINS Coins"
     )
 
+###
 # GET SCREEN DIMENSIONS
 screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
 width=$(echo $screen | cut -d 'x' -f 1)
 height=$(echo $screen | cut -d 'x' -f 2)
 large=$((width-300))
 haut=$((height-200))
-
+###
 ########################################################################
 ## CADRE EXCEPTION COPIE PRIVE
 # https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006278917/2008-12-11/

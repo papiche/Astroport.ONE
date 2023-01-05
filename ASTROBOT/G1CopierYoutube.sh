@@ -213,7 +213,7 @@ else
     echo '# TIDDLER WAS IN CACHE'
     ###################################################################
     ## TODO : ADD EMAIL TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
-
+    continue
 fi
 
 cp -f "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/"

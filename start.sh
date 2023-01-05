@@ -20,6 +20,7 @@ echo "(RE)STARTING 12345.sh"
                                  || ( killall "12345.sh"; killall "_12345.sh"; killall "nc" )
 
 mkdir -p ~/.zen/tmp
+~/.zen/Astroport.ONE/tools/displaytimer.sh 3
 
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 echo $! > ~/.zen/.pid

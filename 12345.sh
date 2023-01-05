@@ -25,8 +25,8 @@ PORT=12345
 mkdir -p ~/.zen/tmp/coucou/ ~/.zen/game/players/localhost
 
 ## CHECK FOR ANY ALREADY RUNNING nc
-ncrunning=$(ps auxf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $ncrunning ]] && echo "ERROR - API Server Already Running -  ${myASTROPORT}/?salt=totodu56&pepper=totodu56&getipns " && exit 1
+ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+[[ $ncrunning ]] && echo "RESTARTING" && kill -9 $ncrunning
 ## NOT RUNNING TWICE
 
 # Some client needs to respect that
