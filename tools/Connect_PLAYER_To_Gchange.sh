@@ -35,16 +35,16 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
 
     ## KEEPING ALREADY EXISTING PROFILE DATA
     NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
-    [[ ! $NAME || $NAME == "null" ]] &&  NAME="Astronaute ${PSEUDO}"
+    [[ ! $NAME || $NAME == "null" ]] &&  NAME=""
 
     DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
-    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR="ASTROPORT Ŋ1 https://g1jeu.ml"
+    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR=""
 
     VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
-    [[ ! $VILLE || $VILLE == "null" ]] &&  VILLE="Paris, 75012"
+    [[ ! $VILLE || $VILLE == "null" ]] &&  VILLE=""
 
     ADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address' 2>/dev/null)
-    [[ ! $ADRESSE || $ADRESSE == "null" ]] &&  ADRESSE="Elysée"
+    [[ ! $ADRESSE || $ADRESSE == "null" ]] &&  ADRESSE=""
 
     # POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
     # SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials' 2>/dev/null)

@@ -45,21 +45,21 @@ CHOICE="$3"
 players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
 
 [[ ${#players[@]} -ne 1 ]] \
-&& espeak "PLEASE CONNECT A PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
+&& espeak "CHOOSE PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
 || OUTPUT="${players}"
 
-echo "PLAYER = $OUTPUT"
+PLAYER=$OUTPUT
 
-[[ $OUTPUT ]] && ( PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current ) \
+[[ $OUTPUT ]] && ( PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current && espeak "CONNECTED" && . "${MY_PATH}/tools/my.sh" ) \
 || espeak "NO PLAYER"
 
-[[ ${PLAYER} == "" ]] \
+[[ $PLAYER == "" ]] \
 && ${MY_PATH}/start.sh \
 && espeak "Astronaut. Please register." \
 && xdg-open "http://astroport.localhost:1234" \
-&& exit 1
+&& exit 1 \
+|| PSEUDO=$(myPlayerUser)
 
-PSEUDO=$(myPlayerUser)
 espeak "Hello $PSEUDO"
 
 G1PUB=$(myPlayerG1Pub)
@@ -146,11 +146,15 @@ fi
 ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
-&& espeak "I P F S not ready. Wait and try again" && exit 1
+&& espeak "I P F S task in progress. Wait finish & try later" && exit 1
 
 ########################################################################
-espeak "restart I P F S daemon"
-[[ "$isLAN" ]] && sudo systemctl restart ipfs && sleep 7
+
+espeak "restarting I P F S daemon"
+[[ "$isLAN" ]] && sudo systemctl restart ipfs
+while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
+    sleep 1
+done
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
