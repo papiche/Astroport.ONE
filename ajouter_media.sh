@@ -50,8 +50,7 @@ players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
 
 PLAYER=$OUTPUT
 
-[[ $OUTPUT ]] && ( PLAYER=$OUTPUT && rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current && espeak "CONNECTED" && . "${MY_PATH}/tools/my.sh" ) \
-|| espeak "NO PLAYER"
+[[ $OUTPUT ]] && ( rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current && espeak "CONNECTED" && . "${MY_PATH}/tools/my.sh" ) || espeak "NO PLAYER"
 
 [[ $PLAYER == "" ]] \
 && ${MY_PATH}/start.sh \
@@ -234,6 +233,7 @@ YID=$(echo "$LINE" | cut -d '&' -f 1)
 TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
 
 /usr/local/bin/youtube-dl -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+                --no-playlist \
                 --cookies-from-browser $BROWSER --verbose --audio-format mp3\
                 --download-archive $HOME/.zen/.yt-dlp.list \
                  -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
@@ -495,6 +495,7 @@ else
 [[ $YTURL == "" ]] && YTURL="$artist"
     espeak "Copying Link"
 /usr/local/bin/youtube-dl \
+--no-playlist \
 --cookies-from-browser $BROWSER \
 --ignore-errors --no-mtime \
 --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
