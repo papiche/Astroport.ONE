@@ -273,7 +273,7 @@ then
     echo $GENRE $SAISON
 
     ## Add screenshot
-    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] && SCREENSHOT=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
+    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] && ANIMH=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1) && PROBETIME=0
 
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
@@ -318,7 +318,6 @@ then
     "filesize": "'${FILE_SIZE}'",
     "size": "'${FILE_BSIZE}'",
     "description": "'${DESCRIPTION}'",
-    "screenshot": "'/ipfs/${POSTER}'",
     "g1pub": "'${G1PUB}'",
     "ipfsroot": "'/ipfs/${IPFSREPFILEID}'",
     "file": "'${file}'",

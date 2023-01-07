@@ -45,14 +45,16 @@ CHOICE="$3"
 players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
 
 [[ ${#players[@]} -ne 1 ]] \
-&& espeak "CHOOSE PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
+&& espeak "SELECT YOUR PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
 || OUTPUT="${players}"
 
 PLAYER=$OUTPUT
 
-[[ $OUTPUT ]] && ( rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current && espeak "CONNECTED" && . "${MY_PATH}/tools/my.sh" ) || espeak "NO PLAYER"
+[[ $OUTPUT ]] \
+&& rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current && espeak "CONNECTED" && . "${MY_PATH}/tools/my.sh" \
+|| espeak "NO PLAYER"
 
-[[ $PLAYER == "" ]] \
+[[ $OUTPUT == "" ]] \
 && ${MY_PATH}/start.sh \
 && espeak "Astronaut. Please register." \
 && xdg-open "http://astroport.localhost:1234" \
@@ -80,10 +82,6 @@ if [ $URL ]; then
     [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
-
-else
-
-    xdg-open "$myIPFS/ipns/$ASTRONAUTENS"
 
 fi
 ###
@@ -157,6 +155,8 @@ done
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
+
+[[ ! $URL ]] && xdg-open "$myIPFS/ipns/$ASTRONAUTENS"
 
 ########################################################################
 espeak "Ready !"
@@ -626,7 +626,7 @@ MEDIAKEY="TMDB_$MEDIAID"
 ###
 TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="${PRE}")
 [[ $TITLE == "" ]] && exit 1
-TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TITLE (NO ;)
+TITLE=$(echo "${TITLE}" | detox --inline ) # Clean TITLE (NO ;)
 
 # VIDEO YEAR
 ### CHECK IF PREVIOUS ajouter_video (Serie case)

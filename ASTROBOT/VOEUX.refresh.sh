@@ -110,6 +110,11 @@ do
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
 
+        ### PREPARE WISHNAME index.html
+        cat $MY_PATH/../templates/index_gif4.html \
+        | sed -e "s~_LIBRA_~$(myIpfsGw)~g" -e "s~_G1VOEU_~${WISHNAME}~g" "s~_PLAYER_~${PLAYER}~g" \
+        > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
+
         ### ADD TO IPFS
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
         JSONIPFS=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
