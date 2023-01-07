@@ -51,7 +51,10 @@ players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
 PLAYER=$OUTPUT
 
 [[ $OUTPUT ]] \
-&& rm -f ~/.zen/game/players/.current && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current && espeak "CONNECTED" && . "${MY_PATH}/tools/my.sh" \
+&& rm -f ~/.zen/game/players/.current \
+&& ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
+&& espeak "CONNECTED" \
+&& . "${MY_PATH}/tools/my.sh" \
 || espeak "NO PLAYER"
 
 [[ $OUTPUT == "" ]] \
