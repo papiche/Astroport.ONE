@@ -19,7 +19,7 @@ Astroport ONE est l'ambassade d'un monde fait de toiles confiances interconnect�
 
 Il s'agit d'un Jeu de société grandeur nature qui consiste à répertorier, inventer, enseigner, diffuser les meilleures façons d'habiter la planète Terre.
 Ce programme introduit des données multimédia (page web, audio, vidéo) en tant que chaines de données (blockchain) inscrites dans le réseau IPFS
-que les joueurs échangent au travers des Oasis.
+que les joueurs échangent au travers des TW et Oasis.
 
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
@@ -29,14 +29,6 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 ```
 
 # LANCEMENT
-
-## ./start.sh
-
-Gestion des VISA PLAYER (et gestion des VOEUX) en mode CLI
-
-```
-~/.zen/Astroport.ONE/command.sh
-```
 
 ## MODE AVENTURE : Activez une Ambassade "Astroport" !
 
@@ -48,8 +40,15 @@ Trouvez le moyen d'accéder à une "Station Astroport" installée en forêt...
 
 NB: Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
 
+## ./start.sh
 
-# INSTALLATION (Docker)
+Gestion des VISA PLAYER (et gestion des VOEUX) en mode CLI
+
+```
+~/.zen/Astroport.ONE/command.sh
+```
+
+# Activer "myos" MODE OLYMPE (Docker)
 
 ```
 sudo apt install git make docker.io
@@ -62,12 +61,14 @@ make
 make install
 ```
 
-L'UTILISATEUR devient un JOUEUR, en semant son propre IPFS, en utilisant un Docker sur un nœud Astroport géré par un autre JOUEUR.
+USER devient un PLAYER, avec son propre démon IPFS, installé dans un Docker.
+Chaque STATION (nœud Astroport) accessible en WAN peut héberger un à plusieurs autres "JOUEURS".
 
-Ainsi, les AMIS peuvent héberger d'autres AMIS.
+IPFS relie les clefs et les données.
+Nous mettons un TW dans une clef.
 
 
-# API : "Code qui Peut"
+# API : "Sauve qui Peut"
 ## https://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée (```~/.start.sh```):
@@ -75,7 +76,7 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 * le port 12345 publie MAP(*)
 
 
-### PRIVATE ZONE
+### PRIVATE ZONE (fonctionne sur toutes les Stations. Mode coucou)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
 * Créer TW BunkerBOX
@@ -104,7 +105,7 @@ Redirections
 
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
 
-### PLAYER
+### PLAYER  (fonctionne uniquement sur la Station qui héberge votre PLAYER)
 
 * Déclencher un Payement de 99 Ğ1 à Fred
 
@@ -115,33 +116,9 @@ Redirections
 ```/?player=${PLAYER}&moa=json&tag=G1CopierYoutube```
 
 
-### PUBLIC
+### PUBLIC (fonctionne par tout, pour tous)
 ### ```/?qrcode=$G1PUB/$IPNS/$...```
 
-
-# TW : TiddlyWiki
-
-L'utilisation du cryptosystème signifie que tout hôte possédant une clé privée peut modifier "quelque chose", la clé publique étant l'adresse de cette "chose". Quand on se concentre sur le hachage des données comme le fait IPFS, on peut stocker n'importe quoi partout.
-
-Astroport.ONE attache une clé (2 pass phrase NaCl generattion) et un email à un modèle TW. Chaque ordinateur sert l'API sur le port 1234. Il peut héberger plusieurs clés PLAYER et gérer leurs TW.
-
-Le projet reproduit le "[protocole Scuttlebut](https://scuttlebot.io/more/protocols/secure-scuttlebutt.html)", d'où emerge le réseau Ŋ1, Ŋ2,... une fois généralisé à toute clef IPFS enchaînées par un mappage "Web of Trust", créant ainsi un service d'hébergement partagé "peer to peer".
-
-Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini en échangeant des étoiles via l'application https://gchange.fr.
-
-**Nous utilisons [la Ğ1](https://monnaie-libre.fr/) comme "la meilleure invention d'une crypto-monnaie"**
-
-N'importe qui (avec une connexion par fibre optique) peut créer un nœud chez lui, inviter des amis et partager des "tiddlers" selon leurs "G1Voeu".
-Vous pouvez rejoindre le swam#0 officiel d'Astroport, en devenant bootstrap et hôte dans https://astroport.copylaradio.com TestNet "DNS Round Robin".
-
-
-![](https://ipfs.copylaradio.com/ipfs/Qma9zvrYHGcUPisLKBcG9U9sktThX5VfVci8jfM8D9RspT)
-
-
-Bien entendu, le mieux est que chacun héberge et publie ses propres données sur son ordinateur "localhost" (pas de délégation de clé privée dans ce cas), de sorte que le protocole de réplication Astroport Ŋ1 peut être utilisé à tout moment. Mais il est préférable de garder une heure de connexion commune afin que les hôtes soient tous disponibles pour un torrent bit massif.
-
-TW est la première application disponible pour les personnes décentralisées.
-L'utilisateur peut écrire des notes personnelles, et quelques "tiddlers de commande" pour activer la copie des tiddlers entre les TW d'amis et exécuter des pré et/ou post traitements.
 
 # 20H12
 
@@ -149,15 +126,12 @@ ASTROBOT exécute le protocole de synchronisation Ŋ1
 
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
-Cet horaire commun invite chaque propriétaire de TW à publier leur version avant cette heure.
+Il analyse les données et extrait des flux json selon les G1Voeu présent dans chaque TW
 
-A cette heure les Stations raffraichissent vos canaux TW communs...
+## FLUX TW :
 
-# EXEMPLE DE TW
+[![TW FEEDS](https://ipfs.copylaradio.com/ipfs/Qma9zvrYHGcUPisLKBcG9U9sktThX5VfVci8jfM8D9RspT)](https://pad.p2p.legal/s/G1TWFeed#)
 
-PLAYER support@qo-op.com
-
-https://ipfs.copylaradio.com/ipns/support.qo-op.com.localhost.copylaradio.com
 
 # IPFS : UN STOCKAGE INALTERABLE ET INTELLIGENT
 
@@ -179,16 +153,11 @@ https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 
 ---
 
-## LOOPY
+## SIMULATIONS LOOPY
 
 > [Simulateur Astronaute/Voeux](https://ncase.me/loopy/v1.1/?data=[[[3,646,229,0.5,%22Astronaute%22,5],[4,806,372,0.16,%22G1Voeu%22,3],[5,449,133,0.83,%22G1Talent%22,1],[6,928,124,0.5,%22Astronaute%22,0],[7,1055,293,0.5,%22Astronaute%22,0],[8,883,587,0.5,%22Astronaute%22,0],[10,691,54,0.5,%22G1Voeu%22,3]],[[3,5,82,1,0],[3,4,-87,1,0],[6,4,83,1,0],[4,5,176,1,0],[8,8,85,1,12],[8,4,-45,1,0],[7,4,34,1,0],[5,3,49,1,0],[7,7,101,1,225],[6,6,113,1,-84],[3,3,90,1,75],[5,4,-293,1,0],[3,10,34,1,0]],[],10%5D)
 
 > [Essaim Astroport.ONE](https://ncase.me/loopy/v1.1/?data=[[[1,419,351,1,%22Astroport.ONE%22,3],[2,506,530,1,%22Terrien%22,5],[3,499,95,1,%22IPFS%22,1],[4,272,225,1,%22Astroport.ONE%22,3],[5,620,297,0.16,%22Astroport.ONE%22,4],[7,927,69,0.66,%22Astroport.ONE%22,3],[8,798,175,0.66,%22Astroport.ONE%22,3]],[[2,1,94,-1,0],[1,2,89,1,0],[2,5,-122,1,0],[5,3,58,1,0],[3,5,25,1,0],[4,3,117,1,0],[3,4,-152,1,0],[1,3,60,1,0],[3,1,-18,1,0],[7,3,-44,1,0],[3,7,15,1,0],[8,3,37,1,0],[3,8,-47,1,0]],[[798,557,%22https%253A%252F%252Fipfs.copylaradio.com%253A1234%250A(salt%2520%252F%2520pepper%2520%252F%2520email)%2520%253D%2520TW%2520%252B%2520AstroBot%2520API%22],[256,141,%22Station%2520Officielle%250A(Bootstrap%2520%252B%2520RoundRobin%2520DNS)%22],[868,332,%22D%25C3%25A9l%25C3%25A9gation%2520de%2520clef%250A(Tiers%2520de%2520confiance)%22]],9%5D)
-
-
-
-# TODO
-* Ajouter des worlists au choix par oasis https://diceware.readthedocs.io/en/stable/wordlists.html
 
 
 ## Stargazers over time
