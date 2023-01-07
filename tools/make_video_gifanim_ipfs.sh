@@ -15,8 +15,8 @@ MIME=$(file --mime-type -b "${path}${file}")
 ############# CONVERT NOT MP4
         [[ ! $MIME == "video/mp4"  ]] \
         && echo "MP4 CONVERT... WAIT" \
-        && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}4${file}" \
-        && [[ -s "${path}4${file}" ]] && rm "${path}${file}" && mv "${path}4${file}" "${path}${file}.mp4" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}")
+        && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
+        && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}")
 
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p

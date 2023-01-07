@@ -85,7 +85,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         #############################################################
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-            [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "MadeInZion : BAD TW (☓‿‿☓) " && continue
+            [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
 
             player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
@@ -183,7 +183,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     echo "IFRIENDHEAD :" ${IFRIENDHEAD}
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
-    # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
+
+    # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/game/players/$PLAYER/FRIENDS/${FPLAYER}.rss.json
+
     [[ -d ~/.zen/game/players/$PLAYER/FRIENDS ]] \
     && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${myIPFS}/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
 
