@@ -112,7 +112,7 @@ do
 
         ### PREPARE WISHNAME index.html
         cat $MY_PATH/../templates/index_gif4.html \
-        | sed -e "s~_LIBRA_~$(myIpfsGw)~g" -e "s~_G1VOEU_~${WISHNAME}~g" "s~_PLAYER_~${PLAYER}~g" \
+        | sed -e "s~_LIBRA_~$(myIpfsGw)~g" -e "s~_G1VOEU_~${WISHNAME}~g" -e "s~_PLAYER_~${PLAYER}~g" \
         > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
 
         ### ADD TO IPFS
