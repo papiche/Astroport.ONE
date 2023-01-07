@@ -61,6 +61,8 @@
     let pageNumber = 0;
     let gifs = [];
     let urls = [];
+    let titles = [];
+    let durees = [];
 
     // Récupérer les données
     fetch('_LIBRA_/ipns/_VOEUNS_/_PLAYER_.tiddlers.json')
@@ -69,6 +71,8 @@
         // Extraire les gifanime
         gifs = data.map(tiddler => tiddler.gifanime);
         urls = data.map(tiddler => tiddler.ipfs);
+        titles = data.map(tiddler => tiddler.title);
+        durees = data.map(tiddler => tiddler.duree);
         // Afficher les gifs
         showGifs();
       });
@@ -79,13 +83,15 @@
       let end = start + pageSize;
       let pageGifs = gifs.slice(start, end);
       let pageUrls = urls.slice(start, end);
+      let pageTitles = titles.slice(start, end);
+      let pageDurees = durees.slice(start, end);
       let output = '';
 
       // Générer le HTML
       pageGifs.forEach((gif, i) => {
         output += `
           <a href="_LIBRA_${pageUrls[i]}">
-            <img src="_LIBRA_${gif}" />
+            <img src="_LIBRA_${gif}" title="${pageTitles[i]} ${pageDurees[i]} " />
           </a>
         `;
       });
