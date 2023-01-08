@@ -12,29 +12,29 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
 PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
-[[ ! $PLAYER ]] && echo "Please provide IPFS publish key" && exit 1
+[[ ! ${PLAYER} ]] && echo "Please provide IPFS publish key" && exit 1
 
 MOATS="$2"
 
-    PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
-    G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
-    ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
+    PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+    ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
 
     ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
-    [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
-    [[ ! $ASTRONAUTENS ]] && echo "Missing $PLAYER IPNS KEY - CONTINUE --" && exit 1
+    ASTRONAUTENS=$(ipfs key list -l | grep ${PLAYER} | cut -d ' ' -f1)
+    [[ ! $ASTRONAUTENS ]] && echo "WARNING No ${PLAYER} in keystore --" && ASTRONAUTENS=$ASTRONS
+    [[ ! $ASTRONAUTENS ]] && echo "Missing ${PLAYER} IPNS KEY - CONTINUE --" && exit 1
 
 INDEX="$3"
-[[ ! $INDEX ]] && INDEX="$HOME/.zen/game/players/$PLAYER/ipfs/moa/index.html"
-[[ ! -s $INDEX ]] && echo "TW $PLAYER manquant" && exit 1
+[[ ! $INDEX ]] && INDEX="$HOME/.zen/game/players/${PLAYER}/ipfs/moa/index.html"
+[[ ! -s $INDEX ]] && echo "TW ${PLAYER} manquant" && exit 1
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
-echo "Exporting $PLAYER TW [tag[G1Voeu]]"
+echo "Exporting ${PLAYER} TW [tag[G1Voeu]]"
 rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
 
@@ -67,7 +67,7 @@ do
     if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh program found !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "$PLAYER" "$MOATS"
+        ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
         echo "________________________________   Finished ******"
     else
         echo "......................... G1${WISHNAME} REGULAR Ŋ1 RSS JSON"
@@ -82,10 +82,10 @@ do
         ## Copy tiddlers ...
         ##################################
         echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=G1${WISHNAME}"
-        echo "ls ~/.zen/game/players/$PLAYER/FRIENDS/*/index.html"
+        echo "ls ~/.zen/game/players/${PLAYER}/FRIENDS/*/index.html"
         echo "*********************************"
         ## Search in Local World (NB! G1Voeu TW copied by Connect_PLAYER_To_Gchange.sh)
-        FINDEX=($( ls $HOME/.zen/game/players/$PLAYER/FRIENDS/*/index.html))
+        FINDEX=($( ls $HOME/.zen/game/players/${PLAYER}/FRIENDS/*/index.html))
 
         for FRIENDTW in ${FINDEX[@]};
         do
@@ -121,8 +121,8 @@ do
         ipfs name publish -k $VOEUKEY /ipfs/$JSONIPFS   # PUBLISH $VOEUKEY
 
         ## MOVE INTO PLAYER AREA
-        echo "Ŋ1 FLUX ~/.zen/game/players/$PLAYER/G1${WISHNAME}/${G1PUB}"
-        mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/$PLAYER/G1${WISHNAME}/${G1PUB}/
+        echo "Ŋ1 FLUX ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}"
+        mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/
 
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 

@@ -17,7 +17,7 @@ start=`date +%s`
 ########################################################################
 [[ ! $(which ipfs) ]] \
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux.install.sh)" \
-&& architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" ]] \
+&& architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" || "$architecture" == "armv7l" ]] \
 && bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux.install.sh) \
 || echo "=== Installez IPFS KUBO puis relancez Install ==="
 

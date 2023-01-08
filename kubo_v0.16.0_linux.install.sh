@@ -9,17 +9,17 @@ architecture=$(uname -m)
 
 # Download appropriate version of kubo
 if [ "$architecture" == "x86_64" ]; then
-    wget https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-amd64.tar.gz
+    wget -O kubo.tar.gz https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-amd64.tar.gz
 elif [ "$architecture" == "aarch64" ]; then
-    wget https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-arm64.tar.gz
+    wget -O kubo.tar.gz https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-arm64.tar.gz
 elif [ "$architecture" == "armv7l" ]; then
-    wget https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-arm.tar.gz
+    wget -O kubo.tar.gz https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-arm.tar.gz
 else
     echo "Error: Unknown architecture"
     exit 1
 fi
 
-tar -xvzf kubo_v0.16.0_linux-$architecture.tar.gz
+tar -xvzf kubo.tar.gz
 
 cd kubo
 
