@@ -12,6 +12,8 @@ if [ "$architecture" == "x86_64" ]; then
     wget https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-amd64.tar.gz
 elif [ "$architecture" == "aarch64" ]; then
     wget https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-arm64.tar.gz
+elif [ "$architecture" == "armv7l" ]; then
+    wget https://dist.ipfs.tech/kubo/v0.16.0/kubo_v0.16.0_linux-arm.tar.gz
 else
     echo "Error: Unknown architecture"
     exit 1
