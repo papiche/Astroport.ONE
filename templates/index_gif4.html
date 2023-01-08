@@ -67,7 +67,7 @@
     let durees = [];
 
     // Récupérer les données
-    fetch('_LIBRA_/ipns/_VOEUNS_/_PLAYER_.tiddlers.json')
+    fetch('./_PLAYER_.tiddlers.json')
       .then(res => res.json())
       .then(data => {
         // Extraire les gifanime
@@ -92,8 +92,8 @@
       // Générer le HTML
       pageGifs.forEach((gif, i) => {
         output += `
-          <a href="_LIBRA_${pageUrls[i]}">
-            <img src="_LIBRA_${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
+          <a href="${pageUrls[i]}">
+            <img src="${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
           </a>
         `;
       });
