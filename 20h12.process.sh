@@ -53,6 +53,8 @@ end=`date +%s`
 dur=`expr $end - $start`
 echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 
+~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh
+
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
