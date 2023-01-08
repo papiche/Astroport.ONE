@@ -21,7 +21,7 @@ PORT=12345
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
-[[ $ncrunning ]] && echo "(≖‿‿≖) - API Server Already Running -  (≖‿‿≖) " && kill -9 $ncrunning
+[[ $ncrunning ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
 ## RESET MEMORY
 rm -Rf ~/.zen/tmp/swarm/*
@@ -33,6 +33,7 @@ rm -Rf ~/.zen/tmp/swarm/*
 mkdir -p ~/.zen/tmp/swarm
 mkdir -p ~/.zen/tmp/$IPFSNODEID
 
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
 
 ## CREATE CHAN = MySwarm_$IPFSNODEID
@@ -108,6 +109,11 @@ while true; do
     echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds.'
 
     ) & ##### SUB-PROCESS
+
+
+    #### ACTIVATE LIBP2P PORT FORWARDINGS
+    ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh
+
 
     # last run recording
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
