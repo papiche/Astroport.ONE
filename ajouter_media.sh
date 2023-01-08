@@ -856,7 +856,7 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
     #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/Astroport/Add_${MEDIAKEY}_script.sh
 
-    echo "mv ~/Astroport/Add_${MEDIAKEY}_script.sh \"$HOME/Astroport/Done_${FILE_NAME}.sh\"
+    echo "mv ~/Astroport/Add_${MEDIAKEY}_script.sh \"$HOME/Astroport/${FILE_NAME}_DONE.sh\"
     " >> ~/Astroport/Add_${MEDIAKEY}_script.sh
 
     chmod +x ~/Astroport/Add_${MEDIAKEY}_script.sh
