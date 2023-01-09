@@ -38,7 +38,7 @@ bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/ins
 
 Trouvez le moyen d'accéder à une "Station Astroport" installée en forêt...
 
-NB: Une Stattion branché sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
+NB: Une Station branchée sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
 
 ## ./start.sh
 
@@ -79,11 +79,11 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 ### PRIVATE ZONE (fonctionne sur toutes les Stations. Mode coucou)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
-* Créer TW BunkerBOX
+* Créer son TW <3BOX
 
-```/?salt=${SALT}&pepper=${PEPPER}&g1pub=$URLENCODEDURL&email=$PLAYER```
+```/?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}```
 
-* Lire Messagerie Gchange
+* Lire sa Messagerie Gchange
 
 ```/?salt=${SALT}&pepper=${PEPPER}&messaging=on```
 
@@ -93,7 +93,7 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 
 * AppName=testcraft : Enregistrer JSON
 
-```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=&dataid=$QRHASH```
+```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=_&dataid=$QRHASH```
 
 
 Redirections
@@ -111,7 +111,7 @@ Redirections
 
 ```/?player=${PLAYER}&pay=99&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech```
 
-* Export TW json TAG=G1CopierYoutube
+* Exporter Tiddlers.json depuis son TW selon valeur des "tags" ( ici TAG=G1CopierYoutube)
 
 ```/?player=${PLAYER}&moa=json&tag=G1CopierYoutube```
 
@@ -122,11 +122,13 @@ Redirections
 
 # 20H12
 
-ASTROBOT exécute le protocole de synchronisation Ŋ1
+Chaque jour, les ASTROBOTs captent les :star: de leurs PLAYERs puis exécutent le protocole de synchronisation Ŋ1
 
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
-Il analyse les données et extrait des flux json selon les G1Voeu présent dans chaque TW
+Ils analysent les données et extraient des flux json selon les G1Voeu présent dans chaque TW.
+
+Le niveau informationnel de confiance exploré permet de proposer des alertes issues du niveau Ŋ2.
 
 ## FLUX TW :
 
