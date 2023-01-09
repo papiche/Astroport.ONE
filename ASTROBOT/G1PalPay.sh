@@ -76,8 +76,10 @@ while read LINE; do
 
     [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
-    ICOMMENT=($COMMENT)
-    ## IF MULTIPLE WORDS OR EMAILS : DIVIDE INCOMING AMOUNT TO SHARE
+    ## GET EMAILS FROM COMMENT
+    ICOMMENT=($(echo "$COMMENT" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+
+    ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#ICOMMENT[@]}"
     N=${#ICOMMENT[@]}
     SHARE=$(echo "$IAMOUNT/$N" | bc -l | cut -d '.' -f 1) ## INTEGER ROUNDED VALUE
@@ -86,72 +88,65 @@ while read LINE; do
 
     for EMAIL in "${ICOMMENT[@]}"; do
 
-        if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-            echo "VALID EMAIL : ${EMAIL}"
-            ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
+        [[ $EMAIL == $PLAYER ]] && echo "My PalPay" && continue
 
-            $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+        echo "EMAIL : ${EMAIL}"
+        ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
 
-            if [[ ! ${ASTROTW} ]]; then
+        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
 
-                echo "# NEW VISA $(date)"
-                SALT="" && PEPPER=""
-                echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
+        if [[ ! ${ASTROTW} ]]; then
 
-                if [[ ! $isLAN || $USER == "zen" ]]; then
+            echo "# NEW VISA $(date)"
+            SALT="" && PEPPER=""
+            echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
 
-                    $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1)
-                    # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
+            if [[ ! $isLAN || $USER == "zen" ]]; then
 
-                else
-
-                    ## CREATE new PLAYER IN myASTROTUBE
-                    echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-                    curl -so ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-
-                    TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
-                    TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
-                    sleep 30
-
-                    curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
-                    $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
-
-                fi
-
-                ######################################################
-
-                ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
-
-            fi
-
-            ## MAKE FRIENDS & SEND G1
-            echo "Hello PalPay Friend $ASTROMAIL
-            TW : $ASTROTW
-            G1 : $ASTROG1
-            ASTROIPFS : $ASTROIPFS
-            RSS : $ASTROFEED"
-
-            [[ ! $ASTROG1 ]] \
-            && echo "MISSING ASTROG1" \
-            && continue
-
-            if [[ ${ASTROG1} != ${G1PUB} ]]; then
-
-                ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m > /dev/null 2>&1
-                STAMP=$?
+                $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1)
+                # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
             else
 
-                STAMP=0
+                ## CREATE new PLAYER IN myASTROTUBE
+                echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                curl -so ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+
+                TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
+                TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
+                sleep 30
+
+                curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
+                $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
 
             fi
-            ## COULD SEND STARS ??
+
+            ######################################################
+
+            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
+
+        fi
+
+        ## MAKE FRIENDS & SEND G1
+        echo "Hello PalPay Friend $ASTROMAIL
+        TW : $ASTROTW
+        G1 : $ASTROG1
+        ASTROIPFS : $ASTROIPFS
+        RSS : $ASTROFEED"
+
+        [[ ! $ASTROG1 ]] \
+        && echo "MISSING ASTROG1" \
+        && continue
+
+        if [[ ${ASTROG1} != ${G1PUB} ]]; then
+
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m > /dev/null 2>&1
+            STAMP=$?
 
         else
 
-                echo "BAD EMAIL : ${EMAIL}"
-                continue
+            STAMP=0
 
         fi
 
@@ -208,7 +203,7 @@ while read LINE; do
 
         ## SEND nb JUNE TO ALL
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${email[@]}" -m > /dev/null 2>&1 ## PalPay $nb G1
+        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${email[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "OK PalPay : $MSG"
         echo "PAYMENT SENT"
 
