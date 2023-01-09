@@ -34,12 +34,13 @@ INDEX="$1"
 
 PLAYER="$2"
 [[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
-[[ ! ${PLAYER} ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
+[[ ! ${PLAYER} ]] && echo "ERROR - Please provide PLAYER" && exit 1
 
 ASTONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 [[ ! $ASTONAUTENS ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
 
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+[[ ! $G1PUB ]] && echo "ERROR - G1PUB ${PLAYER} VIDE"  && exit 1
 
 # Extract tag=tube from TW
 MOATS="$3"
@@ -73,7 +74,7 @@ while read LINE; do
     IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "DONE OLD EVENT"&& continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
     ICOMMENT=($COMMENT)
     ## IF MULTIPLE WORDS OR EMAILS : DIVIDE INCOMING AMOUNT TO SHARE
@@ -96,23 +97,30 @@ while read LINE; do
                 echo "# NEW VISA $(date)"
                 SALT="" && PEPPER=""
                 echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
-                ## $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1) # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
-                ## CREATE new PLAYER IN myASTROTUBE
-                echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-                curl -so ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                if [[ ! $isLAN || $USER == "zen" ]]; then
 
-                TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
-                TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
-                sleep 12
+                    $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1)
+                    # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
-                curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
-                $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
+                else
+
+                    ## CREATE new PLAYER IN myASTROTUBE
+                    echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                    curl -so ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+
+                    TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
+                    TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
+                    sleep 30
+
+                    curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
+                    $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
+
+                fi
 
                 ######################################################
 
-                ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS OFFRE CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
-
+                ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
 
             fi
 
@@ -128,31 +136,93 @@ while read LINE; do
             && continue
 
             if [[ ${ASTROG1} != ${G1PUB} ]]; then
+
                 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m 2>&1
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m > /dev/null 2>&1
                 STAMP=$?
+
             else
+
                 STAMP=0
+
             fi
             ## COULD SEND STARS ??
 
         else
+
                 echo "BAD EMAIL : ${EMAIL}"
                 continue
+
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate
+        [[ $STAMP == 0 ]] && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate ## MEMORIZE LAST IDATE
 
     done
 
 done < ~/.zen/tmp/${MOATS}/myPalPay.json
 
-
+#################################################################
+#################################################################
 ### NEXT #####
-### INNER TIDDLERS TREATMENT
-## SEARCH FOR NEW TIDDLERS WITH MULTIPLE EMAILS IN TAG
-## SEND 1 JUNE DIVIDED INTO ALL
+### TIDDLERS with EMAIL in TAGS treatment
+#################################################################
+## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
+#################################################################
+# EXTRACT TODAY TIDDLERS
+tiddlywiki --load $INDEX \
+                 --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/ \
+                 --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]]'
+
+## FILTER MY OWN EMAIL
+cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
+
+[[ "$(cat ~/.zen/tmp/${MOATS}/@tags.json)" == "[]" ]] && echo "ONLY MY TIDDLERS TODAY" && exit 0
+
+echo "******************TIDDLERS with EMAIL in TAGS treatment"
+#~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
+
+## EXTRACT NOT MY EMAIL
+while read LINE; do
+
+    echo "---------------------------------- PalPAY for Tiddler"
+    TCREATED=$(echo $LINE | jq -r .created)
+    TTITLE=$(echo $LINE | jq -r .title)
+    TTAGS=$(echo $LINE | jq -r .tags)
+    echo "$TTITLE"
+
+    ## Count emails found
+    emails=($(echo "$TTAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    nb=${#email[@]}
+
+    ## Get first zmail
+    ZMAIL="${email}"
+
+    MSG="+ $nb G1 TO ${email[@]}"
+    echo $MSG
+
+    ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
+    $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
+
+    if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
+
+        ## SEND nb JUNE TO ALL
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${email[@]}" -m > /dev/null 2>&1 ## PalPay $nb G1
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "OK PalPay : $MSG"
+        echo "PAYMENT SENT"
+
+    else
+
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${email[@]}"
+        echo "NO ACCOUNT FOUND"
+
+    fi
+
+
+done < ~/.zen/tmp/${MOATS}/@tags.json
+
+echo "****************************************"
 
 rm -Rf $HOME/.zen/tmp/${MOATS}
 

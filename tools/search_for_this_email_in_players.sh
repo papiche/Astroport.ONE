@@ -26,9 +26,12 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ## EXTRACT DATA FROM TW
     mkdir -p ~/.zen/tmp/${MOATS}
     rm -f ~/.zen/tmp/${MOATS}/Astroport.json
+
     tiddlywiki --load $INDEX --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
     ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].g1pub)
+
     rm -Rf ~/.zen/tmp/${MOATS}
     # cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r
 

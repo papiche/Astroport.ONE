@@ -116,7 +116,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ##############################################################
 
         ## CHECK G1PALPAY TO MAKE
-        ${MY_PATH}/G1PalPay.sh
+        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$PLAYER"
 
         ##################################
         echo "# TW : GW API + LightBeam Feed + Friends"
