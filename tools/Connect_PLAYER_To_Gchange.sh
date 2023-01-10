@@ -172,11 +172,11 @@ do
 
         else
 
-            FTW="~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html"
+            FTW="$HOME/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html"
             echo "COOL MON AMI PUBLIE SUR IPFS : $FTW"
 
             # LOG
-            echo tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            # echo tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             [[ ! -s ~/.zen/tmp/${liking_me}.MadeInZion.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) BAD ~/.zen/tmp/${liking_me}.MadeInZion.json ~~~" && continue
             FPLAYER=$(cat ~/.zen/tmp/${liking_me}.MadeInZion.json | jq -r .[].player)
