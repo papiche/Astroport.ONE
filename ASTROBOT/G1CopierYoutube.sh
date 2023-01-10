@@ -202,6 +202,7 @@ if [[ ! ${TIDDLER} ]]; then
     "dur": "'${dur}'",
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
+    "zurl": "'${ZYURL}'",
     "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
   }
 ]
