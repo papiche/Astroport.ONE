@@ -18,7 +18,7 @@ start=`date +%s`
 [[ ! $(which ipfs) ]] \
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux.install.sh)" \
 && architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" || "$architecture" == "armv7l" ]] \
-&& bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.16.0_linux.install.sh) \
+&& bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/kubo_v0.16.0_linux.install.sh) \
 || echo "=== Installez IPFS KUBO puis relancez Install ==="
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
@@ -77,10 +77,10 @@ for i in qrencode ca-certificates basez jq bc file gawk yt-dlp ffmpeg dnsutils n
 done
 
 #### GIT CLONE ###############################################################
-echo "=== CLONAGE CODE  '~/.zen/Astroport.ONE' depuis https://git.p2p.legal"
+echo "=== CLONAGE CODE  '~/.zen/Astroport.ONE' depuis https://github.com"
 mkdir -p ~/.zen
 cd ~/.zen
-git clone --depth 1 https://git.p2p.legal/qo-op/Astroport.ONE.git
+git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
 echo "#############################################"

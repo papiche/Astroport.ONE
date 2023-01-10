@@ -25,7 +25,14 @@ que les joueurs échangent au travers des TW et Oasis.
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
 ```
+# GIT.P2P.LEGAL
+
 bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
+
+# GITHHUB
+bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh)
+
+
 ```
 
 # LANCEMENT
