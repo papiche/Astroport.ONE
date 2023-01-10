@@ -68,9 +68,9 @@ echo
 
 fi
 
-## GET PROFILE BACK
+## GET gchange & cesium PROFILE
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
-#~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
 
@@ -87,7 +87,7 @@ echo "Checking received stars"
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
 
-[[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1 sur GChange" && exit 0
+[[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1" && exit 0
 
 cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
 # echo "cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r" # DEBUG
@@ -136,25 +136,29 @@ do
         echo "$my_star_level" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level && echo "***** $my_star_level STARS *****"
 
         ## GET FRIEND GCHANGE PROFILE
+        echo "GET FRIEND gchange.json"
         ${MY_PATH}/timeout.sh -t 20 \
         ${MY_PATH}/jaklis/jaklis.py get \
-        \
         -p ${liking_me} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
 
         FRIENDTITLE=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json | jq -r '.title')
 
         ## GET FRIEND TW !!
-        echo "Getting $FRIENDTITLE latest online TW..."
+        echo "SEARCHING $FRIENDTITLE - ONLINE TW -"
         YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || ps auxf --sort=+utime | grep -w ipfs | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1);
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-        echo "$LIBRA/ipns/$FRIENDNS"
-        echo "$myIPFS/ipns/$FRIENDNS ($FRIENDTITLE)"
 
         # DISPLAY TIMER
-        ${MY_PATH}/displaytimer.sh 60 &
+        # ${MY_PATH}/displaytimer.sh 60 &
 
-        [[ $YOU ]] && ipfs --timeout 120s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
-        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] && curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
+
+        [[ $YOU ]] \
+        && echo "ipfs --timeout 120s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html" \
+        && ipfs --timeout 120s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+
+        [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] \
+        && echo "curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html $LIBRA/ipns/$FRIENDNS" \
+        && curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
 
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
@@ -171,6 +175,8 @@ do
             FTW="~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html"
             echo "COOL MON AMI PUBLIE SUR IPFS : $FTW"
 
+            # LOG
+            echo tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             [[ ! -s ~/.zen/tmp/${liking_me}.MadeInZion.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) BAD ~/.zen/tmp/${liking_me}.MadeInZion.json ~~~" && continue
             FPLAYER=$(cat ~/.zen/tmp/${liking_me}.MadeInZion.json | jq -r .[].player)
