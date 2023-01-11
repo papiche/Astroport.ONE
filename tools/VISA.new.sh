@@ -46,10 +46,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     echo "SCANNING /ipns/${ASTRONAUTENS}"
     ## GETTING LAST TW via IPFS or HTTP GW
     [[ $YOU ]] \
-    && ipfs --timeout 20s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
+    && ipfs --timeout 30s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
     [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    && curl -m 20 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    && curl -m 12 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     #############################################
     ## AUCUN RESULTAT
@@ -144,14 +144,6 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 # echo "Votre clef moa_${PLAYER} <=> $MOANS ($MOAKEYFILE)"; sleep 2
 ############################################################
 echo
-echo "Votre compte Gchange et portefeuille G1.
-Utilisez ces identifiants pour rejoindre la Monnaie Libre
-
-    $SALT
-    $PEPPER
-
-Rendez-vous sur https://gchange.fr"; sleep 3
-
 echo; echo "Création de votre clef multi-accès..."; sleep 2
 echo;
 
@@ -174,7 +166,9 @@ YOMAIN=$(echo ${PLAYER} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 # echo "MY PLAYER API GW : $(myPlayerApiGw)"
 
 NID="${myIPFS}"
-WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
+WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
+WID="https://ipfs.$(myHostName)/api"
+
 
 [[ $isLAN ]] && NID="http://astroport.localhost:8080" \
                         && WID="http://astroport.localhost:5001"
@@ -204,7 +198,7 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
     PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58) && rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
-    echo "Votre Clef publique G1 est : $G1PUB"; sleep 1
+
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
@@ -337,11 +331,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
     echo "$PSEUDO" > ~/.zen/game/players/${PLAYER}/.pseudo
     echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/.g1pub
 
-    # astrXbian compatible IPFS sub structure =>$XZUID
-    cp ~/.zen/game/players/${PLAYER}/.player ~/.zen/game/players/${PLAYER}/ipfs/_xbian.zuid
-    cp ~/.zen/game/players/${PLAYER}/.player ~/.zen/game/players/${PLAYER}/ipfs/
-    # PUBLIC Ŋ0 ZONE
-
     echo "${ASTRONAUTENS}" > ~/.zen/game/players/${PLAYER}/.playerns
 
     echo "SALT=$SALT" > ~/.zen/game/players/${PLAYER}/secret.june
@@ -350,9 +339,6 @@ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api"
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
 echo "--- PLAYER : ${PLAYER}";
-echo; echo "VISA : ${myIPFS}/ipfs/${IASTRO}"
-echo; echo "+ TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
-echo; echo "+ RSS : ${myIPFS}/ipns/${FEEDNS}"; sleep 1
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}"
 
@@ -362,9 +348,9 @@ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 . "$MY_PATH/my.sh"
 
 #################################################################
-#### make player ipfs docker
-[[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost) > /dev/null 2>&1
-
+#### make player ipfs docker ## TODO
+# [[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost) > /dev/null 2>&1
+## 1ST RELEASE BASED ON DIRECT NODE IPFSNODEID KEY "ADD / DEL" API
 #################################################################
 #################################################################
 #################################################################
@@ -403,9 +389,23 @@ LP=$(ls /dev/usb/lp* 2>/dev/null)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 echo "$(${MY_PATH}/face.sh cool)"
-echo "Bienvenue 'Astronaute' $PSEUDO (${PLAYER})"
+echo "Bienvenue 'Astronaute'  $PSEUDO"
 echo
-echo "Notez vos PHRASES et votre PASS"; sleep 1
+echo "${PLAYER}"
+echo "Clef Publique : $G1PUB"; sleep 1
+echo "
+Phrases de connexion :
+    $SALT
+    $PEPPER
+
+PASS : $PASS
+
+:start: system https://gchange.fr"; sleep 1
+echo "$(${MY_PATH}/face.sh friendly)"
+
+echo; echo "VISA : ${myIPFS}/ipfs/${IASTRO}"
+echo; echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo; echo "RSS : ${myIPFS}/ipns/${FEEDNS}"; sleep 1
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 
