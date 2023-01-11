@@ -21,11 +21,16 @@ Content-Type: text/html; charset=UTF-8
 
 start=`date +%s`
 
-PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
+PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
+
 QRCODE=$THAT
 URL=$THIS
 TYPE=$WHAT
 
+
+ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
+echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html" \
+        && ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html
 ###################################################################################################
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
@@ -36,7 +41,9 @@ TYPE=$WHAT
         PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/${PLAYER} || ${PLAYER} == "" ]] && (echo "$HTTPCORS ERROR - QRCODE - NO ${PLAYER} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
+        [[ ! -d ~/.zen/game/players/${PLAYER} || ${PLAYER} == "" ]] \
+        && (echo "$HTTPCORS ERROR - QRCODE - NO ${PLAYER} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && exit 1
 
         ## Demande de copie d'une URL reçue.
         if [[ $URL ]]; then

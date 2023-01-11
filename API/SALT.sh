@@ -21,7 +21,7 @@ Content-Type: text/html; charset=UTF-8
 
 start=`date +%s`
 
-PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
+PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
 SALT=$THAT
 PEPPER=$THIS
 

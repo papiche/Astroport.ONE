@@ -107,7 +107,6 @@ do
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
     ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
-    \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
 
     ## ZOMBIE PROTECTION - PURGE AFTER 60 DAYS

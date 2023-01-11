@@ -182,15 +182,15 @@ while true; do
 
     case $CMD in
         "salt")
-            exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" &
         ;;
 
         "player")
-            exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" &
         ;;
 
         "qrcode")
-            exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" &
         ;;
 
         "")
