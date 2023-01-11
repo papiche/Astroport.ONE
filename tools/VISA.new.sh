@@ -99,7 +99,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 ################################################################################
-TWMODEL="/ipfs/bafybeifffgdhlrnhbvsadyv77aojhtzwfd6n4irbsf2ufnizngl2bbixxy"
+TWMODEL="/ipfs/bafybeifdifxlikk4bwjdkvh4inm4bzck4do5hzw5gctylzubwmjejmqt3a"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -247,6 +247,7 @@ WID="http://ipfs.$(myHostName):5001"
         $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        echo "$ENCODING"
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'

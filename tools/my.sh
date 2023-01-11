@@ -362,7 +362,7 @@ myAstroTube() {
 }
 
 IPFSNODEID="$(myIpfsPeerId)"
-MOATS="$(myDate)"
+[[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"
 myASTROPORT="http://astroport.$(myDomainName):1234"
 myAPI="http://ipfs.$(myDomainName):5001"
