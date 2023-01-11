@@ -329,7 +329,7 @@ myReyalpResuPath() {
 
 myHtml() {
     local myHtml=$($RUN sed \
-        -e "s~\"http://127.0.0.1:1234\"~\"https://${myHOST}\"~g" \
+        -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
         -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         -e "s~http://127.0.0.1:12345~http://${myHOST}:12345~g" \
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
@@ -339,7 +339,6 @@ myHtml() {
       ~/.zen/Astroport.ONE/templates/register.html)
     [ -z "$isLAN" ] \
      || myHtml=$($RUN echo "$myHtml" | sed \
-      -e "s~\"https://${myHOST}\"~\"${myASTROPORT}\"~g" \
       -e "s~<input type='"'hidden'"' name='"'salt'"' value='"'0'"'>~<input name='"'salt'"' value='"''"'>~g" \
       -e "s~<input type='"'hidden'"' name='"'pepper'"' value='"'0'"'>~<input name='"'pepper'"' value='"''"'>~g")
     [ -n "$myHtml" ] && echo "$myHtml"
@@ -365,7 +364,7 @@ myAstroTube() {
 IPFSNODEID="$(myIpfsPeerId)"
 MOATS="$(myDate)"
 isLAN="$(isLan)"
-myASTROPORT="http://astroport.$(myHostName):1234"
+myASTROPORT="http://astroport.$(myDomainName):1234"
 myAPI="http://ipfs.$(myDomainName):5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
@@ -378,7 +377,7 @@ myASTROTUBE="https://$(myAstroTube)"
 
 ## WAN STATION
 [ -z "$isLAN" ] \
- && myASTROPORT="https://astroport.$(myDomainName)" \
+ && myASTROPORT="https://astroport.$(myHostName)" \
  && myAPI="https://ipfs.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)"
