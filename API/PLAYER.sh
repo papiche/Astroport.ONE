@@ -22,8 +22,8 @@ Content-Type: text/html; charset=UTF-8
 start=`date +%s`
 
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
-
-PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4  OBJ=$5 VAL=$6
+### transfer variables according to script
+PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
 
         echo "- $PLAYER - $APPNAME : $WHAT $OBJ $VAL"
 

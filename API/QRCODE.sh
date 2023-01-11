@@ -22,15 +22,47 @@ Content-Type: text/html; charset=UTF-8
 start=`date +%s`
 
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
-
+### transfer variables according to script
 QRCODE=$THAT
 URL=$THIS
 TYPE=$WHAT
 
+## GET TW
+mkdir -p ~/.zen/tmp/${MOATS}/
 
 ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
-echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html" \
-        && ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html
+        [[ ! ${ASTRONAUTENS} ]] \
+        && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && exit 1
+
+echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html"
+ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html
+
+if [[ -s ~/.zen/tmp/${MOATS}/index.html ]]; then
+
+    tiddlywiki --load ~/.zen/tmp/${MOATS}/index.html --output ~/.zen/tmp/${MOATS} --render '.' "MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+
+    [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] \
+    && ( echo "~~~ NO /ipns/$ASTRONAUTENS (☓‿‿☓) CREATE A TW ~~~" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
+    && exit 1
+
+    GPLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
+
+
+    REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
+
+    ## REDIRECT TO TW OR GCHANGE PROFILE
+    sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    ) &
+
+    exit 0
+
+fi
+
 ###################################################################################################
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
