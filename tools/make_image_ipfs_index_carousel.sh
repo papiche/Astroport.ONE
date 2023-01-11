@@ -41,7 +41,7 @@ echo "<!DOCTYPE html>
 #Loop over images
 num=1
 for i in "$img_dir"/*; do
-if [[ $i =~ \.(jpg|png|jpeg|gif)$ ]]; then
+if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   if [ $num -ne 1 ]; then
     echo "      <li data-target=\"#myCarousel\" data-slide-to=\"$num\"></li>" >> $html_file
   fi
@@ -57,7 +57,7 @@ echo "    </ul>
 #Loop over images
 num=1
 for i in "$img_dir"/*; do
-if [[ $i =~ \.(jpg|png|jpeg|gif)$ ]]; then
+if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   ilink=$(ipfs add -q $i)
   img_info=$(identify -format '%w %h %[EXIF:*]' $i)
   img_width=$(echo $img_info | cut -d ' ' -f1)
