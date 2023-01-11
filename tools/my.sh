@@ -364,7 +364,7 @@ myAstroTube() {
 IPFSNODEID="$(myIpfsPeerId)"
 [[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"
-myASTROPORT="http://astroport.$(myDomainName):1234"
+myASTROPORT="http://$(myIp):1234"
 myAPI="http://$(myIp):5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
