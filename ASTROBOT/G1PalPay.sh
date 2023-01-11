@@ -109,8 +109,8 @@ while read LINE; do
             else
 
                 ## CREATE new PLAYER IN myASTROTUBE
-                echo "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-                curl -so ~/.zen/tmp/${MOATS}/astro.port "${myASTROTUBE}/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                echo "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                curl -so ~/.zen/tmp/${MOATS}/astro.port "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
 
                 TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
                 TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
