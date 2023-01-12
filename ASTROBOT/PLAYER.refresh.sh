@@ -187,7 +187,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/game/players/$PLAYER/FRIENDS/${FPLAYER}.rss.json
 
     [[ -d ~/.zen/game/players/$PLAYER/FRIENDS ]] \
-    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~${myIPFS}/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
+    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/$PLAYER/FRIENDS/index.html
 
     [[ -s ~/.zen/game/players/$PLAYER/FRIENDS/index.html ]] \
     && FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1) \
@@ -204,6 +204,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
     ## Merge actual online version
     ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
+    ## MAP CACHE CLEANING
+    rm -f ~/.zen/tmp/${IPFSNODEID}/*TW.json
+    ############################################
     NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
     [[ $BSIZE != $NSIZE ]] \
