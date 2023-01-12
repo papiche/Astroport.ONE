@@ -14,7 +14,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 echo "## RUNNING PLAYER.refresh"
 
 PLAYERONE="$1"
-[[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player)
+[[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
 
 ## RUNING FOR ALL LOCAL PLAYERS
@@ -199,17 +199,18 @@ done
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
 # Scan local cache
-# ls ~/.zen/tmp/${IPFSNODEID}/
-BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
+    BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
-## Merge actual online version
-ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
-NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+    ## Merge actual online version
+    ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
+    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
-[[ $BSIZE != $NSIZE ]] \
-&& ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
-&& echo "PUBLISH BALISE STATION /ipns/${IPFSNODEID} = $NSIZE octets" \
-&& ipfs name publish --allow-offline -t 24h /ipfs/$ROUTING
+    [[ $BSIZE != $NSIZE ]] \
+    && ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
+    && echo "PUBLISH BALISE STATION /ipns/${IPFSNODEID} = $NSIZE octets" \
+    && ipfs name publish --allow-offline -t 24h /ipfs/$ROUTING
+fi
 
 echo "PLAYER.refresh DONE."
 

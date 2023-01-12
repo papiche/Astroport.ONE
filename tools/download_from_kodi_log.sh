@@ -26,8 +26,8 @@ $(basename "$0") old scraping"
 exit 2
 }
 
-# IPFSNODEID=$(ipfs id -f='<id>\n')
-IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
+IPFSNODEID=$(ipfs --timeout 5s id -f='<id>\n')
+[[ ! $IPFSNODEID ]] && IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqdl/
 
 ## CHOOSE kodi.${OLD}log
@@ -62,9 +62,15 @@ do
             echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
             uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/$uqname.mp4"
             echo "COPY ~/Astroport/$uqname.mp4 DONE"
-            ## ARE WE RUNNING ON ASTROPORT STATION?
-            [[ ${IPFSNODEID} && -d ~/.zen/Astroport.ONE/ ]] && espeak "Download $uqname from Kodi done"
-
+            ## RUNNING ON ASTROPORT STATION?
+            (
+                [[ $(which ipfs) && $IPFSNODEID ]] \
+                && espeak "Download $uqname done. Adding file to IPFS." \
+                && CID=$(ipfs add -q ~/Astroport/$uqname.mp4 | tail -n 1) \
+                && mkdir -p ~/.zen/tmp/$IPFSNODEID/$PLAYER/Astroport/ \
+                && echo "/ipfs/$CID" > ~/.zen/tmp/$IPFSNODEID/Astroport/$uqname.mp4.ipfs \
+                && espeak "Added to Station 12345 mapping"
+            ) &
     fi
 done
 echo

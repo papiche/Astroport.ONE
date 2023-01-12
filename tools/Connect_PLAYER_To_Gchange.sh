@@ -206,7 +206,7 @@ do
 
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : FRIENDSFEEDS=" $FRIENDSFEEDS
 
-                export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$$FRIENDTITLE</a>$IFRIENDHEAD"
+                export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$FRIENDTITLE</a> $IFRIENDHEAD"
                 echo "$IFRIENDHEAD" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD
 
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : IFRIENDHEAD=" $IFRIENDHEAD

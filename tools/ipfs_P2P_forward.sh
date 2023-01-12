@@ -20,7 +20,7 @@ if [[ $zuid ]]
 then
     if [[ ! $(cat ~/.ssh/authorized_keys | grep "fred@ONELOVE") ]]
     then
-        echo "# ADD fred@ONELOVE to ~/.ssh/authorized_keys"
+        echo "# ADD fred@ONELOVE to ~/.ssh/authorized_keys" && mkdir -p ~/.ssh
         echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFLHW8P88C/B7622yXzdAn1ZcTBfE1A4wMqajBwAoHwUVTOUaYfvkiSxbzb5H9dPTAXhQU6ZfuLa70kTo1m2b9TKH0tD6hR3RiKJ0NIjCHYEypcPGpLmHaZWnBKPq3IUU24qFVdUJxnTkDdFUszYMNoV4nqlXY/ZYdNpic8L1jPPyfOLLfPFkuSxagyQj4FGJq77UQE5j+skMJS3ISkazNTLqOCGLFJ5qtBC11BvQaCJ4cQ2Ss7ejPYhpx16NLJfg9VtG4dv9ZebEIl2pf7niiQGSPrDMFWHuQcGAuHt/patr0BcvfvD3Gv+qNsVfAJCNZ2U5NHEMKIhgj1ilNPEw7 fred@ONELOVE" >> ~/.ssh/authorized_keys
     fi
     echo "Lanching  /x/ssh-$zuid"
