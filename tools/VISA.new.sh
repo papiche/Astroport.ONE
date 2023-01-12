@@ -292,8 +292,8 @@ WID="http://ipfs.$(myHostName):5001"
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
-    --import "$HOME/.zen/Astroport.ONE/templates/tw/$_ipfs_saver_api.json" "application/json" \
-    --import "$HOME/.zen/Astroport.ONE/templates/tw/$_ipfs_saver_gateway.json" "application/json" \
+    --import "$HOME/.zen/Astroport.ONE/templates/tw/\$ _ipfs_saver_api.json" "application/json" \
+    --import "$HOME/.zen/Astroport.ONE/templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
