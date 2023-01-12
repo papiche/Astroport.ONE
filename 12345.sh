@@ -113,15 +113,13 @@ while true; do
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
 
     ###############    ###############    ###############    ###############
-
+    [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2 &
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "************************************************************************* $(date)"
-    echo "ASTROPORT 1234 UP & RUNNING.......................... http://$HOST:1234 PORT"
-    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$HOST:${PORT}"
-
-    [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2
+    echo "ASTROPORT 1234 UP & RUNNING.......................... $myASTROPORT"
+    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$myHOST:${PORT}"
 
     echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 

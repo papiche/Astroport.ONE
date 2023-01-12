@@ -39,55 +39,54 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
     # echo "/ipns/${ASTRONAUTENS}"
 
-    ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
-
     mkdir -p ~/.zen/tmp/${MOATS}/TW
 
-    echo "SCANNING /ipns/${ASTRONAUTENS}"
+    echo "SCANNING /ipns/${ASTRONAUTENS} for 30s"
     ## GETTING LAST TW via IPFS or HTTP GW
     [[ $YOU ]] \
     && ipfs --timeout 30s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
     [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    && curl -m 12 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    && echo "Trying curl on $LIBRA" \
+    && curl -m 30 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     #############################################
     ## AUCUN RESULTAT
     if [ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]; then
 
-        rm -f ~/.zen/tmp/${MOATS}/TW/index.html
+        ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
         echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
         echo
         echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
         mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
-        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
     #############################################
-    # TW : DATA TESTING & CACHE
+    # EXISTING TW : DATA TESTING & CACHE
         rm -f ~/.zen/tmp/${MOATS}/Astroport.json
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
 
         if [[ $ASTROPORT ]]; then
 
-            IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev)
+            IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
             [[ $IPNSTAIL == "_ASTROPORT_" ]] \
-            && echo "_ASTROPORT_ TW : CONNECT TO DOCK" \
-            && mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/ \
-            && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-            && echo "- WARNING - WARNING - WARNING - WARNING - PLEASE VERIFY TW -"
+            && echo "DROPPED TW _ASTROPORT_" \
+            && echo "- CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW -" \
+            && mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
 
-            [[ $IPNSTAIL == $IPFSNODEID ]] \
-            && echo "UPDATING ${PLAYER} LOCAL CACHE ~/.zen/game/players/${PLAYER}/ipfs/moa" \
-            && mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa \
-            && cp ~/.zen/tmp/${MOATS}/TW/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/ \
-            || ( echo "PLAYER ALREADY CONNECTED TO $ASTROPORT STATION" && exit 1)
+            #~ PTW=$(ipfs add -q ~/.zen/tmp/${MOATS}/newindex.html | tail -n 1) \
+            #~ && ipfs name publish -k ${MOATS} /ipfs/$PTW \
+            #~ && echo "Continue VISA procedure..."
+
+            ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
 
         else
 
+            ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
             echo "ERROR BAD TW - Missing Astroport Tiddler ?"
             exit 1
 
@@ -123,12 +122,15 @@ PSEUDO=${PLAYER%%[0-9]*}
 
 [[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO
 PSEUDO=${PSEUDO,,}
-PSEUDO=${PSEUDO%%[0-9]*}
-[[ $(ls ~/.zen/game/players/$PSEUDO 2>/dev/null) ]] && echo "CE PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
+# PSEUDO=${PSEUDO%%[0-9]*}
+
+[[ $(ls ~/.zen/game/players/$PSEUDO 2>/dev/null) ]] && echo "$PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 
 # PSEUDO=${PSEUDO,,} #lowercase
 [[ ! ${PLAYER} ]] && PLAYER=${PSEUDO}${RANDOM:0:3}@$(${MY_PATH}/diceware.sh 1 | xargs).${RANDOM:0:3} \
                             && echo "ADRESSE EMAIL ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
+
+PLAYER=${PLAYER,,}
 
 [[ ! $PSEUDO ]] && PSEUDO="Anonymous"
 echo; echo "Génération de votre crypto identité PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
@@ -192,7 +194,7 @@ WID="http://ipfs.$(myHostName):5001"
     qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$LIBRA/ipns/${ASTRONAUTENS}"
 
 
-    ## SEC PASS PROTECTED QRCODE
+    ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
     secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
     echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
@@ -204,7 +206,7 @@ WID="http://ipfs.$(myHostName):5001"
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
 
-        sed -i "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html > ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT ASTROPORT ADRESS
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
@@ -215,10 +217,12 @@ WID="http://ipfs.$(myHostName):5001"
          sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+        ## Fill PleaseDELETE
          sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+        ## Fill ♥BOX
          sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT PLAYER DATA
@@ -229,17 +233,18 @@ WID="http://ipfs.$(myHostName):5001"
         sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+        ## Convert "G1Voeu" into "G1Visa"
         sed -i "s~G1Voeu~G1Visa~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-        # La Clef IPNS porte comme nom G1PUB
+        # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-#
+        ## Change myIP
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
 ###########
@@ -251,13 +256,15 @@ WID="http://ipfs.$(myHostName):5001"
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].secret | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
+        echo "GOT IT"
+        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret"
+        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
 ###########
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
                                                         || sed -i "s~$ENCODING~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
-        rm -f ~/.zen/tmp/${MOATS}/crypto.2
+
 ###########
 
     ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
@@ -287,9 +294,12 @@ WID="http://ipfs.$(myHostName):5001"
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
     --import "$HOME/.zen/Astroport.ONE/templates/tw/$_ipfs_saver_api.json" "application/json" \
     --import "$HOME/.zen/Astroport.ONE/templates/tw/$_ipfs_saver_gateway.json" "application/json" \
-                            --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+                            --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
-        [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html && echo "NEWINDEX OK"
+        [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
+        && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+        && echo "TW INDEX OK" \
+        || ( echo "Problem with TW - EXIT" && exit 1 )
 
         ## ID CARD & QRCODE
         convert ~/.zen/game/players/${PLAYER}/QR.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
@@ -340,7 +350,8 @@ WID="http://ipfs.$(myHostName):5001"
 
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
-echo "--- PLAYER : ${PLAYER}";
+echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
+ls ~/.zen/game/players/${PLAYER}
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}"
 
@@ -411,7 +422,7 @@ echo; echo "RSS : ${myIPFS}/ipns/${FEEDNS}"; sleep 1
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 
-echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
+echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}

@@ -76,7 +76,7 @@ Nous mettons un TW dans une clef.
 
 
 # API : "Sauve qui Peut"
-## https://astroport.localhost:1234
+## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée (```~/.start.sh```):
 * le port 1234 publie API

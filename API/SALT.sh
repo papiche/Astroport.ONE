@@ -365,6 +365,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
 
         ## RESPONDING
+        [[ ! -s ~/.zen/tmp/coucou/${MOATS}.index.redirect ]] && echo "$HTTPCORS  PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
         echo "${MOATS} -----> PAGE AVAILABLE -----> http://${myHOST}:${PORT}"
