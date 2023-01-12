@@ -87,8 +87,8 @@ boucle=0
 ###################################################################
 while read LINE;
         do
-
-        echo "_____ $LINE _____"
+        boucle=$((boucle+1))
+        echo "_____ $LINE _____ $boucle"
         YID="$(echo "$LINE" | cut -d '&' -f 1)"
 
 ###################################################################
@@ -106,6 +106,7 @@ if [[ ! ${TIDDLER} ]]; then
         ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
         echo "COPIE : $ZYURL"
 
+        ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
 
         TITLE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
@@ -148,8 +149,6 @@ if [[ ! ${TIDDLER} ]]; then
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
         echo "$boucle - $ZFILE - FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
 
-        ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
-        boucle=$((boucle+1))
         espeak "GOOD! Video Number $boucle = $FILE_SIZE" > /dev/null 2>&1
 
 
