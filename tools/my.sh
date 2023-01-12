@@ -49,6 +49,18 @@ myAstroPath() {
     [ -n "$myAstroPath" ] && echo "$myAstroPath"
 }
 
+#~ myAstroPlayersPage() {
+    #~ local myAstroPlayersPage=$(cat ~/.zen/tmp/myAstroPlayersPage)
+    #~ if [[ ! "$myAstroPlayersPage" ]]; then
+        #~ counter=1
+        #~ for tw in ls ~/.zen/game/players/*/ipfs/moa/index.html; do
+            #~ tiddlywiki --load $tw --output ~/.zen/tmp --render '.' "${counter}G1Visa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+
+            #~ ((counter++))
+        #~ done
+    #~ echo "$myAstroPlayersPage"
+#~ }
+
 myDate() {
     local myDate=$(date -u +"%Y%m%d%H%M%S%4N")
     [ -n "$myDate" ] && echo "$myDate"
