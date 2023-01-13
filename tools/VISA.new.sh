@@ -31,6 +31,8 @@ LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d
 [[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 [[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS ${PLAYER} EXISTANT ${myIPFS}/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
 
+mkdir -p ~/.zen/tmp/${MOATS}/TW
+
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
     ASTRO=""
@@ -38,8 +40,6 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/player.key "$SALT" "$PEPPER" 2>/dev/null
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
     # echo "/ipns/${ASTRONAUTENS}"
-
-    mkdir -p ~/.zen/tmp/${MOATS}/TW
 
     echo "SCANNING /ipns/${ASTRONAUTENS} for 30s"
     ## GETTING LAST TW via IPFS or HTTP GW
@@ -80,21 +80,20 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
             #~ && ipfs name publish -k ${MOATS} /ipfs/$PTW \
             #~ && echo "Continue VISA procedure..."
 
-            ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
-
         else
 
-            ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
-            echo "ERROR BAD TW - Missing Astroport Tiddler ?"
-            exit 1
+            echo "NO GOOD TW - CREATING ONE"
+            cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
         fi
 
-        rm -Rf ~/.zen/tmp/${MOATS}
+        ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
 
     fi
 
 fi
+
+
 ################################################################################
 TWMODEL="/ipfs/bafybeifdifxlikk4bwjdkvh4inm4bzck4do5hzw5gctylzubwmjejmqt3a"
 # ipfs cat $TWMODEL > templates/twdefault.html
