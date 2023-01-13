@@ -58,7 +58,6 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
         echo
         echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
-        mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
         cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
@@ -75,8 +74,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
             [[ $IPNSTAIL == "_ASTROPORT_" ]] \
             && echo "DROPPED TW _ASTROPORT_" \
-            && echo "- CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW -" \
-            && mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
+            && echo "- CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW -"
 
             #~ PTW=$(ipfs add -q ~/.zen/tmp/${MOATS}/newindex.html | tail -n 1) \
             #~ && ipfs name publish -k ${MOATS} /ipfs/$PTW \
@@ -205,6 +203,7 @@ WID="http://ipfs.$(myHostName):5001"
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
+        mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
 
         sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html > ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
