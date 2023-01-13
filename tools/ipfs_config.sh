@@ -20,6 +20,10 @@ ipfs config Datastore.StorageMax $diskSize
 ipfs config --json Experimental.Libp2pStreamMounting true
 ipfs config --json Experimental.P2pHttpProxy true
 
+## Activate Experimental.AcceleratedDHTClient
+ipfs config --json Experimental.AcceleratedDHTClient true
+ipfs config Reprovider.Strategy "roots"
+
 ipfs config --json Swarm.ConnMgr.LowWater 20
 ipfs config --json Swarm.ConnMgr.HighWater 40
 
