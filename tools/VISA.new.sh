@@ -204,6 +204,7 @@ WID="http://ipfs.$(myHostName):5001"
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
         mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
 
+        [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] && cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
         sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html > ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT ASTROPORT ADRESS
