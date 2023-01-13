@@ -95,7 +95,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeifdifxlikk4bwjdkvh4inm4bzck4do5hzw5gctylzubwmjejmqt3a"
+TWMODEL="/ipfs/bafybeiaxqcyhztrpploty7yoqjfgftpkjm2pj7ze675zmw7w6n6ph2lnea"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -255,10 +255,6 @@ WID="http://ipfs.$(myHostName):5001"
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        # LOG
-        echo tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret"
-
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
 ###########
@@ -352,7 +348,7 @@ WID="http://ipfs.$(myHostName):5001"
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
 echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
-ls ~/.zen/game/players/${PLAYER}
+# ls ~/.zen/game/players/${PLAYER}
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}"
 
