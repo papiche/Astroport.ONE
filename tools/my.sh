@@ -392,4 +392,5 @@ myASTROTUBE="https://$(myAstroTube)"
  && myASTROPORT="https://astroport.$(myHostName)" \
  && myAPI="https://ipfs.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
- && myHOST="astroport.$(myHostName)"
+ && myHOST="astroport.$(myHostName)" \
+ || true
