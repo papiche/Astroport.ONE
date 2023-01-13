@@ -252,12 +252,14 @@ WID="http://ipfs.$(myHostName):5001"
         $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        echo "$ENCODING"
+        # echo "$ENCODING"
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        echo "GOT IT"
+        # LOG
+        echo tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret"
+
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
 ###########
