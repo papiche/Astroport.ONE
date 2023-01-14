@@ -760,7 +760,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     # VIDEO TITLE
     TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de cette vidéo" --entry-text="${FILE_TITLE}")
     [[ $TITLE == "" ]] && exit 1
-    TITLE=$(echo "${TITLE}" | sed "s/[(][^)]*[)]//g" | sed -e 's/;/_/g' ) # Clean TITLE (NO ;)
+    TITLE=$(echo "${TITLE}" | detox --inline ) # Clean TITLE (NO ;)
 
     ## video_timestamp INDEX
     MEDIAID="$(date -u +%s%N | cut -b1-13)"
