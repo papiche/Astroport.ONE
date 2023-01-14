@@ -140,7 +140,12 @@ if [[ ! ${TIDDLER} ]]; then
         ############################################################################
         ### CHECK RESULT CONVERT MKV TO MP4
         [[ -s "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] && ffmpeg -loglevel quiet -i "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
-        [[ ! -s "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] && echo "No FILE -- CONTINUE --" && continue
+
+        [[ ! -s "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] \
+        && echo "No FILE -- CONTINUE --" \
+        && cp -f "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/" \
+        && ln -s "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json" \
+        && continue
         echo
 
 ####################################################
