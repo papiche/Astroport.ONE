@@ -25,10 +25,11 @@ RES=${FILE_RES%?}0p
 ############# VIDEO LINES MAX IS 720p
 LINES=$(echo $RES | tr -dc '0-9')
 [ $LINES -gt 720 ] \
+&& echo "VIDEO RESIZING HALF" \
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
 && [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
-&& echo "VIDEO RESIZED" \
-&& FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) && RES=${FILE_RES%?}0p
+&& FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
+&& RES=${FILE_RES%?}0p && echo $RES
 #################################################################################################################
 
 FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
@@ -49,5 +50,5 @@ rm -f ~/.zen/tmp/screen.gif
 ffmpeg -loglevel quiet -ss $PROBETIME -t 1.6 -loglevel quiet -i "${path}${file}" ~/.zen/tmp/screen.gif
 ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 
-echo "export ANIMH=$ANIMH PROBETIME=$PROBETIME DURATION=$DURATION DUREE=$DUREE RES=$RES MIME=$MIME VTRATIO=$VTRATIO file=$file"
+echo "export ANIMH=$ANIMH PROBETIME=$PROBETIME DURATION=$DURATION DUREE=$DUREE RES=$RES MIME=$MIME VTRATIO=$VTRATIO file=\"$file\""
 exit 0
