@@ -61,7 +61,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "/ipns/$ASTRONAUTENS ON $LIBRA"
 
-    ipfs --timeout 60s get -o ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html /ipns/$ASTRONAUTENS \
+    ipfs --timeout 360s get -o ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html /ipns/$ASTRONAUTENS \
     || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/$ASTRONAUTENS" \
     || cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
 
@@ -86,6 +86,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+
+            ## DETECT IF GOOD LAST VERSION
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Last.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[all[tiddlers]days:modified[-1]]'
+
 
             player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
