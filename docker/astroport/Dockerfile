@@ -11,6 +11,7 @@ RUN apt-get update \
         basez \
         bash \
         bc \
+        ca-certificates \
         cron \
         curl \
         dnsutils \
@@ -97,6 +98,7 @@ RUN set -x && buildDeps=' \
  && ln -s /usr/local/src/dpgpid/keygen /usr/local/bin/keygen \
  && chmod 0755 /usr/local/bin/keygen \
  && /usr/local/bin/keygen --help >/dev/null \
+ && pip3 install amzqr \
  && rm -rf /root/.cache \
  && apt-get clean
 
@@ -194,12 +196,10 @@ RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
  && echo "12  20  *  *  *   /bin/bash /home/zen/.zen/Astroport.ONE/20h12.process.sh > /tmp/20h12.log 2>&1" >> "/var/spool/cron/crontabs/$USER" \
  && chown "$USER" "/var/spool/cron/crontabs/$USER"
 
-VOLUME "/home/$USER/.ipfs"
 VOLUME "/home/$USER/.zen/game/players"
-VOLUME "/home/$USER/Astroport"
 
 # homedir
-RUN mkdir -p "/home/$USER/.ipfs" "/home/$USER/.zen/game/players" "/home/$USER/Astroport" \
+RUN mkdir -p "/home/$USER/.zen/game/players" \
  && chown -R "$USER" "/home/$USER"
 
 HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK

@@ -13,9 +13,7 @@ services:
     tty: true
     volumes:
     - home:/home/zen/.zen/game/players:delegated
-    - ipfs:/home/zen/.ipfs:cached,ro
     working_dir: /home/zen
 
 volumes:
   home:
-  ipfs:
