@@ -111,6 +111,11 @@ myHostName() {
     [ -n "$myHostName" ] && echo "$myHostName"
 }
 
+myHName() {
+    local myHName=$(hostname -s)
+    [ -n "$myHName" ] && echo "$myHName"
+}
+
 myIp() {
     local myIp=$(hostname -I | awk '{print $1}' | head -n 1)
     [ -n "$myIp" ] && echo "$myIp" || echo "127.0.0.1"
@@ -380,9 +385,9 @@ myASTROPORT="http://$(myIp):1234"
 myAPI="http://$(myIp):5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
-myHOST="$(myIp)"
+myHOST="$(myHostName)"
 myIP="$(myIp)"
-myIPFS="http://$(myIp):8080"
+myIPFS="http://$(myHName).local:8080"
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"
