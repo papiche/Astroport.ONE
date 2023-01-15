@@ -159,7 +159,7 @@ done
 YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
 
-[[ ! $URL ]] && xdg-open "$myIPFS/ipns/$ASTRONAUTENS"
+[[ ! $URL ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
 ########################################################################
 espeak "Ready !"
