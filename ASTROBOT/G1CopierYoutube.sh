@@ -143,14 +143,14 @@ if [[ ! ${TIDDLER} ]]; then
 
         [[ ! -s "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] \
         && echo "No FILE -- CONTINUE --" \
-        && cp -f "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/" \
-        && ln -s "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json" \
-        && continue
+        && ( cp -f "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/"; continue )
+
         echo
 
 ####################################################
         echo "FOUND : ~/.zen/tmp/yt-dlp/$ZFILE"
         FILE_BSIZE=$(du -b "$HOME/.zen/tmp/yt-dlp/$ZFILE" | awk '{print $1}')
+        [[ ! $FILE_BSIZE ]] && echo "SIZE ERROR" && continue
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
         echo "$boucle - $ZFILE - FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
 
