@@ -43,6 +43,7 @@ RUN apt-get update \
         ntpdate \
         openssh-client \
         openssl* \
+        pv \
         python3 \
         python3-brotli \
         python3-dotenv \
@@ -99,7 +100,7 @@ RUN set -x && buildDeps=' \
  && rm -rf /root/.cache \
  && apt-get clean
 
-RUN npm install -g tiddlywiki sjcl-cli
+RUN npm install -g tiddlywiki
 
 ARG COMPOSE_REMOTE=https://github.com/docker/compose
 ARG COMPOSE_VERSION=2.5.0
