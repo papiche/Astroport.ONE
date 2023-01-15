@@ -123,7 +123,7 @@ myIp() {
 
 myIpfs() {
     [ -n "$(myIpfsHash)" ] \
-     && local myIpfs="${myIPFS}/ipfs/$(myIpfsHash)" \
+     && local myIpfs="${myIPFSGW}/ipfs/$(myIpfsHash)" \
      && echo "$myIpfs"
 }
 

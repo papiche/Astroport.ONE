@@ -99,8 +99,8 @@ while true; do
     # REPLACE myHOST in http response template (fixing next API meeting point)
     echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     myHtml >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i -e "s~\"${myIPFS}/\"~\"$(myIpfs)\"~g" \
-        -e "s~http://${myHOST}:12345~http://${myHOST}:${PORT}~g" \
+    sed -i -e "s~\"http://127.0.0.1:1234/\"~\"$(myIpfs)\"~g" \
+        -e "s~http://${myHOST}:12345~http://${myIP}:${PORT}~g" \
         ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     ############################################################################
