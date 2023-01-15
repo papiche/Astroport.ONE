@@ -286,9 +286,9 @@ if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
     espeak "Enter your magic TW keys"
     xdg-open "http://astroport.localhost:1234"
 
-echo " ### EXPERIMENTAL ### KODI VSTREAM IPFS INIT ## OUI ? ENTER sinon Ctrl+C"
-[[ -d ~/.kodi ]] && read KODI || KODI=""
-    if [[ ! $KODI ]]; then
+echo " ### EXPERIMENTAL ### FINISH ASTROPORT/KODI SETUP BY IPFS ## OUI ? ENTER sinon Ctrl+C"
+[[ $(which kodi) ]] && read KODI
+    if [[ ! $KODI || $KODI="OUI" ]]; then
 
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
@@ -304,7 +304,7 @@ echo " ### EXPERIMENTAL ### KODI VSTREAM IPFS INIT ## OUI ? ENTER sinon Ctrl+C"
     || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE AN ISSSUE"
 
     ########################################################################
-    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf" # Avoid provider restrictions
+    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS LAN COUNTRY RESTRICTIONS" # Avoid provider restrictions
     ########################################################################
     ACTUAL=$(cat /etc/resolv.conf | grep nameserver | head -n 1)
 
