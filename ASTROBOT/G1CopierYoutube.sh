@@ -141,10 +141,14 @@ if [[ ! ${TIDDLER} ]]; then
         ### CHECK RESULT CONVERT MKV TO MP4
         [[ -s "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] && ffmpeg -loglevel quiet -i "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
 
-        [[ ! -s "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]] \
-        && echo "No FILE -- CONTINUE --" \
-        && ( cp -f "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/"; continue )
-
+        if [[ ! -s "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]]; then
+            echo "No FILE -- TRYING TO RESTORE CACHE FROM TW --"
+            tiddlywiki  --load ${INDEX} \
+                    --output ~/.zen/game/players/$PLAYER/G1CopierYoutube \
+                    --render '.' "'$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "$ZFILE" \
+            && ln -s "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json"
+            continue
+        fi
         echo
 
 ####################################################
