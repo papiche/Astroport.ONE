@@ -288,7 +288,7 @@ if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 
 echo " ### EXPERIMENTAL ### FINISH ASTROPORT/KODI SETUP BY IPFS ## OUI ? ENTER sinon Ctrl+C"
 [[ $(which kodi) ]] && read KODI
-    if [[ ! $KODI || $KODI="OUI" ]]; then
+    if [[ ! $KODI || $KODI == "OUI" ]]; then
 
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."

@@ -39,31 +39,77 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     ## GET AVATAR PICTURE
     cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" 2>/dev/null
 
+    ## GET CESIUM PUBKEY & C+ PROFILE
+    CPUB=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '._source.pubkey' 2>/dev/null)
+    if [[ $CPUB ]]; then
+
+        echo "GET CPUB+ PROFILE  .... $CPUB"
+
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        curl -s https://g1.data.e-is.pro get/user/profile/${CPUB} > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json 2>/dev/null
+
+        cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" 2>/dev/null
+        CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
+
+        [[ $CPSEUDO ]] \
+        && echo "♥PARTNER $CPSEUDO" \
+        && echo "$CPUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1CPUB ## OHHH IT IS REGULAR KEY.
+
+    else
+
+        echo "NO MASTER CESIUM LINK ... TRY TO GET WALLET PROFILE .... "
+
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        curl -s https://g1.data.e-is.pro get/user/profile/${G1PUB} > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json 2>/dev/null
+
+        cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" 2>/dev/null
+        CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
+
+        [[ $CPSEUDO ]] \
+        && echo "Ğ1 WALLET " \
+        && echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET ## OHHH IS IT A MEMBER KEY ???
+
+    fi
+
+    echo ">> GCESIUM LINKS - $CPSEUDO - $G1PUB ($CPUB) <<"
+
     ## KEEPING ALREADY EXISTING PROFILE DATA
-    NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
-    [[ ! $NAME || $NAME == "null" ]] &&  NAME="$PSEUDO"
+    GPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
+    [[ ! $GPSEUDO || $GPSEUDO == "null" ]] &&  GPSEUDO="$PSEUDO"
+    CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
+    [[ ! $CPSEUDO || $CPSEUDO == "null" ]] &&  CPSEUDO="$PLAYER"
 
-    DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
-    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR="Astronaute"
+    GDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
+    [[ ! $GDESCR || $GDESCR == "null" ]] &&  GDESCR="Astronaute GChange"
+    CDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.description' 2>/dev/null)
+    [[ ! $CDESCR || $CDESCR == "null" ]] &&  CDESCR="Portefeuille PalPay"
 
-    VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
-    [[ ! $VILLE || $VILLE == "null" ]] &&  VILLE=""
+    GVILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
+    [[ ! $GVILLE || $GVILLE == "null" ]] &&  GVILLE=""
+    CVILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.description' 2>/dev/null)
+    [[ ! $CVILLE || $CVILLE == "null" ]] &&  CVILLE=""
 
-    ADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address' 2>/dev/null)
-    [[ ! $ADRESSE || $ADRESSE == "null" ]] &&  ADRESSE=""
+    GADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address' 2>/dev/null)
+    [[ ! $GADRESSE || $GADRESSE == "null" ]] &&  GADRESSE=""
+    CADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.address' 2>/dev/null)
+    [[ ! $CADRESSE || $CADRESSE == "null" ]] &&  CADRESSE=""
 
     # POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
     # SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials' 2>/dev/null)
 
-
     ## MIX GCHANGE IMAGE AVATAR WITH G1PUB QRCODE
     if [[ $(which amzqr) ]]; then
 
-        [[ -f "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" ]] \
-        && IMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" \
+        [[ -s "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" ]] \
+        && IMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png"
+
+        [[ -s "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" ]] \
+        && IMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png"
         || IMG="$HOME/.zen/Astroport.ONE/logo.png"
 
+        # QRG1avatar.png
         amzqr ${G1PUB} -l H -p "$IMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+        # QRTWavatar.png
         amzqr ${myIPFS}/ipns/$ASTRONAUTENS -l H -p "$IMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
 
     else
@@ -74,25 +120,28 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     fi
 
     ########################################################################
-    echo "GCHANGE+ PROFILE https://gchange.fr"
-    # echo "set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}""
+    # echo "set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}""
     ########################################################################
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
-    [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
+    if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET ]]; then
 
-echo
-    #~ ## SET CESIUM WALLET
-    #~ ########################################################################
-    #~ echo "CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
-    #~ ########################################################################
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
-    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
+        echo "CREATING GCHANGE+ PROFILE https://gchange.fr"
+
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
+        [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
+        || cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/gchange.1st.json
+
+        echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
+
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
+        [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" \
+        || cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/cesium.1st.json
+    fi
 
 fi
 
-## GET gchange & cesium PROFILE
+## GET LAST ONLINE gchange & cesium PROFILE
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
