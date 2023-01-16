@@ -44,6 +44,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No $PLAYER in keystore --" && ASTRONAUTENS=$ASTRONS
 
+    echo ">>> $myIPFS/ipns/$ASTRONAUTENS"
+
     ## VISA EMITER STATION MUST ACT ONLY
     [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && echo "$PLAYER secret.dunikey NOT HERE CONTINUE -- " \
                                                                                                             && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
