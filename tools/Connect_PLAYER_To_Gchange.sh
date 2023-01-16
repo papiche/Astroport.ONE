@@ -155,6 +155,17 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get > 
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
+        # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+        COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+        [[ $COINS == "" || $COINS == "null" ]] && COINS=0
+        echo "+++ YOU have $COINS Ğ1 Coins +++"
+
+        [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS) != $COIN ]] \
+        && cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS \
+        && echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+########################################################################
+
+########################################################################
 ########################################################################
 echo "### ${PLAYER}  #################"
 echo "SCANNING - $G1PUB STAR FRIENDS"
@@ -168,6 +179,7 @@ echo "Checking received stars ON $myDATA"
 ################################## JAKLIS PLAYER stars
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 30 \
 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
+[[ ! $? == 0 ]] && echo "> WARNING $myDATA UNREACHABLE"
 
 [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1" && exit 0
 
