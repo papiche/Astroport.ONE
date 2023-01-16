@@ -58,9 +58,9 @@ PEPPER=$THIS
 
     # Get PLAYER wallet amount
     ( ## SUB PROCESS
-        COINS=$(${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
+        COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        [[ $COINS == "" || $COINS == "null" ]] && ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO" -m "0 G1 (ᵔ◡◡ᵔ) FLASH TON G1VISA"
+        [[ $COINS == "" || $COINS == "null" ]] && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO" -m "0 G1 (ᵔ◡◡ᵔ) FLASH TON G1VISA"
         end=`date +%s`
         echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
     ) &

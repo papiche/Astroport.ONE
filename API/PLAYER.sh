@@ -39,21 +39,25 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
             if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
                 echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
             fi
 
             if [[ "$WHAT" == "history" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             if [[ "$WHAT" == "get" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             if [[ "$WHAT" == "balance" ]]; then
+                    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
                     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
@@ -72,13 +76,17 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
                 [[ ! $VAL ]] && VAL="G1CopierYoutube"
                 echo "EXPORT MOATUBE $PLAYER $VAL"
 
-                echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}.$PLAYER.http
-                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.$PLAYER.http
-
                 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/ --render '.' "$PLAYER.moatube.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "[tag[$VAL]]"
 
-                cat ~/.zen/tmp/$PLAYER.moatube.json >> ~/.zen/tmp/${MOATS}.$PLAYER.http
-                cat ~/.zen/tmp/${MOATS}.$PLAYER.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                if [[ ! $WHAT || $WHAT == "json" ]]; then
+
+                    echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}.$PLAYER.http
+                    sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.$PLAYER.http
+                    cat ~/.zen/tmp/$PLAYER.moatube.json >> ~/.zen/tmp/${MOATS}.$PLAYER.http
+                    cat ~/.zen/tmp/${MOATS}.$PLAYER.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+                fi
+
                 end=`date +%s`
                 echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
                 exit 0
