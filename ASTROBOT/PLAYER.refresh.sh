@@ -197,7 +197,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     [[ -s ~/.zen/game/players/$PLAYER/FRIENDS/index.html ]] \
     && FRAME=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/FRIENDS/index.html | tail -n 1) \
-    && ipfs name publish --allow-offline -t 24h --key="${PLAYER}_feed" /ipfs/$FRAME
+    && ipfs name publish --key="${PLAYER}_feed" /ipfs/$FRAME
 
 done
 
@@ -218,7 +218,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     [[ $BSIZE != $NSIZE ]] \
     && ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
     && echo "PUBLISH BALISE STATION /ipns/${IPFSNODEID} = $NSIZE octets" \
-    && ipfs name publish --allow-offline -t 24h /ipfs/$ROUTING
+    && ipfs name publish /ipfs/$ROUTING
 fi
 
 echo "PLAYER.refresh DONE."
