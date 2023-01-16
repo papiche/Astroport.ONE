@@ -31,14 +31,20 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 ## VERIFY IT HAS ALREADY RUN
 if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     ## GET GCHANGE PROFIL
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+
+    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+    curl -s ${myGCHANGE}/user/profile/${G1PUB} > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+
+# $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+    ## GET AVATAR PICTURE
+    cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" 2>/dev/null
 
     ## KEEPING ALREADY EXISTING PROFILE DATA
     NAME=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
-    [[ ! $NAME || $NAME == "null" ]] &&  NAME=""
+    [[ ! $NAME || $NAME == "null" ]] &&  NAME="$PSEUDO"
 
     DESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
-    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR=""
+    [[ ! $DESCR || $DESCR == "null" ]] &&  DESCR="Astronaute"
 
     VILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
     [[ ! $VILLE || $VILLE == "null" ]] &&  VILLE=""
@@ -49,28 +55,48 @@ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/cesium.json ]]; then
     # POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
     # SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials' 2>/dev/null)
 
+
+    ## MIX GCHANGE IMAGE AVATAR WITH G1PUB QRCODE
+    if [[ $(which amzqr) ]]; then
+
+        [[ -f "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" ]] \
+        && IMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" \
+        || IMG="$HOME/.zen/Astroport.ONE/logo.png"
+
+        amzqr ${G1PUB} -l H -p "$IMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+        amzqr ${myIPFS}/ipns/$ASTRONAUTENS -l H -p "$IMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
+
+    else
+
+        cp ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png ~/.zen/game/players/${PLAYER}/QRTWavatar.png
+        cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/QRG1avatar.png
+
+    fi
+
     ########################################################################
     echo "GCHANGE+ PROFILE https://gchange.fr"
     # echo "set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}""
     ########################################################################
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS" #GCHANGE+
+    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
     [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED"
 
 echo
-    ## TODO : GET THE MEMBER KEY TO SEND MESSAGE THROUGH CESIUM+
-
     #~ ## SET CESIUM WALLET
     #~ ########################################################################
     #~ echo "CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
     #~ ########################################################################
-    #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" #CESIUM+
-    #~ [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
+    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${NAME}" -d "${DESCR}" -v "${VILLE}" -a "${ADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
+    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED"
 
 fi
 
 ## GET gchange & cesium PROFILE
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get >  ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
+~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
 
