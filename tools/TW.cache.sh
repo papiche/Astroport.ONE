@@ -3,24 +3,25 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+. "${MY_PATH}/my.sh"
+
 ASTRONAUTENS="$1"
 MOATS="$2"
 
 [[ ! $ASTRONAUTENS || ! $MOATS ]] && echo "${ME} : ASTRONAUTENS & MOATS needed" && exit 1
 
 start=$(date +%s)
-IPFSNODEID=$(ipfs id -f='<id>\n') || ( echo "${ME} : IPFSNODEID MISSING" && exit 1 )
-TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
+[[ ! $IPFSNODEID ]] && IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n') || ( echo "${ME} : IPFSNODEID MISSING" && exit 1 )
 
             ## GETTING LAST TW via IPFS
-            echo "${ME} : IPFS : ipfs --timeout 60s cat  /ipns/${ASTRONAUTENS}"\
-            && ipfs --timeout 60s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
+            echo "${ME} : IPFS : ipfs --timeout 120s cat  /ipns/${ASTRONAUTENS}"\
+            && ipfs --timeout 360s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
              ## GETTING LAST TW via HTTP
-            [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] \
-            && echo "${ME} : WWW : $TUBE/ipns/${ASTRONAUTENS}" \
-            && curl -m 60 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$TUBE/ipns/${ASTRONAUTENS}" \
-            || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$TUBE/ipns/${ASTRONAUTENS}" ## Ask caching
+            #~ [[ ! -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]] \
+            #~ && echo "${ME} : WWW : $myTUBE/ipns/${ASTRONAUTENS}" \
+            #~ && curl -m 60 -so ~/.zen/tmp/coucou/${MOATS}.astroindex.html "$myTUBE/ipns/${ASTRONAUTENS}" \
+            #~ || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$myTUBE/ipns/${ASTRONAUTENS}" ## Ask caching
 
         ### GOT TW !!
         if [[ -s ~/.zen/tmp/coucou/${MOATS}.astroindex.html ]]; then
