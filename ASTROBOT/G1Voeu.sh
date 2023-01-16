@@ -144,7 +144,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     rm -f ~/.zen/tmp/newindex.html
 
     echo "Nouveau Voeu $PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
-    tiddlywiki --verbose --load $INDEX \
+    tiddlywiki  --load $INDEX \
                         --deletetiddlers '[tag[voeu]]' \
                         --import ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json "application/json" \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
@@ -190,14 +190,26 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/Astroport.ONE/images/logojune.jpg" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
-    [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED !!!!"
+    [[ ! $? == 0 ]] && echo "G1VOEU CESIUM WALLET PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
     echo "Hop, UNE JUNE pour le Voeu $PEPPER"
     echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c \'"$VOEUNS G1Voeu $PEPPER"\' -m
     echo "************************************************************"
+    echo "************************************************************"
 
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
+    [[ ! $? == 0 ]] \
+    && echo "SOOOOOOOOOOOOOOOORRRRRRRY POOR GUY. YOU CANNOT AFFORD A NEW WISH" \
+    && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$WISHKEY \
+    && rm -Rf ~/.zen/game/world/$WISHKEY/ \
+    && ipfs key rm ${WISHKEY} \
+    && tiddlywiki  --load $INDEX \
+                              --deletetiddlers '${PEPPER}' \
+                              --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain" \
+    && cp -f ~/.zen/tmp/newindex.html $INDEX \
+    && echo "SORRY ${PEPPER} DELETED"
+
     echo "************************************************************"
 
 exit 0
