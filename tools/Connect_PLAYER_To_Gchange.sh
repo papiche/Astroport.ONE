@@ -31,7 +31,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 ## VERIFY IT HAS ALREADY RUN
 
     ## GET GCHANGE PROFIL
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+    ${MY_PATH}/timeout.sh -t 20 \
     curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
     [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH GCHANGE+ NODE ${myDATA} xxxxx" && exit 1
     [[ ! $(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null) ]] && echo "xxxxx GCHANGE+ DATA ERROR ${myDATA} xxxxx" && exit 1
@@ -46,7 +46,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
         echo "OHH ... GET CPUB+ PROFILE  .... $CPUB"
 
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        ${MY_PATH}/timeout.sh -t 20 \
         curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json 2>/dev/null
         [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH CESIUM+ NODE ${myCESIUM} xxxxx"
 
@@ -66,7 +66,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
         echo "... TRY TO GET CESIUM+ WALLET PROFILE .... "
 
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        ${MY_PATH}/timeout.sh -t 20 \
         curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json 2>/dev/null
         [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH CESIUM+ NODE ${myCESIUM} xxxxx"
 
@@ -133,14 +133,14 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
         echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=$G1PUB"
 
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        ${MY_PATH}/timeout.sh -t 20 \
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
         [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
         || cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/gchange.1st.json
 
         echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
 
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+        ${MY_PATH}/timeout.sh -t 20 \
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
         [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" \
         || cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/cesium.1st.json
@@ -149,14 +149,14 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
 
 ## GET LAST ONLINE gchange & cesium PROFILE
-~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+${MY_PATH}/timeout.sh -t 20 \
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
-~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+${MY_PATH}/timeout.sh -t 20 \
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
         # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-        COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+        COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
         [[ $COINS == "" || $COINS == "null" ]] && COINS=0
         echo "+++ YOU have $COINS Ğ1 Coins +++"
 
@@ -177,20 +177,23 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/my_star_level
 ## Getting Gchange  liking_me list
 echo "Checking received stars ON $myDATA"
 ################################## JAKLIS PLAYER stars
-~/.zen/Astroport.ONE/tools/timeout.sh -t 30 \
-~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
+${MY_PATH}/timeout.sh -t 30 \
+${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
 [[ ! $? == 0 ]] && echo "> WARNING $myDATA UNREACHABLE"
 
 [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1" && exit 0
 
+## GETTING ALL INCOMING liking_me FRIENDS
 cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
 # echo "cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r" # DEBUG
+## ADD ALREADY FRIENDS (in case Gchange+ timout)
+find ~/.zen/game/players/${PLAYER}/FRIENDS/* -type d | rev | cut -d '/' -f 1 | rev >> ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
 
 for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me | sort | uniq);
 do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
     echo "........................."
-    FRIENDNS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${liking_me})
+    FRIENDNS=$(${MY_PATH}/g1_to_ipfs.py ${liking_me})
     echo "==========================="
     echo "${liking_me} IS LIKING ME"
     echo "TW ? $LIBRA/ipns/$FRIENDNS "
@@ -198,18 +201,19 @@ do
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     echo "Receiving Stars : cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r"
     ################################## JAKLIS LIKING_ME stars
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-    ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
+    ${MY_PATH}/timeout.sh -t 20 \
+    ${MY_PATH}/jaklis/jaklis.py \
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
 
     ## ZOMBIE PROTECTION - PURGE AFTER 45 DAYS
     find ~/.zen/game/players/${PLAYER}/FRIENDS/*.try -mtime +45 -type f -exec rm -f '{}' \;
 
-    try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null)
-    [[ $try > 3 && $try < 30 ]] && echo "${liking_me} TOO MANY TRY" && continue
+    ## COUNT NUMBER OF STAR COLLECT TRIES
+    try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null) || try=0
+    [[ $try > 2 && $try < 30 ]] && echo "${liking_me} TOO MANY TRY" && continue
 
-#### RECUP ANNONCES Gchange
+#### TODO RECUP ANNONCES Gchange ADD TO TW
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
 ## https://www.gchange.fr/#/app/market/records/42LqLa7ARTZqUKGz2Msmk79gwsY8ZSoFyMyPyEnoaDXR
 
@@ -290,9 +294,19 @@ do
             echo "DEBUG LIGHTBEAM : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json | jq -r"
             echo
 
+        ## ★★★★★ ############################################################################
             ## liking_me IS A GOOD FRIEND. PLAYER Send 1 COIN.
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${liking_me} -c "BRO:star:" -m
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${liking_me} -c "BRO:star:$my_star_level" -m
+            [[ ! $? == 0 ]] \
+            && echo "PLAYER BROKE. NOT SO GOOD FRIEND. ${liking_me}" \
+            && $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "BRO YOU BROKE" -m "PLEASE REFILL WALLET: ${G1PUB} ~:star:~ $my_star_level stars : Friend Ŋ1 SCORE  $gscore ${liking_me} "
 
+        ############################################################################### ★★★★★
+
+            echo "★ SENDING $my_star_level STAR(s) ★"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/secret.dunikey stars -p $liking_me -n $my_star_level
+
+        ######################################
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## PUSH DATA TO 12345 SWARM KEY
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
