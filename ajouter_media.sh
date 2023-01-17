@@ -929,7 +929,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
         echo "================================================"
         echo
 
-        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "$myIPFS/ipns/$ASTRONAUTENS"
+        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
     else
 
