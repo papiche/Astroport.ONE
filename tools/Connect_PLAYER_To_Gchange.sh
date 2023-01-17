@@ -203,11 +203,11 @@ do
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
 
-    ## ZOMBIE PROTECTION - PURGE AFTER 60 DAYS
-    find ~/.zen/game/players/${PLAYER}/FRIENDS/*.try -mtime +60 -type f -exec rm -f '{}' \;
+    ## ZOMBIE PROTECTION - PURGE AFTER 45 DAYS
+    find ~/.zen/game/players/${PLAYER}/FRIENDS/*.try -mtime +45 -type f -exec rm -f '{}' \;
 
     try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null)
-    [[ $try > 3 ]] && echo "${liking_me} TOO MANY TRY" && continue
+    [[ $try > 3 && $try < 30 ]] && echo "${liking_me} TOO MANY TRY" && continue
 
 #### RECUP ANNONCES Gchange
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
@@ -289,6 +289,9 @@ do
 
             echo "DEBUG LIGHTBEAM : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json | jq -r"
             echo
+
+            ## liking_me IS A GOOD FRIEND. PLAYER Send 1 COIN.
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${liking_me} -c "BRO:star:" -m
 
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## PUSH DATA TO 12345 SWARM KEY
