@@ -34,11 +34,13 @@ if [[ $YOU ]]; then
     [[ $YOU == $USER ]] && echo "Stopping ipfs daemon" && killall ipfs \
                                         || (echo "ERROR $YOU is running ipfs, must be $USER" && exit 1)
 else
-    # INIT ipfs
-    if [[ ! -d ~/.ipfs ]]; then
+    # REINIT ipfs
+    [[ -s ~/.ipfs/config ]] && echo ">>> WARNING BACKUP OLD IPFS CONFIG ~/.ipfs/config.old"
+    rm -f ~/.ipfs/config.old 2>/dev/null
+    mv ~/.ipfs/config ~/.ipfs/config.old 2>/dev/null
+
     [[ $isLAN ]] && ipfs init -p lowpower \
     || ipfs init -p server
-    fi
 fi
 
 echo -e "Astroport activate IPFS Layer installation..."
@@ -65,8 +67,9 @@ CPUQuota=60%
 WantedBy=multi-user.target
 EOF
 
-sudo cp -f /tmp/ipfs.service /etc/systemd/system/
-sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/ipfs.service
+    sudo cp -f /tmp/ipfs.service /etc/systemd/system/
+    sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/ipfs.service
+
 
 sudo systemctl daemon-reload
 sudo systemctl enable ipfs
@@ -74,7 +77,8 @@ sudo systemctl enable ipfs
 ###########################################
 # ACTIVATE IPFS OPTIONS: #swarm0 INIT
 ###########################################
-~/.zen/Astroport.ONE/tools/ipfs_config.sh
+$MY_PATH/ipfs_config.sh
+
 sudo systemctl restart ipfs
 
 ## Add ulimit "open files" (avoid ipfs hang)

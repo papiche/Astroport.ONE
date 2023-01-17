@@ -65,7 +65,7 @@ do
             ## RUNNING ON ASTROPORT STATION?
             (
                 [[ $(which ipfs) && $IPFSNODEID ]] \
-                && espeak "Download $uqname done. Adding file to IPFS." \
+                && espeak "Download $uqname done. Adding file to I P F S" \
                 && CID=$(ipfs add -q ~/Astroport/$uqname.mp4 | tail -n 1) \
                 && mkdir -p ~/.zen/tmp/$IPFSNODEID/$PLAYER/Astroport/ \
                 && echo "/ipfs/$CID" > ~/.zen/tmp/$IPFSNODEID/Astroport/$uqname.mp4.ipfs \
