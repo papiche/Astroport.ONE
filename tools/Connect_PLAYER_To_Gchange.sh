@@ -293,7 +293,8 @@ do
 
             echo "DEBUG LIGHTBEAM : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.lightbeam-key.json | jq -r"
             echo
-
+        ## RESET try
+        echo 0 > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
         ## ★★★★★ ############################################################################
             ## liking_me IS A GOOD FRIEND. PLAYER Send $my_star_level COIN
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $my_star_level -p ${liking_me} -c "BRO:star:$my_star_level" -m
