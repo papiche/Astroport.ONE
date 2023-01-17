@@ -295,14 +295,14 @@ do
             echo
 
         ## ★★★★★ ############################################################################
-            ## liking_me IS A GOOD FRIEND. PLAYER Send 1 COIN.
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${liking_me} -c "BRO:star:$my_star_level" -m
+            ## liking_me IS A GOOD FRIEND. PLAYER Send $my_star_level COIN
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $my_star_level -p ${liking_me} -c "BRO:star:$my_star_level" -m
             [[ ! $? == 0 ]] \
-            && echo "PLAYER BROKE. NOT SO GOOD FRIEND. ${liking_me}" \
+            && echo "PLAYER BROKE. G00D FRIEND. ${liking_me}" \
             && $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "BRO YOU BROKE" -m "PLEASE REFILL WALLET: ${G1PUB} ~:star:~ $my_star_level stars : Friend Ŋ1 SCORE  $gscore ${liking_me} "
 
         ############################################################################### ★★★★★
-
+            ## DEFAULT SAME CONFIDENCE LEVEL
             echo "★ SENDING $my_star_level STAR(s) ★"
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/secret.dunikey stars -p $liking_me -n $my_star_level
 
