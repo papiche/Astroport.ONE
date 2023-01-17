@@ -289,6 +289,7 @@ then
         CANON=''
     else
         TidType="${MIME}"
+        TITLE="$TITLE.$CAT"
         TEXT='${MEDIAKEY}'
         TAGS="'$:/isAttachment $:/isIpfs G1${CAT} ${PLAYER} ${CapitalGluedTitle} $GENRE ${HASHTAG}"
         CANON="/ipfs/"${IPFSID}

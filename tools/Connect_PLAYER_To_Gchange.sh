@@ -156,7 +156,7 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "ht
 
 ########################################################################
         # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-        COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+        COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
         [[ $COINS == "" || $COINS == "null" ]] && COINS=0
         echo "+++ YOU have $COINS Ğ1 Coins +++"
 
@@ -206,8 +206,8 @@ do
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
 
-    ## ZOMBIE PROTECTION - PURGE AFTER 45 DAYS
-    find ~/.zen/game/players/${PLAYER}/FRIENDS/*.try -mtime +45 -type f -exec rm -f '{}' \;
+    ## ZOMBIE PROTECTION - PURGE AFTER 365 DAYS
+    find ~/.zen/game/players/${PLAYER}/FRIENDS/* -mtime +365 -type d -exec rm -Rf '{}' \; 2>/dev/null
 
     ## COUNT NUMBER OF STAR COLLECT TRIES
     try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null) || try=0
@@ -218,8 +218,8 @@ do
 ## https://www.gchange.fr/#/app/market/records/42LqLa7ARTZqUKGz2Msmk79gwsY8ZSoFyMyPyEnoaDXR
 
     ## DATA EXTRACTION FROM ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
-    my_star_level=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.yours.level');
-    gscore=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.score');
+    my_star_level=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.yours.level') || my_star_level=1
+    gscore=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.score')
     myfriendship=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$G1PUB'"))')
 
     ## OH MY FRIEND !
