@@ -100,12 +100,12 @@ do
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
-            echo  ">>> RSS YEAH § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json"
+            echo  ">>> G1FRIEND § $myIPFS/ipns/$VOEUNS/${APLAYER}.tiddlers.json ${WISHNAME}"
 
         done
         ##################################
 
-        echo  ">>> MOA § ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${PLAYER}.tiddlers.json"
+        echo  ">>> MOA § $myIPFS/ipns/$VOEUNS/${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.' ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
