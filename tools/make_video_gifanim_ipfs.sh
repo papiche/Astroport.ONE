@@ -14,7 +14,7 @@ MIME=$(file --mime-type -b "${path}${file}")
 #################################################################################################################
 ############# CONVERT NOT MP4
         [[ ! $MIME == "video/mp4"  ]] \
-        && echo "MP4 CONVERT... WAIT" \
+        && espeak "MP4 CONVERSION PLEASE WAIT" 2>/dev/null \
         && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
         && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}")
 
@@ -25,7 +25,7 @@ RES=${FILE_RES%?}0p
 ############# VIDEO LINES MAX IS 720p
 LINES=$(echo $RES | tr -dc '0-9')
 [ $LINES -gt 720 ] \
-&& echo "VIDEO RESIZING HALF" \
+&& espeak "VIDEO RESIZING HALF PLEASE WAIT" 2>/dev/null \
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
 && [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
 && FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
@@ -40,7 +40,7 @@ DUREE=$(ffprobe -v error -i "${path}${file}" -show_entries format=duration -sexa
 PROBETIME=$(echo "0.618 * $DURATION" | bc -l | cut -d '.' -f 1)
 [[ ! $PROBETIME ]] && PROBETIME="1.0"
 
-## How many seconds are encoded by Mo ?
+## How many seconds are encoded by MB ?
 VTRATIO=$(echo "$DURATION / $FILE_BSIZE * 1024 * 1024" | bc -l | xargs printf "%.2f")
 
 ## CREATE SOME INDEX HOOKS
