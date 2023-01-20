@@ -66,10 +66,11 @@ do
             (
                 [[ $(which ipfs) && $IPFSNODEID ]] \
                 && espeak "Download $uqname done. Adding file to I P F S" \
-                && CID=$(ipfs add -q ~/Astroport/$uqname.mp4 | tail -n 1) \
-                && mkdir -p ~/.zen/tmp/$IPFSNODEID/$PLAYER/Astroport/ \
-                && echo "/ipfs/$CID" > ~/.zen/tmp/$IPFSNODEID/Astroport/$uqname.mp4.ipfs \
-                && espeak "Added to Station 12345 mapping"
+                && $MY_PATH/new_file_in_astroport.sh "$HOME/Astroport/" "$uqname.mp4"
+                #~ && CID=$(ipfs add -q ~/Astroport/$uqname.mp4 | tail -n 1) \
+                #~ && mkdir -p ~/.zen/tmp/$IPFSNODEID/$PLAYER/Astroport/ \
+                #~ && echo "/ipfs/$CID" > ~/.zen/tmp/$IPFSNODEID/Astroport/$uqname.mp4.ipfs \
+                #~ && espeak "Added to Station 12345 mapping"
             ) &
     fi
 done

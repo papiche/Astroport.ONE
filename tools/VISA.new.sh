@@ -167,11 +167,11 @@ YOMAIN=$(echo ${PLAYER} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 NID="${myIPFS}"
 WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
 WID="https://ipfs.$(myHostName)/api"
-WID="http://ipfs.$(myHostName):5001"
+# WID="http://ipfs.$(myHostName):5001"
 
 
-[[ $isLAN ]] && NID="http://astroport.localhost:8080" \
-                        && WID="http://astroport.localhost:5001"
+[[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
+                        && WID="http://ipfs.localhost:5001"
 
 ####
 
