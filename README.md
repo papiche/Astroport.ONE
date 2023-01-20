@@ -75,7 +75,7 @@ IPFS relie les clefs et les données.
 Nous mettons un TW dans une clef.
 
 
-# API : La "porte fenètre" de votre "♥BOX"
+# API : "♥BOX"
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée (```~/.start.sh```):
