@@ -1,5 +1,19 @@
 # TW : TiddlyWiki
 
+Clarifions quelques points concernant TiddlyWiki :
+
+* Les Tiddlers peuvent contenir n'importe quelle donnée (notes, tâches, numéros de téléphone, photos, vidéos musicales, recettes, produits, membres de la famille, ...).
+* Les dossiers peuvent avoir des étiquettes
+* Les tags peuvent être utilisés pour "étiqueter" les tiddlers afin de les catégoriser (tout comme les hashtags).
+* Les étiquettes peuvent être utilisées pour créer des hiérarchies, des arbres (table des matières) en ajoutant l'étiquette parent à l'étiquette actuelle.
+* Les tiddlers peuvent avoir des champs
+* Les champs peuvent contenir des données arbitraires (date, valeur numérique, texte, voire une liste d'autres tiddlers) qui caractérisent le tiddler.
+* Les tags sont stockés dans le champ tags du tiddler.
+* Comme les balises ne sont pas différentes des autres champs, n'importe quel champ peut être utilisé comme balises.
+* Les liens dans le texte forment également un arbre
+
+# Ŋ1 PROTOCOL
+
 L'utilisation du cryptosystème signifie que tout hôte possédant une clé privée peut modifier "quelque chose", la clé publique étant l'adresse de cette "chose". Quand on se concentre sur le hachage des données comme le fait IPFS, on peut stocker n'importe quoi partout.
 
 Astroport.ONE attache une clé (2 pass phrase NaCl generattion) et un email à un modèle TW. Chaque ordinateur sert l'API sur le port 1234. Il peut héberger plusieurs clés PLAYER et gérer leurs TW.
