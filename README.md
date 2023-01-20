@@ -82,7 +82,19 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 * le port 1234 publie API
 * le port 12345 publie MAP(*)
 
+⚠ TELETUBE TELEPORT SYSTEM ⚠
 
+## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
+```
+    curl -so ~/.zen/tmp/${MOATS}/astro.port "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+
+    TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
+    TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
+
+                sleep 30
+
+    curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
+```
 
 ## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
