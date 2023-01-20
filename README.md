@@ -11,9 +11,9 @@ C'est une bibliothèque du savoir à la base.
 ## https://astroport.com
 
 Avec cette technologie, nous devenons chacun hébergeur et fournisseur d'accès, souverain monétaire et médiatique.
-Avec cette technologie, nous établissons une "Crypto Nation" dont la carte relie les territoires au delà des frontières et des pays.
+Avec cette technologie, nous établissons le "Crypto Département 96" dont la carte relie les territoires au delà des frontières et des pays.
 
-Astroport ONE est l'ambassade d'un monde fait de toiles confiances interconnectées.
+Astroport ONE est l'ambassade d'un monde fait de toiles confiances algorithmiques interconnectées.
 
 # Astroport.ONE
 
@@ -75,7 +75,7 @@ IPFS relie les clefs et les données.
 Nous mettons un TW dans une clef.
 
 
-# API : "Sauve qui Peut"
+# API : La "porte fenètre" de votre "♥BOX"
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée (```~/.start.sh```):
@@ -83,25 +83,56 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 * le port 12345 publie MAP(*)
 
 
-### PRIVATE ZONE (fonctionne sur toutes les Stations. Mode coucou)
+
+## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
-* Créer son TW <3BOX
+### Créer un PLAYER TW <3BOX
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
+```
 
-```/?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}```
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `g1pub` | `string` | **Required**. Your prefered _URL_  |
+| `email` | `email` | **Required**. Your email one token |
 
-* Lire sa Messagerie Gchange
 
-```/?salt=${SALT}&pepper=${PEPPER}&messaging=on```
+### Lire Messagerie Gchange
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
+```
 
-* Convertir vers adresse IPNS
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `messaging` | `string` | **Required**. (on=json) output type |
 
-```/?salt=${SALT}&pepper=${PEPPER}&getipns=on```
+### Conversion vers adresse IPNS
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&getipns=on
+```
 
-* AppName=testcraft : Enregistrer JSON
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `getipns` | `string` | **Required** on |
 
-```/?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=_&dataid=$QRHASH```
+### AppName=testcraft : Enregistrer JSON
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=_&dataid=$QRHASH
+```
 
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `testcraft` | `string` | **Required** AppNAME subcommand |
+| `${OBJ}` | `${VAL}` | depends on App |
 
 Redirections
 * vers Gchange
@@ -112,19 +143,39 @@ Redirections
 
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
 
-### PLAYER  (fonctionne uniquement sur la Station qui héberge votre PLAYER)
+## ➤ PLAYER ZONE (fonctionne uniquement sur la Station qui héberge votre PLAYER)
+### ```/?player=${PLAYER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
-* Déclencher un Payement de 99 Ğ1 à Fred
+###  Déclencher un Payement de 99 Ğ1 à Fred
+```http
+GET /?player=${PLAYER}&pay=99&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
+```
 
-```/?player=${PLAYER}&pay=99&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech```
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `player` | `string` | **Required**. Your EMAIL token |
+| `pay` | `string` | **Required** pay = ZEN AMOUNT |
+| `g1pub` | `${VAL}` |  **Required** G1PUB |
 
-* Exporter Tiddlers.json depuis son TW selon valeur des "tags" ( ici TAG=G1CopierYoutube)
 
-```/?player=${PLAYER}&moa=json&tag=G1CopierYoutube```
+###  Exporter Tiddlers.json depuis son TW selon valeur des "tags" ( ici TAG=G1CopierYoutube)
+```http
+GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `player` | `string` | **Required**. Your EMAIL token |
+| `moa` | `string` | **Required** APP = output format |
+| `tag` | `${VAL}` | TW filtering default G1CopierYoutube |
+
 
 
 ### PUBLIC (fonctionne par tout, pour tous)
-### ```/?qrcode=$G1PUB/$IPNS/$...```
+```http
+GET /?qrcode=$G1PUB/$IPNS/$...
+```
+### TODO
 
 
 # 20H12
