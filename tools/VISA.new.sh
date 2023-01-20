@@ -95,7 +95,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeicyj5a4hdtfihmcyaydp56rcxgvekimt6c7ky2d2nbtannaz6vfgq"
+TWMODEL="/ipfs/bafybeidsq5jidrjs5vhci6tqumi4rbguhezyeqyte57hqemrqiecw4bany"
 TWEXPERIMENTAL="/ipfs/bafybeia4siwbalwr5smv4sy7rihiit6etkkivfqrywihm7vmivx3d62iie"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
