@@ -189,6 +189,9 @@ if [[ ! ${TIDDLER} ]]; then
         dur=`expr $end - $start`
 
         echo "Creating Youtube \"${YID}\" tiddler : G1CopierYoutube !"
+
+        ## WAN ADD <<hide tiddler-controls>> TO text jq 'map(.text += "<<hide tiddler-controls>>")'
+        [[ ! isLAN ]] && TEXT="$TEXT <<hide tiddler-controls>>"
         echo $TEXT
 
         echo '[
@@ -217,6 +220,7 @@ if [[ ! ${TIDDLER} ]]; then
   }
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
+
 
     TIDDLER="$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
