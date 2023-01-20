@@ -912,7 +912,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     ## GETTING LAST TW via IPFS or HTTP GW
     LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     rm -f ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
-    [[ $YOU ]] && echo " ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 30s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
+    [[ $YOU ]] && echo " ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
     [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
     [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
