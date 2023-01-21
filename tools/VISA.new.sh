@@ -325,7 +325,7 @@ WID="https://ipfs.$(myHostName)/api"
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     echo
-    echo "## ♥ IPFS CENTRAL ♥"
+    echo "♥ IPFS Ŋ1 DRIVE INIT ♥"
     echo "TW /ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
