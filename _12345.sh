@@ -60,7 +60,7 @@ while true; do
     ############# GET BOOTSTRAP SWARM DATA
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
-        echo "############# RUN LOOP #########"
+        echo "############# RUN LOOP ######### $(date)"
 
         ipfsnodeid=${bootnode##*/}
         mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
