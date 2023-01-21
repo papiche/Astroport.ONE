@@ -86,13 +86,15 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 
 ## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
 ```
-    curl -so ~/.zen/tmp/${MOATS}/astro.port "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+    # PLAYER COPIER "_URL_" FAVORITE
+    curl -so ~/.zen/tmp/${MOATS}/astro.port "http://astroport.localhost:1234/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
 
     TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
     TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
 
                 sleep 30
 
+    # RECUPERER SON JETON PLAYER
     curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
 ```
 
