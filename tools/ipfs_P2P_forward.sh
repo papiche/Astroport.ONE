@@ -38,7 +38,7 @@ if [[ ! -f ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh ]]; then
     [ ${PORT} -eq 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
     echo "[[ ! \$(ipfs p2p ls | grep x/ssh-$zuid) ]] && ipfs --timeout=5s ping -n 1 /p2p/$IPFSNODEID && ipfs p2p forward /x/ssh-$zuid /ip4/127.0.0.1/tcp/$PORT /p2p/$IPFSNODEID && ssh $USER@127.0.0.1 -p $PORT" > ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh
 fi
-cat ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh
+echo "https://ipfs.copylaradio.com/ipns/$IPFSNODEID/x_ssh-$zuid.sh"
 
 ## THIS PORT FORWARDING HUB COULD BE MADE MORE CONTROLABLE USING FRIENDSHIP LEVEL & IPFS BALISES
 
