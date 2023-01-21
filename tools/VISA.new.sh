@@ -325,11 +325,11 @@ WID="https://ipfs.$(myHostName)/api"
         sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     echo
-    echo "## PUBLISHING ${PLAYER}"
-    echo "/ipns/${ASTRONAUTENS}/"
+    echo "## ♥ IPFS CENTRAL ♥"
+    echo "TW /ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
-    echo "/ipfs/$IPUSH"
+    echo "$MOATS :: /ipfs/$IPUSH"
     echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     (
