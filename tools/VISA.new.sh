@@ -411,15 +411,14 @@ Phrases de connexion :
 
 PASS : $PASS
 
-:start: system https://gchange.fr"; sleep 1
+★★★★★ https://gchange.fr"; sleep 1
 echo "$(${MY_PATH}/face.sh friendly)"
 
-echo; echo "VISA : ${myIPFS}/ipfs/${IASTRO}"
-echo; echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
-echo; echo "RSS : ${myIPFS}/ipns/${FEEDNS}"; sleep 1
+echo; echo "TELECHARGEZ VOTRE G1VISA : ${myIPFS}/ipfs/${IASTRO}"
+echo; echo "PARTAGEZ VOTE TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
-
+echo "---"
 echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS"
 
 ## CLEANING CACHE

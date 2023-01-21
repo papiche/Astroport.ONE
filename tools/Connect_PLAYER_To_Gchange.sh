@@ -160,7 +160,7 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "ht
         [[ $COINS == "" || $COINS == "null" ]] && COINS=0
         echo "+++ YOU have $COINS Ğ1 Coins +++"
 
-        [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS) != $COIN ]] \
+        [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS) != $COIN && ! $COIN -lt 0 ]] \
         && cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS \
         && echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
 ########################################################################
