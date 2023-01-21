@@ -399,25 +399,28 @@ LP=$(ls /dev/usb/lp* 2>/dev/null)
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
-echo "Bienvenue 'Astronaute'  $PSEUDO"
+echo " 'Astronaute'  $PSEUDO"
 echo
+echo "G1VISA : ${myIPFS}/ipfs/${IASTRO}"
+echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo "Lien Favori : $URL"
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
-echo "Clef Publique : $G1PUB"; sleep 1
+echo "Portefeuille : $G1PUB (Monnaie Libre ğ1)"; sleep 1
 echo "
 Phrases de connexion :
     $SALT
     $PEPPER
 
-PASS : $PASS
-
-★★★★★ https://gchange.fr"; sleep 1
+Echangez vos ★ sur https://gchange.fr"; sleep 1
+echo
+echo "Explorateur du Monde Libre. Bienvenue."
 echo "$(${MY_PATH}/face.sh friendly)"
 
-echo; echo "TELECHARGEZ VOTRE G1VISA : ${myIPFS}/ipfs/${IASTRO}"
-echo; echo "PARTAGEZ VOTE TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
-
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "---"
 echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS"
 
