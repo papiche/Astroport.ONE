@@ -408,13 +408,19 @@ echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo "Lien Favori : $URL"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
-echo "Portefeuille : $G1PUB (Monnaie Libre ğ1)"; sleep 1
+echo "Portefeuille (ğ1) : $G1PUB"; sleep 1
 echo "
-Phrases de connexion :
+A la place de tous vos mots de passe.
+Utilisez vos Phrases Secrètes :
     $SALT
     $PEPPER
 
-Echangez vos ★ sur https://gchange.fr"; sleep 1
+dans le Monde propulsé par la Monnaie Libre
+https://monnaie-libre.fr
+
+1) Installez Cesium et GChange sur votre smartphone.
+2) Connectez-vous. Faites des rencontres, des échanges.
+3) Envoyez, recevez des ★. Activez vos toiles de confiance Ŋ1"; sleep 1
 echo
 echo "Explorateur du Monde Libre. Bienvenue."
 echo "$(${MY_PATH}/face.sh friendly)"
