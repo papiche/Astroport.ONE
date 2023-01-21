@@ -57,7 +57,7 @@ PEPPER=$THIS
         ################### KEY GEN ###################################
 
     # Get PLAYER wallet amount
-    ( ## SUB PROCESS
+    ( ## SUB PROCESS ## ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
         COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
         echo "+++ WALLET BALANCE _ $COINS (G1) _"
         [[ $COINS == "" || $COINS == "null" ]] \
