@@ -159,10 +159,10 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "ht
         COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
         [[ $COINS == "" || $COINS == "null" ]] && COINS=0
         echo "+++ YOU have $COINS Ğ1 Coins +++"
-
-        [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS) != $COIN && ! $COIN -lt 0 ]] \
-        && cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS \
-        && echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+        OLDCOINS=$(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS 2>/dev/null)
+        [[ $OLDCOINS != $COIN && ! $COIN -lt 0 ]] \
+        && ( cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS 2>/dev/null; \
+        echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS )
 ########################################################################
 
 ########################################################################
