@@ -57,15 +57,15 @@ PEPPER=$THIS
         ################### KEY GEN ###################################
 
     # Get PLAYER wallet amount
-    ( ## SUB PROCESS ## ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-        COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
-        echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        [[ $COINS == "" || $COINS == "null" ]] \
-        && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO" -m "0 G1 (ᵔ◡◡ᵔ) FLASH TON G1VISA" \
-        && ~/.zen/Astroport.ONE/tools/mailjet.sh $PLAYER "Votre portefeuille est vide. Alimentez votre G1Visa avec Cesium."
-        end=`date +%s`
-        echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
-    ) &
+    #~ ( ## SUB PROCESS ## ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+        #~ COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
+        #~ echo "+++ WALLET BALANCE _ $COINS (G1) _"
+        #~ [[ $COINS == "" || $COINS == "null" ]] \
+        #~ && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO" -m "0 G1 (ᵔ◡◡ᵔ) FLASH TON G1VISA" \
+        #~ && ~/.zen/Astroport.ONE/tools/mailjet.sh $PLAYER "Votre portefeuille est vide. Alimentez votre G1Visa avec Cesium."
+        #~ end=`date +%s`
+        #~ echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+    #~ ) &
 ########################################
 
 ########################################
