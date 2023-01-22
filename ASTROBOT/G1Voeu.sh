@@ -171,6 +171,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     # COPY QR CODE TO PLAYER ZONE
     cp ~/.zen/tmp/player.png ~/.zen/tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
+    echo "$SALT" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.salt
     echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.title
     echo "$LIBRA/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
     cp ~/.zen/game/world/$WISHKEY/QR.WISHLINK.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
