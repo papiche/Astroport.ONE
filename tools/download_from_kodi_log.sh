@@ -19,7 +19,6 @@ if [[ ! $isKodiRunning ]]; then
     echo "Kodi is not running"
 fi
 
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 # script usage
 usage()
@@ -39,7 +38,6 @@ IPFSNODEID=$(ipfs --timeout 5s id -f='<id>\n')
 [[ $IPFSNODEID == "" ]] && echo "IPFS APPLICATION. P.LEASE " && exit 1
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/uqdl/
-mkdir -p $HOME/Astroport/film/${MOATS}
 
 ## CHOOSE kodi.${OLD}log
 [[ $1 == "old" ]] && OLD='old.' || OLD=''
@@ -57,11 +55,12 @@ do
 
     [[ ! $uqname ]] && echo "$uqlink is BAD" && continue
     cycle=$((cycle+1))
+
     echo "########################################################################"
-    echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\""
+    echo "MANUAL : uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/film/${MOATS}/$uqname.mp4\""
 
     ! cat ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo | grep -w "$uqname.mp4" && \
-    echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/film/${MOATS}/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo || \
+    echo "uqload_downloader https://uqload.com/$uqlink \"$HOME/Astroport/$uqname.mp4\"" >> ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo || \
     echo "$uqname.mp4 detected in ~/.zen/tmp/${IPFSNODEID}/uqdl/commands.fifo"
 
     ## CHECK & MANAGE COPY
@@ -70,6 +69,8 @@ do
         echo "FILE ALREADY IN $HOME/Astroport/"
         continue
     else
+        MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+        mkdir -p $HOME/Astroport/film/${MOATS}
             echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
             uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/film/${MOATS}/$uqname.mp4"
             echo "COPY ~/Astroport/film/${MOATS}/$uqname.mp4 DONE"
