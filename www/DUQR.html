@@ -1,0 +1,147 @@
+<style>
+body {
+    display: grid;
+    height: 97%;
+    grid-template:
+        "search qr" 2em
+        "list main" auto
+        / 20em auto;
+    grid-gap: .5em;
+}
+body:before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2em;
+    /* background: red; */
+    z-index: 2;
+    padding: .5em;
+    box-shadow: 0 0 11px #0000004d;
+}
+
+body > input { grid-area: search; z-index: 3; }
+body > ul { grid-area: list; z-index: 1; }
+body > qr { grid-area: qr; z-index: 3; }
+body > img { grid-area: main; z-index: 1; }
+
+ul  {
+    padding: 0;
+    margin: 0;
+    overflow: auto;
+}
+    li {
+        list-style: none;
+        padding: .3em .5em;
+    }
+        li:hover { background: lightgrey }
+        uid { display: block; }
+        pubkey { display: block; color: grey; }
+
+qr  {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+    qr label:after {
+        content: " :";
+    }
+    qr input {
+        max-width: 70px;
+    }
+        qr input[name=data] {
+            height: 32px;
+            width: 350px;
+            max-width: initial;
+        }
+</style>
+
+<input type="text" name="search"/>
+<ul></ul>
+<qr><input type="text" name="data"/></qr>
+<img />
+
+<!--<script src="./wot.membres.json.js"></script>-->
+
+<script>
+const ss_pp = (ss,...pp)=> ss.map( (s,i)=> s + (pp[i] || '') ).join('')
+const $ = (ss,...pp)=> [...document.querySelectorAll( ss_pp(ss,...pp) )]
+const DOM = (ss,...pp)=> (new DOMParser).parseFromString( ss_pp(ss,...pp), 'text/html' ).body.children
+
+const search = $`input`[0]
+const members = $`ul`[0]
+const QRform = $`qr`[0]
+const QRimg = $`img`[0]
+
+search.onkeyup = e=> [...members.children]
+                        .map( li=> (li.style.display = 'block',li) )
+                        .filter( li=> !(new RegExp(search.value,'i')).test( li.querySelector('uid').textContent ) )
+                        .map( li=> li.style.display = 'none' )
+
+
+const QR = {
+    api: "https://api.qrserver.com/v1/create-qr-code/",
+    config: {
+        format: ["svg","png","gif","jpeg","jpg","eps"],
+        size: "300x300",
+        color: "#000",
+        bgcolor: "#ffffff",
+        qzone: 1,
+        ecc: ["Q","H","M","L"]
+            /*
+            "L (low, ~7% destroyed data may be corrected)",
+            "M (middle, ~15% destroyed data may be corrected)",
+            "Q (quality, ~25% destroyed data may be corrected)",
+            "H (high, ~30% destroyed data may be corrected)"
+        ]
+        */
+    }
+}
+
+
+QRform.append( ...
+    Object.keys( QR.config )
+        .map( opt=> DOM`<label for="">${opt}</label>${
+                Array.isArray(QR.config[opt]) ?
+                    `<select name="${opt}">${QR.config[opt].map(item=>`<option value="${item}">${item}</option>`).join('')}</select>`
+                : QR.config[opt][0] == "#" ?
+                    `<input type="color" name="${opt}" value="${QR.config[opt]}" />`
+                : `<input type="text" name="${opt}" value="${QR.config[opt]}" />`
+            }`
+        )
+        .reduce((a,o)=>a.concat(...o), [])
+)
+
+const QRnames = $`qr [name]`
+QRnames.map( n=>
+    n.onchange = e=>
+        QRimg.src = QR.api + QRnames.reduce( (s,n)=> s + n.name + "=" + n.value.replace(/^#/,'') + "&", "?")
+)
+
+
+;(
+typeof wot != 'undefined' &&
+    Promise.resolve( wot.members )
+||
+    fetch('https://g1.duniter.org/wot/members')
+        .then( res=> res.json() )
+)
+    .then( json=> json.results.map(o=>DOM`<li><uid>${o.uid}</uid><pubkey>${o.pubkey}</pubkey></li>`[0]) )
+    .then( items=> items.map( li=>
+        (li.onclick = e=> {
+            $`qr [name=data]`[0].value = e.currentTarget.querySelector('pubkey').textContent
+            $`qr [name=data]`[0].dispatchEvent(new Event('change'))
+        }
+            /*$`img`[0].src = `https://api.qrserver.com/v1/create-qr-code/?
+                            format=svg&size=300x300&
+                            data=${e.currentTarget.querySelector('pubkey').textContent}&qzone=1&
+                            ecc=H`
+                            .replace(/\s* /mg,'')*/
+        ,li)
+    ) )
+    .then( items=> members.append(...items) )
+
+
+</script>
