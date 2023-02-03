@@ -63,6 +63,8 @@ espeak "20 12 Storm & Thunder duration was $dur seconds" > /dev/null 2>&1
 espeak "Restarting Astroport Station API" > /dev/null 2>&1
 ## CLOSING API PORT
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
+## KILL ALL REMAINING nc
+killall nc
 ## OPEN API ENGINE
 ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
 PID=$!
