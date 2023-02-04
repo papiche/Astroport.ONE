@@ -347,30 +347,7 @@ rm -Rf ${YTEMP}
             cd $FILE_PATH/$DOMAIN/
             grep -rl '../external.html' ./  | xargs sed -i 's~../external.html~external.html~g'
 
-            mv $FILE_PATH/external.html $FILE_PATH/$DOMAIN/
-            #~ echo '
-#~ <html>
-#~ <head>
-#~ <script>
-    #~ function getParameterByName(name, url) {
-        #~ if (!url) url = window.location.href;
-        #~ name = name.replace(/[\[\]]/g, "\\$&");
-        #~ var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-            #~ results = regex.exec(url);
-        #~ if (!results) return null;
-        #~ if (!results[2]) return "";
-        #~ return decodeURIComponent(results[2].replace(/\+/g, " "));
-    #~ }
-
-    #~ var link = getParameterByName("link");
-    #~ window.location.href = link;
-#~ </script>
-#~ </head>
-#~ <body>
-
-#~ </body>
-#~ </html>'  > $FILE_PATH/$DOMAIN/myexternal.html ### CUSTOMIZE HOW TO HANDLE EXTERNAL LINKS
-#~ # COULD BE AN IPFS KEY !! OR IPNS !!!!
+            cp $MY_PATH/templates/external.html $FILE_PATH/$DOMAIN/
 
             ## G1PUB ENCODE.16 MEDIAKEY
             ${MY_PATH}/tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/$MEDIAKEY.ipns -o $HOME/.zen/tmp/$MEDIAKEY.ipns.enc
