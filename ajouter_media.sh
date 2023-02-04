@@ -344,7 +344,10 @@ rm -Rf ${YTEMP}
 
             httrack -wxY --sockets=99 −−max−rate=0 --disable-security-limits −−keep−alive --ext-depth=0 --stay-on-same-domain --robots=0 --keep-links=0 -V "echo \$0 >> $FILE_PATH/files" "$URL" -* +*/$DOMAIN/* -*wget* # -%l "fr"
 
+            cd $FILE_PATH/$DOMAIN/
+            grep -rl '../external.html' ./  | xargs sed -i 's~../external.html~external.html~g'
             mv $FILE_PATH/external.html $FILE_PATH/$DOMAIN/
+
             ## G1PUB ENCODE.16 MEDIAKEY
             ${MY_PATH}/tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/$MEDIAKEY.ipns -o $HOME/.zen/tmp/$MEDIAKEY.ipns.enc
             cat $HOME/.zen/tmp/$MEDIAKEY.ipns.enc | base16 > $FILE_PATH/$DOMAIN/.ipnskey.$G1PUB.enc.16
