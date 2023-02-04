@@ -9,12 +9,13 @@
   if (loc) {
     var pos=loc.indexOf('link=');
     if (pos>0) {
-      document.write('Clic to the link <b>below</b> to go to the online location!<br><a href="'+loc.substring(pos+5)+'">'+loc.substring(pos+5)+'</a><br>');
+      document.write('Clic to the link <b>below</b> to go to the online location!<br><a target="external" href="'+loc.substring(pos+5)+'">'+loc.substring(pos+5)+'</a><br>');
     } else
       document.write('(no location defined)');
   }
 // -->
 </script>
 <h1><strong><u>External Link !...</u></strong></h1>
+<button onclick="history.go(-1)">Go Back</button>
 </body>
 </html>
