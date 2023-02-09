@@ -39,7 +39,8 @@ echo
 #####################################################
 # CREATION DU TW G1VOEU
 #####################################################
-    SALT=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
+    source ~/.zen/game/players/$PLAYER/secret.june ## CLEF DERIVEE ET MEMORISABLE
+    [[ ! $SALT ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
     echo "$SALT"
 
     echo "## TITRE DE VOTRE VOEU ? CapitalGluedWords"

@@ -92,4 +92,23 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
                 exit 0
         fi
 
+##############################################
+# YOUTUBE : /?player=PLAYER&youtube=_URL_
+##############################################
+        if [[ $APPNAME == "youtube" ]]; then
+
+                [[ ! $WHAT ]] && WHAT="https://www.youtube.com/watch?v=BCl2-0HBJ2c"
+                echo "COPY YOUTUBE $PLAYER $WHAT"
+
+                G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+                [[ ! $G1PUB ]] && espeak "NOT A PLAYER" && echo "NOT A PLAYER" && exit 1
+
+                ## DECLENCHER ajouter_media.sh SANS PROMPT !!
+
+
+                end=`date +%s`
+                echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
+                exit 0
+        fi
+
  exit 1
