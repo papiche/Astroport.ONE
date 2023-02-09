@@ -343,8 +343,8 @@ WID="https://ipfs.$(myHostName)/api"
 
     echo "${ASTRONAUTENS}" > ~/.zen/game/players/${PLAYER}/.playerns
 
-    echo "SALT=$SALT" > ~/.zen/game/players/${PLAYER}/secret.june
-    echo "PEPPER=$PEPPER" >> ~/.zen/game/players/${PLAYER}/secret.june
+    echo "SALT=\"$SALT\"" > ~/.zen/game/players/${PLAYER}/secret.june
+    echo "PEPPER=\"$PEPPER\"" >> ~/.zen/game/players/${PLAYER}/secret.june
 
 echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
