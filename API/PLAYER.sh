@@ -108,23 +108,30 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
   {
     "created": "'${MOATS}'",
     "modified": "'${MOATS}'",
-    "title": "'CONTROL ♥BOX'",
+    "title": "'♥BOX'",
     "type": "'text/vnd.tiddlywiki'",
     "text": "'$WHAT'",
-    "g1pub": "'${G1PUB}'"
+    "g1pub": "'${G1PUB}'",
     "tags": "'CopierYoutube ${PLAYER}'"
   }
 ]
 ' > "$HOME/.zen/tmp/CoeurBOX.json"
 
-            rm -f ~/.zen/tmp/$PLAYER.html
+                rm -f ~/.zen/tmp/$PLAYER.html
 
                 ## REMPLACE le Tiddler "CopierYoutube"
                 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
-                        --deletetiddlers '[tag[CopierYoutube]]'
+                        --deletetiddlers '[tag[CopierYoutube]]' \
+                        --output ~/.zen/tmp/ --render "$:/core/save/all" "one.html" "text/plain"
+
+                [[ -s ~/.zen/tmp/one.html ]] && echo "tag[CopierYoutube] removed"
+
+                tiddlywiki --load ~/.zen/tmp/one.html \
                         --import "$HOME/.zen/tmp/CoeurBOX.json" "application/json" \
                         --output ~/.zen/tmp/ --render "$:/core/save/all" "$PLAYER.html" "text/plain"
 
+        [[ ! -s ~/.zen/tmp/$PLAYER.html ]] && echo "ERROR NO TW RESULTING" && exit  0
+        echo "~/.zen/tmp/$PLAYER.html OK"
         ## ANY CHANGES ?
         ##############################################################
         DIFF=$(diff ~/.zen/tmp/$PLAYER.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
@@ -132,6 +139,9 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
             echo "DIFFERENCE DETECTED !! "
             echo "Backup & Upgrade TW local copy..."
             cp ~/.zen/tmp/$PLAYER.html  ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        else
+            echo "SAME TW"
+            exit 0
         fi
         ##############################################################
 
@@ -144,14 +154,17 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
     TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --allow-offline -t 24h --key=$PLAYER /ipfs/$TW
 
-    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
-    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
+    && echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
 
     echo "================================================"
     echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
     echo " = /ipfs/$TW"
     echo "================================================"
 
+    echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}.$PLAYER.http
+    echo "$myIPFS/ipns/$ASTRONAUTENS" >> ~/.zen/tmp/${MOATS}.$PLAYER.http
+    cat ~/.zen/tmp/${MOATS}.$PLAYER.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
 #  ### REFRESH CHANNEL COPY
 
