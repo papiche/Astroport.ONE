@@ -101,10 +101,59 @@ PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
                 echo "COPY YOUTUBE $PLAYER $WHAT"
 
                 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
-                [[ ! $G1PUB ]] && espeak "NOT A PLAYER" && echo "NOT A PLAYER" && exit 1
+                [[ ! $G1PUB ]] && espeak "NOT MY PLAYER " && echo "$PLAYER IS NOT MY PLAYER" && exit 1
 
-                ## DECLENCHER ajouter_media.sh SANS PROMPT !!
+                ## PREPARE tiddler
+                echo '[
+  {
+    "created": "'${MOATS}'",
+    "modified": "'${MOATS}'",
+    "title": "'CONTROL ♥BOX'",
+    "type": "'text/vnd.tiddlywiki'",
+    "text": "'$WHAT'",
+    "g1pub": "'${G1PUB}'"
+    "tags": "'CopierYoutube ${PLAYER}'"
+  }
+]
+' > "$HOME/.zen/tmp/CoeurBOX.json"
 
+            rm -f ~/.zen/tmp/$PLAYER.html
+
+                ## REMPLACE le Tiddler "CopierYoutube"
+                tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html \
+                        --deletetiddlers '[tag[CopierYoutube]]'
+                        --import "$HOME/.zen/tmp/CoeurBOX.json" "application/json" \
+                        --output ~/.zen/tmp/ --render "$:/core/save/all" "$PLAYER.html" "text/plain"
+
+        ## ANY CHANGES ?
+        ##############################################################
+        DIFF=$(diff ~/.zen/tmp/$PLAYER.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html)
+        if [[ $DIFF ]]; then
+            echo "DIFFERENCE DETECTED !! "
+            echo "Backup & Upgrade TW local copy..."
+            cp ~/.zen/tmp/$PLAYER.html  ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+        fi
+        ##############################################################
+
+    ##################################################
+    ##################################################
+    ################## UPDATING PLAYER MOA
+    [[ $DIFF ]] && cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
+                                    ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
+
+    TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+    ipfs name publish --allow-offline -t 24h --key=$PLAYER /ipfs/$TW
+
+    [[ $DIFF ]] && echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+
+    echo "================================================"
+    echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
+    echo " = /ipfs/$TW"
+    echo "================================================"
+
+
+#  ### REFRESH CHANNEL COPY
 
                 end=`date +%s`
                 echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
