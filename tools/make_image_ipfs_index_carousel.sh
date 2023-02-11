@@ -71,8 +71,8 @@ echo "    </ul>
 num=1
 for i in "$img_dir"/*; do
 if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
-  ilink=$(ipfs add -q $i)
-  img_info=$(identify -format '%w %h %[EXIF:*]' $i)
+  ilink=$(ipfs add -q "$i")
+  img_info=$(identify -format '%w %h %[EXIF:*]' "$i")
   img_width=$(echo $img_info | cut -d ' ' -f1)
   img_height=$(echo $img_info | cut -d ' ' -f2)
   img_alt=$(echo $img_info | cut -d ' ' -f3)

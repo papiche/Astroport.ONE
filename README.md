@@ -157,7 +157,7 @@ Redirections
 
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
 
-## ➤ PLAYER ZONE (fonctionne uniquement sur la Station qui héberge votre PLAYER)
+## ➤ PLAYER ZONE (API de la Station qui héberge votre PLAYER)
 ### ```/?player=${PLAYER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
 ###  Déclencher un Payement de 99 Ğ1 à Fred
@@ -196,7 +196,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 
 
 
-### PUBLIC (fonctionne par tout, pour tous)
+### QRCODE (API SandBox)
 ```http
 GET /?qrcode=$G1PUB
 ```
