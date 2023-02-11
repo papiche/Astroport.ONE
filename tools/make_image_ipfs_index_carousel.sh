@@ -5,7 +5,20 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 #Set Path to Images
 img_dir="$1"
-[[ ! -d $img_dir ]] && echo "Not a directory" && exit 1
+if [[ ! -d $img_dir ]]; then
+    echo "STATION CAROUSEL MODE"
+    rm -Rf ~/.zen/tmp/carousel 2>/dev/null
+    mkdir -p ~/.zen/tmp/carousel
+# Make it with latest PLAYERS WALLETS
+PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
+## RUNING FOR ALL LOCAL PLAYERS
+for PLAYER in ${PLAYERONE[@]}; do
+        pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
+        curl -so ~/.zen/tmp/carousel/${pub}.png \
+        "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.duniter.org&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
+done
+    img_dir="$HOME/.zen/tmp/carousel"
+fi
 
 #Set Path to HTML page
 html_file="/tmp/index.html"
@@ -32,7 +45,7 @@ echo "<!DOCTYPE html>
 <body>
 
 <div class=\"container\">
-  <h2> Astroport IPFS $(myPlayer) Gallery $(date) </h2>
+  <h2> Astroport IPFS Gallery $(date) </h2>
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
     <!-- Indicators -->
     <ul class=\"carousel-indicators\">
@@ -96,6 +109,7 @@ echo "    </div>
 </html>" >> $html_file
 
 htmlipfs=$(ipfs add -q $html_file)
-xdg-open ${myIPFSGW}/ipfs/$htmlipfs
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ${myIPFSGW}/ipfs/$htmlipfs
+echo /ipfs/$htmlipfs
 
 exit 0
