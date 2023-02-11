@@ -48,8 +48,9 @@ tiddlywiki  --load ${INDEX} \
 
 echo "DEBUG : cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r"
 
-        BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
-
+        BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
+        [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
+        [[ ! $isLAN ]] && BROWSER=""
 ###################################################################
 ## URL EXTRACTION & yt-dlp.cache.$PLAYER upgrade
 for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
@@ -69,7 +70,7 @@ for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
     fi
         # ONE WEEK NEW SCAN
         if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER ]]; then
-            yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
+            yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
             sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
         fi
 
@@ -109,7 +110,7 @@ if [[ ! ${TIDDLER} ]]; then
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
 
-        TITLE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
+        TITLE="$(yt-dlp $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
 
         start=`date +%s`
@@ -127,7 +128,7 @@ if [[ ! ${TIDDLER} ]]; then
         #  --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
 
         yt-dlp  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
-                    --cookies-from-browser $BROWSER \
+                    $BROWSER \
                     --download-archive $HOME/.zen/.yt-dlp.list \
                     -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
                     -o "$HOME/.zen/tmp/yt-dlp/$TITLE.%(ext)s" ${ZYURL}
@@ -176,9 +177,9 @@ if [[ ! ${TIDDLER} ]]; then
         MIME=$(file --mime-type -b "$HOME/.zen/tmp/yt-dlp/$ZFILE")
 
         ## ADD TAGS
-        SEC=$(yt-dlp --cookies-from-browser $BROWSER --print "%(duration)s" "${ZYURL}")
-        CHANNEL=$(yt-dlp --cookies-from-browser $BROWSER --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
-        PLAYLIST=$(yt-dlp --cookies-from-browser $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+        SEC=$(yt-dlp $BROWSER --print "%(duration)s" "${ZYURL}")
+        CHANNEL=$(yt-dlp $BROWSER --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+        PLAYLIST=$(yt-dlp $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'><source src='/ipfs/"${ILINK}"' type='"${MIME}"'></video>

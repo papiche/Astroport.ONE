@@ -1,6 +1,8 @@
 #!/bin/bash
 ## Create gifanime ##  TODO Search for similarities BEFORE ADD
 ## "(✜‿‿✜) GIFANIME $PROBETIME (✜‿‿✜)"
+# FORMAT MP4 max 720p
+# PHI GIFANIM CREATION
 path="$1"
 file="$2"
 

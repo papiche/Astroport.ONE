@@ -30,6 +30,18 @@ TYPE=$WHAT
 ## GET TW
 mkdir -p ~/.zen/tmp/${MOATS}/
 
+if [[ ${QRCODE} == "station" ]]; then
+    ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
+    ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
+    sed "s~_TWLINK_~${myIPFSGW}${ISTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFSGW}${ISTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    ) &
+
+    exit 0
+fi
+
 ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
         [[ ! ${ASTRONAUTENS} ]] \
         && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \

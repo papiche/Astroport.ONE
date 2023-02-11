@@ -198,9 +198,18 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 
 ### PUBLIC (fonctionne par tout, pour tous)
 ```http
-GET /?qrcode=$G1PUB/$IPNS/$...
+GET /?qrcode=$G1PUB
 ```
-### TODO
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `qrcode` | `string` | **Required**. Your G1PUB token |
+
+Look for details in ~/.zen/Astroport.ONE/API/QRCODE.sh
+
+### STATION : Show Station PLAYER's G1 investments levels
+```http
+GET /?qrcode=station
+```
 
 
 # 20H12

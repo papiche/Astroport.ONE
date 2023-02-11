@@ -45,7 +45,7 @@ echo "<!DOCTYPE html>
 <body>
 
 <div class=\"container\">
-  <h2> Astroport IPFS Gallery $(date) </h2>
+  <h2> Astroport ZEN Gallery $(date) </h2>
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
     <!-- Indicators -->
     <ul class=\"carousel-indicators\">
