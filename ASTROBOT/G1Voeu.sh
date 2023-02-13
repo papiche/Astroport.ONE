@@ -40,6 +40,7 @@ echo
 # CREATION DU TW G1VOEU
 #####################################################
     source ~/.zen/game/players/$PLAYER/secret.june ## CLEF DERIVEE ET MEMORISABLE
+    [[ $PEPPER ]] && SALT=$PEPPER ## Using PLAYER PEPPER AS WISH SALT
     [[ ! $SALT ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
     echo "$SALT"
 
