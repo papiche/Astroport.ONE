@@ -87,7 +87,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     GDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
     [[ ! $GDESCR || $GDESCR == "null" ]] &&  GDESCR="Astronaute GChange"
     CDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.description' 2>/dev/null)
-    [[ ! $CDESCR || $CDESCR == "null" ]] &&  CDESCR="Portefeuille G1PalPay"
+    [[ ! $CDESCR || $CDESCR == "null" ]] &&  CDESCR="Portefeuille G1PalPer"
 
     GVILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
     [[ ! $GVILLE || $GVILLE == "null" ]] &&  GVILLE=""
@@ -211,7 +211,7 @@ do
 
     ## COUNT NUMBER OF STAR COLLECT TRIES
     try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null) || try=0
-    [[ $try > 2 && $try < 30 ]] && echo "${liking_me} TOO MANY TRY" && continue
+    [[ $try > 2 && ( $try < 30 || $try > 31 ) ]] && echo "${liking_me} TOO MANY TRY ( $try )" && continue
 
 #### TODO RECUP ANNONCES Gchange ADD TO TW
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
@@ -264,7 +264,7 @@ do
             echo "AUCUN TW ACTIF. PREVENONS LE"
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
-            ## I TRY
+            ## +1 TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
         else

@@ -74,16 +74,16 @@ do
             echo "DETECTED MOVIE : $uqname (https://uqload.com/$uqlink)"
             uqload_downloader https://uqload.com/$uqlink "$HOME/Astroport/film/${MOATS}/$uqname.mp4"
             echo "COPY ~/Astroport/film/${MOATS}/$uqname.mp4 DONE"
-            ## RUNNING ON ASTROPORT STATION?
-            (
-                [[ $(which ipfs) && $IPFSNODEID ]] \
-                && espeak "Download $uqname done. Adding file to I P F S" \
-                && ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh "$HOME/Astroport/film/${MOATS}/" "$uqname.mp4"
+            #~ ## RUNNING ON ASTROPORT STATION?
+            #~ (
+                #~ [[ $(which ipfs) && $IPFSNODEID ]] \
+                #~ && espeak "Download $uqname done. Adding file to I P F S" \
+                #~ && ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh "$HOME/Astroport/film/${MOATS}/" "$uqname.mp4"
                 #~ && CID=$(ipfs add -q ~/Astroport/$uqname.mp4 | tail -n 1) \
                 #~ && mkdir -p ~/.zen/tmp/$IPFSNODEID/$PLAYER/Astroport/ \
                 #~ && echo "/ipfs/$CID" > ~/.zen/tmp/$IPFSNODEID/Astroport/$uqname.mp4.ipfs \
                 #~ && espeak "Added to Station 12345 mapping"
-            ) &
+            #~ ) &
     fi
 done
 echo

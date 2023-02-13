@@ -15,7 +15,17 @@ PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
 for PLAYER in ${PLAYERONE[@]}; do
         pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
         curl -so ~/.zen/tmp/carousel/${pub}.png \
-        "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.duniter.org&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
+        "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
+
+        # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+        COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+        [[ $COINS == "" || $COINS == "null" ]] && echo "${PLAYER} G1WALLET ERROR" && continue
+        echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
+        OLDCOINS=$(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS 2>/dev/null)
+        [[ $OLDCOINS != $COINS && ! $COINS -lt 0 ]] \
+        && ( cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS 2>/dev/null; \
+        echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS )
+
 done
     img_dir="$HOME/.zen/tmp/carousel"
 fi
