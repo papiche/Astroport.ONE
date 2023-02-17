@@ -87,12 +87,12 @@ if [ $URL ]; then
 
 fi
 ###
-
-    ( ## SUB PROCESS
-        # Get PLAYER wallet amount
-        COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
-        [[ $COINS == "" || $COINS == "null" ]] && espeak "Missing coins. Free Run." || espeak "You have $COINS Coins"
-    )
+# 20H12 WALLET SYNCHO
+    #~ ( ## SUB PROCESS
+        #~ # Get PLAYER wallet amount
+        #~ COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+        #~ [[ $COINS == "" || $COINS == "null" ]] && espeak "Missing coins. Free Run." || espeak "You have $COINS Coins"
+    #~ ) &
 
 ###
 # GET SCREEN DIMENSIONS
@@ -725,8 +725,8 @@ GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
     # CONVERT INPUT TO MP4 #######################
     [[ $FILE_EXT != "mp4"  ]] \
     && espeak "Converting to M P 4. Please wait" \
-    && echo "CONVERT TO MP4 : ffmpeg -loglevel quiet -i ${FILE_PATH}/${FILE_NAME} -vf scale=-1:360  -c:v libx264 -c:a aac ${FILE_PATH}/$FILE_TITLE.mp4" \
-    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -vf scale=-1:480 -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
+    && echo "CONVERT TO MP4 : ffmpeg -loglevel quiet -i ${FILE_PATH}/${FILE_NAME} -c:v libx264 -c:a aac ${FILE_PATH}/$FILE_TITLE.mp4" \
+    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
     && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4" \
     && espeak "M P 4 ready"
 
