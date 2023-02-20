@@ -220,12 +220,11 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
 
     echo "#############################################"
     ## https://darktrojan.github.io/openwith/webextension.html"
-    [[ $XDG_SESSION_TYPE == 'x11' ]] && ~/.zen/Astroport.ONE/open_with_linux.py install; \
+    ~/.zen/Astroport.ONE/open_with_linux.py install
+
     echo "#############################################
-    # NOURRIR SON BLOB
-    # avec 'OpenWith' depuis votre navigateur !!
+    # NOURRISSEZ VOTRE BLOB depuis Firefox !!
     # https://addons.mozilla.org/firefox/addon/open-with
-    # https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno
     #############################################
     ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##
     #############################################"
