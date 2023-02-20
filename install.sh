@@ -221,16 +221,14 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
     echo "#############################################"
     ## https://darktrojan.github.io/openwith/webextension.html"
     [[ $XDG_SESSION_TYPE == 'x11' ]] && ~/.zen/Astroport.ONE/open_with_linux.py install; \
-    echo "#############################################" \
-    echo "# NOURRIR SON BLOB" \
-    echo "# avec 'OpenWith' depuis votre navigateur !!" \
-    echo "# https://addons.mozilla.org/firefox/addon/open-with/
-# https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno" \
-    echo "#############################################" \
-    echo \
-    echo "   ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##" \
-    echo \
-    echo "#############################################"
+    echo "#############################################
+    # NOURRIR SON BLOB
+    # avec 'OpenWith' depuis votre navigateur !!
+    # https://addons.mozilla.org/firefox/addon/open-with
+    # https://chrome.google.com/webstore/detail/open-with/cogjlncmljjnjpbgppagklanlcbchlno
+    #############################################
+    ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##
+    #############################################"
 
 ### ADD 20h12.sh CRON ###############
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
