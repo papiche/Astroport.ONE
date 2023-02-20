@@ -29,3 +29,14 @@ sudo bash install.sh
 # Test & clean
 [[ $(ipfs --version) ]] \
 && rm -Rf ~/.zen/tmp/kubo*
+
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open https://www.openstreetmap.org
+
+    echo "OUVREZ https://www.openstreetmap.org"
+    echo "ET CALIBREZ LA SYNCHRO 20H12 AVEC LE TEMPS NATUREL"
+    echo "SAISIR LES COORD. GPS DE VOTRE STATION IPFS (ex: 44.2133, 1.192)"
+    read GPS
+    echo "$GPS" > ~/.zen/GPS
+
+
+exit 0

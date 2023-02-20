@@ -42,38 +42,45 @@ if [[ ${QRCODE} == "station" ]]; then
     exit 0
 fi
 
+
 ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
         [[ ! ${ASTRONAUTENS} ]] \
         && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 
-echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html"
-ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html
+## SEND MESSAGE TO CESIUM+ ACCOUNT
+MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
+[[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 
-if [[ -s ~/.zen/tmp/${MOATS}/index.html ]]; then
+$MY_PATH/../tools/jaklis/jaklis.py -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
-    tiddlywiki --load ~/.zen/tmp/${MOATS}/index.html --output ~/.zen/tmp/${MOATS} --render '.' "MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+#~ echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html"
+#~ ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html
 
-    [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] \
-    && ( echo "~~~ NO /ipns/$ASTRONAUTENS (☓‿‿☓) CREATE A TW ~~~" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
-    && exit 1
+#~ if [[ -s ~/.zen/tmp/${MOATS}/index.html ]]; then
 
-    GPLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
+    #~ tiddlywiki --load ~/.zen/tmp/${MOATS}/index.html --output ~/.zen/tmp/${MOATS} --render '.' "MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+
+    #~ [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] \
+    #~ && ( echo "~~~ NO /ipns/$ASTRONAUTENS (☓‿‿☓) CREATE A TW ~~~" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
+    #~ && exit 1
+
+    #~ GPLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
 
-    REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
+    #~ REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
 
-    ## REDIRECT TO TW OR GCHANGE PROFILE
-    sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    #~ ## REDIRECT TO TW OR GCHANGE PROFILE
+    #~ sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    #~ echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
 
-    (
-    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    ) &
+    #~ (
+    #~ cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    #~ ) &
 
-    exit 0
+    #~ exit 0
 
-fi
+#~ fi
 
 ###################################################################################################
 ###################################################################################################
