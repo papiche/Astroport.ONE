@@ -36,6 +36,7 @@ sudo bash install.sh
     echo "ET CALIBREZ LA SYNCHRO 20H12 AVEC LE TEMPS NATUREL"
     echo "SAISIR LES COORD. GPS DE VOTRE STATION IPFS (ex: 44.2133, 1.192)"
     read GPS
+    mkdir -p ~/.zen/
     echo "$GPS" > ~/.zen/GPS
 
 
