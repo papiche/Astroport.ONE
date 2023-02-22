@@ -88,7 +88,7 @@ PEPPER=$THIS
 ########################################
 
 ##############################################
-# MESSAGING
+# MESSAGING : GET MESSAGE FROM GCHANGE+
 ##############################################
         if [[ $APPNAME == "messaging" ]]; then
 
@@ -137,29 +137,96 @@ PEPPER=$THIS
         ######################## MESSAGING END
 
 ########################################
-# G1PUB WITH NO EMAIL -> Open Gchange Profile & Update TW cache
+# G1PUB : REDIRECT TO GCHANGE OR TW + EMAIL = CREATE PLAYER
 ########################################
-        if [[ "$APPNAME" == "g1pub" && "$OBJ" != "email" ]]; then
+        if [[ "$APPNAME" == "g1pub" ]]; then
 
-            [[ ${WHAT} == "astro" ]] && REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
-            || REPLACE="$myGCHANGE/#/app/user/${G1PUB}"
-            echo ${REPLACE}
+            if [[ "$OBJ" != "email" ]]; then
+                ## WITH NO EMAIL -> Open Gchange Profile & Update TW cache
+                [[ ${WHAT} == "astro" ]] && REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
+                || REPLACE="$myGCHANGE/#/app/user/${G1PUB}"
+                echo ${REPLACE}
 
-            ## REDIRECT TO TW OR GCHANGE PROFILE
-            sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            ## USED BY https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
-            echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                ## REDIRECT TO TW OR GCHANGE PROFILE
+                sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                ## USED BY https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
+                echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-            ###  REPONSE=$(echo $myGCHANGE/#/app/user/${G1PUB}/ | ipfs add -q)
-            ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
-            ### echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
-            (
-            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-            ${MY_PATH}/../tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
-            ) &
-            end=`date +%s`
-            echo $APPNAME" (0‿‿0) ${WHAT} Execution time was "`expr $end - $start` seconds.
-            exit 0
+                ###  REPONSE=$(echo $myGCHANGE/#/app/user/${G1PUB}/ | ipfs add -q)
+                ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
+                ### echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
+                (
+                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                ${MY_PATH}/../tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
+                ) &
+                end=`date +%s`
+                echo $APPNAME" (0‿‿0) ${WHAT} Execution time was "`expr $end - $start` seconds.
+                exit 0
+
+            else
+
+                # CREATE PLAYER : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email=EMAIL&pseudo=PROFILENAME
+                # WHAT can contain urlencoded FullURL
+                EMAIL="${VAL}"
+
+                [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+
+                ## CHECK WHAT IS EMAIL
+                if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+                    echo "VALID EMAIL OK"
+                else
+                    echo "BAD EMAIL"
+                    (echo "$HTTPCORS KO ${EMAIL} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+                fi
+
+                ## CREATE PSEUDO FROM
+                if [[ ! $PSEUDO ]]; then
+                    PSEUDO=$(echo ${EMAIL} | cut -d '@' -f 1)
+                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:4}
+                fi
+
+                if [[ ! -d ~/.zen/game/players/${EMAIL} ]]; then
+
+                    echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)"
+
+                    (
+                    startvisa=`date +%s`
+                    [[ "$SALT" == "0" && "$PEPPER" == "0" ]] && SALT="" && PEPPER="" # "0" "0" means random salt pepper
+                    echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${WHAT}\"" > ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+                    ${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+
+                    end=`date +%s`
+                    dur=`expr $end - $startvisa`
+                    echo ${MOATS}:${G1PUB}:${PLAYER}:VISA:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
+                    cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
+                    ) &
+
+                    echo "$HTTPCORS
+                    <meta http-equiv='refresh' content='30; url=\""${myIPFS}"/ipns/"${ASTRONAUTENS}"\"'/>
+                    <h1>ASTRONAUTE $PSEUDO</h1>
+                    <br>KEY : $SALT:$PEPPER:${EMAIL}
+                    <br>TW : ${myIPFS}/ipns/${ASTRONAUTENS}
+                    <br>STATION : ${myIPFS}/ipns/$IPFSNODEID<br><br>please wait....<br>
+                    export ASTROTW=/ipns/${ASTRONAUTENS} ASTROG1=${G1PUB} ASTROMAIL=${EMAIL} ASTROIPFS=${myIPFS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+                    exit 0
+
+               else
+
+                    # ASTRONAUT EXISTING ${EMAIL}
+                    CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$SALT")
+                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$PEPPER")
+                    [[ ! $CHECK ]] && (echo "$HTTPCORS - WARNING - PLAYER ${EMAIL} ALREADY HERE"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+
+               fi
+
+                 ###################################################################################################
+                end=`date +%s`
+                echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
+
+            fi
+
         fi
 ########################################
 
@@ -297,73 +364,38 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         fi
 
 
+##############################################
+# LOGOUT
+##############################################
+        if [[ $APPNAME == "logout" ]]; then
+
+            ## REMOVE PLAYER IPNS KEY FROM STATION
+            PLAYER=${WHAT}
+
+            if [[ -d ~/.zen/game/players/${PLAYER}/ipfs ]]; then
+
+                ipfs key rm ${G1PUB} > /dev/null 2>&1
+                ipfs key rm ${PLAYER} > /dev/null 2>&1
+                REP="OK"
+
+            else
+
+                REP="ERROR UNKNOW ${PLAYER}"
+
+            fi
+
+            echo ${REP}
+            echo "$HTTPCORS ${REP}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
+            exit 0
+
+        fi
+
+
         ###################################################################################################
         ###################################################################################################
-        # API ONE : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email=EMAIL&pseudo=PROFILENAME
-    if [[ ${OBJ} == "email" && "${VAL}" != "" ]]; then
 
-                [[ $APPNAME != "g1pub" ]] && (echo "$HTTPCORS ERROR - BAD COMMAND $APPNAME" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && exit 0
-
-                # WHAT can contain urlencoded FullURL
-                EMAIL="${VAL}"
-
-                [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
-
-                ## CHECK WHAT IS EMAIL
-                if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-                    echo "VALID EMAIL OK"
-                else
-                    echo "BAD EMAIL"
-                    (echo "$HTTPCORS KO ${EMAIL} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
-                fi
-
-                ## CREATE PSEUDO FROM
-                if [[ ! $PSEUDO ]]; then
-                    PSEUDO=$(echo ${EMAIL} | cut -d '@' -f 1)
-                    PSEUDO=${PSEUDO,,}; PSEUDO=${PSEUDO%%[0-9]*}${RANDOM:0:4}
-                fi
-
-                if [[ ! -d ~/.zen/game/players/${EMAIL} ]]; then
-
-                    echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)"
-
-                    (
-                    startvisa=`date +%s`
-                    [[ "$SALT" == "0" && "$PEPPER" == "0" ]] && SALT="" && PEPPER="" # "0" "0" means random salt pepper
-                    echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${WHAT}\"" > ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-                    ${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
-
-                    end=`date +%s`
-                    dur=`expr $end - $startvisa`
-                    echo ${MOATS}:${G1PUB}:${PLAYER}:VISA:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
-                    cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
-                    ) &
-
-                    echo "$HTTPCORS
-                    <meta http-equiv='refresh' content='30; url=\""${myIPFS}"/ipns/"${ASTRONAUTENS}"\"'/>
-                    <h1>ASTRONAUTE $PSEUDO</h1>
-                    <br>KEY : $SALT:$PEPPER:${EMAIL}
-                    <br>TW : ${myIPFS}/ipns/${ASTRONAUTENS}
-                    <br>STATION : ${myIPFS}/ipns/$IPFSNODEID<br><br>please wait....<br>
-                    export ASTROTW=/ipns/${ASTRONAUTENS} ASTROG1=${G1PUB} ASTROMAIL=${EMAIL} ASTROIPFS=${myIPFS}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
-                    exit 0
-
-               else
-
-                    # ASTRONAUT EXISTING ${EMAIL}
-                    CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$SALT")
-                    [[ $CHECK ]] && CHECK=$(cat ~/.zen/game/players/${EMAIL}/secret.june | grep -w "$PEPPER")
-                    [[ ! $CHECK ]] && (echo "$HTTPCORS - WARNING - PLAYER ${EMAIL} ALREADY HERE"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
-
-               fi
-
-                 ###################################################################################################
-                end=`date +%s`
-                echo " (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
-
-    fi
 
 
         ## RESPONDING
@@ -375,3 +407,4 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         end=`date +%s`
         echo $type" (J‿‿J) Execution time was "`expr $end - $start` seconds.
 
+exit 0

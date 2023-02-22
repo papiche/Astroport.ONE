@@ -45,7 +45,7 @@ CHOICE="$3"
 players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
 
 [[ ${#players[@]} -ge 1 ]] \
-&& espeak "SELECT YOUR PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="=> Astroport" --text="ASTRONAUTE ?" --entry-text=${players[@]}) \
+&& espeak "SELECT YOUR PLAYER" && OUTPUT=$(zenity --entry --width 640 --title="Astroport" --text="ASTRONAUTE" --entry-text="${players[@]}") \
 || OUTPUT="${players}"
 
 PLAYER=$OUTPUT
