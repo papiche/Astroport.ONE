@@ -34,7 +34,7 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=("NOUVEAU VISA" "IMPORT PLAYER" $(ls ~/.zen/game/players 2>/dev/null))
+    players=("NOUVEAU VISA" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
