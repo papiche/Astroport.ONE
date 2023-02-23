@@ -42,17 +42,20 @@ if [[ ${QRCODE} == "station" ]]; then
     exit 0
 fi
 
-
+## FILTRAGE NON G1 TO IPFS READY QRCODE
 ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
         [[ ! ${ASTRONAUTENS} ]] \
         && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 
-## SEND MESSAGE TO CESIUM+ ACCOUNT
+## SEND MESSAGE TO CESIUM+ ACCOUNT (ME or .current)
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 
+## CCHANGE +
 $MY_PATH/../tools/jaklis/jaklis.py -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
+## CESIUM +
+$MY_PATH/../tools/jaklis/jaklis.py -n https://g1.data.e-is.pro -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
 #~ echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html"
 #~ ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html

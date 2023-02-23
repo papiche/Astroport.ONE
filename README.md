@@ -243,12 +243,14 @@ Ils analysent les données et extraient des flux json selon les G1Voeu présent 
 
 Le niveau informationnel de confiance exploré permet de proposer des alertes issues du niveau Ŋ2.
 
-## FLUX TW :
+## EXEMPLE DE FLUX TW :
 
 [![TW FEEDS](https://ipfs.copylaradio.com/ipfs/Qma9zvrYHGcUPisLKBcG9U9sktThX5VfVci8jfM8D9RspT)](https://pad.p2p.legal/s/G1TWFeed#)
 
 
 # IPFS : UN STOCKAGE INALTERABLE ET INTELLIGENT
+
+[![](http://ipfs.localhost:8080/ipfs/QmafsWdAeB5W9HcNPQWK2yjTgcW8eTxHoSD7bzE55mtrdP)
 
 ### "The Barefoot Architect" de Johan Van Lengen.
 
