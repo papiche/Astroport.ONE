@@ -39,7 +39,7 @@ echo "<!DOCTYPE html>
 <head>
 <title>Astroport IPFS Gallery</title>
 <meta charset=\"UTF-8\">
-<link rel=\"stylesheet\" href=\"${myIPFSGW}/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
+<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
 <style>
 .carousel-item {
     background-color: #0B0C10;
@@ -88,11 +88,11 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   img_alt=$(echo $img_info | cut -d ' ' -f3)
   if [ $num -eq 1 ]; then
     echo "      <div class=\"carousel-item active\">
-        <img src=\"${myIPFSGW}/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">
+        <img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">
       </div>" >> $html_file
   else
     echo "      <div class=\"carousel-item\">
-        <img src=\"${myIPFSGW}/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">
+        <img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">
       </div>" >> $html_file
   fi
   num=$((num+1))
@@ -111,15 +111,15 @@ echo "    </div>
   </div>
 </div>
 
-<script src=\"${myIPFSGW}/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/jquery-3.2.1.slim.min.js\"></script>
-<script src=\"${myIPFSGW}/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/popper.min.js\"></script>
-<script src=\"${myIPFSGW}/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.js\"></script>
+<script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/jquery-3.2.1.slim.min.js\"></script>
+<script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/popper.min.js\"></script>
+<script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.js\"></script>
 
 </body>
 </html>" >> $html_file
 
 htmlipfs=$(ipfs add -q $html_file)
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ${myIPFSGW}/ipfs/$htmlipfs
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open /ipfs/$htmlipfs
 echo /ipfs/$htmlipfs
 
 exit 0
