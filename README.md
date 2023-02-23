@@ -114,14 +114,25 @@ GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
 
 ### LOGOUT PLAYER (remove IPNS keys from Station)
 ```http
-GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${PLAYER}
+GET /?salt=${SALT}&pepper=${PEPPER}&logout=${PLAYER}
 ```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `salt` | `string` | **Required**. Your passphrase one token |
 | `pepper` | `string` | **Required**. Your passphrase two token |
-| `g1pub` | `string` | **Required**. Your email one token  |
+| `logout` | `string` | **Required**. Your email one token  |
+
+### LOGIN PLAYER (Activate IPNS keys on Station)
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&login=${PLAYER}
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `login` | `string` | **Required**. Your email one token  |
 
 
 ### Lire Messagerie Gchange

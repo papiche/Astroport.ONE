@@ -363,6 +363,32 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             exit 0
         fi
 
+##############################################
+# LOGIN
+##############################################
+        if [[ $APPNAME == "login" ]]; then
+
+            ## REMOVE PLAYER IPNS KEY FROM STATION
+            PLAYER=${WHAT}
+
+            if [[ -d ~/.zen/game/players/${PLAYER}/ipfs ]]; then
+
+                ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
+                REP="LOGIN OK"
+
+            else
+
+                REP="ERROR UNKNOW ${PLAYER}"
+
+            fi
+
+            echo ${REP}
+            echo "$HTTPCORS ${REP}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
+            exit 0
+
+        fi
 
 ##############################################
 # LOGOUT
@@ -376,7 +402,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
                 ipfs key rm ${G1PUB} > /dev/null 2>&1
                 ipfs key rm ${PLAYER} > /dev/null 2>&1
-                REP="OK"
+                REP="LOGOUT OK"
 
             else
 
@@ -398,7 +424,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
 
 
-        ## RESPONDING
+        ## END RESPONDING
         [[ ! -s ~/.zen/tmp/coucou/${MOATS}.index.redirect ]] && echo "$HTTPCORS  PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
         cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
