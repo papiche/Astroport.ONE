@@ -21,7 +21,6 @@ Il s'agit d'un Jeu de société grandeur nature qui consiste à répertorier, in
 Ce programme introduit des données multimédia (page web, audio, vidéo) en tant que chaines de données (blockchain) inscrites dans le réseau IPFS
 que les joueurs échangent au travers des TW et Oasis.
 
-
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
 ```
