@@ -23,6 +23,9 @@ echo "FOUND : ${PLAYERONE[@]}"
 for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/$PLAYER ]] && echo "BAD $PLAYERONE" && continue
 
+    # CLEAN LOST ACCOUNT
+    [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && rm -Rf ~/.zen/game/players/$PLAYER
+
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ ! $(echo "$PLAYER" | grep '@') ]] && continue
     mkdir -p ~/.zen/tmp/${MOATS}

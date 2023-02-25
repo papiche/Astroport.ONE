@@ -10,15 +10,6 @@ for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#");
 
     done
 
-## And friends
-for friendnode in $(cat ~/.zen/game/players/*/FRIENDS/*/.astronautens | uniq);
-    do
-        ipfs ping -n 3 $friendnode
-        [ $? = 0 ] && ipfs swarm connect $friendnode \
-                        || echo "UNCONNECTED $friendnode"
-         ipfs swarm peers | grep $friendnode
-    done
-
 ipfs stats dht wan
 
 echo "TODO : search for bootstrap and friends better connectivity"
