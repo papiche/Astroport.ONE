@@ -1,4 +1,4 @@
-# Préambule
+# Préambule - [read this introduction in english](https://github.com/papiche/Astroport.ONE/blob/master/README.en.md) -
 Quand pourrons nous sortir de ce Méchant Cloud qui nous profile, nous scrute, nous analyse... Pour au final nous faire consommer.
 Je n'ai pas suivi la formation d’ingénieur réseau pour fabriquer ça!
 Alors j'ai fait autre chose.

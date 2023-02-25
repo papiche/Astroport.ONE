@@ -162,7 +162,7 @@ if [[ ! ${TIDDLER} ]]; then
         espeak "GOOD! Video Number $boucle = $FILE_SIZE" > /dev/null 2>&1
 
 
-        ### CREATE GIF ANIM
+        ### CREATE GIF ANIM : make_video_gifanim_ipfs.sh
         $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "$HOME/.zen/tmp/yt-dlp" "$ZFILE" | tail -n 1) ## export ANIMH
         echo "/ipfs/$ANIMH"
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
