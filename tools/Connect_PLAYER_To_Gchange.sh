@@ -39,6 +39,8 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     # $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
     ## GET AVATAR PICTURE
     cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" 2>/dev/null
+    # CLEANING BAD FILE TYPE
+    [[ ! $(file -b "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" | grep PNG) ]] && rm "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png"
 
     ## GET CESIUM PUBKEY & C+ PROFILE
     CPUB=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '._source.pubkey' 2>/dev/null)
@@ -51,6 +53,10 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
         [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH CESIUM+ NODE ${myCESIUM} xxxxx"
 
         cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" 2>/dev/null
+        # CLEANING NOT PNG FILE
+        [[ ! $(file -b "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" | grep PNG) ]] && rm "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png"
+
+
         CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
 
         [[ $CPSEUDO ]] \
@@ -71,6 +77,8 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
         [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH CESIUM+ NODE ${myCESIUM} xxxxx"
 
         cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" 2>/dev/null
+        [[ ! $(file -b "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" | grep PNG) ]] && rm "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png"
+
         CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
 
         [[ $CPSEUDO ]] \

@@ -171,8 +171,11 @@ tiddlywiki --load $INDEX \
 
 ## FILTER MY OWN EMAIL
 cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | jq -rc # LOG
-cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null
-[[ $? != 0 ]] && echo "NO EXTRA TIDDLERS TODAY" && exit 0
+
+cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json \
+        | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## INLINE JSON
+
+[[ $? != 0 ]] && echo "NO EXTRA @tags.json TIDDLERS TODAY" && exit 0
 
 echo "******************TIDDLERS with EMAIL in TAGS treatment"
 #~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
@@ -180,6 +183,8 @@ echo "******************TIDDLERS with EMAIL in TAGS treatment"
 ## EXTRACT NOT MY EMAIL
 while read LINE; do
 
+    echo "---------------------------------- PalPé mec"
+    echo "$LINE"
     echo "---------------------------------- PalPAY for Tiddler"
     TCREATED=$(echo $LINE | jq -r .created)
     TTITLE=$(echo $LINE | jq -r .title)
@@ -197,6 +202,7 @@ while read LINE; do
     echo $MSG
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
+    #### SEARCH FOR PALPAY ACOUNTS : TODO BETTER §§§
     $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
