@@ -53,14 +53,14 @@ MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 
 ## CCHANGE +
-$MY_PATH/../tools/jaklis/jaklis.py -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
+$MY_PATH/../tools/jaklis/jaklis.py-n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
 sur https://astroport.copylaradio.com/
 Saisissez votre URL Youtube Favorite et un email
 Activez votre Capsule IPFS
 
 /ipns/$ASTRONAUTENS"
 ## CESIUM +
-$MY_PATH/../tools/jaklis/jaklis.py -n https://g1.data.e-is.pro -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
+$MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
 sur https://astroport.copylaradio.com/
 Saisissez votre URL Youtube Favorite et un email
 Activez votre Capsule IPFS
