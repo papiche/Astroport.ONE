@@ -564,7 +564,7 @@ echo "new_mp3_in_astroport  \"${FILE_PATH}/\" \"${FILE_NAME}\""
             ### ADD TO IPFS
             IPFSREPFILEID=$(ipfs add -q $FILE_PATH/$FILE_NAME | tail -n 1)  # ADDIN TO IPFS
 
-            ## CREATE ajouter_video.txt
+            ## CREATE ajouter_video.txt (RELATED TO astroport.py PLUGIN FOR VSTREAM KODI)
             echo "mp3;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$GROUPES;${RES};/ipfs/$IPFSREPFILEID" > ${FILE_PATH}/ajouter_video.txt
 
             ## DURATION LOG
