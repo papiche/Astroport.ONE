@@ -207,7 +207,7 @@ do
     echo "TW ? $LIBRA/ipns/$FRIENDNS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
-    echo "Receiving Stars : cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r"
+    cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -rc
     ################################## JAKLIS LIKING_ME stars
     ${MY_PATH}/timeout.sh -t 20 \
     ${MY_PATH}/jaklis/jaklis.py \
