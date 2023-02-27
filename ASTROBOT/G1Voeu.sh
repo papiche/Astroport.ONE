@@ -77,6 +77,8 @@ echo
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
+    ## TRYING amrzqr
+    amzqr "$LIBRA/ipns/$VOEUNS" -d "$HOME/.zen/game/world/$WISHKEY" -p ${MY_PATH}/../images/g1magicien.png -c
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
     qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
@@ -176,7 +178,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo "$SALT" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.salt
     echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.title
     echo "$LIBRA/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
-    cp ~/.zen/game/world/$WISHKEY/QR.WISHLINK.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
+    cp ~/.zen/game/world/$WISHKEY/*.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
 
     # PUBLISHING
     banner="## ${PLAYER} YOUR WISH IS READY TO MAKE Ŋ1 TW FLUX for G1$PEPPER"

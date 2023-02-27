@@ -172,7 +172,7 @@ if [[ ! ${TIDDLER} ]]; then
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/yt-dlp/$ZFILE" | tail -n 1)
         echo "/ipfs/$ILINK === $ZFILE"
 
-        [[ $ILINK == "" ]] && echo "BIG PROBLEM PAPA. NO IPFS " && continue
+        [[ $ILINK == "" ]] && echo ">>>>> BIG PROBLEM PAPA. NO IPFS " && continue
 
         MIME=$(file --mime-type -b "$HOME/.zen/tmp/yt-dlp/$ZFILE")
 
