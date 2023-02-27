@@ -1,0 +1,57 @@
+<html><head>
+    <meta charset="UTF-8">
+     <link rel="icon" type="image/x-icon" href="https://ipfs.copylaradio.com/ipfs/QmNwECbSL6xihpS2QLpts8a8Boekk3rEVGeySuzg83jTDA/favicon.ico">
+    <title>Astroport.ONE - SAVE PLANET EARTH - IPFS / La<3BOX / IRL GAMING made by LaSTI /</title>
+
+    <link rel="stylesheet" href="/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/demo.css">
+
+    <script type="text/javascript" src="/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/jquery-3.6.3.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/instascan.min.js"></script>
+
+  </head>
+<body>
+<center>
+    <h1>SCANNEZ VOTRE QRCODE (<a href=https://cesium.app>CESIUM</a>)</h1>
+
+<video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
+
+
+    <script type="text/javascript">
+
+      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+      scanner.addListener('scan', function (content) {
+        alert(content);
+        $.ajax({
+            url: "http://astroport.localhost:1234",
+            data: "qrcode="+content,
+            type: 'GET'
+        });
+        //
+        // BORIS STUFF COMES HERE
+
+      });
+
+      Instascan.Camera.getCameras().then(function (cameras) {
+
+        if (cameras.length > 0) {
+
+          scanner.start(cameras[0]);
+
+        } else {
+
+          console.error('No cameras found.');
+
+        }
+
+      }).catch(function (e) {
+
+        console.error(e);
+
+      });
+
+    </script>
+
+    <h2> - Activez votre Capsule IPFS - </h2>
+</center>
+
+</body></html>
