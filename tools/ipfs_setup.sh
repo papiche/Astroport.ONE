@@ -45,6 +45,23 @@ fi
 
 echo -e "Astroport activate IPFS Layer installation..."
 
+if [[ "$USER" == "xbian" ]]
+then
+    echo "enabling ipfs initV service autostart"
+    cd /etc/rc2.d && sudo ln -s ../init.d/ipfs S02ipfs
+    cd /etc/rc3.d && sudo ln -s ../init.d/ipfs S02ipfs
+    cd /etc/rc4.d && sudo ln -s ../init.d/ipfs S02ipfs
+    cd /etc/rc5.d && sudo ln -s ../init.d/ipfs S02ipfs
+
+    cd /etc/rc0.d && sudo ln -s ../init.d/ipfs K01ipfs
+    cd /etc/rc1.d && sudo ln -s ../init.d/ipfs K01ipfs
+    cd /etc/rc6.d && sudo ln -s ../init.d/ipfs K01ipfs
+
+    # Disable xbian-config auto launch
+    echo 0 > ~/.xbian-config-start
+
+fi
+
     ## DEBIAN
     echo "CREATE SYSTEMD ipfs SERVICE >>>>>>>>>>>>>>>>>>"
 cat > /tmp/ipfs.service <<EOF

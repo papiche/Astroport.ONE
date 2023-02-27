@@ -26,23 +26,6 @@ sudo ./setup.sh
 # PERSONNAL DEFCON LEVEL
 # cp ~/.zen/Astroport.ONE/DEFCON ~/.zen/
 
-if [[ "$USER" == "xbian" ]]
-then
-    echo "enabling ipfs initV service autostart"
-    cd /etc/rc2.d && sudo ln -s ../init.d/ipfs S02ipfs
-    cd /etc/rc3.d && sudo ln -s ../init.d/ipfs S02ipfs
-    cd /etc/rc4.d && sudo ln -s ../init.d/ipfs S02ipfs
-    cd /etc/rc5.d && sudo ln -s ../init.d/ipfs S02ipfs
-
-    cd /etc/rc0.d && sudo ln -s ../init.d/ipfs K01ipfs
-    cd /etc/rc1.d && sudo ln -s ../init.d/ipfs K01ipfs
-    cd /etc/rc6.d && sudo ln -s ../init.d/ipfs K01ipfs
-
-    # Disable xbian-config auto launch
-    echo 0 > ~/.xbian-config-start
-
-fi
-
 ########################################################################
 # CREATE ~/astroport FILESYSTEM GATE
 mkdir -p ~/Astroport/film
@@ -91,6 +74,29 @@ echo "#############################################"
 echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
 [[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Bureau/astroport.desktop && chmod +x ~/Bureau/astroport.desktop
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
+
+
+    ########################################################################
+    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS LAN COUNTRY RESTRICTIONS" # Avoid provider restrictions
+    ########################################################################
+    ACTUAL=$(cat /etc/resolv.conf | grep nameserver | head -n 1)
+
+    sudo chattr -i /etc/resolv.conf
+    sudo cat > /tmp/resolv.conf <<EOF
+domain home
+search home
+nameserver 1.1.1.1
+$ACTUAL
+# ASTROPORT.ONE
+EOF
+
+    sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+    sudo mv /tmp/resolv.conf /etc/resolv.conf
+    sudo chattr +i /etc/resolv.conf
+
+    sudo echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /etc/hosts
+
+
 
 mkdir -p ~/.zen/tmp
 
