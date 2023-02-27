@@ -68,14 +68,6 @@ a {
     left: 1px;
 }
 
-#glow-shadows.earth {
-    background: url(../images/earth-glow-shadows.png);
-}
-
-#glow-shadows.mars {
-    background: url(../images/mars-glow-shadows.png);
-}
-
 .location {
     position: absolute;
     width: 10px;
@@ -96,18 +88,6 @@ a {
     margin-top: -7.5px;
 }
 
-.flight {
-    position: absolute;
-    width: 24px;
-    height: 25px;
-    left: 10px;
-    top: 10px;
-    background: url(../images/plain.png);
-    background-size: 100% 100%;
-    margin-left: -12px;
-    margin-top: -12.5px;
-    cursor: pointer;
-}
 
 .flight:hover {
     width: 36px;

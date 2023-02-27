@@ -148,7 +148,7 @@ var earth3d;
 (function($) {
   $.widget('ui.earth3d', {
     options: {
-      texture: 'images/earth1024x1024.jpg',
+      texture: '/ipfs/QmRpS3HcsawVGL6D3ZjJwP5HBFivydb4mcMNVykKem3jai/earth1024x1024.jpg',
       sphere: {
         tilt: 0,
         turn: 0,

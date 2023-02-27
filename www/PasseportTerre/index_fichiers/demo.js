@@ -72,27 +72,42 @@ examples['flights'] = function() {
     obj1: {
       alpha: Math.PI / 4,
       delta: 0,
-      name: 'location 1'
+      name: 'usa'
     },
     obj2: {
       alpha: 1 * Math.PI / 4,
       delta: -2 * Math.PI / 4,
-      name: 'location 2'
+      name: 'africa'
     },
     obj3: {
       alpha: 2 * Math.PI / 4,
       delta: 0,
-      name: 'location 3'
+      name: 'hawai'
     },
     obj4: {
       alpha: 3 * Math.PI / 4,
       delta: 3 * Math.PI / 4,
-      name: 'location 4'
+      name: 'australia'
     },
     obj5: {
       alpha: 2.2 * Math.PI / 4,
-      delta: -1.1 * Math.PI / 4,
-      name: 'location 5'
+      delta: -0.9 * Math.PI / 4,
+      name: 'southamerica'
+    },
+    obj6: {
+      alpha: 1.2 * Math.PI / 4,
+      delta: -2 * Math.PI / 4,
+      name: 'europe'
+    },
+    zero: {
+      alpha: 0 * Math.PI / 4,
+      delta: 0 * Math.PI / 4,
+      name: 'zero'
+    },
+    pi: {
+      alpha: -3 * Math.PI / 4,
+      delta: -3 * Math.PI / 4,
+      name: 'pi'
     }
   };
   /* defining paths to display.

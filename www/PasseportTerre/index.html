@@ -4,19 +4,42 @@
   <head>
     <title>ASTROPORT PORTAL : http://astroport.localhost:1234</title>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="stylesheet" href="index_fichiers/demo.css">
-    <link rel="stylesheet" href="index_fichiers/jquery-ui.min.css">
+    <link rel="icon" type="image/x-icon" href="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/favicon.ico">
+    <link rel="stylesheet" href="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/demo.css">
+    <link rel="stylesheet" href="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery-ui.min.css">
 
-    <script type="text/javascript" src="index_fichiers/requestanimationframe.polyfill.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/requestanimationframe.polyfill.js"></script>
 
-    <script type="text/javascript" src="index_fichiers/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="index_fichiers/instascan.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/instascan.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/html5-qrcode.min.js"></script>
 
-    <script type="text/javascript" src="index_fichiers/jquery-ui.0.min.js"></script>
-    <script type="text/javascript" src="index_fichiers/sphere-hacked.js"></script>
-    <script type="text/javascript" src="index_fichiers/jquery.earth-3d.js"></script>
-    <script type="text/javascript" src="index_fichiers/demo.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery-ui.0.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/sphere-hacked.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery.earth-3d.js"></script>
+    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/demo.js"></script>
+    <style>
+
+#glow-shadows.earth {
+    background: url(/ipfs/QmY1A2uLGNXbvNs7hadZAKHNiuWxFaWhnaDR1UJXBXRirX/earth-glow-shadows.png);
+}
+
+#glow-shadows.mars {
+    background: url(/ipfs/QmPmpDoTGboQDDiYGCfmtcwnDe1buTSkj24cpJV7raQq9x/mars-glow-shadows.png);
+}
+.flight {
+    position: absolute;
+    width: 24px;
+    height: 25px;
+    left: 10px;
+    top: 10px;
+    background: url(/ipfs/QmS7UkTKfZi45HCq9KHAJgKosdKrbiZTdJE1xD62yxVi7u/plain.png);
+    background-size: 100% 100%;
+    margin-left: -12px;
+    margin-top: -12.5px;
+    cursor: pointer;
+}
+    </style>
   </head>
 
   <body>
@@ -28,57 +51,29 @@
     <div class="subtitle">Une Planète à Vous<br>Un Internet à Nous</div>
     <div id="demo">
       <div id="description">
-        <h2>Utilisez <a href="https://cesium.app">Cesium</a> !</h2>
+        <h2>Un DON ? Flashez le QRCode !</h2>
 
-        <p><img src="/ipfs/QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png"></p>
-        <h3>Ajoutez en commentaire l'email de vos amis...</h3>
-        <p>NB: "fred@g1sms.fr" a ouvert son compte à <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a> il bénéficie du service "G1PalPé"</p>
+        Visitez TW "_PLAYER_"
+        <p><a href="https://ipfs.copylaradio.com/ipns/_ASTRONAUTENS_">
+            <img src="/ipfs/QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png" width=65%></p>
+        </a>
+        <h3>Installez <a href="https://cesium.app">Cesium</a>. Indiquez en commentaire vos "G1Talents" et les emails de vos amis qui partage(ront) votre dons.</h3>
+        <p>/ <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a> / G1Services by U + La♥BOX</p>
         <br>
-        <p><a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a>, téléporte vos DATA 👍 à l'abris dans "Le Claude"</p>
-        <p>Powered by <a href="https://astroport.com">Astroport</a></p>
+    </div>
 
-        <h2>Scannez votre QRCode</h2>
-
-        <video id="preview" style="transform: scaleX(-1);width: 220px;height: 220px;"></video>
-
-    <script type="text/javascript">
-
-      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
-      scanner.addListener('scan', function (content) {
-        alert("qrcode="+content);
-        $.ajax({
-            url: "http://astroport.localhost:1234",
-            data: "qrcode="+content,
-            type: 'GET'
-        });
-        //
-        // $(location).attr('href', content);
-        // Receiver : echo -e 'HTTP/1.1 200 OK\r\n' | nc -l -p 1234 -q 1 | grep '^GET' | cut -d' ' -f2 | cut -d'=' -f 2
-      });
-
-      Instascan.Camera.getCameras().then(function (cameras) {
-        if (cameras.length > 0) {
-            scanner.start(cameras[0]);
-        } else {
-            console.error('No cameras found.');
-        }
-      }).catch(function (e) {
-            console.error(e);
-      });
-
-    </script>
-
-      </div>
-
-
-      <div id="showoff">
+    <div id="showoff">
         <div id="container">
-            <h2>Envoyez la Ḡ1 au Monde</h2>
+            <h2>Monde(s)</h2>
           <canvas id="sphere" width="400" height="400"></canvas>
           <div id="glow-shadows" class="earth"></div>
           <canvas id="flights" width="400" height="400"></canvas>
           <div id="locations"></div>
         </div>
+
+        <p><a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a>, sauvegarde, diffuse et partage vos DATA 👍 à l'abris dans "Le Claude"</p>
+        <p>Powered by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
+
         <div class="choose_example">
           Choose example: <select id="example">
             <option value="simple">Simple earth</option>
@@ -93,7 +88,9 @@
           <a href="#" style="display: none;" onclick="$('#example_code').hide(); $(this).hide().siblings('a').show(); return false;">Hide code</a>
           <textarea id="example_code" onclick="this.focus();this.select();"></textarea>
         </div>
+
       </div>
-    </div>
+
+ </div>
   </body>
 </html>
