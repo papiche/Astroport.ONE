@@ -23,7 +23,8 @@ network that players exchange through TW and Oasis.
 
 ## Fred Story
 
-In 2018, following @Hugo-Trentesaux's example, I decided to refuse to have a profession to get € to live, and thanks to the RSA, transformed my apartment in Toulouse into a "G1FabLab" to realize several prototypes and experiments around the use and practice of G1.
+In 2018, when most of my job oportunies were about Blockchain and IoT aiming to monitor anything... I understood that we should go with great advice in this new age. So.
+I decided to refuse to have a profession to get € to live, and thanks to the RSA, transformed my apartment in Toulouse into a "G1FabLab" to realize several prototypes and experiments around the use and practice of G1.
 
 Several prototypes developed on small computers (RaspberryPi ZeroW, 3B and 4B) appeared.
 
@@ -69,5 +70,10 @@ With @aya the creator of Olympe Network, we are aware of this mutation. We have 
 From this association has just been born "THE ♥BOX", a software and network service that allows you to save your favorite "Youtube" channel or playlist. All these data are saved in "The Claude", a hybrid software using our keys so we can host and own the data we publish.
 
 To try online with an email and a link to keep...
-
+```
+# Manipulate TW with tiddlywiki
+~/.zen/game/players/*/ipfs/moa/index.html
+# Makes your G1Wishes collide : merge and fork. G1Voeu derivated keys system)
+~/.zen/game/world/*/.pepper
+```
 https://astroport.copylaradio.com
