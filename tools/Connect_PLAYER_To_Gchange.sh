@@ -313,7 +313,7 @@ do
         ############################################################################### ★★★★★
             ## DEFAULT SAME CONFIDENCE LEVEL
             echo "★ SENDING $my_star_level STAR(s) ★"
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -p $liking_me -n $my_star_level
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey stars -p $liking_me -n $my_star_level
 
         ######################################
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW

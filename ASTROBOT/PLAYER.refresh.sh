@@ -112,16 +112,12 @@ for PLAYER in ${PLAYERONE[@]}; do
             IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
-            ## CHECK ONLINE
-            ipfs ping -n 3 ${ASTROPORT}
-            [ $? != 0 ] && echo "STATION IS NOT RESPONDING" && continue
-
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
             [[ ${IPNSTAIL} != ${IPFSNODEID} ]] \
             && echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED : EJECTION " \
             && rm -Rf ~/.zen/game/players/${PLAYER}/ \
-            && ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm $G1PUB;
-            && echo ">>>> ASTRONAUT EJECTION OPERATION FINISHED"
+            && ipfs key rm "${PLAYER}" "${PLAYER}_feed" "$G1PUB" \
+            && echo ">>>> ASTRONAUT EJECTION OPERATION FINISHED" \
             && continue
 
     fi
