@@ -71,18 +71,11 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
             IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
-
-            [[ $IPNSTAIL == "_ASTROPORT_" ]] \
-            && echo "DROPPED TW _ASTROPORT_" \
-            && echo "- CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW -"
-
-            #~ PTW=$(ipfs add -q ~/.zen/tmp/${MOATS}/newindex.html | tail -n 1) \
-            #~ && ipfs name publish -k ${MOATS} /ipfs/$PTW \
-            #~ && echo "Continue VISA procedure..."
+            echo "---> CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW with $IPFSNODEID"
 
         else
 
-            echo "NO GOOD TW - CREATING ONE"
+            echo ">> NO GOOD TW - CREATING FRESH NEW ONE"
             cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
         fi
@@ -173,7 +166,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
                         && WID="http://ipfs.localhost:5001" \
-                         && DISCO="http://ipfs.localhost:1234/?salt=${SALT}&pepper=${PEPPER}&logout=${PLAYER}"
+                         && DISCO="http://ipfs.localhost:1234/?salt=${SALT}&pepper=${PEPPER}"
 
 ####
 
@@ -425,7 +418,9 @@ echo "Explorateur du Monde Libre. Bienvenue."
 echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 
 echo "${myIPFS}/ipns/${ASTRONAUTENS}"
-echo "$(${MY_PATH}/face.sh friendly) DISCONNECT : $DISCO "
+echo "$(${MY_PATH}/face.sh friendly)
+DISCONNECT : $DISCO&logout=${PLAYER}
+CONNECT : $DISCO&login=${PLAYER}"
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
