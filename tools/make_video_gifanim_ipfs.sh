@@ -12,13 +12,13 @@ last_char=${path:length-1:1}
 [[ ! -s "${path}${file}" ]] && echo "Nothing Found, please check \"${path}${file}\"" && exit 1
 
 MIME=$(file --mime-type -b "${path}${file}")
-
+HOP=0
 #################################################################################################################
 ############# CONVERT NOT MP4
         [[ ! $MIME == "video/mp4"  ]] \
         && espeak "MP4 CONVERSION PLEASE WAIT" 2>/dev/null \
         && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
-        && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}")
+        && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}") && HOP=1
 
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p
@@ -31,7 +31,7 @@ LINES=$(echo $RES | tr -dc '0-9')
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
 && [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
 && FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
-&& RES=${FILE_RES%?}0p && echo $RES
+&& RES=${FILE_RES%?}0p && echo $RES && HOP=2
 #################################################################################################################
 
 FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
@@ -51,6 +51,6 @@ VTRATIO=$(echo "$DURATION / $FILE_BSIZE * 1024 * 1024" | bc -l | xargs printf "%
 rm -f ~/.zen/tmp/screen.gif
 ffmpeg -loglevel quiet -ss $PROBETIME -t 1.6 -loglevel quiet -i "${path}${file}" ~/.zen/tmp/screen.gif
 ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
-
-echo "export ANIMH=$ANIMH PROBETIME=$PROBETIME DURATION=$DURATION DUREE=$DUREE RES=$RES MIME=$MIME VTRATIO=$VTRATIO file=$file"
+## -- cross "bash tail -n 1" variable setting in return --- BASH TRICK ;)
+echo "export HOP=$HOP ANIMH=$ANIMH PROBETIME=$PROBETIME DURATION=$DURATION DUREE=$DUREE RES=$RES MIME=$MIME VTRATIO=$VTRATIO file=$file"
 exit 0

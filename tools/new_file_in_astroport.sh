@@ -69,6 +69,7 @@ MIME=$(file --mime-type -b "${path}${file}")
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
         echo "(✜‿‿✜) GIFANIME (✜‿‿✜)"
         $(${MY_PATH}/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1)
+        [ $HOP -gt 0 ] && espeak "HOP $HOP. File is ready for Astroport Now" && echo "HOP HOP HOP $HOP" && exit 0
         echo "$DUREE GIFANIM ($PROBETIME) : /ipfs/$ANIMH"
     fi
 
