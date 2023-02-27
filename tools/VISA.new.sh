@@ -169,10 +169,11 @@ NID="${myIPFS}"
 WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
 WID="https://ipfs.$(myHostName)/api"
 # WID="http://ipfs.$(myHostName):5001"
-
+DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${PLAYER}"
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
-                        && WID="http://ipfs.localhost:5001"
+                        && WID="http://ipfs.localhost:5001" \
+                         && DISCO="http://ipfs.localhost:1234/?salt=${SALT}&pepper=${PEPPER}&logout=${PLAYER}"
 
 ####
 
@@ -404,30 +405,31 @@ echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
 echo "G1VISA : ${myIPFS}/ipfs/${IASTRO}"
-echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
-echo "Lien Favori : $URL"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
 echo "Portefeuille (ğ1) : $G1PUB"; sleep 1
+echo "Lien Favori : $URL"
 echo "
-A la place de tous vos mots de passe.
-Utilisez vos Phrases Secrètes :
+vos Phrases Secrètes :
     $SALT
     $PEPPER
 
-dans le Monde propulsé par la Monnaie Libre
+la Monnaie Libre
 https://monnaie-libre.fr
 
-1) Installez Cesium et GChange sur votre smartphone.
+1) Visitez https://Cesium.app et https://GChange.fr
 2) Connectez-vous. Faites des rencontres, des échanges.
-3) Envoyez, recevez des ★. Activez vos toiles de confiance Ŋ1"; sleep 1
+3) Envoyer des ★ active vos toiles de confiance Ŋ1"; sleep 1
 echo
 echo "Explorateur du Monde Libre. Bienvenue."
-echo "$(${MY_PATH}/face.sh friendly)"
+echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+
+echo "${myIPFS}/ipns/${ASTRONAUTENS}"
+echo "$(${MY_PATH}/face.sh friendly) DISCONNECT : $DISCO "
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "---"
+echo "--- web3 PKI system ---"
 echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS"
 
 ## CLEANING CACHE

@@ -91,18 +91,39 @@ for PLAYER in ${PLAYERONE[@]}; do
      ## FOUND TW
         #############################################################
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+
             [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
-
-            ## DETECT IF GOOD LAST VERSION
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Last.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[all[tiddlers]days:modified[-1]]'
-
 
             player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
             [[ $player == $PLAYER ]] \
             && echo "$PLAYER OFFICIAL TW - (⌐■_■) -" \
-            || ( echo "BAD PLAYER=$player in TW" && continue)
+            || ( echo "> BAD PLAYER=$player in TW" && continue)
+
+            ## DETECT IF GOOD ASTROPORT
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+            ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+
+            IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
+            echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
+
+            ## CHECK ONLINE
+            ipfs ping -n 3 ${ASTROPORT}
+            [ $? != 0 ] && echo "STATION IS NOT RESPONDING" && continue
+
+            ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
+            [[ ${IPNSTAIL} != ${IPFSNODEID} ]] \
+            && echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED : EJECTION " \
+            && rm -Rf ~/.zen/game/players/${PLAYER}/ \
+            && ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm $G1PUB;
+            && echo ">>>> ASTRONAUT EJECTION OPERATION FINISHED"
+            && continue
+
     fi
         #############################################################
         ## GWIP == myIP or TUBE !!
