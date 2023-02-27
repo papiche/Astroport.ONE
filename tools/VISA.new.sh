@@ -88,7 +88,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeig4rdfz3gq3nblkotfzvrhqnrnrchk2bj74xitx4ggskcmfqpvtfm"
+TWMODEL="/ipfs/bafybeifrpajkcvmoymmlevbuvxb7v47w4v2vpfbacqm5ltf6gfgunb6a3e"
 TWEXPERIMENTAL="/ipfs/bafybeia4siwbalwr5smv4sy7rihiit6etkkivfqrywihm7vmivx3d62iie"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
@@ -188,11 +188,17 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
 
     ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
     secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
-    echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    echo "astro://$G1PUB/?dunisec=$secFromDunikey&hashpass=$(echo "$PASS" | sha512sum)" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
-    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58) && rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
+    ## MAKE amzqr
+    amzqr "$(cat~/.zen/tmp/${MOATS}/${PSEUDO}.sec)" -d $HOME/.zen/game/players/${PLAYER} -p ${MY_PATH}/../images/logoastro.png
+
+    rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+
+    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/logoastro_qrcode.png | tail -n 1)
 
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
@@ -234,6 +240,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
         # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        sed -i "s~bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
