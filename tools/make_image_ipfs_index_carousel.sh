@@ -6,11 +6,12 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 #Set Path to Images
 img_dir="$1"
 if [[ ! -d $img_dir ]]; then
-    echo "STATION CAROUSEL MODE"
+PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
+    [[ ! $PLAYERONE ]] && echo "NO PLAYER IN THE GAME HERE" && exit 1
+    echo "ASTROPORT STATION CAROUSEL MODE"
     rm -Rf ~/.zen/tmp/carousel 2>/dev/null
     mkdir -p ~/.zen/tmp/carousel
 # Make it with latest PLAYERS WALLETS
-PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
         pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
@@ -25,6 +26,11 @@ for PLAYER in ${PLAYERONE[@]}; do
         [[ $OLDCOINS != $COINS && ! $COINS -lt 0 ]] \
         && ( cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS 2>/dev/null; \
         echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS )
+
+        ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
+
+        ASTR="<a target=$PLAYER href=$myIPFS/ipns/$ASTRONAUTENS alt=$COINS title=$PLAYER $COINS>"
+        OPORT="</a>"
 
 done
     img_dir="$HOME/.zen/tmp/carousel"
@@ -88,11 +94,11 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   img_alt=$(echo $img_info | cut -d ' ' -f3)
   if [ $num -eq 1 ]; then
     echo "      <div class=\"carousel-item active\">
-        <img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">
+        $ASTR<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">$OPORT
       </div>" >> $html_file
   else
     echo "      <div class=\"carousel-item\">
-        <img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">
+        $ASTR<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">$OPORT
       </div>" >> $html_file
   fi
   num=$((num+1))

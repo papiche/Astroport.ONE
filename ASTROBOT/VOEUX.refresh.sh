@@ -112,12 +112,18 @@ do
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.'_ ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
 
-        ### PREPARE WISHNAME index.html
-        cat $MY_PATH/../templates/index_gif4.html \
-        | sed -e "s~_LIBRA_~$(myIpfsGw)~g" -e "s~_G1VOEU_~${WISHNAME}~g" -e "s~_PLAYER_~${PLAYER}~g" -e "s~_VOEUNS_~${VOEUNS}~g" \
-        > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
-
+        ##################################
         ## MAKE EARTH MAP TILES
+        ##################################
+        cat $MY_PATH/../templates/index_gif4.html \
+        | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
+                    -e "s~_G1VOEU_~${WISHNAME}~g" \
+                    -e "s~_PLAYER_~${PLAYER}~g" \
+                    -e "s~_VOEUNS_~${VOEUNS}~g" \
+                    -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+        > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
+                ### PREPARE WISHNAME index.html
+        ##################################
 
         ### ADD TO IPFS
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
@@ -125,7 +131,7 @@ do
         ipfs name publish -k $VOEUKEY /ipfs/$JSONIPFS   # PUBLISH $VOEUKEY
 
         ## MOVE INTO PLAYER AREA
-        echo "Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
+        echo ">>> $VOEUKEY : Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
         echo "~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}"
 
         mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/
