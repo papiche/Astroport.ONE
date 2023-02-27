@@ -412,12 +412,14 @@ https://monnaie-libre.fr
 
 1) Visitez https://Cesium.app et https://GChange.fr
 2) Connectez-vous. Faites des rencontres, des échanges.
-3) Envoyer des ★ active vos toiles de confiance Ŋ1"; sleep 1
+3) Envoyer des ★ active vos toiles de confiance et active votre niveau Ŋ1"; sleep 1
 echo
-echo "Explorateur du Monde Libre. Bienvenue."
-echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo "Explorateur du Web3 en Monde Libre et en Toile(s) de Confiance.
+BIENVENUE
+"
+echo "votre TW est là : ${myIPFS}/ipns/${ASTRONAUTENS}
+contactez support@qo-op.com pour obtenir une URL plus facile à retenir..."
 
-echo "${myIPFS}/ipns/${ASTRONAUTENS}"
 echo "$(${MY_PATH}/face.sh friendly)
 DISCONNECT : $DISCO&logout=${PLAYER}
 CONNECT : $DISCO&login=${PLAYER}"
