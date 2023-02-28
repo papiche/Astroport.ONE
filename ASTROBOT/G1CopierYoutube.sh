@@ -83,6 +83,7 @@ cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER 2>/dev/null
 [[ ! -s  ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
 ###################################################################
 boucle=0
+tot=0
 ###################################################################
 # PROCESS YOUTUBEID VIDEO DOWNLOAD AND CREATE TIDDLER in TW
 ###################################################################
@@ -90,7 +91,7 @@ while read LINE;
         do
         boucle=$((boucle+1))
         echo "_____ $LINE _____ $boucle"
-        YID="$(echo "$LINE" | cut -d '&' -f 1)"
+        YID="$(echo "$LINE" | rev | cut -d '=' -f 1 | rev )"
 
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
@@ -108,7 +109,7 @@ if [[ ! ${TIDDLER} ]]; then
         echo "COPIE : $ZYURL"
 
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
-        [[ $boucle == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
+        [[ $tot == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
 
         TITLE="$(yt-dlp $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
@@ -222,6 +223,7 @@ if [[ ! ${TIDDLER} ]]; then
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 
+    tot=$((tot+1))
 
     TIDDLER="$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
 

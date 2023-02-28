@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ipfs stats dht wan
+
 for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#");
     do
         ipfsnodeid=${bootnode##*/}
@@ -10,6 +12,6 @@ for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#");
 
     done
 
-ipfs stats dht wan
+
 
 echo "TODO : search for bootstrap and friends better connectivity"
