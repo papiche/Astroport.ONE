@@ -65,7 +65,7 @@ while true; do
 
     # EACH VISITOR RECEIVE COMMAND RESPONSE ON
     ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
-    [[ ${isLAN} && $(which yunohost) ]]; then
+    if [[ ${isLAN} && $(which yunohost) ]]; then
         PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## yunohost OPEN FIREWALL 1234 12345 45780 45781
     else
         [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
