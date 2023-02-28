@@ -30,13 +30,13 @@ ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=a
 ## NOT RUNNING TWICE
 
 # Some client needs to respect that
-HTTPCORS="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: ${myASTROPORT}
+HTTPCORS='HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
-"
+'
 echo "_________________________________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
@@ -66,11 +66,12 @@ while true; do
     ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
 
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
+    [[ ${isLAN} && $(which yunohost) ]] && PORT=45780 && ## yunohost OPEN FIREWALL 1234 12345 45780 only
                     ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
 
     ## CHECK PORT IS FREE & KILL OLD ONE
     pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | cut -d " " -f 1)
-    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING $pidportinuse" && continue
+    [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "KILLING LOST $pidportinuse" && continue
 
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
