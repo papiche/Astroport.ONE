@@ -7,8 +7,8 @@
 # astroport.cancer.copylaradio.com
 /ip4/185.202.238.69/tcp/4001/p2p/12D3KooWDYpPdfCFf3CbKpcLNmyA2vmJs4JY55k8yje9R1MxSgdB
 
-# cloud.copylaradio.com
-/dnsaddr/cloud.copylaradio.com/p2p/12D3KooWSQYTxeoZZ39SNosEKxi7RUdGTtAQAqpKeZJxjzqqrZTx
+# rock64.copylaradio.com
+/dnsaddr/rock64.copylaradio.com/p2p/12D3KooWSQYTxeoZZ39SNosEKxi7RUdGTtAQAqpKeZJxjzqqrZTx
 
 # astroport.sonic.copylaradio.com
 /ip4/161.97.174.60/tcp/4001/p2p/12D3KooWJki74EkJ8YUhrAfr2UwtQiJKBY94PYLmVnEQe9jo3aqC
