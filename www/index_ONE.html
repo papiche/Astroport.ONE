@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-     <link rel="icon" type="image/x-icon" href="https://ipfs.copylaradio.com/ipfs/QmNwECbSL6xihpS2QLpts8a8Boekk3rEVGeySuzg83jTDA/favicon.ico">
     <title>Astroport.ONE - SAVE PLANET EARTH - IPFS / La<3BOX / IRL GAMING made by LaSTI /</title>
+
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="https://ipfs.copylaradio.com/ipfs/QmNwECbSL6xihpS2QLpts8a8Boekk3rEVGeySuzg83jTDA/favicon.ico">
 
     <link rel="stylesheet" href="/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/demo.css">
 
@@ -14,10 +15,10 @@
 <body>
 
 
-    <h1>SCANNEZ VOTRE QRCODE (<a href="https://cesium.app" target=_blank>CESIUM</a>)</h1>
+    <h1>SCANNEZ QRCODE (<a href="https://cesium.app" target=_blank>CESIUM</a>)</h1>
 
-    <div class="subtitle">Présentez votre "G1Key"<br>Passeport TERRE</div>
-    <div id="demo">
+    <div class="subtitle">Passeport TERRE</div>
+   <div id="showoff">
       <div id="description">
 <center>
 
@@ -26,75 +27,41 @@
 
     <script type="text/javascript">
                 // BORIS STUFF COMES HERE
-function cacheIt (appName, hash, nodeId = '') {
+    async function fetchMyDocument(myURL) {
+      try {
 
-    var gatewayProtocol = 'http';
+         let response = await fetch(myURL); // Gets a promise
+         var doc =  await response.text();
+         var regex = /url='([^']+)/i;
+         var redirectURL = doc.match(regex)[1]
 
-    var gatewayDomain = 'ipfs.localhost';
+         console.log(redirectURL)
 
-    var gatewayPort = '1234';
+            setTimeout(function() {
+                let resp = await fetch(redirectURL);
+                //document.body.innerHTML = await response.text(); // Replaces body with response
+                window.open( redirectURL, "AstroTab");
+            }, 5000);
 
-    var salt = 'totodu56';
-    var pepper = 'totodu56';
-
-    var query  = 'salt='+ salt
-        query += '&pepper='+ pepper
-        query += '&' + appName
-        query += '&nodeid=' + nodeId
-        query += '&dataid=' + hash;
-
-    var fullURL = 'http://'+ gatewayDomain +':'+ gatewayPort + '/?' + query;
-    console.log(fullURL)
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout( () => {
-        controller.abort()
-    }, 15000)
-    var fetchOpts = {
-        method: 'GET',
-        headers: {
-            'Accept': 'text/html'
-            // ,'Content-Type': 'text/html'
-            // // ,'Access-Control-Allow-Origin': '*',
-            // ,'Origin': 'la-bureautique'
-            // ,'Referrer-Policy': 'unsafe-url'
-            // ,'Redirect': 'manual'
-        },
-        signal: controller.signal
+      } catch (err) {
+        console.log('Fetch error:' + err); // Error handling
+      }
     }
 
-    fetch(fullURL, fetchOpts)
-        .then(reponse => {
-            return reponse.text()
-        })
-        .then(html => {
-            // console.log(html)
+    function sendtostation (mycontent) {
 
-            var regex = /url='([^']+)/i;
-            var redirectURL = html.match(regex)[1]
+        var query  = 'qrcode='+ mycontent;
+        var fullURL = 'http://astroport.localhost:1234/?' + query;
+        console.log(fullURL)
+        fetchMyDocument(fullURL)
 
-            return redirectURL
-        })
-        .then(url => {
-
-            console.log(url)
-        })
-
-    // JSON.stringify(json)
-}
+    }
         // BORIS STUFF COMES HERE
 
       let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
       scanner.addListener('scan', function (content) {
         alert(content);
-        $.ajax({
-            url: "http://astroport.localhost:1234",
-            data: "qrcode="+content,
-            type: 'GET'
-        });
-        //
-
-
+        sendtostation(content);
       });
 
       Instascan.Camera.getCameras().then(function (cameras) {
