@@ -84,6 +84,7 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 ⚠ TELETUBE TELEPORT SYSTEM ⚠
 
 ## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
+### CLI
 ```
     # PLAYER COPIER "_URL_" FAVORITE
     curl -so ~/.zen/tmp/${MOATS}/astro.port "http://astroport.localhost:1234/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
@@ -95,6 +96,30 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 
     # RECUPERER SON JETON PLAYER
     curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
+```
+### JS
+```
+var myURL = 'http://astroport.localhost:1234/?' + query;
+async function fetchAstroport(myURL) {
+      try {
+
+         let one = await fetch(myURL); // Gets a promise
+         var doc =  await one.text();
+         var regex = /url='([^']+)/i; // Get response PORT
+         var redirectURL = doc.match(regex)[1]
+
+         console.log(redirectURL)
+
+        setTimeout(function() {
+                // let two = await fetch(redirectURL);
+                // document.mydiv.innerHTML = await two.text(); // Replaces body with response
+                window.open( redirectURL, "AstroTab");
+        }, 5000);
+
+      } catch (err) {
+        console.log('Fetch error:' + err); // Error handling
+      }
+    }
 ```
 
 ## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)

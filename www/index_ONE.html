@@ -26,37 +26,33 @@
 
 
     <script type="text/javascript">
-                // BORIS STUFF COMES HERE
-    async function fetchMyDocument(myURL) {
-      try {
-
-         let response = await fetch(myURL); // Gets a promise
-         var doc =  await response.text();
-         var regex = /url='([^']+)/i;
-         var redirectURL = doc.match(regex)[1]
-
-         console.log(redirectURL)
-
-            setTimeout(function() {
-                let resp = await fetch(redirectURL);
-                //document.body.innerHTML = await response.text(); // Replaces body with response
-                window.open( redirectURL, "AstroTab");
-            }, 5000);
-
-      } catch (err) {
-        console.log('Fetch error:' + err); // Error handling
-      }
-    }
-
     function sendtostation (mycontent) {
 
         var query  = 'qrcode='+ mycontent;
-        var fullURL = 'http://astroport.localhost:1234/?' + query;
+        var myURL = 'http://astroport.localhost:1234/?' + query;
         console.log(fullURL)
-        fetchMyDocument(fullURL)
 
+        async function fetchAstroport(myURL) {
+          try {
+
+             let one = await fetch(myURL); // Gets a promise
+             var doc =  await one.text();
+             var regex = /url='([^']+)/i; // Get response PORT
+             var redirectURL = doc.match(regex)[1]
+
+             console.log(redirectURL)
+
+            setTimeout(function() {
+                    // let two = await fetch(redirectURL);
+                    // document.mydiv.innerHTML = await two.text(); // Replaces body with response
+                    window.open( redirectURL, "AstroTab");
+            }, 5000);
+
+          } catch (err) {
+            console.log('Fetch error:' + err); // Error handling
+          }
+        }
     }
-        // BORIS STUFF COMES HERE
 
       let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
       scanner.addListener('scan', function (content) {
