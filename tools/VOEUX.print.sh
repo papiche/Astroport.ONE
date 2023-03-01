@@ -32,7 +32,7 @@ echo "VOEUX : ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 
-for v in $(cat ~/.zen/game/players/*/voeux/*/.title); do
+for v in $(cat ~/.zen/game/players/*/voeux/*/*/.title); do
     g1pub=$(grep -r $v ~/.zen/game/players/*/voeux/ 2>/dev/null | rev | cut -d '/' -f 2 | rev )
 #    echo "$v : $g1pub"
 #    echo '------------------------------------------------------------------'
@@ -52,7 +52,7 @@ select voeu in "${vlist[@]}"; do
 
     *) echo "IMPRESSION $voeu"
         voeu=$(echo $voeu | cut -d ':' -f2) ## Get G1PUB part
-        TITLE=$(cat ~/.zen/game/world/$voeu/.pepper) ## Get Voeu title (pepper) = simple GUI form + Name collision => Voeu fusion
+        TITLE=$(echo $voeu | cut -d ':' -f1) ## Get Voeu title
 
         VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
 
@@ -64,14 +64,14 @@ select voeu in "${vlist[@]}"; do
             "TW")
                 echo "Changer de Gateway $myIPFS ?"
                 read GW && [[ ! $GW ]] && GW="$myIPFS"
-                qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/QR.WISHLINK.png" "$GW/ipns/$VOEUXNS"
-                convert $HOME/.zen/game/world/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/START.png
+                qrencode -s 12 -o "$HOME/.zen/game/world/$TITLE/$voeu/QR.WISHLINK.png" "$GW/ipns/$VOEUXNS"
+                convert $HOME/.zen/game/world/$TITLE/$voeu/QR.WISHLINK.png -resize 600 ~/.zen/tmp/START.png
                 echo " QR code $TITLE  : $GW/ipns/$VOEUXNS"
                 break
             ;;
             "G1")
-                qrencode -s 12 -o "$HOME/.zen/game/world/$voeu/G1PUB.png" "$voeu"
-                convert $HOME/.zen/game/world/$voeu/G1PUB.png -resize 600 ~/.zen/tmp/START.png
+                qrencode -s 12 -o "$HOME/.zen/game/world/$TITLE/$voeu/G1PUB.png" "$voeu"
+                convert $HOME/.zen/game/world/$TITLE/$voeu/G1PUB.png -resize 600 ~/.zen/tmp/START.png
                 break
             ;;
             esac

@@ -98,7 +98,8 @@ while read LINE;
         echo "--- CACHE SEARCH FOR $YID ---" && TIDDLER=$(ls -t "$HOME/.zen/game/players/"*"/G1CopierYoutube/$YID.TW.json" 2>/dev/null | head -n 1)
         [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
         [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "$HOME/.zen/tmp/swarm/"*"/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
-        [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" || echo "EMPTY."
+        [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" \
+                                  || echo "EMPTY."
 ###################################################################
 
 if [[ ! ${TIDDLER} ]]; then

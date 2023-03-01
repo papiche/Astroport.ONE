@@ -207,12 +207,13 @@ do
     echo "TW ? $LIBRA/ipns/$FRIENDNS "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
-    cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -rc
     ################################## JAKLIS LIKING_ME stars
     ${MY_PATH}/timeout.sh -t 20 \
     ${MY_PATH}/jaklis/jaklis.py \
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
     stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
+
+    cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -rc
 
     ## ZOMBIE PROTECTION - PURGE AFTER 365 DAYS
     find ~/.zen/game/players/${PLAYER}/FRIENDS/* -mtime +365 -type d -exec rm -Rf '{}' \; 2>/dev/null
