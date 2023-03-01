@@ -128,9 +128,8 @@ select fav in  "${choices[@]}"; do
         ipfs name publish --allow-offline --key=$PLAYER /ipfs/$TW
         espeak "TW dropped in cyberspace..."
         ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm $G1PUB;
-        for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/ 2>/dev/null); do
+        for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/*/ 2>/dev/null); do
             ipfs key rm $voeu
-            [[ $voeu != "" ]] && rm -Rf ~/.zen/game/world/$voeu
         done
 
         [[ $USER == "zen" ]] && make player MAIL=$PLAYER DELETE=true

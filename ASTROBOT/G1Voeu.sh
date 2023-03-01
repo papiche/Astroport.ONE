@@ -55,9 +55,9 @@ echo
     echo "WISHKEY (G1PUB) = $WISHKEY"
 
     echo "# NOUVEAU VOEU"
-    mkdir -p ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
-    ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/qrtw.ipfskey
+    mkdir -p ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/qrtw.ipfskey "$SALT" "$PEPPER"
+    ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/qrtw.ipfskey
     VOEUNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
     echo "/ipns/$VOEUNS"
 
@@ -68,25 +68,28 @@ echo
     echo "# UPGRADING WORLD WHISHKEY DATABASE"
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-    mkdir -p ~/.zen/game/world/$WISHKEY/
+    mkdir -p ~/.zen/game/world/$PEPPER/$WISHKEY/
     ## A la fois Titre du tag et Pepper construction de clef
-    echo $PEPPER > ~/.zen/game/world/$WISHKEY/.pepper
+    echo $PEPPER > ~/.zen/game/world/$PEPPER/$WISHKEY/.pepper
+    echo $WISHKEY > ~/.zen/game/world/$PEPPER/$WISHKEY/.wish
 
     echo "# CREATION QR CODE"
 
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
     ## TRYING amrzqr
-    amzqr "$LIBRA/ipns/$VOEUNS" -d "$HOME/.zen/game/world/$WISHKEY" -p ${MY_PATH}/../images/g1magicien.png -c
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
-    qrencode -s 12 -o "$HOME/.zen/game/world/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUNS"
+    amzqr "$LIBRA/ipns/$VOEUNS" -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" -p ${MY_PATH}/../images/g1magicien.png -c
+    IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/g1magicien_qrcode.png | tail -n 1)
+
+    qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.G1WISH.png" "$WISHKEY"
+    qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.IPNS.png" "/ipns/$VOEUNS"
 
 #################################
     # PREMIER TYPE ~/.zen/tmp/player.png
-    convert $HOME/.zen/game/world/$WISHKEY/QR.WISHLINK.png -resize 300 ~/.zen/tmp/QRWISHLINK.png
+    convert $HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.WISHLINK.png -resize 300 ~/.zen/tmp/QRWISHLINK.png
     convert ${MY_PATH}/../images/logoastro.png  -resize 220 ~/.zen/tmp/ASTROLOGO.png
 
 composite -compose Over -gravity NorthWest -geometry +350+10 ~/.zen/tmp/ASTROLOGO.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
@@ -98,7 +101,7 @@ convert -gravity northwest -pointsize 33 -fill black -draw "text 320,350 \"$PEPP
 
 #################################
     # SECOND TYPE ~/.zen/tmp/voeu.png
-    convert $HOME/.zen/game/world/$WISHKEY/QR.G1WISH.png -resize 300 ~/.zen/tmp/G1WISH.png
+    convert $HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.G1WISH.png -resize 300 ~/.zen/tmp/G1WISH.png
     convert ${MY_PATH}/../images/logojeu.png  -resize 260 ~/.zen/tmp/MIZLOGO.png
 
 composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/G1WISH.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
@@ -115,8 +118,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 #    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
 #:[tag[G1CopierYoutube]] [tag[pdf]]
     # Contains QRCode linked to G1VoeuTW and BUTTON listing G1Voeux
-    TEXT="<a target='_blank' href='#:[tag[G1"$PEPPER"]]' ><img src='"/ipfs/${IVOEUPLAY}"'></a>
-    <br><a target='_blank' href='"/ipns/${VOEUNS}"'>TW G1Voeu "$PLAYER"</a><br><br>
+    TEXT="<img src='"/ipfs/${IMAGIC}"'><br>
+    <a target='_blank' href='#:[tag[G1"$PEPPER"]]' ><img src='"/ipfs/${IVOEUPLAY}"'></a><br>
+    <a target='_blank' href='"/ipns/${VOEUNS}"'>TW G1Voeu "$PLAYER"</a><br><br>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[G1"${PEPPER}"]]'>
    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
@@ -141,7 +145,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'"
   }
 ]
-' > ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json
+' > ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json
 
 
 
@@ -150,7 +154,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo "Nouveau Voeu $PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
     tiddlywiki  --load $INDEX \
                         --deletetiddlers '[tag[voeu]]' \
-                        --import ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json "application/json" \
+                        --import ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json "application/json" \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
     echo "PLAYER TW Update..."
@@ -158,7 +162,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
         echo "$$$ Mise à jour $INDEX"
         cp -f ~/.zen/tmp/newindex.html $INDEX
     else
-        echo "ERROR INTO ~/.zen/game/world/$WISHKEY/${PEPPER}.voeu.json"
+        echo "ERROR INTO ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json"
     fi
 
     # PRINTING
@@ -174,11 +178,11 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     fi
 
     # COPY QR CODE TO PLAYER ZONE
-    cp ~/.zen/tmp/player.png ~/.zen/tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
-    echo "$SALT" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.salt
-    echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.title
-    echo "$LIBRA/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.link
-    cp ~/.zen/game/world/$WISHKEY/*.png ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/
+    cp ~/.zen/tmp/player.png ~/.zen/tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
+    echo "$SALT" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.salt
+    echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.title
+    echo "$LIBRA/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.link
+    cp ~/.zen/game/world/$PEPPER/$WISHKEY/*.png ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
 
     # PUBLISHING
     banner="## ${PLAYER} YOUR WISH IS READY TO MAKE Ŋ1 TW FLUX for G1$PEPPER"
@@ -186,7 +190,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     IPUSH=$(echo "$banner" | ipfs add -q)
     ipfs name publish --key=${WISHKEY} /ipfs/$IPUSH 2>/dev/null
 
-    echo $IPUSH > ~/.zen/game/players/$PLAYER/voeux/$WISHKEY/.chain.$MOATS
+    echo $IPUSH > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.chain.$MOATS
 
     echo
     echo "Astronaute TW : $LIBRA/ipns/$ASTRONAUTENS"
@@ -206,8 +210,8 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
     [[ ! $? == 0 ]] \
     && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT AFFORD A NEW WISH" \
-    && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$WISHKEY \
-    && rm -Rf ~/.zen/game/world/$WISHKEY/ \
+    && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY \
+    && rm -Rf ~/.zen/game/world/$PEPPER/$WISHKEY/ \
     && ipfs key rm ${WISHKEY} \
     && tiddlywiki  --load ${INDEX} \
                               --deletetiddlers '${PEPPER}' \

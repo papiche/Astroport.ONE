@@ -53,7 +53,7 @@ MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 
 ## CCHANGE +
-$MY_PATH/../tools/jaklis/jaklis.py-n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
+$MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
 sur https://astroport.copylaradio.com/
 Saisissez votre URL Youtube Favorite et un email
 Activez votre Capsule IPFS
@@ -105,6 +105,7 @@ Activez votre Capsule IPFS
 
         ## FORCE LOCAL USE ONLY. Remove to open 1234 API
         [[ ! -d ~/.zen/game/players/${PLAYER} || ${PLAYER} == "" ]] \
+        && espeak "nope" \
         && (echo "$HTTPCORS ERROR - QRCODE - NO ${PLAYER} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 
