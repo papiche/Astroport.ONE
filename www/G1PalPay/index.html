@@ -1,0 +1,151 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+     <link rel="icon" type="image/x-icon" href="https://ipfs.copylaradio.com/ipfs/QmNwECbSL6xihpS2QLpts8a8Boekk3rEVGeySuzg83jTDA/favicon.ico">
+    <title>Astroport Ŋ1 - Ğ1 - IPFS</title>
+    <link rel="stylesheet" href="/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/demo.css">
+    <script src="G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
+    <script src="G1PalPay_fichiers/instascan.min.js"></script>
+  </head>
+<body>
+<center>
+    <h1>SCANNEZ VOTRE QRCODE (CESIUM)</h1>
+
+<video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
+
+
+    <script type="text/javascript">
+
+      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+      scanner.addListener('scan', function (content) {
+        alert(content);
+        $.ajax({
+            url: "http://astroport.localhost:1234",
+            data: "qrcode="+content,
+            type: 'GET'
+        });
+        //
+        // BORIS STUFF COMES HERE
+
+      });
+
+      Instascan.Camera.getCameras().then(function (cameras) {
+
+        if (cameras.length > 0) {
+
+          scanner.start(cameras[0]);
+
+        } else {
+
+          console.error('No cameras found.');
+
+        }
+
+      }).catch(function (e) {
+
+        console.error(e);
+
+      });
+
+    </script>
+
+    <h2> - Activez votre Capsule IPFS - </h2>
+</center>
+
+
+<div id="wrapper-auto-scrolling" style="display: none;"><div id="modal-auto-scrolling" class="modal">
+  <a href="#close" class="modal-overlay" data-close-modal-auto-scrolling="" aria-label="Close"></a>
+  <div class="modal-container">
+    <div class="modal-header">
+      <a href="#close" class="btn btn-clear float-right" data-close-modal-auto-scrolling="" aria-label="Close"></a>
+      <div class="modal-title h3">Options | AutoScrolling</div>
+    </div>
+    <div class="modal-body">
+      <div id="speed-wrapper-auto-scrolling">
+  <strong>Scrolling speed(scroll/sec):</strong>
+  <input type="number" class="scrolling-speed" id="scrolling-speed" value="20">
+  <p>The value is scrolling speed. A unit is scroll / sec.<br>
+     Max is 3000, and min is 1.</p>
+</div>
+<div>
+  <strong>Enable transmission scrolling:</strong>
+  <input type="checkbox" id="enable-transmission-scrolling">
+  <p class="mb-0">
+    If enabled, you can change scrolling speed per gear.
+    The gears are Slow / Middle / Fast.
+    The gears are cycled between
+    <mark>Slow</mark>, <mark>Middle</mark>, <mark>Fast</mark>
+    by <i>single/double-clicking</i> browser icon.
+  </p>
+  <table id="transmission-wrapper-auto-scrolling" class="d-hide">
+    <tbody>
+      <tr>
+        <th>Fast:</th>
+        <td><input type="number" class="scrolling-speed" id="transmission-gear-of-fast" value="2000">
+        </td>
+      </tr>
+      <tr>
+        <th>Middle:</th>
+        <td><input type="number" class="scrolling-speed" id="transmission-gear-of-middle" value="500">
+        </td>
+      </tr>
+      <tr>
+        <th>Slow:</th>
+        <td><input type="number" class="scrolling-speed" id="transmission-gear-of-slow" value="20">
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p></p>
+</div>
+<div>
+  <strong>Scrolling stop by click:</strong>
+  <input type="checkbox" id="stop-scrolling-by-click">
+  <p>If enabled the option, scrolling is stopped when you click the scrolling window.</p>
+</div>
+<div>
+  <strong>Stop scrolling by cursor hovering over something:</strong>
+  <input type="checkbox" id="stop-scrolling-by-click-on-hover">
+  <p>If enabled the option, scrolling is stopped temporally when mouse cursor is hovering over something.</p>
+</div>
+<div>
+  <strong>Keyboard shortcut for single-click action:</strong>
+  <input type="text" id="keybind-single-click" value="Alt+Shift+PageDown">
+  <p class="mb-0">Fire a single-click action by keyboard shortcut<br>
+  </p><ul>
+    <li>Start scrolling when window is stopped</li>
+    <li>Stop scrolling when window is scrolling</li>
+    <li>Close option modal window when the window is opened</li>
+  </ul>
+  The keybind should be a combination of keycodes concatenated with the '+' sign. <br>
+  <i>Ex: Ctrl+Shift+Insert.</i><br>
+  Check out the link for the keycodes: <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#Key_combinations" target="_blank">Key combinations</a><br>
+  <span class="text-gray">Notice: Some key combinations are reserved by the browser and can't be reassigned to this.<span><p></p>
+</span></span></div>
+<div>
+  <strong>Stop scrolling on focus out:</strong>
+  <input type="checkbox" id="stop-scrolling-on-focus-out">
+  <p>If enabled the option, scrolling is stopped when focus for the browser is moved to another application or browser window.</p>
+</div>
+<div>
+  <strong>Disable double click action:</strong>
+  <input type="checkbox" id="disable-double-click">
+  <p class="mb-0">If enabled the option</p>
+  <ul>
+    <li>cannot open modal window</li>
+    <li>start/stop scrolling is immediately</li>
+  </ul>
+  <p></p>
+</div>
+<div>
+  <strong>Restore scrolling from switch back:</strong>
+  <input type="checkbox" id="restore-scrolling-from-switch-back">
+  <p>If this option is enabled, scrolling which stopped by tab changing restarts when user is back to a tab that was scrolling.</p>
+</div>
+<div>
+  <strong>Stop when bottom of window:</strong>
+  <input type="checkbox" id="stop-when-bottom-of-window" checked="checked">
+  <p>If enabled, scrolling is stopped when window position is reached at bottom.</p>
+</div>
+    </div>
+  </div>
+</div></div></body></html>
