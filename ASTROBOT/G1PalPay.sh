@@ -67,6 +67,7 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[]
 while read LINE; do
 
     echo "MATCHING IN COMMENT"
+    echo "$LINE"
     JSON=$LINE
     IDATE=$(echo $JSON | jq -r .date)
     IPUBKEY=$(echo $JSON | jq -r .pubkey)
@@ -74,6 +75,7 @@ while read LINE; do
     IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
+    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS IDATE=$IDATE FORMAT ??)"
     [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
     ## GET EMAILS FROM COMMENT
@@ -123,20 +125,22 @@ while read LINE; do
 
             ######################################################
 
-            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
 
         fi
 
+        [[ ! $ASTROG1 ]] \
+        && echo "MISSING ASTROG1" \
+        && continue
+
+        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
+
         ## MAKE FRIENDS & SEND G1
-        echo "Hello PalPay Friend $ASTROMAIL
+        echo "NEW PalPay Friend $ASTROMAIL
         TW : $ASTROTW
         G1 : $ASTROG1
         ASTROIPFS : $ASTROIPFS
         RSS : $ASTROFEED"
 
-        [[ ! $ASTROG1 ]] \
-        && echo "MISSING ASTROG1" \
-        && continue
 
         if [[ ${ASTROG1} != ${G1PUB} ]]; then
 
