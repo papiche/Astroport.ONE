@@ -98,6 +98,8 @@ echo "$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) TW/Moa"
 echo "$myIPFS/ipns/$ASTRONAUTENS"
 echo "Activation Réseau P2P Astroport !"
 
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
+
 echo
 PS3="$PLAYER choisissez : __ "
 choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER QRVOEU" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
@@ -119,7 +121,7 @@ select fav in  "${choices[@]}"; do
         ;;
 
     "SUPPRIMER VISA")
-        echo "ATTENTION ${PLAYER} SUPPRESSION DEFINITIVE !!"
+        echo "ATTENTION ${PLAYER} SUPPRESSION CACHE LOCAL DEFINITIVE !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
         echo "REPLACE $IPFSNODEID WITH _ASTROPORT_"
@@ -132,13 +134,14 @@ select fav in  "${choices[@]}"; do
             ipfs key rm $voeu
         done
 
+        ## REMOVE PLAYER DOCKER
         [[ $USER == "zen" ]] && make player MAIL=$PLAYER DELETE=true
 
         echo "REMOVING GCHANGE+ PROFILE"
         $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
 
         #~ echo "REMOVE CESIUM+"
-        #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n https://g1.data.e-is.pro erase
+        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myCESIUM" erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
         sudo rm -Rf ~/.zen/game/players/$PLAYER
 

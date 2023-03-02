@@ -116,16 +116,17 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     if [[ $(which amzqr) ]]; then
 
         [[ -s "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" ]] \
-        && IMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png"
+        && GIMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png"\
+        || GIMG="$HOME/.zen/Astroport.ONE/images/plain.png"
 
         [[ -s "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" ]] \
-        && IMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" \
-        || IMG="$HOME/.zen/Astroport.ONE/logo.png"
+        && CIMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" \
+        || CIMG="$HOME/.zen/Astroport.ONE/images/g1ticket.png"
 
         # QRG1avatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$IMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$GIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
         # QRTWavatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$IMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
+        [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$CIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
 
     else
 

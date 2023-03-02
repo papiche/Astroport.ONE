@@ -10,8 +10,8 @@ PLAYER="$1"
 
 ##########################
 # Generate G1BARRE for each wish
-for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/); do
-    wishname=$(cat ~/.zen/game/players/$PLAYER/voeux/$g1wish/.title)
+for g1wish in $(ls ~/.zen/game/players/$PLAYER/voeux/*/); do
+    wishname=$(cat ~/.zen/game/players/$PLAYER/voeux/*/$g1wish/.title)
     wishns=$(ipfs key list -l | grep $g1wish | cut -d ' ' -f1)
 
     echo "MISE A JOUR G1BARRE pour VOEU $wishname : "

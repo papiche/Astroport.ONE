@@ -4,28 +4,43 @@
   <head>
     <title>ASTROPORT PORTAL : http://astroport.localhost:1234</title>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/x-icon" href="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/favicon.ico">
-    <link rel="stylesheet" href="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/demo.css">
-    <link rel="stylesheet" href="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery-ui.min.css">
+    <link rel="icon" type="image/x-icon" href="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/favicon.ico">
+    <link rel="stylesheet" href="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/demo.css">
+    <link rel="stylesheet" href="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/jquery-ui.min.css">
 
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/requestanimationframe.polyfill.js"></script>
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/requestanimationframe.polyfill.js"></script>
 
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/instascan.min.js"></script>
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/html5-qrcode.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/instascan.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/html5-qrcode.min.js"></script>
 
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery-ui.0.min.js"></script>
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/sphere-hacked.js"></script>
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/jquery.earth-3d.js"></script>
-    <script type="text/javascript" src="/ipfs/QmUcpeWwA5EZA8UavMU1oAfvRwZhUheBx8Mh8RGC4KHkkD/index_fichiers/demo.js"></script>
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/jquery-ui.0.min.js"></script>
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/sphere-hacked.js"></script>
+
+
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/jquery.earth-3d.js"></script>
+
+
+    <script type="text/javascript" src="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/demo.js"></script>
+
+
+    <script type="text/javascript">
+    examples['simple_mars'] = function() {
+    $('#sphere').earth3d({
+        texture: '/ipfs/QmNNSAJyzVSF2m16dReYgmqmiRkKa5HMKvFUgwhbRzTYto/mars1024x1024.jpg', // texture used by G1Wish planet
+        dragElement: $('#locations') // where do we catch the mouse drag
+    });
+    };
+    </script>
+
     <style>
 
 #glow-shadows.earth {
-    background: url(/ipfs/QmY1A2uLGNXbvNs7hadZAKHNiuWxFaWhnaDR1UJXBXRirX/earth-glow-shadows.png);
+    background: url(/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/earth-glow-shadows.png);
 }
 
 #glow-shadows.mars {
-    background: url(/ipfs/QmPmpDoTGboQDDiYGCfmtcwnDe1buTSkj24cpJV7raQq9x/mars-glow-shadows.png);
+    background: url(/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/mars-glow-shadows.png);
 }
 .flight {
     position: absolute;
@@ -33,7 +48,7 @@
     height: 25px;
     left: 10px;
     top: 10px;
-    background: url(/ipfs/QmS7UkTKfZi45HCq9KHAJgKosdKrbiZTdJE1xD62yxVi7u/plain.png);
+    background: url(/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/plain.png);
     background-size: 100% 100%;
     margin-left: -12px;
     margin-top: -12.5px;
@@ -48,18 +63,19 @@
 
     <h1><a target=_blank href="http://astroport.localhost:1234">Astroport Ŋ1</a></h1>
 
-    <div class="subtitle">Une Planète à Vous<br>Un Internet à Nous</div>
+    <div class="subtitle">One Planet</div>
     <div id="demo">
       <div id="description">
-        <h2>Un DON ? Flashez le QRCode !</h2>
+        <h3>ONE Internet 4 ALL</h3>
 
-        Visitez TW "_PLAYER_"
+                <br>
+                <a href="https://ipfs.copylaradio.com/ipns/_ASTRONAUTENS_">TW♥BOX  "_PLAYER_"</a>
+               <h2>Faites un Don ! Installez <a href="https://cesium.app">Cesium</a></h2>
         <p><a href="https://ipfs.copylaradio.com/ipns/_ASTRONAUTENS_">
-            <img src="/ipfs/QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png" width=65%></p>
-        </a>
-        <h3>Installez <a href="https://cesium.app">Cesium</a>. Indiquez en commentaire vos "G1Talents" et les emails de vos amis qui partage(ront) votre dons.</h3>
+            <img src="/ipfs/QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png" width=65%>
+        </a></p>
+        <p>Indiquez en commentaire votre email pour valider votre inscription.</p>
         <p>/ <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a> / G1Services by U + La♥BOX</p>
-        <br>
     </div>
 
     <div id="showoff">

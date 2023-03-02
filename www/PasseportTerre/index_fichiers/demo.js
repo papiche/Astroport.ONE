@@ -17,13 +17,6 @@ examples['simple_tilted'] = function() {
   });
 };
 
-examples['simple_mars'] = function() {
-  $('#sphere').earth3d({
-    texture: 'images/mars1024x1024.jpg', // texture used by planet
-    dragElement: $('#locations') // where do we catch the mouse drag
-  });
-};
-
 examples['locations'] = function() {
   /* defining locations to display.
      Each position must have a key, an alpha and delta position (or x and y if you want to display a static location).
@@ -33,27 +26,38 @@ examples['locations'] = function() {
     obj1: {
       alpha: Math.PI / 4,
       delta: 0,
-      name: 'location 1'
+      name: '_usa_',
+      link: 'https://oasis.astroport.com#usa'
     },
     obj2: {
       alpha: 1 * Math.PI / 4,
       delta: -2 * Math.PI / 4,
-      name: 'location 2'
+      name: '_africa_',
+      link: 'https://oasis.astroport.com#africa'
     },
     obj3: {
       alpha: 2 * Math.PI / 4,
       delta: 0,
-      name: 'location 3'
+      name: '_hawai_',
+      link: 'https://oasis.astroport.com#awai'
     },
     obj4: {
       alpha: 3 * Math.PI / 4,
       delta: 3 * Math.PI / 4,
-      name: 'location 4'
+      name: '_australia_',
+      link: 'https://oasis.astroport.com#australia'
     },
     obj5: {
       alpha: 2.2 * Math.PI / 4,
-      delta: -1.1 * Math.PI / 4,
-      name: 'location 5'
+      delta: -0.9 * Math.PI / 4,
+      name: '_southamerica_',
+      link: 'https://oasis.astroport.com#southamerica'
+    },
+    obj6: {
+      alpha: 1.2 * Math.PI / 4,
+      delta: -2 * Math.PI / 4,
+      name: '_europe_',
+      link: 'https://oasis.astroport.com#europe'
     }
   };
   $('#sphere').earth3d({
@@ -72,42 +76,50 @@ examples['flights'] = function() {
     obj1: {
       alpha: Math.PI / 4,
       delta: 0,
-      name: 'usa'
+      name: '_usa_',
+      link: 'https://oasis.astroport.com#usa'
     },
     obj2: {
       alpha: 1 * Math.PI / 4,
       delta: -2 * Math.PI / 4,
-      name: 'africa'
+      name: '_africa_',
+      link: 'https://oasis.astroport.com#africa'
     },
     obj3: {
       alpha: 2 * Math.PI / 4,
       delta: 0,
-      name: 'hawai'
+      name: '_hawai_',
+      link: 'https://oasis.astroport.com#awai'
     },
     obj4: {
       alpha: 3 * Math.PI / 4,
       delta: 3 * Math.PI / 4,
-      name: 'australia'
+      name: '_australia_',
+      link: 'https://oasis.astroport.com#australia'
     },
     obj5: {
       alpha: 2.2 * Math.PI / 4,
       delta: -0.9 * Math.PI / 4,
-      name: 'southamerica'
+      name: '_southamerica_',
+      link: 'https://oasis.astroport.com#southamerica'
     },
     obj6: {
       alpha: 1.2 * Math.PI / 4,
       delta: -2 * Math.PI / 4,
-      name: 'europe'
+      name: '_europe_',
+      link: 'https://oasis.astroport.com#europe'
     },
     zero: {
       alpha: 0 * Math.PI / 4,
       delta: 0 * Math.PI / 4,
-      name: 'zero'
+      name: '_CraftYourWorld_',
+      link: 'https://ipfs.copylaradio.com/ipfs/QmNcNcYRDUFmR1Ey1MAyhzzZRJEi1Dfq8YXRTXq6XZ9n4A'
     },
     pi: {
       alpha: -3 * Math.PI / 4,
       delta: -3 * Math.PI / 4,
-      name: 'pi'
+      name: '_OpenTW_',
+      link: 'https://astroport.copylaradio.com'
     }
   };
   /* defining paths to display.

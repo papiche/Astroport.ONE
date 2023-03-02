@@ -40,11 +40,11 @@ echo
 # CREATION DU TW G1VOEU
 #####################################################
     source ~/.zen/game/players/$PLAYER/secret.june ## CLEF DERIVEE ET MEMORISABLE
-    [[ $PEPPER ]] && SALT=$PEPPER ## Using PLAYER PEPPER AS WISH SALT
+    [[ $PEPPER ]] && echo "Using PLAYER PEPPER AS WISH SALT" && SALT=$PEPPER ##
     [[ ! $SALT ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
     echo "$SALT"
 
-    echo "## TITRE DE VOTRE VOEU ? CapitalGluedWords"
+    echo "## TITRE DU G1VOEU ? CapitalGluedWords please"
     [[ ! $TITRE ]] && read TITRE
     PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
     echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
@@ -63,7 +63,9 @@ echo
 
     ## TEST IPFS
     ipfs --timeout=30s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.json
-    [[ -s ~/.zen/tmp/$VOEUNS.json ]] && echo "HEY !!! UN CHANNEL EXISTE DEJA POUR CE VOEU !  ~/.zen/tmp/$VOEUNS.json  - EXIT -" && exit 1
+    [[ -s ~/.zen/tmp/$VOEUNS.json ]] \
+    && echo "HEY !!! UN CHANNEL EXISTE DEJA POUR CE VOEU !  ~/.zen/tmp/$VOEUNS.json  - EXIT -" \
+    && exit 1
 
     echo "# UPGRADING WORLD WHISHKEY DATABASE"
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -78,8 +80,23 @@ echo
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
-    ## TRYING amrzqr
-    amzqr "$LIBRA/ipns/$VOEUNS" -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" -p ${MY_PATH}/../images/g1magicien.png -c
+
+    ## MAKING amrzqr containing G1PUB/SSL[SEC(SALT)].BASE58/PASS.SHA
+    ## LE MOT DE PASSE DU PLAYER PEUT DECOUVRIR LE SECRET (
+    ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
+    secFromDunikey=$(cat ~/.zen/tmp/qrtw.dunikey | grep "sec" | cut -d ' ' -f2)
+    echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$SALT" 2>/dev/null
+    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
+    HPass=$(echo "$SALT" | sha512sum)
+    qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
+
+    ## MAKE amzqr WITH astro:// LINK
+    amzqr "astro://$WISHKEY/?sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB&flux=/ipns/$VOEUNS" \
+                -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
+                -l H \
+               -p ${MY_PATH}/../images/g1magicien.png -c
+
     IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/g1magicien_qrcode.png | tail -n 1)
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
@@ -114,6 +131,13 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     # IMAGE DANS IPFS
     IVOEUPLAY=$(ipfs add -Hq ~/.zen/tmp/player.png | tail -n 1)
     IVOEU=$(ipfs add -Hq ~/.zen/tmp/voeu.png | tail -n 1)
+
+    ### G1VOEU LIGHTBEAM :: ${PLAYER}_${PEPPER} :: /ipns/${VOEUNS}
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_${PEPPER}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key-'${PEPPER}'","text":"'${VOEUNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-key-'${PEPPER}'","text":"'${WISHKEY}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-g1.json
+
+
 
 #    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
 #:[tag[G1CopierYoutube]] [tag[pdf]]
@@ -154,6 +178,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo "Nouveau Voeu $PEPPER dans MOA $PSEUDO : http://127.0.0.1:8080/ipns/$ASTRONAUTENS"
     tiddlywiki  --load $INDEX \
                         --deletetiddlers '[tag[voeu]]' \
+                        --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
+                        --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
+                        --import ~/.zen/tmp/${MOATS}/lightbeam-g1.json "application/json" \
                         --import ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json "application/json" \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
@@ -171,6 +198,8 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
         echo "NO PRINTER FOUND - Plug a Brother QL700 or Add your printer"
     else
         echo "IMPRESSION VOEU"
+        brother_ql_create --model QL-700 --label-size 62 ~/.zen/game/world/$PEPPER/$WISHKEY/g1magicien_qrcode.png > ~/.zen/tmp/toprint.bin 2>/dev/null
+        sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
         brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/player.png > ~/.zen/tmp/toprint.bin 2>/dev/null
         sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
         brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/voeu.png > ~/.zen/tmp/toprint.bin 2>/dev/null
@@ -185,20 +214,25 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     cp ~/.zen/game/world/$PEPPER/$WISHKEY/*.png ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
 
     # PUBLISHING
-    banner="## ${PLAYER} YOUR WISH IS READY TO MAKE Ŋ1 TW FLUX for G1$PEPPER"
-    echo "ipfs name publish --key=${WISHKEY} $banner"
-    IPUSH=$(echo "$banner" | ipfs add -q)
+    echo "ipfs name publish --key=${WISHKEY}"
+    banner="## ${PLAYER} G1WISH READY :: G1$PEPPER
+    <img src=/ipfs/IMAGIC>
+    G1Voeu Astronaute (TW) : $LIBRA/ipns/$ASTRONAUTENS
+    $PEPPER FLUX Ŋ1
+    G1$PEPPER : $LIBRA/ipns/$VOEUNS
+    WHISHKEY(G1PUB) : ${WISHKEY}
+     - Only $PLAYER PEPPER used as login or sslpass can make $PEPPER wish evolution"
+
+    IPUSH=$(echo "$banner" | ipfs add -q | tail -n 1)
     ipfs name publish --key=${WISHKEY} /ipfs/$IPUSH 2>/dev/null
 
     echo $IPUSH > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.chain.$MOATS
 
-    echo
-    echo "Astronaute TW : $LIBRA/ipns/$ASTRONAUTENS"
-    echo "Nouveau G1Voeu : $PEPPER (FLUX Ŋ1)"
-    echo "TW $PEPPER : $LIBRA/ipns/$VOEUNS"
+    echo $banner > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/banner
+    cat ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/banner
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/Astroport.ONE/images/logojune.jpg" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/game/world/$PEPPER/$WISHKEY/g1magicien_qrcode.png" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "G1VOEU CESIUM WALLET PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"

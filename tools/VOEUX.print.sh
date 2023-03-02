@@ -32,8 +32,8 @@ echo "VOEUX : ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 
-for v in $(cat ~/.zen/game/players/*/voeux/*/*/.title); do
-    g1pub=$(grep -r $v ~/.zen/game/players/*/voeux/ 2>/dev/null | rev | cut -d '/' -f 2 | rev )
+for v in $(cat ~/.zen/game/players/$PLAYER/voeux/*/*/.title); do
+    g1pub=$(grep -r $v ~/.zen/game/players/$PLAYER/voeux/ 2>/dev/null | rev | cut -d '/' -f 2 | rev )
 #    echo "$v : $g1pub"
 #    echo '------------------------------------------------------------------'
     vlist=($v:$g1pub ${vlist[@]})

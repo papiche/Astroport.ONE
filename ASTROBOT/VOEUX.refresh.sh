@@ -51,7 +51,7 @@ do
     [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
     echo "==============================="
     echo "G1Voeu ${WISH}"
-    ## Get ${WISHNAME} TW
+    ## Get ${WISHNAME}
     WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
 
@@ -106,6 +106,7 @@ do
 
         done
         ##################################
+        ## TODO JOIN WITH FRIENDS JSONS
         ################################## MOA MAINTENANT
         echo  ">>> MOA § $myIPFS/$VOEUNS/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
@@ -127,8 +128,10 @@ do
 
         ### ADD TO IPFS
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
-        JSONIPFS=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
-        ipfs name publish -k $VOEUKEY /ipfs/$JSONIPFS   # PUBLISH $VOEUKEY
+        du -h ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/
+
+        WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
+        ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
         ## MOVE INTO PLAYER AREA
         echo ">>> $VOEUKEY : Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"

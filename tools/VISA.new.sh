@@ -88,8 +88,8 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeifrpajkcvmoymmlevbuvxb7v47w4v2vpfbacqm5ltf6gfgunb6a3e"
-TWEXPERIMENTAL="/ipfs/bafybeia4siwbalwr5smv4sy7rihiit6etkkivfqrywihm7vmivx3d62iie"
+TWMODEL="/ipfs/bafybeigzqmzbug6lv4zpzesxydxb27qj74x24negiuuwsc6ryayrhy3my4"
+TWLINK="/ipfs/bafybeigyfttjvabeeoa4hbsvtegsqkw3riuquhbil55qhwe3s3q4tesyxi"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -188,13 +188,17 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
 
     ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
     secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
-    echo "astro://$G1PUB/?dunisec=$secFromDunikey&hashpass=$(echo "$PASS" | sha512sum)" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
     PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
+    HPass=$(echo "$PASS" | sha512sum)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
-    ## MAKE amzqr
-    amzqr "$(cat~/.zen/tmp/${MOATS}/${PSEUDO}.sec)" -d $HOME/.zen/game/players/${PLAYER} -p ${MY_PATH}/../images/logoastro.png
+    ## MAKE amzqr WITH astro:// LINK
+    amzqr  "astro://$G1PUB/?sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB" \
+                -d $HOME/.zen/game/players/${PLAYER} \
+                -l H \
+                -p ${MY_PATH}/../images/G1WorldMap.png
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
@@ -232,9 +236,6 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
 
         sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-        ## Convert "G1Voeu" into "G1Visa"
-        sed -i "s~G1Voeu~G1Visa~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
         # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
