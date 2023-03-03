@@ -100,7 +100,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "astro://$WISHKEY/?sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB&flux=/ipns/$VOEUNS" \
+    amzqr "$myASTROPORT/?astro=$WISHKEY&sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB&flux=/ipns/$VOEUNS" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
                -p ${MY_PATH}/../images/g1magicien.png -c
@@ -144,6 +144,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_${PEPPER}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key-'${PEPPER}'","text":"'${VOEUNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-key-'${PEPPER}'","text":"'${WISHKEY}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-g1.json
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-'${PEPPER}'","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
 
 
@@ -190,6 +191,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
                         --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                         --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                         --import ~/.zen/tmp/${MOATS}/lightbeam-g1.json "application/json" \
+                        --import ~/.zen/tmp/${MOATS}/lightbeam-natools.json "application/json" \
                         --import ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json "application/json" \
                         --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 

@@ -195,7 +195,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr  "astro://$G1PUB/?sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB" \
+    amzqr  "$myASTROPORT/?astro=$G1PUB/?sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB" \
                 -d $HOME/.zen/game/players/${PLAYER} \
                 -l H \
                 -p ${MY_PATH}/../images/G1WorldMap.png
