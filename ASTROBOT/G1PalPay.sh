@@ -26,7 +26,6 @@ echo "$ME RUNNING"
 ########################################################################
 # this couls lead in several account creation sharing % of incomes each time
 ########################################################################
-
 INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
 [[ ! -s ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1

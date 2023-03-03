@@ -25,6 +25,7 @@ sudo ./setup.sh
 
 # PERSONNAL DEFCON LEVEL
 # cp ~/.zen/Astroport.ONE/DEFCON ~/.zen/
+mkdir -p ~/.zen/tmp
 
 ########################################################################
 # CREATE ~/astroport FILESYSTEM GATE
@@ -50,25 +51,20 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
     ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##
     #############################################"
 
-### ADD 20h12.sh CRON ###############
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
-
 ########################################################################
 # SUDO permissions
 ########################################################################
-## USED FOR fail2ban-client (DEFCON)
-echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/fail2ban-client" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/fail2ban-client')
 ## USED FOR RAMDISK (video live streaming)
-echo "$USER ALL=(ALL) NOPASSWD:/bin/mount" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/mount')
-echo "$USER ALL=(ALL) NOPASSWD:/bin/umount" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/umount')
 ## USED FOR SYSTEM UPGRADE
-echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/apt-get" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/apt-get')
-echo "$USER ALL=(ALL) NOPASSWD:/usr/bin/apt" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/apt')
 ## USED FOR "systemctl restart ipfs"
-echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 ## USED FOR "sudo youtube-dl -U"
-echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/youtube-dl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/youtube-dl')
-
+for bin in fail2ban-client mount umount apt-get apt systemctl youtube-dl; do
+binpath=$(which $bin)
+[[ $binpath ]] \
+                        && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/$bin') \
+                        && echo "SUDOERS RIGHT SET FOR : $binpath" \
+                        || echo "ERROR MISSING $bin"
+done
 
 echo "#############################################"
 echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
@@ -76,12 +72,39 @@ echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
 
 
-    ########################################################################
-    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS LAN COUNTRY RESTRICTIONS" # Avoid provider restrictions
-    ########################################################################
-    ACTUAL=$(cat /etc/resolv.conf | grep nameserver | head -n 1)
+echo "CREATE SYSTEMD astroport SERVICE >>>>>>>>>>>>>>>>>>"
+cat > /tmp/astroport.service <<EOF
+[Unit]
+Description=ASTROPORT API
+After=network.target
+Requires=network.target
 
+[Service]
+Type=simple
+User=_USER_
+RestartSec=1
+Restart=always
+ExecStart=/home/_USER_/.zen/Astroport.ONE/12345.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo cp -f /tmp/astroport.service /etc/systemd/system/
+sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/astroport.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable astroport
+sudo systemctl start astroport
+
+ACTUAL=$(cat /etc/resolv.conf | grep -w nameserver | head -n 1)
+
+if [[ $(echo $ACTUAL | grep "1.1.1.1") ]] ; then
+########################################################################
+echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS LAN COUNTRY RESTRICTIONS" # Avoid provider restrictions
+########################################################################
     sudo chattr -i /etc/resolv.conf
+
     sudo cat > /tmp/resolv.conf <<EOF
 domain home
 search home
@@ -93,12 +116,12 @@ EOF
     sudo cp /etc/resolv.conf /etc/resolv.conf.backup
     sudo mv /tmp/resolv.conf /etc/resolv.conf
     sudo chattr +i /etc/resolv.conf
+fi
 
-    sudo echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /etc/hosts
+sudo echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /etc/hosts
 
-
-
-mkdir -p ~/.zen/tmp
+### ADD 20h12.sh CRON ###############
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
 
 echo "#############################################"

@@ -115,8 +115,9 @@ do
 
         ##################################
         ## MAKE EARTH MAP TILES
+        echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
         ##################################
-        cat $MY_PATH/../templates/index_gif4.html \
+        cat $MY_PATH/../www/PasseportTerre/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
                     -e "s~_PLAYER_~${PLAYER}~g" \

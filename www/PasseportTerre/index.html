@@ -2,7 +2,7 @@
 <html>
 
   <head>
-    <title>ASTROPORT PORTAL : http://astroport.localhost:1234</title>
+    <title>_PLAYER_ : _G1VOEU_ ASTROPORT PORTAL : http://astroport.localhost:1234</title>
     <meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/favicon.ico">
     <link rel="stylesheet" href="/ipfs/QmXZaseYPrQTjg7DasSSejXQFfQLmbV7UKoxWjK4SZNTFe/index_fichiers/demo.css">
@@ -33,9 +33,46 @@
     };
     </script>
 
-    <style>
+   <style>
+    body {
+      padding: 0;
+      margin: 0;
+      font-family: sans-serif;
+    }
 
-#glow-shadows.earth {
+    .slidecontainer {
+      width: 80%;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .gif-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .gif-container img {
+      margin: 10px;
+      max-width: 200px;
+    }
+
+    .slider {
+      width: 100%;
+      text-align: center;
+    }
+
+    .slider #prev {
+      float: left;
+      font-size: 40px;
+    }
+
+    .slider #next {
+      float: right;
+      font-size: 40px;
+    }
+
+    #glow-shadows.earth {
     background: url(/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/earth-glow-shadows.png);
 }
 
@@ -54,7 +91,7 @@
     margin-top: -12.5px;
     cursor: pointer;
 }
-    </style>
+  </style>
   </head>
 
   <body>
@@ -108,5 +145,78 @@
       </div>
 
  </div>
+
+
+<div class="slidecontainer">
+    <h1>G1_G1VOEU_</h1>
+    <div class="gif-container">
+      <!-- gifs -->
+    </div>
+    <div class="slider">
+      <a href="#" id="prev">&lt;</a>
+      <a href="#" id="next">&gt;</a>
+    </div>
+</div>
+
+  <script>
+    const gifContainer = document.querySelector('.gif-container');
+    const prevBtn = document.querySelector('#prev');
+    const nextBtn = document.querySelector('#next');
+    const pageSize = 12;
+
+    let pageNumber = 0;
+    let gifs = [];
+    let urls = [];
+    let titles = [];
+    let durees = [];
+
+    // Récupérer les données
+    fetch('_LIBRA__VOEUNS_/__PLAYER_.tiddlers.json')
+      .then(res => res.json())
+      .then(data => {
+        // Extraire les gifanime
+        gifs = data.map(tiddler => tiddler.gifanime);
+        urls = data.map(tiddler => tiddler.ipfs);
+        titles = data.map(tiddler => tiddler.title);
+        durees = data.map(tiddler => tiddler.duree);
+        // Afficher les gifs
+        showGifs();
+      });
+
+    // Afficher les images
+    function showGifs() {
+      let start = pageNumber * pageSize;
+      let end = start + pageSize;
+      let pageGifs = gifs.slice(start, end);
+      let pageUrls = urls.slice(start, end);
+      let pageTitles = titles.slice(start, end);
+      let pageDurees = durees.slice(start, end);
+      let output = '';
+
+      // Générer le HTML
+      pageGifs.forEach((gif, i) => {
+        output += `
+          <a href="_LIBRA_${pageUrls[i]}">
+            <img src="_LIBRA_${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
+          </a>
+        `;
+      });
+
+      // Ajouter le HTML
+      gifContainer.innerHTML = output;
+    }
+
+    // Écouter les évènements
+    prevBtn.addEventListener('click', () => {
+      pageNumber--;
+      showGifs();
+    });
+    nextBtn.addEventListener('click', () => {
+      pageNumber++;
+      showGifs();
+    });
+  </script>
+
+
   </body>
 </html>

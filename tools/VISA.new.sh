@@ -88,7 +88,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeib55eqwhuttoyirv4qvvpdxc3wbr5gaksw3xbqal6ejrj4ruh3k3m"
+TWMODEL="/ipfs/bafybeiajejrzr7hdtznx2j5obpsh2yhti42zr7pk2fznfvilgzmv47xtca"
 TWLINK="/ipfs/bafybeigyfttjvabeeoa4hbsvtegsqkw3riuquhbil55qhwe3s3q4tesyxi"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############

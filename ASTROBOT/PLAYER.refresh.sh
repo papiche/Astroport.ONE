@@ -143,9 +143,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         ${MY_PATH}/VOEUX.refresh.sh "$PLAYER" "$MOATS" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
         ##############################################################
 
-        ## CHECK G1PALPAY TO MAKE
-        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$PLAYER"
-
         ##################################
         echo "# TW : GW API + LightBeam Feed + Friends"
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
