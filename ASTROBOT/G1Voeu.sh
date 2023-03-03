@@ -34,7 +34,9 @@ echo "Bienvenue $PSEUDO ($PLAYER) : $G1PUB"
 echo
 
 ######################################################################
-
+MOATS="$4"
+[[ ! $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+mkdir -p ~/.zen/tmp/$MOATS
 
 #####################################################
 # CREATION DU TW G1VOEU
@@ -60,6 +62,12 @@ echo
     ipfs key import $WISHKEY -f pem-pkcs8-cleartext ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/qrtw.ipfskey
     VOEUNS=$(ipfs key list -l | grep -w "$WISHKEY" | cut -d ' ' -f 1 )
     echo "/ipns/$VOEUNS"
+
+    ## NATOOLS ENCRYPT
+    echo "# NATOOLS ENCODING  qrtw.ipfskey "
+    $MY_PATH/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/qrtw.ipfskey -o $HOME/.zen/tmp/${MOATS}/qrtw.ipfskey.$G1PUB.enc
+    ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/qrtw.ipfskey.$G1PUB.enc | base16)
+    echo $ENCODING
 
     ## TEST IPFS
     ipfs --timeout=30s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.json
@@ -166,7 +174,8 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     "wish": "'${WISHKEY}'",
     "g1pub": "'${G1PUB}'",
     "text": "'${TEXT}'",
-    "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'"
+    "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'",
+    "natoolskey" : "'${ENCODING}'"
   }
 ]
 ' > ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json
