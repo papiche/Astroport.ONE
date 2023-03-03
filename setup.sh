@@ -20,9 +20,6 @@ sudo ./setup.sh
 #[....] Starting authentication failure monitor: fail2ban No file(s) found for glob /var/log/auth.log
 [[ "$USER" == "xbian" ]] && sudo sed -i "s/auth.log/faillog/g" /etc/fail2ban/paths-common.conf
 
-### MODIFIYING /etc/sudoers ###
-[[ "$USER" == "xbian" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/astroport')
-
 # PERSONNAL DEFCON LEVEL
 # cp ~/.zen/Astroport.ONE/DEFCON ~/.zen/
 mkdir -p ~/.zen/tmp
@@ -65,6 +62,8 @@ binpath=$(which $bin)
                         && echo "SUDOERS RIGHT SET FOR : $binpath" \
                         || echo "ERROR MISSING $bin"
 done
+### MODIFIYING /etc/sudoers ###
+[[ "$USER" == "xbian" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/astroport')
 
 echo "#############################################"
 echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
@@ -118,7 +117,8 @@ EOF
     sudo chattr +i /etc/resolv.conf
 fi
 
-sudo echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /etc/hosts
+[[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]] \
+&& sudo echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /etc/hosts
 
 ### ADD 20h12.sh CRON ###############
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
