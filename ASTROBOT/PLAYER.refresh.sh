@@ -199,8 +199,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
 
     echo "================================================"
-    echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
-    echo " = /ipfs/$TW"
+    echo " MAJ TW $PLAYER : = /ipfs/$TW"
+    echo "  $myIPFSGW/ipns/$ASTRONAUTENS"
     echo "================================================"
 
 ######################### PLAYER_feed

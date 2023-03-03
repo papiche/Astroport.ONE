@@ -21,7 +21,7 @@ MOATS="$2"
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
 
     ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(ipfs key list -l | grep ${PLAYER} | cut -d ' ' -f1)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No ${PLAYER} in keystore --" && ASTRONAUTENS=$ASTRONS
     [[ ! $ASTRONAUTENS ]] && echo "Missing ${PLAYER} IPNS KEY - CONTINUE --" && exit 1
 
@@ -108,14 +108,16 @@ do
         ##################################
         ## TODO JOIN WITH FRIENDS JSONS
         ################################## MOA MAINTENANT
-        echo  ">>> MOA § $myIPFS/$VOEUNS/_${PLAYER}.tiddlers.json"
+        echo  ">>> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW/$VOEUNS/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.'_ ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
 
         ##################################
         ## MAKE EARTH MAP TILES
+        echo
         echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
+        echo
         ##################################
         cat $MY_PATH/../www/PasseportTerre/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
