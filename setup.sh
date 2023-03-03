@@ -57,8 +57,8 @@ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/
 ## USED FOR "sudo youtube-dl -U"
 for bin in fail2ban-client mount umount apt-get apt systemctl youtube-dl; do
 binpath=$(which $bin)
-[[ $binpath ]] \
-                        && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/$bin') \
+[[ -x $binpath ]] \
+                        && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \
                         && echo "SUDOERS RIGHT SET FOR : $binpath" \
                         || echo "ERROR MISSING $bin"
 done
@@ -117,9 +117,11 @@ EOF
     sudo chattr +i /etc/resolv.conf
 fi
 
-[[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]] \
-&& sudo echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /etc/hosts
-
+if [[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
+    cat /etc/hosts > /tmp/hosts
+    echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /tmp/hosts
+    sudo cp /tmp/hosts /etc/hosts && rm /tmp/hosts
+fi
 ### ADD 20h12.sh CRON ###############
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
