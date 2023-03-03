@@ -13,7 +13,7 @@ C'est une bibliothèque du savoir à la base.
 Avec cette technologie, nous devenons chacun hébergeur et fournisseur d'accès, souverain monétaire et médiatique.
 Avec cette technologie, nous établissons le "Crypto Département 96" dont la carte relie les territoires au delà des frontières et des pays.
 
-Astroport ONE est l'ambassade d'un monde fait de toiles confiances algorithmiques interconnectées.
+**Astroport ONE est une ambassade numérique d'un monde fait de toiles confiances algorithmiques interconnectées**
 
 # Astroport.ONE
 
