@@ -112,28 +112,6 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     echo ">> GCHANGE+ : $GPSEUDO - $GDESCR : $G1PUB ($CPUB) <<"
     echo ">> CESIUM+ : $CPSEUDO - $CDESCR : $G1PUB <<"
 
-    ## MIX GCHANGE IMAGE AVATAR WITH G1PUB QRCODE
-    if [[ $(which amzqr) ]]; then
-
-        [[ -s "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png" ]] \
-        && GIMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.gchange_avatar.png"\
-        || GIMG="$HOME/.zen/Astroport.ONE/images/plain.png"
-
-        [[ -s "$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" ]] \
-        && CIMG="$HOME/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.cesium_avatar.png" \
-        || CIMG="$HOME/.zen/Astroport.ONE/images/g1ticket.png"
-
-        # QRG1avatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$GIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
-        # QRTWavatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$CIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
-
-    else
-
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/QRG1avatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && cp ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png ~/.zen/game/players/${PLAYER}/QRTWavatar.png
-
-    fi
 
     ########################################################################
     # echo "set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}""

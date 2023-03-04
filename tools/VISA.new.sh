@@ -200,13 +200,13 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
                 -d $HOME/.zen/game/players/${PLAYER} \
                 -l H \
-                -p ${MY_PATH}/../images/G1WorldMap.png
+                -p ${MY_PATH}/../images/plain.png
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
-    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/G1WorldMap_qrcode.png | tail -n 1)
+    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/plain_qrcode.png | tail -n 1)
 
-
+############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
         mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
@@ -317,9 +317,32 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
         && echo "TW INDEX OK" \
         || ( echo "Problem with TW - EXIT" && exit 1 )
 
+############################################################################ TW
+
+        ## MAKE IMAGE AVATAR WITH G1PUB QRCODE
+        if [[ $(which amzqr) ]]; then
+
+            GIMG="$HOME/.zen/Astroport.ONE/images/plain.png"
+            CIMG="$HOME/.zen/Astroport.ONE/images/g1ticket.png"
+
+            # QRG1avatar.png
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+            # QRTWavatar.png
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
+
+        else
+
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] \
+            && cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/QRG1avatar.png
+
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] \
+            && cp ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png ~/.zen/game/players/${PLAYER}/QRTWavatar.png
+
+        fi
+
         ## ID CARD & QRCODE
-        convert ~/.zen/game/players/${PLAYER}/QR.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
-        convert ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png -resize 240 ~/.zen/tmp/${MOATS}/TW.png
+        convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
+        convert ~/.zen/game/players/${PLAYER}/QRTWavatar.png -resize 240 ~/.zen/tmp/${MOATS}/TW.png
         convert ${MY_PATH}/../images/astroport.jpg  -resize 240 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 
 
@@ -351,7 +374,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     (
-    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH >/dev/null 2>&1
+    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH
     ) &
 
     ## MEMORISE PLAYER Ŋ1 ZONE
@@ -425,21 +448,17 @@ echo "G1VISA : ${myIPFS}/ipfs/${IASTRO}"
 echo "ASTROQR : ${myIPFS}/ipfs/${ASTROQR}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
-echo "Portefeuille (ğ1) : $G1PUB"; sleep 1
-echo "Lien Favori : $URL"
+echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; sleep 1
+echo "G1CopierYoutube : $URL"
 echo "
-vos Phrases Secrètes :
+Secret :
     $SALT
     $PEPPER
 
-la Monnaie Libre
-https://monnaie-libre.fr
-
-1) Visitez https://Cesium.app et https://GChange.fr
-2) Connectez-vous. Faites des rencontres, des échanges.
-3) Envoyer des ★ active vos toiles de confiance et active votre niveau Ŋ1"; sleep 1
+https://Cesium.app <wallet::market> https://GChange.fr
+People ★ PKI ★ Ğ1/Ŋ1 ★ Nation ★ Libre"; sleep 1
 echo
-echo "Explorateur du Web3 en Monde Libre et en Toile(s) de Confiance.
+echo "Explorateur Web3. Batisseur de(s) Toile(s) de Confiance(s).
 BIENVENUE
 "
 echo "G1FRAME : ${myIPFS}/ipns/${FEEDNS}"
