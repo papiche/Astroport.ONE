@@ -52,7 +52,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
     echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
 
-    echo "## keygen CLEF DE VOEUX from PLAYER : pepper + G1Voeu derivation"
+    echo "## keygen CLEF DE VOEUX from PLAYER : pepper + G1WishName derivation"
     ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
     WISHKEY=$(cat ~/.zen/tmp/qrtw.dunikey | grep "pub:" | cut -d ' ' -f 2)
     echo "WISHKEY (G1PUB) = $WISHKEY"
@@ -223,7 +223,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     cp ~/.zen/tmp/player.png ~/.zen/tmp/voeu.png ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
     echo "$SALT" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.salt
     echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.title
+
     echo "$LIBRA/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.link
+    cp ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.link /.zen/game/world/$PEPPER/$WISHKEY/
     cp ~/.zen/game/world/$PEPPER/$WISHKEY/*.png ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
 
     # PUBLISHING
