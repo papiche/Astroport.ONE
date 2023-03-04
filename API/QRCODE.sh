@@ -48,53 +48,23 @@ ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
         && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 
+echo ">>> ${QRCODE} g1_to_ipfs $ASTRONAUTENS"
+
 ## SEND MESSAGE TO CESIUM+ ACCOUNT (ME or .current)
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 
+## COUCOU MSG
 ## CCHANGE +
-$MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
-sur https://astroport.copylaradio.com/
-Saisissez votre URL Youtube Favorite et un email
-Activez votre Capsule IPFS
-
-/ipns/$ASTRONAUTENS"
+$MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "Rendez vous sur https://astroport.copylaradio.com/"
 ## CESIUM +
-$MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CONTACT" -m "Rendez vous
-sur https://astroport.copylaradio.com/
-Saisissez votre URL Youtube Favorite et un email
-Activez votre Capsule IPFS
-
-/ipns/$ASTRONAUTENS"
-#~ echo "ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html"
-#~ ipfs --timeout 120s cat  /ipns/$ASTRONAUTENS > ~/.zen/tmp/${MOATS}/index.html
-
-#~ if [[ -s ~/.zen/tmp/${MOATS}/index.html ]]; then
-
-    #~ tiddlywiki --load ~/.zen/tmp/${MOATS}/index.html --output ~/.zen/tmp/${MOATS} --render '.' "MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-
-    #~ [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] \
-    #~ && ( echo "~~~ NO /ipns/$ASTRONAUTENS (☓‿‿☓) CREATE A TW ~~~" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
-    #~ && exit 1
-
-    #~ GPLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
-
-
-    #~ REPLACE="https://$myTUBE/ipns/${ASTRONAUTENS}" \
-
-    #~ ## REDIRECT TO TW OR GCHANGE PROFILE
-    #~ sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    #~ echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
-
-    #~ (
-    #~ cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    #~ ) &
-
-    #~ exit 0
-
-#~ fi
+$MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "Rendez vous sur https://astroport.copylaradio.com/"
 
 ###################################################################################################
+###     amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
+###     amzqr "$myASTROPORT/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
+
+## TODO MAGIC QRCODE RX / TX
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
 

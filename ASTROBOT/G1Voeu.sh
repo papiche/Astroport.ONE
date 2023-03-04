@@ -100,7 +100,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "$myASTROPORT/?astro=$WISHKEY&sslpassdunikeysec=$PASsec&hashpass=$HPass&player=$PLAYER&tw=/ipns/$ASTRONAUTENS&g1pub=$G1PUB&flux=/ipns/$VOEUNS" \
+    amzqr "$myASTROPORT/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
                -p ${MY_PATH}/../images/g1magicien.png -c
