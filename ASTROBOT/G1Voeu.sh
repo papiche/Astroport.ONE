@@ -177,7 +177,8 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     "g1pub": "'${G1PUB}'",
     "text": "'${TEXT}'",
     "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'",
-    "natoolskey" : "'${ENCODING}'"
+    "asksalt": "'${HPass}'",
+    "sslpassdunikeysec" : "'${ENCODING}'"
   }
 ]
 ' > ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json

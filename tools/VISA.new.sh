@@ -162,11 +162,13 @@ NID="${myIPFS}"
 WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
 WID="https://ipfs.$(myHostName)/api"
 # WID="http://ipfs.$(myHostName):5001"
-DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${PLAYER}"
+USALT=$(echo "$SALT" | jq -Rr @uri)
+UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
+DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=${PLAYER}"
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
                         && WID="http://ipfs.localhost:5001" \
-                         && DISCO="http://ipfs.localhost:1234/?salt=${SALT}&pepper=${PEPPER}"
+                         && DISCO="http://ipfs.localhost:1234/?salt=${USALT}&pepper=${UPEPPER}"
 
 ####
 
@@ -225,6 +227,9 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
          sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
+        ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN
+        sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## Fill ♥BOX
          sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -300,6 +305,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
         tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/lightbeam-natools.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
     --import "$HOME/.zen/Astroport.ONE/templates/tw/\$ _ipfs_saver_api.json" "application/json" \
@@ -416,6 +422,7 @@ echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
 echo "G1VISA : ${myIPFS}/ipfs/${IASTRO}"
+echo "ASTROQR : ${myIPFS}/ipfs/${ASTROQR}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
 echo "Portefeuille (ğ1) : $G1PUB"; sleep 1
@@ -435,9 +442,9 @@ echo
 echo "Explorateur du Web3 en Monde Libre et en Toile(s) de Confiance.
 BIENVENUE
 "
-echo "votre TW est là : ${myIPFS}/ipns/${ASTRONAUTENS}
-contactez support@qo-op.com pour obtenir une URL plus facile à retenir..."
-
+echo "G1FRAME : ${myIPFS}/ipns/${FEEDNS}"
+echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo echo
 echo "$(${MY_PATH}/face.sh friendly)
 DISCONNECT : $DISCO&logout=${PLAYER}
 CONNECT : $DISCO&login=${PLAYER}"
