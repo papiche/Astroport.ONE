@@ -28,6 +28,9 @@ awk -i inplace -v rmv="PATH" '!index($0,rmv)' /tmp/mycron
 
 crontest=$(cat /tmp/mycron | grep -F '20h12.process.sh')
 
+## TODO check for Station geoposition in ~/.zen/GPS and calibrate 20H12
+cat ~/.zen/GPS 2>/dev/null && echo " TODO calibrate 20H12 with GPS"
+
 if [[ ! $crontest ]]; then
     ## HEADER
     [[ $1 == "OFF" ]] && exit 0
@@ -38,7 +41,9 @@ if [[ ! $crontest ]]; then
     echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
     crontab /tmp/newcron
     sudo systemctl enable ipfs
+    sudo systemctl enable astroport
     sudo systemctl start ipfs
+    sudo systemctl start astroport
     echo "ASTROPORT is ON"
 
 else
@@ -51,6 +56,8 @@ else
     crontab /tmp/newcron
     sudo systemctl stop ipfs
     sudo systemctl disable ipfs
+    sudo systemctl stop astroport
+    sudo systemctl disable astroport
     echo "ASTROPORT is OFF"
 
 fi

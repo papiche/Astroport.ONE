@@ -156,7 +156,7 @@ select fav in  "${choices[@]}"; do
     "CREER UN VOEU")
         echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
         cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
-        ${MY_PATH}/ASTROBOT/G1Voeu.sh "" "$PLAYER" "~/.zen/tmp/$PLAYER.html"
+        ${MY_PATH}/ASTROBOT/G1Voeu.sh "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
         DIFF=$(diff ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html)
         if [[ $DIFF ]]; then
             MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

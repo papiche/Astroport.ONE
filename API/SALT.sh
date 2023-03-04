@@ -167,7 +167,7 @@ PEPPER=$THIS
 
                 # CREATE PLAYER : ?salt=PHRASE%20UNE&pepper=PHRASE%20DEUX&g1pub=on&email=EMAIL&pseudo=PROFILENAME
                 # WHAT can contain urlencoded FullURL
-                EMAIL="${VAL}"
+                EMAIL="${VAL,,}" # lowercase
 
                 [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 

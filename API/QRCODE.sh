@@ -24,7 +24,6 @@ start=`date +%s`
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
 ### transfer variables according to script
 QRCODE=$THAT
-URL=$THIS
 TYPE=$WHAT
 
 ## GET TW
@@ -61,13 +60,39 @@ $MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCO
 $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "Rendez vous sur https://astroport.copylaradio.com/"
 
 ###################################################################################################
+#                                                                       THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
 ###     amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
 ###     amzqr "$myASTROPORT/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
+###
+if [[ $AND == "sslpassdunikeysec" ]]; then
+echo "♥BOX♥BOX♥BOX♥BOX♥BOX"
+echo "MAGIC WORLD ASTRONAUT & WISHES"
+
+    if [[ $APPNAME == "askpass" ]]; then
+        echo ">> ASTRONAUT QRCODE $APPNAME"
+        ENDCODED="$THIS"
+        HPASS="$WHAT"
+        TW="/ipns/$VAL"
+    fi
+
+    if [[ $APPNAME == "asksalt" ]]; then
+        echo ">> WISH QRCODE $APPNAME"
+        ENDCODED="$THIS"
+        HSALT="$WHAT"
+        FLUX="/ipns/$VAL"
+    fi
+
+
+fi
 
 ## TODO MAGIC QRCODE RX / TX
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
 
+if [[ $AND == "url" ]]; then
+        URL=$THIS
+
+        if [[ $URL ]]; then
 
         ## Astroport.ONE local use QRCODE Contains ${WHAT} G1PUB
         g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
@@ -80,7 +105,6 @@ $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCOD
         && exit 1
 
         ## Demande de copie d'une URL reçue.
-        if [[ $URL ]]; then
              [[ ${TYPE} ]] && CHOICE="${TYPE}" || CHOICE="Youtube"
 
             ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
@@ -107,4 +131,4 @@ $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCOD
             (echo "$HTTPCORS ERROR - ${AND} - ${THIS} UNKNOWN"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
         fi
-
+fi

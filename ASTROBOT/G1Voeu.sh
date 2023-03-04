@@ -23,6 +23,7 @@ PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && echo "Troisième paramètre G1PUB manquant" && exit 1
 
 [[ ! $INDEX ]] && INDEX="$HOME/.zen/game/players/$PLAYER/ipfs/moa/index.html"
+echo $INDEX
 [[ ! -s $INDEX ]] && echo "TW $PLAYER manquant" && exit 1
 
 echo "Working on $INDEX"
@@ -51,7 +52,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
     echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
 
-    echo "## keygen CLEF DE VOEUX"
+    echo "## keygen CLEF DE VOEUX from PLAYER : pepper + G1Voeu derivation"
     ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
     WISHKEY=$(cat ~/.zen/tmp/qrtw.dunikey | grep "pub:" | cut -d ' ' -f 2)
     echo "WISHKEY (G1PUB) = $WISHKEY"

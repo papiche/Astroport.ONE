@@ -202,7 +202,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
-    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/logoastro_qrcode.png | tail -n 1)
+    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/G1WorldMap_qrcode.png | tail -n 1)
 
 
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
@@ -260,6 +260,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
         $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
+        echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
 ###########
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
@@ -272,12 +273,21 @@ DISCO="https://astroport.$(myHostName)/?salt=${SALT}&pepper=${PEPPER}&logout=${P
     cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
     # Create"${PLAYER}_feed" Key
-    FEEDNS=$(ipfs key gen "${PLAYER}_feed")
+    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
+    ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey
+    FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1 )
 
     ## MAKE LightBeam Plugin Tiddler ${PLAYER}_feed
     # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
+
+    ## NATOOLS ENCRYPT
+    echo "# NATOOLS ENCODING  feed.ipfskey "
+    $MY_PATH/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
+    ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc | base16)
+    echo $ENCODING
+    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
     echo "TW IPFS GATEWAY : $NID"
     # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
