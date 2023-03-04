@@ -200,11 +200,11 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
                 -d $HOME/.zen/game/players/${PLAYER} \
                 -l H \
-                -p ${MY_PATH}/../images/plain.png
+                -p ${MY_PATH}/../images/moa_net.png
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
-    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/plain_qrcode.png | tail -n 1)
+    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/moa_net_qrcode.png | tail -n 1)
 
 ############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
@@ -411,9 +411,9 @@ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
-#~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.june" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.june" -k $PASS 2>/dev/null
-#~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey" -k $PASS 2>/dev/null
-#~ openssl enc -aes-256-cbc -salt -in "$HOME/.zen/game/players/${PLAYER}/$KEYFILE -out" "$HOME/.zen/game/players/${PLAYER}/enc.$KEYFILE" -k $PASS 2>/dev/null
+openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.june" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.june" -k $PASS 2>/dev/null
+#~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey" -k $PASS 2>/dev/null
+#~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/$KEYFILE -out" "$HOME/.zen/game/players/${PLAYER}/enc.$KEYFILE" -k $PASS 2>/dev/null
 ## TODO MORE SECURE ?! USE opengpg, natools, etc ...
 # ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/${PLAYER}/secret.dunikey -o "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey"
 echo

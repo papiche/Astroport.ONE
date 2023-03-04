@@ -77,7 +77,6 @@ mkdir -p ~/.zen/tmp/$MOATS
     && exit 1
 
     echo "# UPGRADING WORLD WHISHKEY DATABASE"
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
     mkdir -p ~/.zen/game/world/$PEPPER/$WISHKEY/
     ## A la fois Titre du tag et Pepper construction de clef
@@ -95,7 +94,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
     secFromDunikey=$(cat ~/.zen/tmp/qrtw.dunikey | grep "sec" | cut -d ' ' -f2)
     echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
-    openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$SALT" 2>/dev/null
+    openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$SALT" 2>/dev/null
     PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
     HPass=$(echo "$SALT" | sha512sum)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
