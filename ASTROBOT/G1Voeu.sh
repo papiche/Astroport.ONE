@@ -257,15 +257,15 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
     [[ ! $? == 0 ]] \
-    && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT AFFORD A NEW WISH" \
-    && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY \
-    && rm -Rf ~/.zen/game/world/$PEPPER/$WISHKEY/ \
-    && ipfs key rm ${WISHKEY} \
-    && tiddlywiki  --load ${INDEX} \
-                              --deletetiddlers '${PEPPER}' \
-                              --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain" \
-    && cp -f ~/.zen/tmp/newindex.html $INDEX \
-    && echo "G1${PEPPER} FLUX REMOVED"
+    && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT PAY A G1 FOR A NEW WISH"
+    #~ && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY \
+    #~ && rm -Rf ~/.zen/game/world/$PEPPER/$WISHKEY/ \
+    #~ && ipfs key rm ${WISHKEY} \
+    #~ && tiddlywiki  --load ${INDEX} \
+                              #~ --deletetiddlers '${PEPPER}' \
+                              #~ --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain" \
+    #~ && cp -f ~/.zen/tmp/newindex.html $INDEX \
+    #~ && echo "G1${PEPPER} FLUX REMOVED"
 
     echo "************************************************************"
 

@@ -55,9 +55,9 @@ MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -
 
 ## COUCOU MSG
 ## CCHANGE +
-$MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "Rendez vous sur https://astroport.copylaradio.com/"
+$MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTROPORT CONTACT"
 ## CESIUM +
-$MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "Rendez vous sur https://astroport.copylaradio.com/"
+$MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTROPORT CONTACT"
 
 ###################################################################################################
 #                                                                       THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
@@ -68,11 +68,20 @@ if [[ $AND == "sslpassdunikeysec" ]]; then
 echo "♥BOX♥BOX♥BOX♥BOX♥BOX"
 echo "MAGIC WORLD ASTRONAUT & WISHES"
 
+        COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE})
+        [[ $COINS == "" || $COINS == "null" ]] \
+        && $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a 50 -p ${QRCODE} -c "ASTRO:PASSPORT_ACTIVATION" -m
+        echo "************************************************************"
+        echo "$COINS (+ 50 JUNE IF EMPTY) "
+        echo "************************************************************"
+
     if [[ $APPNAME == "askpass" ]]; then
         echo ">> ASTRONAUT QRCODE $APPNAME"
         ENDCODED="$THIS"
         HPASS="$WHAT"
         TW="/ipns/$VAL"
+
+
     fi
 
     if [[ $APPNAME == "asksalt" ]]; then
@@ -80,8 +89,8 @@ echo "MAGIC WORLD ASTRONAUT & WISHES"
         ENDCODED="$THIS"
         HSALT="$WHAT"
         FLUX="/ipns/$VAL"
-    fi
 
+    fi
 
 fi
 

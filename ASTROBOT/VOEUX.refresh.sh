@@ -58,7 +58,30 @@ do
     VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
     VOEUKEY=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wish')
 
-    ## SIGNALING WISH G1PUB
+    ICHECK=$(ipfs key list -l | grep -w "$VOEUKEY" | cut -d ' ' -f 1 )
+
+    if [[ ! $ICHECK ]]; then
+          echo "MISSING $VOEUKEY (new astronaut here) - RESET G1Voeu to voeu"
+           sed -i "s~G1Voeu~voeu~g" $INDEX
+           continue
+    else
+        VCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${VOEUKEY})
+        [[ $VCOINS == "" || $VCOINS == "null" ]] \
+        && echo "ERROR G1WALLET" \
+        || echo "WISH G1WALLET = $VCOINS G1"
+    fi
+
+    echo "************************************************************"
+    echo "Hop, UNE JUNE pour le Voeu $WISHNAME"
+    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $VOEUKEY -c \'"ASTRO:$VOEUNS G1Voeu $WISHNAME"\' -m
+    echo "************************************************************"
+    echo "************************************************************"
+
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $VOEUKEY -c "ASTRO:$VOEUXNS G1Voeu $WISHNAME" -m
+    [[ ! $? == 0 ]] \
+    && echo "POOOOOOOOOOOOOOOOOOOORRRRRR GUY. YOU CANNOT PAY A G1 FOR A YOUR WISH"
+
+    ## RUNNING WISH REFRESH
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
 
 ##########################################################################
@@ -147,6 +170,7 @@ done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "TODO : REFRESH WORLD SAME WISH"
 cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
+
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
