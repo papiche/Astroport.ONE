@@ -5,35 +5,32 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 #Set Path to Images
 img_dir="$1"
+
 if [[ ! -d $img_dir ]]; then
-PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
-    [[ ! $PLAYERONE ]] && echo "NO PLAYER IN THE GAME HERE" && exit 1
-    echo "ASTROPORT STATION CAROUSEL MODE"
-    rm -Rf ~/.zen/tmp/carousel 2>/dev/null
-    mkdir -p ~/.zen/tmp/carousel
-# Make it with latest PLAYERS WALLETS
-## RUNING FOR ALL LOCAL PLAYERS
-for PLAYER in ${PLAYERONE[@]}; do
-        pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
-        curl -so ~/.zen/tmp/carousel/${pub}.png \
-        "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
+    PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
+        [[ ! $PLAYERONE ]] && echo "NO PLAYER IN THE GAME HERE" && exit 1
 
-        # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-        COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
-        [[ $COINS == "" || $COINS == "null" ]] && echo "${PLAYER} G1WALLET ERROR" && continue
-        echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
-        OLDCOINS=$(cat ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS 2>/dev/null)
-        [[ $OLDCOINS != $COINS && ! $COINS -lt 0 ]] \
-        && ( cp ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS.$MOATS 2>/dev/null; \
-        echo $COINS > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS )
+        echo "ASTROPORT STATION CAROUSEL MODE"
+        rm -Rf ~/.zen/tmp/carousel 2>/dev/null
+        mkdir -p ~/.zen/tmp/carousel
+        # Make it with latest PLAYERS WALLETS
+        ## RUNING FOR ALL LOCAL PLAYERS
+        for PLAYER in ${PLAYERONE[@]}; do
 
-        ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
+                pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
 
-        ASTR="<a target=$PLAYER href=$myIPFS/ipns/$ASTRONAUTENS alt=$COINS title=$PLAYER $COINS>"
-        OPORT="</a>"
+                # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+                COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+                echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
-done
-    img_dir="$HOME/.zen/tmp/carousel"
+                curl -so ~/.zen/tmp/carousel/${pub}.png \
+                "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
+                echo "GOT ~/.zen/tmp/carousel/${pub}.png"
+                ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
+                echo "<a target=\"$PLAYER\" href=\"$myIPFS/ipns/$ASTRONAUTENS\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
+
+        done
+        img_dir="$HOME/.zen/tmp/carousel"
 fi
 
 #Set Path to HTML page
@@ -43,7 +40,7 @@ html_file="/tmp/index.html"
 echo "<!DOCTYPE html>
 <html>
 <head>
-<title>Astroport IPFS Gallery</title>
+<title>Astroport ZEN Gallery : $myIP</title>
 <meta charset=\"UTF-8\">
 <link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
 <style>
@@ -61,7 +58,7 @@ echo "<!DOCTYPE html>
 <body>
 
 <div class=\"container\">
-  <h2> Astroport ZEN Gallery $(date) </h2>
+  <h2> Astroport $myHOST ZEN Gallery $(date) </h2>
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
     <!-- Indicators -->
     <ul class=\"carousel-indicators\">
@@ -87,18 +84,28 @@ echo "    </ul>
 num=1
 for i in "$img_dir"/*; do
 if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
+
+
   ilink=$(ipfs add -q "$i")
   img_info=$(identify -format '%w %h %[EXIF:*]' "$i")
   img_width=$(echo $img_info | cut -d ' ' -f1)
   img_height=$(echo $img_info | cut -d ' ' -f2)
   img_alt=$(echo $img_info | cut -d ' ' -f3)
+
+  MORE="${i%.png}.insert"
+  echo "$MORE"
+  LINK="<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">"
+  [[ -s $MORE ]] && ZLINK=$(cat $MORE | sed "s~_REPLACE_~$LINK~g") || ZLINK="$LINK"
+
+  echo $ZLINK
+
   if [ $num -eq 1 ]; then
     echo "      <div class=\"carousel-item active\">
-        $ASTR<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">$OPORT
+        $ZLINK
       </div>" >> $html_file
   else
     echo "      <div class=\"carousel-item\">
-        $ASTR<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">$OPORT
+        $ZLINK
       </div>" >> $html_file
   fi
   num=$((num+1))
