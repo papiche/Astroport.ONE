@@ -155,7 +155,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 #    TEXT="<a target='_blank' href='"/ipns/${VOEUNS}"'><img src='"/ipfs/${IVOEUPLAY}"'></a><br><br><a target='_blank' href='"/ipns/${VOEUNS}"'>"${PEPPER}"</a>"
 #:[tag[G1CopierYoutube]] [tag[pdf]]
     # Contains QRCode linked to G1VoeuTW and BUTTON listing G1Voeux
-    TEXT="<img src='"/ipfs/${IMAGIC}"'><br>
+    TEXT="<img width='600' src='"/ipfs/${IMAGIC}"'><br>
     <a target='_blank' href='#:[tag[G1"$PEPPER"]]' ><img src='"/ipfs/${IVOEUPLAY}"'></a><br>
     <a target='_blank' href='"/ipns/${VOEUNS}"'>TW G1Voeu "$PLAYER"</a><br><br>
     <\$button class='tc-tiddlylink'>
