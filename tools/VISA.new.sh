@@ -200,11 +200,11 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
                 -d $HOME/.zen/game/players/${PLAYER} \
                 -l H \
-                -p ${MY_PATH}/../images/moa_net.png
+                -p ${MY_PATH}/../images/plain.png
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
-    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/moa_net_qrcode.png | tail -n 1)
+    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/plain_qrcode.png | tail -n 1)
 
 ############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
@@ -322,7 +322,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
         ## MAKE IMAGE AVATAR WITH G1PUB QRCODE
         if [[ $(which amzqr) ]]; then
 
-            GIMG="$HOME/.zen/Astroport.ONE/images/plain.png"
+            GIMG="$HOME/.zen/Astroport.ONE/images/moa_net.png"
             CIMG="$HOME/.zen/Astroport.ONE/images/g1ticket.png"
 
             # QRG1avatar.png
