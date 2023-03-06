@@ -99,13 +99,17 @@ mkdir -p ~/.zen/tmp/$MOATS
     HPass=$(echo "$SALT" | sha512sum | cut -d ' ' -f 1 )
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
+    cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/fond.png
+    convert -gravity northwest -pointsize 25 -fill black -draw "text 40,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond.png ~/.zen/tmp/${MOATS}/layer1.png
+    convert -gravity southeast -pointsize 25 -fill black -draw "text 30,30 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
+
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "$myASTROPORT/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
+    amzqr "$myASTRONEF/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
-               -p ${MY_PATH}/../images/g1magicien.png -c
+               -p ~/.zen/tmp/${MOATS}/result.png -c
 
-    IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/g1magicien_qrcode.png | tail -n 1)
+    IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png | tail -n 1)
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"

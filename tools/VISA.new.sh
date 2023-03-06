@@ -202,15 +202,20 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
+    ## ADD NAME
+    cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
+    convert -gravity northwest -pointsize 28 -fill black -draw "text 40,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond.png ~/.zen/tmp/${MOATS}/result.png
+    ## convert -gravity southeast -pointsize 50 -fill black -draw "text 40,40 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
+
     ## MAKE amzqr WITH astro:// LINK
-    amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
+    amzqr  "$myASTRONEF/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
                 -d $HOME/.zen/game/players/${PLAYER} \
                 -l H \
-                -p ${MY_PATH}/../images/plain.png
+                -p ~/.zen/tmp/${MOATS}/result.png
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
-    ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/plain_qrcode.png | tail -n 1)"
+    ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/result_qrcode.png | tail -n 1)"
 
 ############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
