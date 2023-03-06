@@ -151,7 +151,7 @@
       // Générer le HTML
       pageGifs.forEach((gif, i) => {
         output += `
-          <a href="_LIBRA_${pageUrls[i]}">
+          <a target="astroplay" href="_LIBRA_${pageUrls[i]}">
             <img src="_LIBRA_${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
           </a>
         `;
