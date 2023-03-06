@@ -67,6 +67,12 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
 
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
+        AstroID=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[]._canonical_uri)
+
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+        G1Visa=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[]._canonical_uri)
+
         if [[ $ASTROPORT ]]; then
 
             IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
@@ -204,7 +210,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
-    ASTROQR=$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/plain_qrcode.png | tail -n 1)
+    ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/plain_qrcode.png | tail -n 1)"
 
 ############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
@@ -246,7 +252,10 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
         # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        sed -i "s~bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
+        ## AstroID Update
+        [[ ! $AstroID ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
+        sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -362,8 +371,11 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
 
         # INSERTED IMAGE IPFS
         # IASTRO=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ID.png | tail -n 1) ## G1VISA PUBLIC / PRIVATE
-        IASTRO=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/pseudo.png | tail -n 1) ## G1VISA PUBLIC ONLY
-        sed -i "s~bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        IASTRO="/ipfs/$(ipfs add -Hq ~/.zen/tmp/${MOATS}/pseudo.png | tail -n 1)" ## G1VISA PUBLIC ONLY
+
+        ## Update G1Visa
+        [[ ! $G1Visa ]] && G1Visa="/ipfs/bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a"
+        sed -i "s~${G1Visa}~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     echo
     echo "♥ IPFS Ŋ1 DRIVE INIT ♥"
