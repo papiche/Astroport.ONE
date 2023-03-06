@@ -199,7 +199,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
     PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
-    HPass=$(echo "$PASS" | sha512sum)
+    HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
     ## MAKE amzqr WITH astro:// LINK

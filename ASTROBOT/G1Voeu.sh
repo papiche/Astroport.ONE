@@ -96,7 +96,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$SALT" 2>/dev/null
     PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
-    HPass=$(echo "$SALT" | sha512sum)
+    HPass=$(echo "$SALT" | sha512sum | cut -d ' ' -f 1 )
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
     ## MAKE amzqr WITH astro:// LINK
