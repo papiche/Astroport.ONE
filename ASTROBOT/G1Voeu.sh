@@ -202,7 +202,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     echo "PLAYER TW Update..."
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
-        echo "$$$ Mise à jour $INDEX"
+        echo "___ Mise à jour $INDEX"
         cp -f ~/.zen/tmp/newindex.html $INDEX
     else
         echo "ERROR INTO ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json"
@@ -228,7 +228,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo "$PEPPER" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.title
 
     echo "$LIBRA/ipns/$VOEUNS" > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.link
-    cp ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.link /.zen/game/world/$PEPPER/$WISHKEY/
+    cp ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/.link ~/.zen/game/world/$PEPPER/$WISHKEY/
     cp ~/.zen/game/world/$PEPPER/$WISHKEY/*.png ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
 
     # PUBLISHING
