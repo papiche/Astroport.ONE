@@ -73,7 +73,9 @@ PLAYERNS=$(myPlayerNs) || ( echo "noplayerns" && exit 1 )
 ASTRONAUTENS=$(myAstroKey)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
-BROWSER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
+        BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
+        [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
+        [[ ! $isLAN ]] && BROWSER=""
 
 ###
 if [ $URL ]; then
@@ -250,16 +252,22 @@ mkdir -p ${YTEMP}
 # youtube-dl $YTURL
 echo "VIDEO $YTURL"
 
-LINE="$(yt-dlp --cookies-from-browser $BROWSER --print "%(id)s&%(title)s" "${YTURL}")"
+LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${YTURL}")"
 YID=$(echo "$LINE" | cut -d '&' -f 1)
 TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
 
 /usr/local/bin/youtube-dl -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                 --no-playlist \
-                --cookies-from-browser $BROWSER --verbose --audio-format mp3\
+                $BROWSER --verbose --audio-format mp3\
                 --download-archive $HOME/.zen/.yt-dlp.list \
                  -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
                  -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
+
+        if [[ ! $(ls "${YTEMP}/*.mp4") ]]; then
+            ## SECOND TRY
+            /usr/local/bin/youtube-dl --no-playlist $BROWSER --download-archive $HOME/.zen/.yt-dlp.list -S res,ext:mp4:m4a --no-mtime --embed-thumbnail --add-metadata -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
+        fi
+        [[ ! $(ls "${YTEMP}/*.mp4") ]] && espeak "cannot download file" && exit 1
 
         ZFILE="$TITLE.mp4"
         echo "$ZFILE"
@@ -511,7 +519,7 @@ then
     espeak "Searching $artist $song"
     # Download mp3 from 1st youtube search video result (--write-info-json)
     /usr/local/bin/youtube-dl --default-search ytsearch1: \
-     --cookies-from-browser $BROWSER \
+     $BROWSER \
     --ignore-errors --no-mtime \
     --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
     --extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist $song"
@@ -522,7 +530,7 @@ else
     espeak "Copying Link"
 /usr/local/bin/youtube-dl \
 --no-playlist \
---cookies-from-browser $BROWSER \
+$BROWSER \
 --ignore-errors --no-mtime \
 --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
 --extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$YTURL"
