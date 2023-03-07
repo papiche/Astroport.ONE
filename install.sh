@@ -174,32 +174,9 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
 ~/.zen/Astroport.ONE/setup.sh
 
-
-echo "#############################################"
-echo "#############################################"
-    ## Desktop install
-    echo "Astroport.ONE INSTALL"
-    end=`date +%s`
-echo Execution time was `expr $end - $start` seconds.
-echo "#############################################"
-echo "%%%%%%%%%%%%%%%%%%%%"
-echo "SI VOUS AVEZ DEJA UN COMPTE SUR GCHANGE ?"
-echo "          Saisissez vos identifiants"
-echo "%%%%%%%%%%%%%%%%%%%%"
-echo "#############################################"
-
-if  [[ $XDG_SESSION_TYPE == 'x11' ]]; then
-##########################################################
-    ## ON BOARDING PLAYER
-    ~/.zen/Astroport.ONE/start.sh
-    ~/.zen/Astroport.ONE/tools/displaytimer.sh 3
-    espeak "Enter your magic TW keys"
-    xdg-open "http://astroport.localhost:1234"
-
+if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' ]]; then
+(
 echo " ### EXPERIMENTAL ### FINISH ASTROPORT/KODI SETUP BY IPFS ## OUI ? ENTER sinon Ctrl+C"
-[[ $(which kodi) ]] && read KODI
-    if [[ ! $KODI || $KODI == "OUI" ]]; then
-
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
     ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
@@ -212,14 +189,30 @@ echo " ### EXPERIMENTAL ### FINISH ASTROPORT/KODI SETUP BY IPFS ## OUI ? ENTER s
     && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
     && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
     || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE AN ISSSUE"
-
-
-    cd $MY_PATH
-
-    fi
-
-
+) &
 fi
+
+echo "#############################################"
+echo "#############################################"
+    echo "Astroport.ONE INSTALLATION"
+    end=`date +%s`
+echo Execution time was `expr $end - $start` seconds.
+echo "#############################################"
+echo "%%%%%%%%%%%%%%%%%%%%"
+echo "IMPORTER VOTRE COMPTE GCHANGE"
+echo "          "
+echo "%%%%%%%%%%%%%%%%%%%%"
+echo "#############################################"
+
+##########################################################
+    ## ON BOARDING PLAYER
+    # ~/.zen/Astroport.ONE/start.sh
+    ~/.zen/Astroport.ONE/tools/displaytimer.sh 3
+    espeak "Please create a player"
+    [[ $XDG_SESSION_TYPE == 'x11' ]] \
+    && xdg-open "http://astroport.localhost:1234" \
+    || ~/.zen/Astroport.ONE/comand.sh
+
 
 else
 
