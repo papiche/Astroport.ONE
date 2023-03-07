@@ -139,7 +139,7 @@ do
         ##################################
         ## MAKE EARTH MAP TILES
         echo
-        echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
+        # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
         echo
         ##################################
         cat $MY_PATH/../www/PasseportTerre/index.html \
