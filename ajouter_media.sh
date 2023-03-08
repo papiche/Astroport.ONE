@@ -253,6 +253,7 @@ mkdir -p ${YTEMP}
 echo "VIDEO $YTURL"
 
 LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${YTURL}")"
+echo $LINE
 YID=$(echo "$LINE" | cut -d '&' -f 1)
 TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
 
@@ -263,11 +264,18 @@ TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
                  -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
                  -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
 
-        if [[ ! $(ls "${YTEMP}/*.mp4") ]]; then
+        DFILE=$(ls ${YTEMP}/*.mp4)
+        echo "LISTING ${YTEMP} : $DFILE"
+
+        if [[ $DFILE == "" ]]; then
             ## SECOND TRY
             /usr/local/bin/youtube-dl --no-playlist $BROWSER --download-archive $HOME/.zen/.yt-dlp.list -S res,ext:mp4:m4a --no-mtime --embed-thumbnail --add-metadata -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
         fi
-        [[ ! $(ls "${YTEMP}/*.mp4") ]] && espeak "cannot download file" && exit 1
+
+        DFILE=$(ls ${YTEMP}/*.mp4)
+        echo "LISTING ${YTEMP} : $DFILE"
+
+        [[ $DFILE == "" ]] && espeak "cannot find file" && exit 1
 
         ZFILE="$TITLE.mp4"
         echo "$ZFILE"

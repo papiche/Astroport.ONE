@@ -194,11 +194,11 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$LIBRA/ipns/${ASTRONAUTENS}"
 
 
-    ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
-    secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
-    echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
-    openssl enc -aes-256-cbc -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k $PASS 2>/dev/null
-    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
+    ## SEC PASS PROTECTED QRCODE : base58 secret.june / openssl(pass)
+    #~ secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
+    #~ echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS" 2>/dev/null
+    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec  | base64 -w 0 | jq -sRr '@uri' )
     HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
@@ -208,7 +208,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     ## convert -gravity southeast -pointsize 50 -fill black -draw "text 40,40 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr  "$myASTRONEF/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
+    amzqr  "$myASTRONEF/?qrcode=$G1PUB&junesec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
                 -d $HOME/.zen/game/players/${PLAYER} \
                 -l H \
                 -p ~/.zen/tmp/${MOATS}/result.png
@@ -428,7 +428,7 @@ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 # PASS CRYPTING KEY
 #~ echo; echo "Sécurisation de vos clefs... "; sleep 1
-openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.june" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.june" -k $PASS 2>/dev/null
+openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.june" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.june" -k "$PASS" 2>/dev/null
 #~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey" -k $PASS 2>/dev/null
 #~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/$KEYFILE -out" "$HOME/.zen/game/players/${PLAYER}/enc.$KEYFILE" -k $PASS 2>/dev/null
 ## TODO MORE SECURE ?! USE opengpg, natools, etc ...

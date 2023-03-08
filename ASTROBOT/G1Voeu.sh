@@ -93,9 +93,9 @@ mkdir -p ~/.zen/tmp/$MOATS
     ## LE MOT DE PASSE DU PLAYER PEUT DECOUVRIR LE SECRET (
     ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
     secFromDunikey=$(cat ~/.zen/tmp/qrtw.dunikey | grep "sec" | cut -d ' ' -f2)
-    echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+    echo "SALT=\"$SALT\"; PEPPER=\"$PEPPER\"" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
     openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$SALT" 2>/dev/null
-    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base58)
+    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base64 -w 0 | jq -sRr '@uri' )
     HPass=$(echo "$SALT" | sha512sum | cut -d ' ' -f 1 )
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
@@ -104,7 +104,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     convert -gravity southeast -pointsize 25 -fill black -draw "text 30,30 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "$myASTRONEF/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
+    amzqr "$myASTRONEF/?qrcode=$WISHKEY&junesec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c
@@ -181,7 +181,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     "text": "'${TEXT}'",
     "tags": "'G1Voeu G1${PEPPER} ${PLAYER}'",
     "asksalt": "'${HPass}'",
-    "sslpassdunikeysec" : "'${ENCODING}'"
+    "junesec" : "'${ENCODING}'"
   }
 ]
 ' > ~/.zen/game/world/$PEPPER/$WISHKEY/${PEPPER}.voeu.json

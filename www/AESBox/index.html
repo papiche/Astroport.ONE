@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>CryptoJS Decryption</title>
-    <script type="text/javascript" src="./crypto-js-4.1.1/aes.js"></script>
+    <script type="text/javascript" src="./crypto-js-4.1.1/crypto-js.js"></script>
 </head>
 <body>
     <h1>CryptoJS Decryption</h1>
@@ -24,7 +24,7 @@
         console.log(cryptText);
         console.log(decryptedWA.toString(CryptoJS.enc.Utf8));
 
-        //Decode from text    
+        //Decode from text
         var cipherParams = CryptoJS.lib.CipherParams.create({
              ciphertext: CryptoJS.enc.Base64.parse(cryptText )
         });

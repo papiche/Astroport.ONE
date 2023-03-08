@@ -61,10 +61,10 @@ $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCOD
 
 ###################################################################################################
 #                                                                       THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
-###     amzqr  "$myASTROPORT/?qrcode=$G1PUB&sslpassdunikeysec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
-###     amzqr "$myASTROPORT/?qrcode=$WISHKEY&sslpassdunikeysec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
+###     amzqr  "$myASTROPORT/?qrcode=$G1PUB&junesec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
+###     amzqr "$myASTROPORT/?qrcode=$WISHKEY&junesec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
 ###
-if [[ $AND == "sslpassdunikeysec" ]]; then
+if [[ $AND == "junesec" ]]; then
 echo "♥BOX♥BOX♥BOX♥BOX♥BOX"
 echo "MAGIC WORLD ASTRONAUT & WISHES"
 
