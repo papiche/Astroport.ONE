@@ -2,17 +2,17 @@
     <head>
     <meta charset="utf-8">
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-     <link rel="icon" type="image/x-icon" href="https://ipfs.copylaradio.com/ipfs/QmNwECbSL6xihpS2QLpts8a8Boekk3rEVGeySuzg83jTDA/favicon.ico">
+     <link rel="icon" type="image/x-icon" href="http://127.0.0.1:8080/ipfs/QmNwECbSL6xihpS2QLpts8a8Boekk3rEVGeySuzg83jTDA/favicon.ico">
     <title>Compte Ğ1 dans le Claude Inter Planetaire - Astroport Ŋ1 - </title>
-    <link rel="stylesheet" href="/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/demo.css">
-    <script src="G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
-    <script src="G1PalPay_fichiers/instascan.min.js"></script>
-    <link rel="stylesheet" href="https://ipfs.copylaradio.com/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/decoration.css" type="text/css" />
-    <link rel="stylesheet" href="https://ipfs.copylaradio.com/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/layout.css" type="text/css" />
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmVuJCKVp57b3HzwDRAoURonaFwWTwvoqq2Am2JoSQhdPz/index_fichiers/demo.css">
+    <script src="http://127.0.0.1:8080/ipfs/QmXd2PdXAB52ErzzBj41UjUrEnLNuM39VHTZoA7YwYdcwa/jquery-3.6.3.min.js"></script>
+    <script src="http://127.0.0.1:8080/ipfs/QmXd2PdXAB52ErzzBj41UjUrEnLNuM39VHTZoA7YwYdcwa/instascan.min.js"></script>
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/decoration.css" type="text/css" />
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/layout.css" type="text/css" />
     <style>
 
 body {
-    background-image:url("https://ipfs.copylaradio.com/ipfs/QmSFgatcq3q898J56epa8SyGbH651vRBFnv93kQSwfoi83/background.014.jpg");
+    background-image:url("http://127.0.0.1:8080/ipfs/QmSFgatcq3q898J56epa8SyGbH651vRBFnv93kQSwfoi83/background.014.jpg");
     background-repeat: no-repeat;
     background-size: 100% 100%;
     padding: 0;
@@ -35,10 +35,11 @@ header {
     width: 26em;  height: 2em;
     }
 #yellow {
-      background: yellow;
+      background: black;
       position: absolute;
-      top: 33%;
-      left: 66%;
+      bottom: 2%;
+      left: 2%;
+      width: 800px;
       visibility: hidden;
     }
 h1 {
@@ -96,9 +97,9 @@ a {
 
 <div id="demo">
     <div id="description">
-        <h1>Invasion Ğ1 Dons</h1>
+        <h1>Ğ1 Dons Invasion</h1>
         <h2>Pourquoi attendre sa Retraite ?</h2>
-                <h2>Oubliez la crise...</h2>
+                <h2>Oubliez la crise... Evadez-vous</h2>
 
         <h2>Utilisez la Monnaie Libre !</a></h2>
 
@@ -109,9 +110,9 @@ a {
             <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
 
             <p><ul>
-                <li> 1 - <a target="cesium" href="https://cesium.app/fr/telechargement">Télécharger Cesium</a> </li>
+                <li> 1 - <a target="cesium" href="https://cesium.app/fr/telechargement">Téléchargez Cesium</a> </li>
                 <li> 2 - <a target="cesium" href="https://cesium.app/fr/fonctionnalites">Créez un "Simple Portefeuille"</a> </li>
-                <li> 3 - Renseignez vos géo-coordonnées <br>puis présentez votre QRCode face à la Webcam. </li>
+                <li> 3 - Présentez son QRCode face à la Webcam</li>
 
             </ul></p>
 
@@ -120,15 +121,41 @@ a {
 
     <script type="text/javascript">
 
+        async function fetchAstroport(myURL) {
+          try {
+
+             let one = await fetch(myURL); // Gets a promise
+             var doc =  await one.text();
+             var regex = /url='([^']+)/i; // Get response PORT
+             var redirectURL = doc.match(regex)[1]
+
+             console.log(redirectURL)
+
+            setTimeout(function() {
+                    // let two = await fetch(redirectURL);
+                    // document.mydiv.innerHTML = await two.text(); // Replaces body with response
+                    window.open( redirectURL, "AstroTab");
+            }, 15000);
+
+          } catch (err) {
+            console.log('Fetch error:' + err); // Error handling
+          }
+        }
+
       let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
       scanner.addListener('scan', function (content) {
         alert(content);
+/*
         $.ajax({
             url: "http://astroport.localhost:1234",
             data: "qrcode="+content,
             type: 'GET'
         });
+*/
         //
+        var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+        fetchAstroport(myU);
         // BORIS STUFF COMES HERE
 
       });
@@ -153,8 +180,17 @@ a {
 
     </script>
 
+    <div id="yellow" >
+        <iframe src="_STATION_" width="100%" height="220px"></iframe>
+    </div>
 
-</center>
+    <script>
+    const el = document.getElementById('yellow');
 
+    setTimeout(() => {
+      el.style.visibility = 'visible';
+    }, 6000); // 👈️ delay in milliseconds
+
+    </script>
 
 </body></html>

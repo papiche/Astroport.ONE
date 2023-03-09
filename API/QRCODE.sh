@@ -32,10 +32,18 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 if [[ ${QRCODE} == "station" ]]; then
     ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
     ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
-    echo $ISTATION > ~/.zen/ISTATION
-    ## SEND TO ISTATION PAGE
-    sed "s~_TWLINK_~${myIPFSGW}${ISTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myIPFSGW}${ISTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo $ISTATION > ~/.zen/ISTATION ## STATION G1WALLET CAROUSEL
+
+    ## SHOW G1PALPAY FRONT
+    sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../www/G1PalPay/index.html > ~/.zen/tmp/${MOATS}/index.htm
+    sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
+
+    WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
+    echo "NEW WSTATION ${myIPFS}${WSTATION}"
+
+    ## SEND TO WSTATION PAGE
+    sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     ) &
@@ -51,51 +59,129 @@ if [[ $ASTROPATH != "" ]]; then
     #### SELECT PARRAIN "G1PalPé"
 
     ## SEND TO TW PAGE
-    sed "s~_TWLINK_~${myIPFSGW}${QRCODE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myIPFSGW}${QRCODE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    sed "s~_TWLINK_~${myIPFSGW}/ipns/${QRCODE}/#:[tag[G1Voeu]]~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFSGW}/ipns/${QRCODE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     ) &
+    exit 0
 fi
 
 ## FILTRAGE NON G1 TO IPFS READY QRCODE
-ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
+ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPFS} ]] \
-        && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && echo "INVALID QRCODE : ${QRCODE}" \
+        && (echo "$HTTPCORS ERROR - INVALID QRCODE : ${QRCODE}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
-
-## SEND MESSAGE TO CESIUM+ ACCOUNT (ME or .current)
+###########################################""
+###########################################
+## PROCESS QRCODE = G1PUB or IPNS
+###########################################""
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
+echo "$MYPLAYERKEY"
+echo
 
+## PARRAIN
+###########################################
 CURPLAYER=$(cat ~/.zen/game/players/.current/.player)
 CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
-CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1})
+echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1}"
+CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1} | cut -d '.' -f 1)
 echo "CURRENT PLAYER : $CURCOINS G1"
 
+## FAUCHE
+###########################################
+if [[ $CURCOINS == "null" ]]; then
+echo "NULL"
+    sed "s~_TWLINK_~$(cat ~/.zen/ISTATION)~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFSGW}$(cat ~/.zen/ISTATION)"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    ) &
+    exit 0
+fi
 
+# MOA
+###########################################
 if [[ ${CURG1} == ${QRCODE} ]]; then
 
     echo "SAME PLAYER AS CURRENT"
 
 else
+# PAS MOA
+###########################################
     ## GET VISITOR G1 WANNET AMOUNT : VISITORCOINS
-    VISITORCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE})
+    echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
+    VISITORCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE} | cut -d '.' -f 1)
+
+    ## PALPE COMBIEN ?
     if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
-        PALPE=${RANDOM:0:2}
+        # NOUVEAU 1 G1
+        PALPE=1
     else
         PALPE=0
     fi
 
+        echo "VISITEUR POSSEDE ${VISITORCOINS} G1"
+
+        ## GET G1 WALLET HISTORY
+        $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/g1history.json
+
+        ## SCAN CCHANGE +
+        curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gchange.json
+        GFOUND=$(cat ~/.zen/tmp/${MOATS}/gchange.json | jq -r '.found')
+        [[ $GFOUND == "false" ]] \
+        && echo "AUCUN GCHANGE" \
+        && sed "s~_TWLINK_~${myGCHANGE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
+        && echo "url='"${myGCHANGE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
+        && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
+
+        ## CHECK IF RELATED TO CESIUM
+        CPUB=$(cat ~/.zen/tmp/${MOATS}/gchange.json | jq -r '._source.pubkey' 2>/dev/null)
+        ## SCAN GPUB CESIUM +
+        curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gplus.json 2>/dev/null
+        GCFOUND=$(cat ~/.zen/tmp/${MOATS}/gplus.json | jq -r '.found')
+        [[ $GCFOUND == "false" ]] \
+        && echo "AUCUN GCPLUS" \
+        && sed "s~_TWLINK_~${myASTRONEF}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
+        && echo "url='"${myASTRONEF}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
+        && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
+
+        ##### MEMBER ??
+        if [[ $CPUB && $CPUB != 'null'  ]]; then
+
+            ## SCAN CPUB CESIUM +
+            curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/tmp/${MOATS}/cplus.json 2>/dev/null
+            CCFOUND=$(cat ~/.zen/tmp/${MOATS}/cplus.json | jq -r '.found')
+
+            [[ $CCFOUND == "false" ]] \
+            && echo "AUCUN CCPLUS" \
+            && sed "s~_TWLINK_~https://monnaie-libre.fr~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
+            && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
+
+            ## MESSAGE LINKED CESIUM WALLET
+            $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "FORGERON" \
+            -m "ASTROPORT. G1. FORGERON."
+
+        else
+
+            [[ $GCFOUND != "false" ]] \
+            && echo "GPLUS"
+            ## EXTRACT GPS ... CONTINUE THE GAME
+
+        fi
+
     ## DOES CURRENT IS RICHER THAN 100 G1
-    if [ $CURCOINS -gt 99 ]; then
+    if [[ $CURCOINS -gt 1 && $PALPE != 0 ]]; then
 
             ## LE COMPTE VISITOR EST VIDE
             echo "## PARRAIN $CURPLAYER SEND $PALPE TO ${QRCODE}"
             ## G1 PAYEMENT
             $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a ${PALPE} -p ${QRCODE} -c "ASTRO:ZEN_${PALPE}" -m
+
             ## MESSAGE CESIUM +
             $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CADEAU" \
             -m "ASTRO:${CURPLAYER} VOUS ENVOI ${PALPE} JUNE.
@@ -106,38 +192,9 @@ else
     else
         ## CURRENT PLAYER IS TOO POOR
         PALPE=0
-        echo "VISITEUR POSSEDE ${CURCOINS} G1"
 
-        ## GET G1 WALLET HISTORY
-        $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/g1history.json
-
-        ## SCAN CCHANGE +
-        curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gchange.json
-        ## CHECK IF RELATED TO CESIUM
-        CPUB=$(cat ~/.zen/tmp/${MOATS}/gchange.json | jq -r '._source.pubkey' 2>/dev/null)
-        ## SCAN GPUB CESIUM +
-        curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gplus.json 2>/dev/null
-
-        ##### MEMBER ??
-        if [[ $CPUB && $CPUB != 'null'  ]]; then
-
-            ## SCAN CPUB CESIUM +
-            curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/tmp/${MOATS}/cplus.json 2>/dev/null
-
-            ## LINKED CESIUM WALLET
-            $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "FORGERON" \
-            -m "ASTROPORT. G1. FORGERON ET RESEAU DE CONFIANCE Ŋ1. \
-            INSCRIVEZ VOTRE COMPTE GCHANGE SUR : https://astroport.copylaradio.com"
-
-
-
-        else
-
-            ## EXTRACT GPS ... CONTINUE THE GAME
-
-        fi
         # $MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTRO ZEN CONTACT"
-
+        ls ~/.zen/tmp/${MOATS}/
     fi
 
             echo "************************************************************"
@@ -222,3 +279,6 @@ if [[ $AND == "url" ]]; then
 
         fi
 fi
+
+
+exit 0

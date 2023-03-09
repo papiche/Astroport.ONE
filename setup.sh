@@ -84,6 +84,7 @@ User=_USER_
 RestartSec=1
 Restart=always
 ExecStart=/home/_USER_/.zen/Astroport.ONE/12345.sh
+StandardOutput=file:/home/_USER_/.zen/tmp/12345.log
 
 [Install]
 WantedBy=multi-user.target
@@ -94,7 +95,7 @@ sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/astroport.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable astroport
-sudo systemctl start astroport
+sudo systemctl restart astroport
 
 ACTUAL=$(cat /etc/resolv.conf | grep -w nameserver | head -n 1)
 

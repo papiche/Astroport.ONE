@@ -60,7 +60,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 </style>
 
 <div class=\"container\">
-  <h2> Astroport $myHOST ZEN Gallery $(date) </h2>
+
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
     <!-- Indicators -->
     <ul class=\"carousel-indicators\">
@@ -124,6 +124,7 @@ echo "    </div>
       <span class=\"carousel-control-next-icon\"></span>
     </a>
   </div>
+  <h2> Astroport $myHOST ZEN Gallery $(date) </h2>
 </div>
 
 <script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/jquery-3.2.1.slim.min.js\"></script>
@@ -131,12 +132,10 @@ echo "    </div>
 <script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.js\"></script>" >> $core_file
 
 cat $core_file >> $html_file
-echo "</body>
-</html>" >> $html_file
+echo "</body></html>" >> $html_file
 
-coreipfs=$(ipfs add -q $core_file)
 htmlipfs=$(ipfs add -q $html_file)
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
-echo /ipfs/$core_file
+echo /ipfs/$htmlipfs
 
 exit 0
