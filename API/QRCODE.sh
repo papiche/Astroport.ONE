@@ -32,33 +32,120 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 if [[ ${QRCODE} == "station" ]]; then
     ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
     ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
+    echo $ISTATION > ~/.zen/ISTATION
+    ## SEND TO ISTATION PAGE
     sed "s~_TWLINK_~${myIPFSGW}${ISTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFSGW}${ISTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     ) &
-
     exit 0
 fi
 
+## CHECK IF QRCODE is ASTRONAUTENS or G1PUB format
+ASTROPATH=$(grep $QRCODE ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+if [[ $ASTROPATH != "" ]]; then
+    rm ~/.zen/game/players/.current
+    ln -s $ASTROPATH ~/.zen/game/players/.current
+    echo "LINKING $ASTROPATH to .current"
+    #### SELECT PARRAIN "G1PalPé"
+
+    ## SEND TO TW PAGE
+    sed "s~_TWLINK_~${myIPFSGW}${QRCODE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFSGW}${QRCODE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    ) &
+fi
+
 ## FILTRAGE NON G1 TO IPFS READY QRCODE
-ASTRONAUTENS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
-        [[ ! ${ASTRONAUTENS} ]] \
+ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE})
+        [[ ! ${ASTROTOIPFS} ]] \
         && (echo "$HTTPCORS ERROR - ASTRONAUTENS !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 
-echo ">>> ${QRCODE} g1_to_ipfs $ASTRONAUTENS"
+echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 
 ## SEND MESSAGE TO CESIUM+ ACCOUNT (ME or .current)
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 
-## COUCOU MSG
-## CCHANGE +
-$MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTROPORT CONTACT"
-## CESIUM +
-$MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTROPORT CONTACT"
+CURPLAYER=$(cat ~/.zen/game/players/.current/.player)
+CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
+CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1})
+echo "CURRENT PLAYER : $CURCOINS G1"
 
+
+if [[ ${CURG1} == ${QRCODE} ]]; then
+
+    echo "SAME PLAYER AS CURRENT"
+
+else
+    ## GET VISITOR G1 WANNET AMOUNT : VISITORCOINS
+    VISITORCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE})
+    if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
+        PALPE=${RANDOM:0:2}
+    else
+        PALPE=0
+    fi
+
+    ## DOES CURRENT IS RICHER THAN 100 G1
+    if [ $CURCOINS -gt 99 ]; then
+
+            ## LE COMPTE VISITOR EST VIDE
+            echo "## PARRAIN $CURPLAYER SEND $PALPE TO ${QRCODE}"
+            ## G1 PAYEMENT
+            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a ${PALPE} -p ${QRCODE} -c "ASTRO:ZEN_${PALPE}" -m
+            ## MESSAGE CESIUM +
+            $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CADEAU" \
+            -m "ASTRO:${CURPLAYER} VOUS ENVOI ${PALPE} JUNE.
+            GAGNEZ 100 JUNE EN PLUS !
+            CREEZ ET GEOLOCALISEZ VOTRE COMPTE SUR https://gchange.fr \
+            ENSUITE REVENEZ SCANNER VOTRE QRCODE"
+
+    else
+        ## CURRENT PLAYER IS TOO POOR
+        PALPE=0
+        echo "VISITEUR POSSEDE ${CURCOINS} G1"
+
+        ## GET G1 WALLET HISTORY
+        $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/g1history.json
+
+        ## SCAN CCHANGE +
+        curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gchange.json
+        ## CHECK IF RELATED TO CESIUM
+        CPUB=$(cat ~/.zen/tmp/${MOATS}/gchange.json | jq -r '._source.pubkey' 2>/dev/null)
+        ## SCAN GPUB CESIUM +
+        curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gplus.json 2>/dev/null
+
+        ##### MEMBER ??
+        if [[ $CPUB && $CPUB != 'null'  ]]; then
+
+            ## SCAN CPUB CESIUM +
+            curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/tmp/${MOATS}/cplus.json 2>/dev/null
+
+            ## LINKED CESIUM WALLET
+            $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "FORGERON" \
+            -m "ASTROPORT. G1. FORGERON ET RESEAU DE CONFIANCE Ŋ1. \
+            INSCRIVEZ VOTRE COMPTE GCHANGE SUR : https://astroport.copylaradio.com"
+
+
+
+        else
+
+            ## EXTRACT GPS ... CONTINUE THE GAME
+
+        fi
+        # $MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTRO ZEN CONTACT"
+
+    fi
+
+            echo "************************************************************"
+            echo "$VISITORCOINS (+ ${PALPE}) JUNE"
+            echo "************************************************************"
+
+
+fi
 ###################################################################################################
 #                                                                       THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
 ###     amzqr  "$myASTROPORT/?qrcode=$G1PUB&junesec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
@@ -68,12 +155,6 @@ if [[ $AND == "junesec" ]]; then
 echo "♥BOX♥BOX♥BOX♥BOX♥BOX"
 echo "MAGIC WORLD ASTRONAUT & WISHES"
 
-        COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE})
-        [[ $COINS == "" || $COINS == "null" ]] \
-        && $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a 50 -p ${QRCODE} -c "ASTRO:PASSPORT_ACTIVATION" -m
-        echo "************************************************************"
-        echo "$COINS (+ 50 JUNE IF EMPTY) "
-        echo "************************************************************"
 
     if [[ $APPNAME == "askpass" ]]; then
         echo ">> ASTRONAUT QRCODE $APPNAME"

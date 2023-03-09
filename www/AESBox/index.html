@@ -1,49 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
     <title>CryptoJS Decryption</title>
-    <script type="text/javascript" src="./crypto-js-4.1.1/crypto-js.js"></script>
+
+<script type="module">
+import * as openpgp from './openpgp.min.mjs';
+</script>
+
 </head>
 <body>
+
     <h1>CryptoJS Decryption</h1>
     <p>Please enter the password to decrypt the hidden value:</p>
+
+
     <input type="password" id="password" />
-    <input type="submit" value="Decrypt" onclick="decrypt();" />
+    <input type="hidden" id="secretssl" value="jA0ECQMC9HPdy3G2HU7+0lgBuXAZSHSZTtwnq3Ygl48Z8fIgblnTBRNUYvtavTPFBEsAUUI+M/GddxMaXxreaKSo/aaAB+bvcoe8pn4Ivqf0SwHGmNMErXFZ2EY14OUMX6dV8vOOl4Fy"/>
+
+<div id="decrypted">Please wait...</div>
+Insert new note:<input type="text" id="new_note"><input type="button" id="enc_button" value="Encrypt & Decrypt">
+
+
     <script type="text/javascript">
-    function cryptotest() {
-        var CryptoJS = require("crypto-js");
 
-        var key = CryptoJS.enc.Utf8.parse('123456');
-        var iv  = CryptoJS.enc.Utf8.parse('100000');
-        var text = "My Name Is Nghĩa";
-
-
-        var encryptedCP = CryptoJS.AES.encrypt(text, key, { iv: iv });
-        var decryptedWA = CryptoJS.AES.decrypt(encryptedCP, key, { iv: iv});
-        var cryptText = encryptedCP.toString();
-        console.log(cryptText);
-        console.log(decryptedWA.toString(CryptoJS.enc.Utf8));
-
-        //Decode from text
-        var cipherParams = CryptoJS.lib.CipherParams.create({
-             ciphertext: CryptoJS.enc.Base64.parse(cryptText )
-        });
-        var decryptedFromText = CryptoJS.AES.decrypt(cipherParams, key, { iv: iv});
-        console.log(decryptedFromText.toString(CryptoJS.enc.Utf8));
+    function _base64ToArrayBuffer(base64) {
+        var binary_string = window.atob(base64);
+        var len = binary_string.length;
+        var bytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) {
+            bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes.buffer;
     }
 
 
-        function decrypt() {
-            var password = document.getElementById('password').value;
-            alert('Password: ' + password);
-            console.log('Password: ' + password));
 
-            var encrypted = 'U2FsdGVkX19XzumV1+uDVNtgx3Y0/7ZB3QtqKDqxFE2CyCa8RGTEjTtR19RIwNHeyFhYlR+tx7sTIOv5NVcEfg==';
-            var decrypted = CryptoJS.AES.decrypt(encrypted, password);
-            var decoded = CryptoJS.enc.Utf8.stringify(decrypted);
-            alert('The decoded value is: ' + decoded);
-            // document.getElementById('password').value = decoded;
-        }
+    document.getElementById("enc_button").onclick = function(){
+
+    (async () => {
+        var base64Value = document.getElementById("secretssl").value;
+        var encrypted = _base64ToArrayBuffer(base64Value);
+        alert(encrypted)
+
+        const encryptedMessage = await openpgp.readMessage({
+            binaryMessage: encrypted // parse encrypted bytes
+        });
+        const { data: decrypted } = await openpgp.decrypt({
+            message: encryptedMessage,
+            passwords: ['123456'], // decrypt with password
+            format: 'binary' // output as Uint8Array
+        });
+        console.log(decrypted); // Uint8Array([0x01, 0x01, 0x01])
+    })();
+
+    }
     </script>
 </body>
 </html>

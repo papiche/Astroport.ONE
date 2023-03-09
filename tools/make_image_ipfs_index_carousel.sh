@@ -27,7 +27,7 @@ if [[ ! -d $img_dir ]]; then
                 "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
                 echo "GOT ~/.zen/tmp/carousel/${pub}.png"
                 ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
-                echo "<a target=\"$PLAYER\" href=\"$myIPFS/ipns/$ASTRONAUTENS\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
+                echo "<a target=\"$PLAYER\" href=\"$myASTROPORT/?qrcode=$ASTRONAUTENS\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
 
         done
         img_dir="$HOME/.zen/tmp/carousel"
@@ -35,6 +35,7 @@ fi
 
 #Set Path to HTML page
 html_file="/tmp/index.html"
+core_file="/tmp/core.html"
 
 #Create HTML page
 echo "<!DOCTYPE html>
@@ -42,7 +43,10 @@ echo "<!DOCTYPE html>
 <head>
 <title>Astroport ZEN Gallery : $myIP</title>
 <meta charset=\"UTF-8\">
-<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
+</head>
+<body>" > $html_file
+
+echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
 <style>
 .carousel-item {
     background-color: #0B0C10;
@@ -54,22 +58,20 @@ echo "<!DOCTYPE html>
     background-color: #FFFFFF;
 }
 </style>
-</head>
-<body>
 
 <div class=\"container\">
   <h2> Astroport $myHOST ZEN Gallery $(date) </h2>
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
     <!-- Indicators -->
     <ul class=\"carousel-indicators\">
-      <li data-target=\"#myCarousel\" data-slide-to=\"0\" class=\"active\"></li>" > $html_file
+      <li data-target=\"#myCarousel\" data-slide-to=\"0\" class=\"active\"></li>" > $core_file
 
 #Loop over images
 num=1
 for i in "$img_dir"/*; do
 if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   if [ $num -ne 1 ]; then
-    echo "      <li data-target=\"#myCarousel\" data-slide-to=\"$num\"></li>" >> $html_file
+    echo "      <li data-target=\"#myCarousel\" data-slide-to=\"$num\"></li>" >> $core_file
   fi
   num=$((num+1))
 fi
@@ -78,7 +80,7 @@ done
 echo "    </ul>
 
     <!-- The slideshow -->
-    <div class=\"carousel-inner\">" >> $html_file
+    <div class=\"carousel-inner\">" >> $core_file
 
 #Loop over images
 num=1
@@ -102,11 +104,11 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   if [ $num -eq 1 ]; then
     echo "      <div class=\"carousel-item active\">
         $ZLINK
-      </div>" >> $html_file
+      </div>" >> $core_file
   else
     echo "      <div class=\"carousel-item\">
         $ZLINK
-      </div>" >> $html_file
+      </div>" >> $core_file
   fi
   num=$((num+1))
 fi
@@ -126,13 +128,15 @@ echo "    </div>
 
 <script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/jquery-3.2.1.slim.min.js\"></script>
 <script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/popper.min.js\"></script>
-<script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.js\"></script>
+<script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.js\"></script>" >> $core_file
 
-</body>
+cat $core_file >> $html_file
+echo "</body>
 </html>" >> $html_file
 
+coreipfs=$(ipfs add -q $core_file)
 htmlipfs=$(ipfs add -q $html_file)
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
-echo /ipfs/$htmlipfs
+echo /ipfs/$core_file
 
 exit 0
