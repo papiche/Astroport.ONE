@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>[Astroport] :: Station _HOSTNAME_ :: _IPFSNODEID_ </title>
+    <meta http-equiv="refresh" content="60; url='http://127.0.0.1:12345'" />
     <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/logo.png" />
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/decoration.css" type="text/css" />
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/layout.css" type="text/css" />
@@ -39,18 +40,20 @@ header {
     </style>
     <!-- Typed text animation -->
     <script src="http://127.0.0.1:8080/ipfs/QmYyJmAT3cUbjk4vVWQG7LdpY3HkFH9phFD1VzzetHrgpa"></script>
-    <script src="http://127.0.0.1:8080/ipfs/QmVQNVGEbhMjWp6Jur8B4HxfPSupPHR4KRDPn1z3nyq6ad/astro.js"></script>
+    <!-- Astro API JS LIB -->
+    <script src="http://127.0.0.1:8080/ipfs/QmVZ25vNYfg2PxgFi36rNDaTiDKFuJgVTD1XmPtbWFg1hj/astro.js"></script>
 
 </head>
 <body>
 <header>
     <h6>
-       (<a href="javascript:homeAstroportStation()">♥</a>)<span>BOX</span>
-
-       <p id="station">Click me.</p>
-
+        <p id="station">
+        ♥<span>BOX</span>
+        </p>
+        <p id="ainfo"></p>
 <script>
     document.getElementById("station").addEventListener("click", homeAstroportStation);
+    // promptUser();
 </script>
 
    </h6>
