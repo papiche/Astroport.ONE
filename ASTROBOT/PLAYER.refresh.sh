@@ -15,13 +15,13 @@ echo "## RUNNING PLAYER.refresh"
 
 PLAYERONE="$1"
 # [[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-[[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
+[[ ! $PLAYERONE ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
 
 echo "FOUND : ${PLAYERONE[@]}"
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
-    [[ ! -d ~/.zen/game/players/$PLAYER ]] && echo "BAD $PLAYERONE" && continue
+    [[ ! -d ~/.zen/game/players/${PLAYER:-undefined} ]] && echo "BAD $PLAYERONE" && continue
 
     # CLEAN LOST ACCOUNT
     [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && rm -Rf ~/.zen/game/players/$PLAYER

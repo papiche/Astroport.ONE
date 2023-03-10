@@ -7,7 +7,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 img_dir="$1"
 
 if [[ ! -d $img_dir ]]; then
-    PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "localhost" 2>/dev/null))
+    PLAYERONE=($(ls -t ~/.zen/game/players/  | grep -Ev "@" 2>/dev/null))
         [[ ! $PLAYERONE ]] && echo "NO PLAYER IN THE GAME HERE" && exit 1
 
         echo "ASTROPORT STATION CAROUSEL MODE"
