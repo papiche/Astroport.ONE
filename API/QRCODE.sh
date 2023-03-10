@@ -146,7 +146,7 @@ else
         GCFOUND=$(cat ~/.zen/tmp/${MOATS}/gplus.json | jq -r '.found')
         [[ $GCFOUND == "false" ]] \
         && echo "AUCUN GCPLUS" \
-        && sed "s~_TWLINK_~${myASTRONEF}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
+        && sed "s~_TWLINK_~https://demo.cesium.app/#/app/wot/$QRCODE/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
         && echo "url='"${myASTRONEF}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
         && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
 
@@ -180,26 +180,22 @@ else
             ## LE COMPTE VISITOR EST VIDE
             echo "## PARRAIN $CURPLAYER SEND $PALPE TO ${QRCODE}"
             ## G1 PAYEMENT
-            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a ${PALPE} -p ${QRCODE} -c "ASTRO:ZEN_${PALPE}" -m
+            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a ${PALPE} -p ${QRCODE} -c "ASTRO:ZEN_00${PALPE}00" -m
 
             ## MESSAGE CESIUM +
             $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CADEAU" \
             -m "ASTRO:${CURPLAYER} VOUS ENVOI ${PALPE} JUNE.
-            GAGNEZ 100 JUNE EN PLUS !
-            CREEZ ET GEOLOCALISEZ VOTRE COMPTE SUR https://gchange.fr \
-            ENSUITE REVENEZ SCANNER VOTRE QRCODE"
+            GAGNEZ PLUS DE JUNE... RELIEZ CE PORTEFEUILLE Cesium SUR https://gchange.fr \
+            PUIS REVENEZ SCANNER VOTRE QRCODE"
 
-    else
-        ## CURRENT PLAYER IS TOO POOR
-        PALPE=0
-
-        # $MY_PATH/../tools/jaklis/jaklis.py -n $myGCHANGE -k $MYPLAYERKEY send -d "${QRCODE}" -t "COUCOU" -m "ASTRO ZEN CONTACT"
-        ls ~/.zen/tmp/${MOATS}/
     fi
+
+     ls ~/.zen/tmp/${MOATS}/
 
             echo "************************************************************"
             echo "$VISITORCOINS (+ ${PALPE}) JUNE"
             echo "************************************************************"
+    ##
 
 
 fi
@@ -229,6 +225,17 @@ echo "MAGIC WORLD ASTRONAUT & WISHES"
         FLUX="/ipns/$VAL"
 
     fi
+
+fi
+
+###     amzqr "$myASTROPORT/?qrcode=$G1FRIEND&star=1" \
+###
+if [[ $AND == "star" ]]; then
+
+    STAR=$THIS
+    echo "WebClient ask to send $STAR star to $QRCODE"
+    ## RETURN PAGE with "salt / pepper" API to activate
+
 
 fi
 
