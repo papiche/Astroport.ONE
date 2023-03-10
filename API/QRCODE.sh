@@ -30,17 +30,22 @@ TYPE=$WHAT
 mkdir -p ~/.zen/tmp/${MOATS}/
 
 if [[ ${QRCODE} == "station" ]]; then
-    ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
-    ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
-    echo $ISTATION > ~/.zen/ISTATION ## STATION G1WALLET CAROUSEL
+    if [[ ! -s ~/.zen/tmp/WSTATION ]]; then
+        ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
+        ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
+        echo $ISTATION > ~/.zen/ISTATION ## STATION G1WALLET CAROUSEL
 
-    ## SHOW G1PALPAY FRONT
-    sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../www/G1PalPay/index.html > ~/.zen/tmp/${MOATS}/index.htm
-    sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
+        ## SHOW G1PALPAY FRONT
+        sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../www/G1PalPay/index.html > ~/.zen/tmp/${MOATS}/index.htm
+        sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
 
-    WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
-    echo "NEW WSTATION ${myIPFS}${WSTATION}"
-
+        WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
+        echo "NEW WSTATION ${myIPFS}${WSTATION}"
+        echo $WSTATION > ~/.zen/tmp/WSTATION
+    else
+        WSTATION=$(cat ~/.zen/tmp/WSTATION)
+        echo "WSTATION ${myIPFS}${WSTATION}"
+    fi
     ## SEND TO WSTATION PAGE
     sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect

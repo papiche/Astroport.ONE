@@ -33,16 +33,26 @@ header {
       position: absolute;
       top: 33%;
       left: 66%;
+      width: 18%;
       visibility: hidden;
     }
     </style>
     <!-- Typed text animation -->
     <script src="http://127.0.0.1:8080/ipfs/QmYyJmAT3cUbjk4vVWQG7LdpY3HkFH9phFD1VzzetHrgpa"></script>
+    <script src="http://127.0.0.1:8080/ipfs/QmVQNVGEbhMjWp6Jur8B4HxfPSupPHR4KRDPn1z3nyq6ad/astro.js"></script>
+
 </head>
 <body>
 <header>
     <h6>
-        /ipfs/<span>Station</span>(<a href="/?qrcode=station">♥</a>)
+       (<a href="javascript:homeAstroportStation()">♥</a>)<span>BOX</span>
+
+       <p id="station">Click me.</p>
+
+<script>
+    document.getElementById("station").addEventListener("click", homeAstroportStation);
+</script>
+
    </h6>
 </header>
 
