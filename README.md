@@ -159,6 +159,18 @@ GET /?salt=${SALT}&pepper=${PEPPER}&login=${PLAYER}
 | `pepper` | `string` | **Required**. Your passphrase two token |
 | `login` | `string` | **Required**. Your email one token  |
 
+### Définir le niveau ★ accordé à un "g1friend"
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&friend=${G1PUB}&stars=${1:5}
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `friend` | `string` | **Required**. G1PUB token of friend |
+| `stars` | `number` | **Required**. Number between 1 to 5 |
+
 
 ### Lire Messagerie Gchange
 ```http
@@ -244,7 +256,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 
 ### QRCODE (API SandBox)
 ```http
-GET /?qrcode=$G1PUB
+GET /?qrcode=${G1PUB}
 ```
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |

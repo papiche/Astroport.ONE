@@ -354,6 +354,23 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
 
 ##############################################
+# FRIEND  ★ &friend=G1PUB&stars=1 // APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
+##############################################
+        if [[ $APPNAME == "friend" ]]; then
+
+            g1friend=${WHAT}
+            stars=${VAL:-1} // Default 1 ★
+
+            MESTAR=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars)
+
+            echo "$HTTPCORS ${MESTAR}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
+            exit 0
+        fi
+
+
+##############################################
 # GETIPNS
 ##############################################
         if [[ $APPNAME == "getipns" ]]; then

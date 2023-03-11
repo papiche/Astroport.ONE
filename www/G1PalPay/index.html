@@ -150,13 +150,6 @@ a {
 
       scanner.addListener('scan', function (content) {
         alert(content);
-/*
-        $.ajax({
-            url: "http://astroport.localhost:1234",
-            data: "qrcode="+content,
-            type: 'GET'
-        });
-*/
         //
         var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
         fetchAstroport(myU);
