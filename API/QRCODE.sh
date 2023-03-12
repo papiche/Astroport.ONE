@@ -4,7 +4,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 ################################################################################
-## API: SALT & PEPPER
+## API: QRCODE - ANY/MULTI KEY OPERATIONS
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -28,14 +28,19 @@ TYPE=$WHAT
 
 ## GET TW
 mkdir -p ~/.zen/tmp/${MOATS}/
-
+################################################################################
+## REFRESH STATION & OPEN G1PalPay INTERFACE
+################################################################################
 if [[ ${QRCODE} == "station" ]]; then
+
+    rm ~/.zen/tmp/WSTATION ## REMOVE IN PROD
+
     if [[ ! -s ~/.zen/tmp/WSTATION ]]; then
         ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
         ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
         echo $ISTATION > ~/.zen/ISTATION ## STATION G1WALLET CAROUSEL
 
-        ## SHOW G1PALPAY FRONT
+        ## SHOW G1PALPAY FRONT (IFRAME)
         sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../www/G1PalPay/index.html > ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
 
@@ -54,8 +59,10 @@ if [[ ${QRCODE} == "station" ]]; then
     ) &
     exit 0
 fi
-
-## CHECK IF QRCODE is ASTRONAUTENS or G1PUB format
+################################################################################
+## QRCODE can be ASTRONAUTENS or G1PUB format
+################################################################################
+## ACCOUNT IPNS FORMAT : CHANGE .current
 ASTROPATH=$(grep $QRCODE ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 if [[ $ASTROPATH != "" ]]; then
     rm ~/.zen/game/players/.current
@@ -63,33 +70,35 @@ if [[ $ASTROPATH != "" ]]; then
     echo "LINKING $ASTROPATH to .current"
     #### SELECT PARRAIN "G1PalPé"
 
-    ## SEND TO TW PAGE
-    sed "s~_TWLINK_~${myIPFSGW}/ipns/${QRCODE}/#:[tag[G1Voeu]]~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myIPFSGW}/ipns/${QRCODE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    #>>>>>>>>>>>> # SEND TO G1BILLETS
+    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=jeu~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myG1BILLET}"?montant=0\&style=jeu'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     ) &
     exit 0
 fi
 
+################################################################################
 ## FILTRAGE NON G1 TO IPFS READY QRCODE
 ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPFS} ]] \
         && echo "INVALID QRCODE : ${QRCODE}" \
         && (echo "$HTTPCORS ERROR - INVALID QRCODE : ${QRCODE}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
+################################################################################
 
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 ###########################################""
 ###########################################
-## PROCESS QRCODE = G1PUB or IPNS
+## GET G1PUB OR CURRENT SECRET
 ###########################################""
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
-echo "$MYPLAYERKEY"
+echo "SELECTECT KEY : $MYPLAYERKEY"
 echo
 
-## PARRAIN
+## PARRAIN ID EXTRACTION
 ###########################################
 CURPLAYER=$(cat ~/.zen/game/players/.current/.player)
 CURG1=$(cat ~/.zen/game/players/.current/.g1pub)

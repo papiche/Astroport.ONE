@@ -387,6 +387,7 @@ myAPI="http://$(myIp):5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
+myG1BILLET="http://g1billet.localhost:33101"
 myHOST="$(myHostName)"
 myIP="$(myIp)"
 myIPFS="http://ipfs.localhost:8080"
@@ -400,4 +401,5 @@ myASTROTUBE="https://$(myAstroTube)"
  && myAPI="https://ipfs.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
+ && myG1BILLET="https://g1billet.$(myHostName)" \
  || true

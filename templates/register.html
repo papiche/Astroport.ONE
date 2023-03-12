@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>[Astroport] :: Station _HOSTNAME_ :: _IPFSNODEID_ </title>
-    <meta http-equiv="refresh" content="60; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="121; url='http://127.0.0.1:12345'" />
     <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/logo.png" />
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/decoration.css" type="text/css" />
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/layout.css" type="text/css" />
@@ -41,21 +41,18 @@ header {
     <!-- Typed text animation -->
     <script src="http://127.0.0.1:8080/ipfs/QmYyJmAT3cUbjk4vVWQG7LdpY3HkFH9phFD1VzzetHrgpa"></script>
     <!-- Astro API JS LIB -->
-    <script src="http://127.0.0.1:8080/ipfs/QmVZ25vNYfg2PxgFi36rNDaTiDKFuJgVTD1XmPtbWFg1hj/astro.js"></script>
+    <script src="http://127.0.0.1:8080/ipfs/QmWYaEHWrvLXUZHebJVHyBLEAJaicyfbRX37Arx5jf6sNs/astro.js"></script>
 
 </head>
 <body>
 <header>
     <h6>
-        <p id="station">
-        ♥<span>BOX</span>
-        </p>
-        <p id="ainfo"></p>
-<script>
-    document.getElementById("station").addEventListener("click", homeAstroportStation);
-    // promptUser();
-</script>
-
+        <p id="station"> ♥<span>BOX</span></p>
+        <div>
+        <button onclick="homeAstroportStation('/?qrcode=station', '', 5111)">Open Station</button>
+        </div>
+        <div id="ainfo"></div>
+        <div id='countdown'></div>
    </h6>
 </header>
 
@@ -75,8 +72,8 @@ header {
         <h2>
         <div id="typed-strings">
             <p><span>/ <strong><em><a href="https://opencollective.com/monnaie-libre/projects/coeurbox" target="funding">LA ♥BOX</a></em></strong> /</span>^3223</p>
-            <p>Off <em>CLOUD</em> &#9925;</span> On IPFS &#8984;^3222</p>
-            <p>Safe In <strong><em><u>👉<a href="https://qwantic.com">Le Claude</a>👈</u></em></strong>^3112</p>
+            <p>&#8984; Interplanetary Off <em>CLOUD</em> &#9925;</span> ^3222</p>
+            <p>Welcome In <strong><em><u>👉<a href="https://qwantic.com">Le Claude</a>👈</u></em></strong>^3112</p>
             <p>🔥.^999.^888.^777.^666.^555.^444.3^333.2^222.1^111 🚀^4321</p>
         </div>
         <span id="typed"></span>
@@ -84,12 +81,14 @@ header {
         <span><a target="youtube" href="https://youtube.com">📺 (&#128077;)</a> : </span><input name=g1pub value='https://www.youtube.com/playlist?list=LL'></br>
         <span>Email : </span><input name=email value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
+        <p>Renseignez votre lien Youtube préféré et votre Email<br>Validez</p>
+
 </form>
 
 </h2>
 </br>
             <p>
-            <b><a href="mailto:support@qo-op.com">Besoin d'aide ?</a> Contactez support@qo-op.com</b>
+            <b>support@qo-op.com</b>
             </p>
 </header>
 
@@ -196,5 +195,21 @@ function testLatency(cb) {
 }
 
 </script>
+<script>
 
+    var timeLeft = 23;
+    var elem = document.getElementById("countdown");
+    var timerId = setInterval(countdown, 999);
+
+    function countdown() {
+        if (timeLeft == -1) {
+            clearTimeout(timerId);
+            document.getElementById("countdown").innerHTML = "Remplacez les '0' par les identifiants de votre G1BILLET. Validez";
+        } else {
+            // elem.innerHTML = timeLeft + " s";
+            timeLeft--;
+        }
+    }
+    // promptUser();
+</script>
 </html>

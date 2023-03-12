@@ -64,10 +64,14 @@ espeak "Restarting Astroport Station API" > /dev/null 2>&1
 ## CLOSING API PORT
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
 ## KILL ALL REMAINING nc
-killall nc
+killall nc 12345.sh
 ## OPEN API ENGINE
-~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
-PID=$!
-echo $PID > ~/.zen/.pid
+if [[ ! -f /etc/systemd/system/astroport.service ]]; then
+    ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+    PID=$!
+    echo $PID > ~/.zen/.pid
+else
+    echo "systemd will restart..."
+fi
 
 exit 0

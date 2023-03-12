@@ -23,11 +23,18 @@ if [[ ! -d $img_dir ]]; then
                 COINS=$(${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
                 echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
+                ## USE G1BARRE SERVICE AS 1ST IMAGE
                 curl -so ~/.zen/tmp/carousel/${pub}.png \
                 "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
                 echo "GOT ~/.zen/tmp/carousel/${pub}.png"
+
+                ## WRITE ON IT : ASK FOR REFILL
+
+                ## PREPARE LOOP LINK LINE
                 ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
-                echo "<a target=\"$PLAYER\" href=\"$myASTROPORT/?qrcode=$ASTRONAUTENS\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
+                [[ $COINS -gt 0 ]] \
+                && echo "<a href=\"$myASTROPORT/?qrcode=$ASTRONAUTENS\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
+                || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
         done
         img_dir="$HOME/.zen/tmp/carousel"
@@ -58,6 +65,8 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
     background-color: #FFFFFF;
 }
 </style>
+
+  <h2> $myHOST ACCOUNTS $(date) </h2>
 
 <div class=\"container\">
 
@@ -124,7 +133,6 @@ echo "    </div>
       <span class=\"carousel-control-next-icon\"></span>
     </a>
   </div>
-  <h2> Astroport $myHOST ZEN Gallery $(date) </h2>
 </div>
 
 <script src=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/jquery-3.2.1.slim.min.js\"></script>
