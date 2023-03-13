@@ -89,12 +89,8 @@ if [ $URL ]; then
 
 fi
 ###
-# 20H12 WALLET SYNCHO
-    #~ ( ## SUB PROCESS
-        #~ # Get PLAYER wallet amount
-        #~ COINS=$($MY_PATH/tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
-        #~ [[ $COINS == "" || $COINS == "null" ]] && espeak "Missing coins. Free Run." || espeak "You have $COINS Coins"
-    #~ ) &
+
+COINS=$($MY_PATH/COINScheck.sh $G1PUB | tail -n 1)
 
 ###
 # GET SCREEN DIMENSIONS
@@ -163,7 +159,7 @@ YOU=$(myIpfsApi)
 [[ ! $URL ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
 ########################################################################
-espeak "Ready !"
+espeak "$COINS JUNE Ready !"
 ########################################################################
 
 ########################################################################

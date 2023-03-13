@@ -28,12 +28,16 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ ! $(echo "$PLAYER" | grep '@') ]] && continue
+
     mkdir -p ~/.zen/tmp/${MOATS}
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
+    PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
+    ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
     # Get PLAYER wallet amount
-    COINS=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey balance)
+    COINS=$($MY_PATH/../tools/COINScheck.sh $G1PUB | tail -n 1)
     echo "+++ WALLET BALANCE _ $COINS (G1) _"
     #~ ## IF WALLET IS EMPTY : WHAT TODO ?
     echo "##################################################################"
@@ -41,9 +45,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "################### REFRESH ASTRONAUTE TW ###########################"
     echo "##################################################################"
 
-    PSEUDO=$(cat ~/.zen/game/players/$PLAYER/.pseudo 2>/dev/null)
-    G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub 2>/dev/null)
-    ASTRONS=$(cat ~/.zen/game/players/$PLAYER/.playerns 2>/dev/null)
 
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)

@@ -21,7 +21,7 @@ if [[ ! -d $img_dir ]]; then
 
                 # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
                 echo $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance
-                COINS=$(${MY_PATH}/timeout.sh -t 3 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance | cut -d '.' -f 1)
+                COINS=$($MY_PATH/COINScheck.sh $pub | tail -n 1)
                 echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
                 ## USE G1BARRE SERVICE AS 1ST IMAGE

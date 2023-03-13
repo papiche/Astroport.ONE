@@ -65,7 +65,7 @@ do
            sed -i "s~G1Voeu~voeu~g" $INDEX
            continue
     else
-        VCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${VOEUKEY})
+        VCOINS=$($MY_PATH/../tools/COINScheck.sh $VOEUKEY | tail -n 1)
         [[ $VCOINS == "" || $VCOINS == "null" ]] \
         && echo "ERROR G1WALLET" \
         || echo "WISH G1WALLET = $VCOINS G1"

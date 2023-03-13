@@ -101,12 +101,13 @@ a {
 <div id="demo">
     <div id="description">
         <h1><a href="javascript:history.go(-1)">(Ğ1) ♥Box Station</a></h1>
-        <h2>Oubliez la crise... N'attendez plus la Retraite ?</h2>
-        <h2>Passez à la Monnaie Libre. Refaites le monde d'égale à égal.</h2>
+        <h2>Oubliez la crise... N'attendez pas la Retraite !</h2>
+        <h2>Essayez la Monnaie Libre. Découvrez le monde d'égale à égal.</h2>
     </div>
 </div>
     <div id="showoff">
         <div id="container">
+                <div id="countdown"></div>
             <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
 
                 <p> <strong>Scannez QRCode</strong> </p>
@@ -121,17 +122,27 @@ a {
         async function fetchAstroport(myURL) {
           try {
 
-             let one = await fetch(myURL); // Gets a promise
-             var doc =  await one.text();
-             var regex = /url='([^']+)/i; // Get response PORT
-             var redirectURL = doc.match(regex)[1]
+            let one = await fetch(myURL); // Gets a promise
+            var doc =  await one.text();
+            var regex = /url='([^']+)/i; // Get response PORT
+            var redirectURL = doc.match(regex)[1]
 
-             console.log(redirectURL)
+            console.log(redirectURL)
 
-            setTimeout(function() {
+            // start countdown
+            var timeLeft = 20;
+            var elem = document.getElementById("countdown");
+            var timerId = setInterval(countdown, 1000);
 
+            function countdown() {
+                if (timeLeft == -1) {
+                    clearTimeout(timerId);
                     window.open( redirectURL, "AstroTab");
-            }, 15123);
+                } else {
+                    elem.innerHTML = timeLeft + " s";
+                    timeLeft--;
+                }
+            }
 
           } catch (err) {
             console.log('Fetch error:' + err); // Error handling
@@ -141,13 +152,10 @@ a {
       let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
 
       scanner.addListener('scan', function (content) {
-        alert(content);
-        //
-        var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
-        // fetchAstroport(myU);
-        homeAstroportStation(myU, 'aframe', 15123)
-        // BORIS STUFF COMES HERE
-
+            alert(content);
+            var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+            fetchAstroport(myU)
+            // homeAstroportStation(myU, 'aframe', 15123)
       });
 
       Instascan.Camera.getCameras().then(function (cameras) {
@@ -169,7 +177,7 @@ a {
       });
 
     </script>
-
+    <div id="ainfo"></div>
     <div id="yellow" >Menu
         <iframe id="aframe" src="_STATION_" width="100%" height="260px"></iframe>
     </div>
