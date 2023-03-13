@@ -37,11 +37,12 @@ header {
       width: 18%;
       visibility: hidden;
     }
+#login {visibility: hidden; left: 10%;}
     </style>
     <!-- Typed text animation -->
     <script src="http://127.0.0.1:8080/ipfs/QmYyJmAT3cUbjk4vVWQG7LdpY3HkFH9phFD1VzzetHrgpa"></script>
     <!-- Astro API JS LIB -->
-    <script src="http://127.0.0.1:8080/ipfs/QmPas4hhJypYaYD5wCe6Ltz7QhnJeYd8G2erseHADNVcH1/astro.js"></script>
+    <script src="http://127.0.0.1:8080/ipfs/QmU29MoMrph2FotjupnTYMdyH7waJBgXxgg2JHpJnbGuki/astro.js"></script>
 
 </head>
 <body>
@@ -50,8 +51,9 @@ header {
         <p id="station"> ♥<span>BOX</span></p>
         <div>
         <button onclick="homeAstroportStation('/?qrcode=station', '', 7654)">Open Station</button>
+        <div  id="login"><button onclick="promptUser('login')">LOGIN</button><button onclick="promptUser('logout')">LOGOUT</button></div>
         </div>
-        <div id="ainfo"></div>
+        <div id="ainfo"></div><div id="debug"></div>
    </h6>
 </header>
 
@@ -153,9 +155,11 @@ Take possession of your TW. Make freedom of expression uncensurable, unstoppable
 
 <script>
 const el = document.getElementById('yellow');
+const log = document.getElementById('login');
 
 setTimeout(() => {
-  el.style.visibility = 'visible';
+    el.style.visibility = 'visible';
+    log.style.visibility = 'visible';
 }, 23456); // 👈️ delay in milliseconds
 
 var arrTimes = [];

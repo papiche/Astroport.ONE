@@ -31,18 +31,16 @@ if [[ ! -d $img_dir ]]; then
 
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
-                -pointsize 80 -fill black -draw 'text 150,150 "'"$COINS Ğ1"'"' \
+                -pointsize 80 -fill black -draw 'text 150,120 "'"$COINS Ğ1"'"' \
                 "${HOME}/.zen/tmp/carousel/${pub}.one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
                 && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
                 ## PREPARE LOOP LINK LINE
                 ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
                 [[ $COINS -gt 0 ]] \
-                && echo "<a href=\"javascript:homeAstroportStation($myASTROPORT/?qrcode=$ASTRONAUTENS)\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
+                && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'tab', '2500')\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
-                ## DEBUG PATCH
-                echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'tab', '2500')\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
 
         done
         img_dir="$HOME/.zen/tmp/carousel"
@@ -62,7 +60,7 @@ echo "<!DOCTYPE html>
 <body>" > $html_file
 
 echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
-    <script src=\"/ipfs/QmPas4hhJypYaYD5wCe6Ltz7QhnJeYd8G2erseHADNVcH1/astro.js\"></script>
+    <script src=\"/ipfs/QmU29MoMrph2FotjupnTYMdyH7waJBgXxgg2JHpJnbGuki/astro.js\"></script>
 
 <style>
 .carousel-item {
