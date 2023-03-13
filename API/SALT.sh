@@ -439,7 +439,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             fi
 
             echo ${REP}
-            echo "$HTTPCORS ${REP}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+            REPLACE=${myASTROPORT}/ipns/$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
+
+            sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+
+            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
             exit 0

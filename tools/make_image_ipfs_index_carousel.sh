@@ -31,8 +31,9 @@ if [[ ! -d $img_dir ]]; then
 
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
-                -pointsize 80 -fill black -draw 'text 150,150 "'"$COINS"'"' \
-                "${HOME}/.zen/tmp/carousel/${pub}.one.png" "${HOME}/.zen/tmp/carousel/${pub}.png"
+                -pointsize 80 -fill black -draw 'text 150,150 "'"$COINS Ğ1"'"' \
+                "${HOME}/.zen/tmp/carousel/${pub}.one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
+                && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
                 ## PREPARE LOOP LINK LINE
                 ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
