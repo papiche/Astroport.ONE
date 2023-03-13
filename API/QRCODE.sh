@@ -33,13 +33,15 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 ################################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
-    rm ~/.zen/tmp/WSTATION ## REMOVE IN PROD
+    # rm ~/.zen/tmp/ISTATION ## REMOVE IN PROD
 
-    if [[ ! -s ~/.zen/tmp/WSTATION ]]; then
+    if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
         ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
         ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
         echo $ISTATION > ~/.zen/ISTATION ## STATION G1WALLET CAROUSEL
-
+    else
+        ISTATION=$(cat ~/.zen/ISTATION)
+    fi
         ## SHOW G1PALPAY FRONT (IFRAME)
         sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../www/G1PalPay/index.html > ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
@@ -47,10 +49,7 @@ if [[ ${QRCODE} == "station" ]]; then
         WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
         echo "NEW WSTATION ${myIPFS}${WSTATION}"
         echo $WSTATION > ~/.zen/tmp/WSTATION
-    else
-        WSTATION=$(cat ~/.zen/tmp/WSTATION)
-        echo "WSTATION ${myIPFS}${WSTATION}"
-    fi
+
     ## SEND TO WSTATION PAGE
     sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
@@ -78,6 +77,12 @@ if [[ $ASTROPATH != "" ]]; then
     rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
+else
+
+    echo "NOT ON BOARD"
+    echo "What is this $QRCODE ?"
+    echo "AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9"
+
 fi
 
 ################################################################################
@@ -96,7 +101,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 ###########################################""
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
-echo "SELECTECT KEY : $MYPLAYERKEY"
+echo "SELECTES KEY : $(cat MYPLAYERKEY)"
 echo
 
 ## PARRAIN ID EXTRACTION
@@ -146,7 +151,7 @@ else
         $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/g1history.json
 
         ## SCAN CCHANGE +
-        curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gchange.json
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 10 curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gchange.json
         GFOUND=$(cat ~/.zen/tmp/${MOATS}/gchange.json | jq -r '.found')
         [[ $GFOUND == "false" ]] \
         && echo "AUCUN GCHANGE" \
@@ -157,7 +162,7 @@ else
         ## CHECK IF RELATED TO CESIUM
         CPUB=$(cat ~/.zen/tmp/${MOATS}/gchange.json | jq -r '._source.pubkey' 2>/dev/null)
         ## SCAN GPUB CESIUM +
-        curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gplus.json 2>/dev/null
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/gplus.json 2>/dev/null
         GCFOUND=$(cat ~/.zen/tmp/${MOATS}/gplus.json | jq -r '.found')
         [[ $GCFOUND == "false" ]] \
         && echo "AUCUN GCPLUS" \
@@ -169,7 +174,7 @@ else
         if [[ $CPUB && $CPUB != 'null'  ]]; then
 
             ## SCAN CPUB CESIUM +
-            curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/tmp/${MOATS}/cplus.json 2>/dev/null
+            ~/.zen/Astroport.ONE/tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/tmp/${MOATS}/cplus.json 2>/dev/null
             CCFOUND=$(cat ~/.zen/tmp/${MOATS}/cplus.json | jq -r '.found')
 
             [[ $CCFOUND == "false" ]] \

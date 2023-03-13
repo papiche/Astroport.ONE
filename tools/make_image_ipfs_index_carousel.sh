@@ -25,11 +25,14 @@ if [[ ! -d $img_dir ]]; then
                 echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
                 ## USE G1BARRE SERVICE AS 1ST IMAGE
-                curl -so ~/.zen/tmp/carousel/${pub}.png \
+                curl -so ~/.zen/tmp/carousel/${pub}.one.png \
                 "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
                 echo "GOT ~/.zen/tmp/carousel/${pub}.png"
 
                 ## WRITE ON IT : ASK FOR REFILL
+                convert -font 'Liberation-Sans' \
+                -pointsize 80 -fill black -draw 'text 150,150 "'"$COINS"'"' \
+                "${HOME}/.zen/tmp/carousel/${pub}.one.png" "${HOME}/.zen/tmp/carousel/${pub}.png"
 
                 ## PREPARE LOOP LINK LINE
                 ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)

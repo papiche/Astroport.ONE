@@ -100,11 +100,9 @@ a {
 
 <div id="demo">
     <div id="description">
-        <h1>Ğ1 Invasion</h1>
-        <h2>Pourquoi attendre sa Retraite ? Oubliez la crise... </h2>
-        <h2>Société Interplanétaire by La <a href="https://opencollective.com/monnaie-libre/projects/stiits">STI</a> </h2>
-
-
+        <h1><a href="javascript:history.go(-1)">♥Box (Ğ1) Station</a></h1>
+        <h2>Pourquoi attendre la Retraite ? Oubliez la crise... </h2>
+        <h2>Rechargez-votre portefeuille ou Ğ1BILLET.</h2>
     </div>
 </div>
     <div id="showoff">
@@ -137,8 +135,7 @@ a {
              console.log(redirectURL)
 
             setTimeout(function() {
-                    // let two = await fetch(redirectURL);
-                    // document.mydiv.innerHTML = await two.text(); // Replaces body with response
+
                     window.open( redirectURL, "AstroTab");
             }, 15123);
 
@@ -153,7 +150,8 @@ a {
         alert(content);
         //
         var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
-        fetchAstroport(myU);
+        // fetchAstroport(myU);
+        homeAstroportStation(myU, 'aframe', 15123)
         // BORIS STUFF COMES HERE
 
       });
