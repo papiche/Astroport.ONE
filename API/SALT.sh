@@ -137,7 +137,7 @@ PEPPER=$THIS
         ######################## MESSAGING END
 
 ########################################
-# G1PUB : REDIRECT TO GCHANGE OR TW + EMAIL = CREATE PLAYER
+# G1PUB : REDIRECT TO GCHANGE OR TW + EMAIL => CREATE PLAYER !
 ########################################
         if [[ "$APPNAME" == "g1pub" ]]; then
 
@@ -352,6 +352,45 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             exit 0
         fi
 
+##############################################
+# PAY : /?salt=SALT&pepper=PEPPER&pay=1&dest=G1PUB APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
+##############################################
+        if [[ $APPNAME == "pay" ]]; then
+        (
+            echo "$HTTPCORS" > ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+
+            if [[ $WHAT =~ ^[0-9]+$ ]]; then
+
+                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+
+            fi
+
+            if [[ "$WHAT" == "history" ]]; then
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            fi
+
+            if [[ "$WHAT" == "get" ]]; then
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            fi
+
+            if [[ "$WHAT" == "balance" ]]; then
+                    ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
+                    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            fi
+
+            cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+            cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo "(G_G ) G1BANK Operation time was "`expr $end - $start` seconds.
+            exit 0
+        ) &
+        fi
 
 ##############################################
 # FRIEND  ★ &friend=G1PUB&stars=1 // APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9

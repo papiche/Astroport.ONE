@@ -215,7 +215,19 @@ Redirections
 
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
 
-## ➤ PLAYER ZONE (API de la Station qui héberge votre PLAYER)
+###  Déclencher un Payement de 1 Ğ1 à Fred
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `salt` | `string` | **Required**. Your passphrase one token |
+| `pepper` | `string` | **Required**. Your passphrase two token |
+| `pay` | `integer` | **Required** G1 AMOUNT |
+| `g1pub` | `G1PUB` |  **Required**  destination "wallet key" |
+
+## ➤ PLAYER ZONE (API Station qui héberge ${PLAYER})
 ### ```/?player=${PLAYER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
 ###  Déclencher un Payement de 99 Ğ1 à Fred
@@ -226,8 +238,8 @@ GET /?player=${PLAYER}&pay=99&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `player` | `string` | **Required**. Your EMAIL token |
-| `pay` | `string` | **Required** pay = ZEN AMOUNT |
-| `g1pub` | `${VAL}` |  **Required** G1PUB |
+| `pay` | `integer` | **Required** G1 AMOUNT |
+| `g1pub` | `G1PUB` |  **Required**  destination "wallet key" |
 
 
 ###  Exporter Tiddlers.json depuis son TW selon valeur des "tags" ( ici TAG=G1CopierYoutube)

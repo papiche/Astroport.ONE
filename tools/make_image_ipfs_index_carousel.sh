@@ -38,7 +38,7 @@ if [[ ! -d $img_dir ]]; then
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
                 ## DEBUG PATCH
-                echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', '', '2500')\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
+                echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'tab', '2500')\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert
 
         done
         img_dir="$HOME/.zen/tmp/carousel"
@@ -58,7 +58,7 @@ echo "<!DOCTYPE html>
 <body>" > $html_file
 
 echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
-    <script src=\"/ipfs/QmYD1Me6Dm9mZNcgsQLRfbK72HSVREsNz5QdUn1mKedmSL/astro.js\"></script>
+    <script src=\"/ipfs/QmPas4hhJypYaYD5wCe6Ltz7QhnJeYd8G2erseHADNVcH1/astro.js\"></script>
 
 <style>
 .carousel-item {

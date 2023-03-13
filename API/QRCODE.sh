@@ -70,11 +70,12 @@ if [[ $ASTROPATH != "" ]]; then
     echo "LINKING $ASTROPATH to .current"
     #### SELECT PARRAIN "G1PalPé"
 
-    #>>>>>>>>>>>> # SEND TO G1BILLETS
-    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=astro~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myG1BILLET}"?montant=0\&style=astro'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "#>>>>>>>>>>>> # SEND TO G1BILLETS"
+    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=jeu~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myG1BILLET}"?montant=0\&style=jeu'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi
