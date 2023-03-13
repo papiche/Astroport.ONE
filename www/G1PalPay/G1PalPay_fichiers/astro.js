@@ -23,7 +23,7 @@ async function homeAstroportStation(myURL, option = '', duration = 3000) {
      var regex = /url='([^']+)/i; // Get response PORT
      var redirectURL = doc.match(regex)[1]
 
-    console.log(option + " ... Teleportation ... in" + duration + " ms ... " + redirectURL)
+    console.log(option + " ... Teleportation ... in " + duration + " ms ... " + redirectURL)
 
     // start countdown
     var timeLeft = Math.floor(duration / 1000);

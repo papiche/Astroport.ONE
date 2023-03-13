@@ -74,7 +74,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h2> $myHOST : $(date) </h2>
+  <h2> $myHOST : $(date) <div id=\"countdown\"></div></h2>
 
 <div class=\"container\">
 
