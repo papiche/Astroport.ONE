@@ -413,12 +413,21 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 # GETIPNS
 ##############################################
         if [[ $APPNAME == "getipns" ]]; then
-            echo "$HTTPCORS /ipns/${ASTRONAUTENS}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            echo "$HTTPCORS url=/ipns/${ASTRONAUTENS}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
             exit 0
         fi
 
+##############################################
+# GETG1PUB
+##############################################
+        if [[ $APPNAME == "getg1pub" ]]; then
+            echo "$HTTPCORS url=/user/${G1PUB}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            end=`date +%s`
+            echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
+            exit 0
+        fi
 ##############################################
 # LOGIN
 ##############################################
