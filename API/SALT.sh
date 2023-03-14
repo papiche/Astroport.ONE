@@ -428,6 +428,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
             exit 0
         fi
+
 ##############################################
 # LOGIN
 ##############################################
