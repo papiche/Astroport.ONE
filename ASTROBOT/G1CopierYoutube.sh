@@ -219,7 +219,7 @@ if [[ ! ${TIDDLER} ]]; then
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
     "zurl": "'${ZYURL}'",
-    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME}'"
+    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} $(echo $ZFILE | sed 's~_~ ~g' | sed 's~\.~ ~g')'"
   }
 ]
 ' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"

@@ -21,13 +21,15 @@ if [[ ! -d $img_dir ]]; then
 
                 # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
                 echo $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance
-                COINS=$($MY_PATH/COINScheck.sh $pub | tail -n 1)
+                $MY_PATH/COINScheck.sh $pub > ~/.zen/tmp/coins
+                cat ~/.zen/tmp/coins
+                COINS=$(cat ~/.zen/tmp/coins | tail -n 1)
                 echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
                 ## USE G1BARRE SERVICE AS 1ST IMAGE
                 curl -so ~/.zen/tmp/carousel/${pub}.one.png \
                 "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
-                echo "GOT ~/.zen/tmp/carousel/${pub}.png"
+                echo "GOT ~/.zen/tmp/carousel/${pub}.one.png"
 
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
