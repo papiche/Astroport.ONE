@@ -34,7 +34,7 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=("NOUVEAU VISA" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
+    players=("NOUVEAU VISA" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
@@ -134,11 +134,11 @@ select fav in  "${choices[@]}"; do
         ## REMOVE PLAYER DOCKER
         [[ $USER == "zen" ]] && make player MAIL=$PLAYER DELETE=true
 
-        echo "REMOVING GCHANGE+ PROFILE"
-        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
+        #~ echo "REMOVING GCHANGE+ PROFILE"
+        #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
 
-        #~ echo "REMOVE CESIUM+"
-        $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myCESIUM" erase
+        echo "REMOVE CESIUM+"
+        #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myCESIUM" erase
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
         rm -Rf ~/.zen/game/players/$PLAYER
 

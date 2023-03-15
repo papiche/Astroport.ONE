@@ -43,6 +43,7 @@ if [[ ! -d $img_dir ]]; then
                 convert -font 'Liberation-Sans' \
                 -pointsize 80 -fill purple -draw 'text 50,120 "'"$COINS Ğ1"'"' \
                 -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
+                -pointsize 14 -fill white -draw 'text 40, 200 "'"$(date)"'"' \
                 "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
                 && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
@@ -85,7 +86,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h3 id=\"countdown\"> $myHOST : $(date)</h3>
+  <h3 id=\"countdown\"> $myHOST :: ${#PLAYERONE[@]}</h3>
 
 <div class=\"container\">
 

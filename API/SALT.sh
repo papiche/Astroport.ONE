@@ -116,7 +116,7 @@ PEPPER=$THIS
             cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             ## SEND REPONSE PROCESS IN BACKGROUD
-            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/coucou/${MOATS}.index.redirect ) &
                 #~ ( ## USING IPNS SESSION KEY
                 #~ REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
                 #~ ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
@@ -385,7 +385,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             fi
 
             cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-            cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            (cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/$PLAYER.pay.$WHAT.http ) &
             end=`date +%s`
             echo "(G_G ) G1BANK Operation time was "`expr $end - $start` seconds.
             exit 0
