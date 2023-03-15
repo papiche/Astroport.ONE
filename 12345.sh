@@ -109,7 +109,7 @@ while true; do
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
-    REQ=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myHOST.http | nc -l -p 1234 -q 1) ## # WAIT FOR 1234 PORT CONTACT
+    REQ=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/coucou/${MOATS}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
 
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)

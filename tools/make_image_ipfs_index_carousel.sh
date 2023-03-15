@@ -42,7 +42,7 @@ if [[ ! -d $img_dir ]]; then
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
                 -pointsize 80 -fill purple -draw 'text 50,120 "'"$COINS Ğ1"'"' \
-                -pointsize 30 -fill purple -draw 'text 70, 190 "'"$PLAYER"'"' \
+                -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
                 "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
                 && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
