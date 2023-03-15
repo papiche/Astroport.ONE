@@ -27,7 +27,7 @@ if [[ ! -d $img_dir ]]; then
                 echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
                 ## USE G1BARRE OR G1WorldMap.png AS 1ST IMAGE
-                curl -so ~/.zen/tmp/carousel/${pub}.one.png \
+                curl -m 3 -so ~/.zen/tmp/carousel/${pub}.one.png \
                 "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
                 [[ $(file -b ~/.zen/tmp/carousel/${pub}.one.png | cut -d ' ' -f 1) == "PNG" ]] \
                 && echo "GOT ~/.zen/tmp/carousel/${pub}.one.png" \
