@@ -20,21 +20,30 @@ if [[ ! -d $img_dir ]]; then
                 pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
 
                 # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-                echo $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance
+                echo "$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance"
                 $MY_PATH/COINScheck.sh $pub > ~/.zen/tmp/coins
                 cat ~/.zen/tmp/coins
                 COINS=$(cat ~/.zen/tmp/coins | tail -n 1)
                 echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
-                ## USE G1BARRE SERVICE AS 1ST IMAGE
+                ## USE G1BARRE OR G1WorldMap.png AS 1ST IMAGE
                 curl -so ~/.zen/tmp/carousel/${pub}.one.png \
                 "https://g1sms.fr/g1barre/image.php?pubkey=${pub}&target=20000&title=${PLAYER}&node=g1.asycn.io&start_date=2020-01-01&display_pubkey=true&display_qrcode=true"
-                echo "GOT ~/.zen/tmp/carousel/${pub}.one.png"
+                [[ $(file -b ~/.zen/tmp/carousel/${pub}.one.png | cut -d ' ' -f 1) == "PNG" ]] \
+                && echo "GOT ~/.zen/tmp/carousel/${pub}.one.png" \
+                || cp $MY_PATH/../images/G1WorldMap.png ~/.zen/tmp/carousel/${pub}.one.png
+
+
+                CIMG="$MY_PATH/../images/g1ticket.png"
+                amzqr ${pub} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+                convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
+                composite -compose Over -gravity SouthEast -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/one.png
 
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
-                -pointsize 80 -fill black -draw 'text 150,120 "'"$COINS Ğ1"'"' \
-                "${HOME}/.zen/tmp/carousel/${pub}.one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
+                -pointsize 80 -fill purple -draw 'text 150,120 "'"$COINS Ğ1"'"' \
+                -pointsize 30 -fill purple -draw 'text 170, 190 "'"$PLAYER"'"' \
+                "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
                 && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
                 ## PREPARE LOOP LINK LINE
@@ -76,7 +85,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h2> $myHOST : $(date) <div id=\"countdown\"></div></h2>
+  <h2 id=\"countdown\"> $myHOST : $(date)</h2>
 
 <div class=\"container\">
 
