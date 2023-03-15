@@ -36,8 +36,8 @@ if [[ ! -d $img_dir ]]; then
 
                 CIMG="$MY_PATH/../images/g1ticket.png"
                 amzqr ${pub} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
-                convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
-                composite -compose Over -gravity SouthEast -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/one.png
+                convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 250 ~/.zen/tmp/QR.png
+                composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/one.png
 
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
