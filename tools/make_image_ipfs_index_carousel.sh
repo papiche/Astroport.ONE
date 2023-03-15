@@ -163,6 +163,7 @@ echo "</body></html>" >> $html_file
 
 htmlipfs=$(ipfs add -q $html_file)
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
-echo /ipfs/$htmlipfs
+
+echo "/ipfs/$htmlipfs"
 
 exit 0
