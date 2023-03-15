@@ -41,8 +41,8 @@ if [[ ! -d $img_dir ]]; then
 
                 ## WRITE ON IT : ASK FOR REFILL
                 convert -font 'Liberation-Sans' \
-                -pointsize 80 -fill purple -draw 'text 150,120 "'"$COINS Ğ1"'"' \
-                -pointsize 30 -fill purple -draw 'text 170, 190 "'"$PLAYER"'"' \
+                -pointsize 80 -fill purple -draw 'text 50,120 "'"$COINS Ğ1"'"' \
+                -pointsize 30 -fill purple -draw 'text 70, 190 "'"$PLAYER"'"' \
                 "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
                 && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
@@ -85,7 +85,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h2 id=\"countdown\"> $myHOST : $(date)</h2>
+  <h3 id=\"countdown\"> $myHOST : $(date)</h3>
 
 <div class=\"container\">
 
