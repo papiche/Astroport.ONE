@@ -128,8 +128,8 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
 
   MORE="${i%.png}.insert"
   echo "$MORE"
-  BUTTON="${i%.png}.button"
-  echo "$BUTTON"
+  CODEBOUTON="$(cat ${i%.png}.button)"
+  echo "$CODEBOUTON"
 
   LINK="<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">"
   [[ -s $MORE ]] && ZLINK=$(cat $MORE | sed "s~_REPLACE_~$LINK~g") || ZLINK="$LINK"
@@ -137,14 +137,16 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
 
   if [ $num -eq 1 ]; then
     echo "      <div class=\"carousel-item active\">
+        $CODEBOUTON
+        <br>
         $ZLINK
-        <br>$BUTTON
       </div>" >> $core_file
   else
     echo "      <div class=\"carousel-item\">
+        $CODEBOUTON
+        <br>
         $ZLINK
-        <br>$BUTTON
-      </div>" >> $core_file
+       </div>" >> $core_file
   fi
   num=$((num+1))
 fi

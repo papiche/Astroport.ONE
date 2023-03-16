@@ -47,14 +47,15 @@ if [[ ${QRCODE} == "station" ]]; then
         sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
 
         WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
-        echo "NEW WSTATION ${myIPFS}${WSTATION}"
         echo $WSTATION > ~/.zen/tmp/WSTATION
-
+        end=`date +%s`
+        echo "NEW WSTATION ${myIPFS}${WSTATION} Execution time was "`expr $end - $start` seconds.
     ## SEND TO WSTATION PAGE
     sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi
@@ -73,7 +74,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    rm -Rf ~/.zen/tmp/${MOATS}
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi
@@ -95,7 +96,7 @@ if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
     echo "url='"${myG1BILLET}"?montant=0\&style=jeu'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    rm -Rf ~/.zen/tmp/${MOATS}
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 
