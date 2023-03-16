@@ -71,6 +71,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
     ## REDIRECT TO G1VOEU IPNS ADDRESS
     LINK=$(cat $ASTROPATH/voeux/${QRCODE:2}/*/.link)
+    [[ $LINK == "" ]] && $LINK="$myIPFS/ipfs/QmWUZr62SpriLPuqauMbMxvw971qnu741hV8EhrHmKF2Y4" ## 404 LOST IN CYBERSPACE
     echo "#>>> DISPLAY WISHNS >>>> # $VOEU : $LINK"
     sed "s~_TWLINK_~${LINK}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
