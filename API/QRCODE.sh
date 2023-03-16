@@ -30,7 +30,7 @@ TYPE=$WHAT
 mkdir -p ~/.zen/tmp/${MOATS}/
 ################################################################################
 ## REFRESH STATION & OPEN G1PalPay INTERFACE
-################################################################################
+###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
     # rm ~/.zen/tmp/ISTATION ## REMOVE IN PROD
@@ -60,11 +60,31 @@ if [[ ${QRCODE} == "station" ]]; then
 fi
 
 ################################################################################
+## MODE G1VOEU : RETURN WISHNS - image carousel links -
+################################################################################
+if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
+    APPNAME="G1Voeu"
+    VOEU=${QRCODE}
+    ASTROPATH=$(grep ${THIS} ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+    ## REDIRECT TO G1VOEU IPNS ADDRESS
+    LINK=$(cat $ASTROPATH/voeux/${QRCODE:2}/*/.link)
+    echo "#>>> DISPLAY WISHNS >>>> # $VOEU : $LINK"
+    sed "s~_TWLINK_~${LINK}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    rm -Rf ~/.zen/tmp/${MOATS}
+    ) &
+    exit 0
+fi
+
+################################################################################
 ## QRCODE can be ASTRONAUTENS or G1PUB format
 ################################################################################
 ## ACCOUNT IPNS FORMAT : CHANGE .current
 ASTROPATH=$(grep $QRCODE ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
+
     rm ~/.zen/game/players/.current
     ln -s $ASTROPATH ~/.zen/game/players/.current
     echo "LINKING $ASTROPATH to .current"
@@ -78,6 +98,7 @@ if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
     rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
+
 else
 
     echo "NOT ON BOARD"

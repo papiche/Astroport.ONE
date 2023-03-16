@@ -54,7 +54,7 @@ if [[ ! -d $img_dir ]]; then
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
                 ## Add Button for every wish : TODO
-                echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1CopierYoutube&tw=$ASTRONAUTENS', '', 7654)\">G1CopierYoutube</button>" > ~/.zen/tmp/carousel/${pub}.button
+                echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1CopierYoutube&tw=$ASTRONAUTENS', 'parent', 9000)\">G1CopierYoutube</button>" > ~/.zen/tmp/carousel/${pub}.button
 ##################
 
         done
@@ -89,8 +89,8 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h3> $myHOST :: ${#PLAYERONE[@]} <div id=\"countdown\"></div></h3>
-<div id=ainfo>AINFO</div>
+  <h3><div id=ainfo>$myHOST :: ${#PLAYERONE[@]} :: </div><div id=\"countdown\"></div></h3>
+
 <div class=\"container\">
 
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
@@ -143,6 +143,7 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
   else
     echo "      <div class=\"carousel-item\">
         $ZLINK
+        <br>$BUTTON
       </div>" >> $core_file
   fi
   num=$((num+1))

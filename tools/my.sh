@@ -352,7 +352,7 @@ myHtml() {
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
         -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
         -e "s~_HOSTNAME_~$(hostname)~g" \
-        -e "s~.000.~.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
+        -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
       ~/.zen/Astroport.ONE/templates/register.html)
     [ -z "$isLAN" ] \
      || myHtml=$($RUN echo "$myHtml" | sed \
