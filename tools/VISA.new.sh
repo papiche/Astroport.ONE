@@ -197,23 +197,23 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     ## SEC PASS PROTECTED QRCODE : base58 secret.june / openssl(pass)
     #~ secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
     #~ echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
-    openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS" 2>/dev/null
+    openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS"
     PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec  | base64 -w 0 | jq -sRr '@uri' )
     HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
     qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
-    ## ADD NAME
     cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
-    convert -gravity northwest -pointsize 28 -fill black -draw "text 40,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond.png ~/.zen/tmp/${MOATS}/result.png
-    ## convert -gravity southeast -pointsize 50 -fill black -draw "text 40,40 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
     amzqr  "$myASTRONEF/?qrcode=$G1PUB&junesec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
-                -d $HOME/.zen/game/players/${PLAYER} \
+                -d ~/.zen/tmp/${MOATS} \
                 -l H \
-                -p ~/.zen/tmp/${MOATS}/result.png
+                -p ~/.zen/tmp/${MOATS}/fond.png
 
     rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+
+    ## ADD PLAYER EMAIL
+    convert -gravity northwest -pointsize 28 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/game/players/${PLAYER}/result_qrcode.png
 
     ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/result_qrcode.png | tail -n 1)"
 
@@ -461,8 +461,8 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "G1VISA : ${myIPFS}/ipfs/${IASTRO}"
-echo "ASTROQR : ${myIPFS}/ipfs/${ASTROQR}"
+echo "G1VISA : ${myIPFS}${IASTRO}"
+echo "ASTROQR : ${myIPFS}${ASTROQR}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
 echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; sleep 1
