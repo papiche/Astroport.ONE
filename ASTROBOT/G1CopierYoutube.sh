@@ -166,10 +166,17 @@ if [[ ! ${TIDDLER} ]]; then
 
         ### CREATE GIF ANIM : make_video_gifanim_ipfs.sh
         $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "$HOME/.zen/tmp/yt-dlp" "$ZFILE" | tail -n 1) ## export ANIMH
-        echo "/ipfs/$ANIMH"
+        echo "HOP=$HOP
+        ANIMH=$ANIMH
+        PROBETIME=$PROBETIME
+        DURATION=$DURATION
+        DUREE=$DUREE
+        RES=$RES
+        MIME=$MIME
+        VTRATIO=$VTRATIO
+        file=$file"
+
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
-
-
         echo "Adding to IPFS"
         ILINK=$(ipfs add -q "$HOME/.zen/tmp/yt-dlp/$ZFILE" | tail -n 1)
         echo "/ipfs/$ILINK === $ZFILE"

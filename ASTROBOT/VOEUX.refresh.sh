@@ -134,7 +134,7 @@ do
         echo  ">>> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW$VOEUNS/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
-                 --render '.'_ ${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
+                 --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
 
         ##################################
         ## MAKE EARTH MAP TILES
