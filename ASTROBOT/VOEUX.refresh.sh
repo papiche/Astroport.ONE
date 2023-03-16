@@ -141,8 +141,8 @@ do
         echo
         # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
         echo
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs ]] \
-        && ipfs add -qrw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1 > ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs
+        #~ [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs ]] # REACTIVATE .?
+        ipfs add -qrw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1 > ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs
         QRLINK=$(cat ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs)
 
         ##################################
