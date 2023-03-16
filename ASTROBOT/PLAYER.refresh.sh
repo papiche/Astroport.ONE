@@ -22,14 +22,14 @@ echo "FOUND : ${PLAYERONE[@]}"
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/${PLAYER:-undefined} ]] && echo "BAD $PLAYERONE" && continue
+    [[ ! $(echo "$PLAYER" | grep '@') ]] && continue
 
     # CLEAN LOST ACCOUNT
     [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && rm -Rf ~/.zen/game/players/$PLAYER
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ ! $(echo "$PLAYER" | grep '@') ]] && continue
-
     mkdir -p ~/.zen/tmp/${MOATS}
+
     echo "##################################################################"
     echo ">>>>> PLAYER : $PLAYER >>>>>>>>>>>>> REFRESHING TW STATION"
     echo "##################################################################"
@@ -56,7 +56,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -f ~/.zen/game/players/$PLAYER/secret.dunikey ]] && echo "$PLAYER secret.dunikey NOT HERE CONTINUE -- " \
                                                                                                             && mv ~/.zen/game/players/$PLAYER ~/.zen/game/players/.$PLAYER  &&  continue
 
-    ## MY PLAYER
+    ## MY PLAYER : RESTORE PLAYER KEY FROM G1PUB
     ipfs key export $G1PUB -o ~/.zen/tmp/${MOATS}/$PLAYER.key
     [[ ! $(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1) ]] && ipfs key import $PLAYER ~/.zen/tmp/${MOATS}/$PLAYER.key
     rm -f ~/.zen/tmp/${MOATS}/$PLAYER.key

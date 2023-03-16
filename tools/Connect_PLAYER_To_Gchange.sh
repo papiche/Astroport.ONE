@@ -116,23 +116,23 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     ########################################################################
     # echo "set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}""
     ########################################################################
-    if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
+    #~ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
 
-        echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=$G1PUB"
+        #~ echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=$G1PUB"
 
-        ${MY_PATH}/timeout.sh -t 20 \
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
-        [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
-        || cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/gchange.1st.json
+        #~ ${MY_PATH}/timeout.sh -t 20 \
+        #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
+        #~ [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
+        #~ || cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/gchange.1st.json
 
-        echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
+        #~ echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
 
-        ${MY_PATH}/timeout.sh -t 20 \
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
-        [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" \
-        || cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/cesium.1st.json
+        #~ ${MY_PATH}/timeout.sh -t 20 \
+        #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
+        #~ [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" \
+        #~ || cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/cesium.1st.json
 
-    fi
+    #~ fi
 
 
 ## GET LAST ONLINE gchange & cesium PROFILE
