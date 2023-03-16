@@ -102,7 +102,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h3><div id=ainfo>$myHOST :: ${#PLAYERONE[@]} :: </div><div id=\"countdown\"></div></h3>
+  <h3><div id=\"countdown\">$myHOST :: ${#PLAYERONE[@]} :: </div><div id=\"ainfo\"></div></h3>
 
 <div class=\"container\">
 
