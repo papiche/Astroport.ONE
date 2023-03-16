@@ -53,8 +53,21 @@ if [[ ! -d $img_dir ]]; then
                 && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'tab', '3000')\" title=\"$PLAYER ($COINS G1) CHARGEUR DE G1BILLET \">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
-                ## Add Button for every wish : TODO
-                echo "Ŋ1Flux <button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1CopierYoutube&tw=$ASTRONAUTENS', 'parent', 9000)\">G1CopierYoutube</button>" > ~/.zen/tmp/carousel/${pub}.button
+                ## EXTRACT G1Voeu FROM PLAYER TW
+                echo "Ŋ1Flux " > ~/.zen/tmp/carousel/${pub}.button
+                INDEX=~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+                if [[ -s  ${INDEX} ]]; then
+                    tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+                    cat ~/.zen/tmp/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${PLAYER}.g1wishes.txt
+                    while read WISH
+                    do
+                        [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
+                        WISHNAME=$(cat ~/.zen/tmp/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
+                        [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
+                        echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1$WISHNAME&tw=$ASTRONAUTENS', 'parent', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
+                    done < ~/.zen/tmp/${PLAYER}.g1wishes.txt
+                fi
+
 ##################
 
         done
