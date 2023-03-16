@@ -141,6 +141,10 @@ do
         echo
         # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
         echo
+        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs ]] \
+        && ipfs add -qrw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1> ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs
+        QRLINK=$(cat ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs)
+
         ##################################
         cat $MY_PATH/../www/PasseportTerre/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
@@ -148,6 +152,7 @@ do
                     -e "s~_PLAYER_~${PLAYER}~g" \
                     -e "s~_VOEUNS_~${VOEUNS}~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                    -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}/QRG1avatar.png~g" \
         > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
                 ### PREPARE WISHNAME index.html
         ##################################

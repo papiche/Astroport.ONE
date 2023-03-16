@@ -67,6 +67,8 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     APPNAME="G1Voeu"
     VOEU=${QRCODE}
     ASTROPATH=$(grep ${THIS} ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+    echo $ASTROPATH
+
     ## REDIRECT TO G1VOEU IPNS ADDRESS
     LINK=$(cat $ASTROPATH/voeux/${QRCODE:2}/*/.link)
     echo "#>>> DISPLAY WISHNS >>>> # $VOEU : $LINK"
