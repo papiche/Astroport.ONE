@@ -54,7 +54,7 @@ if [[ ! -d $img_dir ]]; then
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
                 ## Add Button for every wish : TODO
-                echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1CopierYoutube&tw=$ASTRONAUTENS', 'parent', 9000)\">G1CopierYoutube</button>" > ~/.zen/tmp/carousel/${pub}.button
+                echo "Ŋ1Flux <button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1CopierYoutube&tw=$ASTRONAUTENS', 'parent', 9000)\">G1CopierYoutube</button>" > ~/.zen/tmp/carousel/${pub}.button
 ##################
 
         done
@@ -75,7 +75,7 @@ echo "<!DOCTYPE html>
 <body>" > $html_file
 
 echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
-    <script src=\"/ipfs/QmTde2kdwzujAiPHxFXib5z5aKHa7had3FgAyDe8ST4a9L/astro.js\"></script>
+    <script src=\"/ipfs/QmRyLAbPErFY4nv56Dun1C1KBhE4wyP38ivpeV7rDFb7Fq/astro.js\"></script>
 
 <style>
 .carousel-item {
