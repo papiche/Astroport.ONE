@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+    />
+    <title>Sorry. Empty Slot in your Metaverse ! </title>
+    <script src="./Cesium.js"></script>
+    <script>window.CESIUM_BASE_URL = "./";</script>
+  </head>
+  <body>
+<style>
+      @import url(./Cesium.widgets.css);
+    </style>
+    <a href="javascript:history.go(-1)"><div id="cesiumContainer" class="fullSize"></div>
+    <div id="toolbar"></div></a>
+    <script id="cesium_sandcastle_script">
+window.startup = function (Cesium) {
+    'use strict';
+    //Sandcastle_Begin
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      imageryProvider: new Cesium.TileMapServiceImageryProvider({
+        url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+      }),
+      baseLayerPicker: false,
+      geocoder: false,
+    });
+    //Sandcastle_End
+    Sandcastle.finishedLoading();
+};
+if (typeof Cesium !== 'undefined') {
+    window.startupCalled = true;
+    window.startup(Cesium);
+}
+</script>
+</body>
+</html>
