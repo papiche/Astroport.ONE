@@ -41,6 +41,9 @@ async function homeAstroportStation(myURL, option = '', duration = 3000) {
                     case "page":
                           window.location.replace(redirectURL);
                           break;
+                    case "parent":
+                          window.parent.location.replace(redirectURL);
+                          break;
                     case "aframe":
                           document.getElementById("aframe").src = redirectURL;
                           break;

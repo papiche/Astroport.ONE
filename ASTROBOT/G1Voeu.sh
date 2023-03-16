@@ -40,19 +40,19 @@ MOATS="$4"
 mkdir -p ~/.zen/tmp/$MOATS
 
 #####################################################
-# CREATION DU TW G1VOEU
+# CREATION DE LA CLEF DERIVEE "G1VOEU"
 #####################################################
-    source ~/.zen/game/players/$PLAYER/secret.june ## CLEF DERIVEE ET MEMORISABLE
+    source ~/.zen/game/players/$PLAYER/secret.june ## LE PEPPER DU PLAYER DEVIENT LE SALT DU G1VOEU
     [[ $PEPPER ]] && echo "Using PLAYER PEPPER AS WISH SALT" && SALT=$PEPPER ##
     [[ ! $SALT ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
     echo "$SALT"
 
     echo "## TITRE DU G1VOEU ? CapitalGluedWords please"
     [[ ! $TITRE ]] && read TITRE
-    PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+    PEPPER=$(echo "$TITRE" | sed -r 's/\<./\U&/g' | sed 's/ //g') # PEPPER EST LE TITRE DU VOEU : CapitalGluedWords
     echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
 
-    echo "## keygen CLEF DE VOEUX from PLAYER : pepper + G1WishName derivation"
+    echo "## keygen PLAYER DERIVATE WISH KEY"
     ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
     WISHKEY=$(cat ~/.zen/tmp/qrtw.dunikey | grep "pub:" | cut -d ' ' -f 2)
     echo "WISHKEY (G1PUB) = $WISHKEY"
@@ -71,10 +71,10 @@ mkdir -p ~/.zen/tmp/$MOATS
     echo $ENCODING
 
     ## TEST IPFS
-    ipfs --timeout=30s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.json
-    [[ -s ~/.zen/tmp/$VOEUNS.json ]] \
-    && echo "HEY !!! UN CHANNEL EXISTE DEJA POUR CE VOEU !  ~/.zen/tmp/$VOEUNS.json  - EXIT -" \
-    && exit 1
+    #~ ipfs --timeout=30s cat /ipns/$VOEUNS > ~/.zen/tmp/$VOEUNS.json
+    #~ [[ -s ~/.zen/tmp/$VOEUNS.json ]] \
+    #~ && echo "HEY !!! UN CHANNEL EXISTE DEJA POUR CE VOEU !  ~/.zen/tmp/$VOEUNS.json  - EXIT -" \
+    #~ && exit 1
 
     echo "# UPGRADING WORLD WHISHKEY DATABASE"
 
@@ -125,7 +125,7 @@ composite -compose Over -gravity NorthWest -geometry +350+10 ~/.zen/tmp/ASTROLOG
 composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/QRWISHLINK.png ~/.zen/tmp/astroport.png ~/.zen/tmp/one.png
 convert -gravity northwest -pointsize 20 -fill black -draw "text 320,250 \"$PLAYER\"" ~/.zen/tmp/one.png ~/.zen/tmp/hop.png
 convert -gravity northwest -pointsize 30 -fill black -draw "text 20,320 \"$PEPPER\"" ~/.zen/tmp/hop.png ~/.zen/tmp/pseudo.png
-convert -gravity northwest -pointsize 30 -fill black -draw "text 320,300 \"$SALT\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/salt.png
+convert -gravity northwest -pointsize 30 -fill black -draw "text 320,300 \"*****\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/salt.png
 convert -gravity northwest -pointsize 33 -fill black -draw "text 320,350 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/player.png
 
 #################################

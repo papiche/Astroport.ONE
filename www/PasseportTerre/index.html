@@ -91,6 +91,14 @@
     margin-top: -12.5px;
     cursor: pointer;
 }
+#yellow {
+      background: black;
+      position: absolute;
+      bottom: 2%;
+      left: 2%;
+      width: 60%;
+      visibility: hidden;
+    }
   </style>
   </head>
 
@@ -151,7 +159,7 @@
       // Générer le HTML
       pageGifs.forEach((gif, i) => {
         output += `
-          <a target="astroplay" href="_LIBRA_${pageUrls[i]}">
+          <a target="astroplay" href="javascript:document.getElementById('aframe').src = _LIBRA_${pageUrls[i]}">
             <img src="_LIBRA_${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
           </a>
         `;
@@ -199,13 +207,25 @@ Plus vous vérifiez votre identité, plus vous aurez d'opportunités de voter et
 
         <p><a href="https://ipfs.copylaradio.com/ipns/_ASTRONAUTENS_">TW♥BOX  "_PLAYER_"</a></p>
 
+        <p>
+        <br>
+        <br> 👍 IPFS DATA STORAGE 👍 </p>
+        <p>Powered by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
+        <p>/ <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a> / <a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a> /
+
+      </div>
+
+ </div>
+
+
+
         <div class="choose_example">
           Choose example: <select id="example">
             <option value="simple">Simple earth</option>
             <option value="simple_tilted">Simple tilted earth</option>
             <option value="simple_mars">Simple mars</option>
-            <option value="locations">Earth with locations</option>
-            <option value="flights" selected>Earth with locations and flights</option>
+            <option value="locations" selected>Earth with locations</option>
+            <option value="flights">Earth with locations and flights</option>
           </select>
         </div>
         <div class="code">
@@ -214,17 +234,12 @@ Plus vous vérifiez votre identité, plus vous aurez d'opportunités de voter et
           <textarea id="example_code" onclick="this.focus();this.select();"></textarea>
         </div>
 
-      </div>
 
- </div>
-
-
-
-
-        <p>
-        <br>
-        <br> 👍 IPFS DATA STORAGE 👍 </p>
-        <p>Powered by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
-        <p>/ <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a> / <a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a> /
-
+    <div id="yellow" >
+        <iframe id="aframe" src="_STATION_" width="100%" height="280px"></iframe>
+    </div>
+    <script>
+    const el = document.getElementById('yellow');
+    el.style.visibility = 'visible';
+    </script>
  </body></html>

@@ -46,13 +46,16 @@ if [[ ! -d $img_dir ]]; then
                 -pointsize 14 -fill white -draw 'text 40, 200 "'"$(date)"'"' \
                 "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
                 && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
-
+    ##################
                 ## PREPARE LOOP LINK LINE
                 ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
                 [[ $COINS -gt 0 ]] \
-                && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'tab', '2500')\" title=\"$PLAYER ($COINS G1)\">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
+                && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'tab', '3000')\" title=\"$PLAYER ($COINS G1) CHARGEUR DE G1BILLET \">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
+                ## Add Button for every wish : TODO
+                echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1CopierYoutube&tw=$ASTRONAUTENS', '', 7654)\">G1CopierYoutube</button>" > ~/.zen/tmp/carousel/${pub}.button
+##################
 
         done
         img_dir="$HOME/.zen/tmp/carousel"
@@ -86,8 +89,8 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h3 id=\"countdown\"> $myHOST :: ${#PLAYERONE[@]}</h3>
-
+  <h3> $myHOST :: ${#PLAYERONE[@]} <div id=\"countdown\"></div></h3>
+<div id=ainfo>AINFO</div>
 <div class=\"container\">
 
   <div id=\"myCarousel\" class=\"carousel slide\" data-ride=\"carousel\">
@@ -125,14 +128,17 @@ if [[ $i =~ \.(JPG|jpg|PNG|png|JPEG|jpeg|GIF|gif)$ ]]; then
 
   MORE="${i%.png}.insert"
   echo "$MORE"
+  BUTTON="${i%.png}.button"
+  echo "$BUTTON"
+
   LINK="<img src=\"/ipfs/$ilink\" alt=\"$img_alt\" width=\"$img_width\" height=\"$img_height\">"
   [[ -s $MORE ]] && ZLINK=$(cat $MORE | sed "s~_REPLACE_~$LINK~g") || ZLINK="$LINK"
-
-  echo $ZLINK
+  # echo $ZLINK
 
   if [ $num -eq 1 ]; then
     echo "      <div class=\"carousel-item active\">
         $ZLINK
+        <br>$BUTTON
       </div>" >> $core_file
   else
     echo "      <div class=\"carousel-item\">

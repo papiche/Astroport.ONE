@@ -414,7 +414,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ##############################################
         if [[ $APPNAME == "getipns" ]]; then
             ( echo "$HTTPCORS
-            url=${ASTRONAUTENS}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getipns : ${ASTRONAUTENS}" ) &
+            url='"${ASTRONAUTENS}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getipns : ${ASTRONAUTENS}" ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
             exit 0
@@ -425,7 +425,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ##############################################
         if [[ $APPNAME == "getg1pub" ]]; then
             ( echo "$HTTPCORS
-            url=${G1PUB}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getg1pub : ${G1PUB}" ) &
+            url='"${G1PUB}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getg1pub : ${G1PUB}" ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
             exit 0

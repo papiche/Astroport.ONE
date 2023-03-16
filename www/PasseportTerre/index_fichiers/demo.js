@@ -60,6 +60,7 @@ examples['locations'] = function() {
       link: 'https://oasis.astroport.com#europe'
     }
   };
+
   $('#sphere').earth3d({
     locationsElement: $('#locations'),
     dragElement: $('#locations'), // where do we catch the mouse drag

@@ -154,11 +154,11 @@ Take possession of your TW. Make freedom of expression uncensurable, unstoppable
 
 <script>
 const el = document.getElementById('yellow');
-const log = document.getElementById('login');
+// const log = document.getElementById('login');
 
 setTimeout(() => {
     el.style.visibility = 'visible';
-    log.style.visibility = 'visible';
+//    log.style.visibility = 'visible';
 }, 23456); // 👈️ delay in milliseconds
 
 var arrTimes = [];
@@ -207,7 +207,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "Remplacez les '0' par les identifiants de votre G1BILLET. Validez";
+            document.getElementById("countdown").innerHTML = "Remplacez les '0' par les identifiants de votre G1BILLET.";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;
