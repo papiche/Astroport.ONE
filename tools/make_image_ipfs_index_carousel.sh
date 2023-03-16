@@ -75,7 +75,7 @@ echo "<!DOCTYPE html>
 <body>" > $html_file
 
 echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
-    <script src=\"/ipfs/QmUre8yT9cMnkDikXWLbvCAurDB16EiYxBwrX9VCComhC8/astro.js\"></script>
+    <script src=\"/ipfs/QmTde2kdwzujAiPHxFXib5z5aKHa7had3FgAyDe8ST4a9L/astro.js\"></script>
 
 <style>
 .carousel-item {
