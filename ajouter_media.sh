@@ -164,7 +164,7 @@ espeak "$COINS JUNE Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3 Kodi)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
@@ -202,26 +202,7 @@ case ${CAT} in
 
     exit 0
     ;;
-########################################################################
-# CASE ## KODI
- #~ _  __         _ _
-#~ | |/ /___   __| (_)
-#~ | ' // _ \ / _` | |
-#~ | . \ (_) | (_| | |
-#~ |_|\_\___/ \__,_|_|
-########################################################################
-    kodi)
 
-    espeak "Kodi U Q Load"
-
-    [ ! $2 ] && zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
-
-    ## EXTRACT AND COPY VIDEO FROM UQLOAD
-    ${MY_PATH}/tools/download_from_kodi_log.sh
-
-
-    exit 0
-    ;;
 ########################################################################
 # CASE ## YOUTUBE
 #                   _         _

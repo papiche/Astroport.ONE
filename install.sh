@@ -176,30 +176,24 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
 if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' ]]; then
 (
-echo " ### EXPERIMENTAL ### FINISH ASTROPORT/KODI SETUP BY IPFS ## OUI ? ENTER sinon Ctrl+C"
+echo " ### AUTO CONFIG ## IPFS # KODI FR PLUGIN ## "
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
     ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
-    echo '## PLUGIN INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
-
+    echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
     mv ~/.kodi ~/.kodi.back 2>/dev/null
-    mv ~/.zen/tmp/kodi ~/.kodi \
-    && cp -Rf ~/.zen/Astroport.ONE/templates/.uqld /tmp && cd /tmp/.uqld \
-    && g++ -o uqload_downloader uqload_downloader.cpp Downloader.cpp -lcurl \
-    && [[ -f uqload_downloader ]] && sudo mv uqload_downloader /usr/local/bin/ \
-    && sudo ln -s ~/.zen/Astroport.ONE/tools/download_from_kodi_log.sh /usr/local/bin/download_from_kodi_log \
-    || echo "SOMETHING IS NOT WORKING WELL : PLEASE CREATE AN ISSSUE"
+    mv ~/.zen/tmp/kodi ~/.kodi
 ) &
 fi
 
 echo "#############################################"
 echo "#############################################"
-    echo "Astroport.ONE INSTALLATION"
+    echo "Astroport.ONE INSTALLATION FINISH"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
 echo "%%%%%%%%%%%%%%%%%%%%"
-echo "IMPORTER VOTRE COMPTE GCHANGE"
+echo "CREEZ VOTRE COMPTE"
 echo "          "
 echo "%%%%%%%%%%%%%%%%%%%%"
 echo "#############################################"

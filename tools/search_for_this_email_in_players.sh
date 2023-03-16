@@ -8,6 +8,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
+### TODO MAKE IT WORKS BETTER
+### USE 12345 MAP
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
