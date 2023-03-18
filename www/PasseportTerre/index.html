@@ -164,7 +164,7 @@
       // Générer le HTML
       pageGifs.forEach((gif, i) => {
         output += `
-          <a target="astroplay" href="javascript:document.getElementById('aframe').src = _LIBRA_${pageUrls[i]}">
+          <a target="aframe" href="_LIBRA_${pageUrls[i]}">
             <img src="_LIBRA_${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
           </a>
         `;
