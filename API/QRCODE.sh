@@ -89,14 +89,16 @@ fi
 ASTROPATH=$(grep $QRCODE ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
 
+    PLAYER=$(echo $ASTROPATH | rev | cut -d '/' -f 1 | rev)
+
     rm ~/.zen/game/players/.current
     ln -s $ASTROPATH ~/.zen/game/players/.current
     echo "LINKING $ASTROPATH to .current"
     #### SELECT PARRAIN "G1PalPé"
 
     echo "#>>>>>>>>>>>> # REDIRECT TO CREATE G1BILLETS"
-    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=jeu~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myG1BILLET}"?montant=0\&style=jeu'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=$PLAYER~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myG1BILLET}"?montant=0\&style=$PLAYER'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
