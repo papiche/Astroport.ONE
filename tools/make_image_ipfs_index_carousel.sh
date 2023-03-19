@@ -54,7 +54,7 @@ if [[ ! -d $img_dir ]]; then
                 || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
                 ## EXTRACT G1Voeu FROM PLAYER TW
-                echo "Ŋ1Flux " > ~/.zen/tmp/carousel/${pub}.button
+                echo "Ŋ1Flux ___ " > ~/.zen/tmp/carousel/${pub}.button
                 INDEX=~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
                 if [[ -s  ${INDEX} ]]; then
                     tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
@@ -67,7 +67,7 @@ if [[ ! -d $img_dir ]]; then
                         echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1$WISHNAME&tw=$ASTRONAUTENS', 'parent', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
                     done < ~/.zen/tmp/${PLAYER}.g1wishes.txt
                 fi
-
+                echo "<button onclick=\"window.location.href = '"$myIPFS"/ipns/"$ASTRONAUTENS"'\">TW</button>" >> ~/.zen/tmp/carousel/${pub}.button
 ##################
 
         done
