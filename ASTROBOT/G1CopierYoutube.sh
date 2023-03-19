@@ -54,6 +54,7 @@ echo "DEBUG : cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
 ###################################################################
 ## URL EXTRACTION & yt-dlp.cache.$PLAYER upgrade
 for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
+    [[ ! $(echo $YURL | grep "http" ) ]] && echo "$YURL error" && continue
     echo "G1CopierYoutube : $YURL"
     echo "Extracting video playlist into yt-dlp.cache.$PLAYER"
 
