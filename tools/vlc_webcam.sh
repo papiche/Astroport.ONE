@@ -142,7 +142,7 @@ echo '[
     "story": "'/ipfs/${IPFSROOT}'",
     "size": "'${FILE_BSIZE}'",
     "ipfs": "'/ipfs/${IPFSID}/output.mp4'",
-    "gif_ipfs": "'/ipfs/${ANIMH}'",
+    "gifanime": "'/ipfs/${ANIMH}'",
     "player": "'${PLAYER}'",
     "tags": "'${PLAYER} G1Vlog vlog ipfs'",
     "modified": "'${MOATS}'"

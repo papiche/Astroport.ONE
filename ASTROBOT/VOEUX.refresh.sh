@@ -110,26 +110,68 @@ do
         ## Search in Local World (NB! G1Voeu TW copied by Connect_PLAYER_To_Gchange.sh)
         FINDEX=($( ls $HOME/.zen/game/players/${PLAYER}/FRIENDS/*/index.html))
 
+        ## PREPARE Ŋ1 WORLD MAP
+        echo "var examples = {};
+        examples['locations'] = function() {
+        var locations = {" > ~/.zen/tmp/world.js
+        floop=1
+
         for FRIENDTW in ${FINDEX[@]};
         do
-            [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && continue
+            [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && ((floop++)) && continue
             APLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
-
-            rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${APLAYER}.tiddlers.json ## CLEANING OLD FORMAT (TODO REMOVE)
 
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
             echo "TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
                                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && continue
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && ((floop++)) && continue
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && ((floop++)) && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             echo  ">>> G1FRIEND § $myIPFS/$VOEUNS/_${APLAYER}.tiddlers.json ${WISHNAME}"
 
+            tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
+            WISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
+            echo ">>> ${myIPFS}${WISHNS}"
+
+            [[ $floop == ${#FINDEX[@]} ]] && virgule="" || virgule=","
+            echo "
+            ${APLAYER}: {
+              alpha: Math.random() * 2 * Math.PI,
+              delta: Math.random() * 2 * Math.PI,
+              name: '"${WISNAME} ${APLAYER}"',
+              link: '"${myIPFS}${WISHNS}"'
+            }$virgule
+            " >> ~/.zen/tmp/world.js
+
+            ((floop++))
         done
         ##################################
-        ## TODO JOIN WITH FRIENDS JSONS
+        ## FINISH LOCATIONS
+        echo"};
+           $('#sphere').earth3d({
+            locationsElement: $('#locations'),
+            dragElement: $('#locations'),
+            locations: locations
+          });
+        };
+
+        $(document).ready(function() {
+          selectExample('locations');
+
+          $('#example').change(function() {
+            selectExample($(this).val());
+          });
+        });
+        " >> ~/.zen/tmp/world.js
+
+        cat ~/.zen/tmp/world.js
+        IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
+        echo "CREATING /ipfs/${IAMAP}/world.js"
+
+        ##################################
+        ## MAKE MY OWN JSON
         ################################## MOA MAINTENANT
         echo  ">>> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW$VOEUNS/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
@@ -141,8 +183,11 @@ do
         echo
         # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
         echo
+
+        ##################################
+        ## INSERT PLAYER G1 QRCODE : QRG1avatar.png
         #~ [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs ]] # REACTIVATE .?
-        ipfs add -qrw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1 > ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs
+        ipfs add -qw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1 > ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs
         QRLINK=$(cat ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs)
 
         ##################################
@@ -151,6 +196,7 @@ do
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
                     -e "s~_PLAYER_~${PLAYER}~g" \
                     -e "s~_VOEUNS_~${VOEUNS}~g" \
+                    -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
                     -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}/QRG1avatar.png~g" \
                     -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
@@ -169,7 +215,7 @@ do
         echo ">>> $VOEUKEY : Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
         echo "~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}"
 
-        mv -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/
+        cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/
 
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 

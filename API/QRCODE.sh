@@ -129,7 +129,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 ###########################################""
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
-echo "SELECTES KEY : $(cat MYPLAYERKEY)"
+echo "SELECTED KEY : $(cat MYPLAYERKEY)"
 echo
 
 ## PARRAIN ID EXTRACTION
@@ -143,16 +143,17 @@ echo "CURRENT PLAYER : $CURCOINS G1"
 ## WALLET JAMAIS SERVI
 ###########################################
 if [[ $CURCOINS == "null" ]]; then
-echo "NULL"
+echo "NULL. PLEASE CHARGE. REDIRECT TO WSTATION HOME"
     sed "s~_TWLINK_~$(cat ~/.zen/WSTATION)~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFSGW}$(cat ~/.zen/WSTATION)"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi
 
-# MOA
+# DETECT WALLET EVOLUTION
 ###########################################
 if [[ ${CURG1} == ${QRCODE} ]]; then
 
@@ -162,7 +163,7 @@ else
 # PAS MOA
 ###########################################
     ## GET VISITOR G1 WANNET AMOUNT : VISITORCOINS
-    echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
+    echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
     VISITORCOINS=$(~/.zen/Astroport.ONE/tools/COINScheck.sh ${QRCODE} | tail -f 1)
 
     ## PALPE COMBIEN ?
@@ -179,13 +180,13 @@ else
         [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.g1history.json ]] \
         && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/coucou/${QRCODE}.g1history.json &
 
-        ## SCAN CCHANGE +
+        ## SCAN GCHANGE +
         [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.gchange.json ]] \
         && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/coucou/${QRCODE}.gchange.json &
 
         GFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.gchange.json | jq -r '.found')
         [[ $GFOUND == "false" ]] \
-        && echo "AUCUN GCHANGE" \
+        && echo "G1BILLET. NO GCHANGE YET. REDIRECT" \
         && sed "s~_TWLINK_~${myGCHANGE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
         && echo "url='"${myGCHANGE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
         && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
@@ -240,9 +241,9 @@ else
 
             ## MESSAGE CESIUM +
             $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CADEAU" \
-            -m "ASTRO:${CURPLAYER} VOUS ENVOI ${PALPE} JUNE.
-            GAGNEZ PLUS DE JUNE... RELIEZ CE PORTEFEUILLE Cesium SUR https://gchange.fr \
-            PUIS REVENEZ SCANNER VOTRE QRCODE"
+            -m "ASTRO:${CURPLAYER} A ENVOYE ${PALPE} JUNE.
+            GAGNEZ PLUS DE JUNE... INSCRIVEZ VOUS SUR GCHANGE  https://gchange.fr \
+            PUIS SCANNEZ VOTRE QRCODE SUR UNE STATION ASTROPORT"
 
     fi
 
@@ -333,6 +334,7 @@ if [[ $AND == "url" ]]; then
 ' > ~/.zen/tmp/${WHAT}.${MOATS}.import.json
 
             ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
+            ## INSERT IN TW
 
             (echo "$HTTPCORS OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
