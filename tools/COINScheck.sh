@@ -53,10 +53,9 @@ echo "$CURCOINS G1"
 ## NO or NULL RESULT in CACHE : REFRESHING
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
-    echo "CACHING ${G1PUB}"
     CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 180 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB} | cut -d '.' -f 1)
-    echo "REFRESH $COINSFILE TO $CURCOINS G1"
     echo "$CURCOINS" > "$COINSFILE"
+    echo $CURCOINS
     ) &
 fi
 
