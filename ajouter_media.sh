@@ -90,7 +90,7 @@ if [ $URL ]; then
 fi
 ###
 
-COINS=$($MY_PATH/COINScheck.sh $G1PUB | tail -n 1)
+COINS=$($MY_PATH/tools/COINScheck.sh $G1PUB | tail -n 1)
 
 ###
 # GET SCREEN DIMENSIONS
