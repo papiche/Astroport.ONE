@@ -118,22 +118,22 @@ do
 
         for FRIENDTW in ${FINDEX[@]};
         do
-            [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && ((floop++)) && continue
+            [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
             APLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
 
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
             echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
             tiddlywiki --load $FRIENDTW \
                                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && ((floop++)) && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && ((floop++)) && continue
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             echo  ">>> G1FRIEND § $myIPFS/$VOEUNS/_${APLAYER}.tiddlers.json ${WISHNAME}"
 
             tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
             WISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
-            [[ $WISHNS == "null" ]] && echo "NO WISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && ((floop++)) && continue
+            [[ $WISHNS == "null" ]] && echo "NO WISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
             echo ">>> ${myIPFS}${WISHNS}"
 
             [[ $floop == ${#FINDEX[@]} ]] && virgule="" || virgule=","
