@@ -149,19 +149,19 @@ do
         done
         ##################################
         ## FINISH LOCATIONS
-        echo"};
-           $('#sphere').earth3d({
-            locationsElement: $('#locations'),
-            dragElement: $('#locations'),
+        echo "};
+           \$('#sphere').earth3d({
+            locationsElement: \$('#locations'),
+            dragElement: \$('#locations'),
             locations: locations
           });
         };
 
-        $(document).ready(function() {
+        \$(document).ready(function() {
           selectExample('locations');
 
-          $('#example').change(function() {
-            selectExample($(this).val());
+          \$('#example').change(function() {
+            selectExample(\$(this).val());
           });
         });
         " >> ~/.zen/tmp/world.js
