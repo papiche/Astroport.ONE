@@ -120,19 +120,26 @@ do
         do
 
             [[ ! -s $FRIENDTW ]] && echo "$floop / ${#FINDEX[@]} $FRIENDTW VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
+
             ## GET FRIEND EMAIL = APLAYER
             tiddlywiki --load $FRIENDTW \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+
             APLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
             echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
             tiddlywiki --load $FRIENDTW \
                                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
+
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] \
+            && echo "NO ${WISHNAME} - CONTINUE -" \
+            && echo && ((floop++)) && continue
+
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] \
+            && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             echo  ">>> G1FRIEND § $myIPFS/$VOEUNS/_${APLAYER}.tiddlers.json ${WISHNAME}"
@@ -142,18 +149,19 @@ do
             [[ $WISHNS == "null" ]] && echo "NO WISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
             echo ">>> ${myIPFS}${WISHNS}"
 
-            [[ $floop == ${#FINDEX[@]} ]] && virgule="" || virgule=","
-            echo "
-            ${APLAYER}: {
+            echo "${APLAYER}: {
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
               name: '"${WISNAME} ${APLAYER}"',
               link: '"${myIPFS}${WISHNS}"'
-            }$virgule
-            " >> ~/.zen/tmp/world.js
+            }
+            ," >> ~/.zen/tmp/world.js
 
             ((floop++))
         done
+
+        # REMOVE la dernière virgule
+        sed -i '$ d' ~/.zen/tmp/world.js
         ##################################
         ## FINISH LOCATIONS
         echo "};
