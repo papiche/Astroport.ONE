@@ -118,11 +118,17 @@ do
 
         for FRIENDTW in ${FINDEX[@]};
         do
-            [[ ! -s $FRIENDTW ]] && echo "$FRIENDTW VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
-            APLAYER=$(ls $FRIENDTW | cut -d '/' -f 7)
+
+            [[ ! -s $FRIENDTW ]] && echo "$floop / ${#FINDEX[@]} $FRIENDTW VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
+            ## GET FRIEND EMAIL = APLAYER
+            tiddlywiki --load $FRIENDTW \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+            [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+            APLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
-            echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $FRIENDTW"
+            echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
             tiddlywiki --load $FRIENDTW \
                                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] && echo "NO ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
