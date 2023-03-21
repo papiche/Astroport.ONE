@@ -128,8 +128,8 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 ## GET G1PUB OR CURRENT SECRET
 ###########################################""
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
-[[ ! $MYPLAYERKEY ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
-echo "SELECTED KEY : $(cat MYPLAYERKEY)"
+[[ $MYPLAYERKEY == "" ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
+echo "SELECTED KEY : $(cat $MYPLAYERKEY)"
 echo
 
 ## PARRAIN ID EXTRACTION
@@ -137,7 +137,9 @@ echo
 CURPLAYER=$(cat ~/.zen/game/players/.current/.player)
 CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
 echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1}"
-CURCOINS=$(~/.zen/Astroport.ONE/tools/COINScheck.sh ${CURG1} | tail -f 1)
+~/.zen/Astroport.ONE/tools/COINScheck.sh ${CURG1} > ~/.zen/tmp/curcoin
+cat ~/.zen/tmp/curcoin
+CURCOINS=$(cat ~/.zen/tmp/curcoin | tail -n 1)
 echo "CURRENT PLAYER : $CURCOINS G1"
 
 ## WALLET JAMAIS SERVI
@@ -164,7 +166,7 @@ else
 ###########################################
     ## GET VISITOR G1 WANNET AMOUNT : VISITORCOINS
     echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
-    VISITORCOINS=$(~/.zen/Astroport.ONE/tools/COINScheck.sh ${QRCODE} | tail -f 1)
+    VISITORCOINS=$(~/.zen/Astroport.ONE/tools/COINScheck.sh ${QRCODE} | tail -n 1)
 
     ## PALPE COMBIEN ?
     if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
@@ -194,7 +196,7 @@ else
         [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.gplus.json ]] \
         && ~/.zen/Astroport.ONE/tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/coucou/${QRCODE}.gplus.json 2>/dev/null &
 
-        GCFOUND=$(cat ~~/.zen/tmp/coucou/${QRCODE}.gplus.json | jq -r '.found')
+        GCFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.gplus.json | jq -r '.found')
         [[ $GCFOUND == "false" ]] \
         && echo "AUCUN GCPLUS : PAS DE CESIUM POUR CLEF GCHANGE" \
         && sed "s~_TWLINK_~https://demo.cesium.app/#/app/wot/$QRCODE/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \

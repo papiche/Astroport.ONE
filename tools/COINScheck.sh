@@ -42,8 +42,8 @@ echo $ASTROPATH
 if [[ -d $ASTROPATH ]]; then
     COINSFILE=$ASTROPATH/ipfs/G1SSB/COINS
 else
-    mkdir -p ~/.zen/tmp/coucou/
-    COINSFILE=~/.zen/tmp/coucou/${G1PUB}.COINS
+    mkdir -p $HOME/.zen/tmp/coucou/
+    COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 fi
 
 echo "ACTUAL $COINSFILE CONTAINS"
