@@ -64,7 +64,7 @@ if [[ ! -d $img_dir ]]; then
                         [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
                         WISHNAME=$(cat ~/.zen/tmp/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
                         [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
-                        echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1$WISHNAME&tw=$ASTRONAUTENS', 'parent', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
+                        echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1$WISHNAME&tw=$ASTRONAUTENS', 'tab', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
                     done < ~/.zen/tmp/${PLAYER}.g1wishes.txt
                 fi
                 echo "<button onclick=\"window.location.href = '"$myIPFS"/ipns/"$ASTRONAUTENS"'\">TW</button>" >> ~/.zen/tmp/carousel/${pub}.button
