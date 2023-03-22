@@ -3,6 +3,6 @@ Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Content-Type: text/html; charset=UTF-8
-Set-Cookie: sessionId= userId=_G1PUB_ ipnsId=_ASTRONAUTENS_
+Set-Cookie: userId=_G1PUB_ ipnsId=_ASTRONAUTENS_
 Location: _TWLINK_
 

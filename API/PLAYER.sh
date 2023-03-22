@@ -21,7 +21,6 @@ Access-Control-Allow-Origin: ${myASTROPORT}
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
-Set-Cookie: sessionId=$PORT userId=_G1PUB_ ipnsId=_ASTRONAUTENS_
 Content-Type: text/html; charset=UTF-8
 
 "
