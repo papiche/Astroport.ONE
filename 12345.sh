@@ -115,6 +115,9 @@ while true; do
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
 
+    ## COOKIE RETRIEVAL ##
+    COOKIE=$(echo "$REQ" | grep '^Cookie:' | cut -d ' ' -f2)
+    echo "COOKIE=$COOKIE"
     ###############    ###############    ###############    ###############
     [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2 &
     ############################################################################
