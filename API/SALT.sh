@@ -452,10 +452,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             fi
 
             echo ${REP}
-
-            REPLACE=${myASTROPORT}/ipns/$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
-
+            ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
+            REPLACE=${myASTROPORT}/ipns/${ASTRONAUTENS}
+            ## SET COOKIE
             sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed -i "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
