@@ -10,20 +10,21 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 
-HTTPCORS="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: ${myASTROPORT}
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Methods: GET
-Server: Astroport.ONE
-Content-Type: text/html; charset=UTF-8
-
-"
-
 start=`date +%s`
 
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
 SALT=$THAT
 PEPPER=$THIS
+
+HTTPCORS="HTTP/1.1 200 OK
+Access-Control-Allow-Origin: ${myASTROPORT}
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
+Server: Astroport.ONE
+Set-Cookie: sessionId=$PORT userId=_G1PUB_ ipnsId=_ASTRONAUTENS_
+Content-Type: text/html; charset=UTF-8
+
+"
 
         [[ ! $APPNAME || $SALT == "pepper" ]] && echo "NO APPNAME - BAD APP - CONTINUE" && exit 1
         ############################################################################

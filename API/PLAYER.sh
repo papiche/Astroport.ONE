@@ -10,21 +10,21 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 
-HTTPCORS="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: ${myASTROPORT}
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Methods: GET
-Server: Astroport.ONE
-Content-Type: text/html; charset=UTF-8
-
-"
-
 start=`date +%s`
 
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
 ### transfer variables according to script
 PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
 
+HTTPCORS="HTTP/1.1 200 OK
+Access-Control-Allow-Origin: ${myASTROPORT}
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
+Server: Astroport.ONE
+Set-Cookie: sessionId=$PORT userId=_G1PUB_ ipnsId=_ASTRONAUTENS_
+Content-Type: text/html; charset=UTF-8
+
+"
         echo "- $PLAYER - $APPNAME : $WHAT $OBJ $VAL"
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
