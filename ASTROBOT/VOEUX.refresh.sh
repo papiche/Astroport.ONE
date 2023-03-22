@@ -170,7 +170,6 @@ do
             dragElement: \$('#locations'),
             locations: locations
           });
-        };
 
         \$(document).ready(function() {
           selectExample('locations');
