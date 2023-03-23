@@ -446,6 +446,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             else
 
+
                 REP="ERROR UNKNOW ${PLAYER}"
 
             fi

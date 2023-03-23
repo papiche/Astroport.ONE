@@ -134,7 +134,7 @@
     const gifContainer = document.querySelector('.gif-container');
     const prevBtn = document.querySelector('#prev');
     const nextBtn = document.querySelector('#next');
-    const pageSize = 12;
+    const pageSize = 4;
 
     let pageNumber = 0;
     let gifs = [];
@@ -143,7 +143,7 @@
     let durees = [];
 
     // Récupérer les données
-    fetch('_LIBRA__VOEUNS_/__PLAYER_.tiddlers.json')
+    fetch('http://127.0.0.1:8080_VOEUNS_/__PLAYER_.tiddlers.json')
       .then(res => res.json())
       .then(data => {
         // Extraire les gifanime
@@ -168,8 +168,8 @@
       // Générer le HTML
       pageGifs.forEach((gif, i) => {
         output += `
-          <a target="aframe" href="_LIBRA_${pageUrls[i]}">
-            <img src="_LIBRA_${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
+          <a target="aframe" href="http://127.0.0.1:8080${pageUrls[i]}">
+            <img src="http://127.0.0.1:8080${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
           </a>
         `;
       });
@@ -233,7 +233,7 @@ TODO:
 
 
         <div class="choose_example">
-          Choose example: <select id="example">
+          Choose Planet: <select id="example">
 <!--
             <option value="simple">Simple earth</option>
             <option value="simple_tilted">Simple tilted earth</option>
