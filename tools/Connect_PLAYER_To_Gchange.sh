@@ -270,7 +270,7 @@ do
                                 --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
             [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ]] && echo "NO ${FPLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json -" && continue
 
-            echo "DEBUG RSS : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json | jq -r"
+            echo "> DEBUG RSS : cat ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json | jq -r"
             echo
             tiddlywiki --load ${FTW} \
                                 --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.lightbeam-key.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key'
@@ -282,16 +282,16 @@ do
         ## RESET try
         echo 0 > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
         ## ★★★★★ ############################################################################
-            ## liking_me IS A GOOD FRIEND. PLAYER Send $my_star_level COIN
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $my_star_level -p ${liking_me} -c "BRO:star:$my_star_level" -m
-            [[ ! $? == 0 ]] \
-            && echo "PLAYER BROKE. G00D FRIEND. ${liking_me}" \
-            && $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "BRO YOU BROKE" -m "PLEASE REFILL WALLET: ${G1PUB} ~:star:~ $my_star_level stars : Friend Ŋ1 SCORE  $gscore ${liking_me} "
+            #~ ## liking_me IS A GOOD FRIEND. PLAYER Send $my_star_level COIN
+            #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $my_star_level -p ${liking_me} -c "BRO:star:$my_star_level" -m
+            #~ [[ ! $? == 0 ]] \
+            #~ && echo "PLAYER BROKE. G00D FRIEND. ${liking_me}" \
+            #~ && $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "BRO YOU BROKE" -m "PLEASE REFILL WALLET: ${G1PUB} ~:star:~ $my_star_level stars : Friend Ŋ1 SCORE  $gscore ${liking_me} "
 
-        ############################################################################### ★★★★★
-            ## DEFAULT SAME CONFIDENCE LEVEL
-            echo "★ SENDING $my_star_level STAR(s) ★"
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey stars -p $liking_me -n $my_star_level
+        #~ ############################################################################### ★★★★★
+            #~ ## DEFAULT SAME CONFIDENCE LEVEL
+            #~ echo "★ SENDING $my_star_level STAR(s) ★"
+            #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey stars -p $liking_me -n $my_star_level
 
         ######################################
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW

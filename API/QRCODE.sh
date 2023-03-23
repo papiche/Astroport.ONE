@@ -170,8 +170,8 @@ else
 
     ## PALPE COMBIEN ?
     if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
-        # NOUVEAU 1 G1
-        PALPE=1
+        # REGLER "DUREE DE VIE" : PALPE / WISH_NB / DAY
+        PALPE=10
     else
         PALPE=0
     fi
@@ -239,13 +239,18 @@ else
             ## LE COMPTE VISITOR EST VIDE
             echo "## PARRAIN $CURPLAYER SEND $PALPE TO ${QRCODE}"
             ## G1 PAYEMENT
-            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a ${PALPE} -p ${QRCODE} -c "ASTRO:ZEN_00${PALPE}00" -m
+            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey pay -a ${PALPE} -p ${QRCODE} -c "ASTRO:${RANDOM}:ZEN_00${PALPE}00" -m
 
             ## MESSAGE CESIUM +
             $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${QRCODE}" -t "CADEAU" \
             -m "ASTRO:${CURPLAYER} A ENVOYE ${PALPE} JUNE.
             GAGNEZ PLUS DE JUNE... INSCRIVEZ VOUS SUR GCHANGE  https://gchange.fr \
             PUIS SCANNEZ VOTRE QRCODE SUR UNE STATION ASTROPORT"
+
+            ## SEND ONE ★ (NEXT STEP GCHANGE)
+            my_star_level=1
+            echo "★ SENDING $my_star_level STAR(s) ★"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey stars -p ${QRCODE} -n $my_star_level
 
     fi
 
