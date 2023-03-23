@@ -170,14 +170,7 @@ do
             dragElement: \$('#locations'),
             locations: locations
           });
-
-        \$(document).ready(function() {
-          selectExample('locations');
-
-          \$('#example').change(function() {
-            selectExample(\$(this).val());
-          });
-        });
+        };
         " >> ~/.zen/tmp/world.js
 
         cat ~/.zen/tmp/world.js

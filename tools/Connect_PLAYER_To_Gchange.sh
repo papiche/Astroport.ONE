@@ -196,7 +196,7 @@ do
     try=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try 2>/dev/null) || try=0
     [[ $try > 2 && ( $try < 30 || $try > 31 ) ]] \
     && echo "${liking_me} TOO MANY TRY ( $try )" \
-    && ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
+    && ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try \
     && continue
 
 #### TODO RECUP ANNONCES Gchange ADD TO TW
