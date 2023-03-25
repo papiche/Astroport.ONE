@@ -94,7 +94,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeihoaournzr4v5jzswbeefa223su5l2g347j4grr3y4mou3qho55ee"
+TWMODEL="/ipfs/bafybeifd6ktudt4fvalr7jjbyt2ezv3jgaoqe6ik6wey4auty3tgo3q2za"
 TWLINK="/ipfs/bafybeigyfttjvabeeoa4hbsvtegsqkw3riuquhbil55qhwe3s3q4tesyxi"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
@@ -170,11 +170,10 @@ WID="https://ipfs.$(myHostName)/api"
 # WID="http://ipfs.$(myHostName):5001"
 USALT=$(echo "$SALT" | jq -Rr @uri)
 UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
-DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}"
+DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
-                        && WID="http://ipfs.localhost:5001" \
-                         && DISCO="http://astroport.localhost:1234/?salt=${USALT}&pepper=${UPEPPER}"
+                        && WID="http://ipfs.localhost:5001"
 
 ####
 

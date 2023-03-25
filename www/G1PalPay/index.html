@@ -6,6 +6,8 @@
     <title>♥Box Station - Astroport Ŋ1 - </title>
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/demo.css">
 
+    <script src="http://127.0.0.1:8080/ipfs/QmYD4y1pXHVnGxxFcn2LWo84ytwmWdNbkyUeFnPCbrpUQy/openpgp.min.js"></script>
+
     <script src="http://127.0.0.1:8080/ipfs/QmRyLAbPErFY4nv56Dun1C1KBhE4wyP38ivpeV7rDFb7Fq/astro.js"></script>
 
     <script src="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
@@ -155,7 +157,22 @@ a {
 
       scanner.addListener('scan', function (content) {
             alert(content);
-            var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+            if (content.startsWith('-----')) {
+                // Try to decrypt PGP
+                var pass = prompt("Saisir votre PASS:");
+                const decrypted = openpgp.decrypt({
+                    message: openpgp.message.readArmored(content),
+                    passwords: [pass]
+                  });
+                //print the decrypted url
+                console.log(decrypted.data);
+                var amount = prompt("Saisir MONTANT Ğ1:");
+                var myU = 'http://astroport.localhost:1234' + decrypted.data +'&pay=' + amount + '&g1pub=' + document.getElementById("countdown").innerHTML.value ;
+            } else {
+                var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+                document.getElementById("countdown").innerHTML = content;
+            }
+
             fetchAstroport(myU)
             // homeAstroportStation(myU, 'aframe', 15123)
       });

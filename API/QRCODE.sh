@@ -61,6 +61,20 @@ if [[ ${QRCODE} == "station" ]]; then
 fi
 
 ################################################################################
+## MODE PGP ENCRYPTED QRCODE
+################################################################################
+if [[ ${QRCODE:0:5} == "-----" ]]; then
+   echo "## THIS IS A PGP ENCRYPTED QRCODE ASK FOR PASSWORD"
+   echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
+    sed "s~encrypted pgp data here~${QRCODE}~g" $MY_PATH/../www/AESBox/index.htm  >> ~/.zen/tmp/${MOATS}/index.redirect
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    ) &
+    exit 0
+fi
+
+################################################################################
 ## MODE G1VOEU : RETURN WISHNS - image carousel links -
 ################################################################################
 if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
@@ -85,7 +99,7 @@ fi
 ################################################################################
 ## QRCODE can be ASTRONAUTENS or G1PUB format
 ################################################################################
-## ACCOUNT IPNS FORMAT : CHANGE .current
+## QRCODE IS IPNS FORMAT : CHANGE .current AND MAKE G1BILLETS
 ASTROPATH=$(grep $QRCODE ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
 

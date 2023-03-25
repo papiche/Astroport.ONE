@@ -1,6 +1,11 @@
+<!DOCTYPE html>
 <html>
-<head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/openpgp/2.6.2/openpgp.min.js"></script>
+    <head>
+    <meta charset="utf-8">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <script src="http://127.0.0.1:8080/ipfs/QmYD4y1pXHVnGxxFcn2LWo84ytwmWdNbkyUeFnPCbrpUQy/openpgp.min.js"></script>
+  <script src="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/instascan.min.js"></script>
+
   <script>
     function decryptPGP() {
       var pass = prompt("Please enter your password:");
@@ -15,9 +20,74 @@
   </script>
 </head>
 <body>
-  <form>
+    <button id="ainfo" onclick="javascript:var x = document.getElementById('yellow'); if (x.style.visibility === 'hidden') {x.style.visibility = 'visible';} else {x.style.visibility = 'hidden';}">G1</button>
+    <div id="yellow" >
+      <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
+    </div>
+      <script type="text/javascript">
+
+        async function fetchAstroport(myURL) {
+          try {
+
+            let one = await fetch(myURL); // Gets a promise
+            var doc =  await one.text();
+            var regex = /url='([^']+)/i; // Get response PORT
+            var redirectURL = doc.match(regex)[1]
+
+            console.log(redirectURL)
+
+            // start countdown
+            var timeLeft = 20;
+            var elem = document.getElementById("countdown");
+            var timerId = setInterval(countdown, 1000);
+
+            function countdown() {
+                if (timeLeft == -1) {
+                    clearTimeout(timerId);
+                    window.open( redirectURL, "AstroTab");
+                } else {
+                    elem.innerHTML = timeLeft + " s";
+                    timeLeft--;
+                }
+            }
+
+          } catch (err) {
+            console.log('Fetch error:' + err); // Error handling
+          }
+        }
+
+      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
+      scanner.addListener('scan', function (content) {
+            alert(content);
+            var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+            fetchAstroport(myU)
+            // homeAstroportStation(myU, 'aframe', 15123)
+      });
+
+      Instascan.Camera.getCameras().then(function (cameras) {
+
+        if (cameras.length > 0) {
+
+          scanner.start(cameras[0]);
+
+        } else {
+
+          console.error('No cameras found.');
+
+        }
+
+      }).catch(function (e) {
+
+        console.error(e);
+
+      });
+
+    </script>
+    <form>
+      <input id="amount" name="amont" value="1">
     <input type="hidden" id="pgp-url" name="pgp-url" value="encrypted pgp data here">
-    <input type="submit" value="decrypt" onclick="decryptPGP()">
   </form>
+    <button id="decrypt" onclick="decryptPGP()">decrypt</button>
 </body>
 </html>

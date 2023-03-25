@@ -46,9 +46,9 @@ echo 'PRESS ENTER... '; read
             exit
             ;;
         "IMPORT PLAYER")
-            echo "'Identifiant'"
+            echo "'Secret 1'"
             read SALT
-            echo "'Mot de passe'"
+            echo "'Secret 2'"
             read PEPPER
             echo "'Adresse Email'"
             read EMAIL
