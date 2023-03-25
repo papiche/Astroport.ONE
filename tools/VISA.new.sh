@@ -94,7 +94,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeibonzhvhxivqblr3qzlb7wttxqbf27ztoghze6l477kbespnap774"
+TWMODEL="/ipfs/bafybeihoaournzr4v5jzswbeefa223su5l2g347j4grr3y4mou3qho55ee"
 TWLINK="/ipfs/bafybeigyfttjvabeeoa4hbsvtegsqkw3riuquhbil55qhwe3s3q4tesyxi"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
@@ -217,7 +217,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}"
                 -p ~/.zen/tmp/${MOATS}/fond.png
 
     ## ADD PLAYER EMAIL
-    convert -gravity northwest -pointsize 28 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/game/players/${PLAYER}/result_qrcode.png
+    convert -gravity northwest -pointsize 28 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond_qrcode.png ~/.zen/game/players/${PLAYER}/result_qrcode.png
 
     ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/result_qrcode.png | tail -n 1)"
 
