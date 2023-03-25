@@ -71,16 +71,6 @@ do
         || echo "WISH G1WALLET = $VCOINS G1"
     fi
 
-    echo "************************************************************"
-    echo "Hop, UNE JUNE pour le Voeu $WISHNAME"
-    echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $VOEUKEY -c \'"ASTRO:$VOEUNS G1Voeu $WISHNAME"\' -m
-    echo "************************************************************"
-    echo "************************************************************"
-
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $VOEUKEY -c "ASTRO:$VOEUXNS G1Voeu $WISHNAME" -m
-    [[ ! $? == 0 ]] \
-    && echo "POOOOOOOOOOOOOOOOOOOORRRRRR GUY. YOU CANNOT PAY A G1 FOR YOUR WISH"
-
     ## RUNNING WISH REFRESH
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
 
@@ -221,6 +211,16 @@ do
         ## MOVE INTO PLAYER AREA
         echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
+
+        echo "************************************************************"
+        echo "Hop, UNE JUNE pour le Voeu $WISHNAME"
+        echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $VOEUKEY -c \'"ASTRO:$VOEUNS G1Voeu $WISHNAME"\' -m
+        echo "************************************************************"
+        echo "************************************************************"
+
+        $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $VOEUKEY -c "ASTRO:$VOEUXNS G1Voeu $WISHNAME" -m
+        [[ ! $? == 0 ]] \
+        && echo "POOOOOOOOOOOOOOOOOOOORRRRRR GUY. YOU CANNOT PAY A G1 FOR YOUR WISH"
 
         cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
