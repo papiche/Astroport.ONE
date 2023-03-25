@@ -149,7 +149,7 @@ do
             [[ $WISHNS == "null" ]] && echo "NO WISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
             echo ">>> ${myIPFS}${WISHNS}"
 
-            echo "${APLAYER}: {
+            echo "${floop}: {
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
               name: '"${WISNAME} ${APLAYER}"',
@@ -213,7 +213,7 @@ do
 
         ### ADD TO IPFS
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
-        du -h ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/
+        ls ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/
 
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
@@ -222,7 +222,7 @@ do
         echo ">>> $VOEUKEY : Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
         echo "~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}"
 
-        cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/
+        cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 

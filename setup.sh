@@ -99,7 +99,7 @@ sudo systemctl restart astroport
 
 ACTUAL=$(cat /etc/resolv.conf | grep -w nameserver | head -n 1)
 
-if [[ ! $(echo $ACTUAL | grep "1.1.1.1") ]] ; then
+if [[ $(echo $ACTUAL | grep "1.1.1.1") == "" ]] ; then
 ########################################################################
 echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS LAN COUNTRY RESTRICTIONS" # Avoid provider restrictions
 ########################################################################
