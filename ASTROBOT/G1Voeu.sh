@@ -89,22 +89,20 @@ mkdir -p ~/.zen/tmp/$MOATS
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.WISHLINK.png" "$LIBRA/ipns/$VOEUNS"
 
-    ## MAKING amrzqr containing G1PUB/SSL[SEC(SALT)].BASE58/PASS.SHA
+    ## MAKING amrzqr containing GPG SALT API INPUT
     ## LE MOT DE PASSE DU PLAYER PEUT DECOUVRIR LE SECRET (
-    ## SEC PASS PROTECTED QRCODE : base58 secFromDunikey.openssl(pass)
-    secFromDunikey=$(cat ~/.zen/tmp/qrtw.dunikey | grep "sec" | cut -d ' ' -f2)
-    echo "SALT=\"$SALT\"; PEPPER=\"$PEPPER\"" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
-    openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/tmp/${MOATS}/${PSEUDO}.sec -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$SALT" 2>/dev/null
-    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec | base64 -w 0 | jq -sRr '@uri' )
-    HPass=$(echo "$SALT" | sha512sum | cut -d ' ' -f 1 )
-    qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
+    USALT=$(echo "$SALT" | jq -Rr @uri)
+    UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
+    DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
+    echo "${DISCO}" \
+    | gpg --symmetric --armor --batch --passphrase "$SALT" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
 
     cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/fond.png
     convert -gravity northwest -pointsize 25 -fill black -draw "text 40,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond.png ~/.zen/tmp/${MOATS}/layer1.png
     convert -gravity southeast -pointsize 25 -fill black -draw "text 30,30 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "$myASTRONEF/?qrcode=$WISHKEY&junesec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
+    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr -d '\n')" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c
