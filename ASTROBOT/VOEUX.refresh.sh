@@ -219,8 +219,8 @@ do
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
         ## MOVE INTO PLAYER AREA
-        echo ">>> $VOEUKEY : Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
-        echo "~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}"
+        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
+        echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
 
         cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 

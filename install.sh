@@ -146,9 +146,9 @@ echo "#############################################"
 echo "######### PATIENCE ######################"
 echo "#############################################"
 
-########### PRINTER ##############
-if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
-    echo "ENTER TO INSTALL AMBASSADE PRINTER. Ajouter imprimante compatible 'brother_ql' pour imprimer vos QRCODE"
+########### QRCODE : G1VISA / G1BILLET : PRINTER ##############
+if [[ $USER != 'xbian' ]]; then
+    echo "INSTALL G1VISA QRCODE STICKERS PRINTING LAYER ? ENTER 'yes' or Hit enter to bypass."
     read saisie
     if [[ $saisie != "" ]]; then
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
@@ -160,6 +160,19 @@ if [[ "$USER" == "pi" ]]; then ## PROPOSE QR_CODE PRINTER SUR RPI
 
         ## brother_ql_print
         echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
+    fi
+
+    echo "INSTALL G1BILLET GENERATION LAYER. ENTER 'yes' or Hit enter to bypass."
+    read billet
+    if [[ $billet != "" ]]; then
+        ## G1BILLET
+        echo "INSTALLING G1BILLET daemon ..."
+        if [[ ! -d ~/.zen/G1BILLET ]]; then
+            cd ~/.zen
+            git clone https://git.p2p.legal/qo-op/G1BILLET.git
+            cd G1BILLET && ./setup_systemd.sh
+            cd -
+        fi
     fi
 fi
 

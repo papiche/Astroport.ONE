@@ -1,0 +1,23 @@
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openpgp/2.6.2/openpgp.min.js"></script>
+  <script>
+    function decryptPGP() {
+      var pass = prompt("Please enter your password:");
+      var encrypted = document.getElementById('pgp-url').value;
+      const decrypted = openpgp.decrypt({
+        message: openpgp.message.readArmored(encrypted),
+        passwords: [pass]
+      });
+      //print the decrypted url
+      console.log(decrypted.data);
+    }
+  </script>
+</head>
+<body>
+  <form>
+    <input type="hidden" id="pgp-url" name="pgp-url" value="encrypted pgp data here">
+    <input type="submit" value="decrypt" onclick="decryptPGP()">
+  </form>
+</body>
+</html>

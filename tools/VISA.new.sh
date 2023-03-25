@@ -170,11 +170,11 @@ WID="https://ipfs.$(myHostName)/api"
 # WID="http://ipfs.$(myHostName):5001"
 USALT=$(echo "$SALT" | jq -Rr @uri)
 UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
-DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=${PLAYER}"
+DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}"
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
                         && WID="http://ipfs.localhost:5001" \
-                         && DISCO="http://ipfs.localhost:1234/?salt=${USALT}&pepper=${UPEPPER}"
+                         && DISCO="http://astroport.localhost:1234/?salt=${USALT}&pepper=${UPEPPER}"
 
 ####
 
@@ -193,24 +193,28 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
 
     qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$LIBRA/ipns/${ASTRONAUTENS}"
 
-
+############################################################################
     ## SEC PASS PROTECTED QRCODE : base58 secret.june / openssl(pass)
     #~ secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
     #~ echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
-    openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS"
-    PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec  | base64 -w 0 | jq -sRr '@uri' )
-    HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
-    qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
 
+    ## PGP ENCODING SALT/PEPPER API ACCESS
+    echo "${DISCO}" \
+    | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
+
+    #~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS"
+    #~ PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec  | base64 -w 0 | jq -sRr '@uri' )
+    #~ HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
+    #~ qrencode -s 12 -o $HOME/.zen/game/players/${PLAYER}/QRsec.png $PASsec
+
+    ## Add logo to QRCode
     cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr  "$myASTRONEF/?qrcode=$G1PUB&junesec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
+    amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr -d '\n')" \
                 -d ~/.zen/tmp/${MOATS} \
                 -l H \
                 -p ~/.zen/tmp/${MOATS}/fond.png
-
-    rm -f ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
     ## ADD PLAYER EMAIL
     convert -gravity northwest -pointsize 28 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/game/players/${PLAYER}/result_qrcode.png
@@ -291,7 +295,7 @@ DISCO="https://astroport.$(myHostName)/?salt=${USALT}&pepper=${UPEPPER}&logout=$
     cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
-    # Create"${PLAYER}_feed" Key
+    # Create"${PLAYER}_feed" Key ! DERIVATED !
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
     ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey
     FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1 )
@@ -409,7 +413,7 @@ echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sl
 echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
 # ls ~/.zen/game/players/${PLAYER}
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}"
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS REPEAT $PASS REPEAT $PASS"
 
 ################# PREPARE DOCKERIZATION
 rm ~/.zen/game/players/.current
@@ -424,16 +428,38 @@ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 #################################################################
 #################################################################
 #################################################################
+# PASS CRYPTING KEY - USE PGP
+#~ create a code that decypher an url base64 encoded by pgp symetric from a form hidden field prompting for password in  html and javascript, include js libraries
 
+#~ <html>
+#~ <head>
+  #~ <script src="./openpgp.min.js"></script>
+  #~ <script>
+    #~ function decryptPGP() {
+      #~ var pass = prompt("Please enter your password:");
+      #~ var encrypted = document.getElementById('pgp-url').value;
+      #~ const decrypted = openpgp.decrypt({
+        #~ message: openpgp.message.readArmored(encrypted),
+        #~ passwords: [pass]
+      #~ });
+      #~ //print the decrypted url
+      #~ console.log(decrypted.data);
+    #~ }
+  #~ </script>
+#~ </head>
+#~ <body>
+  #~ <form>
+    #~ <input type="hidden" id="pgp-url" name="pgp-url" value="encrypted pgp data here">
+    #~ <input type="submit" value="decrypt" onclick="decryptPGP()">
+  #~ </form>
+#~ </body>
+#~ </html>
 
-# PASS CRYPTING KEY
-#~ echo; echo "Sécurisation de vos clefs... "; sleep 1
-openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.june" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.june" -k "$PASS" 2>/dev/null
-#~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" -out "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey" -k $PASS 2>/dev/null
-#~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$HOME/.zen/game/players/${PLAYER}/$KEYFILE -out" "$HOME/.zen/game/players/${PLAYER}/enc.$KEYFILE" -k $PASS 2>/dev/null
-## TODO MORE SECURE ?! USE opengpg, natools, etc ...
-# ${MY_PATH}/natools.py encrypt -p $G1PUB -i ~/.zen/game/players/${PLAYER}/secret.dunikey -o "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey"
-echo
+#~ this is how to create "encrypted pgp data here" from bash CLI
+#~ echo "example url" | gpg --symmetric --armor --batch --passphrase "password" -o /tmp/test.asc
+
+#~ then sed command to replace in html template
+#~ sed -i -e 's/encrypted pgp data here/'"$(cat /tmp/test.asc | tr -d '\n')"'/g' html_file.html
 
 #################################################
 # !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
