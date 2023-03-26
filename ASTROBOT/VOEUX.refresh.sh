@@ -196,7 +196,7 @@ do
                     -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
                     -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}/QRG1avatar.png~g" \
-                    -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
+                    -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
                 ### PREPARE WISHNAME index.html
         ##################################
