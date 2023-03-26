@@ -207,7 +207,9 @@ do
 
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
-        ipfs ls ${VOEUNS} # READ IPNS PUBLISHING
+
+        echo "## ASK ${myTUBE} GATEWAY TO REFRESH"
+        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myTUBE}${VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
         echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"

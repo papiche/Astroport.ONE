@@ -81,12 +81,30 @@ fi
 if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     APPNAME="G1Voeu"
     VOEU=${QRCODE}
-    ASTROPATH=$(grep ${THIS} ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | grep ${QRCODE} | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
     echo $ASTROPATH
 
+    INDEX=$ASTROPATH/index.html
+    echo $INDEX
+    if [[ -s  ${INDEX} ]]; then
+        tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${MOATS}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+        cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
+        while read WISH
+        do
+            [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
+            WISHNAME=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
+            WISHNS=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
+            echo "${WISHNAME} : ${WISHNS} "
+            [[ "G1${WISHNAME}" == "$VOEU" ]] \
+            && echo "FOUND" \
+            && LINK=${myIPFS}${WISHNS} \
+            && break
+
+        done < ~/.zen/tmp/${MOATS}.g1wishes.txt
+    fi
+
     ## REDIRECT TO G1VOEU IPNS ADDRESS
-    LINK=$(cat $ASTROPATH/voeux/${QRCODE:2}/*/.link)
-    [[ $LINK == "" ]] && $LINK="$myIPFS/ipfs/QmWUZr62SpriLPuqauMbMxvw971qnu741hV8EhrHmKF2Y4" ## 404 LOST IN CYBERSPACE
+    [[ $LINK == "" ]] && LINK="$myIPFS/ipfs/QmWUZr62SpriLPuqauMbMxvw971qnu741hV8EhrHmKF2Y4" ## 404 LOST IN CYBERSPACE
     echo "#>>> DISPLAY WISHNS >>>> # $VOEU : $LINK"
     sed "s~_TWLINK_~${LINK}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
