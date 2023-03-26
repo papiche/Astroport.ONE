@@ -65,6 +65,7 @@ fi
 ################################################################################
 if [[ ${QRCODE:0:5} == "-----" ]]; then
    echo "## THIS IS A PGP ENCRYPTED QRCODE ASK FOR PASSWORD"
+   echo ${QRCODE}
    echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
     sed "s~encrypted pgp data here~${QRCODE}~g" $MY_PATH/../www/AESBox/index.htm  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
