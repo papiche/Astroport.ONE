@@ -242,7 +242,7 @@ if [[ ! ${TIDDLER} ]]; then
 
 else
     ###################################################################
-    echo '# TIDDLER WAS IN CACHE'
+    echo
     ###################################################################
     ## TODO : ADD EMAIL TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
     continue
