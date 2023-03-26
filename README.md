@@ -213,7 +213,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=_&dataid=$QRHASH
 | `testcraft` | `string` | **Required** AppNAME subcommand |
 | `${OBJ}` | `${VAL}` | depends on App |
 
-Redirections
+###  Redirections
 * vers Gchange
 
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=on```
