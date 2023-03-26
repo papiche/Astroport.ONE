@@ -67,7 +67,7 @@ do
     else
         VCOINS=$($MY_PATH/../tools/COINScheck.sh $VOEUKEY | tail -n 1)
         [[ $VCOINS == "" || $VCOINS == "null" ]] \
-        && echo "ERROR G1WALLET NOT EXISTING" && continue \
+        && echo "ERROR G1WALLET NOT EXISTING $VCOINS" && continue \
         || echo "WISH G1WALLET = $VCOINS G1"
     fi
 
@@ -143,7 +143,7 @@ do
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
               name: '"${WISNAME} ${APLAYER}"',
-              link: '"${myTUBE}${WISHNS}"'
+              link: '"${myIPFS}${WISHNS}"'
             }
             ," >> ~/.zen/tmp/world.js
 
@@ -194,6 +194,7 @@ do
                     -e "s~_PLAYER_~${PLAYER}~g" \
                     -e "s~_G1PUB_~${G1PUB}~g" \
                     -e "s~_VOEUNS_~${VOEUNS}~g" \
+                    -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
                     -e "s~http://astroport.localhost:1234~${myASTROPORT}~g"
                     -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
@@ -210,8 +211,8 @@ do
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
-        echo "## ASK ${myTUBE} GATEWAY TO REFRESH"
-        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myTUBE}${VOEUNS}" &
+        echo "## ASK ${myASTROTUBE} GATEASTRONAUTENSWAY TO REFRESH"
+        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myASTROTUBE}${VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
         echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
