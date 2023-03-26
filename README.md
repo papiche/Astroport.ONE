@@ -78,10 +78,11 @@ Nous mettons un TW dans une clef.
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée (```~/.start.sh```):
-* le port 1234 publie API
-* le port 12345 publie MAP(*)
+* le port 1234 publie API (REPONSE PORT TCP 12145 12445 )
+* le port 12345 publie MAP(*) (JSON STATION CACHE IPNS KEY)
+* le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
 
-⚠ TELETUBE TELEPORT SYSTEM ⚠
+⚠ ASTROPORT NETCAT SYSTEM ⚠
 
 Astroport utilise l'outil réseau le plus simple "netcat". Il s'agit d'un moteur STEP donnant accès à une "OPEN API".
 Notre programme est conçu pour fonctionner dans des conditions de réseau local.
