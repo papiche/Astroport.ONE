@@ -114,7 +114,7 @@ a {
 
             <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
                 <strong><div id="countdown"></div></strong>
-                <strong><div id="scan"></div></strong>
+                <strong><div id="resu"></div></strong>
                 <p> <strong>Scannez QRCode</strong> </p>
                 <p><a target="g1billet" href="https://g1sms.fr/fr/g1billet">G1BILLET</a>  </p>
                 <p>et "<a target="cesium" href="https://cesium.app/fr/fonctionnalites">portefeuille</a>" <a target="cesium" href="https://cesium.app/fr/telechargement">Cesium</a></p>
@@ -168,10 +168,10 @@ a {
                 //print the decrypted url
                 console.log(decrypted.data);
                 var amount = prompt("Saisir MONTANT Ğ1:");
-                var myU = 'http://astroport.localhost:1234' + decrypted.data +'&pay=' + amount + '&g1pub=' + document.getElementById("scan").innerHTML.value ;
-                document.getElementById("scan").innerHTML = decrypted.data;
+                var myU = 'http://astroport.localhost:1234' + decrypted.data +'&pay=' + amount + '&g1pub=' + document.getElementById("resu").innerHTML.value ;
+                document.getElementById("resu").innerHTML = decrypted.data;
             } else {
-                document.getElementById("scan").innerHTML = content;
+                document.getElementById("resu").innerHTML = content;
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
             }
 

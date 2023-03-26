@@ -45,6 +45,7 @@ if [[ ${QRCODE} == "station" ]]; then
         ## SHOW G1PALPAY FRONT (IFRAME)
         sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../www/G1PalPay/index.html > ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
+        sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
 
         WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
         echo $WSTATION > ~/.zen/tmp/WSTATION

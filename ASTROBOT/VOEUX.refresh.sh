@@ -192,6 +192,7 @@ do
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
                     -e "s~_PLAYER_~${PLAYER}~g" \
+                    -e "s~_G1PUB_~${G1PUB}~g" \
                     -e "s~_VOEUNS_~${VOEUNS}~g" \
                     -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
