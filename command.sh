@@ -102,7 +102,7 @@ echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choisissez : __ "
-choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER QRVOEU" "IMPRIMER VISA" "EXPORTER VISA" "SUPPRIMER VISA" "QUITTER")
+choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER QRVOEU" "IMPRIMER VISA" "SUPPRIMER PLAYER" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
     "IMPRIMER VISA")
@@ -110,17 +110,7 @@ select fav in  "${choices[@]}"; do
         ${MY_PATH}/tools/VISA.print.sh "$PLAYER"
         ;;
 
-    "EXPORTER VISA")
-        echo "EXPORT IDENTITE ASTRONAUTE"
-        du -h ~/.zen/game/players/$PLAYER/
-        echo  "MANUAL BACKUP ZIP ~/.zen/game/players/$PLAYER/"
-        ## EXPORT TW + VOEUX IPNS KEYS
-
-
-        break
-        ;;
-
-    "SUPPRIMER VISA")
+    "SUPPRIMER PLAYER")
         echo "ATTENTION ${PLAYER} DECONNEXION DE VOTRE TW !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
@@ -128,6 +118,7 @@ select fav in  "${choices[@]}"; do
 
         ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm $G1PUB;
         for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/*/ 2>/dev/null); do
+            echo "ipfs key rm $voeu"
             ipfs key rm $voeu
         done
 
@@ -136,9 +127,9 @@ select fav in  "${choices[@]}"; do
 
         #~ echo "REMOVING GCHANGE+ PROFILE"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
-
-        echo "REMOVE CESIUM+"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myCESIUM" erase
+
+        echo "PLAYER IPNS KEYS REMOVED"
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
         rm -Rf ~/.zen/game/players/$PLAYER
 
@@ -161,7 +152,7 @@ select fav in  "${choices[@]}"; do
                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
             TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-            ipfs name publish --allow-offline -t 72h --key=$PLAYER /ipfs/$TW
+            ipfs name publish --allow-offline --key=$PLAYER /ipfs/$TW
 
             echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
             echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
