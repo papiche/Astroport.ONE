@@ -143,7 +143,7 @@ do
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
               name: '"${WISNAME} ${APLAYER}"',
-              link: '"${myIPFS}${WISHNS}"'
+              link: '"${myTUBE}${WISHNS}"'
             }
             ," >> ~/.zen/tmp/world.js
 
@@ -187,7 +187,7 @@ do
         ipfs add -qw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1 > ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs
         QRLINK=$(cat ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs)
 
-        ##################################
+        ################################## PasseportTerre/index.html
         cat $MY_PATH/../www/PasseportTerre/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
