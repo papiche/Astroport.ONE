@@ -74,7 +74,7 @@ IPFS relie les clefs et les données.
 Nous mettons un TW dans une clef.
 
 
-# API : "♥BOX"
+# "OPEN API" : "♥BOX"
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée (```~/.start.sh```):
@@ -82,6 +82,12 @@ Une fois votre Station Astroport démarrée (```~/.start.sh```):
 * le port 12345 publie MAP(*)
 
 ⚠ TELETUBE TELEPORT SYSTEM ⚠
+
+Astroport utilise l'outil réseau le plus simple "netcat". Il s'agit d'un moteur STEP donnant accès à une "OPEN API".
+Notre programme est conçu pour fonctionner dans des conditions de réseau local.
+Le premier HTTP GET envoie la commande, mais l'APP doit obtenir le PORT de réponse.
+
+Voici comment procéder en BASH ou JAVASCRIPT
 
 ## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
 ### CLI
