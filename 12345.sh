@@ -194,7 +194,7 @@ while true; do
         ;;
 
         "qrcode")
-            exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" &
+            exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
         ;;
 
         "")

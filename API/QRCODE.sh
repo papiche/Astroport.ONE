@@ -12,10 +12,12 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 start=`date +%s`
 
-PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
+PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 COOKIE=$10
 ### transfer variables according to script
 QRCODE=$THAT
 TYPE=$WHAT
+
+echo "COOKIE : $COOKIE"
 
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: ${myASTROPORT}
@@ -25,6 +27,7 @@ Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 
 "
+function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 ## GET TW
 mkdir -p ~/.zen/tmp/${MOATS}/
@@ -63,12 +66,26 @@ fi
 
 ################################################################################
 ## MODE PGP ENCRYPTED QRCODE
+# http://127.0.0.1:1234/?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMCWZ%2BOT%2FstJiz%2B0koBBzdybjOYmFHlYSdta6YsO4VMPC%2BEL1tinYpWdIh1~q%2FIZGCu3ZXUK%2FfDmYED%2BKh0vzAJ%2ByBOjSAGaAFfigZYrAhNAPDP8jzZ14w%3D%3D~%3DN1Dz~-----END%20PGP%20MESSAGE-----~&pass=coucou
 ################################################################################
 if [[ ${QRCODE:0:5} == "-----" ]]; then
-   echo "## THIS IS A PGP ENCRYPTED QRCODE ASK FOR PASSWORD"
    echo ${QRCODE}
-   echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    sed "s~encrypted pgp data here~${QRCODE}~g" $MY_PATH/../www/AESBox/index.htm  >> ~/.zen/tmp/${MOATS}/index.redirect
+   PASS=$(urldecode $THIS)
+   echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS $PASS -"
+
+    if [[ $PASS != "" ]]; then
+        urldecode ${QRCODE} | tr '~' '\n' | tr '_' '+' > ~/.zen/tmp/${MOATS}/disco.aes
+        sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
+        echo ~/.zen/tmp/${MOATS}/disco.aes
+        cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/disco
+        echo "DISCO"
+        cat ~/.zen/tmp/${MOATS}/disco
+    else
+        echo "PASS MISSING" > ~/.zen/tmp/${MOATS}/disco
+    fi
+
+    echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
+    cat ~/.zen/tmp/${MOATS}/disco  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}

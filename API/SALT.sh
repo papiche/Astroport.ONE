@@ -448,9 +448,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             || REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
 
             ## SET COOKIE
+            USALT=$(echo "$SALT" | jq -Rr @uri)
+            UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
+            echo "/?salt=${USALT}&pepper=${UPEPPER}"
             sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            sed -i "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed -i "s~_USALT_~${G1PUB}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed -i "s~_UPEPPER_~${ASTRONAUTENS}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
