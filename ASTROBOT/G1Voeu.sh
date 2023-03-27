@@ -97,9 +97,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     echo "${DISCO}" \
     | gpg --symmetric --armor --batch --passphrase "$SALT" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
 
-    cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/fond.png
-    convert -gravity northwest -pointsize 25 -fill black -draw "text 40,40 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond.png ~/.zen/tmp/${MOATS}/layer1.png
-    convert -gravity southeast -pointsize 25 -fill black -draw "text 30,30 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
+    cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
     amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~'  | tr '+' '_' | jq -Rr @uri)" \
@@ -107,7 +105,10 @@ mkdir -p ~/.zen/tmp/$MOATS
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c
 
-    IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png | tail -n 1)
+    convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
+    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
+
+    IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/result.png | tail -n 1)
 
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
     qrencode -s 12 -o "$HOME/.zen/game/world/$PEPPER/$WISHKEY/QR.G1ASTRO.png" "$G1PUB"
@@ -232,7 +233,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     # PUBLISHING
     echo "ipfs name publish --key=${WISHKEY}"
     banner="## ${PLAYER} G1WISH READY :: G1$PEPPER
-    <img src=/ipfs/IMAGIC>
+    <img src=/ipfs/$IMAGIC>
     G1Voeu Astronaute (TW) : $LIBRA/ipns/$ASTRONAUTENS
     $PEPPER FLUX Ŋ1
     G1$PEPPER : $LIBRA/ipns/$VOEUNS
