@@ -75,12 +75,13 @@ if [[ ${QRCODE:0:5} == "-----" ]]; then
    echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS $PASS -"
 
     if [[ $PASS != "" ]]; then
+
         urldecode ${QRCODE} | tr '~' '\n' | tr '_' '+' > ~/.zen/tmp/${MOATS}/disco.aes
         sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
         echo ~/.zen/tmp/${MOATS}/disco.aes
         cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/disco
-        echo "DISCO"
-        cat ~/.zen/tmp/${MOATS}/disco
+        echo "DISCO $(cat ~/.zen/tmp/${MOATS}/disco)"
+
     else
         echo "PASS MISSING" > ~/.zen/tmp/${MOATS}/disco
     fi
