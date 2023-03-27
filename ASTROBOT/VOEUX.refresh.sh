@@ -170,7 +170,7 @@ do
         ##################################
         ## MAKE MY OWN JSON
         ################################## MOA MAINTENANT
-        echo  ">>> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW$VOEUNS/_${PLAYER}.tiddlers.json"
+        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW$VOEUNS/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]]'
@@ -195,7 +195,7 @@ do
                     -e "s~_G1PUB_~${G1PUB}~g" \
                     -e "s~_VOEUNS_~${VOEUNS}~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
-                    -e "s~http://astroport.localhost:1234~${myASTROPORT}~g"
+                    -e "s~http://astroport.localhost:1234~${myASTROPORT}~g" \
                     -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
                     -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}/QRG1avatar.png~g" \
