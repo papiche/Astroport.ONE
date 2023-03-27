@@ -67,23 +67,55 @@ fi
 
 ################################################################################
 ## MODE PGP ENCRYPTED QRCODE
-# http://127.0.0.1:1234/?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMCWZ%2BOT%2FstJiz%2B0koBBzdybjOYmFHlYSdta6YsO4VMPC%2BEL1tinYpWdIh1~q%2FIZGCu3ZXUK%2FfDmYED%2BKh0vzAJ%2ByBOjSAGaAFfigZYrAhNAPDP8jzZ14w%3D%3D~%3DN1Dz~-----END%20PGP%20MESSAGE-----~&pass=coucou
+# http://127.0.0.1:1234/?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iqIY7XLnGn_0koBJB5S2Sy1p%2FHr8CKFgWdZ9_j%2Fb2qdOznICGvqGCXY~7Flw6YtiabngvY6biq%2F0vpiFL8t8BSbMZe0GLBU90EMBrhzEiyPnh__bzQ%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~&pass=coucou&pay=1&g1pub=
 ################################################################################
 if [[ ${QRCODE:0:5} == "-----" ]]; then
    echo ${QRCODE}
    PASS=$(urldecode $THIS)
-   echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS $PASS -"
+   echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS $PASS - $APPNAME"
 
     if [[ $PASS != "" ]]; then
-
+        echo ${WHAT} ${VAL}
         urldecode ${QRCODE} | tr '~' '\n' | tr '_' '+' > ~/.zen/tmp/${MOATS}/disco.aes
         sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
-        echo ~/.zen/tmp/${MOATS}/disco.aes
+
+        echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch"
+
         cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/disco
-        echo "DISCO $(cat ~/.zen/tmp/${MOATS}/disco)"
+
+        cat ~/.zen/tmp/${MOATS}/disco
+
+        DISCO=$(cat ~/.zen/tmp/${MOATS}/disco  | cut -d '?' -f2)
+        ## FORMAT SHOULD BE "/?salt=${USALT}&pepper=${UPEPPER}"
+        arr=(${DISCO//[=&]/ })
+        salt=$(urldecode ${arr[1]} | xargs)
+        pepper=$(urldecode ${arr[3]} | xargs)
+        echo "$DISCO DECODED" >> ~/.zen/tmp/${MOATS}/disco
+
+        if [[ ${salt} != "" && ${pepper} != "" &&  ${WHAT} != "" && ${VAL} != "" ]]; then
+
+            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
+            G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
+
+            ## COMMAND A PAYMENT
+            if [[ $APPNAME == "pay" ]]; then
+                if [[ $WHAT =~ ^[0-9]+$ ]]; then
+
+                    echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
+                    ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
+                    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+
+                fi
+            fi
+
+        else
+
+            echo "BAD PASS FOR ${QRCODE} ${WHAT} ${VAL} " >> ~/.zen/tmp/${MOATS}/disco
+        fi
 
     else
-        echo "PASS MISSING" > ~/.zen/tmp/${MOATS}/disco
+
+        echo "DATA MISSING" >> ~/.zen/tmp/${MOATS}/disco
     fi
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
