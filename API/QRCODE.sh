@@ -120,15 +120,15 @@ fi
 ## QRCODE can be ASTRONAUTENS or G1PUB format
 ################################################################################
 ## QRCODE IS IPNS FORMAT : CHANGE .current AND MAKE G1BILLETS
-ASTROPATH=$(grep $QRCODE ~/.zen/game/players/*/.playerns | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+ASTROPATH=$(grep -r $QRCODE  ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
 
-    PLAYER=$(echo $ASTROPATH | rev | cut -d '/' -f 1 | rev)
+    PLAYER=$(echo $ASTROPATH | rev | cut -d '/' -f 3 | rev)
 
     rm ~/.zen/game/players/.current
-    ln -s $ASTROPATH ~/.zen/game/players/.current
-    echo "LINKING $ASTROPATH to .current"
-    #### SELECT PARRAIN "G1PalPé"
+    ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+    echo "LINKING $PLAYER to .current"
+    #### SELECT PARRAIN "G1PalPay"
 
     echo "#>>>>>>>>>>>> # REDIRECT TO CREATE G1BILLETS"
     sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=$PLAYER~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
@@ -221,16 +221,19 @@ else
         && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/coucou/${QRCODE}.gchange.json &
 
         GFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.gchange.json | jq -r '.found')
+        echo "GFOUND=$GFOUND"
         [[ $GFOUND == "false" ]] \
-        && echo "G1BILLET. NO GCHANGE YET. REDIRECT" \
+        && echo "NO GCHANGE YET. REDIRECT" \
         && sed "s~_TWLINK_~${myGCHANGE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
         && echo "url='"${myGCHANGE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
         && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
 
+        ## SCAN CESIUM +
         [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.gplus.json ]] \
         && ~/.zen/Astroport.ONE/tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/coucou/${QRCODE}.gplus.json 2>/dev/null &
 
         GCFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.gplus.json | jq -r '.found')
+        echo "GCFOUND=$GCFOUND"
         [[ $GCFOUND == "false" ]] \
         && echo "AUCUN GCPLUS : PAS DE CESIUM POUR CLEF GCHANGE" \
         && sed "s~_TWLINK_~https://demo.cesium.app/#/app/wot/$QRCODE/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
@@ -239,6 +242,7 @@ else
 
         ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
         CPUB=$(cat ~/.zen/tmp/coucou/${QRCODE}.gchange.json | jq -r '._source.pubkey' 2>/dev/null)
+        echo "CPUB=$CPUB"
         ## SCAN GPUB CESIUM +
 
         ##### DO WE HAVE A MEMBER LINKED ??
@@ -294,45 +298,6 @@ else
             echo "$VISITORCOINS (+ ${PALPE}) JUNE"
             echo "************************************************************"
     ##
-
-
-fi
-###################################################################################################
-#                                                                       THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8
-###     amzqr  "$myASTROPORT/?qrcode=$G1PUB&junesec=$PASsec&askpass=$HPass&tw=$ASTRONAUTENS" \
-###     amzqr "$myASTROPORT/?qrcode=$WISHKEY&junesec=$PASsec&asksalt=$HPass&flux=$VOEUNS&tw=$ASTRONAUTENS" \
-###
-if [[ $AND == "junesec" ]]; then
-echo "♥BOX♥BOX♥BOX♥BOX♥BOX"
-echo "MAGIC WORLD ASTRONAUT & WISHES"
-
-
-    if [[ $APPNAME == "askpass" ]]; then
-        echo ">> ASTRONAUT QRCODE $APPNAME"
-        ENDCODED="$THIS"
-        HPASS="$WHAT"
-        TW="/ipns/$VAL"
-
-
-    fi
-
-    if [[ $APPNAME == "asksalt" ]]; then
-        echo ">> WISH QRCODE $APPNAME"
-        ENDCODED="$THIS"
-        HSALT="$WHAT"
-        FLUX="/ipns/$VAL"
-
-    fi
-
-fi
-
-###     amzqr "$myASTROPORT/?qrcode=$G1FRIEND&star=1" \
-###
-if [[ $AND == "star" ]]; then
-
-    STAR=$THIS
-    echo "WebClient ask to send $STAR star to $QRCODE"
-    ## RETURN PAGE with "salt / pepper" API to activate
 
 
 fi

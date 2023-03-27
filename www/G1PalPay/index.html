@@ -159,17 +159,20 @@ a {
       scanner.addListener('scan', function (content) {
             alert(content);
             if (content.startsWith('-----')) {
-                // Try to decrypt PGP
+                // Try to decode PGP
+                content = content.replace(/~/g, '\n');
                 var pass = prompt("Saisir votre PASS:");
-                const decrypted = openpgp.decrypt({
+
+                const decoded = openpgp.decrypt({
                     message: openpgp.message.readArmored(content),
-                    passwords: [pass]
-                  });
-                //print the decrypted url
-                console.log(decrypted.data);
+                    passwords: pass
+                });
+
+                //print the decoded url
+                console.log(decoded);
                 var amount = prompt("Saisir MONTANT Ğ1:");
-                var myU = 'http://astroport.localhost:1234' + decrypted.data +'&pay=' + amount + '&g1pub=' + document.getElementById("resu").innerHTML.value ;
-                document.getElementById("resu").innerHTML = decrypted.data;
+                var myU = 'http://astroport.localhost:1234' + decoded +'&pay=' + amount + '&g1pub=' + document.getElementById("resu").innerHTML.value ;
+                document.getElementById("resu").innerHTML = decoded;
             } else {
                 document.getElementById("resu").innerHTML = content;
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content;

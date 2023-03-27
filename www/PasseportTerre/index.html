@@ -115,7 +115,7 @@
 
   <body>
 
-    <a href="javascript:FriendToMe()"><img style="width:40% height:40% position: absolute; top: 0; right: 0; border: 0;" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/l0g0.png" alt="BAck in Le Claude"></a>
+    <a href="javascript:FriendWithMe()"><img style="width:40% height:40% position: absolute; top: 0; right: 0; border: 0;" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/l0g0.png" alt="BAck in Le Claude"></a>
     <div id="countdown"></div>
     <div class="subtitle">A Friendly Planet of Friends</div>
 
@@ -131,10 +131,10 @@
 </div>
 
   <script>
-    function FriendToMe() {
-        let salt = prompt("Secret 1");
-        let pepper = prompt("Secret 2");
-        let resultUt = 'http://astroport.localhost:1234/?salt=' + salt + '&pepper=' + pepper + '&friend=_G1PUB_';
+    function FriendWithMe() {
+        let cookies = document.cookie;
+        console.log(cookies);
+        let resultUt = 'http://astroport.localhost:1234' + cookies + '&friend=_G1PUB_';
         console.log(resultUt)
         homeAstroportStation( resultUt,'aframe', 4000)
     }

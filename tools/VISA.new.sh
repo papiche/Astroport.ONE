@@ -210,7 +210,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr -d '\n')" \
+    amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~')" \
                 -d ~/.zen/tmp/${MOATS} \
                 -l H \
                 -p ~/.zen/tmp/${MOATS}/fond.png

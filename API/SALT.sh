@@ -25,7 +25,7 @@ Content-Type: text/html; charset=UTF-8
 
 "
 
-        [[ ! $APPNAME || $SALT == "pepper" ]] && echo "NO APPNAME - BAD APP - CONTINUE" && exit 1
+        [[ ! $APPNAME || $SALT == "pepper" ]] && echo "NO APPNAME - BAD APP - CONTINUE" &&  (echo "$HTTPCORS ERROR - BAD CREDENTIALS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
         ############################################################################
         # WRITING API # SALT # PEPPER # MAKING THE KEY EXIST #########
         ################### KEY GEN ###################################
@@ -438,22 +438,15 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             ## REMOVE PLAYER IPNS KEY FROM STATION
             PLAYER=${WHAT}
-
-            if [[ -d ~/.zen/game/players/${PLAYER}/ipfs ]]; then
-
-                ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
-                REP="LOGIN OK"
-
-            else
-
-
-                REP="ERROR UNKNOW ${PLAYER}"
-
-            fi
-
-            echo ${REP}
+            ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
             ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
-            REPLACE=${myASTROPORT}/ipns/${ASTRONAUTENS}
+
+            WSTATION=$(cat ~/.zen/tmp/WSTATION 2>/dev/null)
+
+            [[ $WSTATION != "" ]] \
+            && REPLACE=${myIPFS}${WSTATION} \
+            || REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
+
             ## SET COOKIE
             sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
             sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
@@ -475,20 +468,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             ## REMOVE PLAYER IPNS KEY FROM STATION
             PLAYER=${WHAT}
+            ipfs key rm ${G1PUB}
+            ipfs key rm ${PLAYER}
+            REP="$PLAYER LOGOUT OK"
 
-            if [[ -d ~/.zen/game/players/${PLAYER}/ipfs ]]; then
-
-                ipfs key rm ${G1PUB} > /dev/null 2>&1
-                ipfs key rm ${PLAYER} > /dev/null 2>&1
-                REP="LOGOUT OK"
-
-            else
-
-                REP="ERROR UNKNOW ${PLAYER}"
-
-            fi
-
-            echo ${REP}
             echo "$HTTPCORS ${REP}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
