@@ -102,7 +102,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     convert -gravity southeast -pointsize 25 -fill black -draw "text 30,30 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~')" \
+    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~'  | tr '+' '_' | jq -Rr @uri)" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c

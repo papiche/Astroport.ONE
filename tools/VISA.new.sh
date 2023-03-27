@@ -209,8 +209,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     ## Add logo to QRCode
     cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
 
-    ## MAKE amzqr WITH astro:// LINK
-    amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~')" \
+    ## MAKE amzqr WITH astro:// ---- PGP LINK
+    amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~'  | tr '+' '_' | jq -Rr @uri)" \
                 -d ~/.zen/tmp/${MOATS} \
                 -l H \
                 -p ~/.zen/tmp/${MOATS}/fond.png

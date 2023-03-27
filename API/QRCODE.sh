@@ -90,32 +90,44 @@ if [[ ${QRCODE:0:5} == "-----" ]]; then
         arr=(${DISCO//[=&]/ })
         salt=$(urldecode ${arr[1]} | xargs)
         pepper=$(urldecode ${arr[3]} | xargs)
-        echo "$DISCO DECODED" >> ~/.zen/tmp/${MOATS}/disco
+        echo "<br>${salt} <br>${pepper} <br>" >> ~/.zen/tmp/${MOATS}/disco
 
-        if [[ ${salt} != "" && ${pepper} != "" &&  ${WHAT} != "" && ${VAL} != "" ]]; then
-
+        if [[ ${salt} != "" && ${pepper} != "" ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
             G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
 
-            ## COMMAND A PAYMENT
-            if [[ $APPNAME == "pay" ]]; then
-                if [[ $WHAT =~ ^[0-9]+$ ]]; then
+            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1PUB}"
+            ~/.zen/Astroport.ONE/tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
+            cat ~/.zen/tmp/${G1PUB}.curcoin
+            CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1)
+            echo "CURRENT KEY : $CURCOINS G1"
 
-                    echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
-                    ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
-                    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${VAL} == "" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
+             if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" ]]; then
+                ## COMMAND A PAYMENT
+                if [[ $APPNAME == "pay" ]]; then
+                    if [[ $WHAT =~ ^[0-9]+$ ]]; then
+
+                        echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
+                        ~/.zen/Astroport.ONE/tools/timeout.sh -t 3 \
+                        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+
+                    fi
                 fi
-            fi
+            else
 
+                 echo "<br>${WHAT} ${VAL} ${CURCOINS} PROBLEM " >> ~/.zen/tmp/${MOATS}/disco
+            fi
         else
 
-            echo "BAD PASS FOR ${QRCODE} ${WHAT} ${VAL} " >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br>BAD PASS FOR ${QRCODE} ${WHAT} ${VAL} " >> ~/.zen/tmp/${MOATS}/disco
         fi
 
     else
 
-        echo "DATA MISSING" >> ~/.zen/tmp/${MOATS}/disco
+        echo "<br>DATA MISSING" >> ~/.zen/tmp/${MOATS}/disco
     fi
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
