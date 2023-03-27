@@ -56,6 +56,7 @@ if [[ ${QRCODE} == "station" ]]; then
         echo "NEW WSTATION ${myIPFS}${WSTATION} Execution time was "`expr $end - $start` seconds.
     ## SEND TO WSTATION PAGE
     sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
@@ -125,6 +126,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     [[ $LINK == "" ]] && LINK="$myIPFS/ipfs/QmWUZr62SpriLPuqauMbMxvw971qnu741hV8EhrHmKF2Y4" ## 404 LOST IN CYBERSPACE
     echo "#>>> DISPLAY WISHNS >>>> # $VOEU : $LINK"
     sed "s~_TWLINK_~${LINK}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
@@ -149,6 +151,7 @@ if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
 
     echo "#>>>>>>>>>>>> # REDIRECT TO CREATE G1BILLETS"
     sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=$PLAYER~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myG1BILLET}"?montant=0\&style=$PLAYER'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
@@ -198,6 +201,7 @@ echo "CURRENT PLAYER : $CURCOINS G1"
 if [[ $CURCOINS == "null" ]]; then
 echo "NULL. PLEASE CHARGE. REDIRECT TO WSTATION HOME"
     sed "s~_TWLINK_~$(cat ~/.zen/WSTATION)~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFSGW}$(cat ~/.zen/WSTATION)"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
@@ -243,6 +247,7 @@ else
         && echo "NO GCHANGE YET. REDIRECT" \
         && sed "s~_TWLINK_~${myGCHANGE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
         && echo "url='"${myGCHANGE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
+        && sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect \
         && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
 
         ## SCAN CESIUM +
@@ -255,6 +260,7 @@ else
         && echo "AUCUN GCPLUS : PAS DE CESIUM POUR CLEF GCHANGE" \
         && sed "s~_TWLINK_~https://demo.cesium.app/#/app/wot/$QRCODE/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
         && echo "url='"${myASTRONEF}"'" >> ~/.zen/tmp/${MOATS}/index.redirect \
+        && sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect \
         && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
 
         ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
@@ -274,6 +280,7 @@ else
             [[ $CCFOUND == "false" ]] \
             && echo "AUCUN CCPLUS : MEMBRE LIE" \
             && sed "s~_TWLINK_~https://monnaie-libre.fr~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect \
+            && sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect \
             && ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
 
             ## MESSAGE LINKED CESIUM WALLET
