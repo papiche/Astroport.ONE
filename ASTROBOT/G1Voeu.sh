@@ -100,7 +100,7 @@ mkdir -p ~/.zen/tmp/$MOATS
     cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
 
     ## MAKE amzqr WITH astro:// LINK
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc | tr '\n' '~'  | tr '+' '_' | jq -Rr @uri)" \
+    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
                 -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c

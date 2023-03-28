@@ -76,7 +76,7 @@ if [[ ${QRCODE:0:5} == "-----" ]]; then
 
     if [[ $PASS != "" ]]; then
         echo ${WHAT} ${VAL}
-        urldecode ${QRCODE} | tr '~' '\n' | tr '_' '+' > ~/.zen/tmp/${MOATS}/disco.aes
+        urldecode ${QRCODE} | tr '_' '+' | tr '-' '\n' | tr '~' '-'  > ~/.zen/tmp/${MOATS}/disco.aes
         sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
 
         echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch"
