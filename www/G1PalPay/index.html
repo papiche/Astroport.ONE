@@ -104,7 +104,7 @@ a {
 
 <div id="demo">
     <div id="description">
-        <h1><a href="javascript:history.go(-1)">(Ğ1) <span>♥Box</span> Station</a></h1><br>
+        <h1><a href="http://astroport.localhost:1234">(Ğ1) <span>♥Box</span> Station</a></h1><br>
         <h2>Oubliez la crise... N'attendez pas la Retraite !</h2>
         <h2>Essayez la Monnaie Libre.<br>Explorez le Monde Librement.</h2>
     </div>
@@ -114,6 +114,12 @@ a {
 
             <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
                 <strong><div id="countdown"></div></strong>
+                <div id="appname">
+                  <input type="radio" id="r1" name="appname" value="messaging"> Messagerie
+                  <input type="radio" id="r2" name="appname" value="history"> Historique
+                  <input type="radio" id="r3" name="appname" value="pay" checked="checked"> Payer
+                </div>
+
                 <strong><div id="resu"></div></strong>
                 <p> <strong>Scannez QRCode</strong> </p>
                 <p><a target="g1billet" href="https://g1sms.fr/fr/g1billet">G1BILLET</a>  </p>
@@ -159,15 +165,22 @@ a {
       scanner.addListener('scan', function (content) {
             alert(content);
             if (content.startsWith('~~~~~')) {
-                // Try to decode PGP
+                // GET PASS THAT DECODE PGP
+                var pass = prompt("Saisir PASS:");
+                // GET APPNAME
+                var appname = document.querySelector('input[name="appname"]:checked').value;
+                // DEFAULT PAY
+                if ( appname == 'pay') {
+                    var amount = prompt("Saisir MONTANT Ğ1:");
+                }
+                // DESTINATION WAS PREVIOUS SCAN
                 if (document.getElementById("resu").innerHTML !== '') {
                    var mypub = document.getElementById("resu").innerHTML.value;
                 } else {
+                    // OR IF NONE Fred ;)
                     var mypub = "DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
                 }
-                var pass = prompt("Saisir PASS:");
-                var amount = prompt("Saisir MONTANT Ğ1:");
-                var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&pay=' + amount + '&g1pub=' + mypub ;
+                var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + mypub ;
             } else {
                 document.getElementById("resu").innerHTML = content;
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content;

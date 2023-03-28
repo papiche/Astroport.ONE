@@ -40,11 +40,11 @@ ASTROPATH=$(grep $G1PUB ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 | rev | c
 echo $ASTROPATH
 
 if [[ -d $ASTROPATH ]]; then
-    COINSFILE=$ASTROPATH/ipfs/G1SSB/COINS
-else
-    mkdir -p $HOME/.zen/tmp/coucou/
-    COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
+    INNERFILE=$ASTROPATH/ipfs/G1SSB/COINS
 fi
+
+mkdir -p $HOME/.zen/tmp/coucou/
+COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 
 echo "ACTUAL $COINSFILE CONTAINS"
 CURCOINS=$(cat $COINSFILE 2>/dev/null)
@@ -55,6 +55,7 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 180 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB} | cut -d '.' -f 1)
     echo "$CURCOINS" > "$COINSFILE"
+    [[ $INNERFILE != "" ]] && echo "$CURCOINS" > "$INNERFILE"
     echo $CURCOINS
     ) &
 fi
