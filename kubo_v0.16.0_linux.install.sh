@@ -34,8 +34,9 @@ sudo bash install.sh
 
     echo "OUVREZ https://www.openstreetmap.org"
     echo "ET CALIBREZ LA SYNCHRO 20H12 AVEC LE TEMPS NATUREL"
-    echo "SAISIR LES COORD. GPS DE VOTRE STATION IPFS (ex: 44.2133, 1.192)"
+    echo "SAISIR LES COORD. GPS DE VOTRE STATION IPFS (ex: 48.87039, 2.31673)"
     read GPS
+    [[ $GPS == "" ]] && GPS="48.87039, 2.31673"
     mkdir -p ~/.zen/
     echo "$GPS" > ~/.zen/GPS
 
