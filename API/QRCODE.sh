@@ -278,6 +278,7 @@ else
     ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
     echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
     VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
+    COINSFILE=$HOME/.zen/tmp/coucou/${QRCODE}.COINS
 
     ## EMPTY WALLET ? PREPARE PALPE WELCOME
     if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
@@ -290,8 +291,19 @@ else
         echo "VISITEUR POSSEDE ${VISITORCOINS} G1"
 
         ## GET G1 WALLET HISTORY
-        [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.g1history.json ]] \
-        && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/coucou/${QRCODE}.g1history.json &
+        if [ ${VISITORCOINS} -gt 0 ]; then
+
+            [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.g1history.json ]] \
+            && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/coucou/${QRCODE}.g1history.json
+            echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
+            cat ~/.zen/tmp/coucou/${QRCODE}.g1history.json >> ~/.zen/tmp/${MOATS}/index.redirect
+            (
+            cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+            echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+            ) &
+            exit 0
+
+        fi
 
         ## SCAN GCHANGE +
         [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.gchange.json ]] \
