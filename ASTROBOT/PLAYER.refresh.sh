@@ -114,13 +114,17 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
-            [[ ${IPNSTAIL} != ${IPFSNODEID} ]] \
-            && echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED : EJECTION " \
-            && rm -Rf ~/.zen/game/players/${PLAYER}/ \
-            && ipfs key rm "${PLAYER}" "${PLAYER}_feed" "$G1PUB" \
-            && echo ">>>> ASTRONAUT EJECTION OPERATION FINISHED" \
-            && continue
-
+            if [[ ${IPNSTAIL} != ${IPFSNODEID} ]]; then
+                echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
+                echo "REMOVE PLAYER & G1VOEU IPNS KEYS"
+                ipfs key rm "${PLAYER}" "${PLAYER}_feed" "$G1PUB"
+                for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* | rev | cut -d / -f 1 | rev); do
+                    ipfs key rm $vk
+                done
+                rm -Rf ~/.zen/game/players/${PLAYER}/
+                echo ">>>> ASTRONAUT ${PLAYER} EJECTION OPERATION FINISHED"
+                continue
+            fi
     fi
         #############################################################
         ## GWIP == myIP or TUBE !!

@@ -61,7 +61,7 @@ do
     ICHECK=$(ipfs key list -l | grep -w "$VOEUKEY" | cut -d ' ' -f 1 )
 
     if [[ ! $ICHECK ]]; then
-          echo "MISSING $VOEUKEY (new astronaut here) - RESET G1Voeu to voeu"
+          echo ">>> STATION MISSING $VOEUKEY - RESET ASTRONAUT WISHES DERIVATED KEYS -"
            sed -i "s~G1Voeu~voeu~g" $INDEX
            continue
     else
@@ -103,7 +103,8 @@ do
         ## PREPARE Ŋ1 WORLD MAP
         echo "var examples = {};
         examples['locations'] = function() {
-        var locations = {" > ~/.zen/tmp/world.js
+        var locations = {
+        " > ~/.zen/tmp/world.js
         floop=1
 
         for FRIENDTW in ${FINDEX[@]};
