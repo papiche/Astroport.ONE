@@ -102,30 +102,39 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
-             if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" ]]; then
-                ## COMMAND A PAYMENT
-                if [[ $APPNAME == "pay" ]]; then
-                    if [[ $WHAT =~ ^[0-9]+$ ]]; then
+            if [[ $APPNAME == "pay" ]]; then
 
-                        echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m"
-                        ${MY_PATH}/../tools/timeout.sh -t 3 \
-                        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
-                        ####################################
-                        if [ $? == 0 ]; then
-                            echo "ADJUSTING LOCAL CACHE ACOUNTING"
-                            COINSFILE=$HOME/.zen/tmp/coucou/${VAL}.COINS
-                            CUR=$(cat ${COINFILE})
-                            [[ ${CUR} != "" && ${CUR} != "null" ]] \
-                            && echo $((CUR+WHAT)) > ${COINFILE} \
-                            || echo ${WHAT} > ${COINFILE}
-                            cat ${COINFILE}
+                 if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" ]]; then
+                    ## COMMAND A PAYMENT
+                        if [[ $WHAT =~ ^[0-9]+$ ]]; then
+
+                            echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m"
+                            ${MY_PATH}/../tools/timeout.sh -t 3 \
+                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+                            ####################################
+                            if [ $? == 0 ]; then
+                                echo "ADJUSTING LOCAL CACHE ACOUNTING"
+                                COINSFILE=$HOME/.zen/tmp/coucou/${VAL}.COINS
+                                CUR=$(cat ${COINFILE})
+                                [[ ${CUR} != "" && ${CUR} != "null" ]] \
+                                && echo $((CUR+WHAT)) > ${COINFILE} \
+                                || echo ${WHAT} > ${COINFILE}
+                                cat ${COINFILE}
+                            fi
                         fi
-                    fi
-                fi
-            else
 
-                 echo "<br>${WHAT} ${VAL} ${CURCOINS} PROBLEM " >> ~/.zen/tmp/${MOATS}/disco
+                else
+
+                     echo "<br>${WHAT} ${VAL} ${CURCOINS} PROBLEM " >> ~/.zen/tmp/${MOATS}/disco
+                fi
+
+            else
+                ## history & read
+                ${MY_PATH}/../tools/timeout.sh -t 6 \
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+
             fi
+
         else
 
             echo "<br>BAD PASS FOR ${QRCODE} ${WHAT} ${VAL} " >> ~/.zen/tmp/${MOATS}/disco
