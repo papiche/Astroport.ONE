@@ -377,7 +377,7 @@ else
             ## G1 PAYEMENT
             $MY_PATH/../tools/jaklis/jaklis.py \
             -k ~/.zen/game/players/.current/secret.dunikey pay \
-            -a ${PALPE} -p ${QRCODE} -c "ASTRO:${RANDOM}:ZEN_00${PALPE}00" -m
+            -a ${PALPE} -p ${QRCODE} -c "ASTRO:BRO:" -m
 
             ## MESSAGE CESIUM +
             $MY_PATH/../tools/jaklis/jaklis.py \

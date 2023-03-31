@@ -77,10 +77,12 @@ Nous mettons un TW dans une clef.
 # "OPEN API" : "♥BOX"
 ## http://astroport.localhost:1234
 
-Une fois votre Station Astroport démarrée (```~/.start.sh```):
+Une fois votre Station Astroport démarrée:
 * le port 1234 publie API (REPONSE PORT TCP 12145 12445 )
 * le port 12345 publie MAP(*) (JSON STATION CACHE IPNS KEY)
 * le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
+
+* le port 8080, 4001 et 5001 sont ceux de la passerelle IPFS
 
 ⚠ ASTROPORT NETCAT SYSTEM ⚠
 

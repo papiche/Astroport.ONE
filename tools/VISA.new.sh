@@ -325,8 +325,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
                             --import ~/.zen/tmp/${MOATS}/lightbeam-natools.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
-    --import "$HOME/.zen/Astroport.ONE/templates/tw/\$ _ipfs_saver_api.json" "application/json" \
-    --import "$HOME/.zen/Astroport.ONE/templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
+    --import "$MY_PATH/../templates/tw/\$ _ipfs_saver_api.json" "application/json" \
+    --import "$MY_PATH/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
@@ -339,8 +339,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## MAKE IMAGE AVATAR WITH G1PUB QRCODE
         if [[ $(which amzqr) ]]; then
 
-            GIMG="$HOME/.zen/Astroport.ONE/images/moa_net.png"
-            CIMG="$HOME/.zen/Astroport.ONE/images/g1ticket.png"
+            GIMG="$MY_PATH/../images/moa_net.png"
+            CIMG="$MY_PATH/../images/g1ticket.png"
 
             # QRG1avatar.png
             [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
