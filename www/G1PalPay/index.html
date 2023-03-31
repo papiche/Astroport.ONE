@@ -181,12 +181,17 @@ a {
                     var mypub = "DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
                 }
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + mypub ;
+                console.log(myU);
+                homeAstroportStation(myU, 'aframe', 10000)
+
             } else {
                 document.getElementById("resu").innerHTML = content;
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+                console.log(myU);
+                homeAstroportStation(myU, 'aframe', 5000)
             }
-            console.log(myU);
-            homeAstroportStation(myU, 'aframe', 5000)
+
+
 
             // fetchAstroport(myU)
 

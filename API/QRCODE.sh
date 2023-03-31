@@ -130,6 +130,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             else
                 ## history & read
+                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME"
                 ${MY_PATH}/../tools/timeout.sh -t 6 \
                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
