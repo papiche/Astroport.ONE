@@ -122,88 +122,6 @@
     <div id="yellow" >
         <iframe name="aframe" id="aframe" src="_STATION_" width="100%" height="640px"></iframe>
     </div>
-    <div class="slidecontainer">
-
-    <div class="gif-container">
-      <!-- gifs -->
-    </div>
-    <div class="slider">
-      <a href="#" id="prev">&lt;</a>
-      <a href="#" id="next">&gt;</a>
-    </div>
-</div>
-
-  <script>
-    function FriendWithMe() {
-        let cookies = document.cookie;
-        console.log(cookies);
-        let salt = prompt("Secret 1");
-        let pepper = prompt("Secret 2");
-        let resultUt = 'http://astroport.localhost:1234/?salt=' + salt + 'pepper=' + pepper + '&friend=_G1PUB_';
-        console.log(resultUt)
-        homeAstroportStation( resultUt,'aframe', 4000)
-    }
-
-    const gifContainer = document.querySelector('.gif-container');
-    const prevBtn = document.querySelector('#prev');
-    const nextBtn = document.querySelector('#next');
-    const pageSize = 4;
-
-    let pageNumber = 0;
-    let gifs = [];
-    let urls = [];
-    let titles = [];
-    let durees = [];
-
-    // Récupérer les données
-    fetch('http://127.0.0.1:8080_VOEUNS_/__PLAYER_.tiddlers.json')
-      .then(res => res.json())
-      .then(data => {
-        // Extraire les gifanime
-        gifs = data.map(tiddler => tiddler.gifanime);
-        urls = data.map(tiddler => tiddler.ipfs);
-        titles = data.map(tiddler => tiddler.title);
-        durees = data.map(tiddler => tiddler.duree);
-        // Afficher les gifs
-        showGifs();
-      });
-
-    // Afficher les images
-    function showGifs() {
-      let start = pageNumber * pageSize;
-      let end = start + pageSize;
-      let pageGifs = gifs.slice(start, end);
-      let pageUrls = urls.slice(start, end);
-      let pageTitles = titles.slice(start, end);
-      let pageDurees = durees.slice(start, end);
-      let output = '';
-
-      // Générer le HTML
-      // <a target="aframe" href="http://127.0.0.1:8080${pageUrls[i]}">
-      // <a target="aframe" href="http://127.0.0.1:8080/ipns/_ASTRONAUTENS_#${pageTitles[i]}">
-      pageGifs.forEach((gif, i) => {
-        output += `
-          <a target="aframe" href="http://127.0.0.1:8080/ipns/_ASTRONAUTENS_#${pageTitles[i]}">
-            <img src="http://127.0.0.1:8080${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
-          </a>
-        `;
-      });
-
-      // Ajouter le HTML
-      gifContainer.innerHTML = output;
-    }
-
-    // Écouter les évènements
-    prevBtn.addEventListener('click', () => {
-      pageNumber--;
-      showGifs();
-    });
-    nextBtn.addEventListener('click', () => {
-      pageNumber++;
-      showGifs();
-    });
-  </script>
-
 
     <div id="demo">
       <div id="description">
@@ -227,6 +145,91 @@ TODO:
 
     <div id="showoff">
         <div id="container">
+
+
+                <div class="slidecontainer">
+
+                <div class="gif-container">
+                  <!-- gifs -->
+                </div>
+                <div class="slider">
+                  <a href="#" id="prev">&lt;</a>
+                  <a href="#" id="next">&gt;</a>
+                </div>
+            </div>
+
+              <script>
+                function FriendWithMe() {
+                    let cookies = document.cookie;
+                    console.log(cookies);
+                    let salt = prompt("Secret 1");
+                    let pepper = prompt("Secret 2");
+                    let resultUt = 'http://astroport.localhost:1234/?salt=' + salt + 'pepper=' + pepper + '&friend=_G1PUB_';
+                    console.log(resultUt)
+                    homeAstroportStation( resultUt,'aframe', 4000)
+                }
+
+                const gifContainer = document.querySelector('.gif-container');
+                const prevBtn = document.querySelector('#prev');
+                const nextBtn = document.querySelector('#next');
+                const pageSize = 4;
+
+                let pageNumber = 0;
+                let gifs = [];
+                let urls = [];
+                let titles = [];
+                let durees = [];
+
+                // Récupérer les données
+                fetch('http://127.0.0.1:8080_VOEUNS_/__PLAYER_.tiddlers.json')
+                  .then(res => res.json())
+                  .then(data => {
+                    // Extraire les gifanime
+                    gifs = data.map(tiddler => tiddler.gifanime);
+                    urls = data.map(tiddler => tiddler.ipfs);
+                    titles = data.map(tiddler => tiddler.title);
+                    durees = data.map(tiddler => tiddler.duree);
+                    // Afficher les gifs
+                    showGifs();
+                  });
+
+                // Afficher les images
+                function showGifs() {
+                  let start = pageNumber * pageSize;
+                  let end = start + pageSize;
+                  let pageGifs = gifs.slice(start, end);
+                  let pageUrls = urls.slice(start, end);
+                  let pageTitles = titles.slice(start, end);
+                  let pageDurees = durees.slice(start, end);
+                  let output = '';
+
+                  // Générer le HTML
+                  // <a target="aframe" href="http://127.0.0.1:8080${pageUrls[i]}">
+                  // <a target="aframe" href="http://127.0.0.1:8080/ipns/_ASTRONAUTENS_#${pageTitles[i]}">
+                  pageGifs.forEach((gif, i) => {
+                    output += `
+                      <a target="aframe" href="http://127.0.0.1:8080/ipns/_ASTRONAUTENS_#${pageTitles[i]}">
+                        <img src="http://127.0.0.1:8080${gif}" title="${pageDurees[i]} - ${pageTitles[i]}" />
+                      </a>
+                    `;
+                  });
+
+                  // Ajouter le HTML
+                  gifContainer.innerHTML = output;
+                }
+
+                // Écouter les évènements
+                prevBtn.addEventListener('click', () => {
+                  pageNumber--;
+                  showGifs();
+                });
+                nextBtn.addEventListener('click', () => {
+                  pageNumber++;
+                  showGifs();
+                });
+              </script>
+
+
           <h2>G1_G1VOEU_ W0rld</h2>
           <canvas id="sphere" width="400" height="400"></canvas>
           <div id="glow-shadows" class="earth"></div>

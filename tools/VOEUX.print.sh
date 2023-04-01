@@ -39,10 +39,9 @@ for v in $(cat ~/.zen/game/players/$PLAYER/voeux/*/*/.title); do
     vlist=($v:$g1pub ${vlist[@]})
 done
 
-# echo "${vlist[@]}"
+echo "${vlist[@]}"
 
 PS3='Choisissez le voeux ___ '
-voeux=($(ls ~/.zen/game/players/$PLAYER/voeux 2>/dev/null) "QUITTER")
 
 select voeu in "${vlist[@]}"; do
     case $voeu in

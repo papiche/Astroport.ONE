@@ -33,7 +33,6 @@ if [[ ! -d $img_dir ]]; then
                 && echo "GOT ~/.zen/tmp/carousel/${pub}.one.png" \
                 || cp $MY_PATH/../images/G1WorldMap.png ~/.zen/tmp/carousel/${pub}.one.png
 
-
                 CIMG="$MY_PATH/../images/g1ticket.png"
                 amzqr ${pub} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
                 convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 250 ~/.zen/tmp/QR.png
