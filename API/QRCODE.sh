@@ -81,13 +81,14 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
         echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch"
         cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/disco
+
         # cat ~/.zen/tmp/${MOATS}/disco
         ## FORMAT SHOULD BE "/?salt=${USALT}&pepper=${UPEPPER}"
         DISCO=$(cat ~/.zen/tmp/${MOATS}/disco  | cut -d '?' -f2)
         arr=(${DISCO//[=&]/ })
         salt=$(urldecode ${arr[1]} | xargs)
         pepper=$(urldecode ${arr[3]} | xargs)
-        echo "<br>${salt} <br>${pepper} <br>" >> ~/.zen/tmp/${MOATS}/disco
+        # echo "<br>${salt} <br>${pepper} <br>" >> ~/.zen/tmp/${MOATS}/disco
 
         if [[ ${salt} != "" && ${pepper} != "" ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
@@ -130,15 +131,15 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             else
                 ## history & read
-                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME"
-                ${MY_PATH}/../tools/timeout.sh -t 6 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+                cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
+                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key $APPNAME -j"
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 
         else
 
-            echo "<br>BAD PASS FOR ${QRCODE} ${WHAT} ${VAL} " >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br>MAUVAIS PASS<br><img src=/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg" >> ~/.zen/tmp/${MOATS}/disco
         fi
 
     else

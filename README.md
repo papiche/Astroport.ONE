@@ -13,13 +13,18 @@ C'est une bibliothèque du savoir à la base.
 Avec cette technologie, nous devenons chacun hébergeur et fournisseur d'accès, souverain monétaire et médiatique.
 Avec cette technologie, nous établissons le "Crypto Département 96" dont la carte relie les territoires au delà des frontières et des pays.
 
-**Astroport ONE est une ambassade numérique d'un monde fait de toiles confiances algorithmiques interconnectées**
+**Astroport ONE propulse un monde numérique fait de toiles confiances interconnectées**
 
 # Astroport.ONE
 
-Il s'agit d'un Jeu de société grandeur nature qui consiste à répertorier, inventer, enseigner, diffuser les meilleures façons d'habiter la planète Terre.
-Ce programme introduit des données multimédia (page web, audio, vidéo) en tant que chaines de données (blockchain) inscrites dans le réseau IPFS
-que les joueurs échangent au travers des TW et Oasis.
+Chaque Station "Astroport.ONE" est une ambassade numérique qui dialogue et se synchronise avec ses pairs.
+Les utilisateurs peuvent "déplacer leur compte". La dernière utilisée dans la journée devient "station officielle".
+
+L'architecture attachée à chaque clefs publiques se déploie et en forme de "pétales de fleur" selon les cercles de confiance Ŋ1 et Ŋ2.
+
+Des clefs dérivées sont crées pour exporter et explorer les "G1MotsClefs" associés au Tiddlers.
+A chaque copie le tiddlers reçoit une nouvelle signature et déclenche le processus "G1PalPay".
+
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
