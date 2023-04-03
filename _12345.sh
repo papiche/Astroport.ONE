@@ -23,6 +23,8 @@ PORT=12345
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
 [[ $ncrunning ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
+    GNODEID=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
+
 ## RESET MEMORY
 rm -Rf ~/.zen/tmp/swarm/*
 ## NAME PUBLISH EMPTY !!!
@@ -60,17 +62,25 @@ while true; do
     ############# GET BOOTSTRAP SWARM DATA
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
-        echo "############# RUN LOOP ######### $(date)"
 
+        echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
         mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
 
-        echo "IPFS get  /ipns/$ipfsnodeid"
-        [[ $YOU ]] && ipfs --timeout 120s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid/
+        addtype=$(echo ${bootnode} | cut -d '/' -f 2)
+        nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
 
-        echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
+            echo "Getting $nodeip : /ipns/$ipfsnodeid"
+            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid/
+            echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
 
-        ls ~/.zen/tmp/swarm/$ipfsnodeid
+             ls ~/.zen/tmp/swarm/$ipfsnodeid
+
+            ## ASK FOR MY MAP UPSYNC
+            if [[  $addtype == "ip4" ]]; then
+                echo "STATION MAP UPSYNC : curl -s http://$nodeip:12345/?${GNODEID}=${IPFSNODEID}"
+                curl -s -m 10 http://$nodeip:12345/?${GNODEID}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.json
+            fi
 
     done
 
@@ -112,7 +122,7 @@ while true; do
 
 
     #### ACTIVATE LIBP2P PORT FORWARDINGS
-    ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh
+    # ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh
 
 
     # last run recording
@@ -142,7 +152,33 @@ Content-Type: application/json; charset=UTF-8
     ######################################################################################
     #  BLOCKING COMMAND nc 12345 port waiting
     echo '(◕‿‿◕) http://'$myIP:'12345 READY (◕‿‿◕)'
-    echo "$HTTPSEND" | nc -l -p 12345 -q 1 > /dev/null 2>&1
+    REQ=$(echo "$HTTPSEND" | nc -l -p 12345 -q 1) ## # WAIT FOR 12345 PORT CONTACT
+
+    URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
+    HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
+    HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
+    COOKIE=$(echo "$REQ" | grep '^Cookie:' | cut -d ' ' -f2)
+    echo "RECEPTION : $URL"
+    arr=(${URL//[=&]/ })
+
+    #####################################################################
+    ### UPSYNC STATION REQUEST /?G1PUB=g1_to_ipfs(G1PUB)&...(TODO include CODE HASH & TOKEN)
+    #####################################################################
+    if [[ ${arr[0]} != "" ]]; then
+        ##
+        GPUB=${arr[0]}
+        ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${arr[0]} 2>/dev/null)
+        if [[ "${ASTROTOIPFS}" == "${arr[1]}" ]]; then
+            echo "STATION ${GPUB} CONTACT"
+            ## CLIENT KNOWS HOW TO CONVERT G1 to IPFS
+            (
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/swarm/${ASTROTOIPFS}
+            echo "UPSYNC TO  ~/.zen/tmp/${IPFSNODEID}/swarm/${ASTROTOIPFS}"
+            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/${IPFSNODEID}/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
+            ) &
+
+        fi
+    fi
 
     #### 12345 NETWORK MAP TOKEN
     end=`date +%s`
