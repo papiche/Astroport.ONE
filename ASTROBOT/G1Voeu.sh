@@ -101,12 +101,12 @@ mkdir -p ~/.zen/tmp/$MOATS
 
     ## MAKE amzqr WITH astro:// LINK
     amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
-                -d "$HOME/.zen/game/world/$PEPPER/$WISHKEY" \
+                -d "$HOME/.zen/tmp/${MOATS}" \
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c
 
     convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
-    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/result.png
+    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/layer1.png $HOME/.zen/game/world/$PEPPER/$WISHKEY/result.png
 
     IMAGIC=$(ipfs add -Hq ~/.zen/game/world/$PEPPER/$WISHKEY/result.png | tail -n 1)
 
