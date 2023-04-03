@@ -71,17 +71,17 @@ Content-Type: text/html; charset=UTF-8
 ########################################
         ## ARCHIVE TOCTOC ${WHAT}S KEEP LOG (TODO : ERASE)
 ########################################
-        mkdir -p ~/.zen/game/players/.toctoc/
-        ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1 | cut -d '.' -f 1)
-        TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
-        if [[ ! $ISTHERE ]]; then
-            echo "${APPNAME} 1ST TOCTOC : ${MOATS}"
-            cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/.toctoc/
-        else ## KEEP 1ST CONTACT ONLY
-            OLDONE=$(ls -t ~/.zen/tmp/coucou/*.${G1PUB}.ipns.key | tail -n 1)
-            DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
-            [[ $DTIME != ${MOATS} ]] && rm ~/.zen/tmp/coucou/$DTIME.*
-        fi
+        #~ mkdir -p ~/.zen/game/players/.toctoc/
+        #~ ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1 | cut -d '.' -f 1)
+        #~ TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
+        #~ if [[ ! $ISTHERE ]]; then
+            #~ echo "${APPNAME} 1ST TOCTOC : ${MOATS}"
+            #~ cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/.toctoc/
+        #~ else ## KEEP 1ST CONTACT ONLY
+            #~ OLDONE=$(ls -t ~/.zen/tmp/coucou/*.${G1PUB}.ipns.key | tail -n 1)
+            #~ DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
+            #~ [[ $DTIME != ${MOATS} ]] && rm ~/.zen/tmp/coucou/$DTIME.*
+        #~ fi
 
 ########################################
 ## APPNAME SELECTION  ########################
