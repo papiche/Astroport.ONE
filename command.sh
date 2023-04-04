@@ -102,15 +102,15 @@ echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choisissez : __ "
-choices=("AJOUTER VLOG" "CREER UN VOEU" "IMPRIMER QRVOEU" "IMPRIMER VISA" "SUPPRIMER PLAYER" "QUITTER")
+choices=("CREER UN VOEU" "PRINT QRVOEU" "PRINT VISA" "REMOVE PLAYER" "QUITTER")
 select fav in  "${choices[@]}"; do
     case $fav in
-    "IMPRIMER VISA")
+    "PRINT VISA")
         echo "IMPRESSION"
         ${MY_PATH}/tools/VISA.print.sh "$PLAYER"
         ;;
 
-    "SUPPRIMER PLAYER")
+    "REMOVE PLAYER")
         echo "ATTENTION ${PLAYER} DECONNEXION DE VOTRE TW !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
@@ -136,10 +136,10 @@ select fav in  "${choices[@]}"; do
         break
         ;;
 
-    "AJOUTER VLOG")
-        echo "Lancement Webcam..."
-        ${MY_PATH}/tools/vlc_webcam.sh "$PLAYER"
-        ;;
+    #~ "AJOUTER VLOG")
+        #~ echo "Lancement Webcam..."
+        #~ ${MY_PATH}/tools/vlc_webcam.sh "$PLAYER"
+        #~ ;;
 
     "CREER UN VOEU")
         echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
@@ -162,7 +162,7 @@ select fav in  "${choices[@]}"; do
     echo "================================================"
         ;;
 
-    "IMPRIMER QRVOEU")
+    "PRINT QRVOEU")
         ${MY_PATH}/tools/VOEUX.print.sh $PLAYER
         ;;
 

@@ -440,16 +440,17 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ##############################################
         if [[ $APPNAME == "login" ]]; then
 
-            ## REMOVE PLAYER IPNS KEY FROM STATION
+            ## INSTALL PLAYER IPNS KEY ON STATION
             PLAYER=${WHAT}
             ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
             ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
 
-            WSTATION=$(cat ~/.zen/tmp/WSTATION 2>/dev/null)
+            #~ WSTATION=$(cat ~/.zen/tmp/WSTATION 2>/dev/null)
+            #~ [[ $WSTATION != "" ]] \
+            #~ && REPLACE=${myIPFS}${WSTATION} \
+            #~ || REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
 
-            [[ $WSTATION != "" ]] \
-            && REPLACE=${myIPFS}${WSTATION} \
-            || REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
+            REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
 
             ## SET COOKIE
             USALT=$(echo "$SALT" | jq -Rr @uri)
@@ -459,9 +460,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             sed -i "s~_USALT_~${USALT}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             sed -i "s~_UPEPPER_~${UPEPPER}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
-
-            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
+            (
+            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+            echo "BLURP " && rm ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
             exit 0
