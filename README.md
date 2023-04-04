@@ -292,7 +292,13 @@ redirect to pure "tag=" result  json
 
 If is G1PUB ? G1BILLET adventure with GCHANGE and CESIUM
 
+### HOW TO REFRESH SLOW IPFS STATION
+```
+sudo systemctl restart ipfs
+sudo systemctl restart astroport.service
+sudo systemctl restart g1billet.service
 
+```
 
 ### STATION : Show Station PLAYER's G1 investments levels
 ```http
