@@ -94,7 +94,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeifd6ktudt4fvalr7jjbyt2ezv3jgaoqe6ik6wey4auty3tgo3q2za"
+TWMODEL="/ipfs/bafybeictoh7wq6be4xcbjyuizq2q6elpevbhykpf4ogo6k3itbm23ojlvi"
 TWLINK="/ipfs/bafybeigyfttjvabeeoa4hbsvtegsqkw3riuquhbil55qhwe3s3q4tesyxi"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
@@ -240,7 +240,11 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## Fill PleaseDELETE
          sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
          sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         ## AND HACK QRCODE.sh FOR _PGP KEY_ TO VERIFY LAST HASH OF PROVIDED PASS
+         HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
+         sed -i "s~_HPASS_~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN
         sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html

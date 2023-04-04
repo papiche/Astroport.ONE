@@ -174,10 +174,10 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
         if [[ "${APPNAME}" == "json" ]]; then
         ##############################################
-            echo "DIRECT JSON OUTPUT"
+            echo "DIRECT Tag = ${QRCODE:2} OUTPUT"
             ## DIRECT JSON OUTPUT
             tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} \
-            --render '.' "g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag['${QRCODE}']]'
+            --render '.' "g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag['${QRCODE:2}']]'
 
             echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/index.redirect
             sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/index.redirect
