@@ -406,6 +406,7 @@ else
         fi
 
     ## DOES CURRENT IS RICHER THAN 100 G1
+    ## THEN SEND PALPE JUNE. SEND MESSAGE TO GCHANGE MESSAGING. SEND 1 ★
     if [[ $CURCOINS -gt 100 && $PALPE != 0 ]]; then
 
             ## LE COMPTE VISITOR EST VIDE
