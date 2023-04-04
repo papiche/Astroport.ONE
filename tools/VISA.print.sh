@@ -58,11 +58,10 @@ BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
 
     #~ convert ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg -rotate -90 ~/.zen/tmp/G1BILLET.png
 
-xdg-open  ~/.zen/tmp/${BILLETNAME}.TW.png
-brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${BILLETNAME}.TW.png > ~/.zen/tmp/bill.bin 2>/dev/null
-sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${BILLETNAME}.TW.png
 
-exit 0
+#~ brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${BILLETNAME}.TW.png > ~/.zen/tmp/bill.bin 2>/dev/null
+#~ sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
 
 convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 300 ~/.zen/tmp/ASTROPORT.png
