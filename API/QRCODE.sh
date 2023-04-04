@@ -12,6 +12,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 start=`date +%s`
 
+echo "PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 COOKIE=$10"
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 COOKIE=$10
 ### transfer variables according to script
 QRCODE=$THAT
@@ -67,7 +68,8 @@ fi
 
 ################################################################################
 ## MODE PGP ENCRYPTED QRCODE
-# http://127.0.0.1:1234/?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iqIY7XLnGn_0koBJB5S2Sy1p%2FHr8CKFgWdZ9_j%2Fb2qdOznICGvqGCXY~7Flw6YtiabngvY6biq%2F0vpiFL8t8BSbMZe0GLBU90EMBrhzEiyPnh__bzQ%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~&pass=coucou&pay=1&g1pub=
+# /?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iqIY7XLnGn_0koBJB5S2Sy1p%2FHr8CKFgWdZ9_j%2Fb2qdOznICGvqGCXY~7Flw6YtiabngvY6biq%2F0vpiFL8t8BSbMZe0GLBU90EMBrhzEiyPnh__bzQ%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~
+# &pass=coucou&history/read/pay=1&g1pub=_DESTINATAIRE_
 ################################################################################
 if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
    echo ${QRCODE}
@@ -114,8 +116,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                             ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
                             ####################################
                             if [ $? == 0 ]; then
-                                echo "ADJUSTING LOCAL CACHE ACOUNTING"
                                 COINSFILE=$HOME/.zen/tmp/coucou/${VAL}.COINS
+                                echo "ADJUSTING ${COINSFILE}"
                                 CUR=$(cat ${COINFILE})
                                 [[ ${CUR} != "" && ${CUR} != "null" ]] \
                                 && echo $((CUR+WHAT)) > ${COINFILE} \
@@ -157,10 +159,11 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 fi
 
 ################################################################################
-## MODE G1VOEU : RETURN WISHNS - image carousel links -
+## MODE G1VOEU : RETURN WISHNS - IPNS App link - or direct tw tag selected json
+# ~/?qrcode=G1VoeuTag&tw=_IPNS_PLAYER_(&json)
 ################################################################################
 if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
-    APPNAME="G1Voeu"
+
     VOEU=${QRCODE}
     ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | grep ${QRCODE} | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
     echo $ASTROPATH
@@ -168,8 +171,29 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     INDEX=$ASTROPATH/index.html
     echo $INDEX
     if [[ -s  ${INDEX} ]]; then
+
+        if [[ "${APPNAME}" == "json" ]]; then
+        ##############################################
+            echo "DIRECT JSON OUTPUT"
+            ## DIRECT JSON OUTPUT
+            tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} \
+            --render '.' "g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag['${QRCODE}']]'
+
+            echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/index.redirect
+            sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/index.redirect
+            cat ~/.zen/tmp/${MOATS}/g1voeu.json >> ~/.zen/tmp/${MOATS}/index.redirect
+            (
+            cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+            echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+            ) &
+            exit 0
+
+        fi
+        ##############################################
+        echo "## IPNS G1Voeu APP REDIRECT"
         tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${MOATS}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
         cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
+
         while read WISH
         do
             [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
@@ -182,6 +206,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
             && break
 
         done < ~/.zen/tmp/${MOATS}.g1wishes.txt
+
     fi
 
     ## REDIRECT TO G1VOEU IPNS ADDRESS
@@ -293,7 +318,7 @@ else
 
     ## EMPTY WALLET ? PREPARE PALPE WELCOME
     if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
-        # REGLER "DUREE DE VIE" : PALPE / WISH_NB / DAY
+        # CADEAU DE 10 JUNE (Si le .current en a plus que 100)
         PALPE=10
     else
         PALPE=0

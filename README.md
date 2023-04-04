@@ -276,7 +276,23 @@ GET /?qrcode=${G1PUB}
 | :-------- | :------- | :-------------------------------- |
 | `qrcode` | `string` | **Required**. Your G1PUB token |
 
-Look for details in ~/.zen/Astroport.ONE/API/QRCODE.sh
+> Look for details & extend as you like in ~/.zen/Astroport.ONE/API/QRCODE.sh
+
+If is IPNS & local PLAYER ? Redirect to G1BILLET
+
+If is G1*? Redirect to G1WishApp / Export Tags from TW
+
+http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0
+redirect to
+http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/
+
+http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json
+redirect to pure json
+
+
+If is G1PUB ? G1BILLET adventure with GCHANGE and CESIUM
+
+
 
 ### STATION : Show Station PLAYER's G1 investments levels
 ```http
