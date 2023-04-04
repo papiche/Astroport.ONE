@@ -397,6 +397,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 ##############################################
         if [[ $APPNAME == "friend" ]]; then
 
+            ## CHECK IF ASKING FRIEND TW EXISTS
+            ipfs --timeout 60s ls /ipns/${ASTRONAUTENS}
+            [ $? != 0 ] && echo "BAD VISITOR" && exit 0
+
             g1friend=${WHAT}
             stars=${VAL:-1} // Default 1 ★
 
