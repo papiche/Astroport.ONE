@@ -145,8 +145,9 @@ Content-Type: application/json; charset=UTF-8
     \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
-    \"url\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
-    \"myswarm\" : \"${myIPFS}/ipns/${CHAN}\"
+    \"astroport\" : \"http://${myIP}:1234\",
+    \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
+    \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\"
 }
 "
     ######################################################################################
