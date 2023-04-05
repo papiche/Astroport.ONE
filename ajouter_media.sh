@@ -42,7 +42,7 @@ PLAYER="$2"
 CHOICE="$3"
 
 # Check who is .current PLAYER
-players=($(ls ~/.zen/game/players  | grep -Ev "localhost" 2>/dev/null))
+players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 
 [[ ${#players[@]} -ge 1 ]] \
 && espeak "SELECT YOUR PLAYER" && OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}") \
@@ -480,120 +480,9 @@ echo '[
 ########################################################################
     mp3)
 
-        espeak " Youtube music copying. Please help us to make the Web your Web"
-
-[ ! $2 ] && zenity --warning --width 600 --text 'DEV-DEBUG : INSCRIVEZ VOUS SUR https://git.p2p.legal'
-
-# Create TEMP directory
-YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
-mkdir -p ${YTEMP}
-
-YTURL="$URL"
-[ ! $2 ] && [[ $YTURL == "" ]] && artist=$(zenity --entry --width 400 --title "Copie MP3 Youtube" --text "Artiste recherché ou Lien Youtube" --entry-text="")
-[[ $YTURL == "" ]] && [[ $artist == "" ]] && echo "NO COPY TO MAKE" && exit 1
-
-## CHECK if artist is LINK or ID
-length=${#artist}
-islink=$(echo "$artist" | grep "http")
-
-if [[ $YTURL == "" && $islink == "" && $length != 11 ]]
-then
-    # Ask for song name
-    [ ! $2 ] && song=$(zenity --entry --width 300 --title "Titre à chercher sur Youtube" --text "Titre recherché" --entry-text="")
-    [[ $song == "" ]] && espeak "I was expecting a song name. Sorry. I Am out." && exit 1
-    espeak "Searching $artist $song"
-    # Download mp3 from 1st youtube search video result (--write-info-json)
-    /usr/local/bin/youtube-dl --default-search ytsearch1: \
-     $BROWSER \
-    --ignore-errors --no-mtime \
-    --embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
-    --extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$artist $song"
-
-else
-
-[[ $YTURL == "" ]] && YTURL="$artist"
-    espeak "Copying Link"
-/usr/local/bin/youtube-dl \
---no-playlist \
-$BROWSER \
---ignore-errors --no-mtime \
---embed-thumbnail --metadata-from-title "%(artist)s - %(title)s" --add-metadata \
---extract-audio --audio-format mp3 -o "${YTEMP}/%(id)s&%(title)s.%(ext)s" "$YTURL"
-
-fi
-
-ls ${YTEMP}
-# Get filename, extract ID, make destination dir and move copy.
-YFILE=$(ls -t ${YTEMP} | head -n 1)
-FILE_NAME="$(basename "${YFILE}")"
-FILE_EXT="${FILE_NAME##*.}"
-
-YID=$(echo "${FILE_NAME}" | cut -d "&" -f 1)
-YNAME=$(echo "${FILE_NAME}" | cut -d "&" -f 2- | sed "s/[(][^)]*[)]//g" | sed -e 's/[^A-Za-z0-9._-]/_/g' | sed -e 's/__/_/g') # Remove YoutubeID_ and (what is in perentheses)
-[[ $(which detox) ]] && YNAME="$(echo "${FILE_NAME}" | cut -d "&" -f 2- | detox --inline)"
-
-FILE_PATH="$HOME/Astroport/$CAT/${YID}"
-
-mkdir -p "${FILE_PATH}" && mv -f ${YTEMP}/* "${FILE_PATH}/"
-# Remove "&" from FILE_NAME rename to YNAME
-mv "${FILE_PATH}/${FILE_NAME}" "${FILE_PATH}/${YNAME}" && FILE_NAME="${YNAME}"
-
-MEDIAID="${YID}"
-TITLE="${YNAME%.*}"
-GENRES="[\"${PLAYER}\"]"
-GROUPES="_IPNSKEY_" # USE GROUPS TO  RECORD IPNS MEDIAKEY
-MEDIAKEY="MP3_$MEDIAID"
-
-rm -Rf ${YTEMP}
-# zenity --warning --width ${large} --text "MP3 copié"
-echo "new_mp3_in_astroport  \"${FILE_PATH}/\" \"${FILE_NAME}\""
-# ${MY_PATH}/tools/new_mp3_in_astroport.sh "${FILE_PATH}/" "${FILE_NAME}"
-
-## BLOCKCHAIN IT
-            start=`date +%s`
-
-            echo "$MOATS" > $FILE_PATH/.moats        # TIMESTMAPING
-
-            ### ADD TO IPFS
-            IPFSREPFILEID=$(ipfs add -wq $FILE_PATH/$FILE_NAME | tail -n 1)  # ADDIN TO IPFS
-
-            ## CREATE ajouter_video.txt (RELATED TO astroport.py PLUGIN FOR VSTREAM KODI)
-            echo "mp3;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$GROUPES;${RES};/ipfs/$IPFSREPFILEID" > ${FILE_PATH}/ajouter_video.txt
-
-            ## DURATION LOG
-            end=`date +%s`
-            dur=`expr $end - $start`
-            echo ${MOATS}:${G1PUB}:${PLAYER}:${MEDIAID}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
-            cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
-            ## TIDDLER CREATION
-            FILE_BSIZE=$(du -b "$FILE_PATH/$FILE_NAME" | awk '{print $1}' | tail -n 1)
-            FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
-
-            TEXT=""
-
-mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
-
-echo '[
-  {
-    "created": "'${MOATS}'",
-    "modified": "'${MOATS}'",
-    "_canonical_uri": "'/ipfs/${IPFSREPFILEID}/$FILE_NAME'",
-    "title": "'$TITLE'",
-    "artist": "'$artist'",
-    "song": "'$song'",
-    "dur": "'$dur'",
-    "type": "'audio/mpeg'",
-    "text": "'$TEXT'",
-    "size": "'${FILE_BSIZE}'",
-    "filesize": "'${FILE_SIZE}'",
-    "g1pub": "'${G1PUB}'",
-    "ipfs": "'/ipfs/${IPFSREPFILEID}'",
-    "mediakey": "'${MEDIAKEY}'",
-    "tags": "'$:/isAttachment $:/isIpfs ipfs mp3 G1Mp3 $artist $song $PLAYER'"
-  }
-]
-' > ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
-
+        espeak "MP3"
+        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o $HOME/Astroport/mp3/%(autonumber)s_%(title)s.%(ext)s
+        espeak "Check home Astoport mp3 directory"
     ;;
 
 ########################################################################
