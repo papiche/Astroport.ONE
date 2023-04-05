@@ -20,11 +20,14 @@ rm -Rf ~/.zen/tmp/*
 espeak "CODE git pull" > /dev/null 2>&1
 
 ## PROCESS TW BACKOFFICE TREATMENT
+[[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && cd ~/.zen/G1BILLET/ && git pull
+
 cd ~/.zen/Astroport.ONE/
 git pull
+
 ## SOON /ipns/ Address !!!
 
-espeak "20 HOURS 12 MINUTES. START NU ONE UPDATE" > /dev/null 2>&1
+espeak "20 HOURS 12 MINUTES. ASTROBOT RUNNING." > /dev/null 2>&1
 ## Updating yt-dlp
 $MY_PATH/youtube-dl.sh
 sudo youtube-dl -U
@@ -58,7 +61,7 @@ echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@g1sms.fr" "/tmp/20h12.log"
 
-espeak "20 12 Storm & Thunder duration was $dur seconds" > /dev/null 2>&1
+espeak "duration was $dur seconds" > /dev/null 2>&1
 
 espeak "Restarting Astroport Station API" > /dev/null 2>&1
 ## CLOSING API PORT
@@ -71,7 +74,9 @@ if [[ ! -f /etc/systemd/system/astroport.service ]]; then
     PID=$!
     echo $PID > ~/.zen/.pid
 else
-    echo "systemd will restart..."
+    sudo systemctl restart astroport
+    [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
+    echo "systemd restart"
 fi
 
 exit 0
