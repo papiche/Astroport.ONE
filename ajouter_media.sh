@@ -82,7 +82,7 @@ if [ $URL ]; then
 
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" Page MP3 Web) || IMPORT="$CHOICE"
+    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3 Web) || IMPORT="$CHOICE"
     [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
@@ -164,7 +164,7 @@ espeak "$COINS JUNE Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web Page Youtube Mp3)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web PDF Youtube MP3)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
@@ -402,7 +402,7 @@ echo '[
 
 
 ########################################################################
-# CASE ## PAGE
+# CASE ## PDF
  #~ ____
 #~ |  _ \ __ _  __ _  ___
 #~ | |_) / _` |/ _` |/ _ \
@@ -410,9 +410,9 @@ echo '[
 #~ |_|   \__,_|\__, |\___|
                 #~ |___/
 
-    page)
+    pdf)
 
-        espeak "Converting any web page into P D F"
+        espeak "Importing file or web page to P D F"
         ## EVOLVE TO ARTICLE
         # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
@@ -480,9 +480,12 @@ echo '[
 ########################################################################
     mp3)
 
-        espeak "MP3"
-        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o $HOME/Astroport/mp3/%(autonumber)s_%(title)s.%(ext)s
-        espeak "Check home Astoport mp3 directory"
+        [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
+        espeak "OK."
+        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "$HOME/Astroport/mp3/%(autonumber)s_%(title)s.%(ext)s" "$URL"
+        espeak "Ready. check your home Astoport mp3 directory"
+
+        break
     ;;
 
 ########################################################################
