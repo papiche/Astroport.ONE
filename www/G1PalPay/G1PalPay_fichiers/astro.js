@@ -65,7 +65,7 @@ async function homeAstroportStation(myURL, option = '', duration = 3000) {
 
 
   } catch (err) {
-    console.log('Fetch error:' + err); // Error handling
+    console.log('Fetch error:' + err + myURL ); // Error handling
   }
 }
 
