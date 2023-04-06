@@ -67,7 +67,7 @@ do
     else
         VCOINS=$($MY_PATH/../tools/COINScheck.sh $VOEUKEY | tail -n 1)
         [[ $VCOINS == "" || $VCOINS == "null" ]] \
-        && echo "G1WALLET NOT EXISTING YET : $VCOINS" && continue \
+        && echo "G1WALLET NOT EXISTING YET : $VCOINS" \
         || echo "WISH G1WALLET = $VCOINS G1"
     fi
 
