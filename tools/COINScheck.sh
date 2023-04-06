@@ -30,12 +30,13 @@ echo "TW ? $myIPFS/ipns/${ASTROTOIPFS}"
 
 #######################################################
 ## CLEANING DAY+1 COINS CACHE FILES
-find ~/.zen/game/players/ -mtime +1 -type f -name "COINS" -exec rm -f '{}' \;
-find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec rm -f '{}' \;
+# find ~/.zen/game/players/ -mtime +1 -type f -name "COINS" -exec rm -f '{}' \;
+echo "${G1PUB}.COINS"
+find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB}  \;
 #######################################################
 
 ## IDENTIFY IF "ASTROPORT" or "COUCOU" PLAYER
-echo "ASTROPATH ? "
+# echo "ASTROPATH ? "
 ASTROPATH=$(grep $G1PUB ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 echo $ASTROPATH
 
@@ -46,7 +47,7 @@ fi
 mkdir -p $HOME/.zen/tmp/coucou/
 COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 
-echo "ACTUAL $COINSFILE CONTAINS"
+# echo "ACTUAL $COINSFILE CONTAINS"
 CURCOINS=$(cat $COINSFILE 2>/dev/null)
 echo "$CURCOINS G1"
 
@@ -55,7 +56,13 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 180 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB} | cut -d '.' -f 1)
     echo "$CURCOINS" > "$COINSFILE"
-    [[ $INNERFILE != "" ]] && echo "$CURCOINS" > "$INNERFILE"
+
+    # PREVENT DUNITER DESYNC (KEEPING ASTROPORT ZEN VALUE)
+    [[ $CURCOINS == "" || $CURCOINS == "null" ]] \
+    && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
+    && cat $HOME/.zen/tmp/backup.${G1PUB} > "$COINSFILE"
+
+    [[ $INNERFILE != "" ]] && cp "$COINSFILE" "$INNERFILE"
     echo $CURCOINS
     ) &
 fi
