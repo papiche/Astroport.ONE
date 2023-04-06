@@ -224,30 +224,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/$FRAME
 
 done
-
-#################################################################
-## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
-############################
-
-# UDATE STATION BALISE
-if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
-
-    # ONLY FRESH DATA HERE
-    # BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
-    ## Getting actual online version
-    # ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
-
-    ## COPY COINS VALUE OF THE DAY
-    cp ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/
-
-    ############################################
-    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
-    ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
-    ipfs name publish /ipfs/$ROUTING
-    echo ">> $NSIZE Bytes STATION BALISE > ${myIPFS}/ipns/${IPFSNODEID}"
-
-fi
-
 echo "PLAYER.refresh DONE."
+
+${MY_PATH}/MAP.refresh.sh
 
 exit 0
