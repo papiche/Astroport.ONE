@@ -114,7 +114,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
-            if [[ ${IPNSTAIL} != ${IPFSNODEID} ]]; then
+            if [[ ${IPNSTAIL} != ${IPFSNODEID} && ${IPNSTAIL} != "_ASTROPORT_" ]]; then
                 echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
                 echo "REMOVE PLAYER & G1VOEU IPNS KEYS"
                 ipfs key rm "${PLAYER}" "${PLAYER}_feed" "$G1PUB"

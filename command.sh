@@ -102,7 +102,7 @@ echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choisissez : __ "
-choices=("CREER UN VOEU" "PRINT QRVOEU" "PRINT VISA" "REMOVE PLAYER" "QUITTER")
+choices=("MAKE UN VOEU" "PRINT QRVOEU" "PRINT VISA" "UNPLUG PLAYER" "QUIT")
 select fav in  "${choices[@]}"; do
     case $fav in
     "PRINT VISA")
@@ -110,7 +110,7 @@ select fav in  "${choices[@]}"; do
         ${MY_PATH}/tools/VISA.print.sh "$PLAYER"
         ;;
 
-    "REMOVE PLAYER")
+    "UNPLUG PLAYER")
         echo "ATTENTION ${PLAYER} DECONNEXION DE VOTRE TW !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
@@ -122,14 +122,14 @@ select fav in  "${choices[@]}"; do
             ipfs key rm $voeu
         done
 
-        ## REMOVE PLAYER DOCKER
+        ## UNPLUG PLAYER DOCKER
         [[ $USER == "zen" ]] && make player MAIL=$PLAYER DELETE=true
 
         #~ echo "REMOVING GCHANGE+ PROFILE"
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" erase
         #~ $MY_PATH/tools/jaklis/jaklis.py -k $HOME/.zen/game/players/$PLAYER/secret.dunikey -n "$myCESIUM" erase
 
-        echo "PLAYER IPNS KEYS REMOVED"
+        echo "PLAYER IPNS KEYS UNPLUGD"
         echo "rm -Rf ~/.zen/game/players/$PLAYER"
         rm -Rf ~/.zen/game/players/$PLAYER
 
@@ -141,7 +141,7 @@ select fav in  "${choices[@]}"; do
         #~ ${MY_PATH}/tools/vlc_webcam.sh "$PLAYER"
         #~ ;;
 
-    "CREER UN VOEU")
+    "MAKE UN VOEU")
         echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
         cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
         ${MY_PATH}/ASTROBOT/G1Voeu.sh "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
@@ -166,7 +166,7 @@ select fav in  "${choices[@]}"; do
         ${MY_PATH}/tools/VOEUX.print.sh $PLAYER
         ;;
 
-    "QUITTER")
+    "QUIT")
         echo "CIAO" && exit 0
         ;;
 
