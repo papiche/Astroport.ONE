@@ -29,17 +29,24 @@ source ~/.zen/game/players/${PLAYER}/secret.june
 
 LP=$(ls /dev/usb/lp*)
 
+PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+
 # USE G1BILLET GENERATOR
 [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] \
 && echo ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "$PASS" "xbian" "$ASTRONAUTENS" "$PLAYER" \
 && ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "$PASS" "xbian" "$ASTRONAUTENS" "$PLAYER"
 
+s=$(${MY_PATH}/diceware.sh 1 | xargs)
+p=$(${MY_PATH}/diceware.sh 1 | xargs)
 BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg
+
+mv ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg ~/.zen/tmp/$PASS.jpg
+
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/$PASS.jpg
 
         USALT=$(echo "$SALT" | jq -Rr @uri)
         UPEPPER=$(echo "$SECRET" | jq -Rr @uri)
-        echo "/?salt=${USALT}&pepper=${UPEPPER}" \
+        echo "/?${s}=${USALT}&${p}=${UPEPPER}" \
         | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/gpg.${BILLETNAME}.asc
 
         DISCO="$(cat ~/.zen/tmp/gpg.${BILLETNAME}.asc | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
@@ -55,8 +62,6 @@ BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
 
         ## ADD PLAYER EMAIL
         convert -gravity southeast -pointsize 28 -fill black -draw "text 5,3 \"$EMAIL\"" ~/.zen/tmp/fond_qrcode.png ~/.zen/tmp/${BILLETNAME}.TW.png
-
-    #~ convert ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg -rotate -90 ~/.zen/tmp/G1BILLET.png
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${BILLETNAME}.TW.png
 
