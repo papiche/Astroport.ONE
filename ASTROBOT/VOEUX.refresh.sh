@@ -194,6 +194,7 @@ do
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
                     -e "s~_PLAYER_~${PLAYER}~g" \
+                    -e "s~_____~${COINS}~g" \
                     -e "s~_G1PUB_~${G1PUB}~g" \
                     -e "s~_VOEUNS_~${VOEUNS}~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
