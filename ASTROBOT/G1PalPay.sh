@@ -181,6 +181,7 @@ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddl
 
 [[ $? != 0 ]] && echo "NO EXTRA @tags.json TIDDLERS TODAY" && exit 0
 
+cat ~/.zen/tmp/${MOATS}/@tags.json
 echo "******************TIDDLERS with EMAIL in TAGS treatment"
 #~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
 
