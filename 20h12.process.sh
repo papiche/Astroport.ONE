@@ -20,7 +20,9 @@ rm -Rf ~/.zen/tmp/*
 espeak "CODE git pull" > /dev/null 2>&1
 
 ## PROCESS TW BACKOFFICE TREATMENT
-[[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && cd ~/.zen/G1BILLET/ && git pull
+[[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
+&& cd ~/.zen/G1BILLET/ && git pull \
+&& rm -Rf ~/.zen/G1BILLET/tmp/*
 
 cd ~/.zen/Astroport.ONE/
 git pull
