@@ -27,8 +27,15 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
     ## COPY COINS VALUE OF THE DAY
     cp ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/
-    ## COPY FRIENDS BY LEVEL
 
+    ## COPY FRIENDS
+    PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
+    echo "FOUND : ${PLAYERONE[@]}"
+    ## RUNING FOR ALL LOCAL PLAYERS
+    for PLAYER in ${PLAYERONE[@]}; do
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
+        cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
+    done
 
     ############################################
     NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)

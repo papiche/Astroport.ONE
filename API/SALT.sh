@@ -404,11 +404,11 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             g1friend=${WHAT}
             stars=${VAL:-1} // Default 1 ★
 
-            MESTAR=$($MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars)
+            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars
 
-            echo "$HTTPCORS ${MESTAR}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-            end=`date +%s`
-            echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
+            #~ echo "$HTTPCORS ${MESTAR}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            #~ end=`date +%s`
+            #~ echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
             exit 0
         fi
 

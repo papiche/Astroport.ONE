@@ -330,9 +330,9 @@ do
 
         done
 
-        ## CLONE IN MAP CACHE
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
-        cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
+        #~ ## CLONE IN MAP CACHE
+        #~ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
+        #~ cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
 
     else
         #########################################
