@@ -109,6 +109,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
             ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+            CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
 
             IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
@@ -188,6 +189,11 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "DIFFERENCE DETECTED !! "
             echo "Backup & Upgrade TW local copy..."
             cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
+
+            [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
+            && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
+            && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
+            && sed -i "s~$CURCHAIN~$ZCHAIN~g" ~/.zen/game/players/$PLAYER/ipfs/moa/index.html
         fi
         ##############################################################
 

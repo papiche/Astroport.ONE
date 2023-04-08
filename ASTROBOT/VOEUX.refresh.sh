@@ -18,6 +18,7 @@ MOATS="$2"
 
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+    COINS=$(cat $HOME/.zen/tmp/coucou/${G1PUB}.COINS)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
 
     ## REFRESH ASTRONAUTE TW
@@ -31,7 +32,7 @@ INDEX="$3"
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu
 
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+echo "%% $COINS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
 echo "Exporting ${PLAYER} TW [tag[G1Voeu]]"
@@ -212,7 +213,7 @@ do
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
-        echo "## ASK ${myASTROTUBE} GATEASTRONAUTENSWAY TO REFRESH"
+        echo "## ASK ${myASTROTUBE} $ASTRONAUTENS TO REFRESH"
         curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myASTROTUBE}${VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA

@@ -78,15 +78,16 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
     if [[ $PASS != "" ]]; then
         echo ${WHAT} ${VAL}
+        ## Recreate GPG aes file
         urldecode ${QRCODE} | tr '_' '+' | tr '-' '\n' | tr '~' '-'  > ~/.zen/tmp/${MOATS}/disco.aes
         sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
-
+        # Decoding
         echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch"
-        cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/disco
+        cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/decoded
 
         # cat ~/.zen/tmp/${MOATS}/disco
-        ## FORMAT SHOULD BE "/?salt=${USALT}&pepper=${UPEPPER}"
-        DISCO=$(cat ~/.zen/tmp/${MOATS}/disco  | cut -d '?' -f2)
+        ## FORMAT IS "/?salt=${USALT}&pepper=${UPEPPER}"
+        DISCO=$(cat ~/.zen/tmp/${MOATS}/decoded  | cut -d '?' -f2)
         arr=(${DISCO//[=&]/ })
         salt=$(urldecode ${arr[1]} | xargs)
         pepper=$(urldecode ${arr[3]} | xargs)

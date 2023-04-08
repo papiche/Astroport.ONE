@@ -41,14 +41,20 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
     # echo "/ipns/${ASTRONAUTENS}"
 
-    echo "SCANNING /ipns/${ASTRONAUTENS} for 30s"
+    echo "SCANNING /ipns/${ASTRONAUTENS} for 180s"
     ## GETTING LAST TW via IPFS or HTTP GW
     [[ $YOU ]] \
-    && ipfs --timeout 30s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
+    && ipfs --timeout 180s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
-    [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    && echo "Trying curl on $LIBRA" \
-    && curl -m 30 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    [[ $XDG_SESSION_TYPE == 'x11' ]] \
+    && [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
+    && echo "TYPE 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
+    && read ENTER \
+    && [[ $ENTER != "" ]] && rm ~/.zen/tmp/${MOATS}/TW/index.html
+
+    #~ [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
+    #~ && echo "Trying curl on $LIBRA" \
+    #~ && curl -m 30 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
 
     #############################################
     ## AUCUN RESULTAT
@@ -66,14 +72,15 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         rm -f ~/.zen/tmp/${MOATS}/Astroport.json
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-
+        echo "ASTROPORT=$ASTROPORT"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
         AstroID=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[]._canonical_uri)
-
+        echo "AstroID=$AstroID"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
         G1Visa=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[]._canonical_uri)
+        echo "G1Visa=$G1Visa"
 
-        if [[ $ASTROPORT ]]; then
+        if [[ $ASTROPORT != "" ]]; then
 
             IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
@@ -81,7 +88,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
         else
 
-            echo ">> NO GOOD TW - CREATING FRESH NEW ONE"
+            echo ">> NO ACTIVE TW - CREATING FRESH NEW ONE"
             cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
         fi
@@ -367,16 +374,16 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         convert ${MY_PATH}/../images/astroport.jpg  -resize 240 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 
 
-        composite -compose Over -gravity SouthWest -geometry +280+20 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/astroport.png
-        composite -compose Over -gravity East -geometry +0+0 ~/.zen/tmp/${MOATS}/TW.png ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/astroport2.png
+        composite -compose Over -gravity SouthWest -geometry +5+5 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/astroport.png
+        composite -compose Over -gravity East -geometry +5+5 ~/.zen/tmp/${MOATS}/TW.png ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/astroport2.png
         composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/astroport2.png ~/.zen/tmp/${MOATS}/one.png
         # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/.current/QRsec.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
 
-        convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
-        convert -gravity northwest -pointsize 25 -fill black -draw "text 300,40 \"${PLAYER}\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
+        convert -gravity northwest -pointsize 25 -fill black -draw "text 50,300 \"$PSEUDO\"" ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
+        convert -gravity northwest -pointsize 20 -fill black -draw "text 300,40 \"${PLAYER}\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
 
 
-
+        ## WITH CONFIDENTIAL (LOCAL PRINT)
         convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
         convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
         convert -gravity northwest -pointsize 25 -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/${PLAYER}/ID.png
@@ -416,7 +423,7 @@ echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sl
 echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
 # ls ~/.zen/game/players/${PLAYER}
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS REPEAT $PASS REPEAT $PASS"
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
 ################# PREPARE DOCKERIZATION
 rm ~/.zen/game/players/.current
