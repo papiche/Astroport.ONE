@@ -24,7 +24,7 @@ echo "$ME RUNNING"
 # IF COMMENT CONTAINS EMAIL ADDRESSES
 # THEN CREATE VISA+TW AND SEND PAIMENT REMOVING FIRST FROM LIST
 ########################################################################
-# this couls lead in several account creation sharing % of incomes each time
+# this could lead in several account creation sharing % of incomes each time
 ########################################################################
 INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
@@ -102,25 +102,25 @@ while read LINE; do
             SALT="" && PEPPER=""
             echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
 
-            if [[ ! $isLAN || $USER == "zen" ]]; then
+            #~ if [[ ! $isLAN || $USER == "zen" ]]; then
 
-                $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1)
-                # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
+                #~ $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1)
+                #~ # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
 
-            else
+            #~ else
 
-                ## CREATE new PLAYER IN myASTROTUBE
-                echo "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-                curl -so ~/.zen/tmp/${MOATS}/astro.port "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                #~ ## CREATE new PLAYER IN myASTROTUBE
+                #~ echo "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
+                #~ curl -so ~/.zen/tmp/${MOATS}/astro.port "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
 
-                TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
-                TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
-                sleep 30
+                #~ TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
+                #~ TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
+                #~ sleep 30
 
-                curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
-                $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
+                #~ curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
+                #~ $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
 
-            fi
+            #~ fi
 
             ######################################################
 
@@ -128,10 +128,11 @@ while read LINE; do
         fi
 
         [[ ! $ASTROG1 ]] \
-        && echo "MISSING ASTROG1" \
+        && echo "SORRY ${EMAIL} MISSING ASTROG1" \
+        && echo " $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous au Collectif ♥BOX https://opencollective.com/monnaie-libre/" > ~/.zen/tmp/palpay.bro \
+        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. " ~/.zen/tmp/palpay.bro \
         && continue
 
-        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. $PLAYER  VOUS A OFFERT CE TW : $(myIpfsGw)/$ASTROTW" ## WELCOME NEW PLAYER
 
         ## MAKE FRIENDS & SEND G1
         echo "NEW PalPay Friend $ASTROMAIL

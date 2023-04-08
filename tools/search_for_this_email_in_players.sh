@@ -9,8 +9,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
-### TODO MAKE IT WORKS BETTER
 ### USE 12345 MAP
+## EXPLORE SWARM BOOTSTRAP REPLICATED TW CACHE
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -40,7 +40,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "export ASTROTW="" # ${EMAIL} NOT FOUND"
+    echo "export ASTROTW='' # ${EMAIL} NOT FOUND"
     exit 0
 
 fi

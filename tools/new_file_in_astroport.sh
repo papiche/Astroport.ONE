@@ -269,7 +269,9 @@ then
     && SAISON=$(cat ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2) \
     && FILETAG=$(echo "$CapitalGluedTitle" | cut -d '_' -f 1)
 
-    [[ $CAT == "Youtube" ]] && H1="<h1><a target='youtube' href='https://www.youtube.com/watch?v="$(cat ${REFERENCE} | rev | cut -d '_' -f 1 | rev)"'>"${TITLE}"</a></h1>"
+    [[ $CAT == "Youtube" ]] \
+    && H1="<h1><a target='youtube' href='https://www.youtube.com/watch?v="$(cat ${REFERENCE} | rev | cut -d '_' -f 1 | rev)"'>"${TITLE}"</a></h1>" \
+    && PATCH="Copier"
 
     echo $GENRE $SAISON
 
@@ -284,7 +286,7 @@ then
         "$H1"<h2>"$DESCRIPTION"</h2>"
 
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
-        TAGS="G1${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR $MIME"
+        TAGS="G1${PATCH}${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR $MIME"
         # TyPE="$MIME"
         # CANON="/ipfs/"${IPFSID}
         CANON=''
