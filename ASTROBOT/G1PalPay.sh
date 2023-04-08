@@ -197,12 +197,12 @@ while read LINE; do
 
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
-    nb=${#email[@]}
+    nb=${#emails[@]}
 
     ## Get first zmail
-    ZMAIL="${email}"
+    ZMAIL="${emails}"
 
-    MSG="+ $nb G1 TO ${email[@]}"
+    MSG="+ $nb G1 TO ${emails[@]}"
     echo $MSG
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
@@ -213,13 +213,13 @@ while read LINE; do
 
         ## SEND nb JUNE TO ALL
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${email[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
+        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "OK PalPay : $MSG"
         echo "PAYMENT SENT"
 
     else
 
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${email[@]}"
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${emails[@]}"
         echo "NO ACCOUNT FOUND"
 
     fi
