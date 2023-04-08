@@ -89,7 +89,9 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
         ## FORMAT IS "/?salt=${USALT}&pepper=${UPEPPER}"
         DISCO=$(cat ~/.zen/tmp/${MOATS}/decoded  | cut -d '?' -f2)
         arr=(${DISCO//[=&]/ })
+        s=$(urldecode ${arr[0]} | xargs)
         salt=$(urldecode ${arr[1]} | xargs)
+        p=$(urldecode ${arr[2]} | xargs)
         pepper=$(urldecode ${arr[3]} | xargs)
         # echo "<br>${salt} <br>${pepper} <br>" >> ~/.zen/tmp/${MOATS}/disco
 
