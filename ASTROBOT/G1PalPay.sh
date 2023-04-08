@@ -211,7 +211,7 @@ while read LINE; do
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
-        ## SEND nb JUNE TO ALL
+        ## SEND nb JUNE TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
         ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "OK PalPay : $MSG"
