@@ -11,7 +11,7 @@
 /dnsaddr/scorpio.copylaradio.com/p2p/12D3KooWS8EiLNay8qVnFaULpxW1X9sGZZz4wV8E6E3QEwCRktry
 
 # astroport.sonic.copylaradio.com
-/ip4/161.97.174.60/tcp/4001/p2p/12D3KooWJki74EkJ8YUhrAfr2UwtQiJKBY94PYLmVnEQe9jo3aqC
+/ip4/161.97.174.60/tcp/4001/p2p/12D3KooWJnzYzJBtruXZwUQJriF1ePtDQCUQp4aNBV5FjpYVdfhc
 
 #################################################################
 ###### WISHING TO ADD YOUR NODE TO OFFICIAL ASTROPORT BOOSTRAP LIST ?
