@@ -330,7 +330,7 @@ else
         echo "VISITEUR POSSEDE ${VISITORCOINS} G1"
 
         ## GET G1 WALLET HISTORY
-        if [ ${VISITORCOINS} -gt 0 ]; then
+        if [[ ${VISITORCOINS} != "null" && ${VISITORCOINS} -gt 0 ]]; then
 
             [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.g1history.json ]] \
             && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/coucou/${QRCODE}.g1history.json
