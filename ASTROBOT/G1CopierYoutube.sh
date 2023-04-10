@@ -71,7 +71,7 @@ for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
     fi
         # ONE WEEK NEW SCAN
         if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER ]]; then
-            youtube-dl $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
+            /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
             sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
         fi
 
@@ -113,7 +113,7 @@ if [[ ! ${TIDDLER} ]]; then
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
         [[ $tot == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
 
-        TITLE="$(youtube-dl $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
+        TITLE="$(/usr/local/bin/yt-dlp $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
 
         start=`date +%s`
@@ -123,14 +123,14 @@ if [[ ! ${TIDDLER} ]]; then
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # (bv*[height<=720][vcodec~='^((he|a)vc|h26[45])']+ba)
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
-        echo "youtube-dl -f \"(bv*[ext=mp4][height<=720]+ba/b[height<=720])\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/yt-dlp/$TITLE.%(ext)s\" ${ZYURL}"
+        echo "/usr/local/bin/yt-dlp -f \"(bv*[ext=mp4][height<=720]+ba/b[height<=720])\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/yt-dlp/$TITLE.%(ext)s\" ${ZYURL}"
 
         #############################################################################
         ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
         ## EXTRA PARAM TO TRY
         #  --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
 
-        youtube-dl  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+        /usr/local/bin/yt-dlp  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                     $BROWSER \
                     --download-archive $HOME/.zen/.yt-dlp.list \
                     -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
@@ -187,9 +187,9 @@ if [[ ! ${TIDDLER} ]]; then
         MIME=$(file --mime-type -b "$HOME/.zen/tmp/yt-dlp/$ZFILE")
 
         ## ADD TAGS
-        SEC=$(youtube-dl $BROWSER --print "%(duration)s" "${ZYURL}")
-        CHANNEL=$(youtube-dl $BROWSER --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
-        PLAYLIST=$(youtube-dl $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+        SEC=$(/usr/local/bin/yt-dlp $BROWSER --print "%(duration)s" "${ZYURL}")
+        CHANNEL=$(/usr/local/bin/yt-dlp $BROWSER --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
+        PLAYLIST=$(/usr/local/bin/yt-dlp $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
         ## PREPARE VIDEO HTML5 CODE
         TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'>
