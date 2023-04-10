@@ -156,7 +156,8 @@ do
         sed -i '$ d' ~/.zen/tmp/world.js
         ##################################
         ## FINISH LOCATIONS
-        echo "};
+        echo "
+        };
            \$('#sphere').earth3d({
             locationsElement: \$('#locations'),
             dragElement: \$('#locations'),
