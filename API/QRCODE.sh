@@ -175,7 +175,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     echo $INDEX
     if [[ -s  ${INDEX} ]]; then
 
-        if [[ "${APPNAME}" == "json" ]]; then
+        if [[ ${APPNAME} == "json" ]]; then
         ##############################################
             echo "DIRECT Tag = ${QRCODE:2} OUTPUT"
             ## DIRECT JSON OUTPUT
