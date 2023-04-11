@@ -53,8 +53,8 @@ mkdir -p ~/.zen/tmp/$MOATS
     echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
 
     echo "## keygen PLAYER DERIVATE WISH KEY"
-    ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/qrtw.dunikey "$SALT" "$PEPPER"
-    WISHKEY=$(cat ~/.zen/tmp/qrtw.dunikey | grep "pub:" | cut -d ' ' -f 2)
+    ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey "$SALT" "$PEPPER"
+    WISHKEY=$(cat ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey | grep "pub:" | cut -d ' ' -f 2)
     echo "WISHKEY (G1PUB) = $WISHKEY"
 
     echo "# NOUVEAU VOEU"
@@ -249,7 +249,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     cat ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/banner
 
     echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/qrtw.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
     [[ ! $? == 0 ]] && echo "G1VOEU CESIUM WALLET PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
@@ -260,7 +260,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
 
     $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 1 -p $WISHKEY -c "$VOEUXNS G1Voeu $PEPPER" -m
     [[ ! $? == 0 ]] \
-    && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT PAY A G1 FOR A NEW WISH"
+    && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT PAY A G1 A NEW WISH - THIS IS FREE TO CHANGE -"
     #~ && rm -Rf ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY \
     #~ && rm -Rf ~/.zen/game/world/$PEPPER/$WISHKEY/ \
     #~ && ipfs key rm ${WISHKEY} \
