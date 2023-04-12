@@ -210,7 +210,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "Remplacez les '0' par les secrets de votre G1PASS.<br>Utilisez les identifiants de votre compte GChange si vous en disposez déjà";
+            document.getElementById("countdown").innerHTML = "Remplacez les '0' par les secrets de votre G1PASS.<br>Utilisez les identifiants de votre compte GChange si vous en disposez déjà <br><form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>Planche de G1BILLETS</option><option value='xbian' selected>G1PASS</option></select>&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;
