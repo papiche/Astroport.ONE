@@ -33,7 +33,7 @@ cat ~/.zen/GPS 2>/dev/null && echo " TODO calibrate 20H12 with GPS"
 
 if [[ ! $crontest ]]; then
     ## HEADER
-    [[ $1 == "OFF" || ]] && exit 0
+    [[ $1 == "OFF" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
