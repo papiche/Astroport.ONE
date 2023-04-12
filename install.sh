@@ -218,7 +218,7 @@ echo "#############################################"
     espeak "Please create a player"
     [[ $XDG_SESSION_TYPE == 'x11' ]] \
     && xdg-open "http://astroport.localhost:1234" \
-    || ~/.zen/Astroport.ONE/comand.sh
+    || ~/.zen/Astroport.ONE/command.sh
 
 
 else

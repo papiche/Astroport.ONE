@@ -33,17 +33,19 @@ cat ~/.zen/GPS 2>/dev/null && echo " TODO calibrate 20H12 with GPS"
 
 if [[ ! $crontest ]]; then
     ## HEADER
-    [[ $1 == "OFF" ]] && exit 0
+    [[ $1 == "OFF" || ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
     # ADD  20h12.process.sh line
     echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
     crontab /tmp/newcron
-    sudo systemctl enable ipfs
+    [[ $1 != "LOW" ]] && sudo systemctl enable ipfs
     sudo systemctl enable astroport
-    sudo systemctl start ipfs
+    sudo systemctl enable g1billet
+    [[ $1 != "LOW" ]] && sudo systemctl start ipfs
     sudo systemctl start astroport
+    sudo systemctl start g1billet
     echo "ASTROPORT is ON"
 
 else
@@ -56,9 +58,20 @@ else
     crontab /tmp/newcron
     sudo systemctl stop ipfs
     sudo systemctl disable ipfs
-    sudo systemctl stop astroport
-    sudo systemctl disable astroport
-    echo "ASTROPORT is OFF"
+    echo "ASTROPORT IPFS is OFF (20H12 START ONLY)"
+
+    if [[ $1 == "LOW" ]]; then
+        echo "KEEPING 20H12 CRON ACTIVATED"
+        ## LOW DISK RESSOURCES IPFS MODE
+        [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
+        [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
+        cat /tmp/mycron >> /tmp/newcron
+        # ADD  20h12.process.sh line
+        echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
+        crontab /tmp/newcron
+
+    fi
+
 
 fi
 
