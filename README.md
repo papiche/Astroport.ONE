@@ -305,6 +305,38 @@ sudo systemctl restart g1billet.service
 GET /?qrcode=station
 ```
 
+### STATION MAP & PLAYER DATA PROPAGATION
+
+Chaque Station collecte et publie sur sa clef "self" (/ipns/$IPFSNODEID) les liens vers le cache de l'ensemble de l'essaim
+http://localhost:12345 renvoi un json
+
+```
+{
+    "created" : "202304111854481040",
+    "hostname" : "kitty.localhost",
+    "myIP" : "192.168.1.14",
+    "ipfsnodeid" : "12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j",
+    "astroport" : "http://192.168.1.14:1234",
+    "g1station" : "http://ipfs.localhost:8080/ipns/12D3KooWK1ACupF7RD3MNvkBFU9Z6fX11pKRAR99WDzEUiYp5t8j",
+    "g1swarm" : "http://ipfs.localhost:8080/ipns/k51qzi5uqu5djv0qz9wkl8i94opzm62csh56mnp9zove8i543e4vv4cy9gvr1o"
+}
+
+```
+| Parameter | Description     |
+| :-------- | :------- |
+| created | date de creation du document |
+| hostname | nom de la station |
+| myIP | adresse IP de la station |
+| ipfsnodeid | date de creation du document |
+| astroport | Lien vers l'API de la station |
+| g1station | Lien vers la carte PLAYER de la Station |
+| g1swarm | Lien vers la carte des cartes des Stations de l'essaim |
+
+Afin de propager la carte chaque Stations lors de son raffraichissement de cache demande aux Boostrap de la récupérer
+```
+STATION MAP UPSYNC : http://$nodeip:12345/?${GNODEID}=${IPFSNODEID}
+```
+
 
 # 20H12
 
