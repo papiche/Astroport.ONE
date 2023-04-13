@@ -186,9 +186,9 @@ do
 
         ##################################
         ## INSERT PLAYER G1 QRCODE : QRG1avatar.png
-        #~ [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs ]] # REACTIVATE .?
-        rm ~/.zen/game/players/${PLAYER}/QRG1avatar.dir.ipfs ## TO REMOVE
-        QRLINK=$(ipfs add -qw ~/.zen/game/players/${PLAYER}/voeu/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
+        QRLINK=$(ipfs add -qw ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
+        [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -qw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
+
 
         ################################## PasseportTerre/index.html
         cat $MY_PATH/../www/PasseportTerre/index.html \
