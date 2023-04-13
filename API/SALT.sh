@@ -116,7 +116,7 @@ Content-Type: text/html; charset=UTF-8
             cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
             ## SEND REPONSE PROCESS IN BACKGROUD
-            (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/coucou/${MOATS}.index.redirect ) &
+            ( cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/coucou/${MOATS}* ) &
                 #~ ( ## USING IPNS SESSION KEY
                 #~ REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
                 #~ ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
@@ -158,6 +158,7 @@ Content-Type: text/html; charset=UTF-8
                 (
                 cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
                 ${MY_PATH}/../tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
+                rm ~/.zen/tmp/coucou/${MOATS}*
                 ) &
                 end=`date +%s`
                 echo $APPNAME" (0‿‿0) ${WHAT} Execution time was "`expr $end - $start` seconds.
@@ -325,7 +326,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
                 cat ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
 
-                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/coucou/${MOATS}.* ) &
 
             ## REPONSE ON IPFSNODEID
                 (
@@ -405,7 +406,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             stars=${VAL:-1} // Default 1 ★
 
             $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars
-
+            rm ~/.zen/tmp/coucou/${MOATS}.*
             #~ echo "$HTTPCORS ${MESTAR}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             #~ end=`date +%s`
             #~ echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
@@ -421,6 +422,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             url='"${ASTRONAUTENS}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getipns : ${ASTRONAUTENS}" ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
+            rm ~/.zen/tmp/coucou/${MOATS}.*
             exit 0
         fi
 
@@ -432,6 +434,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             url='"${G1PUB}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getg1pub : ${G1PUB}" ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
+            rm ~/.zen/tmp/coucou/${MOATS}.*
             exit 0
         fi
 
@@ -462,7 +465,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
             (
             cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-            echo "BLURP " && rm ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            echo "BLURP " && rm ~/.zen/tmp/coucou/${MOATS}*
             ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
@@ -484,6 +487,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             echo "$HTTPCORS ${REP}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
+            rm ~/.zen/tmp/coucou/${MOATS}.*
             exit 0
 
         fi
@@ -502,5 +506,6 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
         end=`date +%s`
         echo $type" (J‿‿J) Execution time was "`expr $end - $start` seconds.
+        rm ~/.zen/tmp/coucou/${MOATS}.*
 
 exit 0
