@@ -32,7 +32,7 @@ Content-Type: text/html; charset=UTF-8
         echo ">>>>>>>>>>>>>> Application LaBureautique >><< APPNAME = $APPNAME <<<<<<<<<<<<<<<<<<<<"
 
         [[ ! $SALT ]] && (echo "$HTTPCORS ERROR - SALT MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-        [[ ! $PEPPER ]] && (echo "$HTTPCORS ERROR - PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
+        [[ ! $PEPPER || ${PEPPER:0:2} == "G1" ]] && (echo "$HTTPCORS ERROR - BAD OR PEPPER MISSING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
         ## SAVE "salt" "pepper" DEBUG REMOVE OR PASS ENCRYPT FOR SECURITY REASON
         echo "PLAYER : \"$SALT\" \"$PEPPER\" : $APPNAME ($WHAT)"
