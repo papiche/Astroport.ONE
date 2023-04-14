@@ -114,10 +114,12 @@ async function fetchAstroport(myURL) {
     }
 ```
 
-Utilisez astro.js
+Nous utilisons "astro.js" dans l'Application DEMO
 ```
     <script src="http://127.0.0.1:8080/ipfs/QmYjUbg8NzsXxkYV5NnK2rwv38VGd5z8dhxr3zEph6qFQM/astro.js"></script>
 ```
+
+
 
 ## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
