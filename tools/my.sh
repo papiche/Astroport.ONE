@@ -351,6 +351,7 @@ myHtml() {
         -e "s~http://127.0.0.1:12345~http://${myHOST}:12345~g" \
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
         -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+        -e "s~g1billet.localhost~${myIP}~g" \
         -e "s~_HOSTNAME_~$(hostname)~g" \
         -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
       ~/.zen/Astroport.ONE/templates/register.html)
