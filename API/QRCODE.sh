@@ -168,7 +168,7 @@ fi
 if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
     VOEU=${QRCODE}
-    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | grep ${QRCODE} | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | grep ${QRCODE} | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
     echo $ASTROPATH
 
     INDEX=$ASTROPATH/index.html
@@ -196,7 +196,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
         echo "## IPNS G1Voeu APP REDIRECT"
         tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${MOATS}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
         cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
-
+        cat ~/.zen/tmp/${MOATS}.g1wishes.txt
         while read WISH
         do
             [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue

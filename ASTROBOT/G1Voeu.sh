@@ -53,9 +53,12 @@ mkdir -p ~/.zen/tmp/$MOATS
     echo "$PEPPER" && [[ ! $PEPPER ]] && echo "EMPTY PEPPER - ERROR" && exit 1
 
     echo "## keygen PLAYER DERIVATE WISH KEY"
-    ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey "$SALT" "$PEPPER"
-    WISHKEY=$(cat ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey | grep "pub:" | cut -d ' ' -f 2)
+    ${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/$MOATS/wish.dunikey "$SALT" "$PEPPER"
+    WISHKEY=$(cat ~/.zen/tmp/$MOATS/wish.dunikey | grep "pub:" | cut -d ' ' -f 2)
     echo "WISHKEY (G1PUB) = $WISHKEY"
+    [[ $WISHKEY == "" ]] && echo "EMPTY WISHKEY G1PUB - ERROR" && exit 1
+    mkdir -p ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
+    mv ~/.zen/tmp/$MOATS/wish.dunikey ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey
 
     echo "# NOUVEAU VOEU"
     mkdir -p ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/
