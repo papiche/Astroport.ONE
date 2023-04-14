@@ -32,6 +32,20 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 ## GET TW
 mkdir -p ~/.zen/tmp/${MOATS}/
+
+if [[ ${QRCODE:0:4} == "http" ]]; then
+    ## THIS IS A WEB LINK
+    sed "s~_TWLINK_~${QRCODE}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${QRCODE}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    (
+    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    ) &
+    exit 0
+
+fi
+
 ################################################################################
 ## REFRESH STATION & OPEN G1PalPay INTERFACE
 ###############################################################################
@@ -93,7 +107,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
         salt=$(urldecode ${arr[1]} | xargs)
         p=$(urldecode ${arr[2]} | xargs)
         pepper=$(urldecode ${arr[3]} | xargs)
-        # echo "<br>${salt} <br>${pepper} <br>" >> ~/.zen/tmp/${MOATS}/disco
+
+       echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
 
         if [[ ${salt} != "" && ${pepper} != "" ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
@@ -110,7 +125,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ $APPNAME == "pay" ]]; then
 
-                 if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" ]]; then
+                 if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} -gt ${VAL} ]]; then
                     ## COMMAND A PAYMENT
                         if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
@@ -131,7 +146,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 else
 
-                     echo "<br>${WHAT} ${VAL} ${CURCOINS} PROBLEM " >> ~/.zen/tmp/${MOATS}/disco
+                     echo "<h2>${WHAT} ${VAL} ${CURCOINS} PROBLEM</h2>" >> ~/.zen/tmp/${MOATS}/disco
                 fi
 
             else
@@ -144,7 +159,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
         else
 
-            echo "<br>MAUVAIS PASS<br><img src=/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><h1>MAUVAIS PASS</h1>" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><img src='http://127.0.0.1:8080/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg' />" >> ~/.zen/tmp/${MOATS}/disco
         fi
 
     else
@@ -152,11 +168,9 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
         echo "<br>DATA MISSING" >> ~/.zen/tmp/${MOATS}/disco
     fi
 
-    echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    cat ~/.zen/tmp/${MOATS}/disco  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
-    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" # && rm -Rf ~/.zen/tmp/${MOATS}
+    cat cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi
@@ -304,7 +318,7 @@ fi
 if [[ ${CURG1} == ${QRCODE} ]]; then
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "$CURPLAYER WALLET : $CURCOINS G1"  >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "<h1>$CURPLAYER WALLET : $CURCOINS Ǧ1</h1>"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -334,8 +348,10 @@ else
 
             [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.g1history.json ]] \
             && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/coucou/${QRCODE}.g1history.json
+
             echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-            cat ~/.zen/tmp/coucou/${QRCODE}.g1history.json >> ~/.zen/tmp/${MOATS}/index.redirect
+            echo "<h1>Solde $VISITORCOINS Ǧ1</h1>" >> ~/.zen/tmp/${MOATS}/index.redirect
+            echo "<h2><a target=_blank href="$myIPFS/ipfs/$(ipfs add -q ~/.zen/tmp/coucou/${QRCODE}.g1history.json)">HISTORIQUE ${QRCODE}</a></h2>"  >> ~/.zen/tmp/${MOATS}/index.redirect
             (
             cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
             echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
