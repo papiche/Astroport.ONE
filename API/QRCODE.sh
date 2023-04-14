@@ -119,11 +119,11 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                             ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
                             ####################################
                             if [ $? == 0 ]; then
-                                COINSFILE=$HOME/.zen/tmp/coucou/${VAL}.COINS
+                                COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
                                 echo "ADJUSTING ${COINSFILE}"
                                 CUR=$(cat ${COINFILE})
                                 [[ ${CUR} != "" && ${CUR} != "null" ]] \
-                                && echo $((CUR+WHAT)) > ${COINFILE} \
+                                && echo $((CUR-WHAT)) > ${COINFILE} \
                                 || echo ${WHAT} > ${COINFILE}
                                 cat ${COINFILE}
                             fi
