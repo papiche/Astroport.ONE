@@ -25,6 +25,8 @@ L'architecture attachée à chaque clefs publiques se déploie et en forme de "p
 Des clefs dérivées sont crées pour exporter et explorer les "G1MotsClefs" associés au Tiddlers.
 A chaque copie le tiddlers reçoit une nouvelle signature et déclenche le processus "G1PalPay".
 
+[DOCUMENTATION](https://pad.p2p.legal/s/Astroport.ONE)
+
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 

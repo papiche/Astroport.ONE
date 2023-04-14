@@ -276,7 +276,8 @@ then
     echo $GENRE $SAISON
 
     ## Add screenshot
-    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] && SCREEN=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1) && PROBETIME=0
+    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] \
+    && SCREEN=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
 
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
