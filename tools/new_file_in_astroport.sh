@@ -276,7 +276,7 @@ then
     echo $GENRE $SAISON
 
     ## Add screenshot
-    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] && ANIMH=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1) && PROBETIME=0
+    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] && SCREEN=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1) && PROBETIME=0
 
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
@@ -314,6 +314,7 @@ then
     "duration": "'${DURATION}'",
     "giftime": "'${PROBETIME}'",
     "vtratio": "'${VTRATIO}'",
+    "screen": "'/ipfs/${SCREEN}'",
     "gifanime": "'/ipfs/${ANIMH}'",
     "type": "'${TidType}'",
     "mime": "'${MIME}'",
