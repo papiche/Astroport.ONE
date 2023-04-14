@@ -43,50 +43,24 @@ bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/
 
 # LANCEMENT
 
-## MODE AVENTURE : Activez une Ambassade "Astroport" !
+Après l'installation, rendez-vous sur http://astroport.localhost:1234
 
-```
-~/.zen/Astroport.ONE/adventure/adventure.sh
-```
 
-Trouvez le moyen d'accéder à une "Station Astroport" installée en forêt...
+## Comment Activer votre "Astroport" !
 
-NB: Une Station branchée sur un panneau solaire et une batterie adéquate, peut fonctionner OnGrid et OffGrid
-
-## ./start.sh
-
-Gestion des VISA PLAYER (et gestion des VOEUX) en mode CLI
+Commencez par créer (ou importer) un premier compte.
 
 ```
 ~/.zen/Astroport.ONE/command.sh
 ```
-
-# Activer "myos" MODE OLYMPE (Docker)
-
-```
-sudo apt install git make docker.io
-sudo adduser $USER docker
-
-## REBOOT
-
-cd ~/.zen/Astroport.ONE
-make
-make install
-```
-
-USER devient un PLAYER, avec son propre démon IPFS, installé dans un Docker.
-Chaque STATION (nœud Astroport) accessible en WAN peut héberger un à plusieurs autres "JOUEURS".
-
-IPFS relie les clefs et les données.
-Nous mettons un TW dans une clef.
-
+Permet la Gestion des PLAYER (et des G1VoeuX) en mode CLI
 
 # "OPEN API" : "♥BOX"
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée:
-* le port 1234 publie API (REPONSE PORT TCP 12145 12445 )
-* le port 12345 publie MAP(*) (JSON STATION CACHE IPNS KEY)
+* le port 1234 publie API (REPONSE PORT TCP 12145 à 12445 )
+* le port 12345 publie MAP(*) (CARTE DE L'ESSAIM - BOOTSTRAP / STATIONS)
 * le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
 
 * le port 8080, 4001 et 5001 sont ceux de la passerelle IPFS
