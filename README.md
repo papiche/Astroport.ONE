@@ -88,6 +88,8 @@ Voici comment procéder en BASH ou JAVASCRIPT
     curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
 ```
 ### JS
+
+Exemple :
 ```
 var myURL = 'http://astroport.localhost:1234/?' + query;
 async function fetchAstroport(myURL) {
@@ -110,6 +112,11 @@ async function fetchAstroport(myURL) {
         console.log('Fetch error:' + err); // Error handling
       }
     }
+```
+
+Utilisez astro.js
+```
+    <script src="http://127.0.0.1:8080/ipfs/QmYjUbg8NzsXxkYV5NnK2rwv38VGd5z8dhxr3zEph6qFQM/astro.js"></script>
 ```
 
 ## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
