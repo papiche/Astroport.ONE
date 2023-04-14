@@ -156,7 +156,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
     cat ~/.zen/tmp/${MOATS}/disco  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    echo "BLURP $PORT" # && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi

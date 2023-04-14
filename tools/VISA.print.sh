@@ -46,8 +46,8 @@ mv ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg ~/.zen/tmp/$PASS.jp
 
         USALT=$(echo "$SALT" | jq -Rr @uri)
         UPEPPER=$(echo "$SECRET" | jq -Rr @uri)
-        echo "/?${s}=${USALT}&${p}=${UPEPPER}" \
-        | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/gpg.${BILLETNAME}.asc
+        echo "/?${s}=${USALT}&${p}=${UPEPPER}" > ~/.zen/tmp/topgp
+        cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/gpg.${BILLETNAME}.asc
 
         DISCO="$(cat ~/.zen/tmp/gpg.${BILLETNAME}.asc | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
         echo "$DISCO"
@@ -65,8 +65,8 @@ mv ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg ~/.zen/tmp/$PASS.jp
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${BILLETNAME}.TW.png
 
-#~ brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${BILLETNAME}.TW.png > ~/.zen/tmp/bill.bin 2>/dev/null
-#~ sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
+brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${BILLETNAME}.TW.png > ~/.zen/tmp/bill.bin 2>/dev/null
+sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
 
 convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 300 ~/.zen/tmp/ASTROPORT.png

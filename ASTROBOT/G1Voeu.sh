@@ -97,8 +97,8 @@ mkdir -p ~/.zen/tmp/$MOATS
     USALT=$(echo "$SALT" | jq -Rr @uri)
     UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
     DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
-    echo "${DISCO}" \
-    | gpg --symmetric --armor --batch --passphrase "$SALT" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
+    echo "${DISCO}"  > ~/.zen/tmp/topgp
+    cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$SALT" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
 
     cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
 
