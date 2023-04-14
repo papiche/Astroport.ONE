@@ -186,8 +186,8 @@ do
 
         ##################################
         ## INSERT PLAYER G1 QRCODE : QRG1avatar.png
-        QRLINK=$(ipfs add -qw ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
-        [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -qw ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
+        QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
+        [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
 
 
         ################################## PasseportTerre/index.html
