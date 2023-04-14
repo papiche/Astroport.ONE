@@ -352,13 +352,6 @@ cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.zen/game/p
 # echo "SEND TW LINK to GCHANGE MESSAGE"
 [[ $3 ]] && ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
 
-# Couldl be used by caroussel.html template
-# CAROUSSEL=$(ipfs add -wq ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json | head-n 1)
-
-# COPY TIDDLER JSON TO DESKTOP Journal/${TyPE}
-#    [[ "$USER" != "xbian" && -d ~/Bureau ]] && mkdir -p ~/Bureau/Journal/${TyPE} && cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/Bureau/Journal/${TyPE}/${TITLE}.dragdrop.json" && xdg-open "$HOME/Bureau/Journal/${TyPE}/"
-#    [[ "$USER" != "xbian" && -d ~/Desktop ]] && mkdir -p ~/Desktop/Journal/${TyPE} && cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/Desktop/Journal/${TyPE}/${TITLE}.dragdrop.json" && xdg-open "$HOME/Desktop/Journal/${TyPE}/"
-
 fi
 
 ########################################################################

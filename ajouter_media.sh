@@ -236,7 +236,7 @@ TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
 
 /usr/local/bin/youtube-dl -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                 --no-playlist \
-                $BROWSER --verbose --audio-format mp3\
+                $BROWSER --verbose \
                 --download-archive $HOME/.zen/.yt-dlp.list \
                  -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
                  -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
@@ -714,12 +714,10 @@ esac
 ########################################################################
 # Screen capture
 ########################################################################
-#~ if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    #~ espeak "beware taking screen shot in 3 seconds"
-    #~ sleep 3
-    #~ espeak "smile"
-    #~ import -window root ~/.zen/tmp/screen.png
-#~ fi
+if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
+    sleep 1
+    import -window root ~/.zen/tmp/screen.png
+fi
 
 ###################################
 ### MOVING FILE TO ~/astroport ####
@@ -802,7 +800,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     rm -f ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
     [[ $YOU ]] && echo " ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
-    [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    #~ [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
     [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
     ## TODO : CHECK CACHE LAST MODIFIED
@@ -821,6 +819,21 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
 
+            ################################################
+            ## UPDATE TW CHAIN WITH PREVIOUSLY RECORDED CHAIN
+            tiddlywiki --load ~/.zen/tmp/newindex.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+            ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+            CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
+            [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
+            echo "CURCHAIN=$CURCHAIN"
+            [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
+            && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
+            && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
+            && sed -i "s~$CURCHAIN~$ZCHAIN~g" ~/.zen/tmp/newindex.html
+            ################################################
+
         mv ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ~/Astroport/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
         espeak "I P N S Publishing. Please wait..."
         cp ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -832,6 +845,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
         [[ $DIFF ]] && echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
         echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
+
 
         echo "================================================"
         echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
