@@ -124,7 +124,7 @@ Nous utilisons "astro.js" dans l'Application DEMO
 ## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
-### Créer un PLAYER TW <3BOX
+### Créer (ou téléporter) un PLAYER TW : OFFICIAL <3BOX :
 ```http
 GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
 ```
@@ -133,8 +133,8 @@ GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
 | :-------- | :------- | :-------------------------------- |
 | `salt` | `string` | **Required**. Your passphrase one token |
 | `pepper` | `string` | **Required**. Your passphrase two token |
-| `g1pub` | `string` | **Required**. Your prefered _URL_  |
-| `email` | `email` | **Required**. Your email one token |
+| `g1pub` | `string` | **Required**. Your prefered _URL_ to copy video from |
+| `email` | `email` | **Required**. Your email token |
 
 ### LOGOUT PLAYER (remove IPNS keys from Station)
 ```http
@@ -145,7 +145,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&logout=${PLAYER}
 | :-------- | :------- | :-------------------------------- |
 | `salt` | `string` | **Required**. Your passphrase one token |
 | `pepper` | `string` | **Required**. Your passphrase two token |
-| `logout` | `string` | **Required**. Your email one token  |
+| `logout` | `string` | **Required**. Your email token  |
 
 ### LOGIN PLAYER (Activate IPNS keys on Station)
 ```http
@@ -156,7 +156,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&login=${PLAYER}
 | :-------- | :------- | :-------------------------------- |
 | `salt` | `string` | **Required**. Your passphrase one token |
 | `pepper` | `string` | **Required**. Your passphrase two token |
-| `login` | `string` | **Required**. Your email one token  |
+| `login` | `string` | **Required**. Your email token  |
 
 ### Définir le niveau ★ accordé à un "g1friend"
 ```http
@@ -171,7 +171,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&friend=${G1PUB}&stars=${1:5}
 | `stars` | `number` | **Required**. Number between 1 to 5 |
 
 
-### Lire Messagerie Gchange
+### Lire Messagerie de la base "GChange"
 ```http
 GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
 ```
@@ -205,6 +205,14 @@ GET /?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=_&dataid=$QRHASH
 | `testcraft` | `string` | **Required** AppNAME subcommand |
 | `${OBJ}` | `${VAL}` | depends on App |
 
+This IPFS object transfer needs that the client is using well configured WebRTC/IPFS relays
+Look for example in ```www/upload_to_astroport.html```
+
+```
+    '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+    '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
+```
+
 ###  Redirections
 * vers Gchange
 
@@ -214,7 +222,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&testcraft=json&nodeid=_&dataid=$QRHASH
 
 ```/?salt=${SALT}&pepper=${PEPPER}&g1pub=astro```
 
-###  Déclencher un Payement de 1 Ğ1 à Fred
+###  Déclencher un Payement de Ğ1 à une G1PUB
 ```http
 GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
 ```
@@ -241,7 +249,7 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 | `tag` | `${VAL}` | TW filtering default G1CopierYoutube |
 
 
-###  Modifier URL ♥BOX - CopierYoutube du PLAYER
+###  Modifier URL du G1Voeu "G1CopierYoutube" du PLAYER
 ```http
 GET /?player=${PLAYER}&youtube=URLENCODED
 ```
@@ -251,7 +259,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 | `player` | `string` | **Required**. Your EMAIL token |
 | `youtube` | `string` | **Required** URL = Video URL |
 
-
+MORE TEST NEEDED
 
 ### QRCODE (API SandBox)
 ```http
@@ -263,9 +271,11 @@ GET /?qrcode=${G1PUB}
 
 > Look for details & extend as you like in ~/.zen/Astroport.ONE/API/QRCODE.sh
 
-If is IPNS & local PLAYER ? Redirect to G1BILLET
+ACTUAL BEHAVIOUR IS TO RECEIVE QRCODE VALUES
 
-If is G1*? Redirect to G1WishApp / Export Tags from TW
+1) Is IPNS key & PLAYER is local ? Redirect to G1BILLET
+
+2) Is G1*? Redirect to G1WishApp / Export Tags from TW
 
 http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0
 redirect to
@@ -274,12 +284,12 @@ http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9
 http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json
 redirect to pure "tag=" result  json
 
+3) Is G1PUB ...
 
-If is G1PUB ? G1BILLET adventure with GCHANGE and CESIUM
-
-### HOW TO REFRESH SLOW IPFS STATION
+### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
 ```
-sudo systemctl restart ipfs
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh LOW
+
 sudo systemctl restart astroport.service
 sudo systemctl restart g1billet.service
 

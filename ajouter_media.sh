@@ -22,7 +22,15 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
+LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+# echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
+if [[ $LOWMODE != "" ]]; then
+    espeak "Low Mode"
+    sudo systemctl start ipfs
+fi
+
 [[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
+
 
 start=`date +%s`
 # REMOVE GtkDialog errors for zenity
@@ -57,7 +65,6 @@ PLAYER=$OUTPUT
 && . "${MY_PATH}/tools/my.sh"
 
 [[ $OUTPUT == "" ]] \
-&& ${MY_PATH}/start.sh \
 && espeak "Astronaut. Please register." \
 && xdg-open "http://astroport.localhost:1234" \
 && exit 1 \

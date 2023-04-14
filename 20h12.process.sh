@@ -14,9 +14,9 @@ espeak "Ding" > /dev/null 2>&1
 rm -Rf ~/.zen/tmp/*
 
 ## RESTART IPFS DAEMON
-STOPPED=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
-if [[ $STOPPED != "" ]]; then
+if [[ $LOWMODE != "" ]]; then
     sudo systemctl start ipfs && sleep 10
 else
     sudo systemctl restart ipfs && sleep 10
@@ -87,6 +87,6 @@ else
 fi
 
 ## IPFS DISABLED : STOP IT
-[[ $STOPPED != "" ]] && sleep 360 && sudo systemctl stop ipfs
+[[ $LOWMODE != "" ]] && sleep 360 && sudo systemctl stop ipfs
 
 exit 0
