@@ -441,14 +441,14 @@ echo '[
             # SELECT FILE TO ADD TO ASTROPORT/KODI
             [ ! $2 ] && FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
             echo "${FILE}"
-            [[ $FILE == "" ]] && echo "NO FILE" && exit 1
+            [[ ! -s "${FILE}" ]] && echo "NO FILE" && exit 1
 
             # Remove file extension to get file name => STITLE
             FILE_PATH="$(dirname "${FILE}")"
             FILE_NAME="$(basename "${FILE}")"
             FILE_EXT="${FILE_NAME##*.}"
             FILE_TITLE="${FILE_NAME%.*}"
-            cat "${FILE}" > ~/.zen/tmp/output.pdf
+            cp "${FILE}" ~/.zen/tmp/output.pdf
             URL="/ipfs.localhost/$FILE_TITLE"
         fi
 

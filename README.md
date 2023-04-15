@@ -380,3 +380,14 @@ https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
+
+## CREDITS
+
+This "digital art" structure is a selection of some of the most valuable Free & OpenSource Software I ever had in my hand.
+Credits is going to all the kindness and care provided to make valuable and secure software available for all
+
+Did you ever dring a beer bought in G1 ?
+
+You can pay me a beer or more by contributing to our OpenCollective
+https://opencollective.com/monnaie-libre#category-ABOUT
+

@@ -216,7 +216,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
         echo "NO PRINTER FOUND - Plug a Brother QL700 or Add your printer"
     else
         echo "IMPRESSION VOEU"
-        brother_ql_create --model QL-700 --label-size 62 ~/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png > ~/.zen/tmp/toprint.bin 2>/dev/null
+        brother_ql_create --model QL-700 --label-size 62 ~/.zen/game/world/$PEPPER/$WISHKEY/result.png > ~/.zen/tmp/toprint.bin 2>/dev/null
         sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
         brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/player.png > ~/.zen/tmp/toprint.bin 2>/dev/null
         sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
@@ -251,9 +251,9 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"$PEPPE
     echo $banner > ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/banner
     cat ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/banner
 
-    echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
-    [[ ! $? == 0 ]] && echo "G1VOEU CESIUM WALLET PROFILE CREATION FAILED !!!!"
+    #~ echo "## TO RECEIVE G1RONDS Creating Cesium+ Profil #### timeout long ... patience ...."
+    #~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/voeux/$PEPPER/$WISHKEY/wish.dunikey set --name "G1Voeu $PEPPER" --avatar "$HOME/.zen/game/world/$PEPPER/$WISHKEY/result_qrcode.png" --site "$LIBRA/ipns/$VOEUNS" #CESIUM+
+    #~ [[ ! $? == 0 ]] && echo "G1VOEU CESIUM WALLET PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
     echo "Hop, UNE JUNE pour le Voeu $PEPPER"
