@@ -159,6 +159,7 @@ a {
             function countdown() {
                 if (timeLeft == -1) {
                     clearTimeout(timerId);
+                    elem.innerHTML = "<a href='"+redirectURL+"' target='aframe'>OK</a>";
                     window.open( redirectURL, "AstroTab");
                 } else {
                     elem.innerHTML = timeLeft + " s";
@@ -228,7 +229,7 @@ a {
 
     </script>
     <h1><button id="ainfo" onclick="javascript:var x = document.getElementById('yellow'); if (x.style.visibility === 'hidden') {x.style.visibility = 'visible';} else {x.style.visibility = 'hidden';}">0/1</button></h1>
-    <div id="yellow" ><a href="_STATION_" target="aframe">Menu</a>
+    <div id="yellow" ><a href="_STATION_" target="aframe">MENU</a>
         <iframe name="aframe" id="aframe" src="_STATION_" width="100%" height="300px"></iframe>
     </div>
 
