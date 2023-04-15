@@ -4,7 +4,7 @@ MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ######## YOUTUBE-DL ##########
-## NOW INSTALL yt-dlp AND LINK TO youtube-dl
+## NOW INSTALL yt-dlp AND LINK TO /usr/local/bin/youtube-dl
 
 if [[ ! -f /usr/local/bin/yt-dlp ]]; then
         sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
@@ -15,8 +15,8 @@ if [[ ! -f /usr/local/bin/yt-dlp ]]; then
             sudo cp ${ytdl} ${ytdl}.old && \
             sudo rm ${ytdl}
 
-        sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl ##  NOW youtube-dl is linked to yt-dlp (COMMANDS ARE THE SAME ?)
+        sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl ##  NOW youtube-dl is linked to yt-dlp (COMMANDS ARE THE SAME)
 fi
 
 ## UPGRADE TO LATEST
-ls -al /usr/local/bin/youtube-dl
+# ls -al /usr/local/bin/youtube-dl
