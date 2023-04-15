@@ -27,23 +27,17 @@ start=`date +%s`
 # MAIN # SI AUCUNE CLEF DE STATION...
 if [[ ! -d ~/.zen/game/players/ ]];
 then
-
-
-# Check requirements
-echo "Installateur Astroport.ONE pour distributions DEBIAN et dérivées : LinuxMint (https://www.linuxmint.com/)"
-# echo "$USER appuyez sur ENTRER."; read TEST;  [[ "$TEST" != "" ]] && echo "SORTIE" && exit 0 ## Ajouter confirmation à chaque nouvelle étape (+explications)
 echo "#############################################"
-echo "###### IPFS BIOS INSTALL ##############################"
-echo "################  CRYPTO TW Ŋ1 PROTOCOL #############"
-echo "tail -f /tmp/install.errors.log"
+echo "###### ASTROPORT.ONE IPFS STATION ##############"
+echo "################  TW Ŋ1 PROTOCOL #############"
 echo "##################################################"
 
-echo ; echo "Mise à jour des dépots de votre distribution..."
+echo ; echo "UPDATING SYSTEM REPOSITORY"
 #~ [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
 sudo apt-get update
 
 echo "#############################################"
-echo "######### BASIC & PYTHON3 PACKAGE ####"
+echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
 for i in git make cmake fail2ban npm netcat-traditional chromium inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
@@ -55,7 +49,7 @@ for i in git make cmake fail2ban npm netcat-traditional chromium inotify-tools c
     fi
 done
 echo "#############################################"
-echo "######### MULTIMEDIA TOOLS  ######"
+echo "######### INSTALL MULTIMEDIA TOOLS  ######"
 echo "#############################################"
 # removed : sqlite
 for i in qrencode pv gnupg ca-certificates basez jq bc file gawk yt-dlp ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
@@ -69,7 +63,7 @@ done
 
 if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 echo "#############################################"
-echo "######### DESKTOP TOOLS  ######"
+echo "######### INSTALL DESKTOP TOOLS  ######"
 echo "#############################################" for i in x11-utils xclip zenity kodi; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -81,7 +75,7 @@ fi
 
 #### GIT CLONE ###############################################################
 echo "#############################################"
-echo "=== CLONAGE CODE  '~/.zen/Astroport.ONE' depuis https://github.com"
+echo "=== CODE CLONING  TO '~/.zen/Astroport.ONE'"
 echo "#############################################"
 mkdir -p ~/.zen
 cd ~/.zen
@@ -89,7 +83,7 @@ git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
 echo "#############################################"
-echo "######### NODEJS & TIDDLYWIKI ############"
+echo "######### INSTALL NODEJS & TIDDLYWIKI ############"
 echo "#############################################"
 ##########################################################
 sudo npm install -g tiddlywiki
@@ -110,7 +104,7 @@ sudo npm install -g tiddlywiki
 #~ ## DES SUGGESTIONS ?
 #~ ## CONTACTER support@qo-op.com
 #~ #################################################"
-echo "######### MAILJET ############"
+echo "######### CONFIGURE MAILJET ############"
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
 sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
 sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
@@ -120,15 +114,15 @@ sudo chgrp mail /etc/ssmtp/ssmtp.conf
 echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
 
 ## Correct PDF restrictions for imagemagick
-echo "######### IMAGEMAGICK PDF ALLOW ############"
+echo "######### IMAGEMAGICK PDF ############"
 if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
     cat /etc/ImageMagick-6/policy.xml | grep -Ev PDF > /tmp/policy.xml
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
 fi
 
 echo "###########################"
-echo "##  PYTHON CRYPTO LAYER (♥‿‿♥)"
-echo "###########################"
+echo "##  ADDING CRYPTO LAYER ================"
+echo "########################### ♥BOX"
 sudo ln -f -s  /usr/bin/python3 /usr/bin/python
 echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo "<<< CHECK YOUR >>> PATH=$PATH"
 
@@ -147,7 +141,7 @@ done
 cat /tmp/install.errors.log
 
 echo "#############################################"
-echo "######### IMPRESSION  & G1BILLET ##############"
+echo "######### IMPRIMANTE & G1BILLET ##############"
 echo "#############################################"
 
 ########### QRCODE : G1VISA / G1BILLET : PRINTER ##############
@@ -166,20 +160,15 @@ if [[ $USER != 'xbian' ]]; then
         echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
     fi
 
-    echo "INSTALL G1BILLET GENERATION LAYER. ENTER 'yes' or Hit enter to bypass."
-    read billet
-    if [[ $billet != "" ]]; then
+fi
         ## G1BILLET
-        echo "INSTALLING G1BILLET daemon ..."
+        echo "INSTALLING G1BILLET SERVICE : http://g1billet.localhost:33101"
         if [[ ! -d ~/.zen/G1BILLET ]]; then
             cd ~/.zen
             git clone https://git.p2p.legal/qo-op/G1BILLET.git
             cd G1BILLET && ./setup_systemd.sh
             cd -
         fi
-    fi
-fi
-
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
 echo "#############################################"
@@ -211,10 +200,9 @@ echo "#############################################"
     end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
-echo "%%%%%%%%%%%%%%%%%%%%"
-echo "CREEZ VOTRE COMPTE"
-echo "          "
-echo "%%%%%%%%%%%%%%%%%%%%"
+echo "CREEZ VOTRE COMPTE SUR"
+echo "    http://astroport.localhost:1234"
+echo "%%%%%%%%  OU ~/.zen/Astroport.ONE/command.sh "
 echo "#############################################"
 
 ##########################################################
