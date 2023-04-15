@@ -62,7 +62,7 @@ do
     ICHECK=$(ipfs key list -l | grep -w "$VOEUKEY" | cut -d ' ' -f 1 )
 
     if [[ ! $ICHECK ]]; then
-          echo ">>> STATION MISSING $VOEUKEY - RESET ASTRONAUT WISHES DERIVATED KEYS -"
+          echo ">>> STATION MISSING $VOEUKEY - RESET ASTRONAUT WISHES - DERIVATED KEYS RECREATE -"
            sed -i "s~G1Voeu~voeu~g" $INDEX
            continue
     else
@@ -173,7 +173,7 @@ do
         ##################################
         ## MAKE MY OWN JSON
         ################################## MOA MAINTENANT
-        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW$VOEUNS/_${PLAYER}.tiddlers.json"
+        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW/ipns/$VOEUNS/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
@@ -215,11 +215,11 @@ do
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
-        echo "## ASK ${myASTROTUBE} $ASTRONAUTENS TO REFRESH"
-        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myASTROTUBE}${VOEUNS}" &
+        echo "## ASK ${myIPFSGW}/ipns/${VOEUNS} TO REFRESH"
+        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}/ipns/${VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
-        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${VOEUNS}"
+        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
 
         #~ echo "************************************************************"
