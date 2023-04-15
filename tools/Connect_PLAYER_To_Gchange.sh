@@ -340,6 +340,7 @@ do
         ## IS IT REALLY A FRIEND I LIKE ?
         echo "BRO?"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
+        mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/
         try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
     fi
