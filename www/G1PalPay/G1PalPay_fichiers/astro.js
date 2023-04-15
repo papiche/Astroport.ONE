@@ -46,6 +46,9 @@ async function homeAstroportStation(myURL, option = '', duration = 3000) {
                           break;
                     case "aframe":
                           document.getElementById("aframe").src = redirectURL;
+                           if (document.getElementById("countdown").innerHTML !== '') {
+                                document.getElementById("countdown").innerHTML = "<a href='"+redirectURL+"' target='aframe'>OK</a>";
+                            }
                           break;
                     case "ainfo":
                           ainfo(redirectURL);
