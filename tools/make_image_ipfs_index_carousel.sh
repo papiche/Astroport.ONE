@@ -87,7 +87,7 @@ echo "<!DOCTYPE html>
 <body>" > $html_file
 
 echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfPQTULc4cYVJ/bootstrap.min.css\">
-    <script src=\"/ipfs/QmTjGFMMj4GfjUC8DHSGhnT2MzHQRY2B6zSeqsaR7axMhh/astro.js\"></script>
+    <script src=\"/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js\"></script>
 
 <style>
 .carousel-item {
@@ -101,7 +101,7 @@ echo "<link rel=\"stylesheet\" href=\"/ipfs/QmX9QyopkTw9TdeC6yZpFzutfjNFWP36nzfP
 }
 </style>
 
-  <h3><div id=\"countdown\">$myHOST :: ${#PLAYERONE[@]} :: </div><div id=\"ainfo\"></div></h3>
+  <h3>$myHOST :: ${#PLAYERONE[@]} :: <div id=\"countdown\"></div><div id=\"ainfo\"></div></h3>
 
 <div class=\"container\">
 

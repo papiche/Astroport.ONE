@@ -116,7 +116,7 @@ async function fetchAstroport(myURL) {
 
 Nous utilisons "astro.js" dans l'Application DEMO
 ```
-    <script src="http://127.0.0.1:8080/ipfs/QmTjGFMMj4GfjUC8DHSGhnT2MzHQRY2B6zSeqsaR7axMhh/astro.js"></script>
+    <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```
 
 
