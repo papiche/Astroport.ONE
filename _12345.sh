@@ -23,7 +23,7 @@ PORT=12345
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
 [[ $ncrunning ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
-    GNODEID=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
+    NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 
 ## RESET MEMORY
 rm -Rf ~/.zen/tmp/swarm/*
@@ -33,16 +33,16 @@ rm -Rf ~/.zen/tmp/swarm/*
 ##############################################
 
 mkdir -p ~/.zen/tmp/swarm
-mkdir -p ~/.zen/tmp/$IPFSNODEID
+mkdir -p ~/.zen/tmp/${IPFSNODEID}
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
 
-## CREATE CHAN = MySwarm_$IPFSNODEID
-    CHAN=$(ipfs key list -l | grep -w "MySwarm_$IPFSNODEID" | cut -d ' ' -f 1)
-    [[ ! $CHAN ]] && CHAN=$(ipfs key gen "MySwarm_$IPFSNODEID")
+## CREATE CHAN = MySwarm_${IPFSNODEID}
+    CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
+    [[ ! $CHAN ]] && CHAN=$(ipfs key gen "MySwarm_${IPFSNODEID}")
 ## PUBLISH CHANNEL IPNS
-    echo "/ipns/$CHAN" > ~/.zen/tmp/$IPFSNODEID/.MySwarm
+    echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm
 
 
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
@@ -65,55 +65,62 @@ while true; do
 
         echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
-        mkdir -p ~/.zen/tmp/swarm/$ipfsnodeid
+        mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
 
         addtype=$(echo ${bootnode} | cut -d '/' -f 2)
         nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
 
-            echo "Getting $nodeip : /ipns/$ipfsnodeid"
-            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/$ipfsnodeid /ipns/$ipfsnodeid/
-            echo "Updated : ~/.zen/tmp/swarm/$ipfsnodeid"
+            echo "Getting ${nodeip} : /ipns/${ipfsnodeid}"
+            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ipfsnodeid} /ipns/${ipfsnodeid}/
+            echo "Updated : ~/.zen/tmp/swarm/${ipfsnodeid}"
 
-             ls ~/.zen/tmp/swarm/$ipfsnodeid
+             ls ~/.zen/tmp/swarm/${ipfsnodeid}
 
             ## ASK FOR MY MAP UPSYNC
             if [[  $addtype == "ip4" ]]; then
-                echo "STATION MAP UPSYNC : curl -s http://$nodeip:12345/?${GNODEID}=${IPFSNODEID}"
-                curl -s -m 10 http://$nodeip:12345/?${GNODEID}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.json
+                echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
+                curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json
             fi
 
     done
 
+#############################################
     ############### UPDATE MySwarm CHAN
     ls ~/.zen/tmp/swarm
-    BSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
+    SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
 
-    ## SIZE MODIFIED => PUBLISH MySwarm_$IPFSNODEID
-    [[ $BSIZE != $(cat ~/.zen/tmp/swarm/.bsize) ]] \
-    && echo $BSIZE > ~/.zen/tmp/swarm/.bsize \
+    ## SIZE MODIFIED => PUBLISH MySwarm_${IPFSNODEID}
+    [[ ${SWARMSIZE} != $(cat ~/.zen/tmp/swarm/.bsize) ]] \
+    && echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize \
     && SWARMH=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
-    && ipfs name publish --key "MySwarm_$IPFSNODEID" --allow-offline /ipfs/$SWARMH
+    && ipfs name publish --key "MySwarm_${IPFSNODEID}" --allow-offline /ipfs/${SWARMH}
+#############################################
 
 
     ############# PUBLISH IPFSNODEID BALISE
     # Clean Empty Directory (inode dependancy BUG ??)
-    du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
-    while read branch; do [[ $branch =~ "4096" ]] && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
+    #~ du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
+    #~ while read branch; do [[ $branch =~ "4096" ]] && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
 
     # Scan local cache
     ls ~/.zen/tmp/${IPFSNODEID}/
     BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
+    ## BACK UP ACTUAL LOCAL MAP
+    mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/tmp/_${IPFSNODEID}
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}
 
-    ## Merge with actual online version
+    ## GET ONLINE MAP VERSION
     ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
     NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
-    ## Local / IPNS size differ => Publish
-    [[ $BSIZE != $NSIZE ]] \
+    ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
+    [[ ${BSIZE} != ${NSIZE} ]] \
+    && cp -Rf ~/.zen/tmp/_${IPFSNODEID}/* ~/.zen/tmp/${IPFSNODEID}/
+    && rm -Rf ~/.zen/tmp/_${IPFSNODEID}
     && ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
     && echo "BALISE STATION /ipns/${IPFSNODEID} INDEXES = $NSIZE octets" \
-    && ipfs name publish --allow-offline /ipfs/$ROUTING
+    && ipfs name publish --allow-offline /ipfs/${ROUTING}
 
     end=`date +%s`
     echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds.'
