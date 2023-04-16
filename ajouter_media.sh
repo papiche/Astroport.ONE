@@ -423,7 +423,7 @@ echo '[
         ## EVOLVE TO ARTICLE
         # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
-        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "URL à convertir en PDF (LAISSER VIDE POUR CHOISIR UN FICHIER LOCAL)" --text "Indiquez le lien (URL)" --entry-text="")
+        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Convertir lien PDF (ANNULER ET CHOISIR UN FICHIER LOCAL)" --text "Indiquez le lien (URL)" --entry-text="")
 
         if [[ $URL != "" ]]; then
     ## record one page to PDF
@@ -466,11 +466,11 @@ echo '[
         REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev | detox --inline)_"
 
         MEDIAID="$REVSOURCE$(echo "${TITLE}" | detox --inline)"
-        MEDIAKEY="PAGE_${MEDIAID}"
-        FILE_PATH="$HOME/Astroport/page/$MEDIAID"
+        MEDIAKEY="PDF_${MEDIAID}"
+        FILE_PATH="$HOME/Astroport/pdf/$MEDIAID"
         mkdir -p ${FILE_PATH} && mv ~/.zen/tmp/output.pdf ${FILE_PATH}/${FILE_NAME}
 
-        echo "page;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+        echo "pdf;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
 
         espeak 'Document ready'
 

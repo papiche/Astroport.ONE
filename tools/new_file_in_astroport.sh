@@ -58,7 +58,7 @@ TITLE="${file%.*}"
     CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
 
 # .part file false flag correcting (in case inotify has launched script)
-[[ ! -f "${path}${file}" ]] && file="${TITLE%.*}" && extension="${TITLE##*.}" && [[ ! -f "${path}${file}" ]] && er="NO FILE" && echo "$er" && exit 1
+#~ [[ ! -f "${path}${file}" ]] && file="${TITLE%.*}" && extension="${TITLE##*.}" && [[ ! -f "${path}${file}" ]] && er="NO FILE" && echo "$er" && exit 1
 
 MIME=$(file --mime-type -b "${path}${file}")
 
@@ -97,7 +97,7 @@ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
 [[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/ MERCI" && echo "$er" && exit 1
 
 ### TyPE & type & T = related to ~/astroport location of the infile (mimetype subdivision)
-TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/Astroport/... TyPE(film, youtube, mp3, video, page)/ REFERENCE /
+TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/Astroport/... TyPE(film, youtube, mp3, video, pdf)/ REFERENCE /
 type=$(echo "$TyPE" | awk '{ print tolower($0) }')
 PREFIX=$(echo "$TyPE" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, Y, M ou Y (all the alaphabet can address a data type
 
@@ -122,8 +122,8 @@ case ${type} in
         REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
         TITLE="${file%.*}"
     ;;
-    page)
-        INDEXPREFIX="PAGE_"
+    pdf)
+        INDEXPREFIX="PDF_"
         REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
         TITLE="${file%.*}"
     ;;
@@ -234,7 +234,7 @@ fi
 ########################################################################
 # type TW PUBLISHING
 ########################################################################
-if [[ "${type}" =~ ^(page|film|serie|youtube|video)$ ]]
+if [[ "${type}" =~ ^(pdf|film|serie|youtube|video)$ ]]
 then
 
     ## ASK FOR EXTRA METADATA
