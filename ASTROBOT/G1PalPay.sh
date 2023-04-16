@@ -174,14 +174,16 @@ tiddlywiki --load $INDEX \
                  --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]]'
 
 ## FILTER MY OWN EMAIL
-cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | jq -rc # LOG
+# cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
 
 cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json \
-        | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## INLINE JSON
+        | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## REMOVE PLAYER EMAIL IN INLINE JSON
 
 [[ $? != 0 ]] && echo "NO EXTRA @tags.json TIDDLERS TODAY" && exit 0
 
+# LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
+
 echo "******************TIDDLERS with EMAIL in TAGS treatment"
 #~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
 
@@ -194,6 +196,8 @@ while read LINE; do
     TCREATED=$(echo $LINE | jq -r .created)
     TTITLE=$(echo $LINE | jq -r .title)
     TTAGS=$(echo $LINE | jq -r .tags)
+    TOPIN=$(echo $LINE | jq -r .ipfs)
+
     echo "$TTITLE"
 
     ## Count emails found
@@ -216,7 +220,10 @@ while read LINE; do
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
         ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "OK PalPay : $MSG"
-        echo "PAYMENT SENT"
+        echo "PAYMENT SENT --- PINNING $TOPIN"
+
+        ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
+        ipfs pin add $TOPIN
 
     else
 

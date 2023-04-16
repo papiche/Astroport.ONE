@@ -246,8 +246,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## Fill PleaseDELETE
-         sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-         sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         #~ sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         #~ sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
          ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
          sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -256,8 +257,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
          [[ ${HPass} != "" ]] && SRCPASS=${HPass} || SRCPASS="_HPASS_"
          sed -i "s~${SRCPASS}~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN
-        sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN ( DONE IN PLAYER_REFRESH )
+        #~ sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## Fill ♥BOX
          sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -268,7 +269,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~_WISHKEY_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        #~ sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
         # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
