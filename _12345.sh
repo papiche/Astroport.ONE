@@ -116,8 +116,8 @@ while true; do
 
     ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
     [[ ${BSIZE} != ${NSIZE} ]] \
-    && cp -Rf ~/.zen/tmp/_${IPFSNODEID}/* ~/.zen/tmp/${IPFSNODEID}/
-    && rm -Rf ~/.zen/tmp/_${IPFSNODEID}
+    && cp -Rf ~/.zen/tmp/_${IPFSNODEID}/* ~/.zen/tmp/${IPFSNODEID}/ \
+    && rm -Rf ~/.zen/tmp/_${IPFSNODEID} \
     && ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
     && echo "BALISE STATION /ipns/${IPFSNODEID} INDEXES = $NSIZE octets" \
     && ipfs name publish --allow-offline /ipfs/${ROUTING}
