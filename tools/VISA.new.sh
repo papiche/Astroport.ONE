@@ -6,7 +6,7 @@
 ################################################################################
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/my.sh"
 
 ! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
@@ -22,7 +22,7 @@ PSEUDO="$4"
 URL="$5"
 ################################################################################
 YOU=$(myIpfsApi);
-LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 ################################################################################
 
 ################################################################################
@@ -64,7 +64,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
         echo
         echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
-        cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+        cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
     #############################################
@@ -73,11 +73,12 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
         echo "ASTROPORT=$ASTROPORT"
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
-        AstroID=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[]._canonical_uri)
-        echo "AstroID=$AstroID"
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
-        G1Visa=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[]._canonical_uri)
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
+        AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
+        HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
+        echo "AstroID=$AstroID ($HPass)"
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'G1Visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+        G1Visa=$(cat ~/.zen/tmp/${MOATS}/G1Visa.json | jq -r .[]._canonical_uri)
         echo "G1Visa=$G1Visa"
 
         if [[ $ASTROPORT != "" ]]; then
@@ -89,7 +90,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         else
 
             echo ">> NO ACTIVE TW - CREATING FRESH NEW ONE"
-            cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+            cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
         fi
 
@@ -232,7 +233,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     ############ TODO améliorer templates, sed, ajouter index.html, etc...
         mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
 
-        [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] && cp ~/.zen/Astroport.ONE/templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+        [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] && cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
         sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html > ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT ASTROPORT ADRESS
@@ -249,9 +250,11 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
          sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
          sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
          ## AND HACK QRCODE.sh FOR _PGP KEY_ TO VERIFY LAST HASH OF PROVIDED PASS
          HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
-         sed -i "s~_HPASS_~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         [[ ${HPass} != "" ]] && SRCPASS=${HPass} || SRCPASS="_HPASS_"
+         sed -i "s~${SRCPASS}~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN
         sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -284,7 +287,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 ###########
         echo "# CRYPTO ENCODING  _SECRET_ "
-        $MY_PATH/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
+        ${MY_PATH}/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         # echo "$ENCODING"
@@ -292,7 +295,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
-        $MY_PATH/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
+        ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
         echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
 ###########
         ## CRYPTO PROCESS VALIDATED
@@ -302,8 +305,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 ###########
 
     ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
-    cat ~/.zen/Astroport.ONE/templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
-    cat ~/.zen/Astroport.ONE/templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
+    cat ${MY_PATH}/../templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
+    cat ${MY_PATH}/../templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
     # Create"${PLAYER}_feed" Key ! DERIVATED !
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
@@ -317,7 +320,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
     ## NATOOLS ENCRYPT
     echo "# NATOOLS ENCODING  feed.ipfskey "
-    $MY_PATH/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
+    ${MY_PATH}/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
     ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc | base16)
     echo $ENCODING
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
@@ -336,8 +339,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
                             --import ~/.zen/tmp/${MOATS}/lightbeam-natools.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
-    --import "$MY_PATH/../templates/tw/\$ _ipfs_saver_api.json" "application/json" \
-    --import "$MY_PATH/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
+    --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_api.json" "application/json" \
+    --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
@@ -350,8 +353,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## MAKE IMAGE AVATAR WITH G1PUB QRCODE
         if [[ $(which amzqr) ]]; then
 
-            GIMG="$MY_PATH/../images/moa_net.png"
-            CIMG="$MY_PATH/../images/g1ticket.png"
+            GIMG="${MY_PATH}/../images/moa_net.png"
+            CIMG="${MY_PATH}/../images/g1ticket.png"
 
             # QRG1avatar.png
             [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
@@ -401,11 +404,12 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo "TW /ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
-    echo "$MOATS :: /ipfs/$IPUSH"
     echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     (
-    ipfs name publish --key=${PLAYER} /ipfs/$IPUSH
+        echo "$MOATS :: /ipfs/$IPUSH"
+        ipfs name publish --key=${PLAYER} /ipfs/$IPUSH
+        echo "TW PUBLISHING DONE"
     ) &
 
     ## MEMORISE PLAYER Ŋ1 ZONE
@@ -428,48 +432,13 @@ echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
 ################# PREPARE DOCKERIZATION
 rm ~/.zen/game/players/.current
 ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
-. "$MY_PATH/my.sh"
+. "${MY_PATH}/my.sh"
 
 #################################################################
 #### make player ipfs docker ## TODO
 # [[ $USER == 'zen' ]] && make player MAIL=$(myPlayer) USER_HOST=$(myPlayerHost) > /dev/null 2>&1
 ## 1ST RELEASE BASED ON DIRECT NODE IPFSNODEID KEY "ADD / DEL" API
 #################################################################
-#################################################################
-#################################################################
-#################################################################
-# PASS CRYPTING KEY - USE PGP
-#~ create a code that decypher an url base64 encoded by pgp symetric from a form hidden field prompting for password in  html and javascript, include js libraries
-
-#~ <html>
-#~ <head>
-  #~ <script src="./openpgp.min.js"></script>
-  #~ <script>
-    #~ function decryptPGP() {
-      #~ var pass = prompt("Please enter your password:");
-      #~ var encrypted = document.getElementById('pgp-url').value;
-      #~ const decrypted = openpgp.decrypt({
-        #~ message: openpgp.message.readArmored(encrypted),
-        #~ passwords: [pass]
-      #~ });
-      #~ //print the decrypted url
-      #~ console.log(decrypted.data);
-    #~ }
-  #~ </script>
-#~ </head>
-#~ <body>
-  #~ <form>
-    #~ <input type="hidden" id="pgp-url" name="pgp-url" value="encrypted pgp data here">
-    #~ <input type="submit" value="decrypt" onclick="decryptPGP()">
-  #~ </form>
-#~ </body>
-#~ </html>
-
-#~ this is how to create "encrypted pgp data here" from bash CLI
-#~ echo "example url" | gpg --symmetric --armor --batch --passphrase "password" -o /tmp/test.asc
-
-#~ then sed command to replace in html template
-#~ sed -i -e 's/encrypted pgp data here/'"$(cat /tmp/test.asc | tr -d '\n')"'/g' html_file.html
 
 #################################################
 # !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
