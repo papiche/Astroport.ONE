@@ -56,7 +56,7 @@ do
     WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
 
-    VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
+    IPNS_VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
     VOEUKEY=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wish')
 
     ICHECK=$(ipfs key list -l | grep -w "$VOEUKEY" | cut -d ' ' -f 1 )
@@ -134,7 +134,7 @@ do
             && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
-            echo  ">>> G1FRIEND § $myIPFS/$VOEUNS/_${APLAYER}.tiddlers.json ${WISHNAME}"
+            echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.json ${WISHNAME}"
 
             tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
             WISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
@@ -173,7 +173,7 @@ do
         ##################################
         ## MAKE MY OWN JSON
         ################################## MOA MAINTENANT
-        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW/ipns/$VOEUNS/_${PLAYER}.tiddlers.json"
+        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.json"
         tiddlywiki --load $INDEX \
                  --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                  --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
@@ -181,7 +181,7 @@ do
         ##################################
         ## MAKE EARTH MAP TILES
         echo
-        # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
+        # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${IPNS_VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
         echo
 
         ##################################
@@ -197,7 +197,7 @@ do
                     -e "s~_PLAYER_~${PLAYER}~g" \
                     -e "s~_____~${COINS}~g" \
                     -e "s~_G1PUB_~${G1PUB}~g" \
-                    -e "s~_VOEUNS_~${VOEUNS}~g" \
+                    -e "s~_VOEUNS_~${IPNS_VOEUNS}~g" \
                     -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
                     -e "s~http://astroport.localhost:1234~${myASTROPORT}~g" \
                     -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
@@ -215,16 +215,16 @@ do
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
-        echo "## ASK ${myIPFSGW}/ipns/${VOEUNS} TO REFRESH"
-        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}/ipns/${VOEUNS}" &
+        echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH"
+        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
-        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${VOEUNS}"
+        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${IPNS_VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
 
         #~ echo "************************************************************"
         #~ echo "Hop, 0.1 JUNE pour le Voeu $WISHNAME"
-        #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:$VOEUNS G1Voeu $WISHNAME"\' -m
+        #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:$${IPNS_VOEUNS} G1Voeu $WISHNAME"\' -m
         #~ echo "************************************************************"
         #~ echo "************************************************************"
 
