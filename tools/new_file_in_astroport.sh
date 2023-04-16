@@ -145,8 +145,8 @@ case ${type} in
     ;;
 esac
 
-### SET MEDIAKEY
-MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
+### SET MEDIAKEY (PROVIDED IN BATCH FROM AJOUTER MEDIA)
+[[ $MEDIAKEY == "" ]] && MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
 echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 
 ######################### Decimal convert
@@ -270,7 +270,7 @@ then
     && FILETAG=$(echo "$CapitalGluedTitle" | cut -d '_' -f 1)
 
     [[ $CAT == "Youtube" ]] \
-    && H1="<h1><a target='youtube' href='https://www.youtube.com/watch?v="$(cat ${REFERENCE} | rev | cut -d '_' -f 1 | rev)"'>"${TITLE}"</a></h1>" \
+    && H1="<h1><a target='youtube' href='https://www.youtube.com/watch?v="$(echo ${REFERENCE} | rev | cut -d '_' -f 1 | rev)"'>"${TITLE}"</a></h1>" \
     && PATCH="Copier"
 
     echo $GENRE $SAISON

@@ -25,6 +25,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     ## Getting actual online version
     # ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
 
+    ## COPY STATION  yt-dlp.list
+    cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
+
     ## COPY COINS VALUE OF THE DAY
     cp ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/
 
