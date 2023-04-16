@@ -59,7 +59,7 @@ Permet la Gestion des PLAYER (et des G1VoeuX) en mode CLI
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée:
-* le port 1234 publie API (REPONSE PORT TCP 12145 à 12445 )
+* le port 1234 publie API (REPONSE PORT TCP 12245 à 12445 )
 * le port 12345 publie MAP(*) (CARTE DE L'ESSAIM - BOOTSTRAP / STATIONS)
 * le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
 
