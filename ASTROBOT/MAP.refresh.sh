@@ -12,6 +12,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Run TAG subprocess: tube, voeu
 ############################################
 echo "## RUNNING MAP.refresh"
+[[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
@@ -36,14 +37,16 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "FOUND : ${PLAYERONE[@]}"
     ## RUNING FOR ALL LOCAL PLAYERS
     for PLAYER in ${PLAYERONE[@]}; do
+        echo "${PLAYER} SEEKING OWN FRIENDS"
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
         cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
     done
-
-    ############################################
+    echo "############################################ MY MAP "
+    ls ~/.zen/tmp/${IPFSNODEID}/
+    echo "############################################"
     NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
     ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
-    ipfs name publish /ipfs/$ROUTING
+    ipfs name publish /ipfs/${ROUTING}
     echo ">> $NSIZE Bytes STATION BALISE > ${myIPFS}/ipns/${IPFSNODEID}"
 
 fi
