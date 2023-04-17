@@ -21,7 +21,7 @@ PORT=12345
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
-[[ $ncrunning ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
+[[ $ncrunning != "" ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
     NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 
@@ -68,6 +68,8 @@ while true; do
 
         echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
+        [[ ${ipfsnodeid} == ${IPFSNODEID} ]] && echo "My Self : ${IPFSNODEID} - continue" && continue
+
         mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
 
         addtype=$(echo ${bootnode} | cut -d '/' -f 2)
