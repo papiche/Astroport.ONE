@@ -99,8 +99,8 @@ while true; do
 
     ############# PUBLISH IPFSNODEID BALISE
     # Clean Empty Directory (inode dependancy BUG ??)
-    #~ du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
-    #~ while read branch; do [[ $branch =~ "4096" ]] && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
+    du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
+    while read branch; do [[ $branch =~ "4096" ]] && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
 
     # Scan local cache
     ls ~/.zen/tmp/${IPFSNODEID}/
