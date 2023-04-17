@@ -26,16 +26,19 @@ fi
 
 ##########################################################
 ## TRYING TO ADD Add To IPFS Nemo right click action
-    ## NOT WORKING
-rm ~/.local/share/nemo/actions/add2ipfs.nemo_action ## REMOVE WHEN WORKING
-if [[ ! -s ~/.local/share/nemo/actions/add2ipfs.nemo_action ]]; then
-    echo '[Nemo Action]
-Name=Add To IPFS
-Comment=Adding %f to IPFS (TODO: make it work into speak.sh script)
-Exec=/usr/local/bin/ipfs add -rw %F | xargs -L1 -I %  /usr/bin/zenity --width=250 --height=250 --info --text=%
+## https://discuss.ipfs.tech/t/how-to-add-a-file-to-ipfs-with-a-right-clic-in-your-file-manager/16294/1
+# Exec=sh -c "/usr/local/bin/ipfs add -q %F | xclip -selection c"
+if [[ -d ~/.local/share/nemo/actions ]]; then
+
+echo '[Nemo Action]
+Name=+ to IPFS
+Comment=Adding %f to IPFS
+Exec=sh -c "/usr/local/bin/ipfs add -q %F | xargs -L1 -I %  /usr/bin/zenity --width=300 --height=100 --info --text=%"
 Selection=s
-Extensions=any;
+Extensions=nodirs;
+Quote=double
 EscapeSpaces=true' > ~/.local/share/nemo/actions/add2ipfs.nemo_action
+
 fi
 ###################################################
 
