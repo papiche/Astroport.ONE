@@ -31,9 +31,12 @@ rm -Rf ~/.zen/tmp/swarm/*
 # ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEePxy2oXJ
 ## INDICATE IPFSNODEID IS RUNNING
 ##############################################
-
+[[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty" && exit 1
 mkdir -p ~/.zen/tmp/swarm
 mkdir -p ~/.zen/tmp/${IPFSNODEID}
+
+## BE CAREFUL NOT MAKING A LOOP !!!
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
