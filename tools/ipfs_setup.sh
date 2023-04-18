@@ -41,6 +41,8 @@ else
 
     [[ $isLAN ]] && ipfs init -p lowpower \
     || ipfs init -p server
+    # RESET NODE SECRET
+    rm -f ~/.zen/game/secret.* 2>/dev/null
 fi
 
 echo -e "Astroport activate IPFS Layer installation..."

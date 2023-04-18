@@ -43,10 +43,21 @@ echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
 
 ## CREATE CHAN = MySwarm_${IPFSNODEID}
     CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
-    [[ ! $CHAN ]] && CHAN=$(ipfs key gen "MySwarm_${IPFSNODEID}")
+
+    ## RESTORE LOST KEY
+    [[ ! -s ~/.zen/game/secret.dunikey ]] && ipfs key rm "MySwarm_${IPFSNODEID}" && CHAN="" ## NEW KEY FORMAT (NODEPUB)
+
+    if [[ ${CHAN} == "" ]]; then
+    echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
+        SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
+        SECRET2=${IPFSNODEID}
+        ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/secret.ipfskey "$SECRET1" "$SECRET2"
+        ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/secret.dunikey "$SECRET1" "$SECRET2"
+        ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/secret.ipfskey
+        CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
+     fi
 ## PUBLISH CHANNEL IPNS
     echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm
-
 
 # REFRESH FROM BOOTSTRAP (COULD, SHOULD BE MY FRIENDS !)
 while true; do

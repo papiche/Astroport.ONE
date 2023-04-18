@@ -208,7 +208,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     ## PGP ENCODING SALT/PEPPER API ACCESS
     echo "${DISCO}" > ~/.zen/tmp/topgp
     cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
-
+    rm ~/.zen/tmp/topgp
     #~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS"
     #~ PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec  | base64 -w 0 | jq -sRr '@uri' )
     #~ HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
@@ -245,10 +245,6 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
          sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## Fill PleaseDELETE
-         #~ sed -i "s~_SALT_~${SALT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-         #~ sed -i "s~_PEPPER_~${PEPPER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
          ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
          sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -276,7 +272,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## AstroID Update
+        ## AstroID G1PASS Update
         [[ ! $AstroID ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
         sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -287,21 +283,29 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
 ###########
+        ## GET OLD16
+        tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MIZ.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        OLD16=$(cat ~/.zen/tmp/${MOATS}/MIZ.json | jq -r ".[].secret")
+        [[ ${OLD16} == "" || ${OLD16} == "null" ]] && OLD16="_SECRET_"
+
+        ## USING  SWARMKEY (derivated from IPFSNODE "/proc/cpuinfo" key made by _12345.sh)  ## HARDWARE SPECIFIC KEY ##
+        # TODO : NODE COULD FORGET PASS THEN DECODE  ${PLAYER}/secret.dunikey FROM TW # PROD #
+        NODEPUB=$(${MY_PATH}/ipfs_to_g1.py ${IPFSNODEID})
         echo "# CRYPTO ENCODING  _SECRET_ "
-        ${MY_PATH}/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
+        ${MY_PATH}/natools.py encrypt -p ${NODEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
-        sed -i "s~_SECRET_~$ENCODING~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        # echo "$ENCODING"
+        sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        # echo "${ENCODING}"
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
-        ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
+        ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
         echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
 ###########
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
-                                                        || sed -i "s~$ENCODING~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # Revert to plaintext _SECRET_ myIP
+                                                        || echo "NATOOLS ERRORS - CHECK STATION" # NODEPUB CRYPTO ERROR
 
 ###########
 
@@ -323,7 +327,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo "# NATOOLS ENCODING  feed.ipfskey "
     ${MY_PATH}/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
     ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc | base16)
-    echo $ENCODING
+    echo ${ENCODING}
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
     echo "TW IPFS GATEWAY : $NID"
