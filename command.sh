@@ -34,18 +34,18 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=("NOUVEAU VISA" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=("MAKE G1PASS" "IMPORT G1PASS" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
         case $fav in
-        "NOUVEAU VISA")
+        "MAKE G1PASS")
             ${MY_PATH}/tools/VISA.new.sh
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
             ;;
-        "IMPORT PLAYER")
+        "IMPORT G1PASS")
             echo "'Secret 1'"
             read SALT
             echo "'Secret 2'"

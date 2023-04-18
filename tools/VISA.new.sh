@@ -290,9 +290,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
         ## USING  SWARMKEY (derivated from IPFSNODE "/proc/cpuinfo" key made by _12345.sh)  ## HARDWARE SPECIFIC KEY ##
         # TODO : NODE COULD FORGET PASS THEN DECODE  ${PLAYER}/secret.dunikey FROM TW # PROD #
-        NODEPUB=$(${MY_PATH}/ipfs_to_g1.py ${IPFSNODEID})
+        MACHINEPUB=$(cat $HOME/.zen/game/secret.dunikey | grep pub | cut -d ' ' -f 2)
         echo "# CRYPTO ENCODING  _SECRET_ "
-        ${MY_PATH}/natools.py encrypt -p ${NODEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
+        ${MY_PATH}/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         # echo "${ENCODING}"
@@ -305,7 +305,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 ###########
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
-                                                        || echo "NATOOLS ERRORS - CHECK STATION" # NODEPUB CRYPTO ERROR
+                                                        || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
 
 ###########
 
