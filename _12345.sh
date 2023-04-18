@@ -196,9 +196,9 @@ Content-Type: application/json; charset=UTF-8
             echo "STATION ${GPUB} CONTACT"
             ## CLIENT KNOWS HOW TO CONVERT G1 to IPFS
             (
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/swarm/${ASTROTOIPFS}
-            echo "UPSYNC TO  ~/.zen/tmp/${IPFSNODEID}/swarm/${ASTROTOIPFS}"
-            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/${IPFSNODEID}/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
+            mkdir -p ~/.zen/tmp/swarm/${ASTROTOIPFS}
+            echo "UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
+            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
             ) &
 
         fi
