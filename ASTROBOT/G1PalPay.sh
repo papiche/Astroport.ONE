@@ -95,35 +95,13 @@ while read LINE; do
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
 
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
 
         if [[ ! ${ASTROTW} ]]; then
 
             echo "# NEW VISA $(date)"
             SALT="" && PEPPER=""
             echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
-
-            #~ if [[ ! $isLAN || $USER == "zen" ]]; then
-
-                #~ $(${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${URL}" | tail -n 1)
-                #~ # export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS
-
-            #~ else
-
-                #~ ## CREATE new PLAYER IN myASTROTUBE
-                #~ echo "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-                #~ curl -so ~/.zen/tmp/${MOATS}/astro.port "https://astroport.cancer.copylaradio.com/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
-
-                #~ TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
-                #~ TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
-                #~ sleep 30
-
-                #~ curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
-                #~ $(cat ~/.zen/tmp/${MOATS}/astro.rep | tail -n 1) ## SOURCE LAST LINE (SEE SALT PEPPER EMAIL API RETURN)
-
-            #~ fi
-
-            ######################################################
-
 
         fi
 
@@ -141,7 +119,6 @@ while read LINE; do
         ASTROIPFS : $ASTROIPFS
         RSS : $ASTROFEED"
 
-
         if [[ ${ASTROG1} != ${G1PUB} ]]; then
 
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
@@ -155,7 +132,7 @@ while read LINE; do
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate ## MEMORIZE LAST IDATE
+        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate ## MEMORIZE LAST IDATE
 
     done
 
@@ -207,12 +184,13 @@ while read LINE; do
     ## Get first zmail
     ZMAIL="${emails}"
 
-    MSG="+ $nb G1 TO ${emails[@]}"
+    MSG="SEND + $nb G1 TO BROs : ${emails[@]}"
     echo $MSG
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
     #### SEARCH FOR PALPAY ACOUNTS : TODO BETTER §§§
     $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
+echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
