@@ -53,7 +53,7 @@ select voeu in "${vlist[@]}"; do
         voeu=$(echo $voeu | cut -d ':' -f2) ## Get G1PUB part
         TITLE=$(echo $voeu | cut -d ':' -f1) ## Get Voeu title
 
-        VOEUXNS=$(ipfs key list -l | grep $voeu | cut -d ' ' -f1)
+        VOEUXNS=$(ipfs key list -l | grep -w $voeu | cut -d ' ' -f1)
 
         choices=("TW" "G1")
         PS3='Imprimer le QR du TiddlyWiki TW ou celui de son G1 portefeuille ?'

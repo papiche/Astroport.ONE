@@ -58,7 +58,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## MY PLAYER : RESTORE PLAYER KEY FROM G1PUB
     ipfs key export $G1PUB -o ~/.zen/tmp/${MOATS}/$PLAYER.key
-    [[ ! $(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1) ]] && ipfs key import $PLAYER ~/.zen/tmp/${MOATS}/$PLAYER.key
+    [[ ! $(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1) ]] && ipfs key import $PLAYER ~/.zen/tmp/${MOATS}/$PLAYER.key
     rm -f ~/.zen/tmp/${MOATS}/$PLAYER.key
 
     ## REFRESH CACHE

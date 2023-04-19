@@ -446,7 +446,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             ## INSTALL PLAYER IPNS KEY ON STATION
             PLAYER=${WHAT}
             ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
-            ASTRONAUTENS=$(ipfs key list -l | grep $PLAYER | cut -d ' ' -f1)
+            ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
             #~ WSTATION=$(cat ~/.zen/tmp/WSTATION 2>/dev/null)
             #~ [[ $WSTATION != "" ]] \

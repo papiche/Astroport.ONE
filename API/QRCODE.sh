@@ -84,7 +84,7 @@ fi
 ################################################################################
 ## MODE PGP ENCRYPTED QRCODE
 # /?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iqIY7XLnGn_0koBJB5S2Sy1p%2FHr8CKFgWdZ9_j%2Fb2qdOznICGvqGCXY~7Flw6YtiabngvY6biq%2F0vpiFL8t8BSbMZe0GLBU90EMBrhzEiyPnh__bzQ%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~
-# &pass=coucou&history/read/pay=1&g1pub=_DESTINATAIRE_
+# &pass=coucou&history/read/pay/login=(1|email)&g1pub=_DESTINATAIRE_
 ################################################################################
 if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
    echo ${QRCODE}
@@ -122,7 +122,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             echo "CURRENT KEY : $CURCOINS G1"
 
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
-            [[ ${VAL} == "" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
             if [[ $APPNAME == "pay" ]]; then
 
@@ -150,11 +150,38 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                      echo "<h2>${WHAT} ${VAL} ${CURCOINS} PROBLEM</h2>" >> ~/.zen/tmp/${MOATS}/disco
                 fi
 
-            else
+            fi
+
+            if [[ $APPNAME == "pay" || $APPNAME == "history" ]]; then
+
                 ## history & read
-                cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
+                # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
                 echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key $APPNAME -j"
                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j >> ~/.zen/tmp/${MOATS}/disco
+
+            fi
+
+            if [[ $APPNAME == "login" ]]; then
+
+                PLAYER=${WHAT}
+                ISTHERE=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+                echo "IS THERE ? $ISTHERE"
+                [[ ${ISTHERE} == "" ]] \
+                && ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key \
+                && ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1) \
+                || ASTRONAUTENS=${ISTHERE}
+
+                REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
+                echo "${PLAYER} LOGIN - TW : ${REPLACE}"
+
+                sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                (
+                    cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                    echo "BLURP " && rm ~/.zen/tmp/coucou/${MOATS}*
+                    [[ ${ISTHERE} == "" ]] && sleep 3600 && echo "${PLAYER} SESSION OVER" && ipfs key rm ${PLAYER} ## 1 HOUR SESSION
+                ) &
+                exit 0
 
             fi
 
