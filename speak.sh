@@ -9,6 +9,7 @@ if [[ $1 == "OFF" ]]; then
     espeak "SHUT UP NOW"
 
     [[ ! $PROG == "$HOME/.local/bin/espeak" ]] \
+    && mkdir -p $HOME/.local/bin \
     && echo '#!/bin/bash' > $HOME/.local/bin/espeak \
     && chmod +x $HOME/.local/bin/espeak
 

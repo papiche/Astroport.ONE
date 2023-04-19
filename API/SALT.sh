@@ -458,7 +458,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             ## SET COOKIE
             USALT=$(echo "$SALT" | jq -Rr @uri)
             UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
-            echo "/?salt=${USALT}&pepper=${UPEPPER}"
+            echo "/?salt=${USALT}&pepper=${UPEPPER} IS LOGIN - OPEN TW -"
             sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
             sed -i "s~_USALT_~${USALT}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             sed -i "s~_UPEPPER_~${UPEPPER}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
@@ -480,11 +480,12 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             ## REMOVE PLAYER IPNS KEY FROM STATION
             PLAYER=${WHAT}
-            ipfs key rm ${G1PUB}
-            ipfs key rm ${PLAYER}
-            REP="$PLAYER LOGOUT OK"
+            echo "<h1>$PLAYER LOGOUT OK</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
 
-            echo "$HTTPCORS ${REP}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log
+            ipfs key rm ${PLAYER} >> ~/.zen/tmp/coucou/${MOATS}.log
+
+            echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
             rm ~/.zen/tmp/coucou/${MOATS}.*

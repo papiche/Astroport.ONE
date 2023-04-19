@@ -44,28 +44,29 @@ mv ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg ~/.zen/tmp/$PASS.jp
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/$PASS.jpg
 
-        USALT=$(echo "$SALT" | jq -Rr @uri)
-        UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
-        echo "/?${s}=${USALT}&${p}=${UPEPPER}" > ~/.zen/tmp/topgp
-        cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/gpg.${PASS}.asc
+        #~ USALT=$(echo "$SALT" | jq -Rr @uri)
+        #~ UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
+        #~ echo "/?${s}=${USALT}&${p}=${UPEPPER}" > ~/.zen/tmp/topgp
+        #~ cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/gpg.${PASS}.asc
 
-        DISCO="$(cat ~/.zen/tmp/gpg.${PASS}.asc | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
-        echo "$DISCO"
-        ## Add logo to QRCode
-        cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/fond.png
+        #~ DISCO="$(cat ~/.zen/tmp/gpg.${PASS}.asc | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
+        #~ echo "$DISCO"
+        #~ ## Add logo to QRCode
+        #~ cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/fond.png
 
-        ## MAKE amzqr WITH astro:// LINK
-        amzqr -d ~/.zen/tmp \
-                    -l H \
-                    -p ~/.zen/tmp/fond.png \
-                    "$DISCO"
+        #~ ## MAKE amzqr WITH astro:// LINK
+        #~ amzqr -d ~/.zen/tmp \
+                    #~ -l H \
+                    #~ -p ~/.zen/tmp/fond.png \
+                    #~ "$DISCO"
 
-        ## ADD PLAYER EMAIL
-        convert -gravity southeast -pointsize 28 -fill black -draw "text 5,3 \"$EMAIL\"" ~/.zen/tmp/fond_qrcode.png ~/.zen/tmp/${PASS}.TW.png
+        #~ ## ADD PLAYER EMAIL
+        #~ convert -gravity southeast -pointsize 28 -fill black -draw "text 5,3 \"$EMAIL\"" ~/.zen/tmp/fond_qrcode.png ~/.zen/tmp/${PASS}.TW.png
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${PASS}.TW.png
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/G1BILLET/tmp/fond_qrcode.png
 
-brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${PASS}.TW.png > ~/.zen/tmp/bill.bin 2>/dev/null
+
+brother_ql_create --model QL-700 --label-size 62 ~/.zen/G1BILLET/tmp/fond_qrcode.png > ~/.zen/tmp/bill.bin 2>/dev/null
 sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
 
 convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
