@@ -337,7 +337,8 @@ else
     ## EMPTY WALLET ? PREPARE PALPE WELCOME
     if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
         # CADEAU DE 10 JUNE (Si le .current en a plus que 100)
-        PALPE=10
+        PALPE=1
+        echo "PALPE=1"
     else
         PALPE=0
     fi
@@ -376,7 +377,8 @@ else
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
         else
-            echo "~/.zen/tmp/coucou/${QRCODE}.gchange.json CHECK"
+            PALPE=10
+            echo "~/.zen/tmp/coucou/${QRCODE}.gchange.json CHECK : PALPE=10"
         fi
 
         ## SCAN CESIUM +
@@ -394,7 +396,8 @@ else
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
         else
-            echo "~/.zen/tmp/coucou/${QRCODE}.gplus.json CHECK"
+            PALPE=50
+            echo "~/.zen/tmp/coucou/${QRCODE}.gplus.json CHECK : PALPE=50"
         fi
 
         ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
@@ -426,7 +429,8 @@ else
         fi
 
     ## DOES CURRENT IS RICHER THAN 100 G1
-    ## THEN SEND PALPE JUNE. SEND MESSAGE TO GCHANGE MESSAGING. SEND 1 ★
+    ## IF GCHANGE ACCOUNT FOUND => SEND PALPE JUNE.
+    # SEND MESSAGE TO GCHANGE MESSAGING. SEND 1 ★
     if [[ $CURCOINS -gt 100 && $PALPE != 0 ]]; then
 
             ## LE COMPTE VISITOR EST VIDE
