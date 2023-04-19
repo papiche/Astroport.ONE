@@ -139,7 +139,7 @@ while true; do
     && ipfs name publish --allow-offline /ipfs/${ROUTING}
 
     end=`date +%s`
-    echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds.'
+    echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. $(date)'
 
     ) & ##### SUB-PROCESS
 

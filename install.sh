@@ -64,7 +64,8 @@ done
 if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 echo "#############################################"
 echo "######### INSTALL DESKTOP TOOLS  ######"
-echo "#############################################" for i in x11-utils xclip zenity kodi; do
+echo "#############################################"
+for i in x11-utils xclip zenity kodi; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i;
