@@ -262,28 +262,36 @@ MORE TEST NEEDED
 
 ### QRCODE (API SandBox)
 ```http
-GET /?qrcode=${G1PUB}
+GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1PASS_STRING}
 ```
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `qrcode` | `string` | **Required**. Your G1PUB token |
 
-> Look for details & extend as you like in ~/.zen/Astroport.ONE/API/QRCODE.sh
+> Look for details & extend as you like in [~/.zen/Astroport.ONE/API/QRCODE.sh](API/QRCODE.sh)
 
-ACTUAL BEHAVIOUR IS TO RECEIVE QRCODE VALUES
+### CODE BEHAVIOUR. monitor && rewards || fork signal
 
-1) Is IPNS key & PLAYER is local ? Redirect to G1BILLET
+* Is IPNS key & PLAYER is local ? Redirect to G1BILLET
 
-2) Is G1*? Redirect to G1WishApp / Export Tags from TW
+* Is G1*? Redirect to G1WishApp / Export Tags from TW
 
-http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0
+[http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0](http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0)
 redirect to
-http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/
+[http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/](http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/)
 
-http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json
+[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
 redirect to pure "tag=" result  json
 
-3) Is G1PUB ...
+* Is G1PUB ... (FROM NEW G1PASS)
+
+    * If G1PASS balance is "null" : Send 1 G1
+    * if GChange+ account exists : send 10 G1
+    * if Cesium+ account exists : send 50 G1
+
+* Is G1PASS
+    * check PASS and make operation (like for SALT API)
+
 
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
 ```
