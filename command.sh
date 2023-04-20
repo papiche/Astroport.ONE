@@ -117,9 +117,8 @@ select fav in  "${choices[@]}"; do
         espeak "Droping TW in cyber space"
 
         ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm $G1PUB;
-        for voeu in $(ls ~/.zen/game/players/$PLAYER/voeux/*/ 2>/dev/null); do
-            echo "ipfs key rm $voeu"
-            ipfs key rm $voeu
+        for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* | rev | cut -d / -f 1 | rev); do
+            ipfs key rm $vk
         done
 
         ## UNPLUG PLAYER DOCKER

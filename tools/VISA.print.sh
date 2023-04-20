@@ -27,7 +27,7 @@ PASS=$(cat ~/.zen/game/players/${PLAYER}/.pass)
 source ~/.zen/game/players/${PLAYER}/secret.june
 [[ $SALT == "" ]] && echo "BAD ACCOUNT. PLEASE BACKUP. MOVE. RESTORE." && exit 1
 
-LP=$(ls /dev/usb/lp*)
+LP=$(ls /dev/usb/lp* 2>/dev/null)
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
@@ -61,39 +61,51 @@ mv ~/.zen/G1BILLET/tmp/g1billet/$PASS/$BILLETNAME.BILLET.jpg ~/.zen/tmp/$PASS.jp
                     #~ "$DISCO"
 
         #~ ## ADD PLAYER EMAIL
-        #~ convert -gravity southeast -pointsize 28 -fill black -draw "text 5,3 \"$EMAIL\"" ~/.zen/tmp/fond_qrcode.png ~/.zen/tmp/${PASS}.TW.png
+        convert -gravity SouthEast -pointsize 12 -fill black -draw "text 5,3 \"$EMAIL\"" ~/.zen/G1BILLET/tmp/fond_qrcode.png ~/.zen/tmp/${PASS}.G1PASS.png
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/G1BILLET/tmp/fond_qrcode.png
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${PASS}.G1PASS.png
+## PRINT STICKER
+[[ $LP ]] \
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${PASS}.G1PASS.png > ~/.zen/tmp/bill.bin 2>/dev/null \
+&& sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
+#############
 
+convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 320 ~/.zen/tmp/QR.png
+convert ${MY_PATH}/../images/astroport.jpg  -resize 220 ~/.zen/tmp/ASTROPORT.png
 
-brother_ql_create --model QL-700 --label-size 62 ~/.zen/G1BILLET/tmp/fond_qrcode.png > ~/.zen/tmp/bill.bin 2>/dev/null
-sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
-
-convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
-convert ${MY_PATH}/../images/astroport.jpg  -resize 300 ~/.zen/tmp/ASTROPORT.png
-
-composite -compose Over -gravity SouthWest -geometry +280+20 ~/.zen/tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
+composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/astroport.png
 composite -compose Over -gravity NorthWest -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/astroport.png ~/.zen/tmp/one.png
 # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/${PLAYER}/QRsec.png ~/.zen/tmp/one.png ~/.zen/tmp/image.png
 
-convert -gravity northwest -pointsize 35 -fill black -draw "text 50,300 \"$PSEUDO\"" ~/.zen/tmp/one.png ~/.zen/tmp/image.png
-convert -gravity northwest -pointsize 30 -fill black -draw "text 300,40 \"$PLAYER\"" ~/.zen/tmp/image.png ~/.zen/tmp/pseudo.png
-convert -gravity northeast -pointsize 25 -fill black -draw "text 20,180 \"$PASS\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/pass.png
-convert -gravity northwest -pointsize 25 -fill black -draw "text 300,100 \"$SALT\"" ~/.zen/tmp/pass.png ~/.zen/tmp/salt.png
-convert -gravity northwest -pointsize 25     -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/done.jpg
+convert -gravity NorthWest -pointsize 25 -fill black -draw "text 10,300 \"$PLAYER\"" ~/.zen/tmp/one.png ~/.zen/tmp/image.png
+convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/image.png ~/.zen/tmp/pseudo.png
+convert -gravity NorthWest -pointsize 20 -fill black -draw "text 400,260 \"$PASS\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/pass.png
+convert -gravity NorthWest -pointsize 15 -fill black -draw "text 300,200 \"$SALT\"" ~/.zen/tmp/pass.png ~/.zen/tmp/salt.png
+convert -gravity NorthWest -pointsize 15 -fill black -draw "text 300,220 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/done.jpg
 
-brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/done.jpg > ~/.zen/tmp/toprint.bin 2>/dev/null
-sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/done.jpg
+
+[[ $LP ]] \
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/done.jpg > ~/.zen/tmp/toprint.bin 2>/dev/null \
+&& sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
 
 ################################################################
 ### PRINT PLAYER TW myIP link
 
-playerns=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
-qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "$myIPFSGW/ipns/$playerns"
-convert $HOME/.zen/tmp/QR.ASTRO.png -resize 600 ~/.zen/tmp/playerns.png
+#~ playerns=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+#~ qrencode -s 12 -o "$HOME/.zen/tmp/QR.ASTRO.png" "$myIPFSGW/ipns/$playerns"
+#~ convert $HOME/.zen/tmp/QR.ASTRO.png -resize 600 ~/.zen/tmp/playerns.png
+## GET FROM G1BILLET CACHE FACTORY
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/G1BILLET/tmp/${PASS}/300.png
 
-brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/playerns.png > ~/.zen/tmp/toprint.bin 2>/dev/null
-sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
+[[ $LP ]] \
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/G1BILLET/tmp/${PASS}/300.png > ~/.zen/tmp/toprint.bin 2>/dev/null \
+&& sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
 ################################################################
+
+## TODO BETTER CACHE CLEANING
+#~ rm -Rf ~/.zen/G1BILLET/tmp/${PASS}
+#~ rm ~/.zen/G1BILLET/tmp/${PASS}*
+#~ rm ~/.zen/tmp/${PASS}*
 
 exit 0
