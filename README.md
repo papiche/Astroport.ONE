@@ -113,7 +113,7 @@ async function fetchAstroport(myURL) {
       }
     }
 ```
-Utilisez "[astro.js](src/branch/master/www/G1PalPay/G1PalPay_fichiers/astro.js)" comme dans l'Application DEMO www/G1PalPay (accessible sur "Open Station")
+Utilisez "[astro.js](www/G1PalPay/G1PalPay_fichiers/astro.js)" comme dans l'Application DEMO www/G1PalPay (accessible sur "Open Station")
 ```
     <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```
