@@ -54,7 +54,10 @@ fi
 ###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
-    rm ~/.zen/tmp/ISTATION ## REMOVE IN PROD
+    # Keep 2nd try of the day
+    [[ ! -s ~/.zen/tmp/_ISTATION ]] \
+        && mv ~/.zen/tmp/ISTATION ~/.zen/tmp/_ISTATION \
+        || cp ~/.zen/tmp/_ISTATION ~/.zen/tmp/ISTATION
 
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
         ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
@@ -92,16 +95,17 @@ fi
 if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
    echo ${QRCODE}
    PASS=$(urldecode $THIS)
-   echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS $PASS - $APPNAME"
+   echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS ${PASS} - $APPNAME"
 
-    if [[ $PASS != "" ]]; then
-        echo ${WHAT} ${VAL}
+    if [[ ${PASS} != "" ]]; then
+        echo "WHAT=${WHAT} VAL=${VAL}"
+
         ## Recreate GPG aes file
         urldecode ${QRCODE} | tr '_' '+' | tr '-' '\n' | tr '~' '-'  > ~/.zen/tmp/${MOATS}/disco.aes
         sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
         # Decoding
-        echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch"
-        cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "$PASS" --batch > ~/.zen/tmp/${MOATS}/decoded
+        echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch"
+        cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
 
         # cat ~/.zen/tmp/${MOATS}/disco
         ## FORMAT IS "/?salt=${USALT}&pepper=${UPEPPER}"
@@ -173,10 +177,23 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ $APPNAME == "history" || $APPNAME == "read" ]]; then
 
-                ## history & read
+                ## history & read ## CANNOT USE jaklis CLI formated output (JSON output)
+                echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/disco
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
                 echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key $APPNAME -j"
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j > ~/.zen/tmp/${MOATS}/disco
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j >> ~/.zen/tmp/${MOATS}/disco
+
+            fi
+
+            if [[ $APPNAME == "balance" ]]; then
+
+                ## history & read
+                # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
+                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "$G1PUB"
+                QRURL=${myIPFS}/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/disco.qr.png)
+                ONVADIRE="<h1> ~ ${CURCOINS} Ğ1</h1>${G1PUB}<br><br><img src=${QRURL} />"
+                echo "${ONVADIRE}" >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 
@@ -206,7 +223,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
         else
 
-            echo "<br><h1>$PASS : MAUVAIS PASS</h1>" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><h1>${PASS} : MAUVAIS PASS</h1>" >> ~/.zen/tmp/${MOATS}/disco
             echo "<br><img src='http://127.0.0.1:8080/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg' />" >> ~/.zen/tmp/${MOATS}/disco
         fi
 

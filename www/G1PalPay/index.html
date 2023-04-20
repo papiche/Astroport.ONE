@@ -126,7 +126,8 @@ a {
                   <input type="radio" id="r0" name="appname" value="login"> Login
                   <input type="radio" id="r1" name="appname" value="read"> Messagerie
                   <input type="radio" id="r2" name="appname" value="history"> Historique
-                  <input type="radio" id="r3" name="appname" value="pay" checked="checked"> Payer
+                  <input type="radio" id="r3" name="appname" value="pay"> Payer
+                  <input type="radio" id="r3" name="appname" value="balance" checked="checked"> Balance
                 </div>
 
                 <strong><div id="resu"></div></strong>
@@ -181,6 +182,13 @@ a {
       scanner.addListener('scan', function (content) {
             alert(content);
             if (content.startsWith('~~~~~')) {
+                // DESTINATION OF PREVIOUS SCAN
+                if (document.getElementById("resu").innerHTML !== '') {
+                   var mypub = document.getElementById("resu").innerHTML.value;
+                } else {
+                    // OR IF NONE Fred ;)
+                    var mypub = "DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
+                }
                 // GET PASS THAT DECODE PGP
                 var pass = prompt("Saisir PASS:");
                 // GET APPNAME
@@ -191,13 +199,12 @@ a {
                 }
                 if ( appname == 'login') {
                     var amount = prompt("Saisir EMAIL:");
-                }
-                // DESTINATION WAS PREVIOUS SCAN
-                if (document.getElementById("resu").innerHTML !== '') {
-                   var mypub = document.getElementById("resu").innerHTML.value;
                 } else {
-                    // OR IF NONE Fred ;)
-                    var mypub = "DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
+                    var amount = mypub;
+                }
+
+                if ( appname == 'pay') {
+                    alert('PAY TO ' + mypub + ' = ' +  amount);
                 }
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + mypub ;
                 console.log(myU);
