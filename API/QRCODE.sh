@@ -33,6 +33,9 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 ## GET TW
 mkdir -p ~/.zen/tmp/${MOATS}/
 
+################################################################################
+## QRCODE IS HTTP LINK
+###############################################################################
 if [[ ${QRCODE:0:4} == "http" ]]; then
     ## THIS IS A WEB LINK
     sed "s~_TWLINK_~${QRCODE}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
@@ -47,7 +50,7 @@ if [[ ${QRCODE:0:4} == "http" ]]; then
 fi
 
 ################################################################################
-## REFRESH STATION & OPEN G1PalPay INTERFACE
+## QRCODE="station" : REFRESH STATION & OPEN G1PalPay INTERFACE
 ###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
@@ -82,7 +85,7 @@ if [[ ${QRCODE} == "station" ]]; then
 fi
 
 ################################################################################
-## MODE PGP ENCRYPTED QRCODE
+## QRCODE = PGP ENCRYPTED STRING
 # /?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iqIY7XLnGn_0koBJB5S2Sy1p%2FHr8CKFgWdZ9_j%2Fb2qdOznICGvqGCXY~7Flw6YtiabngvY6biq%2F0vpiFL8t8BSbMZe0GLBU90EMBrhzEiyPnh__bzQ%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~
 # &pass=coucou&history/read/pay/login=(1|email)&g1pub=_DESTINATAIRE_
 ################################################################################
@@ -168,12 +171,12 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
-            if [[ $APPNAME == "history" ]]; then
+            if [[ $APPNAME == "history" || $APPNAME == "read" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
                 echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key $APPNAME -j"
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j >> ~/.zen/tmp/${MOATS}/disco
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j > ~/.zen/tmp/${MOATS}/disco
 
             fi
 
@@ -213,7 +216,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
     fi
 
     (
-    cat cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
@@ -221,7 +224,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 fi
 
 ################################################################################
-## MODE G1VOEU : RETURN WISHNS - IPNS App link - or direct tw tag selected json
+## QRCODE = G1* : MODE G1VOEU : RETURN WISHNS - IPNS App link - or direct tw tag selected json
 # ~/?qrcode=G1VoeuTag&tw=_IPNS_PLAYER_(&json)
 ################################################################################
 if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
@@ -285,7 +288,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 fi
 
 ################################################################################
-## QRCODE can be ASTRONAUTENS or G1PUB format
+## QRCODE = IPNS or G1PUB ? Can be ASTRONAUTENS or G1PUB format
 ################################################################################
 ## QRCODE IS IPNS FORMAT : CHANGE .current AND MAKE G1BILLETS
 ASTROPATH=$(grep -r $QRCODE  ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
@@ -317,7 +320,7 @@ else
 fi
 
 ################################################################################
-## FILTRAGE NON G1 TO IPFS READY QRCODE
+## TEST G1 TYPE ( should convert to ipfs )
 ASTROTOIPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPFS} ]] \
         && echo "INVALID QRCODE : ${QRCODE}" \
@@ -326,28 +329,29 @@ ASTROTOIPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
 ################################################################################
 echo "############################################################################"
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
-###########################################""
-###########################################
-## GET G1PUB OR CURRENT SECRET
-###########################################""
+
+###########################################################
+## SEARCH IF G1PUB IS IN PLAYERS OTHERWISE CHOOSE CURRENT SECRET
+##########################################################
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
 [[ ${MYPLAYERKEY} == "" ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
 echo "SELECTED STATION KEY : $(cat ${MYPLAYERKEY} | grep 'pub:')"
 echo
 
-## PARRAIN ID EXTRACTION
+## AUTOGRAPH FROM CURRENT
 ###########################################
 CURPLAYER=$(cat ~/.zen/game/players/.current/.player)
 CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
 echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1}"
-time ${MY_PATH}/../tools/COINScheck.sh ${CURG1} > ~/.zen/tmp/${MOATS}/curcoin
-CURCOINS=$(cat ~/.zen/tmp/${MOATS}/curcoin | tail -n 1)
-echo "CURRENT PLAYER : $CURCOINS G1"
+CURCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${CURG1} | tail -n 1)
+echo "AUTOGRAPH PLAYER : $CURCOINS G1"
 
-## WALLET JAMAIS SERVI
+## WALLET VIERGE
 ###########################################
 if [[ $CURCOINS == "null" ]]; then
-echo "NULL. PLEASE CHARGE. REDIRECT TO WSTATION HOME"
+
+    echo "NULL. PLEASE CHARGE. REDIRECT TO WSTATION HOME"
+
     sed "s~_TWLINK_~$(cat ~/.zen/tmp/WSTATION)~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFSGW}$(cat ~/.zen/tmp/WSTATION)"'" >> ~/.zen/tmp/${MOATS}/index.redirect
@@ -356,10 +360,11 @@ echo "NULL. PLEASE CHARGE. REDIRECT TO WSTATION HOME"
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
+
 fi
 
-# DETECT WALLET EVOLUTION
-###########################################
+# DETECT TO REWARD IN REGARD TO WALLET EVOLUTION
+########################################### G1 PRICE : null 1 + gchange 10 + cesium 50
 if [[ ${CURG1} == ${QRCODE} ]]; then
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
@@ -421,8 +426,8 @@ else
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
         else
-            [[ $VISITORCOINS == "null" ]] && PALPE=10
-            echo "~/.zen/tmp/coucou/${QRCODE}.gchange.json CHECK : PALPE=10"
+            [[ $VISITORCOINS == "null" ]] && PALPE=10 \
+            && echo "~/.zen/tmp/coucou/${QRCODE}.gchange.json CHECK : PALPE=10"
         fi
 
         ## SCAN CESIUM +
@@ -440,8 +445,8 @@ else
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
         else
-            [[ $VISITORCOINS == "null" ]] && PALPE=50
-            echo "~/.zen/tmp/coucou/${QRCODE}.gplus.json CHECK : PALPE=50"
+            [[ $VISITORCOINS == "null" ]] && PALPE=50 \
+            && echo "~/.zen/tmp/coucou/${QRCODE}.gplus.json CHECK : PALPE=50"
         fi
 
         ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
@@ -478,7 +483,7 @@ else
     if [[ $CURCOINS -gt 100 && $PALPE != 0 ]]; then
 
             ## LE COMPTE VISITOR EST VIDE
-            echo "## PARRAIN $CURPLAYER SEND $PALPE TO ${QRCODE}"
+            echo "## AUTOGRAPH $CURPLAYER SEND $PALPE TO ${QRCODE}"
             ## G1 PAYEMENT
             $MY_PATH/../tools/jaklis/jaklis.py \
             -k ${MYPLAYERKEY} pay \

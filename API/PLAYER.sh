@@ -25,7 +25,7 @@ Content-Type: text/html; charset=UTF-8
 
 "
         echo "- $PLAYER - $APPNAME : $WHAT $OBJ $VAL"
-
+        [[ ! $PLAYER ]] && (echo "$HTTPCORS BAD PLAYER - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
         ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
         [[ ! $ASTRONAUTENS ]] && (echo "$HTTPCORS UNKNOWN PLAYER $PLAYER - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
