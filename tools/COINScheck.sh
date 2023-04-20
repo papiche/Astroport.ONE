@@ -54,7 +54,7 @@ echo "$CURCOINS G1"
 ## NO or NULL RESULT in CACHE : REFRESHING
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
-    CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 180 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB} | cut -d '.' -f 1)
+    CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB} | cut -d '.' -f 1)
     echo "$CURCOINS" > "$COINSFILE"
 
     # PREVENT DUNITER DESYNC (KEEPING ASTROPORT ZEN VALUE)
@@ -62,7 +62,7 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
     && cat $HOME/.zen/tmp/backup.${G1PUB} > "$COINSFILE"
 
-    [[ $INNERFILE != "" ]] && cp "$COINSFILE" "$INNERFILE"
+    [[ $INNERFILE != "" ]] && cp "$COINSFILE" "$INNERFILE" && echo "LOCAL PLAYER THERE"
     echo $CURCOINS
     ) &
 fi

@@ -124,6 +124,9 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
+            ## GET DESTINATION ACCOUNT AMOUNT
+            DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${VAL} | tail -n 1)
+
             if [[ $APPNAME == "pay" ]]; then
 
                  if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} -gt ${VAL} ]]; then
@@ -131,17 +134,30 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                         if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
                             echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m"
-                            ${MY_PATH}/../tools/timeout.sh -t 3 \
-                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
-                            ####################################
+                            ${MY_PATH}/../tools/timeout.sh -t 5 \
+                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1PASS:$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-13)" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+
+                            #################################### SYSTEM IS NOT DUNITER OVER POOL RESISTANT
                             if [ $? == 0 ]; then
+
+                                ## TODO : MEMORIZE TX TO VERIFY ASTRO/DUNITER SYNC
                                 COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
-                                echo "ADJUSTING ${COINSFILE}"
+                                DESTFILE="$HOME/.zen/tmp/coucou/${VAL}.COINS"
+
                                 CUR=$(cat ${COINFILE})
                                 [[ ${CUR} != "" && ${CUR} != "null" ]] \
-                                && echo $((CUR-WHAT)) > ${COINFILE} \
-                                || echo ${WHAT} > ${COINFILE}
+                                    && echo $((CUR-WHAT)) > ${COINFILE} \
+                                    || echo ${WHAT} > ${COINFILE}
                                 cat ${COINFILE}
+
+                                DES=$(cat ${DESTFILE})
+                                [[ ${DES} != "" && ${DES} != "null" ]] \
+                                    && echo $((DES+WHAT)) > ${DESTFILE} \
+                                    || echo ${WHAT} > ${DESTFILE}
+                                cat ${DESTFILE}
+
+                                echo "OPERATION<br>${COINSFILE} <br> ($CUR) - ${WHAT} -> ($DES) <br> ${DESTFILE} " >> ~/.zen/tmp/${MOATS}/disco
+
                             fi
                         fi
 
@@ -152,7 +168,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
-            if [[ $APPNAME == "pay" || $APPNAME == "history" ]]; then
+            if [[ $APPNAME == "history" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
@@ -201,6 +217,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
+
 fi
 
 ################################################################################
@@ -314,8 +331,8 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 ## GET G1PUB OR CURRENT SECRET
 ###########################################""
 MYPLAYERKEY=$(grep ${QRCODE} ~/.zen/game/players/*/secret.dunikey | cut -d ':' -f 1)
-[[ $MYPLAYERKEY == "" ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
-echo "SELECTED STATION KEY : $(cat $MYPLAYERKEY | grep 'pub:')"
+[[ ${MYPLAYERKEY} == "" ]] && MYPLAYERKEY="$HOME/.zen/game/players/.current/secret.dunikey"
+echo "SELECTED STATION KEY : $(cat ${MYPLAYERKEY} | grep 'pub:')"
 echo
 
 ## PARRAIN ID EXTRACTION
@@ -362,7 +379,7 @@ else
     COINSFILE=$HOME/.zen/tmp/coucou/${QRCODE}.COINS
 
     ## EMPTY WALLET ? PREPARE PALPE WELCOME
-    if [[ $VISITORCOINS == "" || $VISITORCOINS == "null" ]]; then
+    if [[ $VISITORCOINS == "null" ]]; then
         # CADEAU DE 10 JUNE (Si le .current en a plus que 100)
         PALPE=1
         echo "PALPE=1"
@@ -404,7 +421,7 @@ else
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
         else
-            PALPE=10
+            [[ $VISITORCOINS == "null" ]] && PALPE=10
             echo "~/.zen/tmp/coucou/${QRCODE}.gchange.json CHECK : PALPE=10"
         fi
 
@@ -423,7 +440,7 @@ else
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
         else
-            PALPE=50
+            [[ $VISITORCOINS == "null" ]] && PALPE=50
             echo "~/.zen/tmp/coucou/${QRCODE}.gplus.json CHECK : PALPE=50"
         fi
 
@@ -449,7 +466,7 @@ else
                 exit 0
             else
                 ## MESSAGE TO LINKED CESIUM WALLET
-                $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k $MYPLAYERKEY send -d "${CPLUS}" -t "COUCOU" \
+                $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k ${MYPLAYERKEY} send -d "${CPLUS}" -t "COUCOU" \
                 -m "VOTRE PORTEFEUILLE ${QRCODE} A ETE SCANNE PAR $myASTROPORT - IL CONTIENT ${VISITORCOINS} G1 -"
             fi
 
@@ -464,19 +481,19 @@ else
             echo "## PARRAIN $CURPLAYER SEND $PALPE TO ${QRCODE}"
             ## G1 PAYEMENT
             $MY_PATH/../tools/jaklis/jaklis.py \
-            -k ~/.zen/game/players/.current/secret.dunikey pay \
-            -a ${PALPE} -p ${QRCODE} -c "ASTRO:BRO:" -m
+            -k ${MYPLAYERKEY} pay \
+            -a ${PALPE} -p ${QRCODE} -c "ASTRO:WELCOME:BRO" -m
 
             ## MESSAGE CESIUM +
             $MY_PATH/../tools/jaklis/jaklis.py \
-            -n $myCESIUM -k $MYPLAYERKEY send \
+            -n $myCESIUM -k ${MYPLAYERKEY} send \
             -d "${QRCODE}" -t "CADEAU" \
             -m "DE LA PART DE ${CURPLAYER} : ${PALPE} JUNE."
 
             ## SEND ONE ★ (NEXT STEP GCHANGE)
             my_star_level=1
             echo "★ SENDING $my_star_level STAR(s) ★"
-            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/.current/secret.dunikey stars -p ${QRCODE} -n $my_star_level
+            $MY_PATH/../tools/jaklis/jaklis.py -k ${MYPLAYERKEY} stars -p ${QRCODE} -n $my_star_level
 
     fi
 
