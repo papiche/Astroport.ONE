@@ -272,7 +272,7 @@ GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1PASS_STRING}
 
 ### CODE BEHAVIOUR. monitor && rewards || fork signal
 
-* Is IPNS key & PLAYER is local ? Redirect to G1BILLET
+* Is IPNS key & PLAYER is local ? Redirect to [make a G1PASS (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
 
 * Is G1*? Redirect to G1WishApp / Export Tags from TW
 
