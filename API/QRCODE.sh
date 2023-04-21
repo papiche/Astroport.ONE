@@ -347,6 +347,11 @@ ASTROTOIPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
 echo "############################################################################"
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
 
+    ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
+    echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
+    VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
+    COINSFILE=$HOME/.zen/tmp/coucou/${QRCODE}.COINS
+
 ###########################################################
 ## SEARCH IF G1PUB IS IN PLAYERS OTHERWISE CHOOSE CURRENT SECRET
 ##########################################################
@@ -365,12 +370,14 @@ echo "AUTOGRAPH $CURPLAYER : $CURCOINS G1"
 
 ## WALLET VIERGE
 ###########################################
-if [[ $CURCOINS == "null" ]]; then
+if [[ $VISITORCOINS == "null" || $CURCOINS == "null" ]]; then
 
-    echo "NULL. PLEASE CHARGE. OR CHECK DUNITER"
+    echo "NULL. PLEASE CHARGE. OR CHECK STATION"
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "<h1>PROBLEM : $CURCOINS Ǧ1</h1> Ask admin to check Duniter parameters in ./tools/jaklis/.env"  >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "<h1>PROBLEM : SCAN $VISITORCOINS Ǧ1 (CURRENT $CURCOINS Ǧ1)</h1>
+    If persisting... Contact <a href='mailto:support@qo-op.com'>support</a>
+    and ask to check STATION $myASTROPORT"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -394,10 +401,6 @@ if [[ ${CURG1} == ${QRCODE} ]]; then
 else
 # ANY VISITOR WALLET
 ###########################################
-    ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
-    echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
-    VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
-    COINSFILE=$HOME/.zen/tmp/coucou/${QRCODE}.COINS
 
     ## EMPTY WALLET ? PREPARE PALPE WELCOME
     if [[ $VISITORCOINS == "null" ]]; then
