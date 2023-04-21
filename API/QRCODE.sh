@@ -136,13 +136,13 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ $APPNAME == "pay" ]]; then
 
-                 if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} -gt ${VAL} ]]; then
+                 if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} -gt ${WHAT} ]]; then
                     ## COMMAND A PAYMENT
                         if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
                             echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m"
                             ${MY_PATH}/../tools/timeout.sh -t 5 \
-                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1PASS:$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-13)" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1PASS:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
                             #################################### SYSTEM IS NOT DUNITER OVER POOL RESISTANT
                             if [ $? == 0 ]; then
@@ -151,11 +151,11 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                                 COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
                                 DESTFILE="$HOME/.zen/tmp/coucou/${VAL}.COINS"
 
-                                CUR=$(cat ${COINFILE})
+                                CUR=$(cat ${COINSFILE})
                                 [[ ${CUR} != "" && ${CUR} != "null" ]] \
-                                    && echo $((CUR-WHAT)) > ${COINFILE} \
-                                    || echo ${WHAT} > ${COINFILE}
-                                cat ${COINFILE}
+                                    && echo $((CUR-WHAT)) > ${COINSFILE} \
+                                    || echo ${WHAT} > ${COINSFILE}
+                                cat ${COINSFILE}
 
                                 DES=$(cat ${DESTFILE})
                                 [[ ${DES} != "" && ${DES} != "null" ]] \
@@ -163,7 +163,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                                     || echo ${WHAT} > ${DESTFILE}
                                 cat ${DESTFILE}
 
-                                echo "OPERATION<br>${COINSFILE} <br> ($CUR) - ${WHAT} -> ($DES) <br> ${DESTFILE} " >> ~/.zen/tmp/${MOATS}/disco
+                                echo "<h1>OPERATION</h1> <h3>$G1PUB <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                             fi
                         fi
@@ -496,7 +496,7 @@ else
 
     ## DOES CURRENT IS RICHER THAN 100 G1
     ## IF GCHANGE ACCOUNT FOUND => SEND PALPE JUNE.
-    # SEND MESSAGE TO GCHANGE MESSAGING. SEND 1 ★
+    # SEND MESSAGE TO GCHANGE MESSAGING. SEND 5 ★
     if [[ $CURCOINS -gt 100 && $PALPE != 0 ]]; then
 
             ## LE COMPTE VISITOR EST VIDE
@@ -513,7 +513,10 @@ else
             -m "DE LA PART DE ${CURPLAYER} : ${PALPE} JUNE."
 
             ## SEND ONE ★ (NEXT STEP GCHANGE)
-            my_star_level=1
+            [ $PALPE -ge 1 ] && my_star_level=1
+            [ $PALPE -lt 50 ] && my_star_level=3
+            [ $PALPE -ge 50 ] && my_star_level=5
+
             echo "★ SENDING $my_star_level STAR(s) ★"
             $MY_PATH/../tools/jaklis/jaklis.py -k ${MYPLAYERKEY} stars -p ${QRCODE} -n $my_star_level
 

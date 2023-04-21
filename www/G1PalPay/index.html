@@ -123,14 +123,15 @@ a {
             <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
                 <strong><div id="countdown"></div></strong>
                 <div id="appname">
-                  <input type="radio" id="r0" name="appname" value="login"> Login
-                  <input type="radio" id="r1" name="appname" value="read"> Messagerie
+                  <input type="radio" id="r0" name="appname" value="login"> Login TW
+                  <input type="radio" id="r1" name="appname" value="read"> (G)Messagerie
                   <input type="radio" id="r2" name="appname" value="history"> Historique
-                  <input type="radio" id="r3" name="appname" value="pay"> Payer
+                  <input type="radio" id="r3" name="appname" value="pay"> Virement
                   <input type="radio" id="r3" name="appname" value="balance" checked="checked"> Balance
                 </div>
 
                 <strong><div id="resu"></div></strong>
+                <p><input type="text" id="g1pub" value="DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"/></p>
                 <p> <strong>Scanner QRCODE</strong> </p>
                 <p>1. <b>G1PUB</b>  destinataire</p>
                 <p>2. <b>G1PASS</b>  opérateur</p>
@@ -182,36 +183,38 @@ a {
       scanner.addListener('scan', function (content) {
             alert(content);
             if (content.startsWith('~~~~~')) {
-                // DESTINATION OF PREVIOUS SCAN
-                if (document.getElementById("resu").innerHTML !== '') {
-                   var mypub = document.getElementById("resu").innerHTML.value;
-                } else {
-                    // OR IF NONE Fred ;)
-                    var mypub = "DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
-                }
-                // GET PASS THAT DECODE PGP
-                var pass = prompt("Saisir PASS:");
                 // GET APPNAME
                 var appname = document.querySelector('input[name="appname"]:checked').value;
-                // DEFAULT PAY
+                // GET PASS THAT DECODE PGP
+                var pass = prompt("Saisir PASS:");
+
+                // GET DESTINATION
+                    // FROM PREVIOUS G1PUB SCAN
+                    var g1pub = document.getElementById("g1pub").value;
+
+                // APPNAME : DATA COLLECT & ARRANGE
                 if ( appname == 'pay') {
                     var amount = prompt("Saisir MONTANT Ğ1:");
-                }
-                if ( appname == 'login') {
-                    var amount = prompt("Saisir EMAIL:");
-                } else {
-                    var amount = mypub;
+                    alert('PAY TO ' + g1pub + ' = ' +  amount);
                 }
 
-                if ( appname == 'pay') {
-                    alert('PAY TO ' + mypub + ' = ' +  amount);
+                if ( appname == 'login') {
+                    var amount = prompt("Saisir EMAIL:");
                 }
-                var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + mypub ;
+
+                if ( amount == 'undefined' || amount == '' ) {
+                    var amount = document.getElementById("g1pub").value;
+                }
+
+                var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + g1pub ;
                 console.log(myU);
                 homeAstroportStation(myU, 'aframe', 10000)
 
             } else {
-                document.getElementById("resu").innerHTML = content;
+
+                // COPY QRCODE IN g1pub input
+                document.getElementById("g1pub").value = content;
+                // document.getElementById("resu").innerHTML = content;
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
                 console.log(myU);
                 homeAstroportStation(myU, 'aframe', 10000)
