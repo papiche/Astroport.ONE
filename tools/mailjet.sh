@@ -42,4 +42,4 @@ MESSAGE
 || echo "$messfile" >> ~/.zen/tmp/email.txt
 
 
-cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | ssmtp ${mail}
+cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | /usr/sbin/ssmtp ${mail}
