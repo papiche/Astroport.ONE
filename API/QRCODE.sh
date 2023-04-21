@@ -375,9 +375,9 @@ if [[ $VISITORCOINS == "null" || $CURCOINS == "null" ]]; then
     echo "NULL. PLEASE CHARGE. OR CHECK STATION"
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "<h1>PROBLEM : SCAN $VISITORCOINS Ǧ1 (CURRENT $CURCOINS Ǧ1)</h1>
-    If persisting... Contact <a href='mailto:support@qo-op.com'>support</a>
-    and ask to check STATION $myASTROPORT"  >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "<h1>SCAN $VISITORCOINS Ǧ1 (CURRENT $CURCOINS Ǧ1)</h1>
+    ... Any problem? Contact <a href='mailto:support@qo-op.com'>support</a>
+    ($myHOST)"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
