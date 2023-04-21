@@ -361,17 +361,16 @@ CURPLAYER=$(cat ~/.zen/game/players/.current/.player)
 CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
 echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1}"
 CURCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${CURG1} | tail -n 1)
-echo "AUTOGRAPH PLAYER : $CURCOINS G1"
+echo "AUTOGRAPH $CURPLAYER : $CURCOINS G1"
 
 ## WALLET VIERGE
 ###########################################
 if [[ $CURCOINS == "null" ]]; then
 
-    echo "NULL. PLEASE CHARGE. REDIRECT TO WSTATION HOME"
+    echo "NULL. PLEASE CHARGE. OR CHECK DUNITER"
 
-    sed "s~_TWLINK_~$(cat ~/.zen/tmp/WSTATION)~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-    sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myIPFSGW}$(cat ~/.zen/tmp/WSTATION)"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
+    echo "<h1>PROBLEM : $CURCOINS Ǧ1</h1> Ask admin to check Duniter parameters in ./tools/jaklis/.env"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
