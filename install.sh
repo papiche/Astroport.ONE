@@ -12,7 +12,11 @@ start=`date +%s`
 ##################################################################  SUDO
 ########################################################################
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. " && exit 1
-[[ ! $(groups | grep -w sudo) ]] && echo "AUCUN GROUPE \"sudo\" : su -; usermod -aG sudo $USER" && exit 1
+[[ ! $(groups | grep -w sudo) ]] \
+    && echo "AUCUN GROUPE \"sudo\" : su -; usermod -aG sudo $USER" \
+    && su - && apt-get install sudo -y \
+    && echo "Run Install Again..." && exit 0
+
 ################################################################### IPFS
 ########################################################################
 [[ ! $(which ipfs) ]] \
