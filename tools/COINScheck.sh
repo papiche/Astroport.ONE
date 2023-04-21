@@ -32,7 +32,7 @@ echo "TW ? $myIPFS/ipns/${ASTROTOIPFS}"
 ## CLEANING DAY+1 COINS CACHE FILES
 # find ~/.zen/game/players/ -mtime +1 -type f -name "COINS" -exec rm -f '{}' \;
 echo "${G1PUB}.COINS"
-find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB}  \;
+find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB} \;
 #######################################################
 
 ## IDENTIFY IF "ASTROPORT" or "COUCOU" PLAYER
@@ -57,12 +57,13 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB} | cut -d '.' -f 1)
     echo "$CURCOINS" > "$COINSFILE"
 
-    # PREVENT DUNITER DESYNC (KEEPING ASTROPORT ZEN VALUE)
+    # PREVENT DUNITER DESYNC (KEEPING ASTROPORT LAST KNOWN VALUE)
     [[ $CURCOINS == "" || $CURCOINS == "null" ]] \
     && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
-    && cat $HOME/.zen/tmp/backup.${G1PUB} > "$COINSFILE"
+    && WASCOINS=$(cat $HOME/.zen/tmp/backup.${G1PUB}) \
+    && [[ ${WASCOINS} != "" && ${WASCOINS} != "null" ]] && echo ${WASCOINS} > "$COINSFILE"
 
-    [[ $INNERFILE != "" ]] && cp "$COINSFILE" "$INNERFILE" && echo "LOCAL PLAYER THERE"
+    [[ $INNERFILE != "" ]] && cp "$COINSFILE" "$INNERFILE" && echo "LOCAL PLAYER COINS UPDATED"
     echo $CURCOINS
     ) &
 fi
