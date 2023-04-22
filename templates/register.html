@@ -32,7 +32,7 @@ header {
 #yellow {
       background: yellow;
       position: absolute;
-      top: 33%;
+      top: 12%;
       left: 66%;
       width: 18%;
       visibility: hidden;
@@ -50,16 +50,16 @@ header {
 </head>
 <body>
 <header>
+        <div>
+        <button onclick="homeAstroportStation('/?qrcode=station', '', 21654)">Open Station</button>
+        </div>
             <div  id="login"><button onclick="promptUser('login')">LOGIN</button><button onclick="promptUser('logout')">LOGOUT</button></div>
-
     <h6>
         <p id="station"> ♥<span>BOX <div id='countdown'></div></span></p>
-        <div>
-        <button onclick="homeAstroportStation('/?qrcode=station', '', 19654)">Open Station</button>
-        </div>
+   </h6>
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
-   </h6>
+
 </header>
 
 <main>
@@ -214,7 +214,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "Remplacez les '0' par les secrets de votre G1PASS.<br>Utilisez les identifiants de votre compte GChange si vous en disposez déjà <br><form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>Planche de G1BILLETS</option><option value='xbian' selected>G1PASS</option></select>&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
+            document.getElementById("countdown").innerHTML = "Créez votre TW. Remplacez les '0' par les secrets de votre G1PASS.<br>Utilisez les identifiants de votre compte GChange si vous en disposez déjà <br><form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>Planche de G1BILLETS</option><option value='xbian' selected>G1PASS</option></select>&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;
