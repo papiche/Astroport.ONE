@@ -127,7 +127,7 @@ while true; do
     echo "ASTROPORT 1234 UP & RUNNING.......................... $myASTROPORT"
     echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$myHOST:${PORT}"
 
-    echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
+    # echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
     ############################################################################
     start=`date +%s`
