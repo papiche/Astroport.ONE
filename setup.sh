@@ -66,10 +66,14 @@ done
 [[ "$USER" == "xbian" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/astroport')
 
 echo "#############################################"
-echo "# ADDING <<<Astroport>>>  DESKTOP SHORTCUT"
+echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
 [[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Bureau/astroport.desktop && chmod +x ~/Bureau/astroport.desktop
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
+[[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/rec.desktop > ~/Bureau/rec.desktop && chmod +x ~/Bureau/rec.desktop
+[[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/rec.desktop > ~/Desktop/rec.desktop && chmod +x ~/Desktop/rec.desktop
 
+echo "# ADD NEMO 'Add To IPFS' ACTION"
+~/.zen/Astroport.ONE/tools/install.nemo.add2ipfs.sh
 
 echo "CREATE SYSTEMD astroport SERVICE >>>>>>>>>>>>>>>>>>"
 cat > /tmp/astroport.service <<EOF

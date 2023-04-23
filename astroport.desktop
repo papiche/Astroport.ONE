@@ -1,7 +1,7 @@
 #!/usr/bin/env xdg-open
 [Desktop Entry]
 Name=Astroport
-Exec=/home/_USER_/.zen/Astroport.ONE/ajouter_media.sh
-Icon=/home/_USER_/.zen/Astroport.ONE/rec.png
+Exec=xdg-open http://astroport.localhost:1234
+Icon=/home/_USER_/.zen/Astroport.ONE/logo96.png
 Type=Application
 Categories=Utility
