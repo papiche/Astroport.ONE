@@ -41,14 +41,30 @@ bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/
 
 ```
 
+Si tout s'est bien déroulé, vous devriez trouver ces processus en cours d'execution...
+
+```
+fred     1113122 50.5  0.9 824512 72512 ?        Ssl  18:00   0:01 /usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesy
+fred     1113040  0.0  0.0   6688  3076 ?        Ss   17:59   0:00 /bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
+fred     1113074  0.0  0.0   6688  1492 ?        S    17:59   0:00  \_ /bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
+fred     1113076  0.0  0.0   2980   840 ?        S    17:59   0:00      \_ nc -l -p 33101 -q 1
+fred     1112771  0.0  0.0   6944  3312 ?        Ss   17:57   0:00 /bin/bash /home/fred/.zen/Astroport.ONE/12345.sh
+fred     1112935  0.0  0.0   6944  1668 ?        S    17:57   0:00  \_ /bin/bash /home/fred/.zen/Astroport.ONE/12345.sh
+fred     1112937  0.0  0.0   2980   784 ?        S    17:57   0:00      \_ nc -l -p 1234 -q 1
+fred       29101  0.0  0.0   6820  1880 ?        S    Mar26   0:00 /bin/bash /home/fred/.zen/Astroport.ONE/_12345.sh
+fred     1080385  0.0  0.0   2980   896 ?        S    Apr22   0:00  \_ nc -l -p 12345 -q 1
+
+```
+
 # LANCEMENT
 
-Après l'installation, rendez-vous sur http://astroport.localhost:1234
+Après l'installation, vous devriez avoir 2 nouveaux raccourcis sur votre "Bureau"
 
+* "Astroport" qui ouvre le portail de votre Station : http://astroport.localhost:1234
+* "REC" qui permet d'enregistrer vos fichiers sur IPFS et publier leur Capusle dans votre TW
 
-## Comment Activer votre "Astroport" !
+## Comment Gérer votre "Astroport" !
 
-Commencez par créer (ou importer) un premier compte.
 
 ```
 ~/.zen/Astroport.ONE/command.sh
