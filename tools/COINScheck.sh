@@ -31,8 +31,10 @@ echo "TW ? $myIPFS/ipns/${ASTROTOIPFS}"
 #######################################################
 ## CLEANING DAY+1 COINS CACHE FILES
 # find ~/.zen/game/players/ -mtime +1 -type f -name "COINS" -exec rm -f '{}' \;
-echo "${G1PUB}.COINS"
 find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB} \;
+[ $? == 0 ] && echo "Cleaning ${G1PUB}.COINS"
+find  ~/.zen/tmp/coucou/ -mtime +1 -type f -name "${G1PUB}.g1history.json" -exec rm '{}' \;
+[ $? == 0 ] && echo "Cleaning ${G1PUB}.g1history.json"
 #######################################################
 
 ## IDENTIFY IF "ASTROPORT" or "COUCOU" PLAYER
