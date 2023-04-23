@@ -197,6 +197,12 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
+            if [[ $APPNAME == "friend" ]]; then
+                ## Send ॐ★ॐ
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${VAL} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco
+
+            fi
+
             if [[ $APPNAME == "login" ]]; then
 
                 PLAYER=${WHAT}
