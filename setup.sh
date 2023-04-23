@@ -118,6 +118,7 @@ $ACTUAL
 EOF
 
     sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+
     sudo mv /tmp/resolv.conf /etc/resolv.conf
     sudo chattr +i /etc/resolv.conf
 fi
