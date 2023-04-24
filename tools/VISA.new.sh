@@ -225,8 +225,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
     ## ADD PLAYER EMAIL
     convert -gravity northwest -pointsize 28 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond_qrcode.png ~/.zen/game/players/${PLAYER}/result_qrcode.png
+    convert ~/.zen/game/players/${PLAYER}/result_qrcode.png -resize 480 ~/.zen/game/players/${PLAYER}/AstroID.png
 
-    ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/result_qrcode.png | tail -n 1)"
+    ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/AstroID.png | tail -n 1)"
 
 ############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
