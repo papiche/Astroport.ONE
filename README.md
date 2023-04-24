@@ -272,7 +272,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `player` | `string` | **Required**. Your EMAIL token |
-| `youtube | pdf` | `string` | **Required** URL kind = URL |
+| `youtube or pdf` | `string` | **Required** URL kind = URL |
 
 
 ### QRCODE (API SandBox)
