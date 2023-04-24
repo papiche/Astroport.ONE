@@ -94,7 +94,7 @@ fi
 ################################################################################
 if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
    echo ${QRCODE}
-   PASS=$(urldecode $THIS)
+   PASS=$(urldecode ${THIS})
    echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS ${PASS} - $APPNAME"
 
     if [[ ${PASS} != "" ]]; then
@@ -206,22 +206,26 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             if [[ $APPNAME == "login" ]]; then
 
                 PLAYER=${WHAT}
-                ISTHERE=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
                 echo "IS THERE ? $ISTHERE"
                 [[ ${ISTHERE} == "" ]] \
-                && ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key \
-                && ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1) \
+                && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/secret.ipns  "$salt" "$pepper" \
+                && ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/secret.ipns \
+                && ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) \
                 || ASTRONAUTENS=${ISTHERE}
+
+                ( ## 1 HOUR SESSION
+                    [[ ${ISTHERE} == "" ]] && echo "SESSION START" && sleep 3600 && echo "${PLAYER} SESSION OVER" && ipfs key rm ${PLAYER}
+                ) &
 
                 REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}
                 echo "${PLAYER} LOGIN - TW : ${REPLACE}"
 
-                sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}.index.redirect
+                echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}.index.redirect
                 (
-                    cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-                    echo "BLURP " && rm ~/.zen/tmp/coucou/${MOATS}*
-                    [[ ${ISTHERE} == "" ]] && sleep 3600 && echo "${PLAYER} SESSION OVER" && ipfs key rm ${PLAYER} ## 1 HOUR SESSION
+                    cat ~/.zen/tmp/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                    echo "BLURP " && rm -Rf ~/.zen/tmp/${MOATS} && rm ~/.zen/tmp/coucou/${MOATS}*
                 ) &
                 exit 0
 
@@ -322,14 +326,14 @@ if [[ ${ASTROPATH} != "" && $APPNAME == "" ]]; then
     PLAYER=$(echo ${ASTROPATH} | rev | cut -d '/' -f 3 | rev)
 
     rm ~/.zen/game/players/.current
-    ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
-    echo "LINKING $PLAYER to .current"
+    ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+    echo "LINKING ${PLAYER} to .current"
     #### SELECT PARRAIN "G1PalPay"
 
     echo "#>>>>>>>>>>>> # REDIRECT TO CREATE G1BILLETS"
-    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=$PLAYER~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=${PLAYER}~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myG1BILLET}"?montant=0\&style=$PLAYER'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myG1BILLET}"?montant=0\&style=${PLAYER}'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -542,54 +546,41 @@ else
 
 fi
 
-## TODO MAGIC QRCODE RX / TX
+## USE PLAYER API OR MOVE TO G1PASS PGP QRCODE
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
 
-if [[ $AND == "url" ]]; then
-        URL=$THIS
+#~ if [[ ${AND} == "url" ]]; then
+        #~ URL=${THIS}
 
-        if [[ $URL ]]; then
+        #~ if [[ ${URL} ]]; then
 
-        ## Astroport.ONE local use QRCODE Contains ${WHAT} G1PUB
-        g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
-        PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
+        #~ ## Astroport.ONE local use QRCODE Contains ${WHAT} G1PUB
+        #~ g1pubpath=$(grep $QRCODE ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 2>/dev/null)
+        #~ PLAYER=$(echo "$g1pubpath" | rev | cut -d '/' -f 2 | rev 2>/dev/null)
 
-        ## FORCE LOCAL USE ONLY. Remove to open 1234 API
-        [[ ! -d ~/.zen/game/players/${PLAYER} || ${PLAYER} == "" ]] \
-        && espeak "nope" \
-        && (echo "$HTTPCORS ERROR - QRCODE - NO ${PLAYER} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
-        && exit 1
+        #~ ## FORCE LOCAL USE ONLY. Remove to open 1234 API
+        #~ [[ ! -d ~/.zen/game/players/${PLAYER} || ${PLAYER} == "" ]] \
+        #~ && espeak "nope" \
+        #~ && (echo "$HTTPCORS ERROR - QRCODE - NO ${PLAYER} ON BOARD !!"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        #~ && exit 1
 
-        ## Demande de copie d'une URL reçue.
-             [[ ${TYPE} ]] && CHOICE="${TYPE}" || CHOICE="Youtube"
+        #~ ## Demande de copie d'une URL reçue.
+             #~ [[ ${TYPE} ]] && CHOICE="${TYPE}" || CHOICE="Youtube"
 
-            ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
-            # CHOICE = "Video" Page MP3 Web
-            ~/.zen/Astropor.ONE/ajouter_media.sh "${URL}" "$PLAYER" "$CHOICE" &
+            #~ ## CREATION TIDDLER "G1Voeu" G1CopierYoutube
+            #~ # CHOICE = "Video" Page MP3 Web
+            #~ ~/.zen/Astroport.ONE/ajouter_media.sh "${URL}" "${PLAYER}" "${CHOICE}" &
 
-            echo "## Insertion tiddler : G1CopierYoutube"
-            echo '[
-  {
-    "title": "'${MOATS}'",
-    "type": "'text/vnd.tiddlywiki'",
-    "text": "'${URL}'",
-    "tags": "'CopierYoutube ${WHAT}'"
-  }
-]
-' > ~/.zen/tmp/${WHAT}.${MOATS}.import.json
+            #~ echo "$HTTPCORS <h1>OK</h1> - ${URL} AVAILABLE SOON<br>check you TW"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            #~ exit 0
 
-            ## TODO ASTROBOT "G1AstroAPI" READS ~/.zen/tmp/${WHAT}.${MOATS}.import.json
-            ## INSERT IN TW
+        #~ else
 
-            (echo "$HTTPCORS OK - ~/.zen/tmp/${WHAT}.${MOATS}.import.json WORKS IF YOU MAKE THE WISH voeu 'AstroAPI'"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+            #~ (echo "$HTTPCORS ERROR - ${AND} - ${THIS} UNKNOWN"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
-        else
-
-            (echo "$HTTPCORS ERROR - ${AND} - ${THIS} UNKNOWN"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-
-        fi
-fi
+        #~ fi
+#~ fi
 
 
 exit 0

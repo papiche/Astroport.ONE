@@ -190,9 +190,8 @@ a {
                 // GET PASS THAT DECODE PGP
                 var pass = prompt("Saisir PASS:");
 
-                // GET DESTINATION
-                    // FROM PREVIOUS G1PUB SCAN
-                    var g1pub = document.getElementById("g1pub").value;
+                // PREVIOUS G1PUB SCAN
+                var g1pub = document.getElementById("g1pub").value;
 
                 // APPNAME : DATA COLLECT & ARRANGE
                 if ( appname == 'pay') {
@@ -215,7 +214,12 @@ a {
 
                 var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + g1pub ;
                 console.log(myU);
-                homeAstroportStation(myU, 'aframe', 10000)
+
+                if ( appname == 'login') {
+                    homeAstroportStation(myU, 'tab', 5000)
+                } else {
+                    homeAstroportStation(myU, 'aframe', 10000)
+                }
 
             } else {
 
