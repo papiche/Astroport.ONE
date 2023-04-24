@@ -376,11 +376,15 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             g1friend=${WHAT}
             stars=${VAL:-1} // Default 1 ★
 
-            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars
+            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars > ~/.zen/tmp/coucou/${MOATS}.log
+
+            (
+                echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+            ) &
+
             rm ~/.zen/tmp/coucou/${MOATS}.*
-            #~ echo "$HTTPCORS ${MESTAR}"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-            #~ end=`date +%s`
-            #~ echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
+            end=`date +%s`
+            echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
             exit 0
         fi
 
@@ -401,11 +405,14 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 # GETG1PUB
 ##############################################
         if [[ $APPNAME == "getg1pub" ]]; then
-            ( echo "$HTTPCORS
-            url='"${G1PUB}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getg1pub : ${G1PUB}" ) &
+            (
+                echo "$HTTPCORS
+                url='"${G1PUB}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getg1pub : ${G1PUB}"
+                echo "BLURP ${PORT}"
+            ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
-            rm ~/.zen/tmp/coucou/${MOATS}.*
+            rm ~/.zen/tmp/coucou/${MOATS}*
             exit 0
         fi
 
@@ -435,9 +442,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             #~ sed -i "s~_UPEPPER_~${UPEPPER}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
             echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
             (
-            cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-            echo "BLURP " && rm ~/.zen/tmp/coucou/${MOATS}*
+                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                echo "BLURP ${PORT}"
             ) &
+            rm ~/.zen/tmp/coucou/${MOATS}*
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
             exit 0

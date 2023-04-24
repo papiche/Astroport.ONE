@@ -54,12 +54,15 @@ Content-Type: text/html; charset=UTF-8
         fi
 
 ##############################################
-# YOUTUBE : /?player=PLAYER&youtube=_URL_
+# YOUTUBE : /?player=PLAYER&(youtube | pdf  | image) =_URL_
 ##############################################
-        if [[ ${APPNAME} == "youtube" ]]; then
+        if [[ ${APPNAME} == "youtube" || ${APPNAME} == "pdf" || ${APPNAME} == "image" ]]; then
+
+                APPNAME=$(echo ${APPNAME} | sed -r 's/\<./\U&/g' | sed 's/ //g') ## First letter Capital
 
                 [[ ! ${WHAT} ]] && WHAT="https://www.youtube.com/watch?v=BCl2-0HBJ2c"
-                echo "COPY YOUTUBE ${PLAYER} ${WHAT}"
+
+                echo ">>> COPY ${APPNAME} for ${PLAYER} from ${WHAT}"
 
                 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
                 [[ ! ${G1PUB} ]] && espeak "NOT MY PLAYER " && echo "${PLAYER} IS NOT MY PLAYER" && exit 1
@@ -69,7 +72,7 @@ Content-Type: text/html; charset=UTF-8
                 echo " = /ipfs/${TW}"
                 echo "================================================"
 
-                ${MY_PATH}/../ajouter_media.sh "${WHAT}" "${PLAYER}" "Video" &
+                ${MY_PATH}/../ajouter_media.sh "${WHAT}" "${PLAYER}" "${APPNAME}" &
 
                 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.${PLAYER}.http
                 echo "${myIPFS}/ipns/${ASTRONAUTENS}" >> ~/.zen/tmp/${MOATS}.${PLAYER}.http
@@ -80,6 +83,7 @@ Content-Type: text/html; charset=UTF-8
                 end=`date +%s`
                 echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
                 exit 0
+
         fi
 
  exit 1
