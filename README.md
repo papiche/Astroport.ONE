@@ -264,7 +264,7 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 | `tag` | `${VAL}` | TW filtering default G1CopierYoutube |
 
 
-###  Modifier URL du G1Voeu "G1CopierYoutube" du PLAYER
+###  Lancer la copie Video d'une URL Youtube par PLAYER
 ```http
 GET /?player=${PLAYER}&youtube=URLENCODED
 ```
@@ -274,7 +274,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 | `player` | `string` | **Required**. Your EMAIL token |
 | `youtube` | `string` | **Required** URL = Video URL |
 
-MORE TEST NEEDED
+
 
 ### QRCODE (API SandBox)
 ```http
