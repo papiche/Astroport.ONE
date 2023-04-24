@@ -221,7 +221,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
                 -d ~/.zen/tmp/${MOATS} \
                 -l H \
-                -p ~/.zen/tmp/${MOATS}/fond.png
+                -p ~/.zen/tmp/${MOATS}/fond.png 1>/dev/null
 
     ## ADD PLAYER EMAIL
     convert -gravity northwest -pointsize 28 -fill black -draw "text 5,5 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/fond_qrcode.png ~/.zen/game/players/${PLAYER}/result_qrcode.png
@@ -302,7 +302,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
         ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
-        echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
+        #~ echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
 ###########
         ## CRYPTO PROCESS VALIDATED
         [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
@@ -363,9 +363,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
             CIMG="${MY_PATH}/../images/g1ticket.png"
 
             # QRG1avatar.png
-            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
             # QRTWavatar.png
-            [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
 
         else
 
@@ -415,9 +415,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     (
-        echo "$MOATS :: /ipfs/$IPUSH"
+        #~ echo "$MOATS :: /ipfs/$IPUSH"
         ipfs name publish --key=${PLAYER} /ipfs/$IPUSH
-        echo "TW PUBLISHING DONE"
+        #~ echo "TW PUBLISHING DONE"
     ) &
 
     ## MEMORISE PLAYER Ŋ1 ZONE
@@ -475,7 +475,7 @@ echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
 echo "G1VISA : ${myIPFS}${IASTRO}"
-echo "ASTROQR : ${myIPFS}${ASTROQR}"
+echo "AstroID : ${myIPFS}${ASTROQR}  (${PASS})"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
 echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; sleep 1
@@ -495,8 +495,8 @@ echo "G1FRAME : ${myIPFS}/ipns/${FEEDNS}"
 echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo echo
 echo "$(${MY_PATH}/face.sh friendly)
-DISCONNECT : $DISCO&logout=${PLAYER}
-CONNECT : $DISCO&login=${PLAYER}"
+#~ DISCONNECT : $DISCO&logout=${PLAYER}
+#~ CONNECT : $DISCO&login=${PLAYER}"
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
