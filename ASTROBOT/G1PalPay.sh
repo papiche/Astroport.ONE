@@ -22,7 +22,7 @@ echo "$ME RUNNING"
 ########################################################################
 # CHECK TODAY INCOMING PAYMENT
 # IF COMMENT CONTAINS EMAIL ADDRESSES
-# THEN CREATE VISA+TW AND SEND PAIMENT REMOVING FIRST FROM LIST
+# THEN AND SEND PAIMENT TO NEXT (REMOVING IT FROM LIST)
 ########################################################################
 # this could lead in several account creation sharing % of incomes each time
 ########################################################################
@@ -51,6 +51,7 @@ MOATS="$3"
 mkdir -p $HOME/.zen/tmp/${IPFSNODEID}/G1PalPay/${PLAYER}/
 mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
 mkdir -p $HOME/.zen/tmp/${MOATS}
+echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
@@ -138,6 +139,8 @@ echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$
 
 done < ~/.zen/tmp/${MOATS}/myPalPay.json
 
+echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
+
 #################################################################
 #################################################################
 ### NEXT #####
@@ -213,7 +216,7 @@ echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$
 
 done < ~/.zen/tmp/${MOATS}/@tags.json
 
-echo "****************************************"
+echo "=========== ( ◕‿◕)  (◕‿◕ ) =============="
 
 rm -Rf $HOME/.zen/tmp/${MOATS}
 

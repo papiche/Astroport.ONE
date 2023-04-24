@@ -248,24 +248,26 @@ fi
 
 ################################################################################
 ## QRCODE = G1* : MODE G1VOEU : RETURN WISHNS - IPNS App link - or direct tw tag selected json
-# ~/?qrcode=G1VoeuTag&tw=_IPNS_PLAYER_(&json)
+# ~/?qrcode=G1Tag&tw=_IPNS_PLAYER_(&json)
 ################################################################################
 if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
-    VOEU=${QRCODE}
-    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | grep ${QRCODE} | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
-    echo $ASTROPATH
+    VOEU=${QRCODE:2} ## "G1G1Voeu" => "G1Voeu"
+    # THIS is TW IPNS
+    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+    echo "ASTROPATH=${ASTROPATH}"
 
-    INDEX=$ASTROPATH/index.html
+    INDEX=${ASTROPATH}/index.html
     echo $INDEX
+
     if [[ -s  ${INDEX} ]]; then
 
         if [[ ${APPNAME} == "json" ]]; then
         ##############################################
-            echo "DIRECT Tag = ${QRCODE:2} OUTPUT"
+            echo "DIRECT Tag = ${VOEU} OUTPUT"
             ## DIRECT JSON OUTPUT
             tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} \
-            --render '.' "g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag['${QRCODE:2}']]'
+            --render '.' "g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag['${VOEU}']]'
 
             echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/index.redirect
             sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/index.redirect
@@ -315,9 +317,9 @@ fi
 ################################################################################
 ## QRCODE IS IPNS FORMAT : CHANGE .current AND MAKE G1BILLETS
 ASTROPATH=$(grep -r $QRCODE  ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
-if [[ $ASTROPATH != "" && $APPNAME == "" ]]; then
+if [[ ${ASTROPATH} != "" && $APPNAME == "" ]]; then
 
-    PLAYER=$(echo $ASTROPATH | rev | cut -d '/' -f 3 | rev)
+    PLAYER=$(echo ${ASTROPATH} | rev | cut -d '/' -f 3 | rev)
 
     rm ~/.zen/game/players/.current
     ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current

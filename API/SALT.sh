@@ -54,35 +54,6 @@ Content-Type: text/html; charset=UTF-8
         echo "TW ADDRESS : $myIPFS/ipns/${ASTRONAUTENS}"
         echo
 
-        ################### KEY GEN ###################################
-
-    # Get PLAYER wallet amount
-    #~ ( ## SUB PROCESS ## ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-        #~ COINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key balance)
-        #~ echo "+++ WALLET BALANCE _ $COINS (G1) _"
-        #~ [[ $COINS == "" || $COINS == "null" ]] \
-        #~ && ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key send -d "${G1PUB}" -t "BRO" -m "0 G1 (ᵔ◡◡ᵔ) FLASH TON G1VISA" \
-        #~ && ~/.zen/Astroport.ONE/tools/mailjet.sh $PLAYER "Votre portefeuille est vide. Alimentez votre G1Visa avec Cesium."
-        #~ end=`date +%s`
-        #~ echo "G1WALLET  (☓‿‿☓) Execution time was "`expr $end - $start` seconds.
-    #~ ) &
-########################################
-
-########################################
-        ## ARCHIVE TOCTOC ${WHAT}S KEEP LOG (TODO : ERASE)
-########################################
-        #~ mkdir -p ~/.zen/game/players/.toctoc/
-        #~ ISTHERE=$(ls -t ~/.zen/game/players/.toctoc/*.${G1PUB}.ipns.key 2>/dev/null | tail -n 1 | cut -d '.' -f 1)
-        #~ TTIME=$(echo $ISTHERE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
-        #~ if [[ ! $ISTHERE ]]; then
-            #~ echo "${APPNAME} 1ST TOCTOC : ${MOATS}"
-            #~ cp ~/.zen/tmp/coucou/${MOATS}.* ~/.zen/game/players/.toctoc/
-        #~ else ## KEEP 1ST CONTACT ONLY
-            #~ OLDONE=$(ls -t ~/.zen/tmp/coucou/*.${G1PUB}.ipns.key | tail -n 1)
-            #~ DTIME=$(echo $OLDONE | rev | cut -d '.' -f 4 | cut -d '/' -f 1  | rev)
-            #~ [[ $DTIME != ${MOATS} ]] && rm ~/.zen/tmp/coucou/$DTIME.*
-        #~ fi
-
 ########################################
 ## APPNAME SELECTION  ########################
 ########################################

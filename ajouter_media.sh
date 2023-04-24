@@ -48,23 +48,37 @@ exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
 URL="$1"
 PLAYER="$2"
 CHOICE="$3"
+echo ">>> RUNNING 'ajouter_media.sh' URL=$URL PLAYER=$PLAYER CHOICE=$CHOICE"
 
-# Check who is .current PLAYER
-players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+# Check who is PLAYER  ?
+if [[ ${PLAYER} == "" ]]; then
 
-[[ ${#players[@]} -ge 1 ]] \
-&& espeak "SELECT YOUR PLAYER" && OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}") \
-|| OUTPUT="${players}"
+    players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 
-PLAYER=$OUTPUT
+    if [[ ${#players[@]} -ge 1 ]]; then
+        espeak "SELECT YOUR PLAYER"
+        OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
+        [[ ${OUTPUT} == "" ]] && espeak "No player selected. EXIT" && exit 1
+    else
+        OUTPUT="${players}"
+    fi
 
-[[ $OUTPUT ]] \
+    PLAYER=${OUTPUT}
+
+else
+
+    OUTPUT=${PLAYER}
+
+fi
+
+[[ ${OUTPUT} != ""  ]] \
 && rm -f ~/.zen/game/players/.current \
 && ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
 && espeak "CONNECTED" \
 && . "${MY_PATH}/tools/my.sh"
 
-[[ $OUTPUT == "" ]] \
+## NO PLAYER AT ALL
+[[ ${OUTPUT} == "" ]] \
 && espeak "Astronaut. Please register." \
 && xdg-open "http://astroport.localhost:1234" \
 && exit 1 \
@@ -89,8 +103,8 @@ if [ $URL ]; then
 
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [ ! $2 ] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3 Web) || IMPORT="$CHOICE"
-    [[ $IMPORT == "" ]] && espeak "No choice made. Exiting program" && exit 1
+    [[ ${CHOICE} == "" ]] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3 Web) || IMPORT="$CHOICE"
+    [[ $IMPORT == "" ]] && espeak "No choice made. Exit" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
 
@@ -98,6 +112,7 @@ fi
 ###
 
 COINS=$($MY_PATH/tools/COINScheck.sh $G1PUB | tail -n 1)
+echo "$PLAYER wallet = $COINS G1"
 
 ###
 # GET SCREEN DIMENSIONS
@@ -107,8 +122,9 @@ height=$(echo $screen | cut -d 'x' -f 2)
 large=$((width-300))
 haut=$((height-200))
 ###
+
 ########################################################################
-## CADRE EXCEPTION COPIE PRIVE
+## EXCEPTION COPIE PRIVE
 # https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006278917/2008-12-11/
 if [[ ! -f ~/.zen/game/players/${PLAYER}/legal ]]; then
 zenity --width ${large} --height=${haut} --text-info \
@@ -146,7 +162,7 @@ if [[ $1 == "on" ]]; then
 fi
 
 ###
-# IS THERE ANY RUNNING IPFS ADD
+# IS THERE ANY RUNNING IPFS ADD OR PUBLISH IN PROGRESS ?
 ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
@@ -156,9 +172,14 @@ ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 
 
 espeak "restarting I P F S daemon"
 [[ "$isLAN" ]] && sudo systemctl restart ipfs
+
+## CHECK IF IPFS DAEMON IS STARTS WELL
+floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 1
+    ((floop++)) && [ $floop -gt 10 ] && espeak 'Please check but IPFS cannot start' &&  exit 1
 done
+
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(myIpfsApi)
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
