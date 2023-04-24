@@ -290,7 +290,7 @@ GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1PASS_STRING}
 
 * Is IPNS key & PLAYER is local ? Redirect to [make a G1PASS (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
 
-* Is G1*? Redirect to G1WishApp / Export Tags from TW
+* Is G1*? Redirect to G1WishApp / Export Tagged Tiddlers json from TW
 
 [http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0](http://astroport.localhost:1234/?qrcode=G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0)
 redirect to
