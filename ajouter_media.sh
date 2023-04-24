@@ -674,7 +674,7 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     espeak "Add your personnal video in TW"
 
-    zenity --warning --width 600 --text 'DEV-DEBUG : REGISTER https://git.p2p.legal'
+    #~ zenity --warning --width 600 --text 'DEV-DEBUG : REGISTER https://git.p2p.legal'
 
     ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
     # SELECT FILE TO ADD TO ASTROPORT/KODI
