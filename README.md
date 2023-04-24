@@ -299,14 +299,14 @@ redirect to
 [http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
 redirect to pure "tag=" result  json
 
-* Is G1PUB ... (FROM NEW G1PASS)
+* Is G1PUB ... (FROM NEW G1PASS or empty G1BILLET)
 
-    * If G1PASS balance is "null" : Send 1 G1
+    * If balance is "null" : Send 1 G1 (G1BILLET)
     * if GChange+ account exists : send 10 G1
     * if Cesium+ account exists : send 50 G1
 
 * Is G1PASS
-    * check PASS and make operation (like for SALT API)
+    * decode with PASS and make operation (same functions as SALT API are available)
 
 
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
