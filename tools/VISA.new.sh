@@ -310,7 +310,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 ###########
 
-    ### CREATE $NID ADDRESS FOR API & ROUND ROBIN FOR GW
+    ### CREATE ${NID} ADDRESS FOR API & ROUND ROBIN FOR GW
     cat ${MY_PATH}/../templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ${MY_PATH}/../templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
@@ -328,12 +328,12 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo "# NATOOLS ENCODING  feed.ipfskey "
     ${MY_PATH}/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
     ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc | base16)
-    echo ${ENCODING}
+    #~ echo ${ENCODING}
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
-    echo "TW IPFS GATEWAY : $NID"
+    #~ echo "TW IPFS GATEWAY : ${NID}"
     # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
-    echo "TW IPFS API : $WID"
+    #~ echo "TW IPFS API : ${WID}"
     # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
 
     ## CHANGE SELECTED GW & API
@@ -351,7 +351,6 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
         [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
         && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-        && echo "TW INDEX OK" \
         || ( echo "Problem with TW - EXIT" && exit 1 )
 
 ############################################################################ TW
@@ -409,7 +408,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
     echo
     echo "♥ IPFS Ŋ1 DRIVE INIT ♥"
-    echo "TW /ipns/${ASTRONAUTENS}/"
+    echo "TW ${NID}/ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
     echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
@@ -430,7 +429,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo "SALT=\"$SALT\"" > ~/.zen/game/players/${PLAYER}/secret.june
     echo "PEPPER=\"$PEPPER\"" >> ~/.zen/game/players/${PLAYER}/secret.june
 
-echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
+#~ echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
 echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
 # ls ~/.zen/game/players/${PLAYER}
@@ -461,7 +460,7 @@ echo "$PASS" > ~/.zen/game/players/${PLAYER}/.pass
 #~ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
-${MY_PATH}/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
+${MY_PATH}/Connect_PLAYER_To_Gchange.sh "${PLAYER}" 1>/dev/null
 
 ### IF PRINTER -> PRINT VISA
 LP=$(ls /dev/usb/lp* 2>/dev/null)
