@@ -307,7 +307,7 @@ then
     echo '[
   {
     "text": "'${TEXT}'",
-    "title": "'${TITLE}'",
+    "title": "'${TITLE//_/ }'",
     "season": "'${SAISON}'",
     "created": "'${MOATS}'",
     "resolution": "'${RES}'",

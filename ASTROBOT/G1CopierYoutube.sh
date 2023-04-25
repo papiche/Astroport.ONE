@@ -21,12 +21,12 @@ INDEX="$1"
 [[ ! -s ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 
 PLAYER="$2"
-[[ ! $PLAYER ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
+[[ ! ${PLAYER} ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
 
-ASTONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
-[[ ! $ASTONAUTENS ]] && echo "ERROR - Clef IPNS $PLAYER introuvable!"  && exit 1
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+[[ ! $ASTRONAUTENS ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
 
-G1PUB=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 
 # Extract tag=tube from TW
 MOATS="$3"
@@ -35,34 +35,34 @@ MOATS="$3"
 ###################################################################
 ## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
 ###################################################################
-mkdir -p $HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/
-mkdir -p $HOME/.zen/game/players/$PLAYER/G1CopierYoutube/
+mkdir -p ${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/
+mkdir -p ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
 
 ###################################################################
 ## tag[CopierYoutube] EXTRACT ~/.zen/tmp/CopierYoutube.json FROM TW
 ###################################################################
-rm -f ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
+rm -f ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json
 tiddlywiki  --load ${INDEX} \
-                    --output ~/.zen/game/players/$PLAYER/G1CopierYoutube \
+                    --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
                     --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
-echo "DEBUG : cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r"
+echo "DEBUG : cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json | jq -r"
 
         BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
         [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
         [[ ! $isLAN ]] && BROWSER=""
 ###################################################################
-## URL EXTRACTION & yt-dlp.cache.$PLAYER upgrade
-for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
+## URL EXTRACTION & yt-dlp.cache.${PLAYER} upgrade
+for YURL in $(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
     [[ ! $(echo $YURL | grep "http" ) ]] && echo "$YURL error" && continue
     echo "G1CopierYoutube : $YURL"
-    echo "Extracting video playlist into yt-dlp.cache.$PLAYER"
+    echo "Extracting video playlist into yt-dlp.cache.${PLAYER}"
 
     ### yt-dlp.command
-    CMD=$(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
+    CMD=$(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
     if [[ ! $CMD ]]; then
-        echo "$PLAYER&$YURL:$MOATS" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command
-        echo "NOUVEAU CANAL $PLAYER&$YURL:$MOATS"
+        echo "${PLAYER}&$YURL:$MOATS" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command
+        echo "NOUVEAU CANAL ${PLAYER}&$YURL:$MOATS"
         lastrun=$MOATS
         duree=604800000
     else
@@ -70,18 +70,18 @@ for YURL in $(cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/CopierYoutube.json
         duree=$(expr ${MOATS} - $lastrun)
     fi
         # ONE WEEK NEW SCAN
-        if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER ]]; then
-            /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER
-            sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
+        if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} ]]; then
+            /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
+            sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
         fi
 
 done # FINISH YURL loop
 
-## CREATE SORT UNIQ SHUFFLED ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER (12345 ONLINE)
-cat ~/.zen/game/players/$PLAYER/G1CopierYoutube/yt-dlp.cache.$PLAYER 2>/dev/null | sort | uniq | shuf > ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER
+## CREATE SORT UNIQ SHUFFLED ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER} (12345 ONLINE)
+cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} 2>/dev/null | sort | uniq | shuf > ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER}
 
 ###################################################################
-[[ ! -s  ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
+[[ ! -s  ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER} ]] && echo "AUCUN YOUTUBEID pour CopierYoutube" && exit  0
 ###################################################################
 boucle=0
 tot=0
@@ -96,9 +96,9 @@ while read LINE;
 
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
-        echo "--- CACHE SEARCH FOR $YID ---" && TIDDLER=$(ls -t "$HOME/.zen/game/players/"*"/G1CopierYoutube/$YID.TW.json" 2>/dev/null | head -n 1)
-        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
-        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "$HOME/.zen/tmp/swarm/"*"/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
+        echo "--- CACHE SEARCH FOR $YID ---" && TIDDLER=$(ls -t "${HOME}/.zen/game/players/"*"/G1CopierYoutube/$YID.TW.json" 2>/dev/null | head -n 1)
+        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
+        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/swarm/"*"/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
         [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" \
                                   || echo "EMPTY."
 ###################################################################
@@ -123,7 +123,7 @@ if [[ ! ${TIDDLER} ]]; then
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # (bv*[height<=720][vcodec~='^((he|a)vc|h26[45])']+ba)
         # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
-        echo "/usr/local/bin/yt-dlp -f \"(bv*[ext=mp4][height<=720]+ba/b[height<=720])\" --no-mtime --embed-thumbnail --add-metadata -o \"$HOME/.zen/tmp/yt-dlp/$TITLE.%(ext)s\" ${ZYURL}"
+        echo "/usr/local/bin/yt-dlp -f \"(bv*[ext=mp4][height<=720]+ba/b[height<=720])\" --no-mtime --embed-thumbnail --add-metadata -o \"${HOME}/.zen/tmp/yt-dlp/$TITLE.%(ext)s\" ${ZYURL}"
 
         #############################################################################
         ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
@@ -132,9 +132,9 @@ if [[ ! ${TIDDLER} ]]; then
 
         /usr/local/bin/yt-dlp  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                     $BROWSER \
-                    --download-archive $HOME/.zen/.yt-dlp.list \
+                    --download-archive ${HOME}/.zen/.yt-dlp.list \
                     -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
-                    -o "$HOME/.zen/tmp/yt-dlp/$TITLE.%(ext)s" ${ZYURL}
+                    -o "${HOME}/.zen/tmp/yt-dlp/$TITLE.%(ext)s" ${ZYURL}
 
         ################################################################################
         ### ADAPT TO TW RYTHM (DELAY COPY?)
@@ -143,30 +143,30 @@ if [[ ! ${TIDDLER} ]]; then
 
         ############################################################################
         ### CHECK RESULT CONVERT MKV TO MP4
-        [[ -s "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] && ffmpeg -loglevel quiet -i "$HOME/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "$HOME/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
+        [[ -s "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] && ffmpeg -loglevel quiet -i "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "${HOME}/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
 
-        if [[ ! -s "$HOME/.zen/tmp/yt-dlp/$ZFILE"  ]]; then
+        if [[ ! -s "${HOME}/.zen/tmp/yt-dlp/${ZFILE}"  ]]; then
             echo "No FILE -- TRYING TO RESTORE CACHE FROM TW --"
             tiddlywiki  --load ${INDEX} \
-                    --output ~/.zen/game/players/$PLAYER/G1CopierYoutube \
-                    --render '.' "'$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "$ZFILE" \
-            && rm "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json" && ln -s "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json"
+                    --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
+                    --render '.' "'$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}" \
+            && rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" && ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
             continue
         fi
         echo
 
 ####################################################
-        echo "FOUND : ~/.zen/tmp/yt-dlp/$ZFILE"
-        FILE_BSIZE=$(du -b "$HOME/.zen/tmp/yt-dlp/$ZFILE" | awk '{print $1}')
+        echo "FOUND : ~/.zen/tmp/yt-dlp/${ZFILE}"
+        FILE_BSIZE=$(du -b "${HOME}/.zen/tmp/yt-dlp/${ZFILE}" | awk '{print $1}')
         [[ ! $FILE_BSIZE ]] && echo "SIZE ERROR" && continue
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
-        echo "$boucle - $ZFILE - FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
+        echo "$boucle - ${ZFILE} - FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
 
         espeak "GOOD! Video Number $boucle = $FILE_SIZE" > /dev/null 2>&1
 
 
         ### CREATE GIF ANIM : make_video_gifanim_ipfs.sh
-        $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "$HOME/.zen/tmp/yt-dlp" "$ZFILE" | tail -n 1) ## export ANIMH
+        $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) ## export ANIMH
         echo "HOP=$HOP
         ANIMH=$ANIMH
         PROBETIME=$PROBETIME
@@ -179,12 +179,12 @@ if [[ ! ${TIDDLER} ]]; then
 
         ## Create gifanime ##  TODO Search for similarities BEFORE ADD
         echo "Adding to IPFS"
-        ILINK=$(ipfs add -q "$HOME/.zen/tmp/yt-dlp/$ZFILE" | tail -n 1)
-        echo "/ipfs/$ILINK === $ZFILE"
+        ILINK=$(ipfs add -q "${HOME}/.zen/tmp/yt-dlp/${ZFILE}" | tail -n 1)
+        echo "/ipfs/$ILINK === ${ZFILE}"
 
         [[ $ILINK == "" ]] && echo ">>>>> BIG PROBLEM PAPA. NO IPFS " && continue
 
-        MIME=$(file --mime-type -b "$HOME/.zen/tmp/yt-dlp/$ZFILE")
+        MIME=$(file --mime-type -b "${HOME}/.zen/tmp/yt-dlp/${ZFILE}")
 
         ## ADD TAGS
         SEC=$(/usr/local/bin/yt-dlp $BROWSER --print "%(duration)s" "${ZYURL}")
@@ -218,7 +218,7 @@ if [[ ! ${TIDDLER} ]]; then
     "giftime": "'${PROBETIME}'",
     "gifanime": "'/ipfs/${ANIMH}'",
     "modified": "'${MOATS}'",
-    "title": "'$ZFILE'",
+    "title": "'${ZFILE}'",
     "type": "'text/vnd.tiddlywiki'",
     "vtratio": "'${VTRATIO}'",
     "text": "'$TEXT'",
@@ -231,14 +231,14 @@ if [[ ! ${TIDDLER} ]]; then
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
     "zurl": "'${ZYURL}'",
-    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} $(echo $ZFILE | sed 's~_~ ~g' | sed 's~\.~ ~g')'"
+    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} $(echo ${ZFILE} | sed 's~_~ ~g' | sed 's~\.~ ~g')'"
   }
 ]
-' > "$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
+' > "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/$YID.TW.json"
 
     tot=$((tot+1))
 
-    TIDDLER="$HOME/.zen/tmp/$IPFSNODEID/G1CopierYoutube/$PLAYER/$YID.TW.json"
+    TIDDLER="${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/$YID.TW.json"
 
 else
     ###################################################################
@@ -248,38 +248,38 @@ else
     continue
 fi
 
-cp -f "${TIDDLER}" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/"
+cp -f "${TIDDLER}" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/"
 
 
 #################################################################
-### ADDING $YID.TW.json to ASTONAUTENS INDEX.html
+### ADDING $YID.TW.json to ASTRONAUTENS INDEX.html
 #################################################################
         echo "=========================="
-        echo "Adding $YID tiddler to TW /ipns/$ASTONAUTENS "
+        echo "Adding $YID tiddler to TW /ipns/$ASTRONAUTENS "
 
-        rm -f ~/.zen/tmp/$IPFSNODEID/newindex.html
+        rm -f ~/.zen/tmp/${IPFSNODEID}/newindex.html
 
-        echo  ">>> Importing $HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json"
+        echo  ">>> Importing ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json"
 
         tiddlywiki --load ${INDEX} \
-                        --import "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "application/json" \
-                        --output ~/.zen/tmp/$IPFSNODEID --render "$:/core/save/all" "newindex.html" "text/plain"
+                        --import "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "application/json" \
+                        --output ~/.zen/tmp/${IPFSNODEID} --render "$:/core/save/all" "newindex.html" "text/plain"
 
 # --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
 
-        if [[ -s ~/.zen/tmp/$IPFSNODEID/newindex.html ]]; then
+        if [[ -s ~/.zen/tmp/${IPFSNODEID}/newindex.html ]]; then
 
             ## COPY JSON TIDDLER TO PLAYER
-            ln -s "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$YID.TW.json" "$HOME/.zen/game/players/$PLAYER/G1CopierYoutube/$ZFILE.json"
+            ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
 
-            [[ $(diff ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} ) ]] && cp ~/.zen/tmp/$IPFSNODEID/newindex.html ${INDEX} && echo "===> Mise à jour ${INDEX}"
+            [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] && cp ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} && echo "===> Mise à jour ${INDEX}"
 
         else
-            echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/$IPFSNODEID/newindex.html"
+            echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"
             echo "XXXXXXXXXXXXXXXXXXXXXXX"
         fi
 
-done  < ~/.zen/tmp/$IPFSNODEID/yt-dlp.cache.$PLAYER # FINISH YID loop 1
+done  < ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER} # FINISH YID loop 1
 
 
 exit 0
