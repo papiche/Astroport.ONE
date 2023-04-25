@@ -157,7 +157,7 @@ tiddlywiki --load $INDEX \
 cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json \
         | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## REMOVE PLAYER EMAIL IN INLINE JSON
 
-[[ $? != 0 ]] && echo "NO EXTRA @tags.json TIDDLERS TODAY" && exit 0
+[[ ! -s ~/.zen/tmp/${MOATS}/@tags.json ]] && echo "NO EXTRA @tags.json TIDDLERS TODAY" && exit 0
 
 # LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
