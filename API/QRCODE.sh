@@ -215,7 +215,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 || ASTRONAUTENS=${ISTHERE}
 
                 ( ## 1 HOUR SESSION
-                    [[ ${ISTHERE} == "" ]] && echo "SESSION START" && sleep 3600 && echo "${PLAYER} SESSION OVER" && ipfs key rm ${PLAYER}
+                    [[ ${ISTHERE} == "" ]] && echo "${PLAYER} SESSION START" && sleep 3600 && echo "${PLAYER} SESSION END" && ipfs key rm ${PLAYER}
                 ) &
 
                 REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}

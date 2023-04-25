@@ -35,15 +35,15 @@ PLAYER="$2"
 [[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 [[ ! ${PLAYER} ]] && echo "ERROR - Please provide PLAYER" && exit 1
 
-ASTONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
-[[ ! $ASTONAUTENS ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+[[ ! ${ASTRONAUTENS} ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
 
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ ! $G1PUB ]] && echo "ERROR - G1PUB ${PLAYER} VIDE"  && exit 1
 
 # Extract tag=tube from TW
 MOATS="$3"
-[[ ! $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+[[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 ###################################################################
 ## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
@@ -67,8 +67,8 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[]
 while read LINE; do
 
     echo "MATCHING IN COMMENT"
-    echo "$LINE"
-    JSON=$LINE
+    echo "${LINE}"
+    JSON=${LINE}
     IDATE=$(echo $JSON | jq -r .date)
     IPUBKEY=$(echo $JSON | jq -r .pubkey)
     IAMOUNT=$(echo $JSON | jq -r .amount)
@@ -90,23 +90,21 @@ while read LINE; do
 
     for EMAIL in "${ICOMMENT[@]}"; do
 
-        [[ $EMAIL == $PLAYER ]] && echo "My PalPay" && continue
+        [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
 
         echo "EMAIL : ${EMAIL}"
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
 
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
+echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
         if [[ ! ${ASTROTW} ]]; then
 
-            echo "# NEW VISA $(date)"
-            SALT="" && PEPPER=""
-            echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${URL}\""
+            echo "# PLAYER INCONNU $(date)"
 
         fi
 
-        [[ ! $ASTROG1 ]] \
+        [[ ! ${ASTROG1} ]] \
         && echo "SORRY ${EMAIL} MISSING ASTROG1" \
         && echo " $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous au Collectif ♥BOX https://opencollective.com/monnaie-libre/" > ~/.zen/tmp/palpay.bro \
         && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. " ~/.zen/tmp/palpay.bro \
@@ -116,14 +114,14 @@ echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$
         ## MAKE FRIENDS & SEND G1
         echo "NEW PalPay Friend $ASTROMAIL
         TW : $ASTROTW
-        G1 : $ASTROG1
+        G1 : ${ASTROG1}
         ASTROIPFS : $ASTROIPFS
         RSS : $ASTROFEED"
 
         if [[ ${ASTROG1} != ${G1PUB} ]]; then
 
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "PalPay:$N:$IPUBKEY" -m > /dev/null 2>&1
+            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "G1PalPay:$N:$IPUBKEY" -m > /dev/null 2>&1
             STAMP=$?
 
         else
@@ -171,12 +169,12 @@ echo "******************TIDDLERS with EMAIL in TAGS treatment"
 while read LINE; do
 
     echo "---------------------------------- PalPé mec"
-    echo "$LINE"
+    echo "${LINE}"
     echo "---------------------------------- PalPAY for Tiddler"
-    TCREATED=$(echo $LINE | jq -r .created)
-    TTITLE=$(echo $LINE | jq -r .title)
-    TTAGS=$(echo $LINE | jq -r .tags)
-    TOPIN=$(echo $LINE | jq -r .ipfs)
+    TCREATED=$(echo ${LINE} | jq -r .created)
+    TTITLE=$(echo ${LINE} | jq -r .title)
+    TTAGS=$(echo ${LINE} | jq -r .tags)
+    TOPIN=$(echo ${LINE} | jq -r .ipfs)
 
     echo "$TTITLE"
 
@@ -193,7 +191,7 @@ while read LINE; do
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
     #### SEARCH FOR PALPAY ACOUNTS : TODO BETTER §§§
     $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
-echo "export ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
+echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
