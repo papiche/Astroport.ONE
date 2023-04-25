@@ -8,10 +8,10 @@ ME="${0##*/}"
 ASTRONAUTENS="$1"
 MOATS="$2"
 
-[[ ! $ASTRONAUTENS || ! $MOATS ]] && echo "${ME} : ASTRONAUTENS & MOATS needed" && exit 1
+[[ ! ${ASTRONAUTENS} || ! $MOATS ]] && echo "${ME} : ASTRONAUTENS & MOATS needed" && exit 1
 
 start=$(date +%s)
-[[ ! $IPFSNODEID ]] && IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n') || ( echo "${ME} : IPFSNODEID MISSING" && exit 1 )
+[[ ! ${IPFSNODEID} ]] && IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n') || ( echo "${ME} : IPFSNODEID MISSING" && exit 1 )
 
             ## GETTING LAST TW via IPFS
             echo "${ME} : IPFS : ipfs --timeout 120s cat  /ipns/${ASTRONAUTENS}"\
@@ -48,9 +48,9 @@ start=$(date +%s)
             fi
 
             ## IN CACHE
-            echo "${ME} : CACHING ~/.zen/tmp/$IPFSNODEID/$PLAYER/"
-            mkdir -p ~/.zen/tmp/$IPFSNODEID/$PLAYER/
-            cp -f ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/tmp/$IPFSNODEID/$PLAYER/index.html
+            echo "${ME} : CACHING ~/.zen/tmp/${IPFSNODEID}/$PLAYER/"
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/$PLAYER/
+            cp -f ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/tmp/${IPFSNODEID}/$PLAYER/index.html
 
         ### NO TW !!
         else

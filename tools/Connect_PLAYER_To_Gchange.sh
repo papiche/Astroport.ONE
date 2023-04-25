@@ -14,8 +14,8 @@ PLAYER="$1"
 [[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ${PLAYER} == "" ]] && echo "ERROR PLAYER - EXIT" && exit 1
 PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
-[[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
-[[ $G1PUB == "" ]] && echo "ERROR G1PUB - EXIT" && exit 1
+[[ ${G1PUB} == "" ]] && G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+[[ ${G1PUB} == "" ]] && echo "ERROR G1PUB - EXIT" && exit 1
 
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
@@ -59,8 +59,8 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
         CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
 
-        [[ $CPSEUDO ]] \
-        && echo "♥PARTNER $CPSEUDO" \
+        [[ ${CPSEUDO} ]] \
+        && echo "♥PARTNER ${CPSEUDO}" \
         && echo "$CPUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1CPUB \
         || echo "NO CPUB CESIUM PROFILE"
 
@@ -81,36 +81,36 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
         CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
 
-        [[ $CPSEUDO ]] \
+        [[ ${CPSEUDO} ]] \
         && echo "Ğ1 WALLET " \
-        && echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET \
+        && echo "${G1PUB}" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET \
         || echo "NO WALLET FOR THIS PLAYER"
 
     ## KEEPING ALREADY EXISTING PROFILE DATA
     GPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
-    [[ ! $GPSEUDO || $GPSEUDO == "null" ]] &&  GPSEUDO="$PSEUDO"
+    [[ ! ${GPSEUDO} || ${GPSEUDO} == "null" ]] &&  GPSEUDO="$PSEUDO"
     CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
-    [[ ! $CPSEUDO || $CPSEUDO == "null" ]] &&  CPSEUDO="$PLAYER"
+    [[ ! ${CPSEUDO} || ${CPSEUDO} == "null" ]] &&  CPSEUDO="$PLAYER"
 
     GDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
-    [[ ! $GDESCR || $GDESCR == "null" ]] &&  GDESCR="Astronaute GChange"
+    [[ ! ${GDESCR} || ${GDESCR} == "null" ]] &&  GDESCR="Astronaute GChange"
     CDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.description' 2>/dev/null)
-    [[ ! $CDESCR || $CDESCR == "null" ]] &&  CDESCR="Portefeuille G1PalPer"
+    [[ ! ${CDESCR} || ${CDESCR} == "null" ]] &&  CDESCR="Portefeuille G1PalPer"
 
     GVILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
-    [[ ! $GVILLE || $GVILLE == "null" ]] &&  GVILLE=""
+    [[ ! ${GVILLE} || ${GVILLE} == "null" ]] &&  GVILLE=""
     CVILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.city' 2>/dev/null)
-    [[ ! $CVILLE || $CVILLE == "null" ]] &&  CVILLE=""
+    [[ ! ${CVILLE} || ${CVILLE} == "null" ]] &&  CVILLE=""
 
     GADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.address' 2>/dev/null)
-    [[ ! $GADRESSE || $GADRESSE == "null" ]] &&  GADRESSE=""
+    [[ ! ${GADRESSE} || ${GADRESSE} == "null" ]] &&  GADRESSE=""
     CADRESSE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.address' 2>/dev/null)
-    [[ ! $CADRESSE || $CADRESSE == "null" ]] &&  CADRESSE=""
+    [[ ! ${CADRESSE} || ${CADRESSE} == "null" ]] &&  CADRESSE=""
 
     # POSITION=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.geoPoint')
     # SITE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.socials' 2>/dev/null)
-    echo ">> GCHANGE+ : $GPSEUDO - $GDESCR : $G1PUB ($CPUB) <<"
-    echo ">> CESIUM+ : $CPSEUDO - $CDESCR : $G1PUB <<"
+    echo ">> GCHANGE+ : ${GPSEUDO} - ${GDESCR} : ${G1PUB} ($CPUB) <<"
+    echo ">> CESIUM+ : ${CPSEUDO} - ${CDESCR} : ${G1PUB} <<"
 
 
     ########################################################################
@@ -118,14 +118,14 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     ########################################################################
     #~ if [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/G1WALLET && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
 
-        #~ echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=$G1PUB"
+        #~ echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=${G1PUB}"
 
         #~ ${MY_PATH}/timeout.sh -t 20 \
         #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
         #~ [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
         #~ || cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/gchange.1st.json
 
-        #~ echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=$G1PUB"
+        #~ echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=${G1PUB}"
 
         #~ ${MY_PATH}/timeout.sh -t 20 \
         #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
@@ -143,14 +143,14 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "ht
 
 ########################################################################
         # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
-        COINS=$($MY_PATH/COINScheck.sh $G1PUB | tail -n 1)
-        echo "+++ YOU have $COINS Ğ1 Coins +++"
+        COINS=$($MY_PATH/COINScheck.sh ${G1PUB} | tail -n 1)
+        echo "+++ YOU have ${COINS} Ğ1 Coins +++"
 ########################################################################
 
 ########################################################################
 ########################################################################
 echo "### ${PLAYER}  #################"
-echo "SCANNING - $G1PUB STAR FRIENDS"
+echo "SCANNING - ${G1PUB} STAR FRIENDS"
 echo "########################################################################"
 ################## CHECKING WHO GAVE ME STARS
 ################## BOOTSTRAP LIKES THEM BACK
@@ -178,7 +178,7 @@ do
     FRIENDNS=$(${MY_PATH}/g1_to_ipfs.py ${liking_me})
     echo "==========================="
     echo "${liking_me} IS LIKING ME"
-    echo "TW ? $LIBRA/ipns/$FRIENDNS "
+    echo "TW ? $LIBRA/ipns/${FRIENDNS} "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
     ################################## JAKLIS LIKING_ME stars
@@ -206,17 +206,17 @@ do
     ## DATA EXTRACTION FROM ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
     my_star_level=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.yours.level') || my_star_level=1
     gscore=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.score')
-    myfriendship=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$G1PUB'"))')
+    myfriendship=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'${G1PUB}'"))')
 
     ## OH MY FRIEND !
-    if [[ "$my_star_level" != "null" && "${liking_me}" != "$G1PUB" ]]
+    if [[ "${my_star_level}" != "null" && "${liking_me}" != "${G1PUB}" ]]
     then
         # ADD ${liking_me} TO MY ipfs FRIENDS list
-        echo "LIKING with $my_star_level stars : Friend Ŋ1 SCORE  $gscore "
+        echo "LIKING with ${my_star_level} stars : Friend Ŋ1 SCORE  $gscore "
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}
 
         cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
-        echo "$my_star_level" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level && echo "***** $my_star_level STARS *****"
+        echo "${my_star_level}" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level && echo "***** ${my_star_level} STARS *****"
 
         ## GET FRIEND GCHANGE PROFILE
         echo "GET FRIEND gchange.json"
@@ -236,12 +236,12 @@ do
 
 
         [[ $YOU ]] \
-        && echo "ipfs --timeout 120s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html" \
-        && ipfs --timeout 120s cat  /ipns/$FRIENDNS > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+        && echo "ipfs --timeout 120s cat  /ipns/${FRIENDNS} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html" \
+        && ipfs --timeout 120s cat  /ipns/${FRIENDNS} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
 
         [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] \
-        && echo "curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html $LIBRA/ipns/$FRIENDNS" \
-        && curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/$FRIENDNS"
+        && echo "curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html $LIBRA/ipns/${FRIENDNS}" \
+        && curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/${FRIENDNS}"
 
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
@@ -282,16 +282,16 @@ do
         ## RESET try
         echo 0 > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
         ## ★★★★★ ############################################################################
-            #~ ## liking_me IS A GOOD FRIEND. PLAYER Send $my_star_level COIN
-            #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $my_star_level -p ${liking_me} -c "BRO:star:$my_star_level" -m
+            #~ ## liking_me IS A GOOD FRIEND. PLAYER Send ${my_star_level} COIN
+            #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${my_star_level} -p ${liking_me} -c "BRO:star:${my_star_level}" -m
             #~ [[ ! $? == 0 ]] \
             #~ && echo "PLAYER BROKE. G00D FRIEND. ${liking_me}" \
-            #~ && $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "BRO YOU BROKE" -m "PLEASE REFILL WALLET: ${G1PUB} ~:star:~ $my_star_level stars : Friend Ŋ1 SCORE  $gscore ${liking_me} "
+            #~ && $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "BRO YOU BROKE" -m "PLEASE REFILL WALLET: ${G1PUB} ~:star:~ ${my_star_level} stars : Friend Ŋ1 SCORE  $gscore ${liking_me} "
 
         #~ ############################################################################### ★★★★★
             #~ ## DEFAULT SAME CONFIDENCE LEVEL
-            #~ echo "★ SENDING $my_star_level STAR(s) ★"
-            #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey stars -p $liking_me -n $my_star_level
+            #~ echo "★ SENDING ${my_star_level} STAR(s) ★"
+            #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey stars -p $liking_me -n ${my_star_level}
 
         ######################################
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
@@ -299,15 +299,15 @@ do
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
             cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
 
-                export FRIENDSFEEDS="$ASTRONAUTEFEED\n$FRIENDSFEEDS"
-                echo "$FRIENDSFEEDS" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS
+                export FRIENDSFEEDS="$ASTRONAUTEFEED\n${FRIENDSFEEDS}"
+                echo "${FRIENDSFEEDS}" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS
 
-            echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : FRIENDSFEEDS=" $FRIENDSFEEDS
+            echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : FRIENDSFEEDS=" ${FRIENDSFEEDS}
 
-                export IFRIENDHEAD="<a target='you' href='/ipns/"$FRIENDNS"'>$FRIENDTITLE</a> $IFRIENDHEAD"
-                echo "$IFRIENDHEAD" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD
+                export IFRIENDHEAD="<a target='you' href='/ipns/"${FRIENDNS}"'>$FRIENDTITLE</a> ${IFRIENDHEAD}"
+                echo "${IFRIENDHEAD}" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD
 
-            echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : IFRIENDHEAD=" $IFRIENDHEAD
+            echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : IFRIENDHEAD=" ${IFRIENDHEAD}
 
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
