@@ -11,8 +11,11 @@ MOATS="$2"
 [[ ! ${ASTRONAUTENS} || ! $MOATS ]] && echo "${ME} : ASTRONAUTENS & MOATS needed" && exit 1
 
 start=$(date +%s)
-[[ ! ${IPFSNODEID} ]] && IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n') || ( echo "${ME} : IPFSNODEID MISSING" && exit 1 )
-
+[[ ${IPFSNODEID} == "" ]]; then
+    IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n')
+else
+    echo "${ME} : IPFSNODEID MISSING" && exit 1
+fi
             ## GETTING LAST TW via IPFS
             echo "${ME} : IPFS : ipfs --timeout 120s cat  /ipns/${ASTRONAUTENS}"\
             && ipfs --timeout 360s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/coucou/${MOATS}.astroindex.html
@@ -50,7 +53,8 @@ start=$(date +%s)
             ## IN CACHE
             echo "${ME} : CACHING ~/.zen/tmp/${IPFSNODEID}/$PLAYER/"
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/$PLAYER/
-            cp -f ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/tmp/${IPFSNODEID}/$PLAYER/index.html
+            cp -f ~/.zen/tmp/coucou/${MOATS}.astroindex.html ~/.zen/tmp/${IPFSNODEID}/$PLAYER/index.html \
+            && rm ~/.zen/tmp/coucou/${MOATS}.astroindex.html
 
         ### NO TW !!
         else

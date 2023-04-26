@@ -4,7 +4,7 @@
 # Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
-# COPY ~/Astroport/* files to IPFS
+# COPY ~/Astroport/${PLAYER}/* files to IPFS
 # Publish INDEX ~/.zen/game/players/$PLAYER/ipfs/.*/${PREFIX}ASTRXBIAN
 ######## #### ### ## #
 start=`date +%s`
@@ -22,15 +22,15 @@ YOU=$(myIpfsApi);
 
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
 
-# ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/kodi/vstream/${PREFIX}ASTRXBIAN
+# ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/${PLAYER}/kodi/vstream/${PREFIX}ASTRXBIAN
 # Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from $myIPFS/.$IPFNODEID/
 # Index File Format (could be enhanced) is using Kodi TMDB enhancement
 # https://github.com/Kodi-vStream/venom-xbmc-addons/wiki/Voir-et-partager-sa-biblioth%C3%A8que-priv%C3%A9e#d%C3%A9clarer-des-films
 ########################################################################
-## RUN inotifywait process ~/Astroport/ NEW FILE DETECT
+## RUN inotifywait process ~/Astroport/${PLAYER}/ NEW FILE DETECT
 # /usr/bin/inotifywait -r -e close_write -m /home/$YOU/astroport | while read dir flags file; do ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh "$dir" "$file"; done &
-# mkdir -p ~/Astroport/youtube
-# mkdir -p ~/Astroport/mp3
+# mkdir -p ~/Astroport/${PLAYER}/youtube
+# mkdir -p ~/Astroport/${PLAYER}/mp3
 ########################################################################
 path="$1"
 
@@ -93,11 +93,11 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 ## Indicate IPFSNODEID copying
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
 
-### SOURCE IS ~/Astroport/ !!
-[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/ MERCI" && echo "$er" && exit 1
+### SOURCE IS ~/Astroport/${PLAYER}/ !!
+[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/${PLAYER}/ MERCI" && echo "$er" && exit 1
 
 ### TyPE & type & T = related to ~/astroport location of the infile (mimetype subdivision)
-TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/Astroport/... TyPE(film, youtube, mp3, video, pdf)/ REFERENCE /
+TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/Astroport/${PLAYER}/... TyPE(film, youtube, mp3, video, pdf)/ REFERENCE /
 type=$(echo "$TyPE" | awk '{ print tolower($0) }')
 PREFIX=$(echo "$TyPE" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, Y, M ou Y (all the alaphabet can address a data type
 
@@ -243,21 +243,21 @@ then
 [[ ! $3 ]] && HASHTAG=$(awk -F '~' '{print $2}' <<<$OUTPUT)
 
     # # # # ${MOATS}_ajouter_video.txt DATA # # # #
-    if [[ -f ~/Astroport/${TyPE}/${REFERENCE}/ajouter_video.txt ]]
+    if [[ -f ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/ajouter_video.txt ]]
     then
-        line=$(cat ~/Astroport/${TyPE}/${REFERENCE}/ajouter_video.txt | sed "s/_IPFSREPFILEID_/$IPFSREPFILEID/g" | sed "s/_IPNSKEY_/$IPNS/g" )
+        line=$(cat ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/ajouter_video.txt | sed "s/_IPFSREPFILEID_/$IPFSREPFILEID/g" | sed "s/_IPNSKEY_/$IPNS/g" )
     else
         line="$type;${REFERENCE};$YEAR;$TITLE;$SAISON;;${IPNS};$RES;/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
     fi
     echo "-------------------- ${MOATS}_ajouter_video.txt  -----------------------------"
     echo "$line"
-    echo "UPDATE ~/Astroport/${TyPE}/${REFERENCE}/ajouter_video.txt"
-    echo "$line" > ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt
+    echo "UPDATE ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/ajouter_video.txt"
+    echo "$line" > ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt
 
     echo "----------------- GETTING  METADATA ----------------------"
     CAT=$(echo "$type" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
-    GENRE=$(cat ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
-    YEAR=$(cat ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 3 )
+    GENRE=$(cat ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 6 | sed 's/|/ /g' | jq -r '@csv' | sed 's/ /_/g' | sed 's/,/ /g' | sed 's/\"//g' )
+    YEAR=$(cat ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 3 )
 
     ## Adapt TMDB url for season & tag naming
     [[ $CAT == "Film" ]] \
@@ -266,7 +266,7 @@ then
     && FILETAG="$CapitalGluedTitle"
 
     [[ $CAT == "Serie" ]] && H1="<h1><a target='tmdb' href='https://www.themoviedb.org/tv/"${REFERENCE}"'>"${TITLE}"</a></h1>" \
-    && SAISON=$(cat ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2) \
+    && SAISON=$(cat ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MOATS}_ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2) \
     && FILETAG=$(echo "$CapitalGluedTitle" | cut -d '_' -f 1)
 
     [[ $CAT == "Youtube" ]] \
@@ -276,8 +276,8 @@ then
     echo $GENRE $SAISON
 
     ## Add screenshot
-    [[ -f $HOME/Astroport/${TyPE}/${REFERENCE}/screen.png ]] \
-    && SCREEN=$(ipfs add -q "$HOME/Astroport/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
+    [[ -f $HOME/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/screen.png ]] \
+    && SCREEN=$(ipfs add -q "$HOME/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/screen.png" | tail -n 1)
 
 
     if [[ $(echo "$MIME" | grep 'video') ]]; then
@@ -300,8 +300,8 @@ then
     fi
 
     ## Archive previous dragdrop.json
-    [[ -s ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json ]] \
-    && cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json ~/Astroport/${TyPE}/${REFERENCE}/${MOATS}.${MEDIAKEY}.dragdrop.json
+    [[ -s ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json ]] \
+    && cp ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MOATS}.${MEDIAKEY}.dragdrop.json
 
     echo "## Creation json tiddler"
     echo '[
@@ -332,22 +332,22 @@ then
     "ipns": "'/ipns/${IPNS}'",
     "tmdb": "'${REFERENCE}'",
     "modified": "'${MOATS}'",
-    "tags": "'${TAGS}'" ' > ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+    "tags": "'${TAGS}'" ' > ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
     [[ ${CANON} != "" ]] && echo  ',
-    "_canonical_uri": "'${CANON}'"' >> ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+    "_canonical_uri": "'${CANON}'"' >> ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
     echo '
   }
 ]
-' >> ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+' >> ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
-echo "~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json copy into Station Balise"
+echo "~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json copy into Station Balise"
 
 #############################################################################
 ## ARCHIVE FOR IPFSNODEID CACHE SHARING (APPNAME=KEY)
 mkdir -p "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/"
-cp ~/Astroport/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/tiddler.json"
+cp ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/tiddler.json"
 #############################################################################
 
 ## TODO : Do we keep that ?

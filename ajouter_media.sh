@@ -220,6 +220,8 @@ case ${CAT} in
 ########################################################################
     vlog)
 
+    mkdir -p ~/Astroport/${PLAYER}/vlog
+
     espeak "Ready to record your webcam"
 
     [ ! $2 ] && zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
@@ -241,6 +243,8 @@ case ${CAT} in
 # |___/
 ########################################################################
     youtube)
+
+    mkdir -p ~/Astroport/${PLAYER}/youtube
 
     espeak "youtube : video copying"
 
@@ -294,17 +298,17 @@ espeak "OK $TITLE copied"
 MEDIAID="$REVSOURCE${YID}"
 MEDIAKEY="YOUTUBE_${MEDIAID}"
 
-FILE_PATH="$HOME/Astroport/youtube/$MEDIAID"
+FILE_PATH="$HOME/Astroport/${PLAYER}/youtube/$MEDIAID"
 mkdir -p ${FILE_PATH} && mv -f ${YTEMP}/* ${FILE_PATH}/
 
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE_PATH}/${FILE_NAME}" | cut -d "x" -f 2)
 RES=${FILE_RES%?}0p
 
-## CREATE "~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt" and video.json
+## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt" and video.json
 URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
 
 ## KEEPS KODI COMPATIBILITY (BROKEN astroport.py !! ) : TODO DEBUG
-echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 
 # _IPFSREPFILEID_ is replaced later
 
@@ -322,6 +326,8 @@ rm -Rf ${YTEMP}
 #~
 
     web)
+
+    mkdir -p ~/Astroport/${PLAYER}/web
 
 # URL="https://discuss.ipfs.io/t/limit-ipfs-get-command/3573/6"
         espeak "Mirror web site"
@@ -354,7 +360,7 @@ rm -Rf ${YTEMP}
 
         MEDIAID="WEB_${NIAMOD}" # MEDIAID=WEB_io.ipfs.discuss.
 
-        FILE_PATH="$HOME/Astroport/web/$MEDIAID";  # FILE_PATH=/home/fred/Astroport/web/WEB_io.ipfs.discuss.
+        FILE_PATH="$HOME/Astroport/${PLAYER}/web/$MEDIAID";  # FILE_PATH=/home/fred/Astroport/${PLAYER}/web/WEB_io.ipfs.discuss.
 
             start=`date +%s`
 
@@ -385,7 +391,7 @@ rm -Rf ${YTEMP}
             ipfs name publish -k $MEDIAKEY /ipfs/$IPFSREPFILEID   # PUBLISH $MEDIAKEY
 
             ## CREATE ajouter_video.txt
-            echo "web;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$IPNSKEY;${RES};/ipfs/$IPFSREPFILEID" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+            echo "web;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$IPNSKEY;${RES};/ipfs/$IPFSREPFILEID" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 
             ## DURATION LOG
             end=`date +%s`
@@ -420,7 +426,7 @@ echo '[
     "tags": "'ipfs G1Web $PLAYER webmaster@$DOMAIN'"
   }
 ]
-' > ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
+' > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
 
 #        zenity --warning --width ${large} --text "Copie $URL dans ${FILE_PATH}/ et /ipns/$IPNSKEY"
 
@@ -439,6 +445,8 @@ echo '[
                 #~ |___/
 
     pdf)
+
+        mkdir -p ~/Astroport/${PLAYER}/pdf
 
         espeak "Importing file or web page to P D F"
         ## EVOLVE TO ARTICLE
@@ -488,10 +496,10 @@ echo '[
 
         MEDIAID="$REVSOURCE$(echo "${TITLE}" | detox --inline)"
         MEDIAKEY="PDF_${MEDIAID}"
-        FILE_PATH="$HOME/Astroport/pdf/$MEDIAID"
+        FILE_PATH="$HOME/Astroport/${PLAYER}/pdf/$MEDIAID"
         mkdir -p ${FILE_PATH} && mv ~/.zen/tmp/output.pdf ${FILE_PATH}/${FILE_NAME}
 
-        echo "pdf;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+        echo "pdf;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 
         espeak 'Document ready'
 
@@ -508,9 +516,11 @@ echo '[
 ########################################################################
     mp3)
 
+        mkdir -p ~/Astroport/${PLAYER}/mp3
+
         [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
         espeak "OK."
-        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "$HOME/Astroport/mp3/%(autonumber)s_%(title)s.%(ext)s" "$URL"
+        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "$HOME/Astroport/${PLAYER}/mp3/%(autonumber)s_%(title)s.%(ext)s" "$URL"
         espeak "Ready. check your home Astoport mp3 directory"
 
         break
@@ -526,6 +536,9 @@ echo '[
 #
 ########################################################################
     film | serie)
+
+    mkdir -p ~/Astroport/${PLAYER}/film
+    mkdir -p ~/Astroport/${PLAYER}/serie
 
     espeak "please select your file"
 
@@ -552,15 +565,15 @@ TMTL=$(echo $MEDIAID | cut -d '-' -f 2-) # contient la fin du nom de fichier tmd
 
 if ! [[ "$CMED" =~ ^[0-9]+$ ]]
 then
-        zenity --warning --width ${large} --text "Vous devez renseigner un numéro! Merci de recommencer... Seules les vidéos référencées sur The Movie Database sont acceptées." && exit 1
+        zenity --warning --width ${large} --text "Vous devez renseigner un numéro! Merci de recommencer... Seules les vidéos référencées sur The Movie Database sont acceptées. Sinon importez en mode 'Video'" && exit 1
 fi
 MEDIAID=$CMED
 MEDIAKEY="TMDB_$MEDIAID"
 
 # VIDEO TITLE
 ### CHECK IF PREVIOUS ajouter_video (usefull for Serie)
-[[ -f  ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 4) \
+[[ -f  ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
+&& PRE=$(cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 4) \
 || PRE=${FILE_TITLE}
 ###
 TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="${PRE}")
@@ -569,8 +582,8 @@ TITLE=$(echo "${TITLE}" | detox --inline ) # Clean TITLE (NO ;)
 
 # VIDEO YEAR
 ### CHECK IF PREVIOUS ajouter_video (Serie case)
-[[ -f  ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 3) \
+[[ -f  ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
+&& PRE=$(cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 3) \
 || PRE=""
 YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la vidéo. Exemple: 1985" --entry-text="${PRE}")
 
@@ -580,8 +593,8 @@ RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
 
 # VIDEO SEASON or SAGA
 ### CHECK IF PREVIOUS ajouter_video (Serie case)
-[[ -f  ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2)
+[[ -f  ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
+&& PRE=$(cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2)
 [[ "${CAT}" == "serie" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saison" --text "Indiquez SAISON et EPISODE. Exemple: S02E05" --entry-text="${PRE}")
 [[ "${CAT}" == "film" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saga" --text "Indiquez une SAGA (optionnel). Exemple: James Bond" --entry-text="")
 [[ $SAISON ]] && SAISON="_$SAISON"
@@ -643,18 +656,18 @@ GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
     && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4" \
     && espeak "M P 4 ready"
 
-mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
+mkdir -p ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/
 
-[[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
-&& cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" \
+[[ ! -s "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
+&& cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" \
 && [ $? != 0 ] \
         && zenity --warning --width ${large} --text "(☓‿‿☓) ${FILE_PATH}/${FILE_NAME} vers ~/Astroport - EXIT -" && exit 1
 
 FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
 
-## CREATE "~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt"
+## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt"
 URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
-echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
+echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 # _IPFSREPFILEID_ is replaced later
 #######################################################
 ######## NOT CREATING TIDDLER JSON... SWALLOW IS POST-PROCESSED
@@ -671,6 +684,8 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 #                           TIMESTAMP INDEX
 
     video)
+
+    mkdir -p ~/Astroport/${PLAYER}/video
 
     espeak "Add your personnal video in TW"
 
@@ -700,15 +715,15 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
 
     ## video_timestamp INDEX
     MEDIAID="$(date -u +%s%N | cut -b1-13)"
-    mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
+    mkdir -p ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/
     MEDIAKEY="VIDEO_${MEDIAID}"
 
     ## CREATE SIMPLE JSON (EXPERIENCE WITH it)
-    jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/Astroport/${CAT}/${MEDIAID}/video.json
+    jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json
 
     ## MOVE FILE FOR new_file_in_astroport POST TREATMENT
-    [[ ! -s "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
-    && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
+    [[ ! -s "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
+    && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
 
     FILE_NAME="${TITLE}.${FILE_EXT}"
 
@@ -750,50 +765,50 @@ fi
 ###################################
 ### MOVING FILE TO ~/astroport ####
 ###################################
-mkdir -p ~/Astroport/${CAT}/${MEDIAID}/
-mv ~/.zen/tmp/screen.png ~/Astroport/${CAT}/${MEDIAID}/screen.png
+mkdir -p ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/
+mv ~/.zen/tmp/screen.png ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/screen.png
 
 ########################################################################
 # ADD $FILE to IPFS / ASTROPORT / KODI
-echo "(♥‿‿♥) new_file_in_astroport.sh \"$HOME/Astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" "$3"
-[[ -f ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt ]] && cat ~/Astroport/${CAT}/${MEDIAID}/ajouter_video.txt
-# LOG NOISE # [[ -f ~/Astroport/${CAT}/${MEDIAID}/video.json ]] && cat ~/Astroport/${CAT}/${MEDIAID}/video.json
+echo "(♥‿‿♥) new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" "$3"
+[[ -f ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] && cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
+# LOG NOISE # [[ -f ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json ]] && cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json
 ########################################################################
-## CREATION DU FICHIER ~/Astroport/Add_${MEDIAKEY}_script.sh
+## CREATION DU FICHIER ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 ########################################################################
 ### AJOUT DANS IPFS  #######################################################
 ########################################################################
 ####################################new_file_in_astroport.sh##################
 ########################################################################
-if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
+if [[ ! -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     [[ "$CAT" == "film" || "$CAT" == "serie" ]] && CHOICE="TMDB"
 
     timestamp=$(date -u +%s%N | cut -b1-13)
 
     ## CREATE BASH SCRIPT
 
-    echo "MEDIAKEY=${MEDIAKEY}" > ~/Astroport/Add_${MEDIAKEY}_script.sh
+    echo "MEDIAKEY=${MEDIAKEY}" > ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
     ## ACTIVATE h265 conversion .?
     #[[ $CHOICE == "TMDB" ]] && echo "echo \"Encoder ${FILE_NAME} en h265 avant import ? Tapez sur ENTER.. Sinon saisissez qqch avant...\"
     #reponse=\$1
     #[[ ! \$reponse ]] && read reponse
     #if [[ ! \$reponse ]]; then
-    #    ffmpeg -i \"$HOME/Astroport/${CAT}/${MEDIAID}/${FILE_NAME}\" -vcodec libx265 -crf 28 $HOME/Astroport/${MEDIAID}.mp4
-    #    mv \"$HOME/Astroport/${CAT}/${MEDIAID}/${FILE_NAME}\" \"$HOME/Astroport/${CAT}/${MEDIAID}/${FILE_NAME}.old\"
-    #    mv $HOME/Astroport/${MEDIAID}.mp4 \"$HOME/Astroport/${CAT}/${MEDIAID}/${FILE_NAME}.mp4\"
-    #    ${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}.mp4\"
-    #else" >> ~/Astroport/Add_${MEDIAKEY}_script.sh
+    #    ffmpeg -i \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}\" -vcodec libx265 -crf 28 $HOME/Astroport/${PLAYER}/${MEDIAID}.mp4
+    #    mv \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}\" \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}.old\"
+    #    mv $HOME/Astroport/${PLAYER}/${MEDIAID}.mp4 \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}.mp4\"
+    #    ${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}.mp4\"
+    #else" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
     # $3 is the G1PUB of the PLAYER
-    echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\"" >> ~/Astroport/Add_${MEDIAKEY}_script.sh
+    echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\"" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
-    #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/Astroport/Add_${MEDIAKEY}_script.sh
+    #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
-    echo "mv ~/Astroport/Add_${MEDIAKEY}_script.sh \"$HOME/Astroport/${FILE_NAME}_DONE.sh\"
-    " >> ~/Astroport/Add_${MEDIAKEY}_script.sh
+    echo "mv ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh \"$HOME/Astroport/${PLAYER}/${FILE_NAME}_DONE.sh\"
+    " >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
-    chmod +x ~/Astroport/Add_${MEDIAKEY}_script.sh
+    chmod +x ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
     ########################################################################
     echo "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
@@ -802,7 +817,7 @@ if [[ ! -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     espeak "Adding $CAT to I P F S. Please Wait"
 
     ## RUN BASH SCRIPT
-    bash ~/Astroport/Add_${MEDIAKEY}_script.sh "noh265"
+    bash ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh "noh265"
 
     ## OR PUT IN YOUR QUEUE
     ## CREATING TIMELINE FOR BATCH TREATMENT
@@ -817,7 +832,7 @@ fi
 #######################################
 ########################## TIDDLER JSON READY
 #######################################
-if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
+if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
     espeak "Updating T W"
 
     ########################################################################
@@ -842,7 +857,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
 
     echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
     tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-                    --import ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
+                    --import ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
                     --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
@@ -862,7 +877,7 @@ if [[ -s ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
             && sed -i "s~$CURCHAIN~$ZCHAIN~g" ~/.zen/tmp/newindex.html
             ################################################
 
-        mv ~/Astroport/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ~/Astroport/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
+        mv ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
         espeak "I P N S Publishing. Please wait..."
         cp ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \

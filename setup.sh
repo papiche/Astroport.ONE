@@ -26,13 +26,13 @@ mkdir -p ~/.zen/tmp
 
 ########################################################################
 # CREATE ~/astroport FILESYSTEM GATE
-mkdir -p ~/Astroport/film
-mkdir -p ~/Astroport/serie
-mkdir -p ~/Astroport/anime
-mkdir -p ~/Astroport/page
-mkdir -p ~/Astroport/web
-mkdir -p ~/Astroport/video
-echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME' > ~/Astroport/ajouter_video.modele.txt
+mkdir -p ~/Astroport/${PLAYER}/film
+mkdir -p ~/Astroport/${PLAYER}/serie
+mkdir -p ~/Astroport/${PLAYER}/anime
+mkdir -p ~/Astroport/${PLAYER}/page
+mkdir -p ~/Astroport/${PLAYER}/web
+mkdir -p ~/Astroport/${PLAYER}/video
+echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME' > ~/Astroport/${PLAYER}/ajouter_video.modele.txt
 
 
 #######################################################################

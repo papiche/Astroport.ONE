@@ -6,8 +6,8 @@
 ########################################################################
 ### TAKE A G1Video tiddlers JSON Flux and make a m3u playlist
 ###############################################
-# USE : $IPFSGW/ipns/$VOEUNS/$PLAYER.tiddlers.json > ~/Astroport/playlist.m3u
-## && vlc ~/Astroport/playlist.m3u
+# USE : $IPFSGW/ipns/$VOEUNS/$PLAYER.tiddlers.json > ~/Astroport/${PLAYER}/playlist.m3u
+## && vlc ~/Astroport/${PLAYER}/playlist.m3u
 ###############################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -29,7 +29,7 @@ IPFSGW="$2"
 
 [[ ! $VIDEOJSONTIDDLERSURL ]] \
 && echo "Please provide WISHKEY URL : G1Video JSON Flux URL. TRY" \
-&& echo "$MY_PATH/$ME $IPFSGW/ipns/k51qzi5uqu5dkb5rpiwbu1waex0ve41mi3k3935712z6nhrdesicg2te53glp1/fred@g1sms.fr.tiddlers.json > ~/Astroport/playlist.m3u" \
+&& echo "$MY_PATH/$ME $IPFSGW/ipns/k51qzi5uqu5dkb5rpiwbu1waex0ve41mi3k3935712z6nhrdesicg2te53glp1/fred@g1sms.fr.tiddlers.json > ~/Astroport/${PLAYER}/playlist.m3u" \
 && exit 1
 
 JT=$(echo $VIDEOJSONTIDDLERSURL | rev | cut -d '/' -f 1 | rev)

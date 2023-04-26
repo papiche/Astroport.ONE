@@ -1,0 +1,356 @@
+<html>
+<head>
+<script>
+<!--
+
+function run() {
+
+let myStrSoundStimulation = document.getElementById('LETTER').value
+  myStrSoundStimulation = myStrSoundStimulation
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '223.8, ')
+  .replace(/a/g, '265.6, ')
+  .replace(/s/g, '313.3, ')
+  .replace(/p/g, '343.2, ')
+  .replace(/v/g, '349.2, ')
+  .replace(/t/g, '355.1, ')
+  .replace(/c/g, '361.1, ')
+  .replace(/i/g, '391.0, ')
+  .replace(/l/g, '391.0, ')
+  .replace(/n/g, '393.8, ')
+  .replace(/d/g, '396.8, ')
+  .replace(/q/g, '435.7, ')
+  .replace(/k/g, '435.8, ')
+  .replace(/e/g, '438.6, ')
+  .replace(/m/g, '444.8, ')
+  .replace(/h/g, '462.5, ')
+  .replace(/f/g, '492.4, ')
+  .replace(/r/g, '519.3, ')
+  .replace(/y/g, '540.1, ')
+  .replace(/w/g, '608.8, ')
+  .replace(/S/g, '545.7, ')
+  .replace(/T/g, '587.5, ')
+soundStimulationFrequencies.value = myStrSoundStimulation;
+
+let myStrTemperedNoteStimulation = document.getElementById('LETTER').value
+  myStrTemperedNoteStimulation = myStrTemperedNoteStimulation
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '220, ')
+  .replace(/a/g, '261.6, ')
+  .replace(/s/g, '329.6, ')
+  .replace(/p/g, '349.2, ')
+  .replace(/v/g, '349.2, ')
+  .replace(/t/g, '349.2, ')
+  .replace(/c/g, '349.2, ')
+  .replace(/i/g, '392, ')
+  .replace(/l/g, '392, ')
+  .replace(/n/g, '392, ')
+  .replace(/d/g, '392, ')
+  .replace(/q/g, '440, ')
+  .replace(/k/g, '440, ')
+  .replace(/e/g, '440, ')
+  .replace(/m/g, '440, ')
+  .replace(/h/g, '466.2, ')
+  .replace(/f/g, '493.9, ')
+  .replace(/r/g, '523.3, ')
+  .replace(/y/g, '523.3, ')
+  .replace(/w/g, '587.3, ')
+temperedNoteStimulationFrequencies.value = myStrTemperedNoteStimulation;
+
+let myStrScalarStimulation = document.getElementById('LETTER').value
+  myStrScalarStimulation = myStrScalarStimulation
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '14321.9, ')
+  .replace(/a/g, '16996.7, ')
+  .replace(/s/g, '20049.2, ')
+  .replace(/p/g, '21964.6, ')
+  .replace(/v/g, '22350.8, ')
+  .replace(/t/g, '22725.8, ')
+  .replace(/c/g, '23113.1, ')
+  .replace(/i/g, '25024.7, ')
+  .replace(/l/g, '25024.7, ')
+  .replace(/n/g, '25206.0, ')
+  .replace(/d/g, '25392.9, ')
+  .replace(/q/g, '27882.6, ')
+  .replace(/k/g, '27890.3, ')
+  .replace(/e/g, '28069.6, ')
+  .replace(/m/g, '28466.4, ')
+  .replace(/h/g, '29601.6, ')
+  .replace(/f/g, '31515.1, ')
+  .replace(/r/g, '33234.0, ')
+  .replace(/y/g, '34567.6, ')
+  .replace(/w/g, '38963.2, ')
+  .replace(/S/g, '34924.3, ')
+  .replace(/T/g, '37599.1, ')
+scalarStimulationFrequencies.value = myStrScalarStimulation;
+
+let myStrXmStimulation = document.getElementById('LETTER').value
+  myStrXmStimulation = myStrXmStimulation
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '916602.9, ')
+  .replace(/a/g, '1087786.8, ')
+  .replace(/s/g, '1283146.4, ')
+  .replace(/p/g, '1405734.6, ')
+  .replace(/v/g, '1430398.7, ')
+  .replace(/t/g, '1454452.4, ')
+  .replace(/c/g, '1479238.6, ')
+  .replace(/i/g, '1601582.6, ')
+  .replace(/l/g, '1601582.6, ')
+  .replace(/n/g, '1613182.1, ')
+  .replace(/d/g, '1625147.9, ')
+  .replace(/q/g, '1784488.0, ')
+  .replace(/k/g, '1784976.4, ')
+  .replace(/e/g, '1796453.8, ')
+  .replace(/m/g, '1821850.6, ')
+  .replace(/h/g, '1894499.9, ')
+  .replace(/f/g, '2016966.0, ')
+  .replace(/r/g, '2126977.9, ')
+  .replace(/y/g, '2212325.6, ')
+  .replace(/w/g, '2493643.5, ')
+  .replace(/S/g, '2235158.3, ')
+  .replace(/T/g, '2406342.1, ')
+xmStimulationFrequencies.value = myStrXmStimulation;
+
+let myStrGxStimulation = document.getElementById('LETTER').value
+  myStrGxStimulation = myStrGxStimulation
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '7332823.4, ')
+  .replace(/a/g, '8702294.3, ')
+  .replace(/s/g, '10265171.3, ')
+  .replace(/p/g, '11245876.6, ')
+  .replace(/v/g, '11443189.8, ')
+  .replace(/t/g, '11635619.1, ')
+  .replace(/c/g, '11833909.1, ')
+  .replace(/i/g, '12812660.8, ')
+  .replace(/l/g, '12812660.8, ')
+  .replace(/n/g, '12905456.6, ')
+  .replace(/d/g, '13001182.8, ')
+  .replace(/q/g, '14275904.3, ')
+  .replace(/k/g, '14279811.5, ')
+  .replace(/e/g, '14371630.6, ')
+  .replace(/m/g, '14574804.6, ')
+  .replace(/h/g, '15155999.4, ')
+  .replace(/f/g, '16135727.9, ')
+  .replace(/r/g, '17015823.0, ')
+  .replace(/y/g, '17698604.9, ')
+  .replace(/w/g, '19949147.8, ')
+  .replace(/S/g, '17881266.2, ')
+  .replace(/T/g, '19250737.1, ')
+gxStimulationFrequencies.value = myStrGxStimulation;
+
+let myStrSoundInhibition = document.getElementById('LETTER').value
+  myStrSoundInhibition= myStrSoundInhibition
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '707.1, ')
+  .replace(/a/g, '595.9, ')
+  .replace(/s/g, '505.1, ')
+  .replace(/p/g, '461.1, ')
+  .replace(/v/g, '453.1, ')
+  .replace(/t/g, '445.6, ')
+  .replace(/c/g, '438.2, ')
+  .replace(/i/g, '404.7, ')
+  .replace(/l/g, '404.7, ')
+  .replace(/n/g, '401.8, ')
+  .replace(/d/g, '398.8, ')
+  .replace(/q/g, '363.2, ')
+  .replace(/k/g, '363.1, ')
+  .replace(/e/g, '360.8, ')
+  .replace(/m/g, '355.8, ')
+  .replace(/h/g, '342.1, ')
+  .replace(/f/g, '321.4, ')
+  .replace(/r/g, '304.7, ')
+  .replace(/y/g, '293.0, ')
+  .replace(/w/g, '259.9, ')
+  .replace(/S/g, '290.3, ')
+  .replace(/T/g, '270.2, ')
+soundInhibitionFrequencies.value = myStrSoundInhibition;
+
+let myStrTemperedNoteInhibition = document.getElementById('LETTER').value
+  myStrTemperedNoteInhibition = myStrTemperedNoteInhibition
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '698.4, ')
+  .replace(/a/g, '587.3, ')
+  .replace(/s/g, '466.2, ')
+  .replace(/p/g, '440, ')
+  .replace(/v/g, '440, ')
+  .replace(/t/g, '440, ')
+  .replace(/c/g, '440, ')
+  .replace(/i/g, '392, ')
+  .replace(/l/g, '392, ')
+  .replace(/n/g, '392, ')
+  .replace(/d/g, '392, ')
+  .replace(/q/g, '349.2, ')
+  .replace(/k/g, '349.2, ')
+  .replace(/e/g, '349.2, ')
+  .replace(/m/g, '349.2, ')
+  .replace(/h/g, '329.6, ')
+  .replace(/f/g, '311.1, ')
+  .replace(/r/g, '293.7, ')
+  .replace(/y/g, '293.7, ')
+  .replace(/w/g, '261.6, ')
+temperedNoteInhibitionFrequencies.value = myStrTemperedNoteInhibition;
+
+let myStrScalarInhibition = document.getElementById('LETTER').value
+  myStrScalarInhibition = myStrScalarInhibition
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '45257.2, ')
+  .replace(/a/g, '38135.1, ')
+  .replace(/s/g, '32329.0, ')
+  .replace(/p/g, '29509.8, ')
+  .replace(/v/g, '29000.9, ')
+  .replace(/t/g, '28521.3, ')
+  .replace(/c/g, '28043.4, ')
+  .replace(/i/g, '25901.2, ')
+  .replace(/l/g, '25901.2, ')
+  .replace(/n/g, '25714.9, ')
+  .replace(/d/g, '25525.6, ')
+  .replace(/q/g, '23246.4, ')
+  .replace(/k/g, '23240.0, ')
+  .replace(/e/g, '23091.5, ')
+  .replace(/m/g, '22769.6, ')
+  .replace(/h/g, '21896.5, ')
+  .replace(/f/g, '20567.0, ')
+  .replace(/r/g, '19503.2, ')
+  .replace(/y/g, '18750.8, ')
+  .replace(/w/g, '16635.4, ')
+  .replace(/S/g, '18579.1, ')
+  .replace(/T/g, '17291.9, ')
+scalarInhibitionFrequencies.value = myStrScalarInhibition;
+
+let myStrXmInhibition = document.getElementById('LETTER').value
+  myStrXmInhibition = myStrXmInhibition
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '2896460.8, ')
+  .replace(/a/g, '2440647.8, ')
+  .replace(/s/g, '2069058.0, ')
+  .replace(/p/g, '1888624.2, ')
+  .replace(/v/g, '1856059.0, ')
+  .replace(/t/g, '1825363.6, ')
+  .replace(/c/g, '1794777.6, ')
+  .replace(/i/g, '1657675.6, ')
+  .replace(/l/g, '1657675.6, ')
+  .replace(/n/g, '1645756.2, ')
+  .replace(/d/g, '1633638.7, ')
+  .replace(/q/g, '1487768.1, ')
+  .replace(/k/g, '1487361.0, ')
+  .replace(/e/g, '1477858.4, ')
+  .replace(/m/g, '1457256.9, ')
+  .replace(/h/g, '1401374.8, ')
+  .replace(/f/g, '1316286.1, ')
+  .replace(/r/g, '1248205.0, ')
+  .replace(/y/g, '1200051.4, ')
+  .replace(/w/g, '1064668.8, ')
+  .replace(/S/g, '1189063.3, ')
+  .replace(/T/g, '1106682.1, ')
+xmInhibitionFrequencies.value = myStrXmInhibition;
+
+let myStrGXInhibition = document.getElementById('LETTER').value
+  myStrGXInhibition = myStrGXInhibition
+  .replace(/[0123456789 \n]/g, '')
+  .replace(/g/g, '23171686.0, ')
+  .replace(/a/g, '19525182.1, ')
+  .replace(/s/g, '16552464.3, ')
+  .replace(/p/g, '15108993.9, ')
+  .replace(/v/g, '14848471.8, ')
+  .replace(/t/g, '14602908.6, ')
+  .replace(/c/g, '14358221.0, ')
+  .replace(/i/g, '13261404.8, ')
+  .replace(/l/g, '13261404.8, ')
+  .replace(/n/g, '13166049.6, ')
+  .replace(/d/g, '13069109.5, ')
+  .replace(/q/g, '11902144.8, ')
+  .replace(/k/g, '11898888.2, ')
+  .replace(/e/g, '11822867.3, ')
+  .replace(/m/g, '11658055.6, ')
+  .replace(/h/g, '11210998.1, ')
+  .replace(/f/g, '10530289.2, ')
+  .replace(/r/g, '9985639.9, ')
+  .replace(/y/g, '9600411.0, ')
+  .replace(/w/g, '8517350.4, ')
+  .replace(/S/g, '9512506.3, ')
+  .replace(/T/g, '8853456.4, ')
+gxInhibitionFrequencies.value = myStrGXInhibition;
+}
+
+//-->
+</script>
+
+<style>
+body {
+  background: #00B4DB;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to bottom, #0083B0, #00B4DB);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to bottom, #0083B0, #00B4DB); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  font-style: sans,arial;
+  margin-left: 20%;
+  color: #ffffff;
+  font-family: 'Inconsolata', monospace;
+  font-size: 19px;
+  margin-top: 50px;
+}
+
+a:link, a:visited {
+  color: white;
+  text-decoration: none;
+}
+</style>
+
+
+</head>
+<title>Protein conversion to frequencies</title>
+<body>
+<b><center>Protein conversion to frequencies</center></b>
+<br>
+<br>
+<br>This page translates Amino Acid sequence to Frequencies<br>
+<br>Paste a protein like this example in the first area below 
+<br>&nbsp"vitamin D (1,25- dihydroxyvitamin D3) receptor"
+<br>&nbsp(https://www.ncbi.nlm.nih.gov/protein/BAH02291.1)<br>
+<br>&nbsp&nbsp&nbsp&nbsp&nbsp1 meamaastsl pdpgdfdrnv pricgvcgdr atgfhfnamt cegckgffrr smkrkalftc
+<br>&nbsp&nbsp&nbsp&nbsp61 pfngdcritk dnrrhcqacr lkrcvdigmm kefiltdeev qrkremilkr keeealkdsl
+<br>&nbsp&nbsp&nbsp121 rpklseeqqr iiailldahh ktydptysdf cqfrppvrvn dgggshpsrp nsrhtpsfsg
+<br>&nbsp&nbsp&nbsp181 dsssscsdhc itssdmmdss sfsnldlsee dsddpsvtle lsqlsmlphl adlvsysiqk
+<br>&nbsp&nbsp&nbsp241 vigfakmipg frdltsedqi vllkssaiev imlrsnesft mddmswtcgn qdykyrvsdv
+<br>&nbsp&nbsp&nbsp301 tkaghsleli eplikfqvgl kklnlheeeh vllmaicivs pdrpgvqdaa lieaiqdrls
+<br>&nbsp&nbsp&nbsp361 ntlqtyircr hpppgshlly akmiqkladl rslneehskq yrclsfqpey smkltplvle
+<br>&nbsp&nbsp&nbsp421 vfgneis
+<br>
+<br>then clic on the "Convert to frequencies!" button<br>
+<br>then copy the desired result to Spooky software (File\Create program)
+<br>chosen from "sound|scalar|XM|GX" range of frequencies and
+<br>chosen from "stimulation|inhibition" mode.<br><br>
+<br>Copy Amino Acid protein here:<br>
+   <textarea name="LETTER" id="LETTER"  rows="5" cols="100"></textarea>
+<br><br><input type="button" onclick="run()" value="Convert to frequencies!" />
+
+<br><br><br><br>Amino acid converted for stimulation sound frequencies:<br>
+   <textarea name="soundStimulationFrequencies" id="soundStimulationFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for stimulation tempered note frequencies:<br>
+   <textarea name="temperedNoteStimulationFrequencies" id="temperedNoteStimulationFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for stimulation scalar frequencies:<br>
+   <textarea name="scalarStimulationFrequencies" id="scalarStimulationFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for stimulation XM frequencies:<br>
+   <textarea name="xmStimulationFrequencies" id="xmStimulationFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for stimulation GX frequencies:<br>
+   <textarea name="gxStimulationFrequencies" id="gxStimulationFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for inhibition sound frequencies:<br>
+   <textarea name="soundInhibitionFrequencies" id="soundInhibitionFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for inhibition tempered note frequencies:<br>
+   <textarea name="temperedNoteInhibitionFrequencies" id="temperedNoteInhibitionFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for inhibition scalar frequencies:<br>
+   <textarea name="scalarInhibitionFrequencies" id="scalarInhibitionFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for inhibition XM frequencies:<br>
+   <textarea name="xmInhibitionFrequencies" id="xmInhibitionFrequencies" rows="5" cols="100"></textarea>
+
+<br><br><br><br>Amino acid converted for inhibition GX frequencies:<br>
+   <textarea name="gxInhibitionFrequencies" id="gxInhibitionFrequencies" rows="5" cols="100"></textarea>
+
+</body>
+</html> 

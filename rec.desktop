@@ -1,0 +1,7 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=REC
+Exec=/home/_USER_/.zen/Astroport.ONE/ajouter_media.sh
+Icon=/home/_USER_/.zen/Astroport.ONE/rec.png
+Type=Application
+Categories=Utility
