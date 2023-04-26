@@ -83,14 +83,15 @@ Une fois votre Station Astroport démarrée:
 
 ⚠ ASTROPORT NETCAT SYSTEM ⚠
 
-Astroport utilise l'outil réseau le plus simple "netcat". Il s'agit d'un moteur STEP donnant accès à une "API BASH".
-Notre programme est conçu pour fonctionner dans des conditions de réseau local.
-Le premier HTTP GET envoie la commande, mais l'APP doit obtenir le PORT de réponse.
+Astroport utilise l'outil réseau le plus simple "netcat".
+Il s'agit d'un moteur STEP donnant accès à une "API BASH".
+Les requêtes se font en HTTP GET.
+Vous effectuez un regexp sur "url=ADRESSE:PORT" ou (◕‿‿◕) pour y obtenir le résultat.
 
-Voici comment procéder en BASH ou JAVASCRIPT
+En voici des exemples.
 
 ## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
-### CLI
+### CLI (BASH)
 ```
     # PLAYER COPIER "_URL_" FAVORITE
     curl -so ~/.zen/tmp/${MOATS}/astro.port "http://astroport.localhost:1234/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
