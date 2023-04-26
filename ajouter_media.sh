@@ -103,7 +103,7 @@ if [ $URL ]; then
 
     echo "URL: $URL"
     REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [[ ${CHOICE} == "" ]] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3 Web) || IMPORT="$CHOICE"
+    [[ ${CHOICE} == "" ]] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3) || IMPORT="$CHOICE"
     [[ $IMPORT == "" ]] && espeak "No choice made. Exit" && exit 1
     [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
     CHOICE="$IMPORT"
@@ -192,7 +192,7 @@ espeak "$COINS JUNE Ready !"
 
 ########################################################################
 # CHOOSE CATEGORY (remove anime, not working!)
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie Web PDF Youtube MP3)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie PDF Youtube MP3)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
