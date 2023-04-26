@@ -249,7 +249,7 @@ case ${CAT} in
     espeak "youtube : video copying"
 
 YTURL="$URL"
-[ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 300 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
+[ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 420 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
 [[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
 
 REVSOURCE="$(echo "$YTURL" | awk -F/ '{print $3}' | rev)_"
