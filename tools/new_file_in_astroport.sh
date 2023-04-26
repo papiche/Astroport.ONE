@@ -85,7 +85,7 @@ PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 [[ $(ipfs key list -l | grep -w $G1PUB) ]] \
 && echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
 && ASTRONS=$($MY_PATH/g1_to_ipfs.py "$G1PUB") \
-&& $MY_PATH/TW.cache.sh $ASTRONS $MOATS \
+&& $MY_PATH/TW.cache.sh ${ASTRONS} ${MOATS} \
 || echo "(╥☁╥ ) I cannot help you"
 
 ########################################################################
@@ -97,7 +97,7 @@ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
 [[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/${PLAYER}/ MERCI" && echo "$er" && exit 1
 
 ### TyPE & type & T = related to ~/astroport location of the infile (mimetype subdivision)
-TyPE=$(echo "$path" | cut -d '/' -f 5 ) # ex: /home/$YOU/Astroport/${PLAYER}/... TyPE(film, youtube, mp3, video, pdf)/ REFERENCE /
+TyPE=$(echo "$path" | cut -d '/' -f 6) # ex: /home/$YOU/Astroport/${PLAYER}/... TyPE(film, youtube, mp3, video, pdf)/ REFERENCE /
 type=$(echo "$TyPE" | awk '{ print tolower($0) }')
 PREFIX=$(echo "$TyPE" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, Y, M ou Y (all the alaphabet can address a data type
 
@@ -114,22 +114,22 @@ fi
 case ${type} in
     video)
         INDEXPREFIX="VIDEO_"
-        REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
+        REFERENCE=$(echo "$path" | cut -d '/' -f 7 )
         TITLE="${file%.*}"
     ;;
     youtube)
         INDEXPREFIX="YOUTUBE_"
-        REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
+        REFERENCE=$(echo "$path" | cut -d '/' -f 7 )
         TITLE="${file%.*}"
     ;;
     pdf)
         INDEXPREFIX="PDF_"
-        REFERENCE=$(echo "$path" | cut -d '/' -f 6 )
+        REFERENCE=$(echo "$path" | cut -d '/' -f 7 )
         TITLE="${file%.*}"
     ;;
     film | serie)
         INDEXPREFIX="TMDB_"
-        REFERENCE=$(echo "$path" | cut -d '/' -f 6 ) # Path contains TMDB id
+        REFERENCE=$(echo "$path" | cut -d '/' -f 7 ) # Path contains TMDB id
         if ! [[ "$REFERENCE" =~ ^[0-9]+$ ]] # ${REFERENCE} NOT A NUMBER
         then
             er="$er | ERROR: $path BAD TMDB code. Get it from https://www.themoviedb.org/ or use your a mobile phone number ;)"

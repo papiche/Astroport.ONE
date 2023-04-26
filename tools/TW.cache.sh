@@ -11,10 +11,8 @@ MOATS="$2"
 [[ ! ${ASTRONAUTENS} || ! $MOATS ]] && echo "${ME} : ASTRONAUTENS & MOATS needed" && exit 1
 
 start=$(date +%s)
-[[ ${IPFSNODEID} == "" ]]; then
+if [[ ${IPFSNODEID} == "" ]]; then
     IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n')
-else
-    echo "${ME} : IPFSNODEID MISSING" && exit 1
 fi
             ## GETTING LAST TW via IPFS
             echo "${ME} : IPFS : ipfs --timeout 120s cat  /ipns/${ASTRONAUTENS}"\
