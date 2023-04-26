@@ -71,7 +71,7 @@ Après l'installation, vous devriez avoir 2 nouveaux raccourcis sur votre "Burea
 ```
 Permet la Gestion des PLAYER (et des G1VoeuX) en mode CLI
 
-# "OPEN API" : "♥BOX"
+# "BASH API" : "♥BOX"
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée:
@@ -83,7 +83,7 @@ Une fois votre Station Astroport démarrée:
 
 ⚠ ASTROPORT NETCAT SYSTEM ⚠
 
-Astroport utilise l'outil réseau le plus simple "netcat". Il s'agit d'un moteur STEP donnant accès à une "OPEN API".
+Astroport utilise l'outil réseau le plus simple "netcat". Il s'agit d'un moteur STEP donnant accès à une "API BASH".
 Notre programme est conçu pour fonctionner dans des conditions de réseau local.
 Le premier HTTP GET envoie la commande, mais l'APP doit obtenir le PORT de réponse.
 
