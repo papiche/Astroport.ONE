@@ -43,8 +43,10 @@ if [[ ! -f ~/.zen/tmp/$IPFSNODEID/x_$zuid.sh ]]; then
     PORT=22345
     [ ${PORT} -le 22345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
     echo "if [[ ! \$(ipfs p2p ls | grep x/$zuid) ]]; then
+    floop=0
     ipfs --timeout=5s ping -n 1 /p2p/$IPFSNODEID
     ipfs p2p forward /x/$zuid /ip4/127.0.0.1/tcp/$PORT /p2p/$IPFSNODEID
+    (while [ $floop -lt 360 ]; do floop=$((floop +1)) && ipfs ping -n 2 /p2p/$IPFSNODEID 1>&2>/dev/null && sleep 10; done) & ## HELP KEEP P2P CHANNEL AVAILABLE
     xdg-open http://127.0.0.1:$PORT
 fi" > ~/.zen/tmp/$IPFSNODEID/x_$zuid.sh
 fi
