@@ -47,7 +47,8 @@ file="$2"
 
 G1PUB="$3"
 
-### ECHO COMMAND RECEIVED
+### ECHO COMMAND RECEIVED :
+echo "FOUNIR 'PATH' 'FILE' et 'G1PUB' du PLAYER inscrit sur la STATION"
 echo "$MY_PATH/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\" G1PUB \"$G1PUB\" "
 
 ################################################
@@ -137,12 +138,13 @@ case ${type} in
             exit 1
         fi
     ;;
-    ## TODO ADD "httrack" for website copying
-    ## httrack "https://wiki.lowtechlab.org" -O "./wiki.lowtechlab.org" "+*.lowtechlab.org/*" -v -%l "fr"
-    ##
     *)
-        er="$type inconnu" && echo "$er" && exit 1
+        INDEXPREFIX=$(echo "$type" | awk '{ print toupper($0) }')
+        REFERENCE=$(echo "$path" | cut -d '/' -f 7 )
+        echo "Media type $INDEXPREFIX REFERENCE : $REFERENCE"
+        [[ ${INDEXPREFIX} == "" ||  ${REFERENCE} ==  "" ]] && echo "Must put file in ~/Astroport/${PLAYER}/${type}/REFERENCE" && exit 1
     ;;
+
 esac
 
 ### SET MEDIAKEY (PROVIDED IN BATCH FROM AJOUTER MEDIA)
