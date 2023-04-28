@@ -64,7 +64,7 @@ if [[ ! -d $img_dir ]]; then
                         echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1G1$WISHNAME&tw=$ASTRONAUTENS', 'tab', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
                     done < ~/.zen/tmp/${PLAYER}.g1wishes.txt
                 fi
-                echo "<button onclick=\"window.parent.location.href = '"$myIPFS"/ipns/"$ASTRONAUTENS"'\">TW</button>" >> ~/.zen/tmp/carousel/${pub}.button
+                echo "<button onclick=\"window.open('"$myIPFS"/ipns/"$ASTRONAUTENS"');\">TW</button>" >> ~/.zen/tmp/carousel/${pub}.button
 ##################
 
 
