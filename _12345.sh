@@ -1,18 +1,17 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# PUBLISHING IPNS SWARM MAP
+# PUBLISH AND SYNC ASTROPORT STATIONS SWARM MAPS
 # This script scan Swarm API layer from official bootstraps
-# Then publish map of json DApp data
 #
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
-## LOG IN
+## SEND LOG TO ~/.zen/tmp/_12345.log
 exec 2>&1 >> ~/.zen/tmp/_12345.log
 
 PORT=12345
@@ -20,27 +19,27 @@ PORT=12345
     YOU=$(myIpfsApi); ## API of $USER running ipfs
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
+## KILLING OLD DAEMON OF MYSELF
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
 [[ $ncrunning != "" ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
-    NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
+## WHAT IS NODEG1PUB
+NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 
-## RESET MEMORY
+## RESET SWARM LOCAL CACHE
 rm -Rf ~/.zen/tmp/swarm/*
-## NAME PUBLISH EMPTY !!!
-# ipfs name publish --allow-offline /ipfs/Qmc5m94Gu7z62RC8waSKkZUrCCBJPyHbkpmGzEePxy2oXJ
-## INDICATE IPFSNODEID IS RUNNING
+
 ##############################################
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty" && exit 1
 mkdir -p ~/.zen/tmp/swarm
 mkdir -p ~/.zen/tmp/${IPFSNODEID}
 
-## BE CAREFUL NOT MAKING A LOOP !!!
+## AVOID A swarm IN swarm LOOP !!!
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 
 ## TIMESTAMPING
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
+echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
 
 ############################################################
 ##  MySwarm KEY INIT & SET
@@ -70,15 +69,17 @@ echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
     echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm
 ############################################################
 ############################################################
-
-#############################################
-## SCAN ALL BOOTSTRAP AND GET "IPNS BALISE"
-#############################################
+###################
+# NEVER ENDING LOOP
+###################################################################
+## WILL SCAN ALL BOOTSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
+###################################################################
 while true; do
+
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-    lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats)
+    lastrun=$(cat ~/.zen/tmp/.MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
@@ -95,7 +96,7 @@ while true; do
         echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
 
-        [[ ${ipfsnodeid} == ${IPFSNODEID} ]] && echo "My Self : ${IPFSNODEID} - continue" && continue
+        [[ ${ipfsnodeid} == ${IPFSNODEID} ]] && echo "MYSELF : ${IPFSNODEID} - CONTINUE" && continue
         mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
 
         ## GET bootnode IP
@@ -103,20 +104,42 @@ while true; do
         nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
 
         ## IPFS GET TO /swarm/${ipfsnodeid}
-        echo "Getting ${nodeip} : /ipns/${ipfsnodeid}"
+        echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
         [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ipfsnodeid} /ipns/${ipfsnodeid}/
-        echo "Updated : ~/.zen/tmp/swarm/${ipfsnodeid}"
+        echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
 
         ## SHOW WHAT WE GET
         echo "__________________________________________________"
         ls ~/.zen/tmp/swarm/${ipfsnodeid}
         echo "__________________________________________________"
 
-        ## ASK BOOTSTRAP NODE TO GET MY MAP UPSYNC - MAKES ME KNOWN BY MY COMMUNITY -
+        ## ASK BOOTSTRAP NODE TO GET MY MAP UPSYNC
+        ## - MAKES MY BALISE PRESENT IN BOOTSTRAP SWARM KEY  -
         if [[  $iptype == "ip4" ]]; then
+
             echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
             curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json
-        fi
+
+            ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
+            echo "ANALYSING BOOTSTRAP SWARM MAP"
+            itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.myswarm' | rev | cut -d '/' -f 1 | rev )
+            ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/_swarm.${ipfsnodeid}
+
+            echo "ZNODS LIST"
+            cat ~/.zen/tmp/_swarm.${ipfsnodeid}
+            echo "============================================"
+            for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do
+                if [[ -d ~/.zen/tmp/swarm/${znod} ]]; then
+                    echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
+                    mkdir ~/.zen/tmp/swarm/${znod}
+                    ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod}/ /ipns/${znod}
+                else
+                    echo "____________ KNOW ${znod}"
+                fi
+            done
+            echo "============================================"
+
+        fi ## IP4 WAN BOOTSRAP UPSYNC FINISHED
 
     done
 
@@ -145,17 +168,17 @@ while true; do
     BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
     ## IPFS GET LAST PUBLISHED MAP VERSION
+    rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
     mkdir -p ~/.zen/tmp/_${IPFSNODEID}
     ipfs get -o ~/.zen/tmp/_${IPFSNODEID} /ipns/${IPFSNODEID}/
     NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | cut -f 1)
-
 
     ### CHECK IF SIZE DIFFERENCE ?
     ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
     [[ ${BSIZE} != ${NSIZE} ]] \
     && echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats \
     && MYCACHE=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
-    && echo "NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets" \
+    && echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets" \
     && ipfs name publish --allow-offline /ipfs/${MYCACHE}
 
     end=`date +%s`
@@ -164,11 +187,14 @@ while true; do
     ) & ##### SUB-PROCESS
 
     # last run recording
-    echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
+    echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
 
     else
 
+        echo "#######################"
+        echo "NOT SO QUICK"
         echo "$duree only cache life"
+        echo "#######################"
 
     fi
 
@@ -192,7 +218,7 @@ Content-Type: application/json; charset=UTF-8
 "
     ######################################################################################
     #  WAIT FOR REQUEST ON PORT12345 (netcat is waiting)
-    (sleep $((3600-${RANDOM:0:3})) && curl -s "http://127.0.0.1:12345") & ## AUTO RELAUNCH IN LESS AN HOUR
+    (sleep $((3600-${RANDOM:0:3})) && curl -s "http://127.0.0.1:12345") & ## AUTO RELAUNCH IN LESS AN HOUR : DESYNC SWARM REFRESHINGS
     echo '(◕‿‿◕) http://'$myIP:'12345 READY (◕‿‿◕)'
     REQ=$(echo "$HTTPSEND" | nc -l -p 12345 -q 1) ## # WAIT FOR 12345 PORT CONTACT
     ######################################################################################
