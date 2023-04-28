@@ -132,9 +132,10 @@ while true; do
                 if [[ -d ~/.zen/tmp/swarm/${znod} ]]; then
                     echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
                     mkdir ~/.zen/tmp/swarm/${znod}
-                    ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod}/ /ipns/${znod}
+                    ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
                 else
                     echo "____________ KNOW ${znod}"
+                    # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LASTEST
                 fi
             done
             echo "============================================"
@@ -144,6 +145,9 @@ while true; do
     done
 
 #############################################
+    # ERASE EMPTY DIRECTORIES
+    du -b ~/.zen/tmp/swarm > /tmp/du
+    while read branch; do [[ $branch =~ "4096" ]] && echo "empty $branch" && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
     ############### UPDATE MySwarm CHAN
     ls ~/.zen/tmp/swarm
     SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
@@ -161,7 +165,7 @@ while true; do
 
     # Clean Empty Directory (inode dependancy BUG ??)
     du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
-    while read branch; do [[ $branch =~ "4096" ]] && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
+    while read branch; do [[ $branch =~ "4096" ]] && echo "empty $branch" && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
 
     # Scan local cache
     ls ~/.zen/tmp/${IPFSNODEID}/
@@ -176,13 +180,13 @@ while true; do
     ### CHECK IF SIZE DIFFERENCE ?
     ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
     [[ ${BSIZE} != ${NSIZE} ]] \
-    && echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats \
+    && echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats \
     && MYCACHE=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
     && echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets" \
     && ipfs name publish --allow-offline /ipfs/${MYCACHE}
 
     end=`date +%s`
-    echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. $(date)'
+    echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. '$(date)
 
     ) & ##### SUB-PROCESS
 
