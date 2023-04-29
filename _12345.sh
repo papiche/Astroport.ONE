@@ -69,6 +69,7 @@ echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
     echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm
 ############################################################
 ############################################################
+echo 0 > ~/.zen/tmp/random.sleep
 ###################
 # NEVER ENDING LOOP
 ###################################################################
@@ -226,7 +227,7 @@ Content-Type: application/json; charset=UTF-8
         && T2WAIT=$((3600-${RANDOM:0:3})) \
         || T2WAIT=$(cat ~/.zen/tmp/random.sleep)
 
-    if [[ $T2WAIT != $(cat ~/.zen/tmp/random.sleep) ]]; then
+    if [[ $T2WAIT == 0 || $T2WAIT != $(cat ~/.zen/tmp/random.sleep) ]]; then
         (
             echo $T2WAIT > ~/.zen/tmp/random.sleep
             sleep $T2WAIT && rm ~/.zen/tmp/random.sleep
