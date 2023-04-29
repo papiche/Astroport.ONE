@@ -96,26 +96,10 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.WISHLINK.png" "$LIBRA/ipns/${VOEUNS}"
 
-    ## MAKING amrzqr containing GPG SALT API INPUT
-    ## LE MOT DE PASSE DU PLAYER PEUT UTILISER LE G1PASS
-    USALT=$(echo "$SECRET1" | jq -Rr @uri)
-    UPEPPER=$(echo "${SECRET2}" | jq -Rr @uri)
-    DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
-    echo "${DISCO}"  > ~/.zen/tmp/topgp
-    cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$SALT" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
-
-    cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
-
-    ## MAKE amzqr WITH ~~~ PGP G1PASS FORMAT
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
-                -d "$HOME/.zen/tmp/${MOATS}" \
-                -l H \
-               -p ~/.zen/tmp/${MOATS}/result.png -c
-
-    convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER}\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
-    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png $HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/result.png
-
-    IMAGIC=$(ipfs add -Hq ~/.zen/game/world/${VoeuName}/${WISHG1PUB}/result.png | tail -n 1)
+    #################################################################
+    ## MAKING SPECIAL amrzqr => G1Milgram TICKET
+    ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} :: G1${VoeuName}" avec PASS=YYYYMM
+    IMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${PLAYER}" "${VoeuName}" "${MOATS}" | tail -n 1)
 
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.G1ASTRO.png" "$G1PUB"

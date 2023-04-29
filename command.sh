@@ -121,7 +121,7 @@ select fav in  "${choices[@]}"; do
             ipfs key rm $vk
         done
 
-        ## UNPLUG PLAYER DOCKER
+        ## UNPLUG PLAYER DOCKER / SEE myos MODE
         [[ $USER == "zen" ]] && make player MAIL=$PLAYER DELETE=true
 
         #~ echo "REMOVING GCHANGE+ PROFILE"
