@@ -130,6 +130,10 @@ while true; do
             cat ~/.zen/tmp/_swarm.${ipfsnodeid}
             echo "============================================"
             for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do
+                # CHECK znod validity
+                cznod=$(${MY_PATH}/tools/ipfs_to_g1.py ${znod} 2>/dev/null)
+                [[ ${cznod} == "" ]] && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" && continue
+
                 if [[ -d ~/.zen/tmp/swarm/${znod} ]]; then
                     echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
                     mkdir ~/.zen/tmp/swarm/${znod}
