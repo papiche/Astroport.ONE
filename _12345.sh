@@ -222,7 +222,18 @@ Content-Type: application/json; charset=UTF-8
 "
     ######################################################################################
     #  WAIT FOR REQUEST ON PORT12345 (netcat is waiting)
-    (sleep $((3600-${RANDOM:0:3})) && curl -s "http://127.0.0.1:12345") & ## AUTO RELAUNCH IN LESS AN HOUR : DESYNC SWARM REFRESHINGS
+    [[ ! -s ~/.zen/tmp/random.sleep ]] \
+        && T2WAIT=$((3600-${RANDOM:0:3})) \
+        || T2WAIT=$(cat ~/.zen/tmp/random.sleep)
+
+    if [[ $T2WAIT != $(cat ~/.zen/tmp/random.sleep) ]]; then
+        (
+            echo $T2WAIT > ~/.zen/tmp/random.sleep
+            sleep $T2WAIT && rm ~/.zen/tmp/random.sleep
+            curl -s "http://127.0.0.1:12345"
+        ) & ## AUTO RELAUNCH IN ABOUT AN HOUR : DESYNC SWARM REFRESHINGS
+    fi
+    ######################################################################################
     echo '(◕‿‿◕) http://'$myIP:'12345 READY (◕‿‿◕)'
     REQ=$(echo "$HTTPSEND" | nc -l -p 12345 -q 1) ## # WAIT FOR 12345 PORT CONTACT
     ######################################################################################
