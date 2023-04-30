@@ -124,7 +124,7 @@ while true; do
             ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
             echo "ANALYSING BOOTSTRAP SWARM MAP"
             itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.myswarm' | rev | cut -d '/' -f 1 | rev )
-            ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/_swarm.${ipfsnodeid}
+            ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 
             echo "ZNODS LIST"
             cat ~/.zen/tmp/_swarm.${ipfsnodeid}
@@ -231,7 +231,7 @@ Content-Type: application/json; charset=UTF-8
         && T2WAIT=$((3600-${RANDOM:0:3})) \
         || T2WAIT=$(cat ~/.zen/tmp/random.sleep)
 
-    if [[ $T2WAIT == 0 || $T2WAIT != $(cat ~/.zen/tmp/random.sleep) ]]; then
+    if [[ $T2WAIT == 0 || $T2WAIT != $(cat ~/.zen/tmp/random.sleep 2>/dev/null) ]]; then
         (
             echo $T2WAIT > ~/.zen/tmp/random.sleep
             sleep $T2WAIT && rm ~/.zen/tmp/random.sleep
@@ -262,7 +262,7 @@ Content-Type: application/json; charset=UTF-8
         GPUB=${arr[0]}
         ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${arr[0]} 2>/dev/null)
 
-        if [[ "${ASTROTOIPFS}" == "${arr[1]}" ]]; then
+        if [[ "${ASTROTOIPFS}" == "${arr[1]}" && ${ASTROTOIPFS} != "" && ${arr[1]} != "" ]]; then
             ## WE SPEAK THE SAME PROTOCOL
             echo "MAJOR TOM TO GROUD CONTROL"
             echo "WE HAVE A STATION ${GPUB} CONTACT"

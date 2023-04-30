@@ -48,9 +48,9 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "${G1PUB}" | cut -d ' ' -f 1)
                -p ~/.zen/tmp/${MOATS}/result.png -c
 
     convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER} - ${UPASS} \"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
-    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/final.png
+    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/START.png
 
-    IMAGIC=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/final.png | tail -n 1)
+    IMAGIC=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/START.png | tail -n 1)
     echo ${IMAGIC}
     exit 0
 
@@ -119,7 +119,7 @@ select zwish in "${vlist[@]}"; do
             ;;
 
             "Ğ1Milgram")
-
+                GW="https://qo-op.com"
                 # CREATE G1Milgram
                 IMAGIC=$(${MY_PATH}/VOEUX.print.sh "${PLAYER}" "${TITLE}" "${MOATS}" | tail -n 1)
 
@@ -156,7 +156,7 @@ select zwish in "${vlist[@]}"; do
         done
 
         convert -gravity northwest -pointsize 40 -fill black -draw "text 50,2 \"${TITLE} ($typ)\"" ~/.zen/tmp/${MOATS}/START.png ~/.zen/tmp/${MOATS}/g1voeu1.png
-        convert -gravity southeast -pointsize 30 -fill black -draw "text 50,2 \"${GW}\"" ~/.zen/tmp/${MOATS}/g1voeu1.png ~/.zen/tmp/${MOATS}/g1voeu.png
+        convert -gravity southeast -pointsize 30 -fill black -draw "text 100,2 \"${GW}\"" ~/.zen/tmp/${MOATS}/g1voeu1.png ~/.zen/tmp/${MOATS}/g1voeu.png
 
         #~ echo "~/.zen/tmp/${MOATS}/g1voeu.png READY ?"
         [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/g1voeu.png

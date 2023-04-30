@@ -34,7 +34,7 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 mkdir -p ~/.zen/tmp/${MOATS}/
 
 ################################################################################
-## QRCODE IS HTTP LINK
+## QRCODE IS HTTP LINK REDIRECT TO
 ###############################################################################
 if [[ ${QRCODE:0:4} == "http" ]]; then
     ## THIS IS A WEB LINK
@@ -401,7 +401,7 @@ fi
 # DETECT TO REWARD IN REGARD TO WALLET EVOLUTION
 ########################################### G1 PRICE : null 1 + gchange 10 + cesium 50
 if [[ ${CURG1} == ${QRCODE} ]]; then
-
+    ## SCANNED G1PUB IS CURRENT STATION PLAYER : RETURN BALANCE
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
     echo "<h1>$CURPLAYER WALLET : $CURCOINS Ǧ1</h1>"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
