@@ -36,7 +36,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
     UPEPPER=$(echo "${SECRET2}" | jq -Rr @uri)
     DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo "${DISCO}"  > ~/.zen/tmp/${MOATS}/topgp
-
+    rm -f ~/.zen/tmp/${MOATS}/gpg.asc
     cat ~/.zen/tmp/${MOATS}/topgp | gpg --symmetric --armor --batch --passphrase "$UPASS" -o ~/.zen/tmp/${MOATS}/gpg.asc
 
     cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
@@ -52,6 +52,11 @@ UPASS=$(date '+%Y%m') # YYYYMM
 
     IMAGIC=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/START.png | tail -n 1)
     echo ${IMAGIC}
+
+    ## SENDING EMAIL #############
+    echo "(•‿‿•) SCAN https://astroport.com/scan" > ~/.zen/tmp/${MOATS}/intro.txt
+    mpack -a -s "♥Box : ${UPASS} Missive ... (•‿‿•)" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
+
     exit 0
 
     fi
@@ -131,7 +136,7 @@ select zwish in "${vlist[@]}"; do
 
                 # cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.${VoeuName}.json | jq -r '.[].text' | html2text > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
                 ## COULD USE TEXT FROM TIDDLER (TODO)
-                echo "POUVEZ-VOUS REALISER CE SOUHAIT? Sinon relayez cette missive. SVP." > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
+                echo "SVP. Passez le message un ami de confiance." > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
                 MILGRAM=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt)
 
                 xdg-open http://ipfs.localhost:8080/ipfs/${IMAGIC}
@@ -143,11 +148,6 @@ select zwish in "${vlist[@]}"; do
                 IK=$(ipfs key list -l | grep -w "${PLAYER}_${VoeuName}" | cut -d ' ' -f 1 )
 
                 xdg-open http://ipfs.localhost:8080/ipfs/${MILGRAM}
-
-                echo "$GW" > ~/.zen/tmp/${MOATS}/intro.txt
-
-                ## SEND BY EMAIL #############
-                mpack -a -s "♥Box : ${UPASS} Missive ... (•‿‿•)" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
 
                 (
                     ipfs name publish -k ${PLAYER}_${VoeuName} /ipfs/${MILGRAM}

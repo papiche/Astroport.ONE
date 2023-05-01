@@ -308,7 +308,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             echo "KeyName=$keyname"
 
             ISTHERE=$(ipfs key list -l | grep -w ${player} | cut -d ' ' -f1)
-            echo "G1MISSIVE : $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
 
             # Recreate G1 KEY
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
@@ -316,7 +316,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             ## CHECK ORIG1 amount
             echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${ORIG1}"
             MCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${ORIG1} | tail -n 1)
-            echo "MISSIVE : $MCOINS G1" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><b>$MCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
 
             #CONVERT TO IPNS KEY
             QNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PUB})
