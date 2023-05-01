@@ -114,7 +114,7 @@ Adventure & Exploration P2P Terraforming Game.
 =============================================
 Bienvenue 'Astronaute'"; sleep 1
 
-echo "Création de votre PLAYER, votre PSEUDO et PASS (6 chiffres)"
+echo "Inscription..."
 
 [[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
 echo "-> SALT : $SALT"
@@ -137,7 +137,7 @@ PSEUDO=${PSEUDO,,}
 PLAYER=${PLAYER,,}
 
 [[ ! $PSEUDO ]] && PSEUDO="Anonymous"
-echo; echo "Génération de votre crypto identité PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
+echo "Génération de votre crypto identité PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
 
 # 6 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -157,8 +157,7 @@ ${MY_PATH}/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey "$SALT" "$PEP
 
 G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
-[[ ! $G1PUB ]] && echo "Désolé. clef Cesium absente." && exit 1
-
+[[ ! $G1PUB ]] && echo "Désolé. clef Cesium absente. ERROR" && exit 1
 
     ## CREATE Player personnal files storage and IPFS publish directory
     mkdir -p ~/.zen/game/players/${PLAYER} # Prepare PLAYER datastructure
@@ -478,26 +477,24 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "G1VISA : ${myIPFS}${IASTRO}"
-echo "AstroID : ${myIPFS}${ASTROQR}"
+echo "G1Visa : ${myIPFS}${IASTRO}"
+echo "G1PASS ($PASS) : ${myIPFS}${ASTROQR}"
+echo "G1TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
 echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; sleep 1
 echo "
-Secret :
+Vos Secrets :
     $SALT
     $PEPPER
 
-PASS : $PASS
+Portefeuille : https://Cesium.app
+Marché : https://GChange.fr
 
-https://Cesium.app <wallet::market> https://GChange.fr
-Astroport ★ PKI ★ Ğ1/Ŋ1 ★ Nation ★ Libre"; sleep 1
+Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; sleep 1
 echo
-echo "Explorateur Web3. Batisseur de(s) Toile(s) de Confiance(s).
-BIENVENUE
+echo "Explorez le Web3. Reliez vos Toiles de Confiance.
 "
-echo "G1FRAME : ${myIPFS}/ipns/${FEEDNS}"
-echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo echo
 echo "$(${MY_PATH}/face.sh friendly)"
 #~ DISCONNECT : $DISCO&logout=${PLAYER}
