@@ -348,6 +348,10 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
             if [[ $APPNAME == "milgram"  && ${GOMAIL} == 1 ]]; then
 
+                # SEARCH FOR DESTMAIL IN SWARM
+                $($MY_PATH/../tools/search_for_this_email_in_players.sh ${DESTMAIL}) ## export ASTROTW and more
+                echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${DESTMAIL} ASTROFEED=${FEEDNS}"
+
                 ## CREATE NEXT G1Missive !
                 NEWIMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${DESTMAIL}" "${VoeuName}" "${MOATS}" "${ORIG1}" | tail -n 1)
 

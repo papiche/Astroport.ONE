@@ -102,8 +102,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeibsy5fu4wrjr2gtjljvkuady3cydgrcbr5mdw2ogkrtm4eeo7xzue"
-TWLINK="/ipfs/bafybeigyfttjvabeeoa4hbsvtegsqkw3riuquhbil55qhwe3s3q4tesyxi"
+TWMODEL="/ipfs/bafybeicivms6szyinh4mps25ilyk3dtp4icsvo6bwu5m3udwts52mijqca"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################

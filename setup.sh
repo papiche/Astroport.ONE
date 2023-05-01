@@ -64,7 +64,10 @@ echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
 [[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/rec.desktop > ~/Bureau/rec.desktop && chmod +x ~/Bureau/rec.desktop
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/rec.desktop > ~/Desktop/rec.desktop && chmod +x ~/Desktop/rec.desktop
+[[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/g1billet.desktop > ~/Bureau/g1billet.desktop && chmod +x ~/Bureau/g1billet.desktop
+[[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/g1billet.desktop > ~/Desktop/g1billet.desktop && chmod +x ~/Desktop/g1billet.desktop
 
+######### SUPER PRATIQUE :: DOES NOT WORK WITH SPACE IN FILENAME
 echo "# ADD NEMO 'Add To IPFS' ACTION"
 ~/.zen/Astroport.ONE/tools/install.nemo.add2ipfs.sh
 
