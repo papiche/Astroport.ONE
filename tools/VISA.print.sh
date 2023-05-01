@@ -33,8 +33,8 @@ LP=$(ls /dev/usb/lp* | head -n 1 2>/dev/null)
 
 # USE G1BILLET GENERATOR
 [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] \
-&& echo ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xbian" "$ASTRONAUTENS" "$PLAYER" \
-&& ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xbian" "$ASTRONAUTENS" "$PLAYER" \
+&& echo ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xastro" "$ASTRONAUTENS" "$PLAYER" \
+&& ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xastro" "$ASTRONAUTENS" "$PLAYER" \
 || ( echo "MISSING G1BILLET ENGINE - ERROR - " && exit 1 )
 
 s=$(${MY_PATH}/diceware.sh 1 | xargs)

@@ -246,7 +246,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
          ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
-         sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         #~ sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
          ## AND HACK QRCODE.sh FOR _PGP KEY_ TO VERIFY LAST HASH OF PROVIDED PASS
          HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
@@ -290,21 +290,21 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
         ## USING  SWARMKEY (derivated from IPFSNODE "/proc/cpuinfo" key made by _12345.sh)  ## HARDWARE SPECIFIC KEY ##
         # TODO : NODE COULD FORGET PASS THEN DECODE  ${PLAYER}/secret.dunikey FROM TW # PROD #
-        MACHINEPUB=$(cat $HOME/.zen/game/secret.dunikey | grep pub | cut -d ' ' -f 2)
+        MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
         echo "# CRYPTO ENCODING  _SECRET_ "
         ${MY_PATH}/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        # echo "${ENCODING}"
+        # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
 ###########
         echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
-        ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
+        ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/myswarm_secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
         #~ echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
 ###########
         ## CRYPTO PROCESS VALIDATED
-        [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED" \
+        [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED STATION TW KEY " \
                                                         || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
 
 ###########
@@ -313,7 +313,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     cat ${MY_PATH}/../templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ${MY_PATH}/../templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
-    # Create"${PLAYER}_feed" Key ! DERIVATED !
+    # Create"${PLAYER}_feed" Key ! DERIVATED !  "$SALT" "$G1PUB"
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
     ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey
     FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1 )
@@ -324,7 +324,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
     ## NATOOLS ENCRYPT
-    echo "# NATOOLS ENCODING  feed.ipfskey "
+    echo "# NATOOLS ENCODING MYSELF feed.ipfskey (TODO: could be decoded to compare with G1lib.js) "
     ${MY_PATH}/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
     ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc | base16)
     #~ echo ${ENCODING}
@@ -352,7 +352,13 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
         || ( echo "Problem with TW - EXIT" && exit 1 )
 
-############################################################################ TW
+############################################################################ G1TW
+#### MAKE G1TW
+        [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] && \
+        ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xastro" "$ASTRONAUTENS" "$PLAYER"
+#### MADE # BILLETNAME=$(echo "$SALT" | sed 's/ /_/g') ##
+# IMAGE ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg
+############################################################################
 
         ## MAKE IMAGE AVATAR WITH G1PUB QRCODE
         if [[ $(which amzqr) ]]; then
@@ -473,18 +479,19 @@ echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
 echo "G1VISA : ${myIPFS}${IASTRO}"
-echo "AstroID : ${myIPFS}${ASTROQR}  (${PASS})"
+echo "AstroID : ${myIPFS}${ASTROQR}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
 echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; sleep 1
-echo "G1CopierYoutube : $URL"
 echo "
 Secret :
     $SALT
     $PEPPER
 
+PASS : $PASS
+
 https://Cesium.app <wallet::market> https://GChange.fr
-People ★ PKI ★ Ğ1/Ŋ1 ★ Nation ★ Libre"; sleep 1
+Astroport ★ PKI ★ Ğ1/Ŋ1 ★ Nation ★ Libre"; sleep 1
 echo
 echo "Explorateur Web3. Batisseur de(s) Toile(s) de Confiance(s).
 BIENVENUE
@@ -492,14 +499,13 @@ BIENVENUE
 echo "G1FRAME : ${myIPFS}/ipns/${FEEDNS}"
 echo "TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo echo
-echo "$(${MY_PATH}/face.sh friendly)
+echo "$(${MY_PATH}/face.sh friendly)"
 #~ DISCONNECT : $DISCO&logout=${PLAYER}
 #~ CONNECT : $DISCO&login=${PLAYER}"
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "--- web3 PKI system ---"
-echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS"
+echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
