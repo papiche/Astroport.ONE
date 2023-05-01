@@ -55,7 +55,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
 
     ## SENDING EMAIL #############
     echo "(•‿‿•) SCAN https://astroport.com/scan" > ~/.zen/tmp/${MOATS}/intro.txt
-    mpack -a -s "♥Box : ${UPASS} Missive ... (•‿‿•)" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
+    mpack -a -s "(•‿‿•) : Missive ${VoeuName} - ${UPASS} - La♥Box" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
 
     exit 0
 
