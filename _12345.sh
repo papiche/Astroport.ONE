@@ -136,7 +136,7 @@ while true; do
 
                 if [[ -d ~/.zen/tmp/swarm/${znod} ]]; then
                     echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
-                    mkdir ~/.zen/tmp/swarm/${znod}
+                    mkdir -p ~/.zen/tmp/swarm/${znod}
                     ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
                 else
                     echo "____________ KNOW ${znod}"

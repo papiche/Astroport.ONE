@@ -12,13 +12,19 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 start=`date +%s`
 
-echo "PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 COOKIE=$10"
-PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 COOKIE=$10
+echo "PORT=$1
+THAT=$2
+AND=$3
+THIS=$4
+APPNAME=$5
+WHAT=$6
+OBJ=$7
+VAL=$8
+MOATS=$9
+COOKIE=$10"
+PORT="$1" THAT="$2" AND="$3" THIS="$4"  APPNAME="$5" WHAT="$6" OBJ="$7" VAL="$8" MOATS="$9" COOKIE="$10"
 ### transfer variables according to script
-QRCODE=$THAT
-TYPE=$WHAT
-
-echo "COOKIE : $COOKIE"
+QRCODE="$THAT"
 
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: ${myASTROPORT}
@@ -89,11 +95,10 @@ fi
 
 ################################################################################
 ## QRCODE = PGP ENCRYPTED STRING
-# /?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iqIY7XLnGn_0koBJB5S2Sy1p%2FHr8CKFgWdZ9_j%2Fb2qdOznICGvqGCXY~7Flw6YtiabngvY6biq%2F0vpiFL8t8BSbMZe0GLBU90EMBrhzEiyPnh__bzQ%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~
+# /?qrcode=-----BEGIN%20PGP%20MESSAGE-----~~jA0ECQMC5iq8 [ ......... ] _Q%3D%3D~%3D9UIj~-----END%20PGP%20MESSAGE-----~
 # &pass=coucou&history/read/pay/login=(1|email)&g1pub=_DESTINATAIRE_
 ################################################################################
 if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
-   echo ${QRCODE}
    PASS=$(urldecode ${THIS})
    echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS ${PASS} - $APPNAME"
 
@@ -163,7 +168,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                                     || echo ${WHAT} > ${DESTFILE}
                                 cat ${DESTFILE}
 
-                                echo "<h1>OPERATION</h1> <h3>$G1PUB <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
+                                echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                             fi
                         fi
@@ -190,7 +195,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
-                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "$G1PUB"
+                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}"
                 QRURL=${myIPFS}/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/disco.qr.png)
                 ONVADIRE="<h1> ~ ${CURCOINS} Ğ1</h1>${G1PUB}<br><br><img src=${QRURL} />"
                 echo "${ONVADIRE}" >> ~/.zen/tmp/${MOATS}/disco
@@ -249,6 +254,153 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
     exit 0
 
 fi
+
+################################################################################
+## QRCODE = G1Milgram G1Missive PGP ENCRYPTED STRING
+# /?qrcode=@@@@@BEGIN%20PGP%20MESSAGE@@@@@~~jA0ECQM...............
+# &pass=YYYYMM&milgram=NEWLINE&email=DESTMAIL
+################################################################################
+if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
+   PASS=$(urldecode ${THIS})
+   NEWLINE=$(urldecode ${WHAT})
+   DESTMAIL=$(urldecode ${VAL,,}) # lowercase
+
+   echo "## G1MISSIVE - PASS ${PASS} - $APPNAME"
+
+    if [[ ${PASS} != "" ]]; then
+
+        ## Recreate GPG aes file
+        urldecode ${QRCODE} | tr '_' '+' | tr '-' '\n' | tr '@' '-'  > ~/.zen/tmp/${MOATS}/disco.aes
+        sed -i '$ d' ~/.zen/tmp/${MOATS}/disco.aes
+        # Decoding
+        echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch"
+        cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
+
+        if [[ ! -s ~/.zen/tmp/${MOATS}/decoded ]]; then
+            ## COULD BE ONE MONTH OLDER
+            UPASS=$(date -d "1 month ago" +"%Y%m")
+            cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${UPASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
+        fi
+
+        # cat ~/.zen/tmp/${MOATS}/disco
+        ## FORMAT IS "/?salt=${USALT}&pepper=${UPEPPER}"
+        ## MADE by tools/VOEUX.print.sh WITH SALT="EMAIL G1PUB" PEPPER="G1VoeuName"
+        DISCO=$(cat ~/.zen/tmp/${MOATS}/decoded  | cut -d '?' -f2)
+        arr=(${DISCO//[=&]/ })
+        s=$(urldecode ${arr[0]} | xargs)
+        salt=$(urldecode ${arr[1]} | xargs)
+        p=$(urldecode ${arr[2]} | xargs)
+        pepper=$(urldecode ${arr[3]} | xargs)
+
+       echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
+
+        if [[ ${salt} != "" && ${pepper} != "" ]]; then
+
+            echo "secret1=$salt" ## CONTAINS "EMAIL ORIGING1PUB"
+            player=$(echo $salt | cut -d ' ' -f 1)
+            ORIG1=$(echo $salt | cut -d ' ' -f 2)
+
+            echo "secret2=$pepper" ## CONTAINS "G1VoeuName"
+            [[ ${pepper:0:2} != "G1" ]] && echo "NO GOOD KEY : $pepper" && exit 1
+            VoeuName=$(echo $pepper | cut -c 3-)
+
+            keyname="${player}_${VoeuName}"
+            echo "KeyName=$keyname"
+
+            ISTHERE=$(ipfs key list -l | grep -w ${player} | cut -d ' ' -f1)
+            echo "G1MISSIVE : $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
+
+            # Recreate G1 KEY
+            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
+            G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
+            ## CHECK ORIG1 amount
+            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${ORIG1}"
+            MCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${ORIG1} | tail -n 1)
+            echo "MISSIVE : $MCOINS G1" >> ~/.zen/tmp/${MOATS}/disco
+
+            #CONVERT TO IPNS KEY
+            QNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PUB})
+            ## RETRIEVE IPNS CONTENT
+            echo "http://127.0.0.1:8080/ipns/$QNS"
+            if [[ ! -s ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt ]]; then
+
+                avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$QNS' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+                [[ ! $avanla ]] && ipfs cat /ipns/$QNS > ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt &
+
+                echo "<br>PLEASE RETRY IN 30 SECONDS GETTING MESSAGE FROM IPFS<br>" >> ~/.zen/tmp/${MOATS}/disco
+                (
+                    cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+                ) &
+               exit 0
+
+            fi
+            echo "<br><br>" >> ~/.zen/tmp/${MOATS}/disco
+            cat ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
+
+            [[ ${NEWLINE} == "" || ${NEWLINE} == "undefined"  ]] && echo "<br> NO NEW LINE <br>" >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${DESTMAIL} == "" || ${DESTMAIL} == "undefined" ]] && echo "<br> Missing Destination EMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco
+
+            ## CHECK VALID EMAIL FORMAT
+            [[ "${DESTMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                &&  echo "<br> GOOD $DESTMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco \
+                && GOMAIL=1
+
+            if [[ $APPNAME == "milgram"  && ${GOMAIL} == 1 ]]; then
+
+                ## CREATE NEXT G1Missive !
+                NEWIMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${DESTMAIL}" "${VoeuName}" "${MOATS}" "${ORIG1}" | tail -n 1)
+
+                # Create Next G1 & IPNS KEY
+                DESTG1PUB=$(${MY_PATH}/../tools/keygen"${DESTMAIL} ${ORIG1}" "G1${VoeuName}")
+                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/newsecret.ipfs  "${DESTMAIL} ${ORIG1}" "G1${VoeuName}"
+
+                # INSTALL NEXT IPNS KEY ON NODE
+                IK=$(ipfs key list -l | grep -w "${DESTMAIL}_${VoeuName}" | cut -d ' ' -f 1 )
+                [[ ! $IK ]] && ipfs key import ${DESTMAIL}_${VoeuName} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/newsecret.ipfs
+
+                ## ADD NEWLINE TO MESSAGE
+                if [[ ${NEWLINE} != "" ]]; then
+                    CLINE=$(echo "${NEWLINE}" | detox --inline)
+                    echo "$CLINE" >> ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt ## NB: File could still being into "ipfs cat" process... TODO MAKE BETTER
+                fi
+
+                echo "UPDATED" >> ~/.zen/tmp/${MOATS}/disco
+                cat ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
+                echo "<br><img src=/ipfs/$NEWIMAGIC />" >> ~/.zen/tmp/${MOATS}/disco
+
+                MILGRAM=$(ipfs add -q ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt)
+
+                (
+                    ipfs name publish -k ${DESTMAIL}_${VoeuName} /ipfs/${MILGRAM}
+                    echo "${VoeuName} ${PASS} G1Milgram emitted ${DESTMAIL}"
+                ) &
+
+            fi
+
+        else
+
+            echo "<br><h1>${PASS} ${UPASS} TOO OLD</h1>" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><img src='http://127.0.0.1:8080/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg' />" >> ~/.zen/tmp/${MOATS}/disco
+
+        fi
+
+    else
+
+        echo "<br>DATA MISSING" >> ~/.zen/tmp/${MOATS}/disco
+
+    fi
+
+    (
+    cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    ) &
+
+    exit 0
+
+fi
+
+
 
 ################################################################################
 ## QRCODE = G1* : MODE G1VOEU : RETURN WISHNS - IPNS App link - or direct tw tag selected json

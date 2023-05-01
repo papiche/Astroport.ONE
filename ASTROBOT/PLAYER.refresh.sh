@@ -27,6 +27,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     # CLEAN LOST ACCOUNT
     [[ ! -s ~/.zen/game/players/${PLAYER}/secret.dunikey ]] \
         && rm -Rf ~/.zen/game/players/${PLAYER} \
+        && mv ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.${PLAYER} 2>/dev/null \
         && echo "LOST ${PLAYER} IS OUT" \
         && continue
 

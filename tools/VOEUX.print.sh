@@ -10,22 +10,22 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 PLAYER=$1
 VoeuName=$2
 MOATS=$3
+G1PUB=$4
 
 UPASS=$(date '+%Y%m') # YYYYMM
+
 [[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ${PLAYER} == "" ]] && echo "PLAYER manquant" && exit 1
-PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
+
 [[ ${G1PUB} == "" ]] && G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ ${G1PUB} == "" ]] && echo "G1PUB manquant" && exit 1
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${G1PUB}" | cut -d ' ' -f 1)
-[[ ${ASTRONAUTENS} == "" ]] && echo "ASTRONAUTE manquant" && exit 1
 
 ############################################################ G1Voeu.sh use
 ############################################################ PRINT G1Milgram (once a month)
     if [[ ${G1PUB} != "" && ${VoeuName} != "" && -d ~/.zen/tmp/${MOATS} ]]; then
 
     #################################################################
-    ## MAKING SPECIAL amrzqr => G1Milgram TICKET
+    ## MAKING SPECIAL amrzqr => G1Milgram TICKET = G1Missive
     ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} ${G1PUB} :: G1${VoeuName}" avec PASS=YYYYMM
     SECRET1="${PLAYER} ${G1PUB}"
     SECRET2="G1${VoeuName}"
@@ -47,7 +47,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w "${G1PUB}" | cut -d ' ' -f 1)
                 -l H \
                -p ~/.zen/tmp/${MOATS}/result.png -c
 
-    convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER} - ${UPASS} \"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
+    convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER} - ${UPASS} -\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
     convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/START.png
 
     IMAGIC=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/START.png | tail -n 1)
@@ -93,7 +93,8 @@ select zwish in "${vlist[@]}"; do
     ;;
 
     *) echo "IMPRESSION ${voeu}"
-        TITLE=$(echo ${zwish} | cut -d ':' -f1) ## Get Voeu title
+
+        VoeuName=$(echo ${zwish} | cut -d ':' -f1) ## Get VoeuName
         voeu=$(echo ${zwish} | cut -d ':' -f2) ## Get G1PUB part
 
         VOEUXNS=$(ipfs key list -l | grep -w ${voeu} | cut -d ' ' -f1)
@@ -106,43 +107,52 @@ select zwish in "${vlist[@]}"; do
             "TW")
                 echo "Changer de Gateway $myIPFS ?"
                 read GW && [[ ! $GW ]] && GW="$myIPFS"
-                qrencode -s 12 -o "$HOME/.zen/game/world/${TITLE}/${voeu}/QR.WISHLINK.png" "$GW/ipns/$VOEUXNS"
-                convert $HOME/.zen/game/world/${TITLE}/${voeu}/QR.WISHLINK.png -resize 600 ~/.zen/tmp/${MOATS}/START.png
-                echo " QR code ${TITLE}  : $GW/ipns/$VOEUXNS"
+                qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${voeu}/QR.WISHLINK.png" "$GW/ipns/$VOEUXNS"
+                convert $HOME/.zen/game/world/${VoeuName}/${voeu}/QR.WISHLINK.png -resize 600 ~/.zen/tmp/${MOATS}/START.png
+                echo " QR code ${VoeuName}  : $GW/ipns/$VOEUXNS"
                 break
             ;;
 
             "Ğ1")
-                qrencode -s 12 -o "$HOME/.zen/game/world/${TITLE}/${voeu}/G1PUB.png" "${voeu}"
-                convert $HOME/.zen/game/world/${TITLE}/${voeu}/G1PUB.png -resize 600 ~/.zen/tmp/${MOATS}/START.png
+                qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png" "${voeu}"
+                convert $HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png -resize 600 ~/.zen/tmp/${MOATS}/START.png
                 break
             ;;
 
             "Ğ1Milgram")
-                GW="https://qo-op.com"
+
+                GW="(•‿‿•) SCAN https://astroport.com/scan"
                 # CREATE G1Milgram
-                IMAGIC=$(${MY_PATH}/VOEUX.print.sh "${PLAYER}" "${TITLE}" "${MOATS}" | tail -n 1)
+                IMAGIC=$(${MY_PATH}/VOEUX.print.sh "${PLAYER}" "${VoeuName}" "${MOATS}" | tail -n 1)
 
                 ## EXTRACT TEXT FROM TIDDLER
                 tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu \
-                                    --render '.' "${PLAYER}.${TITLE}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${TITLE}"
+                                    --render '.' "${PLAYER}.${VoeuName}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${VoeuName}"
 
-                cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.${TITLE}.json | jq -r '.[].text' > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.html
-
-                MILGRAM=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.html)
+                # cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.${VoeuName}.json | jq -r '.[].text' | html2text > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
+                ## COULD USE TEXT FROM TIDDLER (TODO)
+                echo "POUVEZ-VOUS REALISER CE SOUHAIT? Sinon relayez cette missive. SVP." > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
+                MILGRAM=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt)
 
                 xdg-open http://ipfs.localhost:8080/ipfs/${IMAGIC}
 
-                # ${TITLE} key
-                IK=$(ipfs key list -l | grep -w "${PLAYER}_${TITLE}" | cut -d ' ' -f 1 )
-                [[ $IK ]] && ipfs key rm ${PLAYER}_${TITLE}
-                ipfs key import ${PLAYER}_${TITLE} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TITLE}.ipfskey
-                IK=$(ipfs key list -l | grep -w "${PLAYER}_${TITLE}" | cut -d ' ' -f 1 )
+                # ${VoeuName} key
+                IK=$(ipfs key list -l | grep -w "${PLAYER}_${VoeuName}" | cut -d ' ' -f 1 )
+                [[ $IK ]] && ipfs key rm ${PLAYER}_${VoeuName}
+                ipfs key import ${PLAYER}_${VoeuName} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${VoeuName}.ipfskey
+                IK=$(ipfs key list -l | grep -w "${PLAYER}_${VoeuName}" | cut -d ' ' -f 1 )
 
                 xdg-open http://ipfs.localhost:8080/ipfs/${MILGRAM}
+
+                echo "$GW" > ~/.zen/tmp/${MOATS}/intro.txt
+
+                ## SEND BY EMAIL #############
+                mpack -a -s "♥Box : ${UPASS} Missive ... (•‿‿•)" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
+
                 (
-                    ipfs name publish -k ${PLAYER}_${TITLE} /ipfs/${MILGRAM}
-                    echo "${TITLE} ${UPASS} G1Milgram emitted ${PLAYER}"
+                    ipfs name publish -k ${PLAYER}_${VoeuName} /ipfs/${MILGRAM}
+                    echo "${VoeuName} ${UPASS} G1Milgram emitted ${PLAYER}"
+                    xdg-open http://ipfs.localhost:8080/ipns/${IK}
                 ) &
 
                 break
@@ -155,7 +165,7 @@ select zwish in "${vlist[@]}"; do
             esac
         done
 
-        convert -gravity northwest -pointsize 40 -fill black -draw "text 50,2 \"${TITLE} ($typ)\"" ~/.zen/tmp/${MOATS}/START.png ~/.zen/tmp/${MOATS}/g1voeu1.png
+        convert -gravity northeast -pointsize 30 -fill black -draw "text 50,2 \"${VoeuName} ($typ)\"" ~/.zen/tmp/${MOATS}/START.png ~/.zen/tmp/${MOATS}/g1voeu1.png
         convert -gravity southeast -pointsize 30 -fill black -draw "text 100,2 \"${GW}\"" ~/.zen/tmp/${MOATS}/g1voeu1.png ~/.zen/tmp/${MOATS}/g1voeu.png
 
         #~ echo "~/.zen/tmp/${MOATS}/g1voeu.png READY ?"
