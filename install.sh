@@ -154,6 +154,7 @@ if [[ $USER != 'xbian' ]]; then
     echo "INSTALL G1VISA QRCODE STICKERS PRINTING LAYER ? ENTER 'yes' or Hit enter to bypass."
     read saisie
     if [[ $saisie != "" ]]; then
+        ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
         sudo pip3 install brother_ql
         sudo cupsctl --remote-admin
@@ -163,17 +164,18 @@ if [[ $USER != 'xbian' ]]; then
 
         ## brother_ql_print
         echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
+
+        ## G1BILLET
+        echo "INSTALLING G1BILLET SERVICE : http://g1billet.localhost:33101"
+        cd ~/.zen
+        git clone https://git.p2p.legal/qo-op/G1BILLET.git
+        cd G1BILLET && ./setup_systemd.sh
+        cd -
+
     fi
 
 fi
-        ## G1BILLET
-        echo "INSTALLING G1BILLET SERVICE : http://g1billet.localhost:33101"
-        if [[ ! -d ~/.zen/G1BILLET ]]; then
-            cd ~/.zen
-            git clone https://git.p2p.legal/qo-op/G1BILLET.git
-            cd G1BILLET && ./setup_systemd.sh
-            cd -
-        fi
+
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
 echo "#############################################"
