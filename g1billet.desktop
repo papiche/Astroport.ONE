@@ -1,0 +1,7 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=G1BILLET
+Exec=xdg-open http://localhost:33101
+Icon=/home/_USER_/.zen/Astroport.ONE/rec.png
+Type=Application
+Categories=Utility
