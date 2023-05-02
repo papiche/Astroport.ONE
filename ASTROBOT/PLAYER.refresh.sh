@@ -56,6 +56,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         && echo "WARNING No ${PLAYER} in keystore WARNING WARNING" \
         && ASTRONAUTENS=$ASTRONS
 
+    [[ ! ${ASTRONAUTENS} ]] && echo "ERROR BAD ${PLAYER} - CONTINUE" && continue
+
     echo ">>> $myIPFS/ipns/${ASTRONAUTENS}"
 
     ## MY PLAYER : RESTORE PLAYER KEY FROM G1PUB (IN CASE IS MISSING : PLAYER LOGOUT)
