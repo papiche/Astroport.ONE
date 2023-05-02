@@ -238,6 +238,6 @@ for PLAYER in ${PLAYERONE[@]}; do
 done
 echo "PLAYER.refresh DONE."
 
-${MY_PATH}/MAP.refresh.sh
+${MY_PATH}/../tools/MAP.refresh.sh
 
 exit 0
