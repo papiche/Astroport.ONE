@@ -12,9 +12,21 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 start=`date +%s`
 
-PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
-### transfer variables according to script
-PORT=$1 PLAYER=$2 APPNAME=$3 WHAT=$4 OBJ=$5 VAL=$6
+PORT=$1 THAT=$2 ANDcyberD0G!
+=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 COOKIE=$10
+echo "PORT=$1
+THAT=$2
+AND=$3
+THIS=$4
+APPNAME=$5
+WHAT=$6
+OBJ=$7
+VAL=$8
+MOATS=$9
+COOKIE=$10"
+
+### transfer variables according to script (TODO REMOVE THAT)
+PORT=$1 PLAYER=$2 APPNAME=$3 OBJ=$5
 
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: ${myASTROPORT}
@@ -24,7 +36,6 @@ Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 
 "
-        echo "- ${PLAYER} - ${APPNAME} : ${WHAT} ${OBJ} ${VAL}"
         [[ ! ${PLAYER} ]] && (echo "${HTTPCORS} BAD PLAYER - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
         ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
         [[ ! ${ASTRONAUTENS} ]] && (echo "${HTTPCORS} UNKNOWN PLAYER ${PLAYER} - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
@@ -34,12 +45,12 @@ Content-Type: text/html; charset=UTF-8
 ##############################################
         if [[ ${APPNAME} == "moa" ]]; then
 
-                [[ ! ${VAL} ]] && VAL="G1CopierYoutube"
-                echo "EXPORT MOATUBE ${PLAYER} ${VAL}"
+                [[ ! ${WHAT} ]] && WHAT="G1CopierYoutube"
+                echo "EXPORT MOATUBE ${PLAYER} ${WHAT}"
 
-                tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/ --render '.' "${PLAYER}.moatube.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "[tag[${VAL}]]"
+                tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/ --render '.' "${PLAYER}.moatube.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "[tag[${WHAT}]]"
 
-                if [[ ! ${WHAT} || ${WHAT} == "json" ]]; then
+                if [[ ! ${THIS} || ${THIS} == "json" ]]; then
 
                     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.${PLAYER}.http
                     sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.${PLAYER}.http
@@ -54,15 +65,27 @@ Content-Type: text/html; charset=UTF-8
         fi
 
 ##############################################
+# ATPASS : /?player=PLAYER&atpass=G1PUB&$VoeuName=ONELINE
+##############################################
+        if [[ ${APPNAME} == "atpass" ]]; then
+
+               echo "CREATING @PASS"
+
+                end=`date +%s`
+                echo "(@PASS) creation time was "`expr $end - $start` seconds.
+                exit 0
+        fi
+
+##############################################
 # YOUTUBE : /?player=PLAYER&(youtube | pdf  | image) =_URL_
 ##############################################
         if [[ ${APPNAME} == "youtube" || ${APPNAME} == "pdf" || ${APPNAME} == "image" ]]; then
 
                 APPNAME=$(echo ${APPNAME} | sed -r 's/\<./\U&/g' | sed 's/ //g') ## First letter Capital
 
-                [[ ! ${WHAT} ]] && WHAT="https://www.youtube.com/watch?v=BCl2-0HBJ2c"
+                [[ ! ${THIS} ]] && THIS="https://www.youtube.com/watch?v=BCl2-0HBJ2c"
 
-                echo ">>> COPY ${APPNAME} for ${PLAYER} from ${WHAT}"
+                echo ">>> COPY ${APPNAME} for ${PLAYER} from ${THIS}"
 
                 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
                 [[ ! ${G1PUB} ]] && espeak "NOT MY PLAYER " && echo "${PLAYER} IS NOT MY PLAYER" && exit 1
@@ -72,11 +95,14 @@ Content-Type: text/html; charset=UTF-8
                 echo " = /ipfs/${TW}"
                 echo "================================================"
 
-                ${MY_PATH}/../ajouter_media.sh "${WHAT}" "${PLAYER}" "${APPNAME}" &
+                ${MY_PATH}/../ajouter_media.sh "${THIS}" "${PLAYER}" "${APPNAME}" &
 
                 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.${PLAYER}.http
                 echo "${myIPFS}/ipns/${ASTRONAUTENS}" >> ~/.zen/tmp/${MOATS}.${PLAYER}.http
-                cat ~/.zen/tmp/${MOATS}.${PLAYER}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                (
+                cat ~/.zen/tmp/${MOATS}.${PLAYER}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                rm ~/.zen/tmp/${MOATS}.${PLAYER}.http
+                ) &
 
 #  ### REFRESH CHANNEL COPY
 
