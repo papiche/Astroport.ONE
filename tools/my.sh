@@ -116,8 +116,15 @@ myHName() {
     [ -n "$myHName" ] && echo "$myHName"
 }
 
+zIp() {
+    local zip=$(cat ~/.zen/♥Box 2>/dev/null)
+    [ -n "$zip" ] && echo "$zip" || false
+}
+
 myIp() {
     local myIp=$(hostname -I | awk '{print $1}' | head -n 1)
+    local myZip=$(zIp)
+    [ -n "$myZip" ] && echo "$myZip" || \
     [ -n "$myIp" ] && echo "$myIp" || echo "127.0.0.1"
 }
 
@@ -407,7 +414,7 @@ myASTROTUBE="https://$(myAstroTube)"
 
 ## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 45781 )
 [ -s "~/.zen/♥Box" ] \
- && zIP=$(cat ~/.zen/♥Box)
+ && zIP=$(zIp) \
  && myASTROPORT="http://$(zIP):1234" \
  && myAPI="http://$(zIP):5001" \
  && myIPFS="http://$(zIP):8080" \
