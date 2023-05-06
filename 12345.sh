@@ -14,7 +14,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
 PORT=12345
-[[ ${isLAN} && $(which yunohost) ]] && PORT=45780
+[[ ${isLAN} && ${zIP} ]] && PORT=45780
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
     echo "YOU=$YOU"
@@ -67,7 +67,6 @@ while true; do
     ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
                 ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
-
     # ZIP
     [[ ${zIP} ]] && PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## yunohost : OPEN FIREWALL 1234 12345 45780 45781
 
