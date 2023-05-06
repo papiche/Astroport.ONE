@@ -14,6 +14,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
 PORT=12345
+[[ ${zIP} ]] && PORT=45780
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
     echo "YOU=$YOU"
@@ -37,7 +38,7 @@ Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 '
-echo "_________________________________________________________ $(date)"
+echo "_____________________$PORT________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
 echo "GCHANGE ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub"
