@@ -124,7 +124,7 @@ zIp() {
 myIp() {
     local myIp=$(hostname -I | awk '{print $1}' | head -n 1)
     local myZip=$(zIp)
-    [ -n "$myZip" ] && echo "$myZip" || \
+    [ -n "$myZip" ] && echo "$myZip" && exit 0
     [ -n "$myIp" ] && echo "$myIp" || echo "127.0.0.1"
 }
 
