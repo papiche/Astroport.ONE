@@ -63,12 +63,15 @@ while true; do
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+    # ZIP
+    if [[ ${zIP} ]]; then
+        PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## yunohost : OPEN FIREWALL 1234 12345 45780 45781
+    else
     # EACH VISITOR RECEIVE COMMAND RESPONSE ON
     ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
     [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
                 ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
-    # ZIP
-    [[ ${zIP} ]] && PORT=$((PORT+1)) && [ ${PORT} -gt 45782 ] && PORT=45780 ||  ## yunohost : OPEN FIREWALL 1234 12345 45780 45781
+    fi
 
     ## CHECK PORT IS FREE & KILL OLD ONE
     pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | cut -d " " -f 1)
