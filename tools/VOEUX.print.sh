@@ -7,7 +7,9 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 
-PLAYER=$1
+PLAYER_=$1
+PLAYER=$(echo "${PLAYER_}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kinds
+
 VoeuName=$2
 MOATS=$3
 G1PUB=$4
@@ -22,42 +24,62 @@ UPASS=$(date '+%Y%m') # YYYYMM
 
 ############################################################ G1Voeu.sh use
 ############################################################ PRINT G1Milgram (once a month)
-    if [[ ${G1PUB} != "" && ${VoeuName} != "" && -d ~/.zen/tmp/${MOATS} ]]; then
+    if [[ ${G1PUB} != "" && ${VoeuName} != "" && ${MOATS} != "" ]]; then
 
-    #################################################################
-    ## MAKING SPECIAL amrzqr => G1Milgram TICKET = G1Missive
-    ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} ${G1PUB} :: G1${VoeuName}" avec PASS=YYYYMM
-    SECRET1="${PLAYER} ${G1PUB}"
-    SECRET2="G1${VoeuName}"
+        mkdir -p ~/.zen/tmp/${MOATS}
+        #################################################################
+        ## MAKING SPECIAL amrzqr => G1Milgram TICKET = G1Missive
+        ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} :: G1${VoeuName} ${G1PUB}" avec PASS=YYYYMM
+        # LINK TO G1BILLET with MAKE_G1BILLET.sh :: ${PLAYER}_dice_words :: G1${VoeuName} ${G1PUB}"
 
-    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.ipfskey "${SECRET1}" "${SECRET2}"
+        # PLAYER G1Voeu G1BILLET+ (derivated key)
+        SECRET1="${PLAYER}"
+        SECRET2="G1${VoeuName} ${G1PUB}"
 
-    USALT=$(echo "${SECRET1}" | jq -Rr @uri)
-    UPEPPER=$(echo "${SECRET2}" | jq -Rr @uri)
-    DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
-    echo "${DISCO}"  > ~/.zen/tmp/${MOATS}/topgp
-    rm -f ~/.zen/tmp/${MOATS}/gpg.asc
-    cat ~/.zen/tmp/${MOATS}/topgp | gpg --symmetric --armor --batch --passphrase "$UPASS" -o ~/.zen/tmp/${MOATS}/gpg.asc
+        ## ATTACHED G1BILLET+
+        [[ $(cat ${PLAYER_} | grep '_' ) ]] \
+            && echo "G1BILLET+ interlinked : salt pepper refining" \
+            && murge=($(echo "${PLAYER_}" | cut -d '_' -f 2- | sed 's/_/ /g' | xargs)) \
+            && i=$(( ${#murge[@]} / 2 )) && i=$(( i + 1 )) \
+            && extra1=$(echo "${murge[@]}" | rev | cut -d ' ' -f $i- | rev) \
+            && extra2=$(echo "${murge[@]}" | cut -d ' ' -f $i-) \
+            && echo "extra1=${extra1} extra2=${extra2}"
 
-    cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
+        ## @PASS PLAYER IPFS KEY
+        echo "@PASS - G1Voeu"
+        ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.ipfskey "${SECRET1}" "${SECRET2}"
 
-    ## MAKE amzqr WITH @@@@@ PGP G1PASS FORMAT (%40)
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.asc  | tr '-' '@' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
-                -d "$HOME/.zen/tmp/${MOATS}" \
-                -l H \
-               -p ~/.zen/tmp/${MOATS}/result.png -c
+        ## EXTRA @PASS G1BILLET IPFS KEY
+        [[ ${extra1} != "" && ${extra2} != "" ]] \
+            && echo "G1BILLET+ EXTRA" \
+            && ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.BILL.ipfskey "${extra1}" "${extra2}"
 
-    convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER} - ${UPASS} -\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
-    convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/START.png
+        USALT=$(echo "${PLAYER_}" | jq -Rr @uri)
+        UPEPPER=$(echo "${SECRET2}" | jq -Rr @uri)
+        DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
+        echo "${DISCO}"  > ~/.zen/tmp/${MOATS}/topgp
+        rm -f ~/.zen/tmp/${MOATS}/gpg.asc
+        cat ~/.zen/tmp/${MOATS}/topgp | gpg --symmetric --armor --batch --passphrase "$UPASS" -o ~/.zen/tmp/${MOATS}/gpg.asc
 
-    IMAGIC=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/START.png | tail -n 1)
-    echo ${IMAGIC}
+        cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
 
-    ## SENDING EMAIL #############
-    echo "(•‿‿•) SCAN https://astroport.com/scan" > ~/.zen/tmp/${MOATS}/intro.txt
-    mpack -a -s "(•‿‿•) : Missive ${VoeuName} - ${UPASS} - La♥Box" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
+        ## MAKE amzqr WITH @@@@@ PGP G1PASS FORMAT (%40)
+        amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.asc  | tr '-' '@' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
+                    -d "$HOME/.zen/tmp/${MOATS}" \
+                    -l H \
+                   -p ~/.zen/tmp/${MOATS}/result.png -c
 
-    exit 0
+        convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER} - ${UPASS} -\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
+        convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/START.png
+
+        IMAGIC=$(ipfs add -Hq ~/.zen/tmp/${MOATS}/START.png | tail -n 1)
+        echo ${IMAGIC}
+
+        ## SENDING EMAIL TOO LONG (BETTER FROM ./command.sh) #############
+        #~ echo "(•‿‿•) SCAN https://astroport.com/scan" > ~/.zen/tmp/${MOATS}/intro.txt
+        #~ mpack -a -s "(•‿‿•) : Missive ${VoeuName} - ${UPASS} - La♥Box" -d ~/.zen/tmp/${MOATS}/intro.txt ~/.zen/tmp/${MOATS}/START.png ${PLAYER} &
+
+        exit 0
 
     fi
 ############################################################

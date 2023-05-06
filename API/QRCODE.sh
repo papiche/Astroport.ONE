@@ -265,7 +265,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
    NEWLINE=$(urldecode ${WHAT})
    DESTMAIL=$(urldecode ${VAL,,}) # lowercase
 
-   echo "## G1MISSIVE - PASS ${PASS} - $APPNAME"
+   echo "## G1BILLET+ - @PASS ${PASS} - $APPNAME"
 
     if [[ ${PASS} != "" ]]; then
 
@@ -277,14 +277,14 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
         cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
 
         if [[ ! -s ~/.zen/tmp/${MOATS}/decoded ]]; then
-            ## COULD BE ONE MONTH OLDER
+            ## COULD BE ONE MONTH OLDER (TODO CHOOSE VALIDITY TIME TO MOVE)
             UPASS=$(date -d "1 month ago" +"%Y%m")
             cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${UPASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
         fi
 
         # cat ~/.zen/tmp/${MOATS}/disco
         ## FORMAT IS "/?salt=${USALT}&pepper=${UPEPPER}"
-        ## MADE by tools/VOEUX.print.sh WITH SALT="EMAIL G1PUB" PEPPER="G1VoeuName"
+        ## MADE by tools/VOEUX.print.sh WITH USALT="EMAIL(_SEC1_SEC2)" UPEPPER="G1VoeuName OriG1PUB"
         DISCO=$(cat ~/.zen/tmp/${MOATS}/decoded  | cut -d '?' -f2)
         arr=(${DISCO//[=&]/ })
         s=$(urldecode ${arr[0]} | xargs)
@@ -296,36 +296,95 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
         if [[ ${salt} != "" && ${pepper} != "" ]]; then
 
-            echo "secret1=$salt" ## CONTAINS "EMAIL ORIGING1PUB"
-            player=$(echo $salt | cut -d ' ' -f 1)
-            ORIG1=$(echo $salt | cut -d ' ' -f 2)
+            echo "secret1=$salt" ## CONTAINS "EMAIL(_SEC1_SEC2)"
+            player=$(echo $salt | cut -d '_' -f 1 | cut -d ' ' -f 1 | grep '@')
+            echo "player=$player"
 
-            echo "secret2=$pepper" ## CONTAINS "G1VoeuName"
-            [[ ${pepper:0:2} != "G1" ]] && echo "NO GOOD KEY : $pepper" && exit 1
-            VoeuName=$(echo $pepper | cut -c 3-)
+            # # G1BILLET+ interlinked ? ##
+            [[ $(echo "$salt" | grep '_') ]] \
+                && echo "G1BILLET+ interlinked : salt pepper refining" \
+                && murge=($(echo $salt | cut -d '_' -f 2- | sed 's/_/ /g' | xargs)) \
+                && echo "${#murge[@]} dice words" && i=$(( ${#murge[@]} / 2 )) && i=$(( i + 1 )) \
+                && extra1=$(echo "${murge[@]}" | rev | cut -d ' ' -f $i- | rev) \
+                && extra2=$(echo "${murge[@]}" | cut -d ' ' -f $i-) \
+                && VoeuName="G1BILLET+" \
+                && billkeyname=$(echo "${extra1} ${extra2}" | sha512sum  | awk '{print $1}')
 
-            keyname="${player}_${VoeuName}"
-            echo "KeyName=$keyname"
+            echo "salt=$salt" ## CONTAINS "EMAIL"
+            echo "pepper=$pepper" ## CONTAINS "G1VoeuName ORIGING1PUB" or G1BILLET+ secret2
 
-            ISTHERE=$(ipfs key list -l | grep -w ${player} | cut -d ' ' -f1)
-            echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${pepper:0:2} == "G1" ]] \
+                && VoeuName=$(echo $pepper | cut -d ' ' -f 1 | cut -c 3-) \
+                && PLAYERORIG1=$(echo $pepper | rev | cut -d ' ' -f 1 | rev) \
+                && echo "$VoeuName $PLAYERORIG1 @PASS"
 
-            # Recreate G1 KEY
-            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
-            G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
-            ## CHECK ORIG1 amount
-            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${ORIG1}"
-            MCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${ORIG1} | tail -n 1)
-            echo "<br><b>$MCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
+            ## CHECK PLAYERORIG1 WALLETS
+            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${PLAYERORIG1}"
+            PLAYERCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${PLAYERORIG1} | tail -n 1)
+            echo "<br><b>${player} $PLAYERCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
+            ###  IF EMPTY ??? WHAT  TODO
+
+            orikeyname="${player}_${VoeuName}"
+            destkeyname="${DESTMAIL}_${VoeuName}"
+            echo "@PASS KEYS :
+            ORIGIN=$orikeyname
+            DEST=$destkeyname
+            BILL=$billkeyname"
+            ## REVEAL THE KEYS
+                # G1VOEU & IPNS KEY
+                [[ ${player} != "" ]] \
+                && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/playersecret.ipfs  "${player}" "G1${VoeuName} ${PLAYERORIG1}" \
+                && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/player.secret.key  "${player}" "G1${VoeuName} ${PLAYERORIG1}" \
+                && G1VOEUPUB=$(cat ~/.zen/tmp/${MOATS}/player.secret.key | grep 'pub:' | cut -d ' ' -f 2)
+               # INSTALL orikeyname IPNS KEY ON NODE
+                IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
+                [[ ! $IK ]] && ipfs key import ${orikeyname} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/playersecret.ipfs
+
+                ## IS IT A TRANSFER ? MILGRAM G1MISSIVE
+                [[ ${DESTMAIL} != "" ]] \
+                    && echo "MILGRAM :: ${player} :: ${DESTMAIL}" \
+                    && DESTG1=$(${MY_PATH}/../tools/keygen "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}") \
+                    && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/destsecret.ipfs  "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}"
+
+               # INSTALL orikeyname IPNS KEY ON NODE
+                IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
+                [[ ! $IK ]] && ipfs key import ${orikeyname} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/playersecret.ipfs
+
+                ## IS IT LINKED WITH extra G1BILLET+
+                [[ ${extra1} != "" && ${extra2} != "" ]] \
+                && echo "@PASS LINK TO G1BILLET+ :: ${extra1} :: ${extra2}" \
+                && EXTRAG1=$(${MY_PATH}/../tools/keygen "${extra1}" "${extra2}") \
+                && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/extrasecret.ipfs  "${extra1}" "${extra2}" \
+                && EXTRAG1COINS=$(${MY_PATH}/../tools/COINScheck.sh ${EXTRAG1} | tail -n 1) \
+                && echo "<br><b>EXTRA ${VoeuName} $EXTRAG1COINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
+
+            # Don't care if ORIGIN PLAYER is THERE
+            #~ ISTHERE=$(ipfs key list -l | grep -w ${player} | cut -d ' ' -f1)
+            #~ echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
+
+
+
+            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1VOEUPUB}"
+            G1VOEUCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${G1VOEUPUB} | tail -n 1)
+            echo "<br><b>${VoeuName} $G1VOEUCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
+
 
             #CONVERT TO IPNS KEY
-            QNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PUB})
+            G1VOEUNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1VOEUPUB})
             ## RETRIEVE IPNS CONTENT
-            echo "http://127.0.0.1:8080/ipns/$QNS"
-            if [[ ! -s ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt ]]; then
-
-                avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$QNS' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-                [[ ! $avanla ]] && ipfs cat /ipns/$QNS > ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt &
+            echo "http://127.0.0.1:8080/ipns/$G1VOEUNS"
+            if [[ ! -s ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt ]]; then
+                HELLO="@PASS :: G1BILLET+ :: ${G1VOEUPUB} :: $(date) :: ${player} :: ${PLAYERORIG1}"
+                echo "${HELLO}"
+                avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$G1VOEUNS' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+                [[ ! $avanla ]] \
+                    && ( ipfs cat /ipns/$G1VOEUNS > ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt \
+                                && [[ ! -s ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt ]] \
+                                && echo "@PASS G1BILLET+ INIT" \
+                                && echo "${HELLO}" > ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt \
+                                && MILGRAM=$(ipfs add -q ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt) \
+                                && ipfs name publish -k ${player}_${VoeuName} /ipfs/${MILGRAM} &
+                            ) &
 
                 echo "<br>PLEASE RETRY IN 30 SECONDS GETTING MESSAGE FROM IPFS<br>" >> ~/.zen/tmp/${MOATS}/disco
                 (
@@ -336,7 +395,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
             fi
             echo "<br><br>" >> ~/.zen/tmp/${MOATS}/disco
-            cat ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
+            cat ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
 
             [[ ${NEWLINE} == "" || ${NEWLINE} == "undefined"  ]] && echo "<br> NO NEW LINE <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${DESTMAIL} == "" || ${DESTMAIL} == "undefined" ]] && echo "<br> Missing Destination EMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco
@@ -352,28 +411,29 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 $($MY_PATH/../tools/search_for_this_email_in_players.sh ${DESTMAIL}) ## export ASTROTW and more
                 echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${DESTMAIL} ASTROFEED=${FEEDNS}"
 
-                ## CREATE NEXT G1Missive !
-                NEWIMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${DESTMAIL}" "${VoeuName}" "${MOATS}" "${ORIG1}" | tail -n 1)
+                 # Create Next G1 & IPNS KEY
+                DESTG1PUB=$(${MY_PATH}/../tools/keygen"${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}")
+                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/newsecret.ipfs  "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}"
 
-                # Create Next G1 & IPNS KEY
-                DESTG1PUB=$(${MY_PATH}/../tools/keygen"${DESTMAIL} ${ORIG1}" "G1${VoeuName}")
-                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/newsecret.ipfs  "${DESTMAIL} ${ORIG1}" "G1${VoeuName}"
-
+                orikeyname="${DESTMAIL}_${VoeuName}"
                 # INSTALL NEXT IPNS KEY ON NODE
-                IK=$(ipfs key list -l | grep -w "${DESTMAIL}_${VoeuName}" | cut -d ' ' -f 1 )
-                [[ ! $IK ]] && ipfs key import ${DESTMAIL}_${VoeuName} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/newsecret.ipfs
+                IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
+                [[ ! $IK ]] && ipfs key import ${orikeyname} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/newsecret.ipfs
+
+                ## CREATE NEXT G1Missive !
+                NEWIMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${DESTMAIL}" "${VoeuName}" "${MOATS}" "${PLAYERORIG1}" | tail -n 1)
 
                 ## ADD NEWLINE TO MESSAGE
                 if [[ ${NEWLINE} != "" ]]; then
                     CLINE=$(echo "${NEWLINE}" | detox --inline)
-                    echo "$CLINE" >> ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt ## NB: File could still being into "ipfs cat" process... TODO MAKE BETTER
+                    echo "$CLINE" >> ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt ## NB: File could still being into "ipfs cat" process... TODO MAKE BETTER
                 fi
 
                 echo "UPDATED" >> ~/.zen/tmp/${MOATS}/disco
-                cat ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
+                cat ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
                 echo "<br><img src=/ipfs/$NEWIMAGIC />" >> ~/.zen/tmp/${MOATS}/disco
 
-                MILGRAM=$(ipfs add -q ~/.zen/tmp/coucou/${ORIG1}.${VoeuName}.missive.txt)
+                MILGRAM=$(ipfs add -q ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt)
 
                 (
                     ipfs name publish -k ${DESTMAIL}_${VoeuName} /ipfs/${MILGRAM}
@@ -383,7 +443,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             fi
 
         else
-
+            ## TODO : EMPTY WALLET BACK TO ORIGIN
             echo "<br><h1>${PASS} ${UPASS} TOO OLD</h1>" >> ~/.zen/tmp/${MOATS}/disco
             echo "<br><img src='http://127.0.0.1:8080/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg' />" >> ~/.zen/tmp/${MOATS}/disco
 

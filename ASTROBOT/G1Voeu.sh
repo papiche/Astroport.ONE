@@ -75,7 +75,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     echo "# NATOOLS ENCODING  qrtw.ipfskey "
     ${MY_PATH}/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/game/players/${PLAYER}/voeux/${VoeuName}/${WISHG1PUB}/qrtw.ipfskey -o $HOME/.zen/tmp/${MOATS}/qrtw.ipfskey.$G1PUB.enc
     ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/qrtw.ipfskey.$G1PUB.enc | base16)
-    echo $ENCODING
+    #~ echo $ENCODING
 
     ## TEST IPFS
     #~ ipfs --timeout=30s cat /ipns/${VOEUNS} > ~/.zen/tmp/${VOEUNS}.json
@@ -98,8 +98,9 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
     #################################################################
     ## MAKING SPECIAL amrzqr => G1Milgram TICKET
-    ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} :: G1${VoeuName}" avec PASS=YYYYMM
-    IMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${PLAYER}" "${VoeuName}" "${MOATS}" | tail -n 1)
+    ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} :: G1${VoeuName} ${PLAYERG1PUB}" avec PASS=YYYYMM
+    IMAGIC=$(${MY_PATH}/../tools/VOEUX.print.sh "${PLAYER}" "${VoeuName}" "${MOATS}" "${G1PUB}" | tail -n 1)
+    cp ~/.zen/tmp/${MOATS}/START.png ~/.zen/game/world/${VoeuName}/${WISHG1PUB}/
 
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.G1ASTRO.png" "$G1PUB"

@@ -13,7 +13,7 @@ Revert() {
 }
 
 isLan() {
-    local isLan=$(ip route |awk '$1 == "default" {print $3}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
+    local isLan=$(ip route | awk '$1 == "default" {print $3}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
                || route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
                || true)
     [ -n "$isLan" ] && echo "$isLan" || true
@@ -403,4 +403,14 @@ myASTROTUBE="https://$(myAstroTube)"
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
  && myG1BILLET="http://${myIP}:33101" \
+ || true
+
+## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 45781 )
+[ -s "~/.zen/♥Box" ] \
+ && zIP=$(cat ~/.zen/♥Box)
+ && myASTROPORT="http://$(zIP):1234" \
+ && myAPI="http://$(zIP):5001" \
+ && myIPFS="http://$(zIP):8080" \
+ && myHOST="$(zIP)" \
+ && myG1BILLET="http://$(zIP):33101" \
  || true
