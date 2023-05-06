@@ -415,11 +415,10 @@ myASTROTUBE="https://$(myAstroTube)"
  || true
 
 ## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 45781 )
-[ -s "~/.zen/♥Box" ] \
- && zIP=$(zIp) \
- && myASTROPORT="http://$(zIP):1234" \
- && myAPI="http://$(zIP):5001" \
- && myIPFS="http://$(zIP):8080" \
- && myHOST="$(zIP)" \
- && myG1BILLET="http://$(zIP):33101" \
+[ -n "$(zIp)" ] \
+  && myASTROPORT="http://$(zIp):1234" \
+ && myAPI="http://$(zIp):5001" \
+ && myIPFS="http://$(zIp):8080" \
+ && myHOST="$(zIp)" \
+ && myG1BILLET="http://$(zIp):33101" \
  || true
