@@ -38,7 +38,7 @@ Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 '
-echo "_____________________$PORT________________________________ $(date)"
+echo "_____________________ $PORT ________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
 echo "GCHANGE ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub"
