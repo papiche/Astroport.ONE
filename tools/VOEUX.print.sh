@@ -25,7 +25,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
 ############################################################ G1Voeu.sh use
 ############################################################ PRINT G1Milgram (once a month)
     if [[ ${G1PUB} != "" && ${VoeuName} != "" && ${MOATS} != "" ]]; then
-
+        echo "MAKE G1PASS+@"
         mkdir -p ~/.zen/tmp/${MOATS}
         #################################################################
         ## MAKING SPECIAL amrzqr => G1Milgram TICKET = G1Missive
@@ -37,7 +37,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
         SECRET2="G1${VoeuName} ${G1PUB}"
 
         ## ATTACHED G1BILLET+
-        [[ $(cat ${PLAYER_} | grep '_' ) ]] \
+        [[ $(echo ${PLAYER_} | grep '_' ) ]] \
             && echo "G1BILLET+ interlinked : salt pepper refining" \
             && murge=($(echo "${PLAYER_}" | cut -d '_' -f 2- | sed 's/_/ /g' | xargs)) \
             && i=$(( ${#murge[@]} / 2 )) && i=$(( i + 1 )) \
@@ -67,7 +67,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
         amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.asc  | tr '-' '@' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
                     -d "$HOME/.zen/tmp/${MOATS}" \
                     -l H \
-                   -p ~/.zen/tmp/${MOATS}/result.png -c
+                   -p ~/.zen/tmp/${MOATS}/result.png
 
         convert -gravity northwest -pointsize 25 -fill black -draw "text 5,5 \"${PLAYER} - ${UPASS} -\"" ~/.zen/tmp/${MOATS}/result_qrcode.png ~/.zen/tmp/${MOATS}/layer1.png
         convert -gravity southeast -pointsize 25 -fill black -draw "text 5,5 \"${VoeuName}\"" ~/.zen/tmp/${MOATS}/layer1.png ~/.zen/tmp/${MOATS}/START.png
