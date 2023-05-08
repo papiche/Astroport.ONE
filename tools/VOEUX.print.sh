@@ -7,20 +7,23 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 
-PLAYER_=$1
+PLAYER_=$1 # ${PLAYER}(_dice_words) for sub-subkey
 PLAYER=$(echo "${PLAYER_}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kinds
 
 VoeuName=$2
 MOATS=$3
 G1PUB=$4
 
-UPASS=$(date '+%Y%m') # YYYYMM
 
 [[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ${PLAYER} == "" ]] && echo "PLAYER manquant" && exit 1
 
 [[ ${G1PUB} == "" ]] && G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ ${G1PUB} == "" ]] && echo "G1PUB manquant" && exit 1
+
+PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+UPASS=$(date '+%Y%m') # YYYYMM
+PPASS=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
 
 ############################################################ G1Voeu.sh use
 ############################################################ PRINT G1Milgram (once a month)
@@ -29,7 +32,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
         mkdir -p ~/.zen/tmp/${MOATS}
         #################################################################
         ## MAKING SPECIAL amrzqr => G1Milgram TICKET = G1Missive
-        ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER} :: G1${VoeuName} ${G1PUB}" avec PASS=YYYYMM
+        ## LE QRCODE CORRESPOND A LA CLEF DERIVE "${PLAYER_} :: G1${VoeuName} ${G1PUB}" avec PASS=YYYYMM
         # LINK TO G1BILLET with MAKE_G1BILLET.sh :: ${PLAYER}_dice_words :: G1${VoeuName} ${G1PUB}"
 
         # PLAYER G1Voeu G1BILLET+ (derivated key)
@@ -52,7 +55,7 @@ UPASS=$(date '+%Y%m') # YYYYMM
         ## EXTRA @PASS G1BILLET IPFS KEY
         [[ ${extra1} != "" && ${extra2} != "" ]] \
             && echo "G1BILLET+ EXTRA" \
-            && ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.BILL.ipfskey "${extra1}" "${extra2}"
+            && ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.EXTRA.ipfskey "${extra1}" "${extra2}"
 
         USALT=$(echo "${PLAYER_}" | jq -Rr @uri)
         UPEPPER=$(echo "${SECRET2}" | jq -Rr @uri)

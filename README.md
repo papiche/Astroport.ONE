@@ -309,6 +309,22 @@ redirect to pure "tag=" result  json
     * decode with PASS and make operation (same functions as SALT API are available)
 
 
+## The Art of key derivation
+
+In order to make (a little) clear how we use cryptography,
+
+We choose to use "NaCl" (secret1 / secret) 2 key generation.
+
+Thus
+
+* If PLAYER key is (SECRET1/SECRET2) and G1PUB and EMAIL
+    * wishes keys are (SECRET2 / G1WishName)
+        * sub-wishes are (EMAIL / G1WishName G1PUB)
+            * wish-billets are (EMAIL_dice_words / G1WishName G1PUB)
+
+This way PLAYER never loose its data.
+It is writen into IPFS... So recreate the key anywhere makes you get your data from friends you shared it with
+
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
 ```
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh LOW
