@@ -43,6 +43,7 @@ echo 'PRESS ENTER... '; read
             ## DIRECT VISA.print.sh
             echo "'Email ?'"
             read EMAIL
+            [[ ${EMAIL} == "" ]] && EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
             echo "'Secret 1 ?'"
             read SALT
             [[ ${SALT} == "" ]] && SALT=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
@@ -51,9 +52,8 @@ echo 'PRESS ENTER... '; read
             [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
             echo "'PIN ?'"
             read PASS
-            [[ ${PASS} == "" ]] && PASS="@"
+            echo "${MY_PATH}/tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
             ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
-            echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
             ;;
         "CREATE PLAYER")

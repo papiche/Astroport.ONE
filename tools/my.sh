@@ -422,5 +422,5 @@ myASTROTUBE="https://$(myAstroTube)"
  && myHOST="$(zIp)" \
  && myG1BILLET="http://$(zIp):33101" \
  && myIP="$(zIp)" \
- && myIPFSGW="$(zIp)" \
+ && myIPFSGW="$(zIp):8080" \
  || true
