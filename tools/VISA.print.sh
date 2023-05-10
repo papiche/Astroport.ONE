@@ -13,18 +13,41 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 PLAYER="$1"
 
-[[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] &&\
-        echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/${PLAYER}/" && exit 1
+SALT="$2"
+PEPPER="$3"
 
-# Check who is .current PLAYER
-PLAYER=$(cat ~/.zen/game/players/${PLAYER}/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
-PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
-G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
-ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null) || ( echo "noastronautens" && exit 1 )
+PASS="$4"
 
-PASS=$(cat ~/.zen/game/players/${PLAYER}/.pass)
+if [[ ${SALT} == ""  || ${PEPPER} == "" ]]; then
 
-source ~/.zen/game/players/${PLAYER}/secret.june
+    [[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] &&\
+            echo "ERREUR. Aucun PLAYER Astronaute connecté .ERREUR  ~/.zen/game/players/${PLAYER}/" && exit 1
+
+    # Check who is .current PLAYER
+    PLAYER=$(cat ~/.zen/game/players/${PLAYER}/.player 2>/dev/null) || ( echo "noplayer" && exit 1 )
+    PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) || ( echo "nopseudo" && exit 1 )
+    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null) || ( echo "nog1pub" && exit 1 )
+    ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null) || ( echo "noastronautens" && exit 1 )
+
+    PASS=$(cat ~/.zen/game/players/${PLAYER}/.pass)
+
+    source ~/.zen/game/players/${PLAYER}/secret.june
+
+else
+
+    echo "VIRTUAL PLAYER ${PLAYER} WELCOME - CREATING G1CARD"
+    VIRTUAL=1
+    G1PUB=$(${MY_PATH}/keygen -t duniter "${SALT}" "${PEPPER}")
+    ASTRONAUTENS=$(${MY_PATH}/keygen -t ipfs "${SALT}" "${PEPPER}")
+    PSEUDO="${PLAYER}"
+
+    mkdir -p ~/.zen/game/players/${PLAYER}/
+    CIMG="${MY_PATH}/../images/g1ticket.png"
+    amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+
+fi
+
+
 [[ $SALT == "" ]] && echo "BAD ACCOUNT. PLEASE BACKUP. MOVE. RESTORE." && exit 1
 
 LP=$(ls /dev/usb/lp* | head -n 1 2>/dev/null)
@@ -90,5 +113,7 @@ composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/one.png ${MY_P
 #~ rm -Rf ~/.zen/G1BILLET/tmp/${PASS}
 #~ rm ~/.zen/G1BILLET/tmp/${PASS}*
 #~ rm ~/.zen/tmp/${PASS}*
+[[ $VIRTUAL == 1 ]] && rm -Rf ~/.zen/game/players/${PLAYER}/
+
 
 exit 0

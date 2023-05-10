@@ -48,7 +48,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     [[ $XDG_SESSION_TYPE == 'x11' ]] \
     && [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    && echo "TYPE 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
+    && echo "TW FOUND ENTER 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
     && read ENTER \
     && [[ $ENTER != "" ]] && rm ~/.zen/tmp/${MOATS}/TW/index.html
 

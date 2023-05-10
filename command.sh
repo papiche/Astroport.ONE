@@ -34,18 +34,35 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=("MAKE G1PASS" "IMPORT G1PASS" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=( "PRINT G1CARTE" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
         case $fav in
-        "MAKE G1PASS")
+        "PRINT G1CARTE")
+            ## DIRECT VISA.print.sh
+            echo "'Email ?'"
+            read EMAIL
+            echo "'Secret 1 ?'"
+            read SALT
+            [[ ${SALT} == "" ]] && SALT=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
+            echo "'Secret 2?'"
+            read PEPPER
+            [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
+            echo "'PIN ?'"
+            read PASS
+            [[ ${PASS} == "" ]] && PASS="@"
+            ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
+            echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
+            exit
+            ;;
+        "CREATE PLAYER")
             ${MY_PATH}/tools/VISA.new.sh
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
             ;;
-        "IMPORT G1PASS")
+        "IMPORT PLAYER")
             echo "'Secret 1'"
             read SALT
             echo "'Secret 2'"
