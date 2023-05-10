@@ -14,7 +14,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
 PORT=12345
-[[ ${zIP} ]] && PORT=45780
+[[ $(zIp) ]] && PORT=45780
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
     echo "YOU=$YOU"
@@ -62,9 +62,9 @@ while true; do
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ ${zIP} ]] && PORT=45780
+    [[ $(zIp) ]] && PORT=45780
     # ZIP
-    if [[ ${zIP} ]]; then
+    if [[ $(zIp) ]]; then
         PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## yunohost : OPEN FIREWALL 1234 12345 45780 45781
     else
     # EACH VISITOR RECEIVE COMMAND RESPONSE ON
