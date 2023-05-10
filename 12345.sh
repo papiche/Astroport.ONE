@@ -62,7 +62,7 @@ while true; do
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ $(zIp) ]] && PORT=45780
+    [[ $(zIp) ]] && PORT=45779
     # ZIP
     if [[ $(zIp) ]]; then
         PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## yunohost : OPEN FIREWALL 1234 12345 45780 45781
