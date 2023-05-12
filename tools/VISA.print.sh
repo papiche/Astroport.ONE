@@ -113,7 +113,5 @@ composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/one.png ${MY_P
 #~ rm -Rf ~/.zen/G1BILLET/tmp/${PASS}
 #~ rm ~/.zen/G1BILLET/tmp/${PASS}*
 #~ rm ~/.zen/tmp/${PASS}*
-[[ $VIRTUAL == 1 ]] && rm -Rf ~/.zen/game/players/${PLAYER}/
-
 
 exit 0
