@@ -151,7 +151,7 @@ echo "#############################################"
 
 ########### QRCODE : G1VISA / G1BILLET : PRINTER ##############
 if [[ $USER != 'xbian' ]]; then
-    echo "INSTALL G1VISA QRCODE STICKERS PRINTING LAYER ? ENTER 'yes' or Hit enter to bypass."
+    echo "INSTALL G1VISA QRCODE PRINTING LAYER ? ENTER 'yes' or Hit enter to bypass."
     read saisie
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
