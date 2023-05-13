@@ -2,7 +2,7 @@
 # https://ipfs.copylaradio.com ipfs.copylaradio.com
 #################################################################
 # astroport.libra.copylaradio.com
-/ip4/149.102.158.67/udp/4001/quic/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+/ip4/149.102.158.67/udp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 
 # astroport.cancer.copylaradio.com
 /ip4/185.202.238.69/tcp/4001/p2p/12D3KooWDYpPdfCFf3CbKpcLNmyA2vmJs4JY55k8yje9R1MxSgdB
