@@ -73,6 +73,8 @@ while true; do
                 ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
     fi
 
+    [ ${PORT} -eq 12345 ] && PORT=$((PORT+1)) ## AVOID _12345.sh SWARM SUBMAP PORT
+
     ## CHECK PORT IS FREE & KILL OLD ONE
     pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | cut -d " " -f 1)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "$(date) KILLING LOST $pidportinuse"

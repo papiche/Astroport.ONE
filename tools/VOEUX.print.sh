@@ -23,6 +23,7 @@ G1PUB=$4
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 UPASS=$(date '+%Y%m') # YYYYMM
+DPASS=$(date '+%Y%m%d') # YYYYMMDD
 PPASS=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
 
 ############################################################ G1Voeu.sh use

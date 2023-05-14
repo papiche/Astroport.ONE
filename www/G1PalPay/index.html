@@ -117,6 +117,16 @@ a {
         <header>
         <h1><a href="http://astroport.localhost:1234"><span>♥Box</span> Ğ1Station </a></h1><br>
         </header>
+        <form method='get' action='http://127.0.0.1:33101' target='aframe'>
+            <input type='hidden' name='montant' value='0' >
+            <label for='type'>Type :</label><select name='type'>
+                <option value=''>G1BILLET+ ( x 6 )</option>
+                <option value='jeu' selected>G1PASS</option>
+                <option value='xastro'>G1PASS+TW</option>
+                <option value='@astroport'>G1PASS+@</option>
+                </select><input type='hidden' name='dice' value='6' >&nbsp;&nbsp;&nbsp;&nbsp;
+            <button type='submit'>Lancer Fabrication</button>
+        </form>
         <h3>Oubliez la crise !</h3>
         <h2>Utilisez la Monnaie Libre.</h2>
         <h3>Explorez le Monde en confiance...</h3>
@@ -128,7 +138,7 @@ a {
             <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
 
                 <h1><div id="countdown">___</div></h1>
-
+                <input type="hidden" id="PASS" value="PASS"/>
                 <p><input type="text" id="g1pub" value="DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"/></p>
                 <p><b>G1PUB</b>  destinataire</p>
 
@@ -193,11 +203,24 @@ a {
             if (content.startsWith('~~~~~')) {
                 // GET APPNAME
                 var appname = document.querySelector('input[name="appname"]:checked').value;
-                // GET PASS THAT DECODE PGP
-                var pass = prompt("Saisir PASS:");
+
+                // GET PASS TO DECODE PGP
+                var oldpass = document.getElementById("PASS").value;
+                if ( oldpass == 'PASS') {
+                    var pass = prompt("Saisir PASS:");
+                } else {
+                    var pass = oldpass;
+                }
 
                 // PREVIOUS G1PUB SCAN
                 var g1pub = document.getElementById("g1pub").value;
+
+                // MEMORIZE
+                if ( appname == 'pay') {
+                    document.getElementById("PASS").value = pass;
+                } else {
+                    document.getElementById("PASS").value = "PASS";
+                }
 
                 // APPNAME : DATA COLLECT & ARRANGE
                 if ( appname == 'pay') {
