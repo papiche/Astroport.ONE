@@ -149,8 +149,11 @@ if [[ ! ${TIDDLER} ]]; then
             echo "No FILE -- TRYING TO RESTORE CACHE FROM TW --"
             tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
-                    --render '.' "$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}" \
-            && rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" && ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+                    --render '.' "$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}"
+            if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json ]]; then
+                rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" 2>/dev/null
+                ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+            fi
             continue
         fi
         echo

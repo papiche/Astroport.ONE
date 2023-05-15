@@ -183,7 +183,7 @@ a {
             function countdown() {
                 if (timeLeft == -1) {
                     clearTimeout(timerId);
-                    elem.innerHTML = "<a href='"+redirectURL+"' target='aframe'>OK</a>";
+                    elem.innerHTML = "<a target='aframe' href='"+redirectURL+"'>OK</a>";
                     window.open( redirectURL, "AstroTab");
                 } else {
                     elem.innerHTML = timeLeft + " s";
