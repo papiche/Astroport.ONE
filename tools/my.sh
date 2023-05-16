@@ -358,6 +358,7 @@ myHtml() {
         -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
         -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         -e "s~http://127.0.0.1:12345~http://${myHOST}:12345~g" \
+        -e "s~http://127.0.0.1:33101~http://${myHOST}:33101~g" \
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
         -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
         -e "s~g1billet.localhost~${myIP}~g" \
