@@ -146,7 +146,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                     ## COMMAND A PAYMENT
                         if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
-                            echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTRO:Bro' -m"
+                            echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'G1PASS:${MOATS}' -m"
                             ${MY_PATH}/../tools/timeout.sh -t 5 \
                             ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1PASS:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
@@ -580,6 +580,9 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
     echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
     VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
     COINSFILE=$HOME/.zen/tmp/coucou/${QRCODE}.COINS
+
+### PATCH COPY G1BILLET G1PUB TO MALKE PAYMENT WHEN RECONNECT
+    cp $COINSFILE ~/live/
 
 ###########################################################
 ## SEARCH IF G1PUB IS IN PLAYERS OTHERWISE CHOOSE CURRENT SECRET
