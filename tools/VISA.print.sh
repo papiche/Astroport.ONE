@@ -87,8 +87,8 @@ composite -compose Over -gravity NorthWest -geometry +0+12 ~/.zen/tmp/QR.png ~/.
 convert -gravity NorthEast -pointsize 15 -fill black -draw "text 42,32 \"$PLAYER\"" ~/.zen/tmp/astroport.png ~/.zen/tmp/image.png
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/image.png ~/.zen/tmp/pseudo.png
 convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PASS}\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/pass.png
-convert -gravity SouthEast -pointsize 12 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/pass.png ~/.zen/tmp/salt.png
-convert -gravity SouthEast -pointsize 12 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/visa.${PASS}.jpg
+convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/pass.png ~/.zen/tmp/salt.png
+convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/visa.${PASS}.jpg
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/visa.${PASS}.jpg
 
