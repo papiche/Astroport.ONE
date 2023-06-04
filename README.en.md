@@ -1,12 +1,19 @@
 # Preamble
-When will we be able to get out of this Evil Cloud that profiles us, scans us, analyzes us... To finally make us consume.
-I didn't train as a network engineer to make this!
-So I did something else.
+Are you ready to be part of an exciting technological adventure? Do you want to contribute to an innovative project that aims to protect freedom of expression and promote uncensored information sharing? If so, Astroport is the perfect fit for you!
 
-Astroport is built on IPFS to form our personal Clouds exchanged between friends of friends protected from AI algorithms and the wild datamining that reigns here.
-The advantage of this system, an energy consumption divided by 100, a distribution of data that allows to operate disconnected, a peer-to-peer information system unalterable, unbreakable.
-Please let's stop this Internet Supermarket of ourselves...
-It is a library of knowledge at its core.
+Astroport is much more than just software; it's a groundbreaking platform that leverages peer-to-peer (P2P) and IPFS technology to enable users to share information, particularly videos, securely and without fear of censorship. We are committed to defending freedom of expression and combating potential restrictions imposed by fact-checking laws advanced by the European Union.
+
+But Astroport doesn't stop there. We go even further by creating a network that identifies resources around you, whether it's food, friends, services, or goods. Imagine being able to easily find what you need, locally and in a decentralized manner. With Astroport, you'll never be alone when it comes to meeting your needs.
+
+Moreover, we offer a revolutionary tool called the "build guide," inspired by Minecraft but for real life. You'll be able to follow detailed tutorials to build or produce anything you desire. And to facilitate your projects, we've integrated the marketplace of the Ğ1 libre currency (gchange.fr), allowing you to order the necessary basic materials for your creations.
+
+To make all this possible, we need talented and passionate developers like you! Join our team and contribute to the creation of a revolutionary platform that unleashes the power of knowledge and fosters unhindered collaboration.
+
+As a developer at Astroport, you'll have the opportunity to work with cutting-edge technologies such as P2P, IPFS, and the Ğ1 libre currency. You'll push the boundaries of innovation and contribute to a project that will change the way we share information and interact with our environment.
+
+Join us now and be part of a passionate team working to make the world better, freer, and more connected. Together, we will build a future where censorship has no place and the sharing of knowledge becomes a reality for all.
+
+Join Astroport and make a difference today!
 
 ## https://astroport.com
 

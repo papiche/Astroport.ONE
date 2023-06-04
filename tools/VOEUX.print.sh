@@ -54,9 +54,25 @@ PPASS=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
         ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.ipfskey "${SECRET1}" "${SECRET2}"
 
         ## EXTRA @PASS G1BILLET IPFS KEY
-        [[ ${extra1} != "" && ${extra2} != "" ]] \
-            && echo "G1BILLET+ EXTRA" \
-            && ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.EXTRA.ipfskey "${extra1}" "${extra2}"
+        if [[ ${extra1} != "" && ${extra2} != "" ]]; then
+
+            MESSAGE="G1BILLET+ MESSAGE BOX - $(date)" ## VOEU=G1BILLET+ ##
+            echo "$MESSAGE"
+            ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${VoeuName}.EXTRA.ipfskey "${extra1}" "${extra2}"
+
+            ## TAKES TOO MUCH TIME -- USER WILL INIT G1BILLET+ MESSAGE LATER
+            #~ echo "$MESSAGE" > ~/.zen/tmp/${MOATS}/MESSAGE
+            #~ BILLETNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${VoeuName}.EXTRA.ipfskey)
+            #~ rm ~/.zen/tmp/${MOATS}/${VoeuName}.EXTRA.ipfskey
+
+            #~ ## INSERT MESSAGE IN G1BILLET+ IPNS key
+            #~ (
+                #~ IPONE=$(ipfs add -q ~/.zen/tmp/${MOATS}/MESSAGE)
+                #~ ipfs name publish -k ${MOATS} /ipfs/${IPONE}
+                #~ ipfs key rm ${MOATS}
+            #~ ) &
+
+        fi
 
         USALT=$(echo "${PLAYER_}" | jq -Rr @uri)
         UPEPPER=$(echo "${SECRET2}" | jq -Rr @uri)
@@ -152,7 +168,7 @@ select zwish in "${vlist[@]}"; do
 
             "Ğ1Milgram")
 
-                GW="(•‿‿•) SCAN https://astroport.com/scan"
+                GW="(•‿‿•) ___ https://g1sms.fr ___"
                 # CREATE G1Milgram
                 IMAGIC=$(${MY_PATH}/VOEUX.print.sh "${PLAYER}" "${VoeuName}" "${MOATS}" | tail -n 1)
 
@@ -160,9 +176,10 @@ select zwish in "${vlist[@]}"; do
                 tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu \
                                     --render '.' "${PLAYER}.${VoeuName}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${VoeuName}"
 
-                # cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.${VoeuName}.json | jq -r '.[].text' | html2text > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
-                ## COULD USE TEXT FROM TIDDLER (TODO)
-                echo "SVP. Passez le message un ami de confiance." > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
+                ## USE TEXT FROM TIDDLER
+                cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.${VoeuName}.json | jq -r '.[].text' | html2text > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
+                echo "
+                Signalez que vous pouvez réaliser ce voeu? Sinon passez le billet un ami." >> ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
                 MILGRAM=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt)
 
                 xdg-open http://ipfs.localhost:8080/ipfs/${IMAGIC}
@@ -176,9 +193,9 @@ select zwish in "${vlist[@]}"; do
                 xdg-open http://ipfs.localhost:8080/ipfs/${MILGRAM}
 
                 (
-                    ipfs name publish -k ${PLAYER}_${VoeuName} /ipfs/${MILGRAM}
                     echo "${VoeuName} ${UPASS} G1Milgram emitted ${PLAYER}"
                     xdg-open http://ipfs.localhost:8080/ipns/${IK}
+                    ipfs name publish -k ${PLAYER}_${VoeuName} /ipfs/${MILGRAM}
                 ) &
 
                 break

@@ -1,12 +1,19 @@
 # Préambule - [read this introduction in english](https://github.com/papiche/Astroport.ONE/blob/master/README.en.md) -
-Quand pourrons nous sortir de ce Méchant Cloud qui nous profile, nous scrute, nous analyse... Pour au final nous faire consommer.
-Je n'ai pas suivi la formation d’ingénieur réseau pour fabriquer ça!
-Alors j'ai fait autre chose.
 
-Astroport est contruit sur IPFS pour former nos Cloud personnels échangés entre amis d'amis à l’abri des algorithmes de l'IA et du datamining sauvage qui règne ici bas.
-L'avantage de ce système, une consommation énergétique divisé par 100, une répartition des données qui permet de fonctionner déconnecté, un système d'information pair à pair inaltérable, inviolable.
-S'il vous plaît arrêtons cet Internet Supermarché de nous même...
-C'est une bibliothèque du savoir à la base.
+Bienvenue dans l'équipe d'Astroport, le réseau pair-à-pair (P2P) révolutionnaire qui repousse les limites de la liberté d'information et d'interaction ! Si vous êtes un développeur passionné à la recherche d'un projet novateur et audacieux, alors vous êtes au bon endroit.
+
+Astroport offre une plateforme sécurisée et décentralisée permettant le partage d'informations, en particulier de vidéos, via IPFS. Notre objectif est de contrer les restrictions de censure qui pourraient être imposées par les futures lois de fact-checking avancées par l'Union Européenne. Nous croyons fermement en la liberté d'expression et nous nous engageons à protéger cette valeur fondamentale.
+
+Mais ce n'est pas tout ! Astroport va bien au-delà du simple partage d'informations. Notre plateforme vous permet également d'identifier les ressources autour de vous, qu'il s'agisse de nourriture, d'amis, de services ou de biens. Grâce à Astroport, vous serez en mesure de trouver et de partager les ressources nécessaires à votre vie quotidienne de manière simple et efficace.
+
+Et ce n'est pas tout ! Nous avons également intégré un "build guide" à Astroport, inspiré par les célèbres livres de recettes de Minecraft. Vous pourrez utiliser ce guide pour apprendre à créer des objets réels, en utilisant les matériaux disponibles sur notre place de marché. Imaginez un tutoriel détaillé pour fabriquer des meubles, des objets de décoration, voire même des outils pratiques pour votre quotidien. Astroport met la créativité entre vos mains.
+
+Nous nous sommes également associés à la monnaie libre Ğ1 et à sa place de marché, gchange.fr. Cela signifie que vous pourrez commander les matériaux nécessaires à la réalisation de vos projets directement depuis Astroport. Tout est à portée de clic, dans une seule et même application.
+
+Rejoindre l'équipe d'Astroport, c'est contribuer à une cause qui va bien au-delà de la simple programmation. C'est faire partie d'un mouvement qui aspire à défendre les principes de liberté, de partage et de créativité. C'est travailler sur un projet qui a le potentiel de changer la façon dont nous interagissons avec l'information et les ressources qui nous entourent.
+
+Alors, si vous êtes prêt à relever le défi et à participer à la construction d'un avenir où la censure n'a pas sa place, rejoignez-nous dès aujourd'hui et laissez votre empreinte sur le monde avec Astroport. Ensemble, nous pouvons libérer le potentiel de la technologie et créer un avenir plus ouvert pour tous.
+
 
 ## https://astroport.com
 
