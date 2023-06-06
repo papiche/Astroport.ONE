@@ -192,6 +192,8 @@ do
 
 
         ################################## PasseportTerre/index.html
+        if [[ ${WISHNAME} == "G1CopierYoutube" ]]; then
+
         cat $MY_PATH/../www/PasseportTerre/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
@@ -206,6 +208,8 @@ do
                     -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}~g" \
                     -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
+
+        fi
                 ### PREPARE WISHNAME index.html
         ##################################
 
