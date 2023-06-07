@@ -344,8 +344,8 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 ## IS IT A TRANSFER ? MILGRAM G1MISSIVE
                 [[ ${DESTMAIL} != "" ]] \
                     && echo "MILGRAM :: ${player} :: ${DESTMAIL}" \
-                    && DESTG1=$(${MY_PATH}/../tools/keygen "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}") \
-                    && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/destsecret.ipfs  "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}"
+                    #~ && DESTG1=$(${MY_PATH}/../tools/keygen "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}") \
+                    #~ && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/destsecret.ipfs  "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}"
 
                # INSTALL orikeyname IPNS KEY ON NODE
                 IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
@@ -362,8 +362,6 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             # Don't care if ORIGIN PLAYER is THERE
             #~ ISTHERE=$(ipfs key list -l | grep -w ${player} | cut -d ' ' -f1)
             #~ echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
-
-
 
             echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1VOEUPUB}"
             G1VOEUCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${G1VOEUPUB} | tail -n 1)
