@@ -40,11 +40,11 @@ $MY_PATH/youtube-dl.sh
 sudo youtube-dl -U
 
 # Refresh ~/.zen/game/world/G1VOEU
-# NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/ASTROBOT/VOEUX.refresh.sh
+# NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/RUNTIME/VOEUX.refresh.sh
 
 espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
-~/.zen/Astroport.ONE/ASTROBOT/PLAYER.refresh.sh
+~/.zen/Astroport.ONE/RUNTIME/PLAYER.refresh.sh
 
     ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
