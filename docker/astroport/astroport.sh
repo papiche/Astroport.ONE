@@ -26,7 +26,10 @@ case "${1:-${cmd:-start}}" in
     cron
     log &
     zen
-    exec "$ASTROPORT_DIR/launch.sh"
+    sudo systemctl restart ipfs
+    sudo systemctl restart g1billet
+    sudo systemctl restart astroport
+    # exec "$ASTROPORT_DIR/launch.sh"
   ;;
 
   install)
