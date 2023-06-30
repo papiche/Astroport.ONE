@@ -139,7 +139,7 @@ async function fetchAstroport(myURL) {
 ```
 Utilisez "[astro.js](www/G1PalPay/G1PalPay_fichiers/astro.js)" comme dans l'Application DEMO www/G1PalPay (accessible sur "Open Station")
 ```
-    <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
+    <script src="https://ipfs.asycn.io/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```
 
 
@@ -299,11 +299,11 @@ GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1PASS_STRING}
 
 * Is G1*? Redirect to G1WishApp / Export Tagged Tiddlers json from TW
 
-[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0](http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0)
+[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0](https://astroport.copylaradio.com/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0)
 redirect to
-[http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/](http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/)
+[http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/](https://ipfs.asycn.io/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/)
 
-[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
+[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](https://astroport.copylaradio.com/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
 redirect to pure "tag=" result  json
 
 * Is G1PUB ... (FROM NEW G1PASS or empty G1BILLET)
@@ -396,7 +396,7 @@ Le niveau informationnel de confiance exploré permet de proposer des alertes is
 
 # IPFS : UN STOCKAGE INALTERABLE ET INTELLIGENT
 
-[![](http://ipfs.localhost:8080/ipfs/QmafsWdAeB5W9HcNPQWK2yjTgcW8eTxHoSD7bzE55mtrdP)
+[![](https://ipfs.asycn.io/ipfs/QmafsWdAeB5W9HcNPQWK2yjTgcW8eTxHoSD7bzE55mtrdP)
 
 ### "The Barefoot Architect" de Johan Van Lengen.
 
