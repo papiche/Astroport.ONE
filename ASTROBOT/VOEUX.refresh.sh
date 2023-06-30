@@ -51,10 +51,10 @@ while read WISH
 do
     [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
     echo "==============================="
-    echo "G1Voeu ${WISH}"
     ## Get ${WISHNAME}
     WISHNAME=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
     [[ ! ${WISHNAME} ]] && echo "WISH sans NOM - CONTINUE -" && continue
+    echo "G1Voeu ${WISH} (${WISHNAME})"
 
     IPNS_VOEUNS=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
     VOEUKEY=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json  | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wish')
@@ -192,7 +192,7 @@ do
 
 
         ################################## PasseportTerre/index.html
-        if [[ ${WISHNAME} == "G1CopierYoutube" ]]; then
+        if [[ ${WISHNAME} == "CopierYoutube" ]]; then
 
         cat $MY_PATH/../www/PasseportTerre/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
