@@ -23,7 +23,7 @@ PORT=12345
     TUBE=$(myTube)
     echo "TUBE=$TUBE"
 
-mkdir -p ~/.zen/tmp/coucou/ ~/.zen/game/players/localhost
+mkdir -p ~/.zen/tmp/coucou/ ~/.zen/game/players/localhost #
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
