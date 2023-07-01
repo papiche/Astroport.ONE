@@ -29,6 +29,8 @@ Les utilisateurs peuvent "déplacer leur compte". La dernière utilisée dans la
 
 L'architecture attachée à chaque clefs publiques se déploie et en forme de "pétales de fleur" selon les cercles de confiance Ŋ1 et Ŋ2.
 
+![N.ONE.2](https://www.copylaradio.com/web/image/6038/ASTROPORT_multiWoTNet.png)
+
 Des clefs dérivées sont crées pour exporter et explorer les "G1MotsClefs" associés au Tiddlers.
 A chaque copie le tiddlers reçoit une nouvelle signature et déclenche le processus "G1PalPay".
 
