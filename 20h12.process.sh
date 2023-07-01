@@ -63,7 +63,8 @@ end=`date +%s`
 dur=`expr $end - $start`
 echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 
-~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh
+# ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh ## COULD FORWARD LOCAL TCP PORT TO SWARM
+rm ~/.zen/game/players/localhost/latest
 
 ## MAIL LOG : support@qo-op.com
 $MY_PATH/tools/mailjet.sh "support@g1sms.fr" "/tmp/20h12.log"
