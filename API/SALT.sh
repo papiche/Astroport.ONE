@@ -169,14 +169,14 @@ Content-Type: text/html; charset=UTF-8
 
                     ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
-                    echo "Le code de votre G1PASS est ${PASS}, scannez-le sur La♥Box Ğ1Station (demo : https://astroport.copylaradio.com)" > ~/.zen/tmp/${MOATS}/intro.txt
+                    echo "Le code de votre G1CARD est ${PASS}, scannez-le sur La♥Box Ğ1Station (demo : https://astroport.copylaradio.com)" > ~/.zen/tmp/${MOATS}/intro.txt
 
                     ## EXECUTE LAST LINE
                     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt | tail -n 1)
                     echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 
                     BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
-                    mpack -a -s "La♥Box : G1PASS :+: TW :+: " -d ~/.zen/tmp/${MOATS}/intro.txt \
+                    mpack -a -s "La♥Box : G1CARD :+: TW :+: " -d ~/.zen/tmp/${MOATS}/intro.txt \
                         ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ${PLAYER}
 
                     end=`date +%s`

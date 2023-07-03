@@ -147,9 +147,9 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                     ## COMMAND A PAYMENT
                         if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
-                            echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'G1PASS:${MOATS}' -m"
+                            echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'G1CARD:${MOATS}' -m"
                             ${MY_PATH}/../tools/timeout.sh -t 5 \
-                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1PASS:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+                            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1CARD:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
                             #################################### SYSTEM IS NOT DUNITER OVER POOL RESISTANT
                             if [ $? == 0 ]; then
@@ -765,7 +765,7 @@ else
 
 fi
 
-## USE PLAYER API OR MOVE TO G1PASS PGP QRCODE
+## USE PLAYER API OR MOVE TO G1CARD PGP QRCODE
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
 

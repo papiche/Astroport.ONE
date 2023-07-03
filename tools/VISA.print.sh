@@ -97,8 +97,8 @@ convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER
 && brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/visa.${PASS}.jpg > ~/.zen/tmp/toprint.bin 2>/dev/null \
 && sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
 
-## PRINT PGP G1PASS
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1PASS.png  -resize 400 ~/.zen/tmp/ASTROPORT.png
+## PRINT PGP G1CARD
+convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1CARD.png  -resize 400 ~/.zen/tmp/ASTROPORT.png
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/ASTROPORT.png ~/.zen/tmp/one.png
 
 composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${PASS}.png

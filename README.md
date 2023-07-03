@@ -287,7 +287,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 
 ### QRCODE (API SandBox)
 ```http
-GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1PASS_STRING}
+GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1CARD_STRING}
 ```
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
@@ -297,7 +297,7 @@ GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1PASS_STRING}
 
 ### CODE BEHAVIOUR. monitor && rewards || fork signal
 
-* Is IPNS key & PLAYER is local ? Redirect to [make a G1PASS (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
+* Is IPNS key & PLAYER is local ? Redirect to [make a G1CARD (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
 
 * Is G1*? Redirect to G1WishApp / Export Tagged Tiddlers json from TW
 
@@ -308,13 +308,13 @@ redirect to
 [http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](https://astroport.copylaradio.com/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
 redirect to pure "tag=" result  json
 
-* Is G1PUB ... (FROM NEW G1PASS or empty G1BILLET)
+* Is G1PUB ... (FROM NEW G1CARD or empty G1BILLET)
 
     * If balance is "null" : Send 1 G1 (G1BILLET)
     * if GChange+ account exists : send 10 G1
     * if Cesium+ account exists : send 50 G1
 
-* Is G1PASS
+* Is G1CARD
     * decode with PASS and make operation (same functions as SALT API are available)
 
 

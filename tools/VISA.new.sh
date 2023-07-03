@@ -271,7 +271,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## AstroID G1PASS Update
+        ## AstroID G1CARD Update
         [[ ! $AstroID ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
         sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -478,7 +478,7 @@ echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
 echo "G1Visa : ${myIPFS}${IASTRO}"
-echo "G1PASS ($PASS) : ${myIPFS}${ASTROQR}"
+echo "G1CARD ($PASS) : ${myIPFS}${ASTROQR}"
 echo "G1TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
