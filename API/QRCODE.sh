@@ -137,6 +137,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
+            VAL=$(echo "$VAL" | cut -d ':' -f 1)
             ## GET DESTINATION ACCOUNT AMOUNT
             DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${VAL} | tail -n 1)
 
