@@ -51,7 +51,16 @@ tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/game/players/${PLAYER}/G1Kodi \
                     --render '.' 'Kodi.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Kodi'
 
-[[ ! -s ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json ]] && echo "AUCUN G1VOEU KODI - EXIT -" && exit 0
+## Second export try
+#~ if [[ ! -s ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json ]] ; then
+    #~ tiddlywiki  --load ${INDEX} \
+                    #~ --output ~/.zen/game/players/${PLAYER}/G1Kodi \
+                    #~ --render '.' 'Kodi.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Kodi]]'
+
+ #~ fi
+
+[[ ! -s ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json ]] && echo "AUCUN VOEU G1KODI - EXIT -" && exit 0
+
 
 WISH=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json | jq -r '.[].wish')
 WISHNS=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json | jq -r '.[].wishns')
