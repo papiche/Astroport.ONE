@@ -24,7 +24,7 @@ MOATS=$9
 COOKIE=$10"
 PORT="$1" THAT="$2" AND="$3" THIS="$4"  APPNAME="$5" WHAT="$6" OBJ="$7" VAL="$8" MOATS="$9" COOKIE="$10"
 ### transfer variables according to script
-QRCODE="$THAT"
+QRCODE=$(echo "$THAT" | cut -d ':' -f 1) # G1nkgo compatible
 
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: ${myASTROPORT}
