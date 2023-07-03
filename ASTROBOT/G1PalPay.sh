@@ -11,8 +11,8 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 
-        CESIUM="https://g1.data.le-sou.org"
-        GCHANGE="https://data.gchange.fr"
+        CESIUM=${myCESIUM}
+        GCHANGE=${myGCHANGE}
 
 echo "(✜‿‿✜) G1PalPay : Receiving & Relaying payments to emails found in comment"
 echo "$ME RUNNING"

@@ -44,7 +44,7 @@ echo "#############################################"
 echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
-for i in git make cmake fail2ban npm netcat-traditional ncdu chromium inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
+for i in git make cmake fail2ban npm netcat-traditional ncdu chromium csvkit inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
