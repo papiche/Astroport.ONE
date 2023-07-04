@@ -116,7 +116,7 @@ while true; do
 
         ## ASK BOOTSTRAP NODE TO GET MY MAP UPSYNC
         ## - MAKES MY BALISE PRESENT IN BOOTSTRAP SWARM KEY  -
-        if [[  $iptype == "ip4" ]]; then
+        if [[  $iptype == "ip4" || $iptype == "ip6" ]]; then
 
             echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
             curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json
