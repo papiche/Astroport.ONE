@@ -116,8 +116,7 @@ Voila ma clef
 
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEtg3SlRxtzsQnsBSeU83W0tvUyBTUvOU5lhjlbZVPCZ support@qo-op.com
 
-* “keygen” Astroport.ONE/keygen at master - Astroport.ONE - P2Git
-* “natools” Astroport.ONE/natools.py at master - Astroport.ONE - P2Git
-* “jaklis” axiom-team/jaklis - jaklis - P2Git
-* “ipfs” Astroport.ONE/kubo_v0.20.0_linux.install.sh at master - Astroport.ONE - P2Git
-
+* “keygen” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/tools/keygen
+* “natools” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/tools/natools.py
+* “jaklis” https://git.p2p.legal/axiom-team/jaklis
+* “ipfs” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/kubo_v0.20.0_linux.install.sh
