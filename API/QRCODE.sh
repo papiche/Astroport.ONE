@@ -170,6 +170,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                                     || echo ${WHAT} > ${DESTFILE}
                                 cat ${DESTFILE}
 
+                                ## VERIFY AND INFORM OR CONFIRM PAYMENT
+
                                 echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                             fi

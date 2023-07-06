@@ -12,7 +12,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
 PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
-[[ ! ${PLAYER} ]] && echo "Please provide IPFS publish key" && exit 1
+[[ ! ${PLAYER} ]] && echo "Please provide PLAYER publish key" && exit 1
 
 MOATS="$2"
 
@@ -44,6 +44,7 @@ tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu --
 cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 echo $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)" VOEUX : ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
 
+## ${PLAYER}.g1wishes.txt contains all TW G1PUB : IPNS key name
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 ## GET VoeuTitle LIST
@@ -64,7 +65,7 @@ do
     if [[ ! $ICHECK ]]; then
           echo ">>> STATION MISSING $VOEUKEY - RESET ASTRONAUT WISHES - DERIVATED KEYS RECREATE -"
            sed -i "s~G1Voeu~voeu~g" $INDEX
-           continue
+           break
     else
         VCOINS=$($MY_PATH/../tools/COINScheck.sh $VOEUKEY | tail -n 1)
         [[ $VCOINS == "" || $VCOINS == "null" ]] \
@@ -72,7 +73,7 @@ do
         || echo "WISH G1WALLET = $VCOINS G1"
     fi
 
-    ## RUNNING WISH REFRESH
+    ## RUNNING WISH REFRESH : PLAYER CACHE
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
 
 ##########################################################################
