@@ -114,14 +114,7 @@ fi
 COINS=$($MY_PATH/tools/COINScheck.sh $G1PUB | tail -n 1)
 echo "$PLAYER wallet = $COINS G1"
 
-###
-# GET SCREEN DIMENSIONS
-screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
-width=$(echo $screen | cut -d 'x' -f 1)
-height=$(echo $screen | cut -d 'x' -f 2)
-large=$((width-300))
-haut=$((height-200))
-###
+
 
 ########################################################################
 ## EXCEPTION COPIE PRIVE

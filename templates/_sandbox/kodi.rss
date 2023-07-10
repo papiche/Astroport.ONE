@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+ <title>RSS MOVIE</title>
+ <description>Astroport Kodi RSS feed</description>
+ <link>http://astroport.copylaradio.com</link>
+ <copyright>2020 Astroport.com All rights reserved</copyright>
+ <lastBuildDate>Mon, 6 Sep 2020 00:01:00 +0000</lastBuildDate>
+ <pubDate>Sun, 6 Sep 2020 16:20:00 +0000</pubDate>
+ <ttl>1800</ttl>
+
+ <item>
+  <title>Delicatessen</title>
+  <description>Un festin comique et funeste.</description>
+  <link>http://ipfs.localhost:8080/ipfs/QmfVuhDo4kEk5eh5EULfZGxiWqrrCcHBehojgPF6kiq8r3/Delicatessen.mp4</link>
+  <pubDate>Sun, 6 Sep 2022 16:20:00 +0000</pubDate>
+ </item>
+
+ <item>
+  <title>Le Petit Prince</title>
+  <description>Histoire à lire</description>
+  <link>http://ipfs.localhost:8080/ipfs/QmQwYpoHX6Fw26nd3KFfLj71Uv34riT4F5X2RFy2rmHekW</link>
+  <pubDate>Sun, 6 Sep 2022 16:20:00 +0000</pubDate>
+ </item>
+
+ <item>
+  <title>Le Roi des Ronces</title>
+  <description>coucou</description>
+  <link>http://ipfs.localhost:8080/ipfs/QmXMrgJ5YfVaXxQCaMdD6i87HKjJ8sX9iZKPthuMfTewGy</link>
+  <pubDate>Sun, 6 Sep 2022 16:20:00 +0000</pubDate>
+ </item>
+
+
+</channel>
+</rss>

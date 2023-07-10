@@ -125,7 +125,8 @@ do
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
             echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
             tiddlywiki --load $FRIENDTW \
-                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
+                                --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
+                                --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
 
             [[ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] \
             && echo "NO ${WISHNAME} - CONTINUE -" \
@@ -213,6 +214,16 @@ do
         fi
                 ### PREPARE WISHNAME index.html
         ##################################
+
+        ## RUN N1Program ASTROBOT PROGRAM (like G1CopierYoutube.sh)
+        if [[ -s $MY_PATH/N1${WISHNAME}.sh ]]; then
+            echo "........................ Astrobot N1${WISHNAME}.sh program found !"
+            echo "________________________________  Running it *****"
+            ${MY_PATH}/N1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
+            echo "________________________________   Finished ******"
+        else
+            echo "......................... N1${WISHNAME} REGULAR Ŋ1 RSS JSON"
+        fi
 
         ### ADD TO IPFS
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
