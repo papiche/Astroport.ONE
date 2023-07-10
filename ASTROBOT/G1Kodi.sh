@@ -47,7 +47,6 @@ echo "${PLAYER} ${INDEX} ${ASTRONAUTENS} ${G1PUB} "
 #~ ###################################################################
 #~ ## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
 #~ ###################################################################
-mkdir -p $HOME/.zen/tmp/${IPFSNODEID}/G1Kodi/${PLAYER}/
 mkdir -p $HOME/.zen/tmp/${MOATS} && echo $HOME/.zen/tmp/${MOATS}
 mkdir -p $HOME/.zen/game/players/${PLAYER}/G1Kodi/
 
@@ -293,7 +292,7 @@ fi
 
 echo "=========== ( ◕‿◕)  (◕‿◕ ) =============="
 
-ls -al $HOME/.zen/tmp/${MOATS}
+rm -Rf $HOME/.zen/tmp/${MOATS}
 
 exit 0
 

@@ -95,7 +95,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     GDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
     [[ ! ${GDESCR} || ${GDESCR} == "null" ]] &&  GDESCR="Astronaute GChange"
     CDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.description' 2>/dev/null)
-    [[ ! ${CDESCR} || ${CDESCR} == "null" ]] &&  CDESCR="Portefeuille G1PalPer"
+    [[ ! ${CDESCR} || ${CDESCR} == "null" ]] &&  CDESCR="Portefeuille Astro"
 
     GVILLE=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.city' 2>/dev/null)
     [[ ! ${GVILLE} || ${GVILLE} == "null" ]] &&  GVILLE=""
@@ -128,7 +128,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
         #~ echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=${G1PUB}"
 
         #~ ${MY_PATH}/timeout.sh -t 20 \
-        #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
+        #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
         #~ [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" \
         #~ || cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/cesium.1st.json
 
@@ -137,9 +137,9 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
 
 ## GET LAST ONLINE gchange & cesium PROFILE
 ${MY_PATH}/timeout.sh -t 20 \
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} get > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
 ${MY_PATH}/timeout.sh -t 20 \
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "https://g1.data.e-is.pro" get > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
+$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} get > ~/.zen/game/players/${PLAYER}/ipfs/cesium.json
 
 ########################################################################
         # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
@@ -156,6 +156,7 @@ echo "########################################################################"
 ################## BOOTSTRAP LIKES THEM BACK
 ################## SEND ipfstryme MESSAGES to FRIENDS
 rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/my_star_level
+
 ## Getting Gchange  liking_me list
 echo "Checking received stars ON $myDATA"
 ################################## JAKLIS PLAYER stars
@@ -244,11 +245,14 @@ do
         && curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/${FRIENDNS}"
 
         ## PLAYER TW EXISTING ?
-        if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
+        if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html || $(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html | grep 504) ]; then
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
+
+            # Remove cache
+            rm -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}
 
             ## +1 TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
@@ -330,16 +334,13 @@ do
 
         done
 
-        #~ ## CLONE IN MAP CACHE
-        #~ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
-        #~ cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
-
     else
         #########################################
         ## COOL FEATURE FOR GCHANGE ACCOUNT CONFIDENCE
         ## IS IT REALLY A FRIEND I LIKE ?
         echo "BRO?"
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
+        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -n ${myCESIUM} -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/
         try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 
