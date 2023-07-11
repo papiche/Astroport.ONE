@@ -192,10 +192,10 @@ while read TITRE; do
             if [[ ${IPFSONE} == "" ]]; then
 
                 ## RUN NO IPFS_ONE STEP
-                echo "${SOURCE}"
+                echo "ADD ${SOURCE} TO IPFS"
                 [[ ${boucle} == 1 ]] && echo "IPFS ADD DONE ONCE TODAY" && continue
 
-                $IPFSMOVIE=$(ipfs add -q "$SOURCE")
+                IPFSMOVIE=$(ipfs add -q "$SOURCE")
                 echo "/ipfs/${IPFSMOVIE}" > ~/.zen/tmp/${MOATS}/source
 
                 ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/source -o ~/.zen/tmp/${MOATS}/source.enc
@@ -214,6 +214,7 @@ while read TITRE; do
                 [[ -s ~/.zen/tmp/newindex.html ]] \
                     && cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
 
+                INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
                 boucle=$((boucle+1)) ## COUNT HOW MANY MOVIES GOING TO IPFS
 
             else
@@ -251,6 +252,7 @@ while read TITRE; do
 
                 [[ -s ~/.zen/tmp/newindex.html ]] \
                             && cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
+                INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
 
             fi
 
