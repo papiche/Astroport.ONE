@@ -57,8 +57,8 @@ tiddlywiki  --load ${INDEX} \
                     --render '.' 'Kodi.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Kodi'
 
 [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json ) == "[]" ]] \
-    && echo "AUCUN VOEU G1KODI" \
-    && echo "EXIT" && exit 0
+    && echo "AUCUN VOEU G1KODI - EXIT -" \
+    && exit 0
 
 WISH=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json | jq -r '.[].wish')
 WISHNS=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json | jq -r '.[].wishns')
@@ -184,7 +184,7 @@ while read TITRE; do
 
     else
 
-            echo "## TIDDLER WITHOUT ipfs_one"
+            echo "## TIDDLER WITH OR WITHOUT ipfs_one"
             ## MANAGING TIDDLER UPDATE
             IPFSONE=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq -r .[].ipfs_one)
             SOURCE=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq -r .[].source)
@@ -225,20 +225,38 @@ while read TITRE; do
                         -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
                         -i ~/.zen/tmp/${MOATS}/source.one.enc -o $HOME/.zen/tmp/${MOATS}/source.one
 
-                cat $HOME/.zen/tmp/${MOATS}/source.one
+                echo "IPFS SOURCE $(cat $HOME/.zen/tmp/${MOATS}/source.one)"
 
-                ## TODO
-                ## ADD FIELDS ipfs_AG1PUB for my FRIENDS
-                #~ cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq --arg a "${AG1PUB}" --arg v "${ACODING}" '.[] |= .+ {"ipfs_$a":"$v"}'
+                ## FIND FRIENDS and ADD FIELDS ipfs_AG1PUB
+                find ~/.zen/game/players/${PLAYER}/FRIENDS -mindepth 1 -maxdepth 1 -type d | rev | cut -f 1 -d '/' | rev > ~/.zen/tmp/${MOATS}/twfriends
+                cp -f ${HOME}/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json ~/.zen/tmp/${MOATS}/atiddler.json
 
+                while read AG1PUB; do
 
+                    ## CREATE "ipfs_AG1PUB" : "ACODING"
+                    rm -f ~/.zen/tmp/${MOATS}/source.aenc
+                    ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${AG1PUB} -i ~/.zen/tmp/${MOATS}/source.one -o ~/.zen/tmp/${MOATS}/source.aenc
+                    ACODING=$(cat ~/.zen/tmp/${MOATS}/source.aenc | base16)
+
+                    cat ~/.zen/tmp/${MOATS}/atiddler.json | jq --arg a "${AG1PUB}" --arg v "${ACODING}" '.[] |= .+ {"ipfs_$a":"$v"}' \
+                        > ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
+                        && mv ~/.zen/tmp/${MOATS}/atiddler.json.tmp ~/.zen/tmp/${MOATS}/atiddler.json
+
+                done < ~/.zen/tmp/${MOATS}/twfriends
+
+                ## INSERT NEW TIDDLER
+                tiddlywiki --load ${INDEX} \
+                            --import ~/.zen/tmp/${MOATS}/atiddler.json "application/json" \
+                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+
+                [[ -s ~/.zen/tmp/newindex.html ]] \
+                            && cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
 
             fi
 
-
             YID=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .extrait' | rev | cut -d '=' -f 1 | rev)
 
-            echo "MOVIE ALREADY IN TW"
+            echo "MOVIE IN TW ($YID)"
 
     fi
 

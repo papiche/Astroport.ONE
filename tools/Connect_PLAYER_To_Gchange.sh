@@ -245,14 +245,11 @@ do
         && curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html "$LIBRA/ipns/${FRIENDNS}"
 
         ## PLAYER TW EXISTING ?
-        if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html || $(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html | grep 504) ]; then
+        if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
-
-            # Remove cache
-            rm -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}
 
             ## +1 TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
@@ -267,7 +264,11 @@ do
             tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.MadeInZion.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             [[ ! -s ~/.zen/tmp/${liking_me}.MadeInZion.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) BAD ~/.zen/tmp/${liking_me}.MadeInZion.json ~~~" && continue
             FPLAYER=$(cat ~/.zen/tmp/${liking_me}.MadeInZion.json | jq -r .[].player)
-            [[ ! $FPLAYER ]] && echo "NO PLAYER = BAD MadeInZion Tiddler" && continue
+
+            [[ ! $FPLAYER ]] \
+                && echo "NO PLAYER = BAD MadeInZion Tiddler" \
+                && rm -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me} \
+                && continue
 
             ## CREATING 30 DAYS RSS STREAM
             tiddlywiki --load ${FTW} \

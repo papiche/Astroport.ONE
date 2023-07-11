@@ -11,6 +11,11 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ################################################################################
 # Inspect game wishes, refresh latest IPNS version
 # SubProcess Backup and chain
+# ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*
+# ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/*
+# _PLAYER.json
+
+
 PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! ${PLAYER} ]] && echo "Please provide PLAYER publish key" && exit 1
 
@@ -80,15 +85,25 @@ do
 ##########################################################################
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
     if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
-        echo "........................ Astrobot G1${WISHNAME}.sh program found !"
+        echo "........................ Astrobot G1${WISHNAME}.sh PROGRAM FOUND !"
         echo "________________________________  Running it *****"
         ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
         echo "________________________________   Finished ******"
     else
-        echo "......................... G1${WISHNAME} REGULAR Ŋ1 RSS JSON"
+        echo "......................... NO G1${WISHNAME} PROGRAM... "
     fi
 ##########################################################################
 ##########################################################################
+
+###########################################################################################
+        ##################################
+        ## MAKE MY OWN EXTRACTION : [tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]
+        ################################## MOA MAINTENANT
+        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.json"
+        tiddlywiki --load $INDEX \
+                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
+                 --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
+
 
     ## RUN TW Ŋ1 search & copy treatment
     echo "*********************************"
@@ -112,19 +127,20 @@ do
         for FRIENDTW in ${FINDEX[@]};
         do
 
-            [[ ! -s $FRIENDTW ]] && echo "$floop / ${#FINDEX[@]} $FRIENDTW VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
+            [[ ! -s ${FRIENDTW} ]] && echo "$floop / ${#FINDEX[@]} ${FRIENDTW} VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
 
-            ## GET FRIEND EMAIL = APLAYER
-            tiddlywiki --load $FRIENDTW \
+            ## GET FRIEND EMAIL = APLAYER (VERIFY TW IS OK)
+            tiddlywiki --load ${FRIENDTW} \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
             [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
 
             APLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
+            ## EXPORT LAST 30 DAYS G1WishName in _${APLAYER}.tiddlers.json
             rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
             echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
-            tiddlywiki --load $FRIENDTW \
+            tiddlywiki --load ${FRIENDTW} \
                                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
                                 --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
 
@@ -138,16 +154,19 @@ do
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.json ${WISHNAME}"
 
+            # Extract Origin G1Voeu Tiddler
             tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
-            WISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
-            [[ $WISHNS == "null" ]] && echo "NO WISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
-            echo ">>> ${myIPFS}${WISHNS}"
+            FWISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
+            [[ $FWISHNS == "null" ]] && echo "NO FWISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
+            echo ">>> ${myIPFS}${FWISHNS}"
 
+###########################################################################################
+            ## ADD WISH ON THE WORLD MAP (TODO: EXTRACT REAL GPS)
             echo "${floop}: {
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
               name: '"${WISNAME} ${APLAYER}"',
-              link: '"${myIPFS}${WISHNS}"'
+              link: '"${myIPFS}${FWISHNS}"'
             }
             ," >> ~/.zen/tmp/world.js
 
@@ -168,31 +187,15 @@ do
         };
         " >> ~/.zen/tmp/world.js
 
-        cat ~/.zen/tmp/world.js
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
-        echo "CREATING /ipfs/${IAMAP}/world.js"
-
+        echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
         ##################################
-        ## MAKE MY OWN JSON
-        ################################## MOA MAINTENANT
-        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.json"
-        tiddlywiki --load $INDEX \
-                 --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME} \
-                 --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
-
-        ##################################
-        ## MAKE EARTH MAP TILES
-        echo
-        # echo "DEBUG : s~_LIBRA_~$(myIpfsGw)~g s~_G1VOEU_~${WISHNAME}~g s~_PLAYER_~${PLAYER}~g s~_VOEUNS_~${IPNS_VOEUNS}~g s~_ASTRONAUTENS_~${ASTRONAUTENS}~g"
-        echo
-
-        ##################################
-        ## INSERT PLAYER G1 QRCODE : QRG1avatar.png
+        ## PREPARE PLAYER G1 QRCODE : QRG1avatar.png
         [[ -s ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png ]] \
         && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
         [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
 
-        ### APPLY FOR ${WISHNAME} MODEL : make index.html
+        ### APPLY FOR ${WISHNAME} APP MODEL : make index.html
         ################################## ${WISHNAME}/index.html
         if [[ -s ${MY_PATH}/../www/${WISHNAME}/index.html ]]; then
 
@@ -212,12 +215,14 @@ do
         > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/index.html
 
         fi
-                ### PREPARE WISHNAME index.html
+                ### PREPARE WISHNAME index.html - CREATE YOUR OWN DAPP -
         ##################################
 
-        ## RUN N1Program ASTROBOT PROGRAM (like G1CopierYoutube.sh)
+###########################################################################################
+        ## DATA POST TREATMENT PROGRAM
+        ## RUN N1Program ASTROBOT PROGRAM
         if [[ -s $MY_PATH/N1${WISHNAME}.sh ]]; then
-            echo "........................ Astrobot N1${WISHNAME}.sh program found !"
+            echo "........................ Astrobot N1${WISHNAME}.sh post-treatment found !"
             echo "________________________________  Running it *****"
             ${MY_PATH}/N1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
             echo "________________________________   Finished ******"
@@ -225,19 +230,22 @@ do
             echo "......................... N1${WISHNAME} REGULAR Ŋ1 RSS JSON"
         fi
 
-        ### ADD TO IPFS
+###########################################################################################
+        ### ADD ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*
+        ### AND PUBLISH WISH TO IPFS
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*"
         ls ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/
 
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
-        echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH"
+        echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH" ## TODO LOOP BOOTSTRAP & ONLINE FRIENDS
         curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
         echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${IPNS_VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
+        cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
         #~ echo "************************************************************"
         #~ echo "Hop, 0.1 JUNE pour le Voeu $WISHNAME"
@@ -249,15 +257,12 @@ do
         #~ [[ ! $? == 0 ]] \
         #~ && echo "POOOOOOOOOOOOOOOOOOOORRRRRR GUY. YOU CANNOT PAY A G1 FOR YOUR WISH"
 
-        cp -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
-
 done < ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "TODO : REFRESH WORLD SAME WISH"
+echo "TODO : REFRESH WORLD SAME WISH CACHE"
 cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
-
-
+## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 ############################################
