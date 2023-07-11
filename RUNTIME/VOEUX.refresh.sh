@@ -84,10 +84,10 @@ do
 ##########################################################################
 ##########################################################################
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
-    if [[ -s $MY_PATH/G1${WISHNAME}.sh ]]; then
+    if [[ -s $MY_PATH/../ASTROBOT/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh PROGRAM FOUND !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
+        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
         echo "________________________________   Finished ******"
     else
         echo "......................... NO G1${WISHNAME} PROGRAM... "
@@ -221,10 +221,10 @@ do
 ###########################################################################################
         ## DATA POST TREATMENT PROGRAM
         ## RUN N1Program ASTROBOT PROGRAM
-        if [[ -s $MY_PATH/N1${WISHNAME}.sh ]]; then
+        if [[ -s $MY_PATH/../ASTROBOT/N1${WISHNAME}.sh ]]; then
             echo "........................ Astrobot N1${WISHNAME}.sh post-treatment found !"
             echo "________________________________  Running it *****"
-            ${MY_PATH}/N1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
+            ${MY_PATH}/../ASTROBOT/N1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
             echo "________________________________   Finished ******"
         else
             echo "......................... N1${WISHNAME} REGULAR Ŋ1 RSS JSON"
