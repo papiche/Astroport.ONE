@@ -203,7 +203,7 @@ while read TITRE; do
                 echo "MOVIE ADDED /ipfs/${IPFSMOVIE} :NATOOLS16: ${ENCODING}"
 
                 ##  UPDATE ipfs_one in JSON
-                cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq  --arg v "${ENCODING}" '.[].ipfs_one = "$v"' \
+                cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq  --arg v "${ENCODING}" '.[].ipfs_one = $v' \
                         > ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json
 
                 ## INSERT NEW TIDDLER
@@ -239,8 +239,10 @@ while read TITRE; do
                     ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${AG1PUB} -i ~/.zen/tmp/${MOATS}/source.one -o ~/.zen/tmp/${MOATS}/source.aenc
                     ACODING=$(cat ~/.zen/tmp/${MOATS}/source.aenc | base16)
 
-                    cat ~/.zen/tmp/${MOATS}/atiddler.json | jq --arg a "${AG1PUB}" --arg v "${ACODING}" '.[] |= .+ {"ipfs_$a":"$v"}' \
+                    cat ~/.zen/tmp/${MOATS}/atiddler.json | jq '.[] |= .+ {"_IPUB_":"_ICOD_"}' \
                         > ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
+                        && sed -i "s~_IPUB_~ipfs_${AG1PUB}~g" ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
+                        && sed -i "s~_ICOD_~${ACODING}~g" ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
                         && mv ~/.zen/tmp/${MOATS}/atiddler.json.tmp ~/.zen/tmp/${MOATS}/atiddler.json
 
                 done < ~/.zen/tmp/${MOATS}/twfriends
