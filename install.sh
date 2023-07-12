@@ -151,7 +151,7 @@ echo "#############################################"
 
 ########### QRCODE : G1VISA / G1BILLET : PRINTER ##############
 if [[ $USER != 'xbian' ]]; then
-    echo "INSTALL G1VISA QRCODE PRINTING LAYER ? ENTER 'yes' or Hit enter to bypass."
+    echo "INSTALL PRINTER FOR G1BILLET G1CARD G1VISA ? ENTER 'yes' or Hit enter to bypass."
     read saisie
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
@@ -194,7 +194,7 @@ echo "#############################################"
 (
     mkdir -p ~/.zen/tmp/kodi
     echo "PATIENTEZ..."
-    ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc763hnsuTqSTDBNagmzca4fSzmcTp9kHoeosaPKC8QvK
+    ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
     echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
     mv ~/.kodi ~/.kodi.back 2>/dev/null
     mv ~/.zen/tmp/kodi ~/.kodi
