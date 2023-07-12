@@ -58,6 +58,7 @@ tiddlywiki  --load ${INDEX} \
 
 [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json ) == "[]" ]] \
     && echo "AUCUN VOEU G1KODI - EXIT -" \
+    && rm -Rf $HOME/.zen/game/players/${PLAYER}/G1Kodi \
     && exit 0
 
 WISH=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json | jq -r '.[].wish')
