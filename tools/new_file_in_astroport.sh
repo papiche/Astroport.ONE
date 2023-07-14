@@ -334,6 +334,7 @@ then
     "ipns": "'/ipns/${IPNS}'",
     "tmdb": "'${REFERENCE}'",
     "modified": "'${MOATS}'",
+    "issuer": "'${PLAYER}'",
     "tags": "'${TAGS}'" ' > ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
     [[ ${CANON} != "" ]] && echo  ',

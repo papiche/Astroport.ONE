@@ -320,10 +320,6 @@ do
 
         fi
 
-        ## ACTIVER RECUP ANNONCES...
-# SCRAPING DONNE LE BON COIN - DIFFICILE - UTILISER COOKIE NAVIGATEUR
-# https://www.leboncoin.fr/recherche?text=donne&locations=Toulouse__43.59743304757555_1.4471155185604894_10000_5000&owner_type=private&sort=time&donation=1
-
         ## Get Ŋ2 LEVEL
         echo "(°▃▃°) (°▃▃°) (°▃▃°) Ŋ2 scraping  ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/friend_of_friend.json"
         for nid in $(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[].issuer');

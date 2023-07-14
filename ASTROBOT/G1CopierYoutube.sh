@@ -234,6 +234,7 @@ if [[ ! ${TIDDLER} ]]; then
     "ipfs": "'/ipfs/${ILINK}'",
     "youtubeid": "'${YID}'",
     "zurl": "'${ZYURL}'",
+    "issuer": "'${PLAYER}'",
     "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} $(echo ${ZFILE} | sed 's~_~ ~g' | sed 's~\.~ ~g')'"
   }
 ]

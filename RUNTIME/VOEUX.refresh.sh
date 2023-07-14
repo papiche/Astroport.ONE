@@ -149,7 +149,9 @@ do
             && echo && ((floop++)) && continue
 
             [[ $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] \
-            && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) && continue
+            && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) \
+            && rm ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json \
+            && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
             echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.json ${WISHNAME}"
@@ -224,7 +226,7 @@ do
         if [[ -s $MY_PATH/../ASTROBOT/N1${WISHNAME}.sh ]]; then
             echo "........................ Astrobot N1${WISHNAME}.sh post-treatment found !"
             echo "________________________________  Running it *****"
-            ${MY_PATH}/../ASTROBOT/N1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
+            ${MY_PATH}/../ASTROBOT/N1${WISHNAME}.sh "~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}" "${PLAYER}" "$MOATS"
             echo "________________________________   Finished ******"
         else
             echo "......................... N1${WISHNAME} REGULAR Ŋ1 RSS JSON"

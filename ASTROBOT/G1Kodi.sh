@@ -136,7 +136,11 @@ while read TITRE; do
               echo "## Creation json tiddler"
               echo '[
               {
-                "text": "'${DESC}'",
+                "text": "{{!!titre}}
+{{!!sub}}
+
+{{!!desc}}
+",
                 "title": "'Kodi_${TITLE}'",
                 "created": "'${MOATS}'",
                 "year": "'${YEAR}'",
@@ -151,6 +155,7 @@ while read TITRE; do
                 "ipfs_one": "''",
                 "titre": "'${TITRE}'",
                 "modified": "'${MOATS}'",
+                "issuer": "'${PLAYER}'",
                 "tags": "'${TAGS}'"
                }
             ]
