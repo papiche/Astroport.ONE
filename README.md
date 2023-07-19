@@ -318,21 +318,54 @@ redirect to pure "tag=" result  json
     * decode with PASS and make operation (same functions as SALT API are available)
 
 
-## The Art of key derivation
+## The Art of key derivation, chaining & use
 
 In order to make (a little) clear how we use cryptography,
 
-We choose to use "NaCl" (secret1 / secret) 2 key generation.
+We choose to use "NaCl" (secret1 / secret) 2 key generation, so it is easy to understand Web3 mechanism.
 
-Thus
+**(SECRET1/SECRET2) mixing**
 
-* If PLAYER key is (SECRET1/SECRET2) and G1PUB and EMAIL
+* If PLAYER key is (SECRET1/SECRET2) and G1PUB and EMAIL + TW
     * wishes keys are (SECRET2 / G1WishName)
         * sub-wishes are (EMAIL / G1WishName G1PUB)
             * wish-billets are (EMAIL_dice_words / G1WishName G1PUB)
 
-This way PLAYER never loose its data.
-It is writen into IPFS... So recreate the key anywhere makes you get your data from friends you shared it with
+This way PLAYER TW capable of retrieving and never loose its data.
+It is writen into IPFS... So recreate the key anywhere makes you get your data from friends you shared it with.
+
+**Cross (G1PUB) keys**
+
+Between PlayerA (AG1PUB) & PlayerB (BG1PUB) obvious communication channel keys are existing :
+
+(AG1PUB / AG1PUB) - A knock on the door
+(AG1PUB / BG1PUB) - From A to B channel
+(BG1PUB / AG1PUB) - From B to A channel
+(BG1PUB / BG1PUB) - B knock on the door
+
+We can use this to implement protocols, for exemple :
+To ollow PlayerA / PlayerB to become friends
+
+A write a KNOCK.AG1PUB file + signature using (BG1PUB / BG1PUB) keygen IPNS key,
+Then B reply with the same KNOCK at (AG1PUB / AG1PUB) address
+
+A/B - B/A keys can be used as bidirectionnal encrypted data channels.
+
+In a well formed IPFS swarm, we could even send video... Check code in ```/tools/streaming/```
+
+
+**(LON / LAT) keys**
+
+NaCl keys can be initiated with GPS Geoloc and receive shared informations.
+Using the same A/B swapping method, any A place have also a communication channel with B place ;)
+
+
+
+ASTROBOT while applying ScuttleButt replications will check for protocol respect.
+
+
+
+
 
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
 ```
