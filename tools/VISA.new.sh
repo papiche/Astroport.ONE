@@ -102,7 +102,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeicivms6szyinh4mps25ilyk3dtp4icsvo6bwu5m3udwts52mijqca"
+TWMODEL="/ipfs/bafybeiawwjh3tbbi4t27kwevzvcjzydgsjksrqeompsyhgkqlg7ninuhca"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -246,6 +246,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
          # TW CHAIN INIT WITH TWMODEL
          sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         sed -i "s~_TWMODEL_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+         sed -i "s~_TW_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
          ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
          #~ sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html

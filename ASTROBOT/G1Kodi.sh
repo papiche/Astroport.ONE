@@ -124,6 +124,8 @@ while read TITRE; do
                     --render '.' "${TITLE}.dragdrop.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "'"Kodi_${TITLE}"'"
         fi
         ## CHECK PLAYER G1KODI CACHE. QUICKER.
+        # MAKE PAYMENT QRCODE
+        THASH=$(echo "Kodi_${TITLE}" | sha256sum | cut -d ' ' -f 1)
 
     if [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json) == "[]" ]]; then
         echo "NOT IN TW either IN CACHE"
@@ -142,6 +144,7 @@ while read TITRE; do
 {{!!desc}}
 ",
                 "title": "'Kodi_${TITLE}'",
+                "thash": "'${THASH}'",
                 "created": "'${MOATS}'",
                 "year": "'${YEAR}'",
                 "mime": "'${MIME}'",

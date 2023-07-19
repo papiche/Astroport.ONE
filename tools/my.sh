@@ -16,9 +16,11 @@ isLan() {
     local isLan=$(ip route | awk '$1 == "default" {print $3}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
                || route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
                || true)
-    local myZip=$(zIp)
-    [ -n "$myZip" ] && echo "$myZip" && exit 0
-    [ -n "$isLan" ] && echo "$isLan" || true
+
+    #~ local myZip=$(zIp)
+    #~ [ -n "$myZip" ] && echo "$myZip" && exit 0
+
+    # [ -n "$isLan" ] && echo "$isLan" || true
 } 2>/dev/null
 
 isPlayerLegal() {
