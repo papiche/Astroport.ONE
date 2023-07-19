@@ -359,12 +359,16 @@ In a well formed IPFS swarm, we could even send video... Check code in ```/tools
 NaCl keys can be initiated with GPS Geoloc and receive shared informations.
 Using the same A/B swapping method, any A place have also a communication channel with B place ;)
 
+**(COUNTRY / ZIP) keys**
 
+For a town key, we could use country code + ZIP code, ... etc
+Many public application can be easily addressed like that
 
-ASTROBOT while applying ScuttleButt replications will check for protocol respect.
+As these keys are discoverable, the channel can be hijacked by anyone.
+So ASTROBOT while applying ScuttleButt replications will ".chain.ts" data and check for protocol respect.
 
-
-
+Data can't be lost, but protocol chain can be break !
+In case of some annoyance, we can monitor IPFS protocol to identify which IPFSNODEID key is acting badly and apply reaction based on DEFCON level (look into astrXbian code)
 
 
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
