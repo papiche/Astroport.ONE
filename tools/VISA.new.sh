@@ -102,7 +102,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeidlswle5mqun7g2qpj2kd7pgrrhw6i76bcncdtn5cfdefigjqmnjy"
+TWMODEL="/ipfs/bafybeihcc7nwz4e3ewphqasghrsktxuwouba5kidb5rmfhjexuauymbzjq"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
