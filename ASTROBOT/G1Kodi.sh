@@ -74,6 +74,13 @@ tiddlywiki  --load ${INDEX} \
 
 [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/TWmovies.json) == "[]" ]] && echo "AUCUN FILM G1KODI"
 
+## TW G1Kodi RESET CODE
+#~ tiddlywiki  --load ${INDEX} \
+                    #~ --deletetiddlers '[tag[G1Kodi]]' \
+                    #~ --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "cleanindex.html" "text/plain"
+#~ [[ -s ~/.zen/tmp/${MOATS}/cleanindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/cleanindex.html ~/.zen/tmp/${MOATS}/index.html
+
+
 echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
 ## EXTRACT MOVIE FILES LIST TO CSV
@@ -124,23 +131,31 @@ while read TITRE; do
                     --render '.' "${TITLE}.dragdrop.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "'"Kodi_${TITLE}"'"
         fi
         ## CHECK PLAYER G1KODI CACHE. QUICKER.
-        # MAKE PAYMENT QRCODE
-        THASH=$(echo "Kodi_${TITLE}" | sha256sum | cut -d ' ' -f 1)
 
     if [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json) == "[]" ]]; then
         echo "NOT IN TW either IN CACHE"
 
-
          if [[ $MIME == "video/mp4"  ]]; then
             echo "$MIME. GOOD. RECORDING TO TW"
 
+            # MAKE PAYMENT QRCODE
+            # sha256 Kodi_TITLE + G1PUB encrypt = comment
+            THASH=$(echo "Kodi_${TITLE}" | sha256sum | cut -d ' ' -f 1) && echo ${THASH} > ~/.zen/tmp/${MOATS}/thash
+            ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/thash -o ~/.zen/tmp/${MOATS}/thash.enc
+            THASHSEC=$(cat ~/.zen/tmp/${MOATS}/thash.enc | base16)
+
+            ## CREATE june:// QRCODE
+            amzqr "june://${G1PUB}?comment=G1KODI:${THASHSEC}&" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD.png -d ~/.zen/tmp/${MOATS}/
+            PV=$(ipfs add -q ~/.zen/tmp/${MOATS}/VOD.png)
+            echo "VODQR = /ipfs/${PV}"
 
               echo "## Creation json tiddler"
               echo '[
               {
                 "text": "{{!!titre}}
 {{!!sub}}
-
+<br><a href=https://youtu.be/${YID}>Bande Annonce</a><br>
+<img src=/Ipfs/${PV}>
 {{!!desc}}
 ",
                 "title": "'Kodi_${TITLE}'",
@@ -187,7 +202,7 @@ while read TITRE; do
 
         else
 
-            echo "MOVIE NO COMPATIBLE. PLEASE CONVERT TO MP4"
+            echo "MOVIE NO COMPATIBLE. MUST BE CONVERTED TO MP4"
 
         fi
 

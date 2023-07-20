@@ -396,6 +396,10 @@ IPFSNODEID="$(myIpfsPeerId)"
 isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
 
+## PATCH
+myIP=$(hostname -I | awk '{print $1}' | head -n 1)
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+
 myASTROPORT="http://${myIP}:1234"
 myASTRONEF="http://${myIP}:1234"
 myAPI="http://${myIP}:5001"
