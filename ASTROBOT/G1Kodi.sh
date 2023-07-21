@@ -74,7 +74,7 @@ tiddlywiki  --load ${INDEX} \
 
 [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/TWmovies.json) == "[]" ]] && echo "AUCUN FILM G1KODI"
 
-## TW G1Kodi RESET CODE
+## TW G1Kodi deletetiddlers CODE
 #~ tiddlywiki  --load ${INDEX} \
                     #~ --deletetiddlers '[tag[G1Kodi]]' \
                     #~ --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "cleanindex.html" "text/plain"
@@ -124,89 +124,26 @@ while read TITRE; do
     #~ <pubDate>Sun, 6 Sep 2022 16:20:00 +0000</pubDate>
     #~ </item>
 
-        ## CHECK IN TW
-        if [[ ! -s ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json ]]; then
-        tiddlywiki  --load ${ORIGININDEX} \
-                    --output ~/.zen/game/players/${PLAYER}/G1Kodi \
-                    --render '.' "${TITLE}.dragdrop.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "'"Kodi_${TITLE}"'"
-        fi
-        ## CHECK PLAYER G1KODI CACHE. QUICKER.
+    if [[ ! -s ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json ]]; then
+    ## CHECK IN TW
+    tiddlywiki  --load ${ORIGININDEX} \
+                --output ~/.zen/game/players/${PLAYER}/G1Kodi \
+                --render '.' "${TITLE}.dragdrop.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "'"Kodi_${TITLE}"'"
+    fi ## CHECK PLAYER G1KODI CACHE. QUICKER.
 
     if [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json) == "[]" ]]; then
-        echo "NOT IN TW either IN CACHE"
 
          if [[ $MIME == "video/mp4"  ]]; then
             echo "$MIME. GOOD. RECORDING TO TW"
 
             # MAKE PAYMENT QRCODE
             # sha256 Kodi_TITLE + G1PUB encrypt = comment
-            THASH=$(echo "Kodi_${TITLE}" | sha256sum | cut -d ' ' -f 1) && echo ${THASH} > ~/.zen/tmp/${MOATS}/thash
-            ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/thash -o ~/.zen/tmp/${MOATS}/thash.enc
-            THASHSEC=$(cat ~/.zen/tmp/${MOATS}/thash.enc | base16)
-
-            ## CREATE june:// QRCODE
-            amzqr "june://${G1PUB}?comment=G1KODI:${THASHSEC}&" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD.png -d ~/.zen/tmp/${MOATS}/
-            PV=$(ipfs add -q ~/.zen/tmp/${MOATS}/VOD.png)
-            echo "VODQR = /ipfs/${PV}"
-
-              echo "## Creation json tiddler"
-              echo '[
-              {
-                "text": "{{!!titre}}
-{{!!sub}}
-<br><a href=https://youtu.be/${YID}>Bande Annonce</a><br>
-<img src=/Ipfs/${PV}>
-{{!!desc}}
-",
-                "title": "'Kodi_${TITLE}'",
-                "thash": "'${THASH}'",
-                "created": "'${MOATS}'",
-                "year": "'${YEAR}'",
-                "mime": "'${MIME}'",
-                "prem": "'${PREM}'",
-                "sub": "'${SUB}'",
-                "desc": "'${DESC}'",
-                "yid": "'${YID}'",
-                "cat": "'${CAT}'",
-                "g1pub": "'${G1PUB}'",
-                "source": "'${SOURCE}'",
-                "ipfs_one": "''",
-                "titre": "'${TITRE}'",
-                "modified": "'${MOATS}'",
-                "issuer": "'${PLAYER}'",
-                "tags": "'${TAGS}'"
-               }
-            ]
-            ' > ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json
-
-
-            echo "ADD G1KODI IN TW ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
-            rm -f ~/.zen/tmp/newindex.html
-            tiddlywiki --load ${INDEX} \
-                            --import ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json "application/json" \
-                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-
-            if [[ -s ~/.zen/tmp/newindex.html ]]; then
-
-                    cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
-
-                    INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
-                    echo "NEWINDEX : ${INDEX}"
-
-            else
-
-                    echo "CANNOT UPDATE TW - FATAL ERROR -"
-                    exit 1
-
-            fi
-
-        else
-
-            echo "MOVIE NO COMPATIBLE. MUST BE CONVERTED TO MP4"
-
-        fi
-
-    else
+            THASH=$(echo "Kodi_${TITLE}" | sha256sum | cut -d ' ' -f 1) # && echo ${THASH} > ~/.zen/tmp/${MOATS}/thash
+            # TODO : WITH MORE SECURITY
+            ## ENCRYPT THASH with G1PUB (so you are sure it is a link from your TW).
+            #~ ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/thash -o ~/.zen/tmp/${MOATS}/thash.enc
+            #~ THASHSEC=$(cat ~/.zen/tmp/${MOATS}/thash.enc | base16)
+            #~ Then update THASH with THASHSEC next
 
             echo "## TIDDLER WITH OR WITHOUT ipfs_one"
             ## MANAGING TIDDLER UPDATE
@@ -217,7 +154,7 @@ while read TITRE; do
 
                 ## RUN NO IPFS_ONE STEP
                 echo "ADD ${SOURCE} TO IPFS"
-                [[ ${boucle} == 1 ]] && echo "IPFS ADD DONE ONCE TODAY" && continue
+                [[ ${boucle} == 3 ]] && echo "${boucle} IPFS ADD DONE TODAY - BREAK -" && break
 
                 IPFSMOVIE=$(ipfs add -q "$SOURCE")
                 echo "/ipfs/${IPFSMOVIE}" > ~/.zen/tmp/${MOATS}/source
@@ -282,20 +219,83 @@ while read TITRE; do
 
             fi
 
+            ## CREATE june:// QRCODE put it in IPFS
+            amzqr "june://${G1PUB}?comment=N1Kodi:${THASH}&" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD.png -d ~/.zen/tmp/${MOATS}/
+            PV=$(ipfs add -q ~/.zen/tmp/${MOATS}/VOD.png)
+            echo "VODQR = /ipfs/${PV}"
+
+            ## MAKING TIDDLER
+              echo "## Creation json tiddler"
+              echo '[
+              {
+                "text": "{{!!titre}}
+{{!!sub}}
+<br><a href=https://youtu.be/${YID}>Bande Annonce</a><br>
+Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+
+<img src=/Ipfs/${PV}>
+{{!!desc}}
+",
+                "title": "'Kodi_${TITLE}'",
+                "thash": "'${THASH}'",
+                "created": "'${MOATS}'",
+                "year": "'${YEAR}'",
+                "mime": "'${MIME}'",
+                "prem": "'${PREM}'",
+                "sub": "'${SUB}'",
+                "desc": "'${DESC}'",
+                "yid": "'${YID}'",
+                "cat": "'${CAT}'",
+                "g1pub": "'${G1PUB}'",
+                "source": "'${SOURCE}'",
+                "ipfs_one": "''",
+                "titre": "'${TITRE}'",
+                "modified": "'${MOATS}'",
+                "issuer": "'${PLAYER}'",
+                "tags": "'${TAGS}'"
+               }
+            ]
+            ' > ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json
+
+            ## ADD TO TW
+            echo "ADD G1KODI IN TW ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
+            rm -f ~/.zen/tmp/newindex.html
+            tiddlywiki --load ${INDEX} \
+                            --import ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json "application/json" \
+                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+
+            ## UPDATE ${INDEX}
+            if [[ -s ~/.zen/tmp/newindex.html ]]; then
+
+                    cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
+
+                    INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
+                    echo "NEWINDEX : ${INDEX}"
+
+            else
+
+                    echo "CANNOT UPDATE TW - FATAL ERROR -"
+                    exit 1
+
+            fi
+
             YID=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .extrait' | rev | cut -d '=' -f 1 | rev)
 
             echo "MOVIE IN TW ($YID)"
+            echo "~~~~~~~~"
 
+        else
+
+            echo "MOVIE NO COMPATIBLE. MUST BE CONVERTED TO MP4"
+
+        fi
     fi
-
-    echo "~~~~~~~~"
 
 done < ~/.zen/tmp/${MOATS}/${PLAYER}.movie.id
 
 if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; then
 
     ################################################
-    ## UPDATE TW CHAIN WITH PREVIOUSLY RECORDED CHAIN
+    ## GET TW CHAIN
     tiddlywiki --load ${INDEX} \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
@@ -303,14 +303,16 @@ if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; the
     [[ $ASTROPORT == "" ]] && echo "INCOMPATIBLE TW - ADD Astroport TIDDLER - CORRECTION NEEDED -" && exit 1
 
     CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
-    [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
+    [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] && echo "FATAL ERROR TW CHAIN IS BROKEN : CHECK ${INDEX} - EXIT -" && exit 1
+    ## CHAINING
     echo "CURCHAIN=$CURCHAIN"
     [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
     && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
     && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
     && sed -i "s~$CURCHAIN~$ZCHAIN~g" ${INDEX}
-    ################################################
 
+    ################################################
+    ## UPDATE PLAYER TW
     espeak "I P N S Publishing. Please wait..."
     cp ${INDEX} ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -320,6 +322,7 @@ if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; the
     TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=${PLAYER} /ipfs/$TW
 
+    ## UPDATE LAST KNOWN FOR NEXT CHAIN
     echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
     echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
@@ -327,8 +330,6 @@ if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; the
     echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
     echo "================================================"
     echo
-
-    [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
 else
 
