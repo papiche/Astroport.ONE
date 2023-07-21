@@ -93,8 +93,8 @@ sqlite3 -csv ~/.kodi/userdata/Database/MyVideos116.db 'select c00, c01, c03, c22
 ## Use "miller" to convert csv into json
 mlr --c2j --jlistwrap cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.csv > ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json
 
-## INDEX TITRE LIST
-cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json | jq -r .[].titre > ~/.zen/tmp/${MOATS}/${PLAYER}.movie.id
+## SHUFFLE TITRE LIST
+cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json | jq -r .[].titre | shuf > ~/.zen/tmp/${MOATS}/${PLAYER}.movie.id
 
 boucle=0
 
@@ -103,6 +103,7 @@ while read TITRE; do
     DESC=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) | .desc')
     SUB=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) | .sub')
     SOURCE=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .source')
+    IPFSONE=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .ipfs_one')
     CAT=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .cat' | tail -n 1)
     YID=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .extrait' | rev | cut -d '=' -f 1 | rev)
 
@@ -113,7 +114,7 @@ while read TITRE; do
     TITLE=$(echo "${TITRE}" | detox --inline ) ## TITLE SANITY
     TAGS="${YEAR} G1Kodi ${TITLE} ${PLAYER} $(echo "${CAT}" | detox --inline | sed 's~_~\ ~g')"
 
-    echo "${YID} > ${TITLE}"
+    echo "${boucle} > ${TITLE}"
     echo "($MIME)" "$SOURCE"
 
     ## ADD MOVIE TO IPFS
@@ -139,101 +140,42 @@ while read TITRE; do
             # MAKE PAYMENT QRCODE
             # sha256 Kodi_TITLE + G1PUB encrypt = comment
             THASH=$(echo "Kodi_${TITLE}" | sha256sum | cut -d ' ' -f 1) # && echo ${THASH} > ~/.zen/tmp/${MOATS}/thash
-            # TODO : WITH MORE SECURITY
+            # WANA DO MORE SECURE ?
             ## ENCRYPT THASH with G1PUB (so you are sure it is a link from your TW).
             #~ ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/thash -o ~/.zen/tmp/${MOATS}/thash.enc
             #~ THASHSEC=$(cat ~/.zen/tmp/${MOATS}/thash.enc | base16)
             #~ Then update THASH with THASHSEC next
-
-            echo "## TIDDLER WITH OR WITHOUT ipfs_one"
-            ## MANAGING TIDDLER UPDATE
-            IPFSONE=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq -r .[].ipfs_one)
-            SOURCE=$(cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq -r .[].source)
-
-            if [[ ${IPFSONE} == "" ]]; then
-
-                ## RUN NO IPFS_ONE STEP
-                echo "ADD ${SOURCE} TO IPFS"
-                [[ ${boucle} == 3 ]] && echo "${boucle} IPFS ADD DONE TODAY - BREAK -" && break
-
-                IPFSMOVIE=$(ipfs add -q "$SOURCE")
-                echo "/ipfs/${IPFSMOVIE}" > ~/.zen/tmp/${MOATS}/source
-
-                ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/source -o ~/.zen/tmp/${MOATS}/source.enc
-                ENCODING=$(cat ~/.zen/tmp/${MOATS}/source.enc | base16)
-                echo "MOVIE ADDED /ipfs/${IPFSMOVIE} :NATOOLS16: ${ENCODING}"
-
-                ##  UPDATE ipfs_one in JSON
-                cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq  --arg v "${ENCODING}" '.[].ipfs_one = $v' \
-                        > ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json
-
-                ## INSERT NEW TIDDLER
-                tiddlywiki --load ${INDEX} \
-                            --import ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json "application/json" \
-                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-
-                [[ -s ~/.zen/tmp/newindex.html ]] \
-                    && cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
-
-                INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
-                boucle=$((boucle+1)) ## COUNT HOW MANY MOVIES GOING TO IPFS
-
-            else
-
-                ## ipfs_one STEP OK
-                echo "ipfs_one NATOOLS DECRYPTING"
-                echo "${IPFSONE}" | base16 -d > ~/.zen/tmp/${MOATS}/source.one.enc
-                 ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec \
-                        -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
-                        -i ~/.zen/tmp/${MOATS}/source.one.enc -o $HOME/.zen/tmp/${MOATS}/source.one
-
-                echo "IPFS SOURCE $(cat $HOME/.zen/tmp/${MOATS}/source.one)"
-
-                ## FIND FRIENDS and ADD FIELDS ipfs_AG1PUB
-                find ~/.zen/game/players/${PLAYER}/FRIENDS -mindepth 1 -maxdepth 1 -type d | rev | cut -f 1 -d '/' | rev > ~/.zen/tmp/${MOATS}/twfriends
-                cp -f ${HOME}/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json ~/.zen/tmp/${MOATS}/atiddler.json
-
-                while read AG1PUB; do
-
-                    ## CREATE "ipfs_AG1PUB" : "ACODING"
-                    rm -f ~/.zen/tmp/${MOATS}/source.aenc
-                    ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${AG1PUB} -i ~/.zen/tmp/${MOATS}/source.one -o ~/.zen/tmp/${MOATS}/source.aenc
-                    ACODING=$(cat ~/.zen/tmp/${MOATS}/source.aenc | base16)
-
-                    cat ~/.zen/tmp/${MOATS}/atiddler.json | jq '.[] |= .+ {"_IPUB_":"_ICOD_"}' \
-                        > ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
-                        && sed -i "s~_IPUB_~ipfs_${AG1PUB}~g" ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
-                        && sed -i "s~_ICOD_~${ACODING}~g" ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
-                        && mv ~/.zen/tmp/${MOATS}/atiddler.json.tmp ~/.zen/tmp/${MOATS}/atiddler.json
-
-                done < ~/.zen/tmp/${MOATS}/twfriends
-
-                ## INSERT NEW TIDDLER
-                tiddlywiki --load ${INDEX} \
-                            --import ~/.zen/tmp/${MOATS}/atiddler.json "application/json" \
-                            --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-
-                [[ -s ~/.zen/tmp/newindex.html ]] \
-                            && cp -f ~/.zen/tmp/newindex.html ~/.zen/tmp/${MOATS}/index.html
-                INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
-
-            fi
-
             ## CREATE june:// QRCODE put it in IPFS
-            amzqr "june://${G1PUB}?comment=N1Kodi:${THASH}&" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD.png -d ~/.zen/tmp/${MOATS}/
+            PAYCOM="june://${G1PUB}?comment=N1Kodi:${THASH}&"
+            echo"${PAYCOM}"
+            amzqr "${PAYCOM}" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD.png -d ~/.zen/tmp/${MOATS}/
             PV=$(ipfs add -q ~/.zen/tmp/${MOATS}/VOD.png)
-            echo "VODQR = /ipfs/${PV}"
+            echo "VOD QR = /ipfs/${PV}"
+            ## ADD TO IPFS
+            echo "ADD ${SOURCE} TO IPFS"
+
+            ## BOUCLE BREAK - choose how many movies are added per day ? - G1STATION PARAM -
+            [[ ${boucle} == 1 ]] && echo "IPFS ADD ${boucle} TODAY - BREAK -" && break
+
+            IPFSMOVIE=$(ipfs add -q "$SOURCE")
+            echo "/ipfs/${IPFSMOVIE}" > ~/.zen/tmp/${MOATS}/source
+
+            ~/.zen/Astroport.ONE/tools/natools.py encrypt -p ${G1PUB} -i ~/.zen/tmp/${MOATS}/source -o ~/.zen/tmp/${MOATS}/source.enc
+            ENCODING=$(cat ~/.zen/tmp/${MOATS}/source.enc | base16)
+            echo "MOVIE ADDED /ipfs/${IPFSMOVIE} :NATOOLS16: ${ENCODING}"
+
+            boucle=$((boucle+1)) ## COUNT HOW MANY MOVIES GOING TO IPFS
 
             ## MAKING TIDDLER
-              echo "## Creation json tiddler"
+              echo "## Creation json tiddler ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json"
               echo '[
               {
                 "text": "{{!!titre}}
 {{!!sub}}
-<br><a href=https://youtu.be/${YID}>Bande Annonce</a><br>
-Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+
-<img src=/Ipfs/${PV}>
+<h3>Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+</h3>
+<img src=/Ipfs/${PV}><br>
 {{!!desc}}
+<br><a href=https://youtu.be/${YID}>Bande Annonce</a>
 ",
                 "title": "'Kodi_${TITLE}'",
                 "thash": "'${THASH}'",
@@ -247,7 +189,6 @@ Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+
                 "cat": "'${CAT}'",
                 "g1pub": "'${G1PUB}'",
                 "source": "'${SOURCE}'",
-                "ipfs_one": "''",
                 "titre": "'${TITRE}'",
                 "modified": "'${MOATS}'",
                 "issuer": "'${PLAYER}'",
@@ -255,6 +196,16 @@ Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+
                }
             ]
             ' > ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json
+
+            ##  ADD ipfs_one to JSON file
+            cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq  --arg v "${ENCODING}" '.[].ipfs_one = $v' \
+                    > ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json
+
+            [[ -s ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json ]] \
+                && cp -f ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json \
+                && rm ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json
+
+            echo "ipfs_one : ${ENCODING}"
 
             ## ADD TO TW
             echo "ADD G1KODI IN TW ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
@@ -278,8 +229,6 @@ Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+
 
             fi
 
-            YID=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.movie.json  | jq --arg v "${TITRE}" -r '.[] | select(.titre==$v) |  .extrait' | rev | cut -d '=' -f 1 | rev)
-
             echo "MOVIE IN TW ($YID)"
             echo "~~~~~~~~"
 
@@ -288,10 +237,16 @@ Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+
             echo "MOVIE NO COMPATIBLE. MUST BE CONVERTED TO MP4"
 
         fi
+
+    else
+
+        echo "${SOURCE} "
+
     fi
 
 done < ~/.zen/tmp/${MOATS}/${PLAYER}.movie.id
 
+## VERIFY, COULD BE DONE IN PLAYER REFRESH
 if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; then
 
     ################################################
