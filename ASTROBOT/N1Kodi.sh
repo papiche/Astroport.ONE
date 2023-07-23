@@ -14,21 +14,22 @@ ME="${0##*/}"
 . "${MY_PATH}/../tools/my.sh"
 
 echo "$ME RUNNING"
-
+########################################################################
+## LOOK IN TW INDEX for THASH
+## DECODE ipfs_one
+## SEND MESSAGE TO SOURCEG1PUB
 ########################################################################
 echo "NO READY YET"
 exit 0
 ########################################################################
-N1PATH="$1"
-[[ ! -s ${N1PATH} ]] && echo "ERROR - Please provide path to source N1PATH" && exit 1
-[[ ! -s ${N1PATH} ]] && echo "ERROR - Fichier TW absent. ${N1PATH}" && exit 1
+INDEX="$1"
+[[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
+[[ ! -s ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
+[[ ! -s ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 
 PLAYER="$2"
+[[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 [[ ! ${PLAYER} ]] && echo "ERROR - Please provide PLAYER" && exit 1
-
-[[ ! -s ${N1PATH}/_${PLAYER}.tiddlers.json ]] \
-    && echo "MISSING ${N1PATH}/_${PLAYER}.tiddlers.json - EXIT -" \
-    && exit 1
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 [[ ! ${ASTRONAUTENS} ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
@@ -40,75 +41,119 @@ G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 MOATS="$3"
 [[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-echo "${PLAYER} ${N1PATH} ${ASTRONAUTENS} ${G1PUB} "
+IPUBKEY="$4"
+[[ ! ${IPUBKEY} ]] && echo "ERROR - MISSING COMMAND ISSUER !"  && exit 1
+
+TH="$5"
+[[ ! ${TH} ]] && echo "ERROR - MISSING COMMAND TITLE HASH ADDRESS !"  && exit 1
+
+echo "${PLAYER} : ${IPUBKEY} SEEKING FOR ${TH}
+${ASTRONAUTENS} ${G1PUB} "
+
 #~ ###################################################################
 #~ ## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
 #~ ###################################################################
 mkdir -p $HOME/.zen/tmp/${MOATS} && echo $HOME/.zen/tmp/${MOATS}
 
-echo '<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
-<channel>
- <title>RSS ASTROPORT</title>
- <description>Astroport Kodi RSS feed</description>
- <link>https://www.copylaradio.com</link>
- <copyright>2020 Astroport.com FOSS</copyright>
- <lastBuildDate>Mon, 6 Sep 2020 00:01:00 +0000</lastBuildDate>
- <pubDate>Sun, 6 Sep 2020 16:20:00 +0000</pubDate>
- <ttl>1800</ttl>
-' > ~/.zen/tmp/${MOATS}/movie.rss
+## EXTRACT TIDDLER
+tiddlywiki  --load ${INDEX} \
+                --output ~/.zen/.zen/tmp/${MOATS} \
+                --render '.' 'TH.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[thash['${TH}']]'
 
-find ~/.zen/game/players/${PLAYER}/FRIENDS -mindepth 1 -maxdepth 1 -type d | rev | cut -f 1 -d '/' | rev > ~/.zen/tmp/${MOATS}/twfriends
+if [[ $(cat ~/.zen/.zen/tmp/${MOATS}/TH.json) != "[]" ]]; then
+# FOUND GETTING CYPHERED IPFS LINK
+    TITLE=$(cat ~/.zen/.zen/tmp/${MOATS}/TH.json | jq -r '.[].title')
 
-## SCAN ALL "_APLAYER.tiddlers.json"
-for FILE in $(ls ${N1PATH}/*.tiddlers.json); do
-    APLAYER=$(echo "$FILE" | rev | cut -d '.' -f 3- | cut -d '_' -f 1 | rev )
-    [[ ${APLAYER} == ${PLAYER} ]] && echo "My Movie List" && continue
-
-## EXTRACT all titles to do JQ LOOP
-    cat ${FILE} | jq -r .[].title > ~/.zen/tmp/${MOATS}/${APLAYER}.movie.id
-
-    while read TITLE; do
-
-    ## GET AG1PUB FROM FRIEND TW
-## BUG !!!
-    TITRE=$(cat ${FILE} | jq -r .[].titre)
-    SUB=$(cat ${FILE} | jq -r .[].sub)
-    IPFSONE=$(cat ${FILE} | jq -r .[].ipfs_one)
+    IPFSONE=$(cat ~/.zen/.zen/tmp/${MOATS}/TH.json | jq -r '.[].ipfs_one')
     echo "${IPFSONE}" | base16 -d > ~/.zen/tmp/${MOATS}/source.one.enc
 
+    ## DECRYPTING ipfs_one
     ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec \
                         -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
                         -i ~/.zen/tmp/${MOATS}/source.one.enc -o $HOME/.zen/tmp/${MOATS}/source.one
 
-    SOURCE=$(cat ${FILE} | jq -r .[].source)
-    IPFS_ME=$(cat ${FILE} | jq -r .[].ipfs_${player})
+    DECIPFS=$(cat $HOME/.zen/tmp/${MOATS}/source.one)
+    cat "${TITLE} = ${DECIPFS}"
 
-    echo '
-     <item>
-      <title>'${TITRE}'</title>
-      <description>'${SUB}'</description>
-      <link>http://ipfs.localhost:8080/ipfs/QmQwYpoHX6Fw26nd3KFfLj71Uv34riT4F5X2RFy2rmHekW</link>
-      <pubDate>Sun, 6 Sep 2022 16:20:00 +0000</pubDate>
-     </item>' >> ~/.zen/tmp/${MOATS}/movie.rss
+    ## TODO CREATE A TEMP IPNS KEY ?!
 
-    done < ~/.zen/tmp/${MOATS}/${APLAYER}.movie.id
+    ## SENDING GCHANGE & CESIUM+ MESSAGE
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : ${myTUBE}${DECIPFS}"
 
+    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : ${myTUBE}${DECIPFS}"
 
-done
+else
 
-## EXTRACT and DECODE ipfs_AG1PUB from FRIENDS json's
+        echo "NO TIDDLER WITH ${TH}"
+        continue
 
-
-echo '
-</channel>
-</rss>
-' >> ~/.zen/tmp/${MOATS}/movie.rss
-
-## UPDATE LOCAL KODI WITH
-## ./userdata/mediasources.xml
-## ./userdata/sources.xml
-
+fi
 
 exit 0
+## TODO CREATE FROM FRIEND LOCAL KODI RSS
+#~ echo '<?xml version="1.0" encoding="UTF-8" ?>
+#~ <rss version="2.0">
+#~ <channel>
+ #~ <title>RSS ASTROPORT</title>
+ #~ <description>Astroport Kodi RSS feed</description>
+ #~ <link>https://www.copylaradio.com</link>
+ #~ <copyright>2020 Astroport.com FOSS</copyright>
+ #~ <lastBuildDate>Mon, 6 Sep 2020 00:01:00 +0000</lastBuildDate>
+ #~ <pubDate>Sun, 6 Sep 2020 16:20:00 +0000</pubDate>
+ #~ <ttl>1800</ttl>
+#~ ' > ~/.zen/tmp/${MOATS}/movie.rss
+
+#~ find ~/.zen/game/players/${PLAYER}/FRIENDS -mindepth 1 -maxdepth 1 -type d | rev | cut -f 1 -d '/' | rev > ~/.zen/tmp/${MOATS}/twfriends
+
+#~ ## SCAN ALL "_APLAYER.tiddlers.json"
+#~ for FILE in $(ls ${N1PATH}/*.tiddlers.json); do
+    #~ APLAYER=$(echo "$FILE" | rev | cut -d '.' -f 3- | cut -d '_' -f 1 | rev )
+    #~ [[ ${APLAYER} == ${PLAYER} ]] && echo "My Movie List" && continue
+
+#~ ## EXTRACT all titles to do JQ LOOP
+    #~ cat ${FILE} | jq -r .[].title > ~/.zen/tmp/${MOATS}/${APLAYER}.movie.id
+
+    #~ while read TITLE; do
+
+    #~ ## GET AG1PUB FROM FRIEND TW
+#~ ## BUG !!!
+    #~ TITRE=$(cat ${FILE} | jq -r .[].titre)
+    #~ SUB=$(cat ${FILE} | jq -r .[].sub)
+    #~ IPFSONE=$(cat ${FILE} | jq -r .[].ipfs_one)
+    #~ echo "${IPFSONE}" | base16 -d > ~/.zen/tmp/${MOATS}/source.one.enc
+
+    #~ ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec \
+                        #~ -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
+                        #~ -i ~/.zen/tmp/${MOATS}/source.one.enc -o $HOME/.zen/tmp/${MOATS}/source.one
+
+    #~ SOURCE=$(cat ${FILE} | jq -r .[].source)
+    #~ IPFS_ME=$(cat ${FILE} | jq -r .[].ipfs_${player})
+
+    #~ echo '
+     #~ <item>
+      #~ <title>'${TITRE}'</title>
+      #~ <description>'${SUB}'</description>
+      #~ <link>http://ipfs.localhost:8080/ipfs/QmQwYpoHX6Fw26nd3KFfLj71Uv34riT4F5X2RFy2rmHekW</link>
+      #~ <pubDate>Sun, 6 Sep 2022 16:20:00 +0000</pubDate>
+     #~ </item>' >> ~/.zen/tmp/${MOATS}/movie.rss
+
+    #~ done < ~/.zen/tmp/${MOATS}/${APLAYER}.movie.id
+
+
+#~ done
+
+#~ ## EXTRACT and DECODE ipfs_AG1PUB from FRIENDS json's
+
+
+#~ echo '
+#~ </channel>
+#~ </rss>
+#~ ' >> ~/.zen/tmp/${MOATS}/movie.rss
+
+#~ ## UPDATE LOCAL KODI WITH
+#~ ## ./userdata/mediasources.xml
+#~ ## ./userdata/sources.xml
+
+
+
 

@@ -54,7 +54,7 @@ echo "EXPORT Kodi Wish for ${PLAYER}"
 rm -f ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json
 tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/game/players/${PLAYER}/G1Kodi \
-                    --render '.' 'Kodi.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Kodi'
+                    --render '.' 'Kodi.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]tag[G1Kodi]]'
 
 [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/Kodi.json ) == "[]" ]] \
     && echo "AUCUN VOEU G1KODI - EXIT -" \
@@ -74,14 +74,14 @@ tiddlywiki  --load ${INDEX} \
 
 [[ $(cat ~/.zen/game/players/${PLAYER}/G1Kodi/TWmovies.json) == "[]" ]] && echo "AUCUN FILM G1KODI"
 
-## TW G1Kodi deletetiddlers CODE
+#~ ## TW G1Kodi deletetiddlers CODE
 #~ tiddlywiki  --load ${INDEX} \
-                    #~ --deletetiddlers '[tag[G1Kodi]]' \
+                    #~ --deletetiddlers '[tag[G1Kodi]!Kodi]' \
                     #~ --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "cleanindex.html" "text/plain"
 #~ [[ -s ~/.zen/tmp/${MOATS}/cleanindex.html ]] && cp -f ~/.zen/tmp/${MOATS}/cleanindex.html ~/.zen/tmp/${MOATS}/index.html
 
 
-echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
+echo "=========== ( ◕‿◕) EXTRACT KODI MyVideos DB (◕‿◕ ) =============="
 
 ## EXTRACT MOVIE FILES LIST TO CSV
 echo "\"titre\",\"desc\",\"sub\",\"source\",\"cat\",\"extrait\",\"prem\"" > ~/.zen/tmp/${MOATS}/${PLAYER}.movie.csv
@@ -126,7 +126,7 @@ while read TITRE; do
     #~ </item>
 
     if [[ ! -s ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json ]]; then
-    ## CHECK IN TW
+    echo "CHECKING Kodi_${TITLE} IN TW"
     tiddlywiki  --load ${ORIGININDEX} \
                 --output ~/.zen/game/players/${PLAYER}/G1Kodi \
                 --render '.' "${TITLE}.dragdrop.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "'"Kodi_${TITLE}"'"
@@ -147,15 +147,14 @@ while read TITRE; do
             #~ Then update THASH with THASHSEC next
             ## CREATE june:// QRCODE put it in IPFS
             PAYCOM="june://${G1PUB}?comment=N1Kodi:${THASH}&"
-            echo"${PAYCOM}"
-            amzqr "${PAYCOM}" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD.png -d ~/.zen/tmp/${MOATS}/
+            echo "${PAYCOM}"
+            amzqr "${PAYCOM}" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD_${TITLE}.png -d ~/.zen/tmp/${MOATS}/
+            convert -gravity northwest -pointsize 20 -fill black -draw "text 30,3 \"${TITRE} (${YEAR})\"" ~/.zen/tmp/${MOATS}/VOD_${TITLE}.png ~/.zen/tmp/${MOATS}/VOD.png
+
             PV=$(ipfs add -q ~/.zen/tmp/${MOATS}/VOD.png)
-            echo "VOD QR = /ipfs/${PV}"
+            echo "VOD QR = ${myIPFS}/ipfs/${PV}"
             ## ADD TO IPFS
             echo "ADD ${SOURCE} TO IPFS"
-
-            ## BOUCLE BREAK - choose how many movies are added per day ? - G1STATION PARAM -
-            [[ ${boucle} == 1 ]] && echo "IPFS ADD ${boucle} TODAY - BREAK -" && break
 
             IPFSMOVIE=$(ipfs add -q "$SOURCE")
             echo "/ipfs/${IPFSMOVIE}" > ~/.zen/tmp/${MOATS}/source
@@ -164,22 +163,21 @@ while read TITRE; do
             ENCODING=$(cat ~/.zen/tmp/${MOATS}/source.enc | base16)
             echo "MOVIE ADDED /ipfs/${IPFSMOVIE} :NATOOLS16: ${ENCODING}"
 
-            boucle=$((boucle+1)) ## COUNT HOW MANY MOVIES GOING TO IPFS
+            # CREATE TEXT AREA
+            TEXT="<h1>{{!!titre}} ({{!!year}})</h1><h2>{{!!sub}}</h2>
+            {{!!desc}}<br>
+            <a target='youtube' href='https://youtu.be/"${YID}"'>Bande Annonce</a>
+            <h3>Envoyez un don. Recevez le lien vers ce film dans votre messagerie Cesium+</h3>
+            <img width='300' src='/ipfs/"${PV}"'>"
 
             ## MAKING TIDDLER
               echo "## Creation json tiddler ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json"
               echo '[
               {
-                "text": "{{!!titre}}
-{{!!sub}}
-<h3>Envoyez un don. Recevez le lien vers ce film dans la messagerie Cesium+</h3>
-<img src=/Ipfs/${PV}><br>
-{{!!desc}}
-<br><a href=https://youtu.be/${YID}>Bande Annonce</a>
-",
-                "title": "'Kodi_${TITLE}'",
-                "thash": "'${THASH}'",
                 "created": "'${MOATS}'",
+                "title": "'Kodi_${TITLE}'",
+                "text": "'${TEXT}'",
+                "thash": "'${THASH}'",
                 "year": "'${YEAR}'",
                 "mime": "'${MIME}'",
                 "prem": "'${PREM}'",
@@ -189,6 +187,7 @@ while read TITRE; do
                 "cat": "'${CAT}'",
                 "g1pub": "'${G1PUB}'",
                 "source": "'${SOURCE}'",
+                "ipfs_one": "''",
                 "titre": "'${TITRE}'",
                 "modified": "'${MOATS}'",
                 "issuer": "'${PLAYER}'",
@@ -197,13 +196,21 @@ while read TITRE; do
             ]
             ' > ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json
 
-            ##  ADD ipfs_one to JSON file
-            cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq  --arg v "${ENCODING}" '.[].ipfs_one = $v' \
+            ##  ADD ipfs_one to JSON file (Just to show jq in action)
+            cat ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json | jq --arg v "${ENCODING}" '.[].ipfs_one = $v' \
                     > ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json
 
             [[ -s ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json ]] \
                 && cp -f ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json \
                 && rm ~/.zen/game/players/${PLAYER}/G1Kodi/ipfs_one.json
+
+            ## TO ALLOW DECODING FOR MY FRIENDS
+            ## jq FORMULA TO ADD ipfs_FG1PUB = ACODING
+            #~ cat ~/.zen/tmp/${MOATS}/atiddler.json | jq '.[] |= .+ {"_IPUB_":"_ICOD_"}' \
+                        #~ > ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
+                        #~ && sed -i "s~_IPUB_~ipfs_${AG1PUB}~g" ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
+                        #~ && sed -i "s~_ICOD_~${ACODING}~g" ~/.zen/tmp/${MOATS}/atiddler.json.tmp \
+                        #~ && mv ~/.zen/tmp/${MOATS}/atiddler.json.tmp ~/.zen/tmp/${MOATS}/atiddler.json
 
             echo "ipfs_one : ${ENCODING}"
 
@@ -222,6 +229,8 @@ while read TITRE; do
                     INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
                     echo "NEWINDEX : ${INDEX}"
 
+                    boucle=$((boucle+1)) ## COUNT HOW MANY MOVIES GOING TO IPFS
+
             else
 
                     echo "CANNOT UPDATE TW - FATAL ERROR -"
@@ -234,67 +243,76 @@ while read TITRE; do
 
         else
 
-            echo "MOVIE NO COMPATIBLE. MUST BE CONVERTED TO MP4"
+            echo "${TITLE} MIME TYPE NOT COMPATIBLE.
+            MUST BE CONVERTED TO MP4"
 
         fi
 
     else
 
-        echo "${SOURCE} "
+        echo "ALREADY IN TW : Kodi_${TITLE}
+        https://youtu.be/${YID}"
 
     fi
+
+    ## BOUCLE BREAK - choose how many movies are added per day ? - G1STATION PARAM -
+    [[ ${boucle} == 1 ]] && echo "IPFS ADD ${boucle} TODAY - BREAK -" && break
 
 done < ~/.zen/tmp/${MOATS}/${PLAYER}.movie.id
 
 ## VERIFY, COULD BE DONE IN PLAYER REFRESH
 if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; then
 
-    ################################################
-    ## GET TW CHAIN
-    tiddlywiki --load ${INDEX} \
-        --output ~/.zen/tmp/${MOATS} \
-        --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-    [[ $ASTROPORT == "" ]] && echo "INCOMPATIBLE TW - ADD Astroport TIDDLER - CORRECTION NEEDED -" && exit 1
+    cp ${INDEX} ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+    ## PLAYER.refresh will detect change & publish
 
-    CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
-    [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] && echo "FATAL ERROR TW CHAIN IS BROKEN : CHECK ${INDEX} - EXIT -" && exit 1
-    ## CHAINING
-    echo "CURCHAIN=$CURCHAIN"
-    [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
-    && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
-    && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
-    && sed -i "s~$CURCHAIN~$ZCHAIN~g" ${INDEX}
+    #~ ################################################
+    #~ ## GET TW CHAIN
+    #~ tiddlywiki --load ${INDEX} \
+        #~ --output ~/.zen/tmp/${MOATS} \
+        #~ --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+    #~ ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+    #~ [[ $ASTROPORT == "" ]] && echo "INCOMPATIBLE TW - ADD Astroport TIDDLER - CORRECTION NEEDED -" && exit 1
 
-    ################################################
-    ## UPDATE PLAYER TW
-    espeak "I P N S Publishing. Please wait..."
-    cp ${INDEX} ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+    #~ CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
+    #~ [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] && echo "FATAL ERROR TW CHAIN IS BROKEN : CHECK ${INDEX} - EXIT -" && exit 1
+    #~ ## CHAINING
+    #~ echo "CURCHAIN=$CURCHAIN"
+    #~ [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
+    #~ && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
+    #~ && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
+    #~ && sed -i "s~$CURCHAIN~$ZCHAIN~g" ${INDEX}
 
-    cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-                                ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
+    #~ ################################################
+    #~ ## UPDATE PLAYER TW
+    #~ espeak "I P N S Publishing. Please wait..."
+    #~ cp ${INDEX} ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-    TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-    ipfs name publish --key=${PLAYER} /ipfs/$TW
+    #~ cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+                                #~ ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
-    ## UPDATE LAST KNOWN FOR NEXT CHAIN
-    echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
-    echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
+    #~ TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
+    #~ ipfs name publish --key=${PLAYER} /ipfs/$TW
 
-    echo "================================================"
-    echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
-    echo "================================================"
-    echo
+    #~ ## UPDATE LAST KNOWN FOR NEXT CHAIN
+    #~ echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
+    #~ echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
-else
+    #~ echo "================================================"
+    #~ echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
+    #~ echo "================================================"
+    #~ echo
+    #~ espeak "DONE "
 
-    echo "UNCHANGED TW"
+#~ else
+
+    echo "CHANGED TW"
 
 fi
 
 echo "=========== ( ◕‿◕)  (◕‿◕ ) =============="
 
-rm -Rf $HOME/.zen/tmp/${MOATS}
+#~ rm -Rf $HOME/.zen/tmp/${MOATS}
 
 exit 0
 

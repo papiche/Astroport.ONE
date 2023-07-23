@@ -20,11 +20,6 @@ echo "$ME RUNNING"
 ########################################################################
 # PALPAY SERVICE
 ########################################################################
-# CHECK TODAY INCOMING PAYMENT
-# IF COMMENT CONTAINS EMAIL ADDRESSES
-# THEN AND SEND PAIMENT TO NEXT (REMOVING IT FROM LIST)
-########################################################################
-# this could lead in several account creation sharing % of incomes each time
 ########################################################################
 INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
@@ -53,6 +48,7 @@ mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
 mkdir -p $HOME/.zen/tmp/${MOATS}
 echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
+# CHECK TODAY INCOMING PAYMENT
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
 
@@ -60,7 +56,43 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 && echo "NO PAYMENT HISTORY" \
 && exit 1
 
+########################################################################################
+############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
+#################################################################
+
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
+while read NLINE; do
+    IDATE=$(echo ${NLINE} | jq -r .date)
+    IPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "N1COMMAND $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+
+    COMMENT=$(echo ${NLINE} | jq -r .comment)
+    CMD=$(echo ${COMMENT} | cut -d ':' -f 1)
+    TH=$(echo ${COMMENT} | cut -d ':' -f 2)
+
+    if [[ -s ${MY_PATH}/${CMD}.sh ]]; then
+
+        echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
+        ${MY_PATH}/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH}
+
+    else
+
+        echo "NOT A N1 COMMAND ${COMMENT}"
+
+    fi
+
+done < ~/.zen/tmp/${MOATS}/myN1.json
+
+########################################################################################
+############# CHECK FOR EMAILs IN PAYMENT COMMENT
 ## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
+#################################################################
+
+# IF COMMENT CONTAINS EMAIL ADDRESSES
+# THEN AND SEND PAIMENT TO NEXT (REMOVING IT FROM LIST)
+########################################################################
+# this could lead in several account creation sharing % of incomes each time
+
 cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
 
 ## GET @ in JSON INLINE
@@ -96,7 +128,7 @@ while read LINE; do
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
 
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+        echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
         if [[ ! ${ASTROTW} ]]; then
 
@@ -139,15 +171,11 @@ done < ~/.zen/tmp/${MOATS}/myPalPay.json
 
 echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
 
-#################################################################
-#################################################################
-### NEXT #####
-### TIDDLERS with EMAIL in TAGS treatment
-#################################################################
+########################################################################################
 ## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
 #################################################################
 echo "# EXTRACT TODAY TIDDLERS"
-tiddlywiki --load $INDEX \
+tiddlywiki --load ${INDEX} \
                  --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/ \
                  --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]]'
 
