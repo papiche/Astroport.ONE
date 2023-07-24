@@ -223,14 +223,14 @@ do
 ###########################################################################################
         ## DATA POST TREATMENT PROGRAM
         ## RUN N1Program ASTROBOT PROGRAM
-        if [[ -s $MY_PATH/../ASTROBOT/N1${WISHNAME}.sh ]]; then
-            echo "........................ Astrobot N1${WISHNAME}.sh post-treatment found !"
-            echo "________________________________  Running it *****"
-            ${MY_PATH}/../ASTROBOT/N1${WISHNAME}.sh "~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}" "${PLAYER}" "$MOATS"
-            echo "________________________________   Finished ******"
-        else
-            echo "......................... N1${WISHNAME} REGULAR Ŋ1 RSS JSON"
-        fi
+        #~ if [[ -s $MY_PATH/../ASTROBOT/N1${WISHNAME}.sh ]]; then
+            #~ echo "........................ Astrobot N1${WISHNAME}.sh post-treatment found !"
+            #~ echo "________________________________  Running it *****"
+            #~ ${MY_PATH}/../ASTROBOT/N1${WISHNAME}.sh "~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}" "${PLAYER}" "$MOATS"
+            #~ echo "________________________________   Finished ******"
+        #~ else
+            #~ echo "......................... N1${WISHNAME} REGULAR Ŋ1 RSS JSON"
+        #~ fi
 
 ###########################################################################################
         ### ADD ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${WISHNAME}/*
