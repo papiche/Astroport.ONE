@@ -13,8 +13,9 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 
-echo "(✜‿‿✜) G1Kodi : Get Kodi database from ~/.kodi/userdata/Database/MyVideos116.db
-export movie to RSS (ex : http://ipfs.localhost:8080/ipfs/QmSJYf4uTj3NmqovSFZpBZuUhSS8j9FXKKnAjUMuVE896k)"
+echo "(✜‿‿✜) G1Kodi
+Insert G1Kodi Tiddlers from Kodi database from ~/.kodi/userdata/Database/MyVideos116.db
+should export movie to RSS (ex : http://ipfs.localhost:8080/ipfs/QmSJYf4uTj3NmqovSFZpBZuUhSS8j9FXKKnAjUMuVE896k)"
 echo "$ME RUNNING"
 
 ## EXTRACT MOVIES FROM KODI

@@ -74,6 +74,8 @@ while read NLINE; do
 
         echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
         ${MY_PATH}/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH}
+        ## WELL DONE .
+        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate ## MEMORIZE LAST IDATE
 
     else
 

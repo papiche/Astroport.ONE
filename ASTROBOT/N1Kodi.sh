@@ -19,8 +19,6 @@ echo "$ME RUNNING"
 ## DECODE ipfs_one
 ## SEND MESSAGE TO SOURCEG1PUB
 ########################################################################
-echo "NO READY YET"
-exit 0
 ########################################################################
 INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
@@ -73,20 +71,19 @@ if [[ $(cat ~/.zen/.zen/tmp/${MOATS}/TH.json) != "[]" ]]; then
                         -i ~/.zen/tmp/${MOATS}/source.one.enc -o $HOME/.zen/tmp/${MOATS}/source.one
 
     DECIPFS=$(cat $HOME/.zen/tmp/${MOATS}/source.one)
-    cat "${TITLE} = ${DECIPFS}"
+    echo "${TITLE} = ${DECIPFS}"
 
     ## TODO CREATE A TEMP IPNS KEY ?!
 
     ## SENDING GCHANGE & CESIUM+ MESSAGE
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : ${myTUBE}${DECIPFS}"
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : https://${myTUBE}${DECIPFS}"
 
-    $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : ${myTUBE}${DECIPFS}"
+    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : https://${myTUBE}${DECIPFS}"
 
 else
 
         echo "NO TIDDLER WITH ${TH}"
-        continue
-
+        exit 1
 fi
 
 exit 0
