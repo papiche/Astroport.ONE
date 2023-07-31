@@ -60,20 +60,26 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
 #################################################################
 
+## TREAT ANY COMMENT STARTING WITH N1
 cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
+
 while read NLINE; do
+    ## COMMENT FORMAT = N1$CMD:$TH:$TRAIL
     IDATE=$(echo ${NLINE} | jq -r .date)
     IPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $IDATE ]]  && echo "N1COMMAND $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
     COMMENT=$(echo ${NLINE} | jq -r .comment)
-    CMD=$(echo ${COMMENT} | cut -d ':' -f 1)
+    CMD=$(echo ${COMMENT} | cut -d ':' -f 1 | cut -c -12 ) # Maximum 12 characters CMD
+
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $IDATE ]]  && echo "$CMD $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+
     TH=$(echo ${COMMENT} | cut -d ':' -f 2)
+    TRAIL=$(echo ${COMMENT} | cut -d ':' -f 3-)
 
     if [[ -s ${MY_PATH}/${CMD}.sh ]]; then
 
         echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
-        ${MY_PATH}/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH}
+        ${MY_PATH}/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH} ${TRAIL}
         ## WELL DONE .
         [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST IDATE
 

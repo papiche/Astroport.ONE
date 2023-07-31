@@ -19,6 +19,7 @@ echo "$ME RUNNING"
 ## DECODE ipfs_one
 ## SEND MESSAGE TO SOURCEG1PUB
 ########################################################################
+## THIS SCRIPT IS RUN WHEN A WALLET RECEIVED A TRANSACTION WITH COMMENT STARTING WITH N1Kodi:
 ########################################################################
 INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"

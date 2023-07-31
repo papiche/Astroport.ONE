@@ -52,7 +52,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     [[ ! ${TITRE} ]] && read TITRE
     VoeuName=$(echo "${TITRE}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # VoeuName EST LE TITRE DU VOEU : CapitalGluedWords + EMAIL1
 
-    SECRET2="${VoeuName}" ## SECRET2 est "TitreDuVoeu PLAYER"
+    SECRET2="${VoeuName} ${PLAYER}" ## SECRET2 est "TitreDuVoeu PLAYER"
 
     echo "${SECRET2}" && [[ ! ${SECRET2} ]] && echo "EMPTY SECRET2 - ERROR" && exit 1
 
@@ -244,14 +244,14 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"${Voeu
     #~ [[ ! $? == 0 ]] && echo "G1VOEU CESIUM WALLET PROFILE CREATION FAILED !!!!"
 
     echo "************************************************************"
-    echo "Hop, UNE JUNE pour le Voeu ${VoeuName}"
-    echo ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${WISHG1PUB} -c \'"${VOEUNS} G1Voeu ${VoeuName}"\' -m
-    echo "************************************************************"
-    echo "************************************************************"
+    #~ echo "COULD LIMIT ON JUNE pour le Voeu ${VoeuName}"
+    #~ echo ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${WISHG1PUB} -c \'"${VOEUNS} G1Voeu ${VoeuName}"\' -m
+    #~ echo "************************************************************"
+    #~ echo "************************************************************"
 
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${WISHG1PUB} -c "$VOEUXNS G1Voeu ${VoeuName}" -m
-    [[ ! $? == 0 ]] \
-    && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT PAY A G1 A NEW WISH - THIS IS FREE TO CHANGE -"
+    #~ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a 1 -p ${WISHG1PUB} -c "$VOEUXNS G1Voeu ${VoeuName}" -m
+    #~ [[ ! $? == 0 ]] \
+    #~ && echo "SOOOOOOOOOOOORRRRRRRY GUY. YOU CANNOT PAY A G1 A NEW WISH - THIS IS FREE TO CHANGE -"
     #~ && rm -Rf ~/.zen/game/players/${PLAYER}/voeux/${VoeuName}/${WISHG1PUB} \
     #~ && rm -Rf ~/.zen/game/world/${VoeuName}/${WISHG1PUB}/ \
     #~ && ipfs key rm ${WISHG1PUB} \

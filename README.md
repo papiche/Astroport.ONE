@@ -327,7 +327,7 @@ We choose to use "NaCl" (secret1 / secret) 2 key generation, so it is easy to un
 **(SECRET1/SECRET2) mixing**
 
 * If PLAYER key is (SECRET1/SECRET2) and G1PUB and EMAIL + TW
-    * wishes keys are (SECRET2 / G1WishName)
+    * wishes keys are (SECRET2 / WishName EMAIL)
         * sub-wishes are (EMAIL / G1WishName G1PUB)
             * wish-billets are (EMAIL_dice_words / G1WishName G1PUB)
 
