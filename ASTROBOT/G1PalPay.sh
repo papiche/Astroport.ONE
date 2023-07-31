@@ -64,7 +64,7 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[]
 while read NLINE; do
     IDATE=$(echo ${NLINE} | jq -r .date)
     IPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "N1COMMAND $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $IDATE ]]  && echo "N1COMMAND $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
     COMMENT=$(echo ${NLINE} | jq -r .comment)
     CMD=$(echo ${COMMENT} | cut -d ':' -f 1)
@@ -75,7 +75,7 @@ while read NLINE; do
         echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
         ${MY_PATH}/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH}
         ## WELL DONE .
-        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate ## MEMORIZE LAST IDATE
+        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST IDATE
 
     else
 
@@ -110,7 +110,7 @@ while read LINE; do
     COMMENT=$(echo $JSON | jq -r .comment)
 
     echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS IDATE=$IDATE FORMAT ??)"
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.idate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
     ## GET EMAILS FROM COMMENT
     ICOMMENT=($(echo "$COMMENT" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
@@ -140,7 +140,7 @@ while read LINE; do
 
         [[ ! ${ASTROG1} ]] \
         && echo "SORRY ${EMAIL} MISSING ASTROG1" \
-        && echo " $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous au Collectif ♥BOX https://opencollective.com/monnaie-libre/" > ~/.zen/tmp/palpay.bro \
+        && echo " $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous au Collectif https://www.copylaradio.com/" > ~/.zen/tmp/palpay.bro \
         && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. " ~/.zen/tmp/palpay.bro \
         && continue
 
@@ -165,7 +165,7 @@ while read LINE; do
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.idate ## MEMORIZE LAST IDATE
+        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST IDATE
 
     done
 

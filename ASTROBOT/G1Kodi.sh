@@ -147,7 +147,7 @@ while read TITRE; do
             #~ THASHSEC=$(cat ~/.zen/tmp/${MOATS}/thash.enc | base16)
             #~ Then update THASH with THASHSEC next
             ## CREATE june:// QRCODE put it in IPFS
-            PAYCOM="june://${G1PUB}?comment=N1Kodi:${THASH}&"
+            PAYCOM="june://${G1PUB}?comment=N1Kodi:${THASH}&" ## comment=N1Kodi:TiddlerTiltleHash
             echo "${PAYCOM}"
             amzqr "${PAYCOM}" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD_${TITLE}.png -d ~/.zen/tmp/${MOATS}/
             convert -gravity northwest -pointsize 20 -fill black -draw "text 30,3 \"${TITRE} (${YEAR})\"" ~/.zen/tmp/${MOATS}/VOD_${TITLE}.png ~/.zen/tmp/${MOATS}/VOD.png

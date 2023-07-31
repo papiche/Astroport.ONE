@@ -20,7 +20,6 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "${MY_PATH}/tools/my.sh"
 
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
@@ -29,6 +28,19 @@ if [[ $LOWMODE != "" ]]; then
     sudo systemctl start ipfs
 fi
 
+########################################################################
+
+espeak "restarting I P F S daemon"
+[[ "$isLAN" ]] && sudo systemctl restart ipfs
+
+## CHECK IF IPFS DAEMON IS STARTS WELL
+floop=0
+while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
+    sleep 1
+    ((floop++)) && [ $floop -gt 10 ] && espeak 'Please check but IPFS cannot start' &&  exit 1
+done
+
+. "${MY_PATH}/tools/my.sh"
 [[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
 
 
@@ -160,18 +172,6 @@ ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|g
 ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
 && espeak "I P F S task in progress. Wait finish & try later" && exit 1
-
-########################################################################
-
-espeak "restarting I P F S daemon"
-[[ "$isLAN" ]] && sudo systemctl restart ipfs
-
-## CHECK IF IPFS DAEMON IS STARTS WELL
-floop=0
-while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
-    sleep 1
-    ((floop++)) && [ $floop -gt 10 ] && espeak 'Please check but IPFS cannot start' &&  exit 1
-done
 
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
 YOU=$(myIpfsApi)
@@ -478,6 +478,12 @@ echo '[
         [[ ! -s ~/.zen/tmp/output.pdf ]] && espeak "No file Sorry. Exit" && exit 1
 
         espeak "OK P D F received"
+
+        #~ ## TODO
+        #~ ## CONVERT TO DOCX
+        #~ pdf2docx convert ~/.zen/tmp/output.pdf
+        #~ # THEN TO MD
+        #~ pandoc -f docx -t markdown -o ~/.zen/tmp/output.md ~/.zen/tmp/output.docx
 
         CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
 

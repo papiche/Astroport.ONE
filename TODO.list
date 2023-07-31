@@ -1,3 +1,20 @@
+CESIUM PLUS POD API
+https://github.com/duniter/cesium-plus-pod/blob/master/src/site/markdown/REST_API.md
+
+FIND IN SYNC DUNITER NODES
+
+https://g1.data.e-is.pro/g1/block/current
+
+https://g1.duniter.fr/network/peers
+https://g1.duniter.fr/network/ws2p/heads
+
+EXTRACT MEMBER
+https://g1.data.e-is.pro/wot/members
+
+FOLLOW THE G1 (FIND LOOPS)
+https://g1.data.e-is.pro/g1/movement/_search?pretty&q=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
+
+
 # TODO LIST
 MADE BY
 ```
