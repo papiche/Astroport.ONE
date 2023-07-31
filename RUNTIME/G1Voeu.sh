@@ -50,7 +50,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
     echo "## TITRE DU G1VOEU ? CapitalGluedWords please"
     [[ ! ${TITRE} ]] && read TITRE
-    VoeuName=$(echo "${TITRE}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # VoeuName EST LE TITRE DU VOEU : CapitalGluedWords + EMAIL1
+    VoeuName=$(echo "${TITRE}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # VoeuName EST LE TITRE DU VOEU : CapitalGluedWords + EMAIL
 
     SECRET2="${VoeuName} ${PLAYER}" ## SECRET2 est "TitreDuVoeu PLAYER"
 
