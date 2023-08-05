@@ -334,10 +334,10 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     #~ echo ${ENCODING}
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
-    #~ echo "TW IPFS GATEWAY : ${NID}"
-    # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
-    #~ echo "TW IPFS API : ${WID}"
-    # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
+    echo "TW IPFS GATEWAY : ${NID}"
+    #~ # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
+    echo "TW IPFS API : ${WID}"
+    #~ # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
 
     ## CHANGE SELECTED GW & API
 
