@@ -141,6 +141,11 @@ while true; do
     if [[ $URL == "/" ]]; then
         echo "/ CONTACT :  $HOSTP"
         echo "$HTTPCORS
+        <html>
+        <head>
+    <title>[Astroport] :powered: Station</title>
+    <meta http-equiv=\"refresh\" content=\"3; url='https://astroport.com'\" />
+    </head>
         DING : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         end=`date +%s`
         echo " (‿/‿) $myHOST:$PORT / Execution time was "`expr $end - $start` seconds.
@@ -199,6 +204,10 @@ while true; do
 
         "qrcode")
             exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        ;;
+
+        "uplanet")
+            exec ${MY_PATH}/API/UPLANET.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
         ;;
 
         "")

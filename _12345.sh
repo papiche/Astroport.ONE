@@ -63,7 +63,7 @@ echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
         ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipfskey
         CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
      fi
-    ########################################################
+    ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
 
 ## PUBLISH CHANNEL IPNS
     echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm

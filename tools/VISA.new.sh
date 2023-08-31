@@ -446,8 +446,9 @@ echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
 ################# PREPARE DOCKERIZATION
-rm ~/.zen/game/players/.current
-ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+[[ -l ~/.zen/game/players/.current ]] \
+&& ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+
 . "${MY_PATH}/my.sh"
 
 #################################################################
