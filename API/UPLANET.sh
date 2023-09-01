@@ -90,27 +90,32 @@ ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${PASS}
 ######################################################
 echo "UMAP = $LAT:$LON"
 echo "# CALCULATING MAP G1PUB WALLET"
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/cesium.key  "$LAT" "$LON"
-G1PUB=$(cat ~/.zen/tmp/${MOATS}/cesium.key | grep 'pub:' | cut -d ' ' -f 2)
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${G1PUB}/_cesium.key  "$LAT" "$LON"
+G1PUB=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_cesium.key | grep 'pub:' | cut -d ' ' -f 2)
 [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "MAPG1PUB : ${G1PUB}"
 
 echo "# CALCULATING UMAP IPNS ADDRESS"
+mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB}
 ipfs key rm ${G1PUB} > /dev/null 2>&1
-rm -f ~/.zen/tmp/${MOATS}/${G1PUB}.priv
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${G1PUB}.priv "$LAT" "$LON"
-UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${G1PUB}.priv )
+rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
+UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}"
 
 ####################################### Umap.png
 ## CREATING Umap_${SALT}_${PEPPER}.png
 echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png"
-chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.png --window-size=600x600 "https://ipfs.copylaradio.com/ipfs/QmegythUHq8bhcLKDAtLh5TRfBt8w1aES3gHykuywyMg9a/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+UMAPGEN="https://ipfs.copylaradio.com/ipfs/QmYJ2Ri1ygL7ZFTamP3gcc5VZwxhE685bWJnXSVkvNFJfF/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+echo ${UMAPGEN}
 
+# curl -x "https://ipfs.copylaradio.com/ipfs/QmegythUHq8bhcLKDAtLh5TRfBt8w1aES3gHykuywyMg9a/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}
 ## COPYING FILES FROM ABROAD
-cp /tmp/Umap_${SALT}_${PEPPER}.png ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png
+cp /tmp/Umap_${SALT}_${PEPPER}.jpg ~/.zen/tmp/${MOATS}/
 cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
+cp ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/
 ls ~/.zen/tmp/${MOATS}/
 
 ## ADD TO FRIENDS
@@ -118,22 +123,23 @@ echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 
 ## ADD HPASS to verify PASS is right
 HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
-echo "${HPASS}" > ~/.zen/tmp/${MOATS}/.hpass
+echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS
 
 ## TAKING CARE OF THE CHAIN
 ########################################
 IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
 ########################################
-ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/.chain 2>/dev/null)
-ZMOATS=$(cat ~/.zen/tmp/${MOATS}/.moats 2>/dev/null)
-[[ ${ZCHAIN} && ${ZMOATS} ]] && cp ~/.zen/tmp/${MOATS}/.chain ~/.zen/tmp/${MOATS}/.chain.${ZMOATS}
-## DOES CHAIN CHANGED ?
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_chain 2>/dev/null)
+ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_moats 2>/dev/null)
+[[ ${ZCHAIN} && ${ZMOATS} ]] && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${G1PUB}/_chain.${ZMOATS} && echo "UPDATING MOATS"
+## DOES CHAIN CHANGED or INIT ?
 [[ ${ZCHAIN} != ${IPFSROOT} || ${ZCHAIN} == "" ]] \
-    && echo "${IPFSROOT}" > ~/.zen/tmp/${MOATS}/.chain \
-    && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/.moats
-[[ ! ${ZCHAIN} ]] && IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "INIT THE CHAIN"
+    && echo "${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_chain \
+    && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_moats \
+    && IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
+
 ########################################
-echo "IPFSROOT : http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
+echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
 
 ## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
 alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
@@ -148,16 +154,18 @@ else
     ) &
 fi
 
+## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
     <html>
     <head>
     <title>[Astroport] :powered: Station</title>
     <meta http-equiv=\"refresh\" content=\"300; url='https://ipfs.copylaradio.com/ipns/${UMAPNS}'\" />
     </head><body>
-    UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}
-    CHAIN : https://ipfs.copylaradio.com/ipfs/${IPFSROOT}
+    <h1>$LAT/$LON OSM2IPFS CHAIN </h1>
+    <br>UMAP : http://ipfs.localhost:8080/ipns/${UMAPNS}
+    <br>CHAIN : https://ipfs.copylaradio.com/ipfs/${IPFSROOT}
     <br>
-        $LAT/$LON BLOCKCHAIN REGISTRED by ${EMAIL} : ${MOATS} : $(date)
+        <br><br>REGISTRED by ${EMAIL} : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
