@@ -44,26 +44,41 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
 ## DIRECT VISA.print.sh
 PLAYER=${THAT}
-SALT=${AND}
-LAT=${AND}
-PEPPER=${THIS}
-LON=${THIS}
+
+[[ ${AND} == "lat" ]] && SALT=${THIS}
+
+input_number=${SALT}
+if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]{2}$ ]]; then
+    (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+else
+    LAT=${input_number}
+fi
+
+[[ ${APPNAME} == "lon" ]] && PEPPER=${WHAT}
+
+input_number=${PEPPER}
+if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]{2}$ ]]; then
+    (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+else
+   LON=${input_number}
+fi
+
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 
+### CHECK PLAYER EMAIL
+EMAIL="${PLAYER,,}" # lowercase
 
-                EMAIL="${PLAYER,,}" # lowercase
+[[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
-                [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+## CHECK WHAT IS EMAIL
+if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+    echo "VALID ${EMAIL} EMAIL OK"
+else
+    echo "BAD EMAIL"
+    (echo "$HTTPCORS PLEASE PROVIDE A VALID EMAIL ${EMAIL} '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+fi
 
-                ## CHECK WHAT IS EMAIL
-                if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-                    echo "VALID ${EMAIL} EMAIL OK"
-                else
-                    echo "BAD EMAIL"
-                    (echo "$HTTPCORS KO ${EMAIL} : bad '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
-                fi
-
-
+### CREATE G1VISA & G1Card
 echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'" "'"$MOATS"'"
 ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${MOATS}"##
 [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
@@ -74,8 +89,8 @@ ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${MOATS
 ######################################################
 echo "UMAP = $LAT:$LON"
 echo "# CALCULATING MAP G1PUB WALLET"
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$LAT" "$LON"
-G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/cesium.key  "$LAT" "$LON"
+G1PUB=$(cat ~/.zen/tmp/${MOATS}/cesium.key | grep 'pub:' | cut -d ' ' -f 2)
 [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "MAPG1PUB : ${G1PUB}"
 
@@ -87,8 +102,8 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${G
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
 echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap.png"
-chromium --headless --disable-gpu --screenshot=~/.zen/tmp/${MOATS}/Umap.png --window-size=600x600 https://ipfs.copylaradio.com/ipfs/QmSgeT3bo5GZMAfY1yPDHDPpt9tg1EwWYAKom9pb4Gyfeq/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01
-
+chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=600x600 "https://ipfs.copylaradio.com/ipfs/QmSgeT3bo5GZMAfY1yPDHDPpt9tg1EwWYAKom9pb4Gyfeq/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/Umap.png
 ls ~/.zen/tmp/${MOATS}/
 
 IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)

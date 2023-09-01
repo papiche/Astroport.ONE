@@ -31,9 +31,9 @@ header {
 #yellow {
       background: yellow;
       position: absolute;
-      top: 12%;
-      left: 66%;
-      width: 18%;
+      top: 2%;
+      left: 56%;
+      width: 180;
       visibility: hidden;
     }
 #login {
@@ -54,7 +54,7 @@ header {
             <div  id="login"><button onclick="promptUser('login')">LOGIN</button><button onclick="promptUser('logout')">LOGOUT</button></div>
 -->
          <div>
-        <button onclick="homeAstroportStation('/?qrcode=station', '', 21654)">Ğ1Station</button>
+        <button onclick="homeAstroportStation('/?qrcode=station', 'tab', 21654)">Ğ1Station</button>
         </div>
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
@@ -69,21 +69,19 @@ header {
 
 <form id="formlink" action = "http://127.0.0.1:1234" method = "GET" enctype="application/x-www-form-urlencoded">
 
-    <h1><span>Astroport</span> <a href="https://pad.p2p.legal/s/Astroport.ONE">Ŋ1</a></h1>
+    <h1></h1>
+        <span>Email : </span><input name=uplanet value=''></br></br>
 
     <div id="yellow">
-        <input type=hidden name='salt' value='0'>
-<h3><a title="SERVE YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
-        <input type=hidden name='pepper' value='0'>
+        <input name='lat' value='0.00'>
+<h3><a title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+        <input name='lon' value='0.00'>
 </div>
 
-        <input name=g1pub value='any youtube link to feed your TW with ?'></br>
-        <span>Email : </span><input name=email value=''></br></br>
-        <input type=hidden name='lat' value='0.00'>
-        <input type=hidden name='lon' value='0.00'>
         <input type='submit' value='[(♥‿‿♥)]'>
 
 </form>
+   <span>Astroport  <a href="https://pad.p2p.legal/s/Astroport.ONE">Ŋ1</a> - Crypto Commons for a United Planet -</span>
     <h6>
         <p id="station"><div id='countdown'></div></span></p>
    </h6>
@@ -91,21 +89,24 @@ header {
 </body>
 <script>
   // Extract latitude and longitude from URL parameters
+document.addEventListener('DOMContentLoaded', function() {
   const urlParams = new URLSearchParams(window.location.search);
-  const lat = urlParams.get('lat').toFixed(2);
-  const lon = urlParams.get('lon').toFixed(2);
+  const lat = urlParams.get('lat');
+  const lon = urlParams.get('lon');
+  const uplanet = urlParams.get('uplanet');
 
   // Set latitude and longitude values to hidden inputs
-  document.getElementById('salt').value = lat;
-  document.getElementById('pepper').value = lon;
+  const latElement = document.querySelector('input[name="lat"]');
+  const lonElement = document.querySelector('input[name="lon"]');
+  const uplanetElement = document.querySelector('input[name="uplanet"]');
 
-  var typed = new Typed('#typed', {
-    stringsElement: '#typed-strings',
-    smartBackspace: true,
-    backDelay: 700,
-    loop: true,
-    typeSpeed: 40
-  });
+  if (latElement && lonElement) {
+    latElement.value = lat || '0.00'; // Default to '0.00' if lat is missing
+    lonElement.value = lon || '0.00'; // Default to '0.00' if lon is missing
+    uplanetnElement.value = uplanet || '@'; // Default to '0.00' if lon is missing
+  }
+});
+
 </script>
 
 <script>
@@ -166,7 +167,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='xastro' selected>G1CARD+TW</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Extra</button></form>";
+            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='xastro' selected>G1CARD+TW</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Make Extra</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;
