@@ -44,20 +44,21 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
 ## DIRECT VISA.print.sh
 PLAYER=${THAT}
+[[ ${PLAYER} == "lat"  ]] && PLAYER="@"
 
-[[ ${AND} == "lat" ]] && SALT=${THIS}
+[[ ${AND} == "lat" ]] && SALT=${THIS} || SALT=${AND}
 
 input_number=${SALT}
-if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]{2}$ ]]; then
+if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]*$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
     LAT=${input_number}
 fi
 
-[[ ${APPNAME} == "lon" ]] && PEPPER=${WHAT}
+[[ ${APPNAME} == "lon" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
 
 input_number=${PEPPER}
-if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]{2}$ ]]; then
+if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]*$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
    LON=${input_number}
@@ -68,7 +69,7 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
 
-[[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+[[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR UPLANET LANDING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
 ## CHECK WHAT IS EMAIL
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
@@ -79,8 +80,8 @@ else
 fi
 
 ### CREATE G1VISA & G1Card
-echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'" "'"$MOATS"'"
-${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${MOATS}"##
+echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'" "'"$PASS"'"
+${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${PASS}"##
 [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
 
 # UPLANET #############################################
@@ -96,27 +97,68 @@ echo "MAPG1PUB : ${G1PUB}"
 
 echo "# CALCULATING UMAP IPNS ADDRESS"
 ipfs key rm ${G1PUB} > /dev/null 2>&1
-rm -f ~/.zen/tmp/${MOATS}/${G1PUB}.ipns.key
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${G1PUB}.ipns.key "$LAT" "$LON"
-UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${G1PUB}.ipns.key )
+rm -f ~/.zen/tmp/${MOATS}/${G1PUB}.priv
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${G1PUB}.priv "$LAT" "$LON"
+UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${G1PUB}.priv )
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
+echo "UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}"
 
-echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap.png"
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=600x600 "https://ipfs.copylaradio.com/ipfs/QmSgeT3bo5GZMAfY1yPDHDPpt9tg1EwWYAKom9pb4Gyfeq/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
-cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/Umap.png
+####################################### Umap.png
+## CREATING Umap_${SALT}_${PEPPER}.png
+echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png"
+chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.png --window-size=600x600 "https://ipfs.copylaradio.com/ipfs/QmegythUHq8bhcLKDAtLh5TRfBt8w1aES3gHykuywyMg9a/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+
+## COPYING FILES FROM ABROAD
+cp /tmp/Umap_${SALT}_${PEPPER}.png ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png
+cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
 ls ~/.zen/tmp/${MOATS}/
 
+## ADD TO FRIENDS
+echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
+
+## ADD HPASS to verify PASS is right
+HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
+echo "${HPASS}" > ~/.zen/tmp/${MOATS}/.hpass
+
+## TAKING CARE OF THE CHAIN
+########################################
 IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
-ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
+########################################
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/.chain 2>/dev/null)
+ZMOATS=$(cat ~/.zen/tmp/${MOATS}/.moats 2>/dev/null)
+[[ ${ZCHAIN} && ${ZMOATS} ]] && cp ~/.zen/tmp/${MOATS}/.chain ~/.zen/tmp/${MOATS}/.chain.${ZMOATS}
+## DOES CHAIN CHANGED ?
+[[ ${ZCHAIN} != ${IPFSROOT} || ${ZCHAIN} == "" ]] \
+    && echo "${IPFSROOT}" > ~/.zen/tmp/${MOATS}/.chain \
+    && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/.moats
+[[ ! ${ZCHAIN} ]] && IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "INIT THE CHAIN"
+########################################
+echo "IPFSROOT : http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
 
+## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
+alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+if [[ ${alreadypublishing} ]]; then
+     echo "$HTTPCORS ERROR - (╥☁╥ ) - IPFS ALREADY PUBLISHING RETRY LATER"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+     exit 1
+else
+    (
+    ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
+    end=`date +%s`
+    echo "(IPNS) publish time was "`expr $end - $start` seconds.
+    ) &
+fi
 
-        echo "$HTTPCORS
-        <html>
-        <head>
+echo "$HTTPCORS
+    <html>
+    <head>
     <title>[Astroport] :powered: Station</title>
-    <meta http-equiv=\"refresh\" content=\"5; url='https://ipfs.copylaradio.com/ipfs/${IPFSROOT}'\" />
-    </head>
-        $LAT/$LON BLOCKCHAIN REGISTRED by ${EMAIL} : ${MOATS} : $(date)" > ~/.zen/tmp/${MOATS}/http.rep
+    <meta http-equiv=\"refresh\" content=\"300; url='https://ipfs.copylaradio.com/ipns/${UMAPNS}'\" />
+    </head><body>
+    UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}
+    CHAIN : https://ipfs.copylaradio.com/ipfs/${IPFSROOT}
+    <br>
+        $LAT/$LON BLOCKCHAIN REGISTRED by ${EMAIL} : ${MOATS} : $(date)
+     </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
 

@@ -400,16 +400,16 @@ myIP="$(myIp)" # "127.0.0.1"
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-myASTROPORT="http://${myIP}:1234"
-myASTRONEF="http://${myIP}:1234"
+myASTROPORT="http://astroport.localhost:1234"
+myASTRONEF="http://astroport.localhost:1234"
 myAPI="http://${myIP}:5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
-myG1BILLET="http://${myIP}:33101"
+myG1BILLET="http://g1billet.localhost:33101"
 myHOST="$(myHostName)"
 
-myIPFS="http://${myIP}:8080"
+myIPFS="http://ipfs.localhost:8080"
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"

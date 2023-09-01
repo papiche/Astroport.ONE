@@ -69,7 +69,7 @@ header {
 
 <form id="formlink" action = "http://127.0.0.1:1234" method = "GET" enctype="application/x-www-form-urlencoded">
 
-    <h1></h1>
+    <h1>U Planet</h1>
         <span>Email : </span><input name=uplanet value=''></br></br>
 
     <div id="yellow">
@@ -81,10 +81,11 @@ header {
         <input type='submit' value='[(♥‿‿♥)]'>
 
 </form>
-   <span>Astroport  <a href="https://pad.p2p.legal/s/Astroport.ONE">Ŋ1</a> - Crypto Commons for a United Planet -</span>
-    <h6>
+<br>
+   <span>Astroport  <a href="https://pad.p2p.legal/s/Astroport.ONE">Ŋ1</a> - Crypto Commons Defender -</span>
+    <h2>
         <p id="station"><div id='countdown'></div></span></p>
-   </h6>
+   </h2>
 </main>
 </body>
 <script>
@@ -103,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (latElement && lonElement) {
     latElement.value = lat || '0.00'; // Default to '0.00' if lat is missing
     lonElement.value = lon || '0.00'; // Default to '0.00' if lon is missing
-    uplanetnElement.value = uplanet || '@'; // Default to '0.00' if lon is missing
+    uplanetElement.value = uplanet || '@'; // Default to '0.00' if lon is missing
   }
 });
 
@@ -130,7 +131,7 @@ testLatency(function(avg){
   isConnectedFast = (avg <= tThreshold);
   /** output */
   document.body.appendChild(
-    document.createTextNode("Time: " + (avg.toFixed(2)) + "ms - ♥Box ready ? " + isConnectedFast)
+    document.createTextNode("https://github.com/papiche/Astroport.ONE - Swarm delay: " + (avg.toFixed(2)) + "ms - ♥Box ready ? " + isConnectedFast)
   );
 });
 
@@ -167,7 +168,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='xastro' selected>G1CARD+TW</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Make Extra</button></form>";
+            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='xastro' selected>G1CARD+TW</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>more crypto wallets...</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;

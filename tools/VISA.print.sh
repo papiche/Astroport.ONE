@@ -40,7 +40,7 @@ if [[ ${SALT} == ""  || ${PEPPER} == "" ]]; then
 
 else
 
-    echo "VIRTUAL PLAYER ${PLAYER} WELCOME - CREATING G1CARD"
+    echo "VIRTUAL PLAYER ${PLAYER} WELCOME - CREATING G1Card"
     VIRTUAL=1
     G1PUB=$(${MY_PATH}/keygen -t duniter "${SALT}" "${PEPPER}")
     ASTRONAUTENS=$(${MY_PATH}/keygen -t ipfs "${SALT}" "${PEPPER}")
@@ -70,7 +70,7 @@ p=$(${MY_PATH}/diceware.sh 1 | xargs)
 BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
 
 ## GET IMAGE FROM G1BILLET ENGINE
-mv ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MOATS}/${PASS}.jpg
+cp ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MOATS}/${PASS}.jpg
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/${PASS}.jpg
 
@@ -93,30 +93,34 @@ convert -gravity NorthEast -pointsize 15 -fill black -draw "text 42,32 \"$PLAYER
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
 convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PASS}\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
 convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
-convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/visa.${PASS}.jpg
+convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/G1Visa.${PASS}.jpg
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/visa.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/G1Visa.${PASS}.jpg
 
 ## PRINT VISA
 [[ $LP ]] \
-&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/visa.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/G1Visa.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
 && sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
-## PRINT PGP G1CARD
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1CARD.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+## PRINT PGP G1Card
+convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1Card.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/ASTROPORT.png ~/.zen/tmp/${MOATS}/one.png
 
-composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/G1CARD.${PASS}.jpg
+composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
 
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/G1CARD.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
 
 [[ $LP ]] \
 && brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${PASS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
 && sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
+echo "DEBUG"
+ls ~/.zen/tmp/${MOATS}
+echo "DEBUG"
+
 ## SELECTIVE CLEANING
-rm -f ~/.zen/tmp/${MOATS}/*.bin
-rm -f ~/.zen/tmp/${MOATS}/*.png
+#~ rm -f ~/.zen/tmp/${MOATS}/*.bin
+#~ rm -f ~/.zen/tmp/${MOATS}/*.png
 
 exit 0
