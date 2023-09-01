@@ -64,8 +64,8 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
                 fi
 
 
-echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
-${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
+echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'" "'"$MOATS"'"
+${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${MOATS}"##
 [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
 
 # UPLANET #############################################
@@ -86,11 +86,22 @@ ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${G1PUB}.ipns.key "$LA
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${G1PUB}.ipns.key )
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
-echo "# OSM2IPFS using Chromium loading Umap.html"
+echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap.png"
+chromium --headless --disable-gpu --screenshot=~/.zen/tmp/${MOATS}/Umap.png --window-size=600x600 https://ipfs.copylaradio.com/ipfs/QmSgeT3bo5GZMAfY1yPDHDPpt9tg1EwWYAKom9pb4Gyfeq/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01
+
+ls ~/.zen/tmp/${MOATS}/
+
+IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
+ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
 
 
-echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/http.rep
-cat ~/.zen/tmp/${PLAYER}.moatube.json >> ~/.zen/tmp/${MOATS}/http.rep
+        echo "$HTTPCORS
+        <html>
+        <head>
+    <title>[Astroport] :powered: Station</title>
+    <meta http-equiv=\"refresh\" content=\"5; url='https://ipfs.copylaradio.com/ipfs/${IPFSROOT}'\" />
+    </head>
+        $LAT/$LON BLOCKCHAIN REGISTRED by ${EMAIL} : ${MOATS} : $(date)" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
 

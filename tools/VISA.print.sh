@@ -18,6 +18,11 @@ PEPPER="$3"
 
 PASS="$4"
 
+MOATS="$5"
+
+[[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+mkdir -p ~/.zen/tmp/${MOATS}
+
 if [[ ${SALT} == ""  || ${PEPPER} == "" ]]; then
 
     [[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] &&\
@@ -64,54 +69,54 @@ s=$(${MY_PATH}/diceware.sh 1 | xargs)
 p=$(${MY_PATH}/diceware.sh 1 | xargs)
 BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
 
-## GET IMAGE FROM G1BILLET tmp
-mv ~/.zen/G1BILLET/tmp/g1billet/${PASS}/$BILLETNAME.BILLET.jpg ~/.zen/tmp/${PASS}.jpg
+## GET IMAGE FROM G1BILLET ENGINE
+mv ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MOATS}/${PASS}.jpg
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/${PASS}.jpg
 
 #~ [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png
 
 
 #~ [[ $LP ]] \
-#~ && brother_ql_create --model QL-700 --label-size 62 ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png > ~/.zen/tmp/bill.bin 2>/dev/null \
-#~ && sudo brother_ql_print ~/.zen/tmp/bill.bin $LP
+#~ && brother_ql_create --model QL-700 --label-size 62 ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png > ~/.zen/tmp/${MOATS}/bill.bin 2>/dev/null \
+#~ && sudo brother_ql_print ~/.zen/tmp/${MOATS}/bill.bin $LP
 #~ #############
 
-convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/QR.png
-convert ${MY_PATH}/../images/astroport.jpg  -resize 260 ~/.zen/tmp/astroport.jpg
+convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
+convert ${MY_PATH}/../images/astroport.jpg  -resize 260 ~/.zen/tmp/${MOATS}/astroport.jpg
 
-composite -compose Over -gravity NorthEast -geometry +42+72 ~/.zen/tmp/astroport.jpg ${MY_PATH}/../images/Brother_600x300.png ~/.zen/tmp/one.png
-composite -compose Over -gravity NorthWest -geometry +0+12 ~/.zen/tmp/QR.png ~/.zen/tmp/one.png ~/.zen/tmp/astroport.png
-# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/${PLAYER}/QRsec.png ~/.zen/tmp/one.png ~/.zen/tmp/image.png
+composite -compose Over -gravity NorthEast -geometry +42+72 ~/.zen/tmp/${MOATS}/astroport.jpg ${MY_PATH}/../images/Brother_600x300.png ~/.zen/tmp/${MOATS}/one.png
+composite -compose Over -gravity NorthWest -geometry +0+12 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/astroport.png
+# composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/${PLAYER}/QRsec.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
 
-convert -gravity NorthEast -pointsize 15 -fill black -draw "text 42,32 \"$PLAYER\"" ~/.zen/tmp/astroport.png ~/.zen/tmp/image.png
-convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/image.png ~/.zen/tmp/pseudo.png
-convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PASS}\"" ~/.zen/tmp/pseudo.png ~/.zen/tmp/pass.png
-convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/pass.png ~/.zen/tmp/salt.png
-convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/salt.png ~/.zen/tmp/visa.${PASS}.jpg
+convert -gravity NorthEast -pointsize 15 -fill black -draw "text 42,32 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/image.png
+convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
+convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PASS}\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
+convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
+convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/visa.${PASS}.jpg
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/visa.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/visa.${PASS}.jpg
 
 ## PRINT VISA
 [[ $LP ]] \
-&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/visa.${PASS}.jpg > ~/.zen/tmp/toprint.bin 2>/dev/null \
-&& sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/visa.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
+&& sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
 ## PRINT PGP G1CARD
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1CARD.png  -resize 400 ~/.zen/tmp/ASTROPORT.png
-convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/ASTROPORT.png ~/.zen/tmp/one.png
+convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1CARD.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/ASTROPORT.png ~/.zen/tmp/${MOATS}/one.png
 
-composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${PASS}.png
+composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/G1CARD.${PASS}.jpg
 
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${PASS}.png
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/G1CARD.${PASS}.jpg
 
 [[ $LP ]] \
-&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${PASS}.png > ~/.zen/tmp/toprint.bin 2>/dev/null \
-&& sudo brother_ql_print ~/.zen/tmp/toprint.bin $LP
-## TODO BETTER CACHE CLEANING
-#~ rm -Rf ~/.zen/G1BILLET/tmp/${PASS}
-#~ rm ~/.zen/G1BILLET/tmp/${PASS}*
-#~ rm ~/.zen/tmp/${PASS}*
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${PASS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
+&& sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
+
+## SELECTIVE CLEANING
+rm -f ~/.zen/tmp/${MOATS}/*.bin
+rm -f ~/.zen/tmp/${MOATS}/*.png
 
 exit 0
