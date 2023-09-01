@@ -48,6 +48,7 @@ PLAYER=${THAT}
 
 [[ ${AND} == "lat" ]] && SALT=${THIS} || SALT=${AND}
 
+[[ ${SALT} == "0" ]] && SALT="0.00"
 input_number=${SALT}
 if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]*$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
@@ -57,6 +58,7 @@ fi
 
 [[ ${APPNAME} == "lon" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
 
+[[ ${PEPPER} == "0" ]] && PEPPER="0.00"
 input_number=${PEPPER}
 if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]*$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
