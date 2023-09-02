@@ -70,17 +70,19 @@ header {
 <form id="formlink" action = "http://127.0.0.1:1234" method = "GET" enctype="application/x-www-form-urlencoded">
 
     <h1><a href="https://qo-op.com">U Planet</a></h1>
-        <span>Email : </span><input name=uplanet value=''></br></br>
+
+        <span>Email : </span><input name=uplanet value=''></br>
 
     <div id="yellow">
         <input name='salt' value='0.00'>
-<h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+        <h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
         <input name='pepper' value='0.00'>
-</div>
-
+    </div>
+        <span>PASS : </span><input type=password name='PASS' size=6 value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 
 </form>
+registre
 <br>
    <span>Astroport  <a href="https://pad.p2p.legal/s/Astroport.ONE">Ŋ1</a> - Crypto Commons Defender -</span>
     <h2>
@@ -115,6 +117,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const latElement = document.querySelector('input[name="salt"]');
   const lonElement = document.querySelector('input[name="pepper"]');
   const uplanetElement = document.querySelector('input[name="uplanet"]');
+  const passElement = document.querySelector('input[name="PASS"]');
+
+  // Generate a random 6-digit number and set it as the default value for "PASS"
+  if (passElement) {
+    const randomPass = Math.floor(100000 + Math.random() * 900000); // Generates a random 6-digit number
+    passElement.value = randomPass.toString();
+  }
 
   if (latElement && lonElement) {
     latElement.value = salt || '0.00'; // Default to '0.00' if lat is missing
@@ -185,7 +194,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            elem.innerHTML = "Try to click on the yellow face now !"
+            elem.innerHTML = "Hey ! Now. Click on the yellow face..."
         } else {
             elem.innerHTML = timeLeft + " s";
             timeLeft--;

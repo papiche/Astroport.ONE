@@ -42,7 +42,7 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 ## GET TW
 mkdir -p ~/.zen/tmp/${MOATS}/
 
-## DIRECT VISA.print.sh
+## GET PARAM, with case uplanet="" decalage !
 PLAYER=${THAT}
 [[ ${PLAYER} == "salt"  ]] && PLAYER="@"
 
@@ -53,7 +53,7 @@ input_number=${SALT}
 if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
-    LAT=${input_number}
+     LAT=$(printf "%.2f" $input_number)
 fi
 
 [[ ${APPNAME} == "pepper" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
@@ -63,10 +63,12 @@ input_number=${PEPPER}
 if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
-   LON=${input_number}
+   LON=$(printf "%.2f" $input_number)
 fi
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+## CHOOSEN PASS
+[[ ${OBJ} == "PASS" ]] && PASS=${VAL}
 
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
@@ -99,6 +101,8 @@ echo "MAPG1PUB : ${G1PUB}"
 
 echo "# CALCULATING UMAP IPNS ADDRESS"
 mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB}
+mkdir -p ~/.zen/tmp/${MOATS}/${SALT}_${PEPPER}
+
 ipfs key rm ${G1PUB} > /dev/null 2>&1
 rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
@@ -114,20 +118,21 @@ ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 ####################################### Umap.png
 ## CREATING Umap_${SALT}_${PEPPER}.png
 echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png"
-UMAPGEN="https://ipfs.copylaradio.com/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+UMAPGEN="/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
 echo ${UMAPGEN}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
 
 ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
-echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 \"${UMAPGEN}\""
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 ${UMAPGEN}
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 ${UMAPGEN}
+echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 \"https://ipfs.copylaradio.com${UMAPGEN}\""
+chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
+chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 
 ## COPYING FILES FROM ABROAD
 cp /tmp/Umap.jpg ~/.zen/tmp/${MOATS}/
 cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/
-cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
-cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
+rm -f ~/.zen/tmp/${MOATS}/G1*.jpg ## DELETE VISA FROM PREVIOUS VISITOR
+cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.jpg
+cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
 ls ~/.zen/tmp/${MOATS}/
 
 echo "<img src=G1Card.${PASS}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
@@ -145,12 +150,11 @@ ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_chain 2>/dev/null)
 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_moats 2>/dev/null)
 [[ ${ZCHAIN} && ${ZMOATS} ]] \
     && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${G1PUB}/_chain.${ZMOATS} \
-    && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS.${ZMOATS} \
     && echo "UPDATING MOATS"
 
 ## UPDATE HPASS last G1Visa PASS
 HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
-echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS
+echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_${EMAIL}.HPASS
 
 ## DOES CHAIN CHANGED or INIT ?
 [[ ${ZCHAIN} != ${IPFSROOT} || ${ZCHAIN} == "" ]] \
