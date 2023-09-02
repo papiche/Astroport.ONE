@@ -106,10 +106,15 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}"
 
+###################################################
+## GET NETWORK CACHE
+echo "ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
+ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
+
 ####################################### Umap.png
 ## CREATING Umap_${SALT}_${PEPPER}.png
 echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png"
-UMAPGEN="https://ipfs.copylaradio.com/ipfs/QmYJ2Ri1ygL7ZFTamP3gcc5VZwxhE685bWJnXSVkvNFJfF/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+UMAPGEN="https://ipfs.copylaradio.com/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
 echo ${UMAPGEN}
 
 # curl -x "https://ipfs.copylaradio.com/ipfs/QmegythUHq8bhcLKDAtLh5TRfBt8w1aES3gHykuywyMg9a/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
@@ -163,11 +168,14 @@ echo "$HTTPCORS
     <title>[Astroport] :powered: Station</title>
     <meta http-equiv=\"refresh\" content=\"300; url='https://ipfs.copylaradio.com/ipns/${UMAPNS}'\" />
     </head><body>
-    <h1>$LAT/$LON OSM2IPFS CHAIN </h1>
-    <br>UMAP : http://ipfs.localhost:8080/ipns/${UMAPNS}
-    <br>CHAIN : https://ipfs.copylaradio.com/ipfs/${IPFSROOT}
+    <h1>$LAT/$LON UPlanet common blockchain</h1>
+    <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
+    <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
     <br>
-        <br><br>REGISTRED by ${EMAIL} : ${MOATS} : $(date)
+    <br> Download files conatining $PASS in their name
+    <br> Use G1Station and compatible G1Card QRCode scanner to operate...
+    <br>
+        <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
