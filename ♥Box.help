@@ -1,0 +1,11 @@
+123.123.123.123 
+#########################################################
+# Indicate your Internet BOX public IPv4 in the file "♥Box"
+## BEWARE
+# This mode is used to put your LAN node on WAN
+# thus your node could be part of the "Boostraps"
+# publish an issue if you need help
+#########################################################
+# See OpenPORTS.png to know which port you should forward
+#########################################################
+
