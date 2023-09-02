@@ -117,7 +117,8 @@ echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png"
 UMAPGEN="https://ipfs.copylaradio.com/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
 echo ${UMAPGEN}
 
-# curl -x "https://ipfs.copylaradio.com/ipfs/QmegythUHq8bhcLKDAtLh5TRfBt8w1aES3gHykuywyMg9a/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
+echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}
 ## COPYING FILES FROM ABROAD
 cp /tmp/Umap_${SALT}_${PEPPER}.jpg ~/.zen/tmp/${MOATS}/
