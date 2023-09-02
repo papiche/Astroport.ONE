@@ -73,8 +73,8 @@ header {
         <span>Email : </span><input name=uplanet value=''></br></br>
 
     <div id="yellow">
-        <input name='lat' value='0.00'>
-<h3><a title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+        <input name='salt' value='0.00'>
+<h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
         <input name='lon' value='0.00'>
 </div>
 
@@ -95,7 +95,7 @@ header {
                 <option value='@astroport'>G1CARD+@</option>
             </select>
             <input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;
-            <button type='submit'>more crypto wallets...</button>
+            <button type='submit'>get more paper wallets...</button>
         </form>
 
    </h2>
@@ -107,13 +107,13 @@ header {
   // Extract latitude and longitude from URL parameters
 document.addEventListener('DOMContentLoaded', function() {
   const urlParams = new URLSearchParams(window.location.search);
-  const lat = urlParams.get('lat');
-  const lon = urlParams.get('lon');
+  const salt = urlParams.get('salt');
+  const pepper = urlParams.get('pepper');
   const uplanet = urlParams.get('uplanet');
 
   // Set latitude and longitude values to hidden inputs
-  const latElement = document.querySelector('input[name="lat"]');
-  const lonElement = document.querySelector('input[name="lon"]');
+  const latElement = document.querySelector('input[name="salt"]');
+  const lonElement = document.querySelector('input[name="pepper"]');
   const uplanetElement = document.querySelector('input[name="uplanet"]');
 
   if (latElement && lonElement) {

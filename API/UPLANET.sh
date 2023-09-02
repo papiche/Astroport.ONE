@@ -6,7 +6,7 @@
 ################################################################################
 ## API: UPLANET
 ## Dedicated to OSM2IPFS & UPlanet Client App
-# ?uplanet=EMAIL&LAT=LON
+# ?uplanet=EMAIL&salt=LAT&pepper=LON
 ## https://git.p2p.legal/qo-op/OSM2IPFS
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -44,9 +44,9 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
 ## DIRECT VISA.print.sh
 PLAYER=${THAT}
-[[ ${PLAYER} == "lat"  ]] && PLAYER="@"
+[[ ${PLAYER} == "salt"  ]] && PLAYER="@"
 
-[[ ${AND} == "lat" ]] && SALT=${THIS} || SALT=${AND}
+[[ ${AND} == "salt" ]] && SALT=${THIS} || SALT=${AND}
 
 [[ ${SALT} == "0" ]] && SALT="0.00"
 input_number=${SALT}
@@ -56,7 +56,7 @@ else
     LAT=${input_number}
 fi
 
-[[ ${APPNAME} == "lon" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
+[[ ${APPNAME} == "pepper" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
 
 [[ ${PEPPER} == "0" ]] && PEPPER="0.00"
 input_number=${PEPPER}
@@ -118,10 +118,11 @@ UMAPGEN="https://ipfs.copylaradio.com/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK
 echo ${UMAPGEN}
 
 ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
-echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}"
-chromium --headless --disable-gpu --screenshot=${HOME}/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}
+echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 \"${UMAPGEN}\""
+chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}
 
 ## COPYING FILES FROM ABROAD
+cp /tmp/Umap_${SALT}_${PEPPER}.jpg ~/.zen/tmp/${MOATS}/
 cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
 ls ~/.zen/tmp/${MOATS}/
