@@ -179,7 +179,7 @@ NID="${myIPFS}"
 WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
 WID="https://ipfs.$(myHostName)/api"
 WID="https://ipfs.$(myHostName)/api"
-WID="$(myAPI)" ## https://ipfs.libra.copylaradio.com
+WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
 
 # WID="http://ipfs.$(myHostName):5001"
 USALT=$(echo "$SALT" | jq -Rr @uri)
