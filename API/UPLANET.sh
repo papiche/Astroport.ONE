@@ -174,8 +174,8 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
         ) &
 fi
 
-## LEAVE A MESSAGE
-MESSAGE="<html>
+## MAKE A MESSAGE
+echo "<html>
     <head>
     <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
     </head><body>
@@ -189,11 +189,11 @@ MESSAGE="<html>
 <br>(⌐■_■) G1Card <br>
 
     <h2>See who TW is there </h2>
-        $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
-        <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
-     </body></html>"
 
-echo "MESSAGE" > ~/.zen/tmp/${MOATS}/message.html
+        <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
+     </body></html>" > ~/.zen/tmp/${MOATS}/message.html
+
+ # $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
 
 ## TAKING CARE OF THE CHAIN
 ########################################
