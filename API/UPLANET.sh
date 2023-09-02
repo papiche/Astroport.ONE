@@ -84,13 +84,13 @@ else
 fi
 
 ### CREATE G1VISA & G1Card
-echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'" "'"$PASS"'"
-${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" "${PASS}"##
+echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$LAT"'" "'"$LON"'" "'"$PASS"'" "'"$PASS"'"
+${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$LAT" "$LON" "$PASS" "${PASS}"##
 [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
 
 # UPLANET #############################################
 ## OCCUPY COMMON CRYPTO KEY CYBERSPACE
-## SALT="UPLANET LAT $LAT" PEPPER="UPLANET LON $LON"
+## SALT="$LAT" PEPPER="$LON"
 ######################################################
 echo "UMAP = $LAT:$LON"
 echo "# CALCULATING MAP G1PUB WALLET"
@@ -101,7 +101,7 @@ echo "MAPG1PUB : ${G1PUB}"
 
 echo "# CALCULATING UMAP IPNS ADDRESS"
 mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB}
-mkdir -p ~/.zen/tmp/${MOATS}/${SALT}_${PEPPER}
+mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
 
 ipfs key rm ${G1PUB} > /dev/null 2>&1
 rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
@@ -116,14 +116,14 @@ echo "ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
 ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
 ####################################### Umap.png
-## CREATING Umap_${SALT}_${PEPPER}.png
-echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.png"
-UMAPGEN="/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$SALT&southWestLon=$PEPPER&deg=0.01"
+## CREATING Umap_${LAT}_${LON}.png
+echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${LAT}_${LON}.png"
+UMAPGEN="/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
 echo ${UMAPGEN}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
 
 ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
-echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 \"https://ipfs.copylaradio.com${UMAPGEN}\""
+echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${LAT}_${LON}.jpg --window-size=1200x1200 \"https://ipfs.copylaradio.com${UMAPGEN}\""
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 
@@ -135,8 +135,8 @@ cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.j
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
 ls ~/.zen/tmp/${MOATS}/
 
-echo "<img src=G1Card.${PASS}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
-echo "<img src=G1Visa.${PASS}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
+echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
+echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
 
 ## ADD TO FRIENDS
 echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
