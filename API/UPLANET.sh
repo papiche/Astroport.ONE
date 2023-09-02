@@ -161,13 +161,13 @@ ls ~/.zen/tmp/${MOATS}/
 
 
 ### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
-if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
+if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
     ## Create a redirection to PLAYER (EMAIL/PASS) TW
     if [[ ${PASS} ==  ${VAL} ]]; then
-        mkdir -p ~/.zen/tmp/${MOATS}/${EMAIL}
+        mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
         ## CREATE TW LINK
         TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "$EMAIL" "$PASS")
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/${EMAIL}/index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
         ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
         (
         ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
@@ -181,9 +181,9 @@ echo "<html>
     <head>
     <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
     </head><body>
-    <h1>$LAT/$LON UPlanet common blockchain</h1>
-    <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
-    <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
+    <h1>UPlanet $LAT/$LON </h1>
+    <br>    <img width=300 height=300 src=Umap.jpg \>
+    <br> $LAT $LON 0.01° : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
     <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
 <br>    <img src=G1Visa.${EMAIL}.jpg \>
 <br>G1Visa<br>
@@ -192,8 +192,9 @@ echo "<html>
 
     <h2>See who TW is there </h2>
 
+<br> Now enhance UPLANET.sh !
         <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
-     </body></html>" > ~/.zen/tmp/${MOATS}/message.html
+     </body></html>" > ~/.zen/tmp/${MOATS}/MESSAGE.html
 
  # $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
 
