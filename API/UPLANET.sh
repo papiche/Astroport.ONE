@@ -145,6 +145,12 @@ echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${LAT}_${LON}.jpg
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 
+
+echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
+echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
+## ADD TO FRIENDS
+echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
+
 ## COPYING FILES FROM ABROAD
 cp /tmp/Umap.jpg ~/.zen/tmp/${MOATS}/
 cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/
@@ -153,11 +159,6 @@ cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.j
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
 ls ~/.zen/tmp/${MOATS}/
 
-echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
-echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
-
-## ADD TO FRIENDS
-echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 
 ### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
 if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
@@ -172,6 +173,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
         ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
         ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
         ) &
+    fi
 fi
 
 ## MAKE A MESSAGE
@@ -184,9 +186,9 @@ echo "<html>
     <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
     <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
 <br>    <img src=G1Visa.${EMAIL}.jpg \>
-<br>(✜‿‿✜) G1Visa<br>
+<br>G1Visa<br>
 <br>    <img src=G1Card.${EMAIL}.jpg \>
-<br>(⌐■_■) G1Card <br>
+<br>G1Card <br>
 
     <h2>See who TW is there </h2>
 
