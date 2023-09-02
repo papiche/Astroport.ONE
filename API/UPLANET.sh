@@ -179,8 +179,8 @@ echo "$HTTPCORS
     <h1>$LAT/$LON UPlanet common blockchain</h1>
     <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
     <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
-    <br>
-    <br> Download files containing <bold>$PASS</bold> in their name
+    <br> <h2><bold>Your PASS is $PASS</bold></h2>
+    <br> Download files containing in their name
     <br> Use G1Station and compatible G1Card QRCode scanner to operate...
     <br>
         <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
