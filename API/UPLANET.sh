@@ -183,14 +183,15 @@ echo "<html>
     </head><body>
     <h1>UPlanet $LAT/$LON </h1>
     <br>    <img width=300 height=300 src=Umap.jpg \>
-    <br> $LAT $LON 0.01° : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
+    <br> <a href=Umap.html>OSM2IPFS</a>
+    <br> UMap Key : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
     <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
+<h1>G1Visa</h1>
 <br>    <img src=G1Visa.${EMAIL}.jpg \>
-<br>G1Visa<br>
+<h1>G1Card</h1>
 <br>    <img src=G1Card.${EMAIL}.jpg \>
-<br>G1Card <br>
-
-    <h2>See who TW is there </h2>
+<br>
+    <h2>See TW's here</h2>
 
 <br> Now enhance UPLANET.sh !
         <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
