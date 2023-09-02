@@ -20,6 +20,11 @@ PSEUDO="$4"
 
 ## Fill UP TW with VIDEO URL
 URL="$5"
+
+## UPLANET PLAYER
+LAT="$6"
+LON="$7"
+
 ################################################################################
 YOU=$(myIpfsApi);
 LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
@@ -283,6 +288,11 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+        ## template 44.2301, 1.6518 UMAP LAT LON replacement
+        if [[ ${LAT} && ${LON} ]]; then
+            sed -i "s~44.2301~${LAT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+            sed -i "s~1.6518~${LON}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        fi
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 

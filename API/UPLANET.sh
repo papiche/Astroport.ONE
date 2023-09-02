@@ -67,8 +67,8 @@ else
 fi
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
-## CHOOSEN PASS
-[[ ${OBJ} == "PASS" ]] && PASS=${VAL}
+## RECEIVED PASS
+[[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
 
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
@@ -178,10 +178,16 @@ else
     ) &
 fi
 
-### CREATE A G1VISA FOR PLAYER
-${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-## SEND EMAIL
-${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
+if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
+    ## Create a redirection to PLAYER (EMAIL/PASS) TW
+    [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] \
+    && mkdir -p ~/.zen/tmp/${MOATS}/${EMAIL} \
+    && TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "$EMAIL" "$PASS") \
+    && echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/${EMAIL}/index.html \
+    && ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt \
+    && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+fi
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
@@ -197,7 +203,7 @@ echo "$HTTPCORS
     <br> Download files containing in their name
     <br> Use G1Station and compatible G1Card QRCode scanner to operate...
     <br>
-    $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)
+    $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
         <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
