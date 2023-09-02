@@ -125,12 +125,12 @@ cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
 ls ~/.zen/tmp/${MOATS}/
 
+echo "<img src=G1Card.${PASS}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
+echo "<img src=G1Visa.${PASS}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
+
 ## ADD TO FRIENDS
 echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 
-## ADD HPASS to verify PASS is right
-HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
-echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS
 
 ## TAKING CARE OF THE CHAIN
 ########################################
@@ -138,7 +138,15 @@ IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
 ########################################
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_chain 2>/dev/null)
 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_moats 2>/dev/null)
-[[ ${ZCHAIN} && ${ZMOATS} ]] && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${G1PUB}/_chain.${ZMOATS} && echo "UPDATING MOATS"
+[[ ${ZCHAIN} && ${ZMOATS} ]] \
+    && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${G1PUB}/_chain.${ZMOATS} \
+    && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS.${ZMOATS} \
+    && echo "UPDATING MOATS"
+
+## UPDATE HPASS last G1Visa PASS
+HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
+echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_HPASS
+
 ## DOES CHAIN CHANGED or INIT ?
 [[ ${ZCHAIN} != ${IPFSROOT} || ${ZCHAIN} == "" ]] \
     && echo "${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_chain \
@@ -172,7 +180,7 @@ echo "$HTTPCORS
     <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
     <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
     <br>
-    <br> Download files conatining $PASS in their name
+    <br> Download files containing <bold>$PASS</bold> in their name
     <br> Use G1Station and compatible G1Card QRCode scanner to operate...
     <br>
         <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
