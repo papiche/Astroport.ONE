@@ -78,7 +78,7 @@ header {
         <h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
         <input name='pepper' value='0.00'>
     </div>
-        <span>PASS : </span><input type=password name='PASS' size=6 value=''></br></br>
+        <span>PASS : </span><input name='g1pub' size=6 value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 
 </form>
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const latElement = document.querySelector('input[name="salt"]');
   const lonElement = document.querySelector('input[name="pepper"]');
   const uplanetElement = document.querySelector('input[name="uplanet"]');
-  const passElement = document.querySelector('input[name="PASS"]');
+  const passElement = document.querySelector('input[name="g1pub"]');
 
   // Generate a random 6-digit number and set it as the default value for "PASS"
   if (passElement) {

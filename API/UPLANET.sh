@@ -178,6 +178,11 @@ else
     ) &
 fi
 
+### CREATE A G1VISA FOR PLAYER
+${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+## SEND EMAIL
+${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
     <html>
@@ -192,10 +197,10 @@ echo "$HTTPCORS
     <br> Download files containing in their name
     <br> Use G1Station and compatible G1Card QRCode scanner to operate...
     <br>
+    $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)
         <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
 
 end=`date +%s`
 echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
