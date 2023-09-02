@@ -50,7 +50,7 @@ PLAYER=${THAT}
 
 [[ ${SALT} == "0" ]] && SALT="0.00"
 input_number=${SALT}
-if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]*$ ]]; then
+if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
     LAT=${input_number}
@@ -60,7 +60,7 @@ fi
 
 [[ ${PEPPER} == "0" ]] && PEPPER="0.00"
 input_number=${PEPPER}
-if [[ ! $input_number =~ ^[0-9]{1,3}\.[0-9]*$ ]]; then
+if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
    LON=${input_number}
@@ -122,7 +122,7 @@ chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg -
 ## COPYING FILES FROM ABROAD
 cp /tmp/Umap_${SALT}_${PEPPER}.jpg ~/.zen/tmp/${MOATS}/
 cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
-cp ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/
+cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
 ls ~/.zen/tmp/${MOATS}/
 
 ## ADD TO FRIENDS
