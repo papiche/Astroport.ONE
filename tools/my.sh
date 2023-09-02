@@ -420,7 +420,7 @@ myASTROTUBE="https://$(myAstroTube)"
  && myAPI="https://ipfs.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
- && myG1BILLET="http://${myIP}:33101" \
+ && myG1BILLET="https://libra.copylaradio.com" \
  || true
 
 ## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 45781 )
