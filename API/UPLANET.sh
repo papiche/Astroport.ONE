@@ -53,7 +53,16 @@ input_number=${SALT}
 if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
-     LAT=$(printf "%.2f" $input_number)
+    # If input_number has one decimal digit, add a trailing zero
+    if [[ ${input_number} =~ ^-?[0-9]+\.[0-9]$ ]]; then
+        input_number="${input_number}0"
+    elif [[ ${input_number} =~ ^-?[0-9]+$ ]]; then
+        # If input_number is an integer, add ".00"
+        input_number="${input_number}.00"
+    fi
+
+    # Convert input_number to LAT with two decimal digits
+    LAT="${input_number}"
 fi
 
 [[ ${APPNAME} == "pepper" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
@@ -63,7 +72,16 @@ input_number=${PEPPER}
 if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
-   LON=$(printf "%.2f" $input_number)
+    # If input_number has one decimal digit, add a trailing zero
+    if [[ ${input_number} =~ ^-?[0-9]+\.[0-9]$ ]]; then
+        input_number="${input_number}0"
+    elif [[ ${input_number} =~ ^-?[0-9]+$ ]]; then
+        # If input_number is an integer, add ".00"
+        input_number="${input_number}.00"
+    fi
+
+    # Convert input_number to LAT with two decimal digits
+    LON="${input_number}"
 fi
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -141,6 +159,21 @@ echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
 ## ADD TO FRIENDS
 echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 
+### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
+if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
+    ## Create a redirection to PLAYER (EMAIL/PASS) TW
+    if [[ ${PASS} ==  ${VAL} ]]; then
+        mkdir -p ~/.zen/tmp/${MOATS}/${EMAIL}
+        ## CREATE TW LINK
+        TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "$EMAIL" "$PASS")
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/${EMAIL}/index.html
+        ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
+        (
+        ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+        ) &
+fi
+
 
 ## TAKING CARE OF THE CHAIN
 ########################################
@@ -178,16 +211,6 @@ else
     ) &
 fi
 
-### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
-if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
-    ## Create a redirection to PLAYER (EMAIL/PASS) TW
-    [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] \
-    && mkdir -p ~/.zen/tmp/${MOATS}/${EMAIL} \
-    && TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "$EMAIL" "$PASS") \
-    && echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/${EMAIL}/index.html \
-    && ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt \
-    && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
-fi
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
