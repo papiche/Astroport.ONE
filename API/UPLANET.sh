@@ -174,6 +174,26 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/${EMAIL}/index.html ]]; then
         ) &
 fi
 
+## LEAVE A MESSAGE
+MESSAGE="<html>
+    <head>
+    <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
+    </head><body>
+    <h1>$LAT/$LON UPlanet common blockchain</h1>
+    <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
+    <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
+    <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
+<br>    <img src=G1Visa.${EMAIL}.jpg \>
+<br>(✜‿‿✜) G1Visa<br>
+<br>    <img src=G1Card.${EMAIL}.jpg \>
+<br>(⌐■_■) G1Card <br>
+
+    <h2>See who TW is there </h2>
+        $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
+        <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
+     </body></html>"
+
+echo "MESSAGE" > ~/.zen/tmp/${MOATS}/message.html
 
 ## TAKING CARE OF THE CHAIN
 ########################################
@@ -216,17 +236,18 @@ fi
 echo "$HTTPCORS
     <html>
     <head>
-    <title>[Astroport] :powered: Station</title>
-    <meta http-equiv=\"refresh\" content=\"300; url='https://ipfs.copylaradio.com/ipns/${UMAPNS}'\" />
+    <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
+    <meta http-equiv=\"refresh\" content=\"10; url='https://ipfs.copylaradio.com/ipfs/${IPFSROOT}/message.html'\" />
     </head><body>
     <h1>$LAT/$LON UPlanet common blockchain</h1>
     <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
     <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
-    <br> <h2><bold>Your PASS is $PASS</bold></h2>
-    <br> Download files containing in their name
-    <br> Use G1Station and compatible G1Card QRCode scanner to operate...
+    <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
+    ---
     <br>
+( ⚆_⚆) if you entered PASS<br>
     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
+<br>(☉_☉ ) your TW has move to ASTROPORT<br>
         <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
