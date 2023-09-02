@@ -119,9 +119,9 @@ echo ${UMAPGEN}
 
 ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
 echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}"
-chromium --headless --disable-gpu --screenshot=/tmp/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}
+chromium --headless --disable-gpu --screenshot=${HOME}/.zen/tmp/${MOATS}/Umap_${SALT}_${PEPPER}.jpg --window-size=1200x1200 ${UMAPGEN}
+
 ## COPYING FILES FROM ABROAD
-cp /tmp/Umap_${SALT}_${PEPPER}.jpg ~/.zen/tmp/${MOATS}/
 cp ~/.zen/tmp/${PASS}##/G1*.jpg ~/.zen/tmp/${MOATS}/
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
 ls ~/.zen/tmp/${MOATS}/
