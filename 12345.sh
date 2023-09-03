@@ -41,16 +41,6 @@ Content-Type: text/html; charset=UTF-8
 echo "_____________________ $PORT ________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
 echo
-#~ echo "GCHANGE ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub"
-#~ echo "OPEN TW ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub=astro"
-#~ echo "GCHANGE MESSAGING ${myASTROPORT}/?salt=totodu56&pepper=totodu56&messaging"
-#~ echo "CREATE SAME PLAYER : ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub=on&email=totodu56@yopmail.com"
-#~ echo
-#~ echo "NEW PLAYER : ${myASTROPORT}/?salt=${RANDOM}&pepper=${RANDOM}&g1pub=on&email=astro${RANDOM}@yopmail.com"
-#~ echo
-#~ echo "BunkerBOX : ${myASTROPORT}/?salt=totodu56&pepper=totodu56&g1pub=_URL_&email=totodu56@yopmail.com"
-#~ echo
-#~ echo "TESTCRAFT ${myASTROPORT}/?salt=totodu56&pepper=totodu56&testcraft=on&dataid=QmPXhrqQrS1bePKJUPH9cJ2qe4RrNjaJdRXaJzSjxWuvDi"
 echo "_________________________________________________________"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
