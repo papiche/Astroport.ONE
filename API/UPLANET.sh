@@ -186,17 +186,47 @@ fi
 echo "<html>
     <head>
     <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        h1 {
+            color: #0077cc;
+        }
+        h2 {
+            color: #333;
+        }
+        img {
+            cursor: pointer;
+        }
+    </style>
     </head><body>
-    <h1>UPlanet $LAT/$LON </h1>
-    <br>    <img width=300 height=300 src=Umap.jpg \>
-    <br> <a href=Umap.html>OSM2IPFS</a>
+    <h1>Welcome UPlanet Keeper!</h1>
+    <h1>Registration for $LAT/$LON</h1>
+    <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet recorded Image' \>
+    <br> <a href='Umap.html >OSM2IPFS</a>
     <br> UMap Key : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCALHOST</a> / <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>WAN</a>
-    <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
-<h1>G1Visa</h1>
-<br>    <img src=G1Visa.${EMAIL}.jpg \>
-<h1>G1Card</h1>
-<br>    <img src=G1Card.${EMAIL}.jpg \>
+    <br> <h2>${EMAIL}</h2>
+    UPlanet ID's
+        <br>
+    <button id='printButton'>Print</button>
+<h1>Umap Visa</h1>
+<br>    <img src=G1Visa.${EMAIL}.jpg alt='G1Visa' \>
+<h1>Umap Card</h1>
+<br>    <img src=G1Card.${EMAIL}.jpg alt='G1Card' \>
 <br>
+    <script>
+        // Function to print the page
+        function printPage() {
+            window.print();
+        }
+        // Add click event listener to the print button
+        document.getElementById('printButton').addEventListener('click', printPage);
+    </script>
+
     <h2>See <a href='./TW'>TW's</a> here</h2>
 
 <br> Now enhance UPLANET.sh !
