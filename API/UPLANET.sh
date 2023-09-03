@@ -190,7 +190,7 @@ echo "<html>
 <h1>G1Card</h1>
 <br>    <img src=G1Card.${EMAIL}.jpg \>
 <br>
-    <h2>See TW's here</h2>
+    <h2>See <a href='./TW'>TW's</a> here</h2>
 
 <br> Now enhance UPLANET.sh !
         <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
@@ -220,9 +220,9 @@ echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_${EMAIL}.HPASS
 
 ################################################################################
 ## WRITE INTO 12345 SWARM CACHE LAYER
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
-echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
+echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
 ########################################
 ########################################
 echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
