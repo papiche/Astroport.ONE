@@ -107,7 +107,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeic7z5zfp642is3g3f6owibhzgojk6oflmbryuekuaukcrucevcsby"
+TWMODEL="/ipfs/bafybeihtmgiouqswbfyayihda42t3fvyvpeq5rlnb4ky5kx6g7otl4kmwe"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -117,7 +117,7 @@ ASTROPORT DIPLOMATIC PASSPORT - MadeInZion VISA -
 A Cryptographic Key to control your INTERNET
 Adventure & Exploration P2P Terraforming Game.
 =============================================
-Bienvenue 'Astronaute'"; sleep 1
+WELCOME 'Astronaute'"; sleep 1
 
 echo "Inscription..."
 
