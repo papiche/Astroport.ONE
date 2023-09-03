@@ -142,7 +142,7 @@ PSEUDO=${PSEUDO,,}
 PLAYER=${PLAYER,,}
 
 [[ ! $PSEUDO ]] && PSEUDO="Anonymous"
-echo "Génération de votre crypto identité PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
+echo "Crypto ID PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
 
 # 6 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -154,9 +154,6 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 # echo "Coffre personnel multimedia journalisé dans votre 'Astroport' (amis de niveau 3)"
 # echo "Votre clef moa_${PLAYER} <=> $MOANS ($MOAKEYFILE)"; sleep 2
 ############################################################
-echo
-echo; echo "Création de votre clef multi-accès..."; sleep 2
-echo;
 
 ${MY_PATH}/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey "$SALT" "$PEPPER"
 
@@ -305,13 +302,13 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## USING  SWARMKEY (derivated from IPFSNODE "/proc/cpuinfo" key made by _12345.sh)  ## HARDWARE SPECIFIC KEY ##
         # TODO : NODE COULD FORGET PASS THEN DECODE  ${PLAYER}/secret.dunikey FROM TW # PROD #
         MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
-        echo "# CRYPTO ENCODING  _SECRET_ "
+        #~ echo "# CRYPTO ENCODING  _SECRET_ "
         ${MY_PATH}/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
 ###########
-        echo "# CRYPTO DECODING TESTING..."
+        #~ echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
         ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/myswarm_secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
@@ -338,7 +335,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
     ## NATOOLS ENCRYPT
-    echo "# NATOOLS ENCODING MYSELF feed.ipfskey (TODO: could be decoded to compare with G1lib.js) "
+    #~ echo "# NATOOLS ENCODING MYSELF feed.ipfskey (TODO: could be decoded to compare with G1lib.js) "
     ${MY_PATH}/../tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/${MOATS}/feed.ipfskey -o $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc
     ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/feed.ipfskey.$G1PUB.enc | base16)
     #~ echo ${ENCODING}
