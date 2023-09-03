@@ -105,7 +105,8 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     echo "VALID ${EMAIL} EMAIL OK"
 else
     echo "BAD EMAIL"
-    (echo "$HTTPCORS PLEASE PROVIDE A VALID EMAIL ${EMAIL} '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+    UMAPNS="$(${MY_PATH}/../tools/keygen -t ipfs "$LAT" "$LON")"
+    (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='https://ipfs.copylaradio.com/ipns/${UMAPNS}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 fi
 
 ### CREATE G1VISA & G1Card
