@@ -130,8 +130,8 @@ echo "UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}"
 
 ###################################################
 ## GET NETWORK CACHE
-echo "ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
-ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
+echo "ipfs --timeout 60s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
+ipfs --timeout 60s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
