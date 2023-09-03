@@ -107,7 +107,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeihdjfskk5xqjp3f74iqxffksis7okgmz4ftrk2fffzqbgffrkmwcm"
+TWMODEL="/ipfs/bafybeic7z5zfp642is3g3f6owibhzgojk6oflmbryuekuaukcrucevcsby"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -289,6 +289,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         if [[ ${LAT} && ${LON} ]]; then
             sed -i "s~44.2301~${LAT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
             sed -i "s~1.6518~${LON}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+            sed -i "s~/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
         fi
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)

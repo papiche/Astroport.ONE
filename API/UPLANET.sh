@@ -133,7 +133,7 @@ rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-echo "UMAPNS : http://ipfs.localhost:8080/ipns/${UMAPNS}"
+echo "UMAPNS : https://ipfs.copylaradio.com/ipns/${UMAPNS}"
 
 ###################################################
 ## GET NETWORK CACHE
@@ -176,7 +176,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         if [[ ${PASS} ==  ${VAL} ]]; then
             ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
             (
-            ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+            ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
             ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
             ) &
         fi
@@ -190,7 +190,7 @@ echo "<html>
     <h1>UPlanet $LAT/$LON </h1>
     <br>    <img width=300 height=300 src=Umap.jpg \>
     <br> <a href=Umap.html>OSM2IPFS</a>
-    <br> UMap Key : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
+    <br> UMap Key : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCALHOST</a> / <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>WAN</a>
     <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
 <h1>G1Visa</h1>
 <br>    <img src=G1Visa.${EMAIL}.jpg \>
