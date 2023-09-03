@@ -93,8 +93,8 @@ fi
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 ## RECEIVED PASS
+VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
 [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
-
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
 
