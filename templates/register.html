@@ -69,20 +69,23 @@ header {
 
 <form id="formlink" action = "http://127.0.0.1:1234" method = "GET" enctype="application/x-www-form-urlencoded">
 
-    <h1><a href="https://qo-op.com">U Planet</a></h1>
+    <h1><span>UPlanet</span>
+    <br><span>(<a href="https://qo-op.com">qo-op</a>)<a id="myLink" href="https://qo-op.com">*</a></span></h1>
 
         <span>Email : </span><input name=uplanet value=''></br>
 
     <div id="yellow">
         <input name='salt' value='0.00'>
-        <h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+        <h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a>
+        </h3>
         <input name='pepper' value='0.00'>
     </div>
         <span>PASS : </span><input name='g1pub' size=6 value=''></br></br>
+
         <input type='submit' value='[(♥‿‿♥)]'>
 
 </form>
-registre
+
 <br>
    <span>Astroport  <a href="https://pad.p2p.legal/s/Astroport.ONE">Ŋ1</a> - Crypto Commons Playground -</span>
     <h2>
@@ -102,7 +105,7 @@ registre
 
    </h2>
 <br>
-<p id="station"><div id='countdown'>G1Visa registration</div></span></p>
+<h1><span id='countdown'>G1Visa registration</span></h1>
 </main>
 </body>
 <script>
@@ -119,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const uplanetElement = document.querySelector('input[name="uplanet"]');
   const passElement = document.querySelector('input[name="g1pub"]');
 
-  // Generate a random 6-digit number and set it as the default value for "PASS"
+ // Generate a random 6-digit number and set it as the default value for "PASS"
   //~ if (passElement) {
     //~ const randomPass = Math.floor(100000 + Math.random() * 900000); // Generates a random 6-digit number
     //~ passElement.value = randomPass.toString();
@@ -130,6 +133,10 @@ document.addEventListener('DOMContentLoaded', function() {
     lonElement.value = pepper || '0.00'; // Default to '0.00' if lon is missing
     uplanetElement.value = '@'; // Default to '0.00' if lon is missing
   }
+
+  const newURL = `https://ipfs.copylaradio.com/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/map_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
+  document.getElementById("myLink").href = newURL;
+
 });
 
 </script>
@@ -194,7 +201,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            elem.innerHTML = "Hey ! Now. Click on the yellow face..."
+            elem.innerHTML = "Get response by clicking the yellow face..."
         } else {
             elem.innerHTML = timeLeft + " s";
             timeLeft--;
