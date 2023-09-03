@@ -136,7 +136,7 @@ ipfs --timeout 22s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
 echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${LAT}_${LON}.png"
-UMAPGEN="/ipfs/QmSaFpSM6ps2pBqYxxLjKJfuigpEo98GNCPdK4PkMXnDaY/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+UMAPGEN="/ipfs/QmQdB6ChBs7N1StVo3ikytMRBW4zCHL4pxEFP9Tq8kfjAV/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
 echo ${UMAPGEN}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
 
