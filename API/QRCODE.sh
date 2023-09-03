@@ -212,6 +212,26 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
+##############################################
+# LOGIN / LOGOUT
+##############################################
+            if [[ $APPNAME == "logout" ]]; then
+
+                ## REMOVE PLAYER IPNS KEY FROM STATION
+                PLAYER=${WHAT}
+                echo "<h1>$PLAYER LOGOUT OK</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
+
+                ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log
+                ipfs key rm ${PLAYER} >> ~/.zen/tmp/coucou/${MOATS}.log
+
+                echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                end=`date +%s`
+                echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
+                rm ~/.zen/tmp/coucou/${MOATS}.*
+                exit 0
+
+            fi
+
             if [[ $APPNAME == "login" ]]; then
 
                 PLAYER=${WHAT}
