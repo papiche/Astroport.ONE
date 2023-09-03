@@ -39,7 +39,14 @@ Content-Type: text/html; charset=UTF-8
 "
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
-## GET TW
+## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
+alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+if [[ ${alreadypublishing} ]]; then
+     echo "$HTTPCORS ERROR - (╥☁╥ ) - IPFS ALREADY PUBLISHING RETRY LATER"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+     exit 1
+fi
+
+## START MANAGING UPLANET LAT/LON & PLAYER
 mkdir -p ~/.zen/tmp/${MOATS}/
 
 ## GET PARAM, with case uplanet="" decalage !
@@ -162,17 +169,17 @@ ls ~/.zen/tmp/${MOATS}/
 ### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
 if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
     ## Create a redirection to PLAYER (EMAIL/PASS) TW
-    if [[ ${PASS} ==  ${VAL} ]]; then
         mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
         ## CREATE TW LINK
         TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "$EMAIL" "$PASS")
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
-        ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
-        (
-        ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
-        ) &
-    fi
+        if [[ ${PASS} ==  ${VAL} ]]; then
+            ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
+            (
+            ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "ADD YOUTUBE VIDEO CHANNEL URL" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+            ) &
+        fi
 fi
 
 ## MAKE A MESSAGE
@@ -227,18 +234,11 @@ echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}
 ########################################
 echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
 
-## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
-alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-if [[ ${alreadypublishing} ]]; then
-     echo "$HTTPCORS ERROR - (╥☁╥ ) - IPFS ALREADY PUBLISHING RETRY LATER"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-     exit 1
-else
     (
     ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
     end=`date +%s`
     echo "(IPNS) publish time was "`expr $end - $start` seconds.
     ) &
-fi
 
 
 ## HTTP nc ON PORT RESPONSE
