@@ -40,6 +40,7 @@ header {
     right: 10%;
     top: 5%
  }
+         #countdown { display: flex; justify-content: center; align-items: center; color: #0e2c4c; font-size: 20px; width: 60px; height: 60px; background-color: #e7d9fc; border-radius: 50%;}
     </style>
     <!-- Typed text animation -->
     <script src="http://127.0.0.1:8080/ipfs/QmYyJmAT3cUbjk4vVWQG7LdpY3HkFH9phFD1VzzetHrgpa"></script>
@@ -203,7 +204,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            elem.innerHTML = "Get response by clicking the yellow face..."
+            elem.innerHTML = "Get response by clicking smiling face ;)"
         } else {
             elem.innerHTML = timeLeft + " s";
             timeLeft--;
