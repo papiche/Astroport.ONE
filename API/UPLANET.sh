@@ -262,10 +262,16 @@ echo "<html>
 
     <h2>See <a href='./TW'>TW's</a> here</h2>
 
-<br> Now enhance UPLANET.sh !
+<br> Can you <a href='./_ipns.priv.${EMAIL}.asc'>decode this key</a>? Want to know how to use a private key in a browser? <a href='mailto:support@qo-op.com'>Contact us</a>. Let's enhance UPLANET.sh together
         <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/MESSAGE.html
 
+## HERE YOU PLUG INDEX
+# echo "BOO" > ~/.zen/tmp/${MOATS}/index.html
+## WHO WILL BE THE G1 WINNER OF THE AREA
+# SHOW G1 STATION WALLETS
+
+rm ~/.zen/tmp/${MOATS}/message.html ## RENIT OLD FORMAT TO REMOVE
  # $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
 
 ## TAKING CARE OF THE CHAIN
@@ -309,7 +315,7 @@ echo "$HTTPCORS
     <html>
     <head>
     <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
-    <meta http-equiv=\"refresh\" content=\"10; url='https://ipfs.copylaradio.com/ipfs/${IPFSROOT}/message.html'\" />
+    <meta http-equiv=\"refresh\" content=\"10; url='https://ipfs.copylaradio.com/ipfs/${IPFSROOT}/MESSAGE.html'\" />
     </head><body>
     <h1>$LAT/$LON UPlanet common blockchain</h1>
     <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
