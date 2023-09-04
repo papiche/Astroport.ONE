@@ -70,7 +70,7 @@ header {
 <form id="formlink" action = "http://127.0.0.1:1234" method = "GET" enctype="application/x-www-form-urlencoded">
 
     <h1>U<span>Planet</span>
-    <br><span>(<a href="https://qo-op.com">qo-op</a>)<a id="myLink" href="https://qo-op.com">*</a></span></h1>
+    <br><span><a id="satLink" href="#">*</a>(<a href="https://qo-op.com">qo-op</a>)<a id="mapLink" href="#">*</a></span></h1>
 
         <span>Email : </span><input name=uplanet value=''></br>
 
@@ -134,9 +134,10 @@ document.addEventListener('DOMContentLoaded', function() {
     lonElement.value = pepper || '0.00'; // Default to '0.00' if lon is missing
     uplanetElement.value = '@'; // Default to '0.00' if lon is missing
   }
-
-  const newURL = `https://ipfs.copylaradio.com/ipfs/QmQdB6ChBs7N1StVo3ikytMRBW4zCHL4pxEFP9Tq8kfjAV/map_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
-  document.getElementById("myLink").href = newURL;
+  const satURL = `https://ipfs.copylaradio.com/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/sat_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
+  document.getElementById("satLink").href = satURL;
+  const mapURL = `https://ipfs.copylaradio.com/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/map_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
+  document.getElementById("mapLink").href = mapURL;
 
 });
 

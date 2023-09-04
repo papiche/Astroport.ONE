@@ -144,15 +144,19 @@ ipfs --timeout 60s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
 echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${LAT}_${LON}.png"
-UMAPGEN="/ipfs/QmQdB6ChBs7N1StVo3ikytMRBW4zCHL4pxEFP9Tq8kfjAV/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+
 echo ${UMAPGEN}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
+echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
 
 ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
 echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${LAT}_${LON}.jpg --window-size=1200x1200 \"https://ipfs.copylaradio.com${UMAPGEN}\""
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
-
+chromium --headless --disable-gpu --screenshot=/tmp/Usat.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${USATGEN}"
+chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "https://ipfs.copylaradio.com${USATGEN}"
 
 echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
 echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
@@ -162,6 +166,8 @@ echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 ## COPYING FILES FROM ABROAD
 cp /tmp/Umap.jpg ~/.zen/tmp/${MOATS}/
 cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/
+cp /tmp/Usat.jpg ~/.zen/tmp/${MOATS}/
+cp /tmp/Usat.png ~/.zen/tmp/${MOATS}/
 rm -f ~/.zen/tmp/${MOATS}/G1*.jpg ## DELETE VISA FROM PREVIOUS VISITOR
 cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.jpg
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
@@ -207,8 +213,8 @@ echo "<html>
     </head><body>
     <h1>Welcome UPlanet Keeper!</h1>
     <h1>Registration for $LAT/$LON</h1>
-    <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet recorded Image' \>
-    <br> <a href='Umap.html >OSM2IPFS</a>
+    <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
+    <br> source : <a href='Umap.html >MAP</a> <a href='Usat.html >SAT</a>
     <br> UMap Key : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCALHOST</a> / <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>WAN</a>
     <br> <h2>${EMAIL}</h2>
     UPlanet ID's
