@@ -237,18 +237,19 @@ echo "<html>
         }
     </style>
     </head><body>
-    <h1>Welcome UPlanet Keeper!</h1>
-    <h1>Registration for $LAT/$LON</h1>
+    <h1>U Planet Registration : $LAT/$LON </h1>
+    <h2>${EMAIL}</h2>
+        <button id='printButton'>Print</button>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
-    <br> source : <a href='Umap.html >MAP</a> <a href='Usat.html >SAT</a>
-    <br> UMap Key : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCALHOST</a> / <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>WAN</a>
-    <br> <h2>${EMAIL}</h2>
+    <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
+    <br> UMap Key<br>
+    <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCALHOST</a> | <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>WAN</a>
+    <h1>
     UPlanet ID's
-        <br>
-    <button id='printButton'>Print</button>
-<h1>Umap Visa</h1>
+     </h1>
+<h2>Umap Visa</h2>
 <br>    <img src=G1Visa.${EMAIL}.jpg alt='Umap G1Visa' \>
-<h1>Umap Card</h1>
+<h2>Umap Card</h2>
 <br>    <img src=G1Card.${EMAIL}.jpg alt='Umap G1Card' \>
 <br>
     <script>
