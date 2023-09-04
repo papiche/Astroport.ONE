@@ -247,9 +247,9 @@ echo "<html>
         <br>
     <button id='printButton'>Print</button>
 <h1>Umap Visa</h1>
-<br>    <img src=G1Visa.${EMAIL}.jpg alt='G1Visa' \>
+<br>    <img src=G1Visa.${EMAIL}.jpg alt='Umap G1Visa' \>
 <h1>Umap Card</h1>
-<br>    <img src=G1Card.${EMAIL}.jpg alt='G1Card' \>
+<br>    <img src=G1Card.${EMAIL}.jpg alt='Umap G1Card' \>
 <br>
     <script>
         // Function to print the page
@@ -300,7 +300,7 @@ echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
     (
     ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
     end=`date +%s`
-    echo "(IPNS) publish time was "`expr $end - $start` seconds.
+    echo "(IPNS) PUBLISH time was "`expr $end - $start` seconds.
     ) &
 
 
