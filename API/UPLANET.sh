@@ -104,9 +104,12 @@ EMAIL="${PLAYER,,}" # lowercase
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     echo "VALID ${EMAIL} EMAIL OK"
 else
-    echo "BAD EMAIL"
-    UMAPNS="$(${MY_PATH}/../tools/keygen -t ipfs "$LAT" "$LON")"
-    (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='https://ipfs.copylaradio.com/ipns/${UMAPNS}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
+    UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
+    ipfs key rm ${MOATS}
+    REDIR="https://ipfs.copylaradio.com/ipns/${UMAPNS}"
+    echo "_$LAT_$LON : ${REDIR}"
+    (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 fi
 
 ### CREATE G1VISA & G1Card
@@ -137,9 +140,9 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 echo "UMAPNS : https://ipfs.copylaradio.com/ipns/${UMAPNS}"
 
 ###################################################
-## GET NETWORK CACHE
-echo "ipfs --timeout 60s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
-ipfs --timeout 60s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
+## GET NETWORK CACHE - 42s - UNLEASHED COMON BLOCKCHAIN
+echo "ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
+ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
@@ -151,19 +154,21 @@ echo ${UMAPGEN}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
 
-## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
-echo "chromium --headless --disable-gpu --screenshot=/tmp/Umap_${LAT}_${LON}.jpg --window-size=1200x1200 \"https://ipfs.copylaradio.com${UMAPGEN}\""
+## GET MAP ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
+## GET SAT
 chromium --headless --disable-gpu --screenshot=/tmp/Usat.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${USATGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "https://ipfs.copylaradio.com${USATGEN}"
 
-echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Card.html
-echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/G1Visa.html
-## ADD TO FRIENDS
+## CREATE HTML for LAST of U Keys
+echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UCard.html
+echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UVisa.html
+
+## ADD TO VISITOR LIST : UFriends
 echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 
-## COPYING FILES FROM ABROAD
+## COPYING FILES  to PUBLISH from ABROAD
 cp /tmp/Umap.jpg ~/.zen/tmp/${MOATS}/
 cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/
 cp /tmp/Usat.jpg ~/.zen/tmp/${MOATS}/
@@ -173,12 +178,14 @@ cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.j
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
 ls ~/.zen/tmp/${MOATS}/
 
-### CREATE A G1VISA FOR PLAYER (IF PASS WAS GIVEN AND NO TW EXISTS YET)
+### CREATE A G1VISA FOR PLAYER (NO TW EXISTS YET for EMAIL)
 if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
     ## Create a redirection to PLAYER (EMAIL/PASS) TW
         mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
-        ## CREATE TW LINK
-        TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "$EMAIL" "$PASS")
+        ## CREATE TW LINK /ipns/TWADD
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$PASS"
+        TWADD=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.priv)
+        ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
         if [[ ${PASS} ==  ${VAL} ]]; then
             ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
