@@ -146,7 +146,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
-        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "${PLAYER}"
+        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
         # VOEUX.refresh.sh
         ##############################################################
         ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)

@@ -22,6 +22,13 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "$PLAYER IPNS INTROUVABLE" && exit 1
 
+G1PUB="$3"
+[[ -s $HOME/.zen/tmp/coucou/${G1PUB}.COINS ]] \
+    && COINS=$(cat $HOME/.zen/tmp/coucou/${G1PUB}.COINS) \
+    && [[ ${COINS} == "null" || ${COINS} == "" ]] \
+    && echo ">>> ${COINS} : DESACTIVATED - NEED G1 TO MAKE A WISH - EXIT - " \
+    && exit 0
+
 ## EXPORT [tag[voeu]]
 echo "## EXTRACTION DE NOUVEAUX VOEUX pour $PLAYER TW"
 echo "$INDEX  [tag[voeu]]  ?"
