@@ -209,9 +209,9 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         if [[ ${PASS} ==  ${VAL} ]]; then
             ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
             (
-            PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
+            NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
 
-            ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${PASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+            ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
             ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
             ) &
         fi
