@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     lonElement.value = pepper || '0.00'; // Default to '0.00' if lon is missing
     uplanetElement.value = '@'; // Default to '0.00' if lon is missing
   }
-  const satURL = `https://ipfs.copylaradio.com/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/sat_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
+  const satURL = `https://ipfs.copylaradio.com/ipfs/QmfVZajimvgkCHhybnwVuKuY1aDzGLBsDbnzSXpN7RmfUm/sat_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
   document.getElementById("satLink").href = satURL;
   const mapURL = `https://ipfs.copylaradio.com/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/map_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
   document.getElementById("mapLink").href = mapURL;
