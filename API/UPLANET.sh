@@ -243,7 +243,7 @@ echo "<html>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
     <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
     <br> UMap Key<br>
-    <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCALHOST</a> | <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>WAN</a>
+    <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCAL</a> | <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>GLOBAL</a>
     <h1>
     UPlanet ID's
      </h1>
@@ -307,6 +307,7 @@ echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
     (
     ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
     end=`date +%s`
+    ipfs key rm ${G1PUB} ## REMOVE IPNS KEY
     echo "(IPNS) PUBLISH time was "`expr $end - $start` seconds.
     ) &
 
@@ -316,11 +317,11 @@ echo "$HTTPCORS
     <html>
     <head>
     <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
-    <meta http-equiv=\"refresh\" content=\"10; url='https://ipfs.copylaradio.com/ipfs/${IPFSROOT}/MESSAGE.html'\" />
+    <meta http-equiv=\"refresh\" content=\"10; url='${myIPFS}/ipfs/${IPFSROOT}/MESSAGE.html'\" />
     </head><body>
     <h1>$LAT/$LON UPlanet common blockchain</h1>
-    <br>UMAP : <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>http://ipfs.localhost:8080/ipns/${UMAPNS}</a>
-    <br>CHAIN : <a target=wan href=https://ipfs.copylaradio.com/ipfs/${IPFSROOT}>https://ipfs.copylaradio.com/ipfs/${IPFSROOT}</a>
+    <br>UMAP : <a target=localhost href=${myIPFS}/ipns/${UMAPNS}>${myIPFS}/ipns/${UMAPNS}</a>
+    <br>CHAIN : <a target=wan href=${myIPFS}/ipfs/${IPFSROOT}>${IPFSROOT}</a>
     <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
     ---
     <br>
