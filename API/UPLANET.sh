@@ -100,17 +100,34 @@ EMAIL="${PLAYER,,}" # lowercase
 
 [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR UPLANET LANDING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
-## CHECK WHAT IS EMAIL
-if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
-    echo "VALID ${EMAIL} EMAIL OK"
-else
+### SESSION KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
     ipfs key rm ${MOATS}
+###
+
+## CHECK WHAT IS EMAIL
+if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+
+    echo "VALID ${EMAIL} EMAIL OK"
+    ###################################################
+    ## GET NETWORK CACHE - 42s - UNLEASHED COMON BLOCKCHAIN
+    echo "ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
+    ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
+
+    ## CHECK if TW is HERE
+    [[ -s ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]] \
+        && (echo "$HTTPCORS $(cat ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html)"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && echo "TW is HERE : $EMAIL" && exit 0
+
+else
+
     REDIR="https://ipfs.copylaradio.com/ipns/${UMAPNS}"
     echo "_$LAT_$LON : ${REDIR}"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+
 fi
+
 
 ### CREATE G1VISA & G1Card
 echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$LAT"'" "'"$LON"'" "'"$PASS"'" "'"$PASS"'"
@@ -123,8 +140,8 @@ ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$LAT" "$LON" "$PASS" "${PASS}"##
 ######################################################
 echo "UMAP = $LAT:$LON"
 echo "# CALCULATING MAP G1PUB WALLET"
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${G1PUB}/_cesium.key  "$LAT" "$LON"
-G1PUB=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_cesium.key | grep 'pub:' | cut -d ' ' -f 2)
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/_cesium.key  "$LAT" "$LON"
+G1PUB=$(cat ~/.zen/tmp/${MOATS}/_cesium.key | grep 'pub:' | cut -d ' ' -f 2)
 [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "MAPG1PUB : ${G1PUB}"
 
@@ -138,11 +155,6 @@ ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LO
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : https://ipfs.copylaradio.com/ipns/${UMAPNS}"
-
-###################################################
-## GET NETWORK CACHE - 42s - UNLEASHED COMON BLOCKCHAIN
-echo "ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
-ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
@@ -177,6 +189,13 @@ rm -f ~/.zen/tmp/${MOATS}/G1*.jpg ## DELETE VISA FROM PREVIOUS VISITOR
 cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.jpg
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
 ls ~/.zen/tmp/${MOATS}/
+
+    ### SECURE UMap private keys key with PGP
+    cat ~/.zen/tmp/${MOATS}/_ipns.priv | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/_ipns.priv.${EMAIL}.asc
+    rm ~/.zen/tmp/${MOATS}/_ipns.priv
+
+    cat ~/.zen/tmp/${MOATS}/_cesium.key | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/_cesium.key.${EMAIL}.asc
+    rm ~/.zen/tmp/${MOATS}/_cesium.key
 
 ### CREATE A G1VISA FOR PLAYER (NO TW EXISTS YET for EMAIL)
 if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
