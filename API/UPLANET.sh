@@ -106,6 +106,8 @@ EMAIL="${PLAYER,,}" # lowercase
     ipfs key rm ${MOATS}
 ###
 
+    REDIR="https://ipfs.copylaradio.com/ipns/${UMAPNS}"
+
 ## CHECK WHAT IS EMAIL
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
@@ -117,12 +119,11 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     ## CHECK if TW is HERE
     [[ -s ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]] \
-        && (echo "$HTTPCORS $(cat ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html)"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && (echo  "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}/TW/${EMAIL}/index.html'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && echo "TW is HERE : $EMAIL" && exit 0
 
 else
 
-    REDIR="https://ipfs.copylaradio.com/ipns/${UMAPNS}"
     echo "_$LAT_$LON : ${REDIR}"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
