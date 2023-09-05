@@ -91,7 +91,8 @@ header {
         </h3>
         <input name='pepper' value='0.00'>
     </div>
-        <span>PASS : </span><input name='g1pub' size=6 value=''></br></br>
+        <input type=hidden name=g1pub value=''></br>
+(<span id='LAT'></span>:<span id='LON'></span>) registration<br>
 
         <input type='submit' value='[(♥‿‿♥)]'>
 
@@ -134,21 +135,25 @@ document.addEventListener('DOMContentLoaded', function() {
   const uplanetElement = document.querySelector('input[name="uplanet"]');
   const passElement = document.querySelector('input[name="g1pub"]');
 
- // Generate a random 6-digit number and set it as the default value for "PASS"
-  //~ if (passElement) {
-    //~ const randomPass = Math.floor(100000 + Math.random() * 900000); // Generates a random 6-digit number
-    //~ passElement.value = randomPass.toString();
-  //~ }
+ //~ // Generate a random 6-digit number and set it as the default value for "PASS"
+  if (passElement) {
+    const randomPass = Math.floor(100000 + Math.random() * 900000); // Generates a random 6-digit number
+    passElement.value = randomPass.toString();
+  }
 
   if (latElement && lonElement) {
     latElement.value = salt || '0.00'; // Default to '0.00' if lat is missing
     lonElement.value = pepper || '0.00'; // Default to '0.00' if lon is missing
     uplanetElement.value = '@'; // Default to '0.00' if lon is missing
   }
+
   const satURL = `https://ipfs.copylaradio.com/ipfs/QmfVZajimvgkCHhybnwVuKuY1aDzGLBsDbnzSXpN7RmfUm/sat_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
   document.getElementById("satLink").href = satURL;
   const mapURL = `https://ipfs.copylaradio.com/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/map_render.html?southWestLat=${latElement.value}&southWestLon=${lonElement.value}&deg=0.1`;
   document.getElementById("mapLink").href = mapURL;
+
+    document.getElementById("LAT").innerHTML = latElement.value ;
+    document.getElementById("LON").innerHTML = lonElement.value ;
 
 });
 
