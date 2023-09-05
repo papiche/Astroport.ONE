@@ -180,7 +180,7 @@ testLatency(function(avg){
   isConnectedFast = (avg <= tThreshold);
   /** output */
   document.body.appendChild(
-    document.createTextNode("https://github.com/papiche/Astroport.ONE - Swarm delay: " + (avg.toFixed(2)) + "ms - ♥Box ready ? " + isConnectedFast)
+    document.createTextNode("- IPFS swarm delay - " + (avg.toFixed(2)) + "ms - ♥Box ready ? " + isConnectedFast)
   );
 });
 
@@ -219,7 +219,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            elem.innerHTML = "Clic Smiling Face ;)"
+            elem.innerHTML = "<a href=http://127.0.0.1:12345>OK</a>"
         } else {
             elem.innerHTML = timeLeft + " s";
             timeLeft--;

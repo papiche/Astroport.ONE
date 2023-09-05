@@ -117,15 +117,15 @@ ASTROPORT DIPLOMATIC PASSPORT - MadeInZion VISA -
 A Cryptographic Key to control your INTERNET
 Adventure & Exploration P2P Terraforming Game.
 =============================================
-WELCOME 'Astronaute'"; sleep 1
+WELCOME 'Astronaute'"; # sleep 1
 
 echo "Inscription..."
 
 [[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
-echo "-> SALT : $SALT"
+echo "-> ID : $SALT"
 
 [[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
-echo "-> PEPPER : $PEPPER"
+echo "-> PASS : $PEPPER"
 
 PSEUDO=${PLAYER%%[0-9]*}
 
@@ -142,7 +142,7 @@ PSEUDO=${PSEUDO,,}
 PLAYER=${PLAYER,,}
 
 [[ ! $PSEUDO ]] && PSEUDO="Anonymous"
-echo "Crypto ID PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
+# echo "Crypto ID PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
 
 # 6 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
@@ -492,12 +492,12 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "G1Visa : ${myIPFS}${IASTRO}"
-echo "G1CARD ($PASS) : ${myIPFS}${ASTROQR}"
-echo "G1TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo "Public G1Visa (TW) : ${myIPFS}${IASTRO}"
+echo "Private G1Card ($PASS) : ${myIPFS}${ASTROQR}"
+echo "Control Your TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "${PLAYER}"
-echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; sleep 1
+echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; # sleep 1
 echo "
 Vos Secrets :
     $SALT
@@ -506,11 +506,9 @@ Vos Secrets :
 Portefeuille : https://Cesium.app
 Marché : https://GChange.fr
 
-Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; sleep 1
+Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
+
 echo
-echo "Explorez le Web3. Reliez vos Toiles de Confiance.
-"
-echo echo
 echo "$(${MY_PATH}/face.sh friendly)"
 #~ DISCONNECT : $DISCO&logout=${PLAYER}
 #~ CONNECT : $DISCO&login=${PLAYER}"

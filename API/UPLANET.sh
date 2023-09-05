@@ -240,16 +240,14 @@ echo "<html>
         }
     </style>
     </head><body>
-    <h1>U Planet Registration : $LAT/$LON </h1>
+    <h1>U Planet ID Registration : $LAT/$LON </h1>
     <h2>${EMAIL}</h2>
         <button id='printButton'>Print</button>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
     <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
     <br> UMap Key<br>
     <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCAL</a> | <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>GLOBAL</a>
-    <h1>
-    UPlanet ID's
-     </h1>
+
 <h2>Umap Visa</h2>
 <br>    <img src=G1Visa.${EMAIL}.jpg alt='Umap G1Visa' \>
 <h2>Umap Card</h2>
