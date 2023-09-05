@@ -239,10 +239,9 @@ echo "<html>
             cursor: pointer;
         }
     </style>
-    </head><body>
+    </head><body>        <button id='printButton'>Print</button>
     <h1>U Planet ID Registration : $LAT/$LON </h1>
     <h2>${EMAIL}</h2>
-        <button id='printButton'>Print</button>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
     <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
     <br> UMap Key<br>
