@@ -45,6 +45,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "+++ WALLET BALANCE _ $COINS (G1) _"
     #~ ## IF WALLET IS EMPTY : WHAT TODO ?
     echo "##################################################################"
+
     echo "##################################################################"
     echo "################### REFRESH ASTRONAUTE TW ###########################"
     echo "##################################################################"
@@ -61,9 +62,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo ">>> $myIPFS/ipns/${ASTRONAUTENS}"
 
     ## MY PLAYER : RESTORE PLAYER KEY FROM G1PUB (IN CASE IS MISSING : PLAYER LOGOUT)
-    ipfs key export $G1PUB -o ~/.zen/tmp/${MOATS}/${PLAYER}.key
-    [[ ! $(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) ]] && ipfs key import ${PLAYER} ~/.zen/tmp/${MOATS}/${PLAYER}.key
-    rm ~/.zen/tmp/${MOATS}/${PLAYER}.key
+    [[ ! $(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) ]] \
+        &&  ipfs key export ${G1PUB} -o ~/.zen/tmp/${MOATS}/${PLAYER}.key \
+        && ipfs key import ${PLAYER} ~/.zen/tmp/${MOATS}/${PLAYER}.key \
+        && rm ~/.zen/tmp/${MOATS}/${PLAYER}.key
 
     ## REFRESH PLAYER IN STATION CACHE
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
@@ -99,7 +101,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
 
             [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
 
@@ -109,17 +111,30 @@ for PLAYER in ${PLAYERONE[@]}; do
             && echo "${PLAYER} OFFICIAL TW - (⌐■_■) -" \
             || ( echo "> BAD PLAYER=$player in TW" && continue)
 
-            ## DETECT IF GOOD ASTROPORT
+            ## GET "Astroport" TIDDLER
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-            ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+                --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
+            ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## Raccorded G1Station IPNS address
             CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
             [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
             echo "CURCHAIN=${CURCHAIN}"
             IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
+            ## GET "GPS" TIDDLER
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+            UMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+            LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+            LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+            echo "> GPS_${LAT}_${LON} : ${UMAPNS}"
+
+            [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} ]] \
+                && mkdir ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/rss/
+
+            ########### ASTROPORT is not IPFSNODEID => EJECT TW
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
             if [[ ${IPNSTAIL} != ${IPFSNODEID} && ${IPNSTAIL} != "_ASTROPORT_" ]]; then
                 echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
@@ -142,45 +157,51 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
         ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
 
-        # VOEUX.create.sh
+        ###############
+        # VOEUX.create.sh #
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
         ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
-        # VOEUX.refresh.sh
+
+        ###############
+        # VOEUX.refresh.sh #
         ##############################################################
         ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)
         ##############################################################
         ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
-        ##############################################################
 
+        ###################
+        # REFRESH PLAYER_feed #
         ##################################
         echo "# TW : GW API + LightBeam Feed + Friends"
         TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
         FEEDNS=$(ipfs key list -l  | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
-        [[ ! $FEEDNS ]] && echo "ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR" && continue
+        [[ ! ${FEEDNS} ]] && echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR" && continue
 
+        # WRITE lightbeam params
         echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
         echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
                 ###########################
-                # Modification Tiddlers de contrôle de GW & API
+                # Tiddlers controling GW & API
             #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
             #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
+            ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
             FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
             echo "FRIENDS qo-op FEEDS : "${FRIENDSFEEDS}
-
-            ## export FRIENDSFEEDS from Gchange stars
             echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
+            ## WRITE TIDDLERS IN TW
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \
                             --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
+            ## CHECK IT IS OK
             [[ -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ]] \
                     && cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                     && rm ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html
@@ -220,20 +241,25 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
     echo "================================================"
 
-######################### PLAYER_feed
-    IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
+
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
-    echo "IFRIENDHEAD :" ${IFRIENDHEAD}
-    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+    ## CREATING 30 DAYS RSS STREAM
+    tiddlywiki --load --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+                        --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
+    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
-    # cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}.rss.json
-
-    [[ -d ~/.zen/game/players/${PLAYER}/FRIENDS ]] \
-    && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/${PLAYER}/FRIENDS/index.html
-
-    [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/index.html ]] \
-    && FRAME=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/FRIENDS/index.html | tail -n 1) \
+    FRAME=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/$FRAME
+
+######################### PLAYER_feed
+    #~ IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
+    #~ echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+    #~ echo "IFRIENDHEAD :" ${IFRIENDHEAD}
+    #~ [[ -d ~/.zen/game/players/${PLAYER}/FRIENDS ]] \
+    #~ && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/${PLAYER}/FRIENDS/index.html
+    #~ [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/index.html ]] \
+    #~ && FRAME=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/FRIENDS/index.html | tail -n 1) \
+    #~ && ipfs name publish --key="${PLAYER}_feed" /ipfs/$FRAME
 
 done
 echo "PLAYER.refresh DONE."
