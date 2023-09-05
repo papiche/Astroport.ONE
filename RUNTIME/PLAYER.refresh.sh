@@ -131,9 +131,6 @@ for PLAYER in ${PLAYERONE[@]}; do
             LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
             echo "> GPS_${LAT}_${LON} : ${UMAPNS}"
 
-            [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} ]] \
-                && mkdir ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/rss/
-
             ########### ASTROPORT is not IPFSNODEID => EJECT TW
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
             if [[ ${IPNSTAIL} != ${IPFSNODEID} && ${IPNSTAIL} != "_ASTROPORT_" ]]; then
@@ -241,15 +238,23 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
     echo "================================================"
 
-
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     ## CREATING 30 DAYS RSS STREAM
     tiddlywiki --load --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
-    FRAME=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-    && ipfs name publish --key="${PLAYER}_feed" /ipfs/$FRAME
+    IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
+    && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
+
+    ## Publish on LAT/ON key on 12345 CACHE
+    [[ ${LAT} && ${LON} ]] \
+    && [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} ]] \
+        && mkdir ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/rss/ \
+        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/rss/
+
+    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
 ######################### PLAYER_feed
     #~ IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
