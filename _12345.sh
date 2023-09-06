@@ -30,7 +30,7 @@ NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 rm -Rf ~/.zen/tmp/swarm/*
 
 ##############################################
-[[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty" && exit 1
+[[ ${IPFSNODEID} == "" || ${IPFSNODEID} == "null" ]] && echo "IPFSNODEID is empty" && exit 1
 mkdir -p ~/.zen/tmp/swarm
 mkdir -p ~/.zen/tmp/${IPFSNODEID}
 
@@ -40,6 +40,7 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 ## TIMESTAMPING
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
+echo "$(date -u)" > ~/.zen/tmp/.MySwarm.staom
 
 ############################################################
 ##  MySwarm KEY INIT & SET
@@ -49,11 +50,6 @@ echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
 
     #######################################################
     ## CREATE MySwarm KEYS ?
-    [[ -s ~/.zen/game/secret.dunikey ]] && mv ~/.zen/game/secret.dunikey ~/.zen/game/myswarm_secret.dunikey ## Change MySwarm key file name : TODOREMOVELINE : REMOVE FORMAT MIGRATION LINE
-    [[ -s ~/.zen/game/secret.ipfskey ]] && mv ~/.zen/game/secret.ipfskey ~/.zen/game/myswarm_secret.ipfskey ## Change MySwarm key file name : TODOREMOVELINE : REMOVE FORMAT MIGRATION LINE
-
-    [[ ! -s ~/.zen/game/myswarm_secret.dunikey ]] && ipfs key rm "MySwarm_${IPFSNODEID}" && CHAN="" ## NEW KEY FORMAT (NODEPUB)
-
     if [[ ${CHAN} == "" ]]; then
     echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
         SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
@@ -66,7 +62,7 @@ echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
     ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
 
 ## PUBLISH CHANNEL IPNS
-    echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm
+    echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.ipns
 ############################################################
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
@@ -197,6 +193,7 @@ while true; do
 
     # last run recording
     echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
+    echo "$(date -u)" > ~/.zen/tmp/.MySwarm.staom
 
     else
 

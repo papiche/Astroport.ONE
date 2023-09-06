@@ -30,7 +30,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
 
     ## COPY COINS VALUE OF THE DAY
-    cp ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/COINS/
+    mv  ~/.zen/tmp/${IPFSNODEID}/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/ ## CORRECT FORMAT : TO REMOVE
+    cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
 
     ## COPY FRIENDS
     PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))

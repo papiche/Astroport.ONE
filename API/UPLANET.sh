@@ -100,13 +100,13 @@ EMAIL="${PLAYER,,}" # lowercase
 
 [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR UPLANET LANDING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
-### SESSION KEY
+### SESSION "$LAT" "$LON" KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
     ipfs key rm ${MOATS}
 ###
 
-    REDIR="https://ipfs.copylaradio.com/ipns/${UMAPNS}"
+    REDIR="${myIPFS}/ipns/${UMAPNS}"
 
 ## CHECK WHAT IS EMAIL
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
@@ -155,7 +155,7 @@ rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-echo "UMAPNS : https://ipfs.copylaradio.com/ipns/${UMAPNS}"
+echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
@@ -168,11 +168,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
 
 ## GET MAP ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "https://ipfs.copylaradio.com${UMAPGEN}"
+chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
+chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
 ## GET SAT
-chromium --headless --disable-gpu --screenshot=/tmp/Usat.jpg --window-size=1200x1200 "https://ipfs.copylaradio.com${USATGEN}"
-chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "https://ipfs.copylaradio.com${USATGEN}"
+chromium --headless --disable-gpu --screenshot=/tmp/Usat.jpg --window-size=1200x1200 "${myIPFS}${USATGEN}"
+chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "${myIPFS}${USATGEN}"
 
 ## CREATE HTML for LAST of U Keys
 echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UCard.html
@@ -245,7 +245,7 @@ echo "<html>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
     <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
     <br> UMap Key<br>
-    <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCAL</a> | <a target=localhost href=https://ipfs.copylaradio.com/ipns/${UMAPNS}>GLOBAL</a>
+    <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCAL</a> | <a target=localhost href=${myIPFS}/ipns/${UMAPNS}>GLOBAL</a>
 
 <h2>Umap Visa</h2>
 <br>    <img src=G1Visa.${EMAIL}.jpg alt='Umap G1Visa' \>
@@ -295,12 +295,15 @@ echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_${EMAIL}.HPASS
     && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_moats \
     && IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
+########################################
 ################################################################################
 ## WRITE INTO 12345 SWARM CACHE LAYER
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
 echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
+################################################################################
 ########################################
+
 ########################################
 echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
 
@@ -333,5 +336,5 @@ echo "$HTTPCORS
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
 end=`date +%s`
-echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
+echo "(UPLANET) Operation time was "`expr $end - $start` seconds.
 exit 0
