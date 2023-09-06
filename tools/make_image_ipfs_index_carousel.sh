@@ -61,6 +61,16 @@ if [[ ! -d $img_dir ]]; then
                 && convert ~/.zen/game/players/${PLAYER}/moa.jpg -resize 200 ~/.zen/tmp/moa.jpg \
                 && composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/moa.jpg ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/carousel/${pub}.one.png
 
+            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+            moabirth=$(cat ~/.zen/tmp/${PLAYER}.astroport.json | jq -r '.[].birthdate')
+            year="${moabirth:0:4}"
+            month="${moabirth:4:2}"
+            day="${moabirth:6:2}"
+            weekday=$(date -d "$year-$month-$day" "+%A")
+            time="${moabirth:8:6}"
+
+                        birthdate="${year}/${month}/${day} - ${weekday} - ${time}"
+
             ## EXTRACT  [tag[G1Voeu]] : ~/.zen/tmp/${PLAYER}.g1wishes.txt
             tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
             cat ~/.zen/tmp/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${PLAYER}.g1wishes.txt
@@ -87,7 +97,7 @@ if [[ ! -d $img_dir ]]; then
         convert -font 'Liberation-Sans' \
         -pointsize 80 -fill purple -draw 'text 50,120 "'"$COINS Ğ1"'"' \
         -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
-        -pointsize 14 -fill white -draw 'text 40, 200 "'"$(date)"'"' \
+        -pointsize 14 -fill white -draw 'text 40, 200 "'"${birthdate}"'"' \
         "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
         && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
