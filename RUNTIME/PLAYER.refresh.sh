@@ -68,20 +68,22 @@ for PLAYER in ${PLAYERONE[@]}; do
         && rm ~/.zen/tmp/${MOATS}/${PLAYER}.key
 
     ## REFRESH PLAYER IN STATION CACHE
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
+    rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/ 2>/dev/null ## CORRECT OLD PUBLISH FORMAT REMOVE
+
+    rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
     echo "Getting latest online TW..."
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
     echo "/ipns/${ASTRONAUTENS} ON $LIBRA"
 
     ## IPFS / HTTP / LOCAL
-    ipfs --timeout 360s get -o ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html /ipns/${ASTRONAUTENS} \
-    || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "$LIBRA/ipns/${ASTRONAUTENS}" \
-    || cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+    ipfs --timeout 360s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS} \
+    || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "$LIBRA/ipns/${ASTRONAUTENS}" \
+    || cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     ## PLAYER TW IS ONLINE ?
-    if [ ! -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html ]; then
+    if [ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ]; then
 
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         echo "ERROR_PLAYERTW_OFFLINE : /ipns/${ASTRONAUTENS}"
@@ -99,7 +101,7 @@ for PLAYER in ${PLAYERONE[@]}; do
      ## FOUND TW
         #############################################################
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
 
@@ -112,7 +114,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             || ( echo "> BAD PLAYER=$player in TW" && continue)
 
             ## GET "Astroport" TIDDLER
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
             ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## Raccorded G1Station IPNS address
@@ -123,7 +125,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
             ## GET "GPS" TIDDLER
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
             UMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
@@ -159,14 +161,14 @@ for PLAYER in ${PLAYERONE[@]}; do
         ##############################################################
         ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
         ##############################################################
-        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
+        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
 
         ###############
         # VOEUX.refresh.sh #
         ##############################################################
         ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)
         ##############################################################
-        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
+        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
         ###################
         # REFRESH PLAYER_feed #
@@ -187,32 +189,32 @@ for PLAYER in ${PLAYERONE[@]}; do
             #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
             ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
-            FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
+            FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
             echo "FRIENDS qo-op FEEDS : "${FRIENDSFEEDS}
             echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
 
             ## WRITE TIDDLERS IN TW
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                             --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \
-                            --output ~/.zen/tmp/${IPFSNODEID}/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
+                            --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
             ## CHECK IT IS OK
-            [[ -s ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ]] \
-                    && cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
-                    && rm ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/newindex.html
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
+                    && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                    && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html
                 ###########################
 
         ####################
 
         ## ANY CHANGES ?
         ##############################################################
-        DIFF=$(diff ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html)
+        DIFF=$(diff ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html)
         if [[ $DIFF ]]; then
             echo "DIFFERENCE DETECTED !! "
             echo "Backup & Upgrade TW local copy..."
-            cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+            cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
             [[ -s ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain ]] \
             && ZCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain) \
@@ -240,7 +242,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     ## CREATING 30 DAYS RSS STREAM
-    tiddlywiki --load --load ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html \
+    tiddlywiki --load --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
@@ -250,14 +252,14 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## Publish on LAT/ON key on 12345 CACHE
     [[ ${LAT} && ${LON} ]] \
     && [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} ]] \
-        && mkdir ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/rss/ \
-        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/rss/
+        && mkdir ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
+        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/
 
     ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
 ######################### PLAYER_feed
-    #~ IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
+    #~ IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
     #~ echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
     #~ echo "IFRIENDHEAD :" ${IFRIENDHEAD}
     #~ [[ -d ~/.zen/game/players/${PLAYER}/FRIENDS ]] \

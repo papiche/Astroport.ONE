@@ -301,22 +301,22 @@ do
         ######################################
             ## ADD THIS FPLAYER RSS FEED INTO PLAYER TW
             ## PUSH DATA TO 12345 SWARM KEY
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}
-            cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}
+            cp -f ~/.zen/game/players/${PLAYER}/ipfs/${FPLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/${FPLAYER}.rss.json
 
                 export FRIENDSFEEDS="$ASTRONAUTEFEED\n${FRIENDSFEEDS}"
-                echo "${FRIENDSFEEDS}" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/FRIENDSFEEDS
+                echo "${FRIENDSFEEDS}" > ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS
 
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : FRIENDSFEEDS=" ${FRIENDSFEEDS}
 
                 export IFRIENDHEAD="<a target='you' href='/ipns/"${FRIENDNS}"'>$FRIENDTITLE</a> ${IFRIENDHEAD}"
-                echo "${IFRIENDHEAD}" > ~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/IFRIENDHEAD
+                echo "${IFRIENDHEAD}" > ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/IFRIENDHEAD
 
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : IFRIENDHEAD=" ${IFRIENDHEAD}
 
 
             echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
-            echo "~/.zen/tmp/${IPFSNODEID}/rss/${PLAYER}/${FPLAYER}.rss.json"
+            echo "~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/${FPLAYER}.rss.json"
 
         fi
 
