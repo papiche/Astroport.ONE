@@ -129,7 +129,6 @@ else
 
 fi
 
-
 ### CREATE G1VISA & G1Card
 echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$LAT"'" "'"$LON"'" "'"$PASS"'" "'"$PASS"'"
 ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$LAT" "$LON" "$PASS" "${PASS}"##
@@ -200,22 +199,26 @@ ls ~/.zen/tmp/${MOATS}/
 
 ### CREATE A G1VISA FOR PLAYER (NO TW EXISTS YET for EMAIL)
 if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
-    ## Create a redirection to PLAYER (EMAIL/PASS) TW
+
+        ## CHECK IF TW EXISTS FOR THIS EMAIL ALREADY
+        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+        echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+        [[ ${ASTROTW} ]] && (echo "$HTTPCORS INFO - (╥☁╥ ) - ${PLAYER} TW ALREADY EXISTING /ipns/${ASTROTW}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
+
+        ## Create a redirection to PLAYER (EMAIL/PASS) TW
         mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
         ## CREATE TW LINK /ipns/TWADD
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$PASS"
         TWADD=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.priv)
         ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
-        if [[ ${PASS} ==  ${VAL} ]]; then
-            ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
-            (
-            NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
+        ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
+        (
+        NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
 
-            ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
-            ) &
-        fi
+        ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+        ) &
 fi
 
 ## MAKE A MESSAGE
@@ -272,7 +275,7 @@ echo "<html>
 ## WHO WILL BE THE G1 WINNER OF THE AREA
 # SHOW G1 STATION WALLETS
 
-rm ~/.zen/tmp/${MOATS}/message.html ## RENIT OLD FORMAT TO REMOVE
+rm ~/.zen/tmp/${MOATS}/message.html 2>/dev/null ## RENIT OLD FORMAT TO REMOVE
  # $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
 
 ## TAKING CARE OF THE CHAIN

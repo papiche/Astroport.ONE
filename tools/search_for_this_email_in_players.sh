@@ -21,8 +21,8 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 
     INDEX=$(ls $HOME/.zen/tmp/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null)
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/$IPFSNODEID/${EMAIL}/index.html 2>/dev/null)
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/${EMAIL}/index.html 2>/dev/null)
+    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null)
+    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null)
     [[ ! $INDEX ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
 
@@ -30,7 +30,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     mkdir -p ~/.zen/tmp/${MOATS}
     rm -f ~/.zen/tmp/${MOATS}/Astroport.json
 
-    tiddlywiki --load $INDEX --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+    tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
 
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
     ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].g1pub)

@@ -219,6 +219,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             [[ -s ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain ]] \
             && ZCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain) \
             && echo "# CHAIN : ${CURCHAIN} -> ${ZCHAIN}" \
+            && [[ ${CURCHAIN} != "" && ${ZCHAIN} != "" ]]  \
             && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         fi
         ##############################################################
@@ -236,11 +237,11 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     echo "================================================"
-    echo " MAJ TW ${PLAYER} : = /ipfs/${TW}"
+    echo " NEW TW ${PLAYER} : =  ${myIPFS}/ipfs/${TW}"
     echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
     echo "================================================"
 
-    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
     ## CREATING 30 DAYS RSS STREAM
     tiddlywiki --load --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
