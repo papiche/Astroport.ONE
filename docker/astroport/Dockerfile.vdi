@@ -1,4 +1,5 @@
-FROM debian:stable as dist
+ARG DOCKER_REPOSITORY=aynicos
+FROM ${DOCKER_REPOSITORY}/x2go:xfce-debian as dist
 LABEL maintainer aynic.os <support+docker@asycn.io>
 ARG DOCKER_BUILD_DIR
 ARG DOCKER_MACHINE=x86_64
@@ -11,8 +12,6 @@ RUN apt-get update \
         bash \
         bc \
         ca-certificates \
-        chromium \
-        cmake \
         cron \
         curl \
         dnsutils \
@@ -24,7 +23,6 @@ RUN apt-get update \
         gawk \
         gettext \
         git \
-        gnupg \
         gpg \
         gpg-agent \
         html2text \
@@ -32,17 +30,13 @@ RUN apt-get update \
         imagemagick \
         inotify-tools \
         jq \
-        kodi \
-        libcurl4-openssl-dev \
         libsodium* \
         make \
-        miller \
         mp3info \
         mpack \
         msmtp \
         musl-dev \
         nano \
-        ncdu \
         net-tools \
         netcat-traditional \
         nmap \
@@ -50,14 +44,12 @@ RUN apt-get update \
         ntpdate \
         openssh-client \
         openssl* \
-        pandoc \
         pv \
         python3 \
         python3-brotli \
         python3-dotenv \
         python3-gpg \
         python3-jwcrypto \
-        python3-libnacl \
         python3-opencv \
         python3-pip \
         python3-setuptools \
@@ -73,9 +65,10 @@ RUN apt-get update \
         vim-nox \
         wget \
         x11-utils \
+        x2goserver \
         xclip \
         xz-utils \
-        yt-dlp \
+        youtube-dl \
         zenity \
  && sed -i '/PDF/d' /etc/ImageMagick-6/policy.xml \
  && ln -f -s  /usr/bin/python3 /usr/bin/python \
@@ -94,18 +87,18 @@ RUN set -x && buildDeps=' \
  && mkdir -p /usr/local/src/jaklis \
  && wget -qO - https://github.com/aynicos/jaklis/archive/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/jaklis -xzf - \
- && pip3 install --break-system-packages -r /usr/local/src/jaklis/requirements.txt \
+ && pip3 install -r /usr/local/src/jaklis/requirements.txt \
  && ln -s /usr/local/src/jaklis/jaklis.py /usr/local/bin/jaklis \
  && chmod 0755 /usr/local/bin/jaklis \
  && /usr/local/bin/jaklis --help >/dev/null \
  && mkdir -p /usr/local/src/dpgpid \
  && wget -qO - https://github.com/aynicos/dpgpid/archive/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/dpgpid -xzf - \
- && pip3 install --break-system-packages -r /usr/local/src/dpgpid/requirements.txt \
+ && pip3 install -r /usr/local/src/dpgpid/requirements.txt \
  && ln -s /usr/local/src/dpgpid/keygen /usr/local/bin/keygen \
  && chmod 0755 /usr/local/bin/keygen \
  && /usr/local/bin/keygen --help >/dev/null \
- && pip3 install --break-system-packages amzqr pdf2docx pyppeteer \
+ && pip3 install amzqr \
  && rm -rf /root/.cache \
  && apt-get clean
 
@@ -119,7 +112,7 @@ RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
     wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
  && chmod +x /usr/bin/docker-compose
 
-ARG IPFS_VERSION=0.22.0
+ARG IPFS_VERSION=0.16.0
 
 RUN { OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
     ARCH="$(echo ${DOCKER_MACHINE})"; \

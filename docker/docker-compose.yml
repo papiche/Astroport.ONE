@@ -8,8 +8,10 @@ services:
       - IPFS_VERSION=${IPFS_VERSION:-0.20.0}
       context: ../
       dockerfile: docker/astroport/Dockerfile
-    network_mode: host
     restart: unless-stopped
+    ports:
+    - 1234
+    - 12345
     tty: true
     volumes:
     - home:/home/zen/.zen/game/players:delegated
