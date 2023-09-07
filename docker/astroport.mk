@@ -1,6 +1,5 @@
-COMPOSE_FILE_VDI                          := true
 COMPOSE_IGNORE_ORPHANS                    := true
-DOCKER_IMAGES_MYOS                        := x2go:xfce-debian
+DOCKER_IMAGES_MYOS                        := $(if $(COMPOSE_FILE_VDI),x2go:xfce-debian)
 ENV_VARS                                  += HOST_ASTROPORT_SERVICE_1234_TAGS
 HOST_ASTROPORT_SERVICE_NAME               ?= astroport
 HOST_ASTROPORT_SERVICE_1234_TAGS          ?= $(call tagprefix,HOST_ASTROPORT,1234)

@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
   astroport:
+    build:
+      dockerfile: docker/astroport/Dockerfile.vdi
     cap_add:
     - IPC_LOCK # ecryptfs
     - NET_ADMIN # iptables
