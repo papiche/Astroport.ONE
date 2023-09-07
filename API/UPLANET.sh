@@ -72,7 +72,7 @@ else
     LAT="${input_number}"
 fi
 
-[[ ${APPNAME} == "pepper" ]] \
+[[ ${APPNAME} != "pepper" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
 [[ ${PEPPER} == "0" ]] && PEPPER="0.00"
