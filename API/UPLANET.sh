@@ -212,7 +212,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$NPASS"
         TWADD=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.priv)
         ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
         ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
         (
         ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
