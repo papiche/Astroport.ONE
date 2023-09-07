@@ -31,7 +31,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
     ## COPY COINS VALUE OF THE DAY
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/COINS/
-    mv  ~/.zen/tmp/${IPFSNODEID}/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/ ## CORRECT FORMAT : TO REMOVE
+    mv  ~/.zen/tmp/${IPFSNODEID}/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/ 2>/dev/null ## CORRECT FORMAT : TO REMOVE
     cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
 
     ## COPY FRIENDS

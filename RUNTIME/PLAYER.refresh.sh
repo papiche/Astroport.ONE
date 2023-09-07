@@ -109,9 +109,10 @@ for PLAYER in ${PLAYERONE[@]}; do
 
             player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
-            [[ $player == ${PLAYER} ]] \
-            && echo "${PLAYER} OFFICIAL TW - (⌐■_■) -" \
-            || ( echo "> BAD PLAYER=$player in TW" && continue)
+            [[ $player != ${PLAYER} ]] \
+                && echo "> BAD PLAYER=$player in TW" \
+                && continue \
+                || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
             ## GET "Astroport" TIDDLER
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \

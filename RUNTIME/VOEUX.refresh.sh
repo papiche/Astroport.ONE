@@ -37,6 +37,11 @@ INDEX="$3"
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu
 
+###############################
+####### NEED G1 TO RUN
+    [[ ${COINS} == "null" || ${COINS} == "" ]] \
+    && echo ">>> ${COINS} : DESACTIVATED - NEED G1 TO REFRESH WISH - EXIT - " \
+    && exit 0
 echo "%% $COINS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
