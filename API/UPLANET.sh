@@ -250,7 +250,8 @@ echo "<html>
             cursor: pointer;
         }
     </style>
-    </head><body>        <button id='printButton'>Print</button>
+    </head><body>
+    <button id='printButton'>Print</button>
     <h1>U U Planet ID registration : $LAT/$LON </h1>
     <h2>${EMAIL}</h2>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
@@ -264,11 +265,9 @@ echo "<html>
 <br>    <img src=G1Card.${EMAIL}.jpg alt='Umap G1Card' \>
 <br>
     <script>
-        // Function to print the page
         function printPage() {
             window.print();
         }
-        // Add click event listener to the print button
         document.getElementById('printButton').addEventListener('click', printPage);
     </script>
 
@@ -350,9 +349,15 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    <br><h2>${EMAIL}<br> your TW PASS is <br>
-    <bold>${NPASS}</bold></h2>
-
+    <br><h2>${EMAIL}<br> your TW PASS is <br></h2>
+    <h1>${NPASS}</h1>
+    <button id='printButton'>Print</button>
+    <script>
+        function printPage() {
+            window.print();
+        }
+        document.getElementById('printButton').addEventListener('click', printPage);
+    </script>
     ---<br>
     TELEPORTATION
     <br>in
