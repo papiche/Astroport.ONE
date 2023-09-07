@@ -53,7 +53,10 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 PLAYER=${THAT}
 [[ ${PLAYER} == "salt"  ]] && PLAYER="@"
 
-[[ ${AND} == "salt" ]] && SALT=${THIS} || SALT=${AND}
+[[ ${AND} != "salt" ]] \
+    &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
+
+SALT=${THIS}
 
 [[ ${SALT} == "0" ]] && SALT="0.00"
 input_number=${SALT}
