@@ -20,11 +20,12 @@ EMAIL="$1"
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 
-    INDEX=$(ls $HOME/.zen/tmp/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null)
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null)
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null)
+    INDEX=$(ls $HOME/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) ## LOCAL
+    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) ## CACHE
+    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) ## SWARM
     [[ ! $INDEX ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
+    echo "TW=${INDEX}"
 
     ## EXTRACT DATA FROM TW
     mkdir -p ~/.zen/tmp/${MOATS}
