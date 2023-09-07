@@ -129,8 +129,7 @@ echo "-> PASS : $PEPPER"
 
 PSEUDO=${PLAYER%%[0-9]*}
 
-[[ ! $PSEUDO ]] && echo "Choisissez un pseudo : " && read PSEUDO
-PSEUDO=${PSEUDO,,}
+[[ ! $PSEUDO ]] && PSEUDO="qo-op"
 # PSEUDO=${PSEUDO%%[0-9]*}
 
 [[ $(ls ~/.zen/game/players/$PSEUDO 2>/dev/null) ]] && echo "$PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
