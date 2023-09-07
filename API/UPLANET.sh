@@ -110,10 +110,11 @@ EMAIL="${PLAYER,,}" # lowercase
 ### SESSION "$LAT" "$LON" KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
-    ipfs key rm ${MOATS}
+    ipfs key rm ${MOATS} && echo "IPNS key identified"
 ###
 
     REDIR="${myIPFS}/ipns/${UMAPNS}"
+    echo "$REDIR"
 
 ## CHECK WHAT IS EMAIL
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
@@ -131,7 +132,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "BAD EMAIL _$LAT_$LON : ${REDIR}"
+    echo "BAD EMAIL $LAT $LON - EXIT -"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
 fi
