@@ -132,7 +132,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "BAD EMAIL $LAT $LON - EXIT -"
+    echo "BAD EMAIL $LAT $LON - OPEN UMAP IPNS -"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
 fi
@@ -350,7 +350,8 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    <br><h2>${EMAIL}, your TW PASS is <bold>${NPASS}</bold></h2>
+    <br><h2>${EMAIL}<br> your TW PASS is <br>
+    <bold>${NPASS}</bold></h2>
 
     ---<br>
     TELEPORTATION
