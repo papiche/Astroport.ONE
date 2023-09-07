@@ -72,7 +72,8 @@ else
     LAT="${input_number}"
 fi
 
-[[ ${APPNAME} == "pepper" ]] && PEPPER=${WHAT} || PEPPER=${APPNAME}
+[[ ${APPNAME} == "pepper" ]] \
+    &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
 [[ ${PEPPER} == "0" ]] && PEPPER="0.00"
 input_number=${PEPPER}
@@ -95,6 +96,7 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 ## RECEIVED PASS
 VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
 [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
+echo "PASS for Umap $LAT $LON is $PASS"
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
 
@@ -124,12 +126,13 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "_$LAT_$LON : ${REDIR}"
+    echo "BAD EMAIL _$LAT_$LON : ${REDIR}"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
 fi
 
-### CREATE G1VISA & G1Card
+###########################################
+### CREATE Umap G1VISA & G1Card
 echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$LAT"'" "'"$LON"'" "'"$PASS"'" "'"$PASS"'"
 ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$LAT" "$LON" "$PASS" "${PASS}"##
 [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
@@ -242,11 +245,11 @@ echo "<html>
         }
     </style>
     </head><body>        <button id='printButton'>Print</button>
-    <h1>U Planet ID Registration : $LAT/$LON </h1>
+    <h1>U U Planet ID registration : $LAT/$LON </h1>
     <h2>${EMAIL}</h2>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
     <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
-    <br> UMap Key<br>
+    <br> UMap Key Drive <br>
     <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCAL</a> | <a target=localhost href=${myIPFS}/ipns/${UMAPNS}>GLOBAL</a>
 
 <h2>Umap Visa</h2>
@@ -273,9 +276,6 @@ echo "<html>
 # echo "BOO" > ~/.zen/tmp/${MOATS}/index.html
 ## WHO WILL BE THE G1 WINNER OF THE AREA
 # SHOW G1 STATION WALLETS
-
-rm ~/.zen/tmp/${MOATS}/message.html 2>/dev/null ## RENIT OLD FORMAT TO REMOVE
- # $(find ~/.zen/tmp/${MOATS}/ -type d -regex '.*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}.*')
 
 ## TAKING CARE OF THE CHAIN
 ########################################
@@ -307,7 +307,7 @@ echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}
 ########################################
 
 ########################################
-echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
+echo "PUBLISHING NEW IPFSROOT : http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
 
     (
     ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
@@ -316,7 +316,6 @@ echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
     echo "(IPNS) PUBLISH time was "`expr $end - $start` seconds.
     ) &
 
-TWADD
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
     <html>
@@ -344,11 +343,12 @@ echo "$HTTPCORS
         }
     </style>
     </head><body>
-    <h1>$LAT/$LON UPlanet Registration</h1>
+    <h1>UPlanet Registration</h1>
     <br><h2>${EMAIL}, your TW PASS is <bold>${NPASS}</bold></h2>
 
     ---<br>
-    ASTROPORT LOGIN
+    TELEPORTATION
+    <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
     var timeLeft = 10;
@@ -370,7 +370,7 @@ echo "$HTTPCORS
     ( ⚆_⚆) <br>CONSOLE<br>
     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
     <br>(☉_☉ )<br>
-    <br><br>${EMAIL} REGISTERED UMAP : ${MOATS} : $(date)
+    <br><br>${EMAIL} REGISTERED on UMAP : $LAT/$LON : ${MOATS} : $(date)
      </body>
      </html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
