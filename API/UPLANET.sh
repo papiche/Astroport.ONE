@@ -203,7 +203,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         ## CHECK IF TW EXISTS FOR THIS EMAIL ALREADY
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
         echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
-        [[ ${ASTROTW} ]] && (echo "$HTTPCORS INFO - (╥☁╥ ) - ${PLAYER} TW ALREADY EXISTING /ipns/${ASTROTW}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
+        [[ ${ASTROTW} ]] && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
         ## Create a redirection to PLAYER (EMAIL/PASS) TW
         mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
@@ -316,26 +316,65 @@ echo "Now IPFSROOT is http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
     echo "(IPNS) PUBLISH time was "`expr $end - $start` seconds.
     ) &
 
-
+TWADD
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
     <html>
     <head>
-    <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
-    <meta http-equiv=\"refresh\" content=\"10; url='${myIPFS}/ipfs/${IPFSROOT}/MESSAGE.html'\" />
+    <title>[Astroport] $LAT $LON + ${EMAIL} </title>
+    <meta http-equiv=\"refresh\" content=\"10; url='${myIPFS}/ipns/${TWADD}'\" />
+    <style>
+        #countdown { display: flex; justify-content: center; align-items: center; color: #0e2c4c; font-size: 20px; width: 60px; height: 60px; background-color: #e7d9fc; border-radius: 50%;}
+    </style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        h1 {
+            color: #0077cc;
+        }
+        h2 {
+            color: #333;
+        }
+        img {
+            cursor: pointer;
+        }
+    </style>
     </head><body>
-    <h1>$LAT/$LON UPlanet common blockchain</h1>
-    <br>UMAP : <a target=localhost href=${myIPFS}/ipns/${UMAPNS}>${myIPFS}/ipns/${UMAPNS}</a>
-    <br>CHAIN : <a target=wan href=${myIPFS}/ipfs/${IPFSROOT}>${IPFSROOT}</a>
-    <br> <h2>${EMAIL} <bold>your PASS is $PASS</bold></h2>
+    <h1>$LAT/$LON UPlanet Registration</h1>
+    <br><h2>${EMAIL}, your TW PASS is <bold>${NPASS}</bold></h2>
+
+    ---<br>
+    ASTROPORT LOGIN
+    <h1><center><div id='countdown'></div></center></h1>
+    <script>
+    var timeLeft = 10;
+    var elem = document.getElementById('countdown');
+    var timerId = setInterval(countdown, 1000);
+
+    function countdown() {
+        if (timeLeft == -1) {
+            clearTimeout(timerId);
+            doSomething();
+        } else {
+            elem.innerHTML = timeLeft + ' s';
+            timeLeft--;
+        }
+    }
+    </script>
     ---
     <br>
-( ⚆_⚆) if you entered PASS<br>
+    ( ⚆_⚆) <br>CONSOLE<br>
     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
-<br>(☉_☉ ) your TW has move to ASTROPORT<br>
-        <br><br>${EMAIL} REGISTERED : ${MOATS} : $(date)
-     </body></html>" > ~/.zen/tmp/${MOATS}/http.rep
+    <br>(☉_☉ )<br>
+    <br><br>${EMAIL} REGISTERED UMAP : ${MOATS} : $(date)
+     </body>
+     </html>" > ~/.zen/tmp/${MOATS}/http.rep
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
 
 end=`date +%s`
 echo "(UPLANET) Operation time was "`expr $end - $start` seconds.
