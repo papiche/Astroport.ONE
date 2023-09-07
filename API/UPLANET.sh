@@ -208,14 +208,13 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         ## Create a redirection to PLAYER (EMAIL/PASS) TW
         mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
         ## CREATE TW LINK /ipns/TWADD
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$PASS"
+        NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$NPASS"
         TWADD=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.priv)
         ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
         ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
         (
-        NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
-
         ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
         ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
         ) &
