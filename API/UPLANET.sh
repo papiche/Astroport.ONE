@@ -327,7 +327,7 @@ echo "$HTTPCORS
     <html>
     <head>
     <title>[Astroport] $LAT $LON + ${EMAIL} </title>
-    <meta http-equiv=\"refresh\" content=\"10; url='${myIPFS}/ipns/${TWADD}'\" />
+    <meta http-equiv=\"refresh\" content=\"42; url='${myIPFS}/ipns/${TWADD}'\" />
     <style>
         #countdown { display: flex; justify-content: center; align-items: center; color: #0e2c4c; font-size: 20px; width: 60px; height: 60px; background-color: #e7d9fc; border-radius: 50%;}
     </style>
@@ -358,7 +358,7 @@ echo "$HTTPCORS
     <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
-    var timeLeft = 10;
+    var timeLeft = 42;
     var elem = document.getElementById('countdown');
     var timerId = setInterval(countdown, 1000);
 
