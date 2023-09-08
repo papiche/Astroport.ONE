@@ -491,10 +491,13 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "Public G1Visa : ${myIPFS}${IASTRO}"
-echo "Private G1Card ($PASS) : ${myIPFS}${ASTROQR}"
-echo "TW : ${NID}/ipns/${ASTRONAUTENS}/"
-echo "U Map : ${myIPFS}${URL}"
+echo "* Public G1Visa"
+echo "   ${NID}/ipns/${ASTRONAUTENS}#G1Visa"
+echo "* Personal AstroID ($PASS)"
+echo "   ${NID}/ipns/${ASTRONAUTENS}#AstroID"
+echo "* GPS : ${NID}/ipns/${ASTRONAUTENS}#GPS"
+echo "* U Map : ${myIPFS}${URL}"
+echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "BIENVENUE"
 echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; # sleep 1
