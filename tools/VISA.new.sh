@@ -491,20 +491,22 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "Public G1Visa (TW) : ${myIPFS}${IASTRO}"
+echo "Public G1Visa : ${myIPFS}${IASTRO}"
 echo "Private G1Card ($PASS) : ${myIPFS}${ASTROQR}"
-echo "Control Your TW : ${myIPFS}/ipns/${ASTRONAUTENS}"
+echo "TW : ${NID}/ipns/${ASTRONAUTENS}/"
+echo "U Map : ${myIPFS}${URL}"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "${PLAYER}"
+echo "BIENVENUE"
 echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; # sleep 1
 echo "
 Vos Secrets :
     $SALT
     $PEPPER
 
-Portefeuille : https://Cesium.app
-Marché : https://GChange.fr
+* WALLET : https://cesium.app
+* MARKET : https://gchange.fr
 
+U Planet : https://ipfs.copylaradio.com/ipns/copylaradio.com
 Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
 
 echo
