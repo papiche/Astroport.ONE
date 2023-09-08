@@ -29,7 +29,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-    echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
+    echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
 
     ### IPNS "$LAT" "$LON" KEY
