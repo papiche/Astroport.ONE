@@ -66,9 +66,9 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     if [ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]; then
 
         ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
-        echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
-        echo
-        echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
+        #~ echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
+        #~ echo
+        #~ echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
         cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
@@ -119,7 +119,7 @@ Adventure & Exploration P2P Terraforming Game.
 =============================================
 WELCOME 'Astronaute'"; # sleep 1
 
-echo "Inscription..."
+#~ echo "Inscription..."
 
 [[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
 echo "-> ID : $SALT"
@@ -328,7 +328,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     # Create"${PLAYER}_feed" Key ! DERIVATED !  "$SALT" "$G1PUB"
     ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
     FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
-    echo ">>> RSS FEED : ${myIPFS}/ipns/${FEEDNS}/"
+
     ## MAKE LightBeam Plugin Tiddler ${PLAYER}_feed
     # $:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
@@ -341,11 +341,12 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     #~ echo ${ENCODING}
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
-    echo "TW IPFS GATEWAY : ${NID}"
+    echo
+    echo "IPFS GATEWAY : ${NID}"
     #~ # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
-    echo "TW IPFS API : ${WID}"
+    echo "IPFS API : ${WID}"
     #~ # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
-
+    echo ">>> RSS FEED : ${myIPFS}/ipns/${FEEDNS}"
     ## CHANGE SELECTED GW & API
 
         ## ADD SYSTEM TW
