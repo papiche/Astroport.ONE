@@ -26,7 +26,7 @@ PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     [[ ! $ASTRONAUTENS ]] && echo "WARNING No ${PLAYER} in keystore -- EXIT" && exit 1
     [[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] && echo "NOT MY ${PLAYER} -- EXIT" && exit 1
 
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/
 
 ## VERIFY IT HAS ALREADY RUN
 
@@ -90,7 +90,7 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     GPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null)
     [[ ! ${GPSEUDO} || ${GPSEUDO} == "null" ]] &&  GPSEUDO="$PSEUDO"
     CPSEUDO=$(cat ~/.zen/game/players/${PLAYER}/ipfs/cesium.json | jq -r '.title' 2>/dev/null)
-    [[ ! ${CPSEUDO} || ${CPSEUDO} == "null" ]] &&  CPSEUDO="$PLAYER"
+    [[ ! ${CPSEUDO} || ${CPSEUDO} == "null" ]] &&  CPSEUDO="${PLAYER}"
 
     GDESCR=$(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.description' 2>/dev/null)
     [[ ! ${GDESCR} || ${GDESCR} == "null" ]] &&  GDESCR="Astronaute GChange"
@@ -155,24 +155,24 @@ echo "########################################################################"
 ################## CHECKING WHO GAVE ME STARS
 ################## BOOTSTRAP LIKES THEM BACK
 ################## SEND ipfstryme MESSAGES to FRIENDS
-rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/my_star_level
+rm -f ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/my_star_level
 
 ## Getting Gchange  liking_me list
 echo "Checking received stars ON $myDATA"
 ################################## JAKLIS PLAYER stars
 ${MY_PATH}/timeout.sh -t 30 \
-${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json
+${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json
 [[ ! $? == 0 ]] && echo "> WARNING $myDATA UNREACHABLE"
 
-[[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1" && exit 0
+[[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1" && exit 0
 
 ## GETTING ALL INCOMING liking_me FRIENDS
-cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
-# echo "cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/received_stars.json | jq -r" # DEBUG
+cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json | jq -r '.likes[].issuer' | sort | uniq > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/liking_me
+# echo "cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json | jq -r" # DEBUG
 ## ADD ALREADY FRIENDS (in case Gchange+ timout)
-find ~/.zen/game/players/${PLAYER}/FRIENDS/* -type d | rev | cut -d '/' -f 1 | rev >> ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me
+find ~/.zen/game/players/${PLAYER}/FRIENDS/* -type d | rev | cut -d '/' -f 1 | rev >> ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/liking_me
 
-for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/liking_me | sort | uniq);
+for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/liking_me | sort | uniq);
 do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
     echo "........................."
@@ -186,9 +186,9 @@ do
     ${MY_PATH}/timeout.sh -t 20 \
     ${MY_PATH}/jaklis/jaklis.py \
     -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
-    stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
+    stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json
 
-    cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -rc
+    cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json | jq -rc
 
     ## ZOMBIE PROTECTION - PURGE AFTER 365 DAYS
     find ~/.zen/game/players/${PLAYER}/FRIENDS/* -mtime +365 -type d -exec rm -Rf '{}' \; 2>/dev/null
@@ -204,10 +204,10 @@ do
 ## https://www.gchange.fr/#/app/records/wallet?q=2geH4d2sndR47XWtfDWsfLLDVyNNnRsnUD3b1sk9zYc4&old
 ## https://www.gchange.fr/#/app/market/records/42LqLa7ARTZqUKGz2Msmk79gwsY8ZSoFyMyPyEnoaDXR
 
-    ## DATA EXTRACTION FROM ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
-    my_star_level=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.yours.level') || my_star_level=1
-    gscore=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.score')
-    myfriendship=$(cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'${G1PUB}'"))')
+    ## DATA EXTRACTION FROM ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json
+    my_star_level=$(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json | jq -r '.yours.level') || my_star_level=1
+    gscore=$(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json | jq -r '.score')
+    myfriendship=$(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'${G1PUB}'"))')
 
     ## OH MY FRIEND !
     if [[ "${my_star_level}" != "null" && "${liking_me}" != "${G1PUB}" ]]
@@ -216,7 +216,7 @@ do
         echo "LIKING with ${my_star_level} stars : Friend Ŋ1 SCORE  $gscore "
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}
 
-        cp ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/${liking_me}.Gstars.json
+        cp ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json
         echo "${my_star_level}" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level && echo "***** ${my_star_level} STARS *****"
 
         ## GET FRIEND GCHANGE PROFILE
