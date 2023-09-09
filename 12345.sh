@@ -185,11 +185,11 @@ while true; do
 
     case $CMD in
         "salt")
-            exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" &
+            exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
         ;;
 
         "player")
-            exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" &
+            exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
         ;;
 
         "qrcode")
@@ -198,6 +198,10 @@ while true; do
 
         "uplanet")
             exec ${MY_PATH}/API/UPLANET.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        ;;
+
+        "amzqr")
+            exec ${MY_PATH}/API/AMZQR.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
         ;;
 
         "")
@@ -212,7 +216,7 @@ while true; do
             [[ ! -s ${MY_PATH}/API/${CMD^^}.sh ]] \
             && ( echo "$HTTPCORS
             ERROR UNKNOWN $CMD : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
-            || exec ${MY_PATH}/API/${CMD^^}.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" &
+            || exec ${MY_PATH}/API/${CMD^^}.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
 
         ;;
 
