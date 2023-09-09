@@ -13,8 +13,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
-PORT=12345
-[[ $(zIp) ]] && PORT=45780
+PORT=45779
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
     echo "YOU=$YOU"
@@ -39,7 +38,7 @@ Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 '
 echo "_____________________ $PORT ________________________________ $(date)"
-echo "LAUNCHING Astroport  API Server - TUBE : $LIBRA - "
+echo "LAUNCHING Astroport  API Server : ASTROPORT : ${myASTROPORT}"
 echo
 echo "_________________________________________________________"
 
@@ -52,42 +51,37 @@ while true; do
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    [[ $(zIp) ]] && PORT=45779
+
+    PORT=$(cat ~/.zen/tmp/PORT) || PORT=45779
+
+    # EACH VISITOR RECEIVE COMMAND RESPONSE ON
+    #~ ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
+    #~ [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
+                #~ ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
+
+    #~ [ ${PORT} -eq 12345 ] && PORT=$((PORT+1)) ## AVOID _12345.sh SWARM SUBMAP PORT
+
     # ZIP
     if [[ $(zIp) ]]; then
-        PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## ♥Box : OPEN FIREWALL 1234 12345 45780 45781
-    else
-    # EACH VISITOR RECEIVE COMMAND RESPONSE ON
-    ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
-    [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
-                ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
+        PORT=$((PORT+1)) && [ ${PORT} -ge 45781 ] && PORT=45780 ## ♥Box : OPEN FIREWALL 1234 12345 45780 45781 ... 45790
     fi
 
-    [ ${PORT} -eq 12345 ] && PORT=$((PORT+1)) ## AVOID _12345.sh SWARM SUBMAP PORT
+    PORT=$((PORT+1)) && [ ${PORT} -ge 45791 ] && PORT=45780 ## WAN ASTROPORT 45780 45781 ... 45790
+
+    echo ${PORT} > ~/.zen/tmp/PORT
 
     ## CHECK PORT IS FREE & KILL OLD ONE
+    echo "SEARCHING FOR PORT ${PORT}"
+    ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep'
     pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | cut -d " " -f 1)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "$(date) KILLING LOST $pidportinuse"
 
+    ### START MAP STATION 12345
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
     maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
     [[ ! $maprunning ]] \
-    && echo '(ᵔ◡◡ᵔ) LAUNCHING '${myASTROPORT}:'12345 (ᵔ◡◡ᵔ)' \
+    && echo '(ᵔ◡◡ᵔ) MAP LAUNCHING http://'${myIP}':12345 (ᵔ◡◡ᵔ)' \
     && exec $MY_PATH/_12345.sh &
-
-    ############### ACTIVATE USE ON QUICK IPFS DRIVE
-    ### CREATE IPNS KEY - ACTIVATE WHITH ENOUGH BOOTSTRAP
-    #~ echo
-    #~ ipfs key rm ${PORT} > /dev/null 2>&1
-    #~ SESSIONNS=$(ipfs key gen ${PORT})
-    #~ echo "IPNS SESSION ${myIPFS}/ipns/$SESSIONNS CREATED"
-
-        ### # USE IT #
-        ### MIAM=$(echo ${PORT} | ipfs add -q)
-        ### ipfs name publish --allow-offline -t 180s --key=${PORT} /ipfs/$MIAM &
-
-    ###############
-    ###############
 
     # RESET VARIABLES
     CMD="" THAT="" AND="" THIS=""  APPNAME="" WHAT="" OBJ="" VAL=""
@@ -96,9 +90,14 @@ while true; do
     # REPLACE myHOST in http response template (fixing next API meeting point)
     echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
     myHtml >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    sed -i -e "s~\"http://127.0.0.1:1234/\"~\"$(myIpfs)\"~g" \
-        -e "s~http://${myHOST}:12345~http://${myIP}:${PORT}~g" \
+
+    ## REPLACE RESPONSE PORT
+    sed -i -e "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" \
         ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+
+    ## WAN REDIRECT TO HTTPS:// + /${PORT}
+    [ -z "$isLAN" ] \
+        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)

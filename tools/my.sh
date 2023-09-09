@@ -357,9 +357,8 @@ myReyalpResuPath() {
 
 myHtml() {
     local myHtml=$($RUN sed \
-        -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
         -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
-        -e "s~http://127.0.0.1:12345~http://${myHOST}:12345~g" \
+        -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
         -e "s~http://127.0.0.1:33101~http://${myHOST}:33101~g" \
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
         -e "s~http://g1billet.localhost:33101~${myG1BILLET}~g" \
@@ -424,7 +423,7 @@ myASTROTUBE="https://$(myAstroTube)"
  && myG1BILLET="https://libra.copylaradio.com" \
  || true
 
-## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 45781 )
+## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45790 )
 [ -n "$(zIp)" ] \
  && myASTROPORT="http://$(zIp):1234" \
  && myAPI="http://$(zIp):5001" \
