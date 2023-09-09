@@ -55,7 +55,7 @@ while true; do
     [[ $(zIp) ]] && PORT=45779
     # ZIP
     if [[ $(zIp) ]]; then
-        PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## yunohost : OPEN FIREWALL 1234 12345 45780 45781
+        PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## ♥Box : OPEN FIREWALL 1234 12345 45780 45781
     else
     # EACH VISITOR RECEIVE COMMAND RESPONSE ON
     ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
