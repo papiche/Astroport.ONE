@@ -60,10 +60,10 @@ fi
 ###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
-    # Keep 2nd try of the day
-    [[ ! -s ~/.zen/tmp/_ISTATION ]] \
-        && mv ~/.zen/tmp/ISTATION ~/.zen/tmp/_ISTATION \
-        || cp ~/.zen/tmp/_ISTATION ~/.zen/tmp/ISTATION
+    #~ # Keep 2nd try of the day
+    #~ [[ ! -s ~/.zen/tmp/_ISTATION ]] \
+        #~ && mv ~/.zen/tmp/ISTATION ~/.zen/tmp/_ISTATION \
+        #~ || cp ~/.zen/tmp/_ISTATION ~/.zen/tmp/ISTATION
 
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
         ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
