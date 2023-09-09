@@ -349,17 +349,10 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    <br><h2>${EMAIL}<br> your TW PASS is <br></h2>
+    <br><h2>${EMAIL}<br> remember your TW PASS<br></h2>
     <h1>${NPASS}</h1>
-    <button id='printButton'>Print</button>
-    <script>
-        function printPage() {
-            window.print();
-        }
-        document.getElementById('printButton').addEventListener('click', printPage);
-    </script>
-    ---<br>
-    TELEPORTATION
+    ---
+    <br>TWPORTATION
     <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
