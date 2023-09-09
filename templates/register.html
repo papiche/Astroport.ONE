@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>[Astroport] : G1Visa Application : _HOSTNAME_ :: _IPFSNODEID_ </title>
-    <meta http-equiv="refresh" content="168; url='http://127.0.0.1:12345'" />
+    <meta http-equiv="refresh" content="199; url='https://ipfs.copylaradio.com/ipns/copylaradio.com'" />
     <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/logo.png" />
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/decoration.css" type="text/css" />
     <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/layout.css" type="text/css" />
@@ -253,7 +253,9 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            elem.innerHTML = "<a href=http://127.0.0.1:12345>OK</a>"
+            elem.innerHTML = "<a href=http://127.0.0.1:12345 target='aframe'>RETRY</a>"
+            document.getElementById('aframe').src = 'http://127.0.0.1:12345';
+            document.getElementById('console').style.visibility = 'visible';
         } else {
             elem.innerHTML = timeLeft + " s";
             timeLeft--;

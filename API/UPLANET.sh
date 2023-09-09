@@ -349,7 +349,7 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    <br><h2>${EMAIL}<br> remember your TW PASS<br></h2>
+    <br><h2>${EMAIL}<br> this is your TW PASS<br></h2>
     <h1>${NPASS}</h1>
     ---
     <br>TWPORTATION
