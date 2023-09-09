@@ -31,8 +31,8 @@ header {
 #yellow {
       background: yellow;
       position: absolute;
-      top: 2%;
-      left: 56%;
+      top: 15%;
+      right: 6%;
       width: 180;
       visibility: hidden;
     }
@@ -60,8 +60,8 @@ header {
     visibility: hidden;
     background: rgba(0, 0, 0, 0.7); /* Adjust the background color and opacity as needed */
     color: white;
-    width: 580px;
-    height: 580px;
+    width: 570px;
+    height: 570px;
     position: absolute;
     bottom: 0;
     left: 0;
@@ -88,9 +88,11 @@ header {
 <!--
             <div  id="login"><button onclick="promptUser('login')">LOGIN</button><button onclick="promptUser('logout')">LOGOUT</button></div>
 -->
+<!--
          <div>
         <button onclick="homeAstroportStation('/?qrcode=station', 'tab', 33000)">Ğ1Station</button>
         </div>
+-->
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
         <button onclick="document.getElementById('console').style.visibility = 'visible'; homeAstroportStation( qrURL, 'aframe', 7000);">UMap QR</button>
@@ -107,17 +109,17 @@ header {
 
     <h1><a href="/">U</a><span>Planet</span>
     <br><span><a id="satLink" href="#" title="Sat">&nbsp;*&nbsp;</a>(<a href="https://ipfs.copylaradio.com/ipns/copylaradio.com">qo-op</a>)<a id="mapLink" href="#" title="Map">&nbsp;*&nbsp;</a></span></h1>
+<span>Umap</span> [<span id='LAT'></span>]-[<span id='LON'></span>] <span>registration</span><br>
 
         <span>Email : </span><input name=uplanet value=''></br>
 
     <div id="yellow">
         <input name='salt' value='0.00'>
-        <h3><a target="info" title="CHECK BY YOURSELF" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a>
+        <h3><a target="info" title="CHECK PORT" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a>
         </h3>
         <input name='pepper' value='0.00'><br>
     </div>
         <input type=hidden name=g1pub value=''></br>
-(<span id='LAT'></span>:<span id='LON'></span>) registration<br><br>
 
         <input type='submit' value='[(♥‿‿♥)]'>
 
