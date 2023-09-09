@@ -259,7 +259,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtH
 | `pay` | `integer` | **Required** G1 AMOUNT |
 | `g1pub` | `G1PUB` |  **Required**  destination "wallet key" |
 
-## ➤ PLAYER ZONE (API Station qui héberge ${PLAYER})
+## ➤ PLAYER ZONE (disponible uniquement sur la Station qui héberge ${PLAYER})
 ### ```/?player=${PLAYER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
 ###  Exporter Tiddlers.json depuis son TW selon valeur des "tags" ( ici TAG=G1CopierYoutube)
@@ -285,13 +285,38 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 | `youtube or pdf` | `string` | **Required** URL kind = URL |
 
 
+## ➤ AMZQR : Create a QRCode with "amzqr"
+### ```/?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `amzqr` | `string` | **Required** the qrcode string |
+| `logo` | `string` | **Required** ./images/${IMAGE}.png |
+
+check available "logo.png" in [./images](./images)
+
+## ➤ UPLANET : Create Umap, G1Card & G1Visa for PLAYER (email)
+### ```/?uplanet=${PLAYER}&salt=${LAT}&pepper=${LON}&g1pub=${PASS}```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `uplanet` | `email` | **Required** Your EMAIL token |
+| `salt` | `decimal` | **Required** LATITUDE with 2 decimals digits |
+| `pepper` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
+| `g1pub` | `string` | **Facultative** choose Umap G1Card PASS |
+
+Create à Umap key (LAT/LON), then a PLAYER TW with GPS as Umap IPNS reference
+This API is used by OSM2IPFS code.
+
+DEMO : https://ipfs.copylaradio.com/ipns/copylaradio.com
+
 ### QRCODE (API SandBox)
 ```http
 GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1CARD_STRING}
 ```
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
-| `qrcode` | `string` | **Required**. Your G1PUB token |
+| `qrcode` | `string` | **Required**. Your G1PUB or ASTRONAUTENS or PGP_G1CARD token |
 
 > Look for details & extend as you like in [~/.zen/Astroport.ONE/API/QRCODE.sh](API/QRCODE.sh)
 
