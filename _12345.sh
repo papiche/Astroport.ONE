@@ -26,9 +26,6 @@ ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=
 ## WHAT IS NODEG1PUB
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 
-## RESET SWARM LOCAL CACHE
-rm -Rf ~/.zen/tmp/swarm/*
-
 ##############################################
 [[ ${IPFSNODEID} == "" || ${IPFSNODEID} == "null" ]] && echo "IPFSNODEID is empty" && exit 1
 mkdir -p ~/.zen/tmp/swarm
@@ -94,6 +91,11 @@ while true; do
         ipfsnodeid=${bootnode##*/}
 
         [[ ${ipfsnodeid} == ${IPFSNODEID} ]] && echo "MYSELF : ${IPFSNODEID} - CONTINUE" && continue
+
+        [[ ${ipfsnodeid} == "null" || ${ipfsnodeid} == "" ]] && echo "BAD ${IPFSNODEID} - CONTINUE" && continue
+
+        ## RESET SWARM LOCAL CACHE
+        rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
         mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
 
         ## GET bootnode IP

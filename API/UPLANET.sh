@@ -121,7 +121,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     echo "VALID ${EMAIL} EMAIL OK"
     ###################################################
-    ## GET NETWORK CACHE - 42s - UNLEASHED COMON BLOCKCHAIN
+    ## GET NETWORK CACHE - UNLEASHED LAT LON COMMON BLOCKCHAIN
     echo "ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
     ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
