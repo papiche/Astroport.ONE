@@ -122,8 +122,8 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     echo "VALID ${EMAIL} EMAIL OK"
     ###################################################
     ## GET NETWORK CACHE - 42s - UNLEASHED COMON BLOCKCHAIN
-    echo "ipfs --timeout 26s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
-    ipfs --timeout 26s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
+    echo "ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
+    ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
     ## CHECK if TW is HERE
     [[ -s ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]] \
