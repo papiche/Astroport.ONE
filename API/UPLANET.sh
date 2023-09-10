@@ -326,7 +326,7 @@ echo "$HTTPCORS
     <html>
     <head>
     <title>[Astroport] $LAT $LON + ${EMAIL} </title>
-    <meta http-equiv=\"refresh\" content=\"42; url='${myIPFS}/ipns/${TWADD}'\" />
+    <meta http-equiv=\"refresh\" content=\"100; url='${myIPFS}/ipns/${TWADD}#AstroID'\" />
     <style>
         #countdown { display: flex; justify-content: center; align-items: center; color: #0e2c4c; font-size: 20px; width: 60px; height: 60px; background-color: #e7d9fc; border-radius: 50%;}
     </style>
@@ -352,11 +352,11 @@ echo "$HTTPCORS
     <br><h2>${EMAIL}<br> your TW PASS is<br></h2>
     <h1>${NPASS}</h1>
     ---
-    <br><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TWPORTATION</a>
+    <br>Try <a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TWPORTATION</a>
     <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
-    var timeLeft = 42;
+    var timeLeft = 90;
     var elem = document.getElementById('countdown');
     var timerId = setInterval(countdown, 1000);
 
