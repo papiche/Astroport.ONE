@@ -104,7 +104,7 @@ while true; do
 
         ## IPFS GET TO /swarm/${ipfsnodeid}
         echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-        [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ipfsnodeid} /ipns/${ipfsnodeid}/
+        ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ipfsnodeid} /ipns/${ipfsnodeid}/
         echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
 
         ## SHOW WHAT WE GET
@@ -132,7 +132,7 @@ while true; do
                 cznod=$(${MY_PATH}/tools/ipfs_to_g1.py ${znod} 2>/dev/null)
                 [[ ${cznod} == "" || ${cznod} == "null" ]] && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" && continue
 
-                if [[ -d ~/.zen/tmp/swarm/${znod} ]]; then
+                if [[ ! -d ~/.zen/tmp/swarm/${znod} ]]; then
                     echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
                     mkdir -p ~/.zen/tmp/swarm/${znod}
                     ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
