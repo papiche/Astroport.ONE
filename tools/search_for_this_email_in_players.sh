@@ -25,7 +25,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) ## SWARM
     [[ ! $INDEX ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
-    echo "TW=${INDEX}"
+    echo "export TW=${INDEX}"
 
     ## EXTRACT DATA FROM TW
     mkdir -p ~/.zen/tmp/${MOATS}

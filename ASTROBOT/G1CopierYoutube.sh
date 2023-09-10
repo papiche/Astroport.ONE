@@ -59,7 +59,7 @@ for YURL in $(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.js
     echo "Extracting video playlist into yt-dlp.cache.${PLAYER}"
 
     ### yt-dlp.command
-    CMD=$(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command 2>/dev/null | grep "$YURL" | tail -n 1)
+    CMD=$(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command 2>/dev/null | grep -- "$YURL" | tail -n 1)
     if [[ ! $CMD ]]; then
         echo "${PLAYER}&$YURL:$MOATS" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command
         echo "NOUVEAU CANAL ${PLAYER}&$YURL:$MOATS"
@@ -146,13 +146,17 @@ if [[ ! ${TIDDLER} ]]; then
         [[ -s "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] && ffmpeg -loglevel quiet -i "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "${HOME}/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
 
         if [[ ! -s "${HOME}/.zen/tmp/yt-dlp/${ZFILE}"  ]]; then
-            echo "No FILE -- TRYING TO RESTORE CACHE FROM TW --"
+            echo "No FILE -- TRYING TO RESTORE CACHE FROM TW -- ${ZFILE}"
             tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
                     --render '.' "$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}"
             if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json ]]; then
                 rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" 2>/dev/null
                 ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+            else
+                ## REMOVE FILE FROM .yt-dlp.list - RETRY NEXT TIME
+                grep -v -- "$YID" ${HOME}/.zen/.yt-dlp.list > /tmp/.yt-dlp.list
+                mv /tmp/.yt-dlp.list ${HOME}/.zen/.yt-dlp.list
             fi
             continue
         fi
