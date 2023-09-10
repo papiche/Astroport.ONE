@@ -192,13 +192,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("LAT").innerHTML = latElement.value ;
     document.getElementById("LON").innerHTML = lonElement.value ;
 
-    if (uplanet === "@" || uplanet === "") {
+    if (uplanetElement.value === "@" || uplanetElement.value === "") {
       // Hide the countdown div
       const countdownDiv = document.getElementById('countdown');
       if (countdownDiv) { // Check if the element exists
         countdownDiv.style.visibility = 'hidden';
       }
-    } else {
+   } else {
         const submitDiv = document.getElementById('submit');
           if (submitDiv) { // Check if the element exists
             submitDiv.style.visibility = 'hidden';
