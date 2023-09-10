@@ -216,14 +216,19 @@ do
         echo "LIKING with ${my_star_level} stars : Friend Ŋ1 SCORE  $gscore "
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}
 
-        cp ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/ && rm -f ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json
-        echo "${my_star_level}" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level && echo "***** ${my_star_level} STARS *****"
+        cp ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/
+        echo "${my_star_level}" > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/stars.level ## LOCAL
+        echo "${my_star_level}" > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.stars.level ## SWARM
+        echo "***** ${my_star_level} STARS *****"
 
         ## GET FRIEND GCHANGE PROFILE
         echo "GET FRIEND gchange.json"
         ${MY_PATH}/timeout.sh -t 20 \
         ${MY_PATH}/jaklis/jaklis.py get \
         -p ${liking_me} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
+
+        cp ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json \
+                ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.gchange.json
 
         FRIENDTITLE=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json | jq -r '.title')
 
@@ -328,6 +333,9 @@ do
             echo "Ami(s) de cet Ami $linking_me : $nid"
             friend_of_friend=$(cat ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/${liking_me}.Gstars.json | jq -r '.likes[] | select(.issuer | strings | test("'$nid'"))')
             echo "$friend_of_friend" | jq -r > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/FoF_$nid.json
+
+            cp ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/FoF_$nid.json \
+                    ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.FoF_$nid.json
 
         done
 

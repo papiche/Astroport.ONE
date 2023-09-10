@@ -509,7 +509,7 @@ Vos Secrets :
 * WALLET : https://cesium.app
 * MARKET : https://gchange.fr
 
-U Planet : https://ipfs.copylaradio.com/ipns/copylaradio.com
+U Planet : ${myUPLANET}
 Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
 
 echo

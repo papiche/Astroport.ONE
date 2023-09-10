@@ -99,6 +99,9 @@ while true; do
     [ -z "$isLAN" ] \
         && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
 
+    ## UPLANET HOME LINK REPLACEMENT
+    sed -i -e "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
