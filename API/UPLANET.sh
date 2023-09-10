@@ -252,7 +252,7 @@ echo "<html>
     </style>
     </head><body>
     <button id='printButton'>Print</button>
-    <h1>U U Planet ID registration : $LAT/$LON </h1>
+    <h1>U Planet ID registration : $LAT/$LON </h1>
     <h2>${EMAIL}</h2>
     <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
     <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
@@ -349,10 +349,10 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    <br><h2>${EMAIL}<br> this is your TW PASS<br></h2>
+    <br><h2>${EMAIL}<br> your TW PASS is<br></h2>
     <h1>${NPASS}</h1>
     ---
-    <br>TWPORTATION
+    <br><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TWPORTATION</a>
     <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
