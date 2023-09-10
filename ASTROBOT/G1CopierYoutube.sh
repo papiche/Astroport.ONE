@@ -208,6 +208,8 @@ if [[ ! ${TIDDLER} ]]; then
 
         echo "Creating Youtube \"${YID}\" tiddler : G1CopierYoutube !"
 
+        CTITLE=$(echo ${ZFILE} | sed 's~_~ ~g' | sed 's~\.~ ~g')
+
         ## WAN ADD <<hide tiddler-controls>> TO text jq 'map(.text += "<<hide tiddler-controls>>")'
         [[ ! isLAN ]] && TEXT="$TEXT <<hide tiddler-controls>>"
         echo $TEXT
@@ -235,7 +237,7 @@ if [[ ! ${TIDDLER} ]]; then
     "youtubeid": "'${YID}'",
     "zurl": "'${ZYURL}'",
     "issuer": "'${PLAYER}'",
-    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} $(echo ${ZFILE} | sed 's~_~ ~g' | sed 's~\.~ ~g')'"
+    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} ${CTITLE}'"
   }
 ]
 ' > "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/$YID.TW.json"
