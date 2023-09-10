@@ -121,7 +121,9 @@ header {
     </div>
         <input type=hidden name=g1pub value=''></br>
 
-        <input type='submit' value='[(♥‿‿♥)]'>
+        <input id='submit' type='submit' value='[(♥‿‿♥)]'>
+        <span id='countdown'>UPlanet</span>
+
 
 </form>
 
@@ -149,7 +151,6 @@ header {
 
    </h2>
 <br>
-<h1><span id='countdown'>G1Visa registration</span></h1>
 <a href="https://opencollective.com/monnaie-libre/" target="funding">- (^‿‿^) -</a>
 </main>
 </body>
@@ -190,6 +191,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById("LAT").innerHTML = latElement.value ;
     document.getElementById("LON").innerHTML = lonElement.value ;
+
+    if (uplanet === "@" || uplanet === "") {
+      // Hide the countdown div
+      const countdownDiv = document.getElementById('countdown');
+      if (countdownDiv) { // Check if the element exists
+        countdownDiv.style.visibility = 'hidden';
+      }
+    } else {
+        const submitDiv = document.getElementById('submit');
+          if (submitDiv) { // Check if the element exists
+            submitDiv.style.visibility = 'hidden';
+          }
+    }
+
 
 });
 
@@ -246,12 +261,13 @@ function testLatency(cb) {
 
     document.getElementById("countdown").innerHTML = "";
 
-    var timeLeft = 42;
+    var timeLeft = 90;
     var elem = document.getElementById("countdown");
     var timerId = setInterval(countdown, 999);
 
     function countdown() {
         if (timeLeft == -1) {
+            document.getElementById('countdown').style.visibility = 'visible';
             clearTimeout(timerId);
             elem.innerHTML = "<a href=http://127.0.0.1:12345 target='aframe'>RETRY</a>"
             document.getElementById('aframe').src = 'http://127.0.0.1:12345';
