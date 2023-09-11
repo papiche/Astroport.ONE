@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrow Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url('image.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            height: 100vh;
+        }
+
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .arrow {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.7); /* Add a semi-transparent background color */
+            color: white; /* Set arrow color to white */
+            font-size: 24px; /* Increase arrow font size */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%; /* Make the arrows circular */
+        }
+
+        #north { top: 20px; left: calc(50% - 25px); }
+        #south { bottom: 20px; left: calc(50% - 25px); }
+        #east { top: calc(50% - 25px); right: 20px; }
+        #west { top: calc(50% - 25px); left: 20px; }
+        #northeast { top: 20px; right: 20px; }
+        #northwest { top: 20px; left: 20px; }
+        #southeast { bottom: 20px; right: 20px; }
+        #southwest { bottom: 20px; left: 20px; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="north" class="arrow" onclick="alert('North Arrow Clicked')">&#8593;</div>
+        <div id="south" class="arrow" onclick="alert('South Arrow Clicked')">&#8595;</div>
+        <div id="east" class="arrow" onclick="alert('East Arrow Clicked')">&#8594;</div>
+        <div id="west" class="arrow" onclick="alert('West Arrow Clicked')">&#8592;</div>
+        <div id="northeast" class="arrow" onclick="alert('Northeast Arrow Clicked')">&#8599;</div>
+        <div id="northwest" class="arrow" onclick="alert('Northwest Arrow Clicked')">&#8598;</div>
+        <div id="southeast" class="arrow" onclick="alert('Southeast Arrow Clicked')">&#8600;</div>
+        <div id="southwest" class="arrow" onclick="alert('Southwest Arrow Clicked')">&#8601;</div>
+    </div>
+</body>
+</html>
+
