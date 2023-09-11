@@ -22,15 +22,18 @@ mkdir ~/.zen/tmp/${MOATS}
 ############################
     ## RUNING FOR ALL UMAP FOUND IN STATION MAP CACHE : "_LAT_LON"
 
-    ## SEARCH UMAP
+    ## SEARCH UMAP (created by PLAYER.refresh.sh)
     UMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
     echo "FOUND : ${UMAPS[@]}"
 
     for UMAP in ${UMAPS[@]}; do
 
+        start=`date +%s`
         echo ">>> REFRESHING ${UMAP}"
         LAT=$(echo ${UMAP} | cut -d '_' -f 2)
         LON=$(echo ${UMAP} | cut -d '_' -f 3)
+
+        [[ $LAT == "" || $LON == "" ]] && echo ">> ERROR BAD $LAT $LON" && continue
 
         ##############################################################
         WALLET=$(${MY_PATH}/../tools/keygen -t duniter "$LAT" "$LON")
@@ -47,9 +50,13 @@ mkdir ~/.zen/tmp/${MOATS}
         ###############################################
 
         ## FORMAT CONTROL
-        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh ]] \
-            && echo ">>> ERROR - UMAP.refresh MISSING - ERROR -" \
+        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP} ]] \
+            && echo ">>> ERROR - UMAP BAD FORMAT - ERROR -" \
             && continue
+
+        ## UMAP.refresh CORRECTION
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh ]] \
+            && echo "${IPFSNODEID}" > ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh
 
         ########################################################
         ## NODE  SELECTION in UMAP.refresh
@@ -78,6 +85,8 @@ mkdir ~/.zen/tmp/${MOATS}
         ######################################################## # NODE  SELECTION in UMAP.refresh
 
         ##############################################################
+        ##############################################################
+        ##############################################################
         ## CALCULATE SURROUNDING UMAPS
         ##############################################################
         # North Umap
@@ -89,6 +98,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ipfs key rm ${NWALLET} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/NWALLET.priv "$NLAT" "$NLON"
         NUMAPNS=$(ipfs key import ${NWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/NWALLET.priv)
+        ipfs key rm ${NWALLET}
 
         ##############################################################
         # South Umap
@@ -173,6 +183,31 @@ mkdir ~/.zen/tmp/${MOATS}
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SEWALLET.priv "$SELAT" "$SELON"
         SWUMAPNS=$(ipfs key import ${SEWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SEWALLET.priv)
         ipfs key rm ${SEWALLET}
+
+        ##############################################################
+        ############################ PUBLISHING UMAP
+        ##############################################################
+        UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1)
+
+        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain 2>/dev/null)
+        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_moats 2>/dev/null)
+        [[ ${ZCHAIN} && ${ZMOATS} ]] \
+            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain.${ZMOATS} \
+            && echo "UPDATING MOATS"
+
+        ## DOES CHAIN CHANGED or INIT ?
+        [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
+            && echo "${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain \
+            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_moats \
+            && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
+
+        echo "PUBLISHING NEW UMAPROOT : http://ipfs.localhost:8080/ipfs/${UMAPROOT}"
+
+            ipfs name publish --key=${WALLET} /ipfs/${UMAPROOT}
+            end=`date +%s`
+            ipfs key rm ${WALLET} ## REMOVE IPNS KEY
+
+            echo "(UMAP) PUBLISH time was "`expr $end - $start` seconds.
 
     done
 

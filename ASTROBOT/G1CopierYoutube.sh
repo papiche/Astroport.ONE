@@ -224,7 +224,9 @@ if [[ ! ${TIDDLER} ]]; then
         [[ ! isLAN ]] && TEXT="$TEXT <<hide tiddler-controls>>"
         echo $TEXT
 
-        echo '[
+    TIDDLER="${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/${YID}.TW.json"
+
+    echo '[
   {
     "created": "'${MOATS}'",
     "resolution": "'${RES}'",
@@ -250,21 +252,19 @@ if [[ ! ${TIDDLER} ]]; then
     "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} ${CTITLE}'"
   }
 ]
-' > "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/$YID.TW.json"
+' > ${TIDDLER}
 
     tot=$((tot+1))
 
-    TIDDLER="${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/$YID.TW.json"
-
 else
     ###################################################################
-    echo
+    echo "${TIDDLER} FOUND"
     ###################################################################
     ## TODO : ADD EMAIL TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
     continue
 fi
 
-cp -f "${TIDDLER}" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/"
+        cp -f "${TIDDLER}" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/"
 
 
 #################################################################
@@ -275,20 +275,21 @@ cp -f "${TIDDLER}" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/"
 
         rm -f ~/.zen/tmp/${IPFSNODEID}/newindex.html
 
-        echo  ">>> Importing ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json"
+        echo  ">>> Importing ${TIDDLER}"
 
         tiddlywiki --load ${INDEX} \
-                        --import "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "application/json" \
+                        --import "${TIDDLER}" "application/json" \
                         --output ~/.zen/tmp/${IPFSNODEID} --render "$:/core/save/all" "newindex.html" "text/plain"
-
-# --deletetiddlers '[tag[CopierYoutube]]' ### REFRESH CHANNEL COPY
 
         if [[ -s ~/.zen/tmp/${IPFSNODEID}/newindex.html ]]; then
 
             ## COPY JSON TIDDLER TO PLAYER
-            ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+            ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" \
+                    "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
 
-            [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] && cp ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} && echo "===> Mise à jour ${INDEX}"
+            [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] \
+                && mv ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} \
+                && echo "===> Mise à jour ${INDEX}"
 
         else
             echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"

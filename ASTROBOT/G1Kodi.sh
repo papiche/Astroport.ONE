@@ -264,49 +264,7 @@ done < ~/.zen/tmp/${MOATS}/${PLAYER}.movie.id
 ## VERIFY, COULD BE DONE IN PLAYER REFRESH
 if [[ $(diff ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${INDEX}) ]]; then
 
-    cp ${INDEX} ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/index.html
-    ## PLAYER.refresh will detect change & publish
-
-    #~ ################################################
-    #~ ## GET TW CHAIN
-    #~ tiddlywiki --load ${INDEX} \
-        #~ --output ~/.zen/tmp/${MOATS} \
-        #~ --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-    #~ ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-    #~ [[ $ASTROPORT == "" ]] && echo "INCOMPATIBLE TW - ADD Astroport TIDDLER - CORRECTION NEEDED -" && exit 1
-
-    #~ CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
-    #~ [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] && echo "FATAL ERROR TW CHAIN IS BROKEN : CHECK ${INDEX} - EXIT -" && exit 1
-    #~ ## CHAINING
-    #~ echo "CURCHAIN=$CURCHAIN"
-    #~ [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
-    #~ && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
-    #~ && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
-    #~ && sed -i "s~$CURCHAIN~$ZCHAIN~g" ${INDEX}
-
-    #~ ################################################
-    #~ ## UPDATE PLAYER TW
-    #~ espeak "I P N S Publishing. Please wait..."
-    #~ cp ${INDEX} ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-    #~ cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-                                #~ ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
-
-    #~ TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-    #~ ipfs name publish --key=${PLAYER} /ipfs/$TW
-
-    #~ ## UPDATE LAST KNOWN FOR NEXT CHAIN
-    #~ echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
-    #~ echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
-
-    #~ echo "================================================"
-    #~ echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
-    #~ echo "================================================"
-    #~ echo
-    #~ espeak "DONE "
-
-#~ else
-
+    cp ${INDEX} ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
     echo "CHANGED TW"
 
 fi

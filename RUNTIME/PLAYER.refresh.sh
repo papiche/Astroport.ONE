@@ -258,9 +258,9 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## Publish on LAT/ON key on 12345 CACHE
     [[ ${LAT} && ${LON} ]] \
-        && mkdir ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
+        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
         && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
+        && echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
 
     ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
