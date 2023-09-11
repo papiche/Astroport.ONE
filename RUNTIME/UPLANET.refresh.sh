@@ -31,6 +31,7 @@ mkdir ~/.zen/tmp/${MOATS}
         echo ">>> REFRESHING ${UMAP}"
         LAT=$(echo ${UMAP} | cut -d '_' -f 2)
         LON=$(echo ${UMAP} | cut -d '_' -f 3)
+
         ##############################################################
         WALLET=$(${MY_PATH}/../tools/keygen -t duniter "$LAT" "$LON")
         [[ ! ${WALLET} ]] && echo "ERROR generating WALLET" && exit 1
@@ -38,16 +39,46 @@ mkdir ~/.zen/tmp/${MOATS}
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/WALLET.priv "$LAT" "$LON"
         ipfs key rm ${WALLET} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         UMAPNS=$(ipfs key import ${WALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/WALLET.priv)
+        ##############################################################
 
         ## GET ONLINE UMAPNS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
         ipfs get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
+        ###############################################
 
-        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP} ]] \
-            && echo "UMAP IS BAD FORMAT - PLEASE CORRECT -" \
-            && exit 1
+        ## FORMAT CONTROL
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh ]] \
+            && echo ">>> ERROR - UMAP.refresh MISSING - ERROR -" \
+            && continue
 
+        ########################################################
+        ## NODE  SELECTION in UMAP.refresh
+        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh"
+        ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
+        STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
+        # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))
 
+        IAMINBOOTSTRAP=$(echo ${STRAPS[@]} | grep ${IPFSNODEID})
+        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=$(cat ${UREFRESH} | tail -n 1) ## LAST NODE
+
+        # PRIORITY TO BOOSTRAP
+        for NODE in ${ALLNODES[@]}; do
+            for STRAP in ${STRAPS[@]}; do
+                [[ "$NODE" == "$STRAP" ]] && ACTINGNODE=$(NODE) ## PREFERED 1ST NODE BEING BOOSTRAP
+            done
+        done
+
+        [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
+            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - NEXT -" \
+            && continue
+
+        # SHUFFLE UMAP.refresh
+        cat ${UREFRESH} | shuf > ${UREFRESH}.shuf
+        mv ${UREFRESH}.shuf ${UREFRESH}
+        ######################################################## # NODE  SELECTION in UMAP.refresh
+
+        ##############################################################
+        ## CALCULATE SURROUNDING UMAPS
         ##############################################################
         # North Umap
         NLAT=$(echo "$LAT + 0.01" | bc)

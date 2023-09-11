@@ -136,7 +136,8 @@ while read LINE; do
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
 
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-        echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+        [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
 
         if [[ ! ${ASTROTW} ]]; then
 
@@ -227,7 +228,8 @@ while read LINE; do
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
     #### SEARCH FOR PALPAY ACOUNTS : TODO BETTER §§§
     $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
-echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+    echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+    [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 

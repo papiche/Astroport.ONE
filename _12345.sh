@@ -36,8 +36,8 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 
 ## TIMESTAMPING
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
-echo "$(date -u)" > ~/.zen/tmp/.MySwarm.staom
+echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
+echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.staom
 
 ############################################################
 ##  MySwarm KEY INIT & SET

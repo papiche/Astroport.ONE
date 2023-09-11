@@ -19,6 +19,9 @@ PLAYERONE="$1"
 
 echo "FOUND : ${PLAYERONE[@]}"
 
+echo "CLEANING UPLANET KEYS"
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*
+
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/${PLAYER:-undefined} ]] && echo "BAD ${PLAYERONE}" && continue
@@ -247,7 +250,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
     ## CREATING 30 DAYS RSS STREAM
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                        --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'
+                        --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
@@ -275,6 +278,10 @@ for PLAYER in ${PLAYERONE[@]}; do
 done
 echo "PLAYER.refresh DONE."
 
+echo "REFRESHING MAP"
 ${MY_PATH}/MAP.refresh.sh
+
+echo "REFRESHING UPLANET"
+${MY_PATH}/UPLANET.refresh.sh
 
 exit 0

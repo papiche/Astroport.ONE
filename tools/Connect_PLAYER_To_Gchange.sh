@@ -153,7 +153,6 @@ echo "### ${PLAYER}  #################"
 echo "SCANNING - ${G1PUB} STAR FRIENDS"
 echo "########################################################################"
 ################## CHECKING WHO GAVE ME STARS
-################## BOOTSTRAP LIKES THEM BACK
 ################## SEND ipfstryme MESSAGES to FRIENDS
 rm -f ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/my_star_level
 

@@ -97,6 +97,7 @@ while read LINE;
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
         echo "--- CACHE SEARCH FOR $YID ---" && TIDDLER=$(ls -t "${HOME}/.zen/game/players/"*"/G1CopierYoutube/$YID.TW.json" 2>/dev/null | head -n 1)
+        ## TODO CORRECT - CACHE CHANGED -
         [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
         [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/swarm/"*"/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
         [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" \
@@ -143,23 +144,28 @@ if [[ ! ${TIDDLER} ]]; then
 
         ############################################################################
         ### CHECK RESULT CONVERT MKV TO MP4
-        [[ -s "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] && ffmpeg -loglevel quiet -i "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "${HOME}/.zen/tmp/yt-dlp/$TITLE.mp4" # TRY TO CONVERT MKV TO MP4
+        [[ -s "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] \
+            && ffmpeg -loglevel quiet -i "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "${HOME}/.zen/tmp/yt-dlp/$TITLE.mp4" \
+            && rm "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"
 
         if [[ ! -s "${HOME}/.zen/tmp/yt-dlp/${ZFILE}"  ]]; then
             echo "No FILE -- TRYING TO RESTORE CACHE FROM TW -- ${ZFILE}"
             tiddlywiki  --load ${INDEX} \
                     --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
                     --render '.' "$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}"
-            if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json ]]; then
+
+            if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${YID}.TW.json ]]; then
                 rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" 2>/dev/null
-                ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+                ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${YID}.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
             else
                 ## REMOVE FILE FROM .yt-dlp.list - RETRY NEXT TIME
                 grep -v -- "$YID" ${HOME}/.zen/.yt-dlp.list > /tmp/.yt-dlp.list
                 mv /tmp/.yt-dlp.list ${HOME}/.zen/.yt-dlp.list
             fi
+
             continue
         fi
+
         echo
 
 ####################################################

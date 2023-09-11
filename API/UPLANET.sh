@@ -277,11 +277,6 @@ echo "<html>
         <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/MESSAGE.html
 
-## HERE YOU PLUG INDEX
-# echo "BOO" > ~/.zen/tmp/${MOATS}/index.html
-## WHO WILL BE THE G1 WINNER OF THE AREA
-# SHOW G1 STATION WALLETS
-
 ## TAKING CARE OF THE CHAIN
 ########################################
 IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
@@ -309,6 +304,12 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
 echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
 ################################################################################
+
+########################################
+### USED BY UPLANET.refresh.sh : inform which IPFSNODEID's are UMAP keepers
+UREFRESH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/UMAP.refresh"
+[[ ! $(cat ${UREFRESH} | grep ${IPFSNODEID} ) ]] \
+    && echo "${IPFSNODEID}" >> ${UREFRESH}
 ########################################
 
 ########################################

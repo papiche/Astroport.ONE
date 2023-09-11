@@ -107,7 +107,7 @@ fi
 
 
 ################################################################################
-TWMODEL="/ipfs/bafybeiai3wvr3jpdpaslx72yfw2ipoc7acrse7aktdpykdairhsgkujsa4"
+TWMODEL="/ipfs/bafybeidmzuostuxqjyp6jinoic4adybxesvdm2onncqpuufo4miy37wxvm"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -276,6 +276,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
         sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
+        sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## AstroID G1CARD Update
         [[ ! $AstroID ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
