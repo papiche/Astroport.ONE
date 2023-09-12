@@ -138,6 +138,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
             LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
+            ## STORE IN PLAYER CACHE
+            echo "_${LAT_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
 
             ########### ASTROPORT is not IPFSNODEID => EJECT TW
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)

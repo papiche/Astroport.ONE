@@ -50,12 +50,11 @@ mkdir ~/.zen/tmp/${MOATS}
         ipfs get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-        ## FORMAT CONTROL
+        ## FORMAT CONTROL WARNING
         [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
-            && echo ">>> ERROR - UMAP BAD FORMAT - PLEASE RESET -" && continue
-            #~ && rm -Rf ~/.zen/tmp/${MOATS}/${UMAP}/*.* \
-            #~ && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            #~ && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}
+            && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}
 
         ## UMAP.refresh CORRECTION
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh ]] \
@@ -205,6 +204,18 @@ mkdir ~/.zen/tmp/${MOATS}
     ### SET navigator.html ## MAKE EVOLVE template/umap.html
         cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
         cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_map.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
+
+    ### REFRESH PLAYERS DATA (SHOULD BE THERE, but Station rebuilds it )
+    # FIND WHICH PLAYERS MATCH SAME "_LAT_LON" IN ~/.zen/game/players/*/.umap
+        find ~/.zen/game/players -type f -name ".umap" -exec grep -l "${UMAP}" {} \; | while read umap_file; do
+            player_dir=$(dirname "$umap_file")
+            player_name=$(basename "$player_dir")
+            echo "MATCHING $player_name"
+            playertw=$(cat ${player_dir}/.playerns)
+            mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}
+            echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${playertw}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}/index.html
+        done
+        ## COMPLETE WITH SEARCH IN ~/.zen/tmp/swarm/*/UPLANET/${UMAP} ????
 
         ##############################################################
         ############################ PUBLISHING UMAP

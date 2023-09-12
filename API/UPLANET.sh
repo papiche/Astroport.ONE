@@ -182,7 +182,7 @@ echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ####################################### Umap.png
 ## CREATING Umap_${LAT}_${LON}.png
-echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap_${LAT}_${LON}.png"
+echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap.png & Umap.jpg & Usat.png & Usat.jpg" ## TODO MAYBE KEEP JPG ONLY FOR LOWERING UMAP SIZE
 UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
 USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
 
