@@ -24,7 +24,7 @@ mkdir ~/.zen/tmp/${MOATS}
 
     ## SEARCH UMAP (created by PLAYER.refresh.sh)
     UMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
-    echo "FOUND : ${UMAPS[@]}"
+    echo "FOUND : ${UMAPS[@]}" # "_LAT_LON" directories
 
     for UMAP in ${UMAPS[@]}; do
 
@@ -44,23 +44,26 @@ mkdir ~/.zen/tmp/${MOATS}
         UMAPNS=$(ipfs key import ${WALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/WALLET.priv)
         ##############################################################
 
-        ## GET ONLINE UMAPNS
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        ## IPFS GET ONLINE UMAPNS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
         ipfs get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
-        ###############################################
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         ## FORMAT CONTROL
-        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP} ]] \
-            && echo ">>> ERROR - UMAP BAD FORMAT - ERROR -" \
-            && continue
+        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
+            && echo ">>> ERROR - UMAP BAD FORMAT - PLEASE RESET -" && continue
+            #~ && rm -Rf ~/.zen/tmp/${MOATS}/${UMAP}/*.* \
+            #~ && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
+            #~ && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}
 
         ## UMAP.refresh CORRECTION
-        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh ]] \
-            && echo "${IPFSNODEID}" > ~/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh ]] \
+            && echo "${IPFSNODEID}" > ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh
 
         ########################################################
         ## NODE  SELECTION in UMAP.refresh
-        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${UMAP}/UMAP.refresh"
+        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
         ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
         STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
         # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))

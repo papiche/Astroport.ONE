@@ -6,7 +6,7 @@
 ################################################################################
 ## API: UPLANET
 ## Dedicated to OSM2IPFS & UPlanet Client App
-# ?uplanet=EMAIL&salt=LAT&pepper=LON
+# ?uplanet=EMAIL&salt=LAT&pepper=LON&g1pub=PASS
 ## https://git.p2p.legal/qo-op/OSM2IPFS
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -49,7 +49,7 @@ fi
 ## START MANAGING UPLANET LAT/LON & PLAYER
 mkdir -p ~/.zen/tmp/${MOATS}/
 
-## GET PARAM, with case uplanet="" decalage !
+## GET & VERIFY PARAM
 PLAYER=${THAT}
 [[ ${PLAYER} == "salt"  ]] && PLAYER="@"
 
@@ -107,6 +107,7 @@ EMAIL="${PLAYER,,}" # lowercase
 
 [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR UPLANET LANDING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
+################################ START WORKING WITH KEYS
 ### SESSION "$LAT" "$LON" KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
@@ -114,7 +115,7 @@ EMAIL="${PLAYER,,}" # lowercase
 ###
 
     REDIR="${myIPFS}/ipns/${UMAPNS}"
-    echo "$REDIR"
+    echo "Umap : $REDIR"
 
 ## CHECK WHAT IS EMAIL
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
@@ -125,6 +126,18 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     echo "ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
     ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
 
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "UMAP CONTAINS"
+    ls ~/.zen/tmp/${MOATS}/ ## LOG
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+    ## FORMAT CONTROL
+    [[ ! -d ~/.zen/tmp/${MOATS}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${LAT}_${LON} ]] \
+            && echo ">>> UMAP IS BAD FORMAT - RESET -" \
+            && rm -Rf ~/.zen/tmp/${MOATS}/*.* \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB} \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
+
     ## CHECK if TW is HERE
     [[ -s ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]] \
         && (echo  "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}/TW/${EMAIL}/index.html'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
@@ -132,11 +145,13 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "BAD EMAIL $LAT $LON - OPEN UMAP IPNS -"
+    echo "BAD EMAIL $LAT $LON - DEFAULT OPEN UMAP IPNS LINK -"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
 fi
 
+###########################################
+## NEW EMAIL : CREATE PLAYER with GPS UMAP link
 ###########################################
 ### CREATE Umap G1VISA & G1Card
 echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$LAT"'" "'"$LON"'" "'"$PASS"'" "'"$PASS"'"
@@ -148,11 +163,11 @@ ${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$LAT" "$LON" "$PASS" "${PASS}"##
 ## SALT="$LAT" PEPPER="$LON"
 ######################################################
 echo "UMAP = $LAT:$LON"
-echo "# CALCULATING MAP G1PUB WALLET"
+echo "# CALCULATING UMAP G1PUB WALLET"
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/_cesium.key  "$LAT" "$LON"
 G1PUB=$(cat ~/.zen/tmp/${MOATS}/_cesium.key | grep 'pub:' | cut -d ' ' -f 2)
 [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-echo "MAPG1PUB : ${G1PUB}"
+echo "UMAP G1PUB : ${G1PUB}"
 
 echo "# CALCULATING UMAP IPNS ADDRESS"
 mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB}
@@ -175,10 +190,10 @@ echo ${UMAPGEN}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
 
-## GET MAP ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
+## COPY MAP IMAGE ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
-## GET SAT
+## COPY SAT IMAGE
 chromium --headless --disable-gpu --screenshot=/tmp/Usat.jpg --window-size=1200x1200 "${myIPFS}${USATGEN}"
 chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "${myIPFS}${USATGEN}"
 
@@ -197,6 +212,7 @@ cp /tmp/Usat.png ~/.zen/tmp/${MOATS}/
 rm -f ~/.zen/tmp/${MOATS}/G1*.jpg ## DELETE VISA FROM PREVIOUS VISITOR
 cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.jpg
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
+
 ls ~/.zen/tmp/${MOATS}/
 
     ### SECURE UMap private keys key with PGP
@@ -211,7 +227,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
 
         ## CHECK IF TW EXISTS FOR THIS EMAIL ALREADY
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-        echo "export ASTROTW=${ASTRONAUTENS} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
         [[ ${ASTROTW} ]] && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
         ## Create a redirection to PLAYER (EMAIL/PASS) TW
@@ -221,15 +237,18 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$NPASS"
         TWADD=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.priv)
         ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
+
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
-        ## CREATE OR TRANSFER TW ON CURRENT ASTROPORT
+        ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
         (
         ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
         ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
         ) &
+
 fi
 
-## MAKE A MESSAGE
+# EMAIL have access to the "Key of the Land"
+## MAKE A MESSAGE: ACCESS TO THE UMAP KEY & MAP
 echo "<html>
     <head>
     <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
@@ -277,6 +296,12 @@ echo "<html>
         <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
      </body></html>" > ~/.zen/tmp/${MOATS}/MESSAGE.html
 
+### USED BY UPLANET.refresh.sh : inform which IPFSNODEID's are UMAP keepers
+UREFRESH="${HOME}/.zen/tmp/${MOATS}/${LAT}_${LON}/UMAP.refresh"
+[[ ! $(cat ${UREFRESH} | grep ${IPFSNODEID} ) ]] \
+    && echo "${IPFSNODEID}" >> ${UREFRESH}
+########################################
+
 ## TAKING CARE OF THE CHAIN
 ########################################
 IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
@@ -303,23 +328,16 @@ echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_${EMAIL}.HPASS
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
 echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
-################################################################################
-
-########################################
-### USED BY UPLANET.refresh.sh : inform which IPFSNODEID's are UMAP keepers
-UREFRESH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/UMAP.refresh"
-[[ ! $(cat ${UREFRESH} | grep ${IPFSNODEID} ) ]] \
-    && echo "${IPFSNODEID}" >> ${UREFRESH}
 ########################################
 
 ########################################
-echo "PUBLISHING NEW IPFSROOT : http://ipfs.localhost:8080/ipfs/${IPFSROOT}"
+echo "PUBLISHING NEW IPFSROOT : ${myIPFS}/ipfs/${IPFSROOT}"
 
     (
     ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
     end=`date +%s`
     ipfs key rm ${G1PUB} ## REMOVE IPNS KEY
-    echo "(IPNS) PUBLISH time was "`expr $end - $start` seconds.
+    echo "(UMAP) IPNS PUBLISH FINISHED at "`expr $end - $start` seconds.
     ) &
 
 ## HTTP nc ON PORT RESPONSE
