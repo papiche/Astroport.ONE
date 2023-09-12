@@ -19,7 +19,7 @@ PLAYERONE="$1"
 
 echo "FOUND : ${PLAYERONE[@]}"
 
-echo "CLEANING UPLANET KEYS"
+echo "CLEANING UPLANET KEYS ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*"
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*
 
 ## RUNING FOR ALL LOCAL PLAYERS
@@ -112,7 +112,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
             player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
-            [[ $player != ${PLAYER} ]] \
+            [[ ${player} != ${PLAYER} ]] \
                 && echo "> BAD PLAYER=$player in TW" \
                 && continue \
                 || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
@@ -139,7 +139,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
             ## STORE IN PLAYER CACHE
-            echo "_${LAT_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
+            echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
 
             ########### ASTROPORT is not IPFSNODEID => EJECT TW
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
