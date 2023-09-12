@@ -94,9 +94,9 @@ while true; do
 
         [[ ${ipfsnodeid} == "null" || ${ipfsnodeid} == "" ]] && echo "BAD ${IPFSNODEID} - CONTINUE" && continue
 
-        ## RESET SWARM LOCAL CACHE
-        rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
+        ## PREPARE TO REFRESH SWARM LOCAL CACHE
         mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
+        mkdir -p ~/.zen/tmp/swarm/_${ipfsnodeid}
 
         ## GET bootnode IP
         iptype=$(echo ${bootnode} | cut -d '/' -f 2)
@@ -104,13 +104,27 @@ while true; do
 
         ## IPFS GET TO /swarm/${ipfsnodeid}
         echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-        ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ipfsnodeid} /ipns/${ipfsnodeid}/
-        echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
+        ipfs --timeout 360s get -o ~/.zen/tmp/swarm/_${ipfsnodeid} /ipns/${ipfsnodeid}/
 
         ## SHOW WHAT WE GET
         echo "__________________________________________________"
-        ls ~/.zen/tmp/swarm/${ipfsnodeid}
+        ls ~/.zen/tmp/swarm/_${ipfsnodeid}
         echo "__________________________________________________"
+
+        ## LOCAL CACHE SWITCH WITH LATEST
+        if [[ -s ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats  ]]; then
+            if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) ]]; then
+                rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
+                mv ~/.zen/tmp/swarm/_${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
+                 echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
+            else
+                echo "TimeStamp unchanged : $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats)"
+                continue
+            fi
+        else
+            echo "UNREACHABLE /ipns/${ipfsnodeid}/ "
+            continue
+        fi
 
         ## ASK BOOTSTRAP NODE TO GET MY MAP UPSYNC
         ## - MAKES MY BALISE PRESENT IN BOOTSTRAP SWARM KEY  -
