@@ -59,7 +59,9 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
     ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
 
 ## PUBLISH CHANNEL IPNS
-    echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.ipns
+    echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.ipns
+    rm ~/.zen/tmp/${IPFSNODEID}/.MySwarm.ipns ## TO REMOVE
+
 ############################################################
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
