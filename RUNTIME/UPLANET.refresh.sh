@@ -73,7 +73,7 @@ mkdir ~/.zen/tmp/${MOATS}
         # PRIORITY TO BOOSTRAP
         for NODE in ${ALLNODES[@]}; do
             for STRAP in ${STRAPS[@]}; do
-                [[ "$NODE" == "$STRAP" ]] && ACTINGNODE=$(NODE) ## PREFERED 1ST NODE BEING BOOSTRAP
+                [[ "${NODE}" == "${STRAP}" ]] && ACTINGNODE=${NODE} ## PREFERED 1ST NODE BEING BOOSTRAP
             done
         done
 
