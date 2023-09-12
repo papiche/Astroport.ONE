@@ -47,7 +47,7 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.staom
 
     #######################################################
     ## CREATE MySwarm KEYS ?
-    if [[ ${CHAN} == "" ]]; then
+    if [[ ${CHAN} == "" || ${CHAN} == "null" ]]; then
     echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
         SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
         SECRET2=${IPFSNODEID}
@@ -268,7 +268,7 @@ Content-Type: application/json; charset=UTF-8
             (
             mkdir -p ~/.zen/tmp/swarm/${ASTROTOIPFS}
             echo "UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
-            [[ $YOU ]] && ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
+            ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
             ) &
 
         fi
