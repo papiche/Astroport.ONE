@@ -119,10 +119,11 @@ while true; do
                  echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
             else
                 echo "TimeStamp unchanged : $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats)"
+                rm -Rf ~/.zen/tmp/swarm/_${ipfsnodeid}/
                 continue
             fi
         else
-            echo "UNREACHABLE /ipns/${ipfsnodeid}/ "
+            echo "UNREACHABLE /ipns/${ipfsnodeid}/"
             continue
         fi
 
