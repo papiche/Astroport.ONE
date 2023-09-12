@@ -315,7 +315,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
                     start=`date +%s`
                     echo "¯\_༼<O͡〰o>༽_/¯ $IPFSNODEID $PLAYER SIGNALING"
                     ROUTING=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
-                    ipfs name publish --allow-offline /ipfs/$ROUTING
+                    ipfs name publish /ipfs/$ROUTING
                     echo "DONE"
                     end=`date +%s`
                     dur=`expr $end - $start`

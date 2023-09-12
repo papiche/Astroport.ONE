@@ -175,7 +175,7 @@ while true; do
     && echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize \
     && SWARMH=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
     && echo "=== ~/.zen/tmp/swarm EVOLVED : PUBLISHING NEW STATE ===" \
-    && ipfs name publish --key "MySwarm_${IPFSNODEID}" --allow-offline /ipfs/${SWARMH}
+    && ipfs name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
 #############################################
 
     ######################################
@@ -201,7 +201,7 @@ while true; do
     && echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats \
     && MYCACHE=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
     && echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets" \
-    && ipfs name publish --allow-offline /ipfs/${MYCACHE}
+    && ipfs name publish /ipfs/${MYCACHE}
 
     end=`date +%s`
     echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. '$(date)

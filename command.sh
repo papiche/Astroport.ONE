@@ -157,7 +157,7 @@ select fav in  "${choices[@]}"; do
                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
             TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-            ipfs name publish --allow-offline --key=$PLAYER /ipfs/$TW
+            ipfs name publish --key=$PLAYER /ipfs/$TW
 
             echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
             echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
