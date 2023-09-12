@@ -36,8 +36,8 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 
 ## TIMESTAMPING
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
-echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/.MySwarm.staom
+echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
 ############################################################
 ##  MySwarm KEY INIT & SET
@@ -73,7 +73,7 @@ while true; do
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-    lastrun=$(cat ~/.zen/tmp/.MySwarm.moats)
+    lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
@@ -104,11 +104,11 @@ while true; do
 
         ## IPFS GET TO /swarm/${ipfsnodeid}
         echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-        ipfs --timeout 360s get -o ~/.zen/tmp/swarm/_${ipfsnodeid} /ipns/${ipfsnodeid}/
+        ipfs --timeout 360s get -o ~/.zen/tmp/swarm/_${ipfsnodeid}/ /ipns/${ipfsnodeid}/
 
         ## SHOW WHAT WE GET
         echo "__________________________________________________"
-        ls ~/.zen/tmp/swarm/_${ipfsnodeid}
+        ls ~/.zen/tmp/swarm/_${ipfsnodeid}/
         echo "__________________________________________________"
 
         ## LOCAL CACHE SWITCH WITH LATEST
@@ -171,7 +171,7 @@ while true; do
     SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
 
     ## SIZE MODIFIED => PUBLISH MySwarm_${IPFSNODEID}
-    [[ ${SWARMSIZE} != $(cat ~/.zen/tmp/swarm/.bsize) ]] \
+    [[ ${SWARMSIZE} != $(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null) ]] \
     && echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize \
     && SWARMH=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
     && echo "=== ~/.zen/tmp/swarm EVOLVED : PUBLISHING NEW STATE ===" \
@@ -209,8 +209,8 @@ while true; do
     ) & ##### SUB-PROCESS
 
     # last run recording
-    echo "${MOATS}" > ~/.zen/tmp/.MySwarm.moats
-    echo "$(date -u)" > ~/.zen/tmp/.MySwarm.staom
+    echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
     else
 
