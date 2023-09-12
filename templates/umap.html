@@ -8,7 +8,7 @@
         body {
             margin: 0;
             padding: 0;
-            background-image: url('image.png');
+            background-image: url('Umap.jpg');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -47,15 +47,33 @@
 </head>
 <body>
     <div id="container">
-        <div id="north" class="arrow" onclick="alert('North Arrow Clicked')">&#8593;</div>
-        <div id="south" class="arrow" onclick="alert('South Arrow Clicked')">&#8595;</div>
-        <div id="east" class="arrow" onclick="alert('East Arrow Clicked')">&#8594;</div>
-        <div id="west" class="arrow" onclick="alert('West Arrow Clicked')">&#8592;</div>
-        <div id="northeast" class="arrow" onclick="alert('Northeast Arrow Clicked')">&#8599;</div>
-        <div id="northwest" class="arrow" onclick="alert('Northwest Arrow Clicked')">&#8598;</div>
-        <div id="southeast" class="arrow" onclick="alert('Southeast Arrow Clicked')">&#8600;</div>
-        <div id="southwest" class="arrow" onclick="alert('Southwest Arrow Clicked')">&#8601;</div>
+        <div id="north" class="arrow" title="GO NORTH" onclick="redirectTo('north')">&#8593;</div>
+        <div id="south" class="arrow" title="GO SOUTH" onclick="redirectTo('south')">&#8595;</div>
+        <div id="east" class="arrow" title="GO EAST" onclick="redirectTo('east')">&#8594;</div>
+        <div id="west" class="arrow" title="GO WEST" onclick="redirectTo('west')">&#8592;</div>
+        <div id="northeast" class="arrow" title="GO NORTH EAST"  onclick="redirectTo('northeast')">&#8599;</div>
+        <div id="northwest" class="arrow" title="GO NORTHWEST" onclick="redirectTo('northwest')">&#8598;</div>
+        <div id="southeast" class="arrow" title="GO SOUTH EAST" onclick="redirectTo('southeast')">&#8600;</div>
+        <div id="southwest" class="arrow" title="GO SOUTH WEST" onclick="redirectTo('southwest')">&#8601;</div>
     </div>
+    <script>
+        // Function to handle redirection based on direction
+        function redirectTo(direction) {
+            fetch('geolinks.json') // Fetch the JSON file
+                .then(response => response.json()) // Parse the JSON response
+                .then(data => {
+                    const url = data[direction]; // Get the URL for the specified direction
+                    if (url) {
+                        window.location.href = url; // Redirect to the URL
+                    } else {
+                        alert('No URL found for this direction.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching JSON:', error);
+                });
+        }
+    </script>
 </body>
 </html>
 

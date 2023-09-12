@@ -145,7 +145,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "BAD EMAIL $LAT $LON - DEFAULT OPEN UMAP IPNS LINK -"
+    echo "BAD EMAIL $LAT $LON - OPEN UMAP IPNS LINK -"
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
 fi

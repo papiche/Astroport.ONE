@@ -89,6 +89,7 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         ##############################################################
+    if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
         ##############################################################
         ## CALCULATE SURROUNDING UMAPS
         ##############################################################
@@ -186,6 +187,24 @@ mkdir ~/.zen/tmp/${MOATS}
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SEWALLET.priv "$SELAT" "$SELON"
         SWUMAPNS=$(ipfs key import ${SEWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SEWALLET.priv)
         ipfs key rm ${SEWALLET}
+
+        jq -n \
+          --arg north "${myIPFS}/ipns/${NUMAPNS}" \
+          --arg south "${myIPFS}/ipns/${SUMAPNS}" \
+          --arg east "${myIPFS}/ipns/${EUMAPNS}" \
+          --arg west "${myIPFS}/ipns/${WUMAPNS}" \
+          --arg northeast "${myIPFS}/ipns/${NEUMAPNS}" \
+          --arg northwest "${myIPFS}/ipns/${NWUMAPNS}" \
+          --arg southeast "${myIPFS}/ipns/${SEMAPNS}" \
+          --arg southwest "${myIPFS}/ipns/${SWMAPNS}" \
+          '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest}' \
+          > ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
+
+    fi
+
+    ### SET navigator.html ## MAKE EVOLVE template/umap.html
+        cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
+        cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_map.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
 
         ##############################################################
         ############################ PUBLISHING UMAP
