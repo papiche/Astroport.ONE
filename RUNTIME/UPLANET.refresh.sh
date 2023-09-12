@@ -87,6 +87,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ######################################################## # NODE  SELECTION in UMAP.refresh
 
         ##############################################################
+        rm ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
         ##############################################################
     if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
         ##############################################################
@@ -160,7 +161,7 @@ mkdir ~/.zen/tmp/${MOATS}
         echo "NORTH WEST UMAP NWWALLET : ${NWWALLET}"
         ipfs key rm ${NWWALLET} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/NWWALLET.priv "$NWLAT" "$NWLON"
-        SWUMAPNS=$(ipfs key import ${NWWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/NWWALLET.priv)
+        NWUMAPNS=$(ipfs key import ${NWWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/NWWALLET.priv)
         ipfs key rm ${NWWALLET}
 
         ##############################################################
@@ -172,7 +173,7 @@ mkdir ~/.zen/tmp/${MOATS}
         echo "NORTH EAST UMAP NEWALLET : ${NEWALLET}"
         ipfs key rm ${NEWALLET} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/NEWALLET.priv "$NELAT" "$NELON"
-        SWUMAPNS=$(ipfs key import ${NEWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/NEWALLET.priv)
+        NEUMAPNS=$(ipfs key import ${NEWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/NEWALLET.priv)
         ipfs key rm ${NEWALLET}
 
         ##############################################################
@@ -184,7 +185,7 @@ mkdir ~/.zen/tmp/${MOATS}
         echo "SOUTH EAST UMAP SEWALLET : ${SEWALLET}"
         ipfs key rm ${SEWALLET} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SEWALLET.priv "$SELAT" "$SELON"
-        SWUMAPNS=$(ipfs key import ${SEWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SEWALLET.priv)
+        SEUMAPNS=$(ipfs key import ${SEWALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SEWALLET.priv)
         ipfs key rm ${SEWALLET}
 
         jq -n \
@@ -194,8 +195,8 @@ mkdir ~/.zen/tmp/${MOATS}
           --arg west "${myIPFS}/ipns/${WUMAPNS}" \
           --arg northeast "${myIPFS}/ipns/${NEUMAPNS}" \
           --arg northwest "${myIPFS}/ipns/${NWUMAPNS}" \
-          --arg southeast "${myIPFS}/ipns/${SEMAPNS}" \
-          --arg southwest "${myIPFS}/ipns/${SWMAPNS}" \
+          --arg southeast "${myIPFS}/ipns/${SEUMAPNS}" \
+          --arg southwest "${myIPFS}/ipns/${SWUMAPNS}" \
           '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest}' \
           > ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
 
@@ -203,7 +204,7 @@ mkdir ~/.zen/tmp/${MOATS}
 
     ### SET navigator.html ## MAKE EVOLVE template/umap.html
         cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
-        cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_map.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
+        cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
 
     ### REFRESH PLAYERS DATA (SHOULD BE THERE, but Station rebuilds it )
     # FIND WHICH PLAYERS MATCH SAME "_LAT_LON" IN ~/.zen/game/players/*/.umap

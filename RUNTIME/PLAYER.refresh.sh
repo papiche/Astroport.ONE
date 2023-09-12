@@ -130,14 +130,19 @@ for PLAYER in ${PLAYERONE[@]}; do
             IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
-            ## GET "GPS" TIDDLER
+            ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
             UMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+                        [[ $UMAPNS == "null" ]] && UMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
             LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+                        [[ $LAT == "null" ]] && LAT="0.00"
             LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+                        [[ $LON == "null" ]] && LON="0.00"
+
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
+
             ## STORE IN PLAYER CACHE
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
 
