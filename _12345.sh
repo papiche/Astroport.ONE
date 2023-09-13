@@ -115,7 +115,7 @@ while true; do
 
         ## LOCAL CACHE SWITCH WITH LATEST
         if [[ -s ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats  ]]; then
-            if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) ]]; then
+            if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) == "" ]]; then
                 rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
                 mv ~/.zen/tmp/swarm/_${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
                  echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"

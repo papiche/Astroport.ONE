@@ -34,6 +34,7 @@ mkdir ~/.zen/tmp/${MOATS}
         LON=$(echo ${UMAP} | cut -d '_' -f 3)
 
         [[ $LAT == "" || $LON == "" ]] && echo ">> ERROR BAD $LAT $LON" && continue
+        [[ $LAT == "null" || $LON == "null" ]] && echo ">> ERROR BAD $LAT $LON" && continue
 
         ##############################################################
         WALLET=$(${MY_PATH}/../tools/keygen -t duniter "$LAT" "$LON")
