@@ -12,7 +12,8 @@ sudo systemctl stop ipfs
 ### IMPORTANT !!!!!!! IMPORTANT !!!!!!
 ###########################################
 # DHT PUBSUB mode
-ipfs config Pubsub.Router gossipsub
+# ipfs config Pubsub.Router gossipsub ## DEPRECATED
+ipfs config --json Ipns.UsePubsub true
 
 # MAXSTORAGE = 1/2 full
 availableDiskSize=$(df -P ~/ | awk 'NR>1{sum+=$4}END{print sum}')
