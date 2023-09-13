@@ -336,7 +336,7 @@ echo "PUBLISHING NEW IPFSROOT : ${myIPFS}/ipfs/${IPFSROOT}"
     (
     ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
     end=`date +%s`
-    ipfs key rm ${G1PUB} ## REMOVE IPNS KEY
+    ipfs key rm ${G1PUB} ## REMOVE UMAP IPNS KEY
     echo "(UMAP) IPNS PUBLISH FINISHED at "`expr $end - $start` seconds.
     ) &
 

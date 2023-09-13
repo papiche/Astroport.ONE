@@ -77,7 +77,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         rm -f ~/.zen/tmp/${MOATS}/Astroport.json
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-        echo "ASTROPORT=$ASTROPORT"
+        echo "ASTROPORT=${ASTROPORT}"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
         AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
         HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
@@ -86,9 +86,9 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         G1Visa=$(cat ~/.zen/tmp/${MOATS}/G1Visa.json | jq -r .[]._canonical_uri)
         echo "G1Visa=$G1Visa"
 
-        if [[ $ASTROPORT != "" ]]; then
+        if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
 
-            IPNSTAIL=$(echo $ASTROPORT | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
+            IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
             echo "---> CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW with $IPFSNODEID"
 
@@ -233,25 +233,21 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 ############################################################################ TW
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
-    ############ TODO améliorer templates, sed, ajouter index.html, etc...
         mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
 
         [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] && cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
         sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html > ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        # INSERT ASTROPORT ADRESS
+        # INSERT ASTROPORT ADDRESS
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-        sed -i "s~$ASTROPORT~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        sed -i "s~${ASTROPORT}~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
          # TW CHAIN INIT WITH TWMODEL
          sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_CHAIN_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_TWMODEL_~${TWMODEL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
          sed -i "s~_TW_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
-         #~ sed -i "s~_PASS_~${PASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
          ## AND HACK QRCODE.sh FOR _PGP KEY_ TO VERIFY LAST HASH OF PROVIDED PASS
          HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
@@ -261,7 +257,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN ( DONE IN PLAYER_REFRESH )
         #~ sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## Fill ♥BOX
+        ## Fill ♥BOX - CopierYoutube Tiddler
          sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT PLAYER DATA
@@ -280,18 +276,28 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## AstroID G1CARD Update
-        [[ ! $AstroID ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
+        [[ ! ${AstroID} ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
         sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## template 44.2301, 1.6518 UMAP LAT LON replacement
-        if [[ ${LAT} && ${LON} ]]; then
-            sed -i "s~44.2301~${LAT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-            sed -i "s~1.6518~${LON}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-            sed -i "s~/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        ## PREPARE UMAP LAT LON replacement
+        [[ ! ${LAT} ]] && LAT="0.00"
+        [[ ! ${LON} ]] && LON="0.00"
+        UMAP=${URL}
+        [[ ! $(echo ${UMAP} | grep "/ipns/") ]] && UMAP="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu" ## DEFAULT = 0.00
 
+        if [[ ${LAT} && ${LON} ]]; then
+            # GET ACTUAL GPS VALUES
+            tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'
+            OLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+            OLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+            OUMAP=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+            # REPLACE WITH NEW LAT LON UMAP
+            sed -i "s~${OLAT}~${LAT}~g" ~/.zen/tmp/${MOATS}/GPS.json
+            sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
+            sed -i "s~${OUMAP}~${UMAP}~g" ~/.zen/tmp/${MOATS}/GPS.json
         fi
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
@@ -358,12 +364,16 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
                             --import ~/.zen/tmp/${MOATS}/lightbeam-natools.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
     --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_api.json" "application/json" \
     --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
+        ## COPY TO LOCAL & 12345 IPFSNODEID MAP
         [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
         && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} \
+        && cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/ \
         || ( echo "Problem with TW - EXIT" && exit 1 )
 
 ############################################################################ G1TW
