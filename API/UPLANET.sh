@@ -191,11 +191,12 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
 
 ## COPY MAP IMAGE ## TODO find a better crawling method (pb tiles are not fully loaded before screenshot)
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.jpg --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
-chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
+python ${MY_PATH}/../page_screenshot.py "${myIPFS}${UMAPGEN}" /tmp/Umap.jpg 900 900
+# chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
+
 ## COPY SAT IMAGE
-chromium --headless --disable-gpu --screenshot=/tmp/Usat.jpg --window-size=1200x1200 "${myIPFS}${USATGEN}"
-chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "${myIPFS}${USATGEN}"
+python ${MY_PATH}/../page_screenshot.py "${myIPFS}${USATGEN}" /tmp/Usat.jpg 900 900
+# chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "${myIPFS}${USATGEN}"
 
 ## CREATE HTML for LAST of U Keys
 echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UCard.html
