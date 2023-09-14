@@ -234,7 +234,7 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
             && echo "${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain \
             && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_moats \
-            && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
+            && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
         echo "PUBLISHING NEW UMAPROOT : http://ipfs.localhost:8080/ipfs/${UMAPROOT}"
 
