@@ -191,11 +191,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
 
 ## COPY MAP IMAGE
-#~ python ${MY_PATH}/../page_screenshot.py "${myIPFS}${UMAPGEN}" /tmp/Umap.jpg 900 900
+#~ python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" /tmp/Umap.jpg 900 900
 # chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
 
 ## COPY SAT IMAGE
-#~ python ${MY_PATH}/../page_screenshot.py "${myIPFS}${USATGEN}" /tmp/Usat.jpg 900 900
+#~ python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" /tmp/Usat.jpg 900 900
 # chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "${myIPFS}${USATGEN}"
 
 ## CREATE HTML for LAST of U Keys

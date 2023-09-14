@@ -15,7 +15,7 @@ async def take_screenshot(url, output_file, width, height):
     finally:
         await browser.close()
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) != 5:
         print("Usage: python page_screenshot.py <URL> <output_file> <width> <height>")
         sys.exit(1)
@@ -25,4 +25,10 @@ if __name__ == "__main__":
     width = int(sys.argv[3])
     height = int(sys.argv[4])
 
-    asyncio.get_event_loop().run_until_complete(take_screenshot(url, output_file, width, height))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(take_screenshot(url, output_file, width, height))
+    loop.close()
+
+if __name__ == "__main__":
+    main()
