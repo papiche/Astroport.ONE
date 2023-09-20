@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.3
+# Version: 0.4
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -13,8 +13,10 @@ espeak "Ding" > /dev/null 2>&1
 ## CLEANING  ~/.zen/tmp
 rm -Rf ~/.zen/tmp/*
 
-## RESTART IPFS DAEMON
+## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+[[ $LOWMODE == "" ]] && LOWMODE=$(ipfs swarm peers 2>&1 | grep Error) ## IPFS IS STOPPED
+[[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 if [[ $LOWMODE != "" ]]; then
     sudo systemctl start ipfs && sleep 10
