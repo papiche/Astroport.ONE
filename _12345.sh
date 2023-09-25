@@ -214,10 +214,6 @@ while true; do
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
     echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
-    ## CLEANING OLD FORMAT CAN BE REMOVED
-    rm ~/.zen/tmp/${IPFSNODEID}/.MySwarm.moats
-    rm ~/.zen/tmp/${IPFSNODEID}/.MySwarm.staom
-
     else
 
         echo "#######################"
