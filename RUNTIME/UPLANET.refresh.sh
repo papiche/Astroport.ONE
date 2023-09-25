@@ -26,6 +26,10 @@ mkdir ~/.zen/tmp/${MOATS}
     UMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
     echo "FOUND : ${UMAPS[@]}" # "_LAT_LON" directories
 
+    ## GET UMAP's IN SWARM MEMORY
+    SWAPS=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/ 2>/dev/null))
+
+
     for UMAP in ${UMAPS[@]}; do
 
         start=`date +%s`
@@ -37,57 +41,77 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ $LAT == "null" || $LON == "null" ]] && echo ">> ERROR BAD $LAT $LON" && continue
 
         ##############################################################
-        WALLET=$(${MY_PATH}/../tools/keygen -t duniter "$LAT" "$LON")
-        [[ ! ${WALLET} ]] && echo "ERROR generating WALLET" && exit 1
-        echo "ACTUAL UMAP WALLET : ${WALLET}"
+        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "$LAT" "$LON")
+        [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
+        echo "ACTUAL UMAP WALLET : ${G1PUB}"
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/WALLET.priv "$LAT" "$LON"
-        ipfs key rm ${WALLET} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-        UMAPNS=$(ipfs key import ${WALLET} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/WALLET.priv)
+        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/WALLET.priv)
         ##############################################################
 
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         ## IPFS GET ONLINE UMAPNS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
         ipfs get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         ## FORMAT CONTROL WARNING
-        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
+        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
 
-        ## UMAP.refresh CORRECTION
-        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh ]] \
-            && echo "${IPFSNODEID}" > ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh
-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ########################################################
         ## NODE  SELECTION in UMAP.refresh
         UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
         ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
+        [[ ! ${ALLNODES} ]] && ALLNODES=${IPFSNODEID} && echo ${IPFSNODEID} > ${UREFRESH}
+
         STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
         # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))
-
         IAMINBOOTSTRAP=$(echo ${STRAPS[@]} | grep ${IPFSNODEID})
-        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=$(cat ${UREFRESH} | tail -n 1) ## LAST NODE
+        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=${ALLNODES[-1]} ## LAST NODE
 
         # PRIORITY TO BOOSTRAP
         for NODE in ${ALLNODES[@]}; do
             for STRAP in ${STRAPS[@]}; do
-                [[ "${NODE}" == "${STRAP}" ]] && ACTINGNODE=${NODE} ## PREFERED 1ST NODE BEING BOOSTRAP
+                [[ "${NODE}" == "${STRAP}" ]] && ACTINGNODE=${NODE} ## PREFER NODE BEING BOOSTRAP
             done
         done
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
-            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - NEXT -" \
+            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
             && continue
+            ########################################
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
 
+        ## NEXT REFRESHER
+        # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
         # SHUFFLE UMAP.refresh
         cat ${UREFRESH} | shuf > ${UREFRESH}.shuf
         mv ${UREFRESH}.shuf ${UREFRESH}
+        ## NEXT REFRESHER
+        echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
         ######################################################## # NODE  SELECTION in UMAP.refresh
 
+
+        ## ISM2IPFS UMAP GENESYS
+        UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+        USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
+
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg ]] \
+            && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg 900 900
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] \
+            && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg 900 900
+
+
         ##############################################################
+        ## ERASE FOR ALL NODE PROTOCOL UGRADE
         rm ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
         ##############################################################
     if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
@@ -190,6 +214,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ipfs key rm ${SEWALLET}
 
         jq -n \
+          --arg here "${myIPFS}/ipns/${UMAPNS}" \
           --arg north "${myIPFS}/ipns/${NUMAPNS}" \
           --arg south "${myIPFS}/ipns/${SUMAPNS}" \
           --arg east "${myIPFS}/ipns/${EUMAPNS}" \
@@ -198,7 +223,7 @@ mkdir ~/.zen/tmp/${MOATS}
           --arg northwest "${myIPFS}/ipns/${NWUMAPNS}" \
           --arg southeast "${myIPFS}/ipns/${SEUMAPNS}" \
           --arg southwest "${myIPFS}/ipns/${SWUMAPNS}" \
-          '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest}' \
+          '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest}, here: $here}' \
           > ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
 
     fi
@@ -217,6 +242,7 @@ mkdir ~/.zen/tmp/${MOATS}
             mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}
             echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${playertw}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}/index.html
         done
+
         ## COMPLETE WITH SEARCH IN ~/.zen/tmp/swarm/*/UPLANET/${UMAP} ????
 
         ##############################################################
@@ -224,23 +250,23 @@ mkdir ~/.zen/tmp/${MOATS}
         ##############################################################
         UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1)
 
-        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain 2>/dev/null)
-        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_moats 2>/dev/null)
+        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
         [[ ${ZCHAIN} && ${ZMOATS} ]] \
-            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain.${ZMOATS} \
+            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain.${ZMOATS} \
             && echo "UPDATING MOATS"
 
         ## DOES CHAIN CHANGED or INIT ?
         [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
-            && echo "${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_chain \
-            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${WALLET}/_moats \
+            && echo "${MOATS}:${IPFSNODEID}:${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain \
+            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats \
             && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
         echo "PUBLISHING NEW UMAPROOT : http://ipfs.localhost:8080/ipfs/${UMAPROOT}"
 
-            ipfs name publish --key=${WALLET} /ipfs/${UMAPROOT}
+            ipfs name publish --key=${G1PUB} /ipfs/${UMAPROOT}
             end=`date +%s`
-            ipfs key rm ${WALLET} ## REMOVE IPNS KEY
+            ipfs key rm ${G1PUB} ## REMOVE IPNS KEY
 
             echo "(UMAP) PUBLISH time was "`expr $end - $start` seconds.
 

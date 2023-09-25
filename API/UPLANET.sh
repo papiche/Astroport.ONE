@@ -180,24 +180,6 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
-####################################### Umap.png
-## CREATING Umap_${LAT}_${LON}.png
-echo "# OSM2IPFS ~/.zen/tmp/${MOATS}/Umap.png & Umap.jpg & Usat.png & Usat.jpg" ## TODO MAYBE KEEP JPG ONLY FOR LOWERING UMAP SIZE
-UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
-USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
-
-echo ${UMAPGEN}
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/Umap.html
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/Usat.html
-
-## COPY MAP IMAGE
-#~ python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" /tmp/Umap.jpg 900 900
-# chromium --headless --disable-gpu --screenshot=/tmp/Umap.png --window-size=1200x1200 "${myIPFS}${UMAPGEN}"
-
-## COPY SAT IMAGE
-#~ python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" /tmp/Usat.jpg 900 900
-# chromium --headless --disable-gpu --screenshot=/tmp/Usat.png --window-size=1200x1200 "${myIPFS}${USATGEN}"
-
 ## CREATE HTML for LAST of U Keys
 echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UCard.html
 echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UVisa.html
@@ -205,11 +187,7 @@ echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UVisa.html
 ## ADD TO VISITOR LIST : UFriends
 echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
 
-## COPYING FILES  to PUBLISH from ABROAD
-cp /tmp/Umap.jpg ~/.zen/tmp/${MOATS}/
-cp /tmp/Umap.png ~/.zen/tmp/${MOATS}/
-cp /tmp/Usat.jpg ~/.zen/tmp/${MOATS}/
-cp /tmp/Usat.png ~/.zen/tmp/${MOATS}/
+## COPYING FILES   from ABROAD to PUBLISH on UMap
 rm -f ~/.zen/tmp/${MOATS}/G1*.jpg ## DELETE VISA FROM PREVIOUS VISITOR
 cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.jpg
 cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
@@ -307,7 +285,7 @@ UREFRESH="${HOME}/.zen/tmp/${MOATS}/${LAT}_${LON}/UMAP.refresh"
 ########################################
 IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
 ########################################
-ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_chain 2>/dev/null)
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_chain  | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_moats 2>/dev/null)
 [[ ${ZCHAIN} && ${ZMOATS} ]] \
     && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${G1PUB}/_chain.${ZMOATS} \
@@ -319,7 +297,7 @@ echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_${EMAIL}.HPASS
 
 ## DOES CHAIN CHANGED or INIT ?
 [[ ${ZCHAIN} != ${IPFSROOT} || ${ZCHAIN} == "" ]] \
-    && echo "${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_chain \
+    && echo "${MOATS}:${IPFSNODEID}:${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_chain \
     && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_moats \
     && IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
