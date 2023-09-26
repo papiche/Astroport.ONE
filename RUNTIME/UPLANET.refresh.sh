@@ -226,8 +226,11 @@ mkdir ~/.zen/tmp/${MOATS}
           '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest, here: $here}' \
           > ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
 
-
     fi
+
+        ## RECORD P4N SPOT DATA
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] \
+        && curl -s "https://www.park4night.com/api/places/around?lat=$LAT&lng=$LON&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
 
     ### SET navigator.html ## MAKE EVOLVE template/umap.html
         cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
