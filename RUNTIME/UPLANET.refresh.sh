@@ -214,7 +214,6 @@ mkdir ~/.zen/tmp/${MOATS}
         ipfs key rm ${SEWALLET}
 
         jq -n \
-          --arg here "${myIPFS}/ipns/${UMAPNS}" \
           --arg north "${myIPFS}/ipns/${NUMAPNS}" \
           --arg south "${myIPFS}/ipns/${SUMAPNS}" \
           --arg east "${myIPFS}/ipns/${EUMAPNS}" \
@@ -223,8 +222,10 @@ mkdir ~/.zen/tmp/${MOATS}
           --arg northwest "${myIPFS}/ipns/${NWUMAPNS}" \
           --arg southeast "${myIPFS}/ipns/${SEUMAPNS}" \
           --arg southwest "${myIPFS}/ipns/${SWUMAPNS}" \
-          '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest}, here: $here}' \
+          --arg here "${myIPFS}/ipns/${UMAPNS}" \
+          '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest, here: $here}' \
           > ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
+
 
     fi
 
