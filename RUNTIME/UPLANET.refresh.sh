@@ -258,7 +258,7 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## DOES CHAIN CHANGED or INIT ?
         [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
-            && echo "${MOATS}:${IPFSNODEID}:${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain \
+            && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain \
             && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats \
             && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
