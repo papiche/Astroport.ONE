@@ -27,8 +27,13 @@ def main():
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(take_screenshot(url, output_file, width, height))
-    loop.close()
+
+    try:
+        loop.run_until_complete(asyncio.wait_for(take_screenshot(url, output_file, width, height), timeout=30))
+    except asyncio.TimeoutError:
+        print("Timeout: The operation took too long to complete and has been terminated.")
+    finally:
+        loop.close()
 
 if __name__ == "__main__":
     main()
