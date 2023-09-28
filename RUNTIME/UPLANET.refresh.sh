@@ -66,6 +66,14 @@ mkdir ~/.zen/tmp/${MOATS}
             cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
         done
 
+## COLLECT TW LINKS FOR SWARM
+        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html))
+        for TWRED in ${TWFILES[@]}; do
+            ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
+            mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}
+            cp ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}/
+        done
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ########################################################
         ## NODE  SELECTION in UMAP.refresh

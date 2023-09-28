@@ -97,9 +97,6 @@ header {
         <div id="debug"></div>
         <button onclick="document.getElementById('console').style.visibility = 'visible'; homeAstroportStation( qrURL, 'aframe', 7000);">UMap QR</button>
 
-
-<b>Welkom - Mirë se vini -  Willkommen - Welkomma - Welcome - Marhaban - Bari galoust - Xos gelmissiniz - Welkum -  Ongi etorri- Swagata - Ansuf yiswen - ščyra zaprašajem - Kyo tzo pa eit - ॐ★ॐ - Ani kié - Dobro došli - Dagemer mat - Dobre doshŭl - Benvinguts - Ulihebisdi - ௐ- Huān yíng - Karibu - Eoso eoseyo - Benvenuti - Bel bonjou - Bienvini - Dobrodošli - Velkommen - Bienvenido -  Bonvenon - Tere tulemast - Gabitê - Vælkomin -  Tervetuloa - Welkom - Wìllkòmme - Binvignut - Fàilte - Benvido - Croeso - Planvenguda - Mikouabô - Kalos irthate - Eguahé porá - Baroukh habaim - ﷽ </b><br>
-
 </header>
 
 <main>
@@ -127,7 +124,7 @@ header {
 
 </form>
 
-            <div id="console"><a href="https://pad.p2p.legal/s/Astroport.ONE#Application-name--U-Planet" target="aframe"> IMAGINE ____________</a> <button onclick="document.getElementById('console').style.visibility = 'hidden';">close</button>
+            <div id="console"><h2><a href="https://pad.p2p.legal/s/Astroport.ONE#Imagine" target="aframe"> IMAGINE</a> ____________<button onclick="document.getElementById('console').style.visibility = 'hidden';"> X </button></h2>
                 <iframe name="aframe" id="aframe" src="https://pad.p2p.legal/s/Astroport.ONE#Application-name--U-Planet" width="100%" height="100%"></iframe>
             </div>
 
@@ -152,6 +149,10 @@ header {
    </h2>
 <br>
 <a href="https://opencollective.com/monnaie-libre/" target="funding">- (^‿‿^) -</a>
+<br>
+
+<b>Welkom - Mirë se vini -  Willkommen - Welkomma - Welcome - Marhaban - Bari galoust - Xos gelmissiniz - Welkum -  Ongi etorri- Swagata - Ansuf yiswen - ščyra zaprašajem - Kyo tzo pa eit - ॐ★ॐ - Ani kié - Dobro došli - Dagemer mat - Dobre doshŭl - Benvinguts - Ulihebisdi - ௐ- Huān yíng - Karibu - Eoso eoseyo - Benvenuti - Bel bonjou - Bienvini - Dobrodošli - Velkommen - Bienvenido -  Bonvenon - Tere tulemast - Gabitê - Vælkomin -  Tervetuloa - Welkom - Wìllkòmme - Binvignut - Fàilte - Benvido - Croeso - Planvenguda - Mikouabô - Kalos irthate - Eguahé porá - Baroukh habaim - ﷽ </b><br>
+
 </center>
 </main>
 </body>
@@ -217,42 +218,6 @@ const el = document.getElementById('yellow');
 setTimeout(() => {
     el.style.visibility = 'visible';
 }, 5456); // 👈️ delay in milliseconds
-
-var arrTimes = [];
-var i = 0; // start
-var timesToTest = 3;
-var tThreshold = 300; //ms
-var testImage = "https://ipfs.copylaradio.com/ipfs/QmUUyiuCM4yXgaeGyqC2SVUUXZksuxhDfHQYpUpZPuL2oS/astroport.jpg"; // small image in your server
-var dummyImage = new Image();
-var isConnectedFast = false;
-
-testLatency(function(avg){
-  isConnectedFast = (avg <= tThreshold);
-  /** output */
-  document.body.appendChild(
-    document.createTextNode("- IPFS swarm delay - " + (avg.toFixed(2)) + "ms - ♥Box ready ? " + isConnectedFast)
-  );
-});
-
-/** test and average time took to download image from server, called recursively timesToTest times */
-function testLatency(cb) {
-  var tStart = new Date().getTime();
-  if (i<timesToTest-1) {
-    dummyImage.src = testImage + '?t=' + tStart;
-    dummyImage.onload = function() {
-      var tEnd = new Date().getTime();
-      var tTimeTook = tEnd-tStart;
-      arrTimes[i] = tTimeTook;
-      testLatency(cb);
-      i++;
-    };
-  } else {
-    /** calculate average of array items then callback */
-    var sum = arrTimes.reduce(function(a, b) { return a + b; });
-    var avg = sum / arrTimes.length;
-    cb(avg);
-  }
-}
 
 </script>
 <script>
