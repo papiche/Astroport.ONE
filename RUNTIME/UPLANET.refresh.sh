@@ -238,8 +238,11 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
         && cp ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
 
-        ## GET 100KM GCHANGE ADS
-        ${MY_PATH}/../tools/gchange_get_100km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange100.json
+        ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
+        ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
+
+        ## CREATE GCHANGE ACCOUNT ??!!
+
 
     ### SET navigator.html ## MAKE EVOLVE template/umap.html
         cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html

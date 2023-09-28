@@ -275,15 +275,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
-######################### PLAYER_feed
-    #~ IFRIENDHEAD="$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/IFRIENDHEAD 2>/dev/null)"
-    #~ echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
-    #~ echo "IFRIENDHEAD :" ${IFRIENDHEAD}
-    #~ [[ -d ~/.zen/game/players/${PLAYER}/FRIENDS ]] \
-    #~ && cat ${MY_PATH}/../www/iframe.html | sed "s~_ME_~/ipns/${ASTRONAUTENS}~g" | sed "s~_IFRIENDHEAD_~${IFRIENDHEAD}~g" > ~/.zen/game/players/${PLAYER}/FRIENDS/index.html
-    #~ [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/index.html ]] \
-    #~ && FRAME=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/FRIENDS/index.html | tail -n 1) \
-    #~ && ipfs name publish --key="${PLAYER}_feed" /ipfs/$FRAME
+######################### REPLACE TW with REDIRECT (reduce 12345 cache size)
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />" \
+                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
 done
 echo "PLAYER.refresh DONE."

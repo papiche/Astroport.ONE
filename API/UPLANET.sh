@@ -218,8 +218,10 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
 
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
+
         ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
         (
+                            ##### (☉_☉ ) #######
         ${MY_PATH}/../tools/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
         ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
         ) &
