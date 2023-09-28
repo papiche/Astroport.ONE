@@ -26,10 +26,6 @@ mkdir ~/.zen/tmp/${MOATS}
     UMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
     echo "FOUND : ${UMAPS[@]}" # "_LAT_LON" directories
 
-    ## GET UMAP's IN SWARM MEMORY
-    SWAPS=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/ 2>/dev/null))
-
-
     for UMAP in ${UMAPS[@]}; do
 
         start=`date +%s`
@@ -61,7 +57,14 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
+
+ ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
+        RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json))
+        for RSSFILE in ${RSSFILES[@]}; do
+            cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
+        done
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ########################################################
@@ -228,9 +231,15 @@ mkdir ~/.zen/tmp/${MOATS}
 
     fi
 
+### EXTRA SCRAPPING
+####################################
         ## RECORD P4N SPOT DATA
-        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] \
-        && curl -s "https://www.park4night.com/api/places/around?lat=$LAT&lng=$LON&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+        curl -s "https://www.park4night.com/api/places/around?lat=$LAT&lng=$LON&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
+        [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+        && cp ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+
+        ## GET 100KM GCHANGE ADS
+        ${MY_PATH}/../tools/gchange_get_100km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange100.json
 
     ### SET navigator.html ## MAKE EVOLVE template/umap.html
         cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
@@ -247,7 +256,11 @@ mkdir ~/.zen/tmp/${MOATS}
             echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${playertw}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}/index.html
         done
 
-        ## COMPLETE WITH SEARCH IN ~/.zen/tmp/swarm/*/UPLANET/${UMAP} ????
+########################################################
+## ACTIVATE IN CASE OF PROTOCOL BRAKE
+## TODO : BACKUP STATE IN // PRIVATE KEY
+## TODO : SNIFF IPFS DHT MODIFICATIONS ## FAIL2BAN ## DEFCON
+########################################################
 
         ##############################################################
         ############################ PUBLISHING UMAP
