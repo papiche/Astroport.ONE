@@ -30,8 +30,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     # CLEAN LOST ACCOUNT
     [[ ! -s ~/.zen/game/players/${PLAYER}/secret.dunikey ]] \
         && rm -Rf ~/.zen/game/players/${PLAYER} \
-        && mv ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.${PLAYER} 2>/dev/null \
-        && echo "LOST ${PLAYER} IS OUT" \
+        && echo "${PLAYER} WAS BADLY PLUGGED" \
         && continue
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -66,7 +65,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## MY PLAYER : RESTORE PLAYER KEY FROM G1PUB (IN CASE IS MISSING : PLAYER LOGOUT)
     [[ ! $(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) ]] \
-        &&  ipfs key export ${G1PUB} -o ~/.zen/tmp/${MOATS}/${PLAYER}.key \
+        && ipfs key export ${G1PUB} -o ~/.zen/tmp/${MOATS}/${PLAYER}.key \
         && ipfs key import ${PLAYER} ~/.zen/tmp/${MOATS}/${PLAYER}.key \
         && rm ~/.zen/tmp/${MOATS}/${PLAYER}.key
 
