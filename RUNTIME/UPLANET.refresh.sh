@@ -244,7 +244,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ## RECORD P4N SPOT DATA
         curl -s "https://www.park4night.com/api/places/around?lat=$LAT&lng=$LON&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
         [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
-        && cp ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+        && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
 
         ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
         ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
