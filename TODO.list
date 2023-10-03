@@ -29,12 +29,12 @@ MADE BY
 ./tools/create_ipfsnodeid_from_tmp_secret.dunikey.py:# TODO controls
 ./tools/cron_VRFY.sh:## TODO check for Station geoposition in ~/.zen/GPS and calibrate 20H12
 ./tools/cron_VRFY.sh:cat ~/.zen/GPS 2>/dev/null && echo " TODO calibrate 20H12 with GPS"
-./tools/VISA.new.sh:######### TODO Ajouter d'autres clefs IPNS, GPG ?
-./tools/VISA.new.sh:WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
-./tools/VISA.new.sh:    ############ TODO améliorer templates, sed, ajouter index.html, etc...
-./tools/VISA.new.sh:         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
-./tools/VISA.new.sh:# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
-./tools/VISA.new.sh:# TODO : Allow Astronaut PASS change ;)
+./RUNTIME/VISA.new.sh:######### TODO Ajouter d'autres clefs IPNS, GPG ?
+./RUNTIME/VISA.new.sh:WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
+./RUNTIME/VISA.new.sh:    ############ TODO améliorer templates, sed, ajouter index.html, etc...
+./RUNTIME/VISA.new.sh:         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
+./RUNTIME/VISA.new.sh:# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
+./RUNTIME/VISA.new.sh:# TODO : Allow Astronaut PASS change ;)
 ./tools/search_for_this_email_in_players.sh:### TODO MAKE IT WORKS BETTER
 ./tools/search_for_this_email_in_players.sh:    ## TODO ? SEARCH WITH DNSLINK
 ./tools/new_file_in_astroport.sh:        ## Create gifanime ##  TODO Search for similarities BEFORE ADD

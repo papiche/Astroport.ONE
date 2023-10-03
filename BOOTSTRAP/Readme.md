@@ -46,16 +46,16 @@ For exemple, if you want to know from where VISA.new.sh is called run
 ------------------------------------------------------------------------------
   Searching for VISA.new.sh recursively. Please Wait...
 ------------------------------------------------------------------------------
-./command.sh:            ${MY_PATH}/tools/VISA.new.sh
-./command.sh:            ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
+./command.sh:            ${MY_PATH}/RUNTIME/VISA.new.sh
+./command.sh:            ${MY_PATH}/RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
 ./API/SALT.sh:                    echo "# ASTRONAUT NEW VISA Create VISA.new.sh in background (~/.zen/tmp/email.${EMAIL}.${MOATS}.txt)"
-./API/SALT.sh:                    ${MY_PATH}/../tools/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-./TODO.list:./tools/VISA.new.sh:######### TODO Ajouter d'autres clefs IPNS, GPG ?
-./TODO.list:./tools/VISA.new.sh:WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
-./TODO.list:./tools/VISA.new.sh:    ############ TODO améliorer templates, sed, ajouter index.html, etc...
-./TODO.list:./tools/VISA.new.sh:         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
-./TODO.list:./tools/VISA.new.sh:# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
-./TODO.list:./tools/VISA.new.sh:# TODO : Allow Astronaut PASS change ;)
+./API/SALT.sh:                    ${MY_PATH}/../RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+./TODO.list:./RUNTIME/VISA.new.sh:######### TODO Ajouter d'autres clefs IPNS, GPG ?
+./TODO.list:./RUNTIME/VISA.new.sh:WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
+./TODO.list:./RUNTIME/VISA.new.sh:    ############ TODO améliorer templates, sed, ajouter index.html, etc...
+./TODO.list:./RUNTIME/VISA.new.sh:         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
+./TODO.list:./RUNTIME/VISA.new.sh:# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
+./TODO.list:./RUNTIME/VISA.new.sh:# TODO : Allow Astronaut PASS change ;)
 ------------------------------------------------------------------------------
 ```
 

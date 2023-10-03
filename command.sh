@@ -62,7 +62,7 @@ echo 'PRESS ENTER... '; read
             exit
             ;;
         "CREATE PLAYER")
-            ${MY_PATH}/tools/VISA.new.sh
+            ${MY_PATH}/RUNTIME/VISA.new.sh
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
             exit
@@ -74,7 +74,7 @@ echo 'PRESS ENTER... '; read
             read PEPPER
             echo "'Adresse Email'"
             read EMAIL
-            ${MY_PATH}/tools/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
+            ${MY_PATH}/RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
             echo "Astronaute $fav heureux de vous acceuillir"
             exit

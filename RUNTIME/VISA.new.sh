@@ -81,10 +81,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
         AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
         HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
-        echo "AstroID=$AstroID ($HPass)"
+        #~ echo "AstroID=$AstroID ($HPass)"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'G1Visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
         G1Visa=$(cat ~/.zen/tmp/${MOATS}/G1Visa.json | jq -r .[]._canonical_uri)
-        echo "G1Visa=$G1Visa"
+        #~ echo "G1Visa=$G1Visa"
 
         if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
 
@@ -111,21 +111,21 @@ TWMODEL="/ipfs/bafybeiaaf52awrqliwn5mqleua6tcv4qv5oxjfa6j2web6nh42vzdtjkiu"
 # ipfs cat $TWMODEL > templates/twdefault.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
-echo "=============================================
-ASTROPORT DIPLOMATIC PASSPORT - MadeInZion VISA -
-=============================================
-A Cryptographic Key to control your INTERNET
-Adventure & Exploration P2P Terraforming Game.
-=============================================
-WELCOME 'Astronaute'"; # sleep 1
+#~ echo "=============================================
+#~ ASTROPORT DIPLOMATIC PASSPORT - MadeInZion VISA -
+#~ =============================================
+#~ A Cryptographic Key to control your INTERNET
+#~ Adventure & Exploration P2P Terraforming Game.
+#~ =============================================
+#~ WELCOME 'Astronaute'"; # sleep 1
 
 #~ echo "Inscription..."
 
 [[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
-echo "-> ID : $SALT"
+#~ echo "-> ID : $SALT"
 
 [[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
-echo "-> PASS : $PEPPER"
+#~ echo "-> PASS : $PEPPER"
 
 PSEUDO=${PLAYER%%[0-9]*}
 
@@ -349,13 +349,13 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     #~ echo ${ENCODING}
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/g1/lightbeam-natools-feed","text":"'${ENCODING}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-natools.json
 
-    echo
-    echo "IPFS GATEWAY : ${NID}"
-    #~ # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
-    echo "IPFS API : ${WID}"
-    #~ # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
-    echo ">>> RSS FEED : ${myIPFS}/ipns/${FEEDNS}"
-    ## CHANGE SELECTED GW & API
+    #~ echo
+    #~ echo "IPFS GATEWAY : ${NID}"
+    # cat ~/.zen/tmp/${MOATS}/local.gw.json | jq -r
+    #~ echo "IPFS API : ${WID}"
+    # cat ~/.zen/tmp/${MOATS}/local.api.json | jq -r
+    #~ echo ">>> RSS FEED : ${myIPFS}/ipns/${FEEDNS}"
+    #~ ## CHANGE SELECTED GW & API
 
         ## ADD SYSTEM TW
         tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
@@ -436,7 +436,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~${G1Visa}~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     echo
-    echo "♥ IPFS Ŋ1 DRIVE INIT ♥"
+    echo "♥ IPFS Ŋ1 TW INIT ♥"
     echo "TW ${NID}/ipns/${ASTRONAUTENS}/"
     IPUSH=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     echo $IPUSH > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain # Contains last IPFS backup PLAYER KEY
@@ -460,7 +460,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 #~ echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
-echo "--- PLAYER : ${PLAYER} - FILE SYSTEM LOADED";
+echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 # ls ~/.zen/game/players/${PLAYER}
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
@@ -503,26 +503,26 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "* Public G1Visa"
-echo "   ${NID}/ipns/${ASTRONAUTENS}#G1Visa"
-echo "* Personal AstroID ($PASS)"
-echo "   ${NID}/ipns/${ASTRONAUTENS}#AstroID"
-echo "* GPS : ${NID}/ipns/${ASTRONAUTENS}#GPS"
-echo "* U Map : ${myIPFS}${URL}"
+echo "* Public Wallet <a href=${NID}/ipns/${ASTRONAUTENS}#G1Visa>G1Visa</a>"
+echo "   "
+echo "*  G1Card with PASS: <b>$PASS</b>"
+echo "   <a href=${NID}/ipns/${ASTRONAUTENS}#AstroID>AstroID</a>"
+echo
+echo "* <a href=${myIPFS}${URL}> U Map _$LAT_$LON</a>"
 echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "BIENVENUE"
-echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; # sleep 1
-echo "
-Vos Secrets :
-    $SALT
-    $PEPPER
+#~ echo "BIENVENUE"
+#~ echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; # sleep 1
+#~ echo "
+#~ Vos Secrets :
+    #~ $SALT
+    #~ $PEPPER
 
-* WALLET : https://cesium.app
-* MARKET : https://gchange.fr
+#~ * WALLET : https://cesium.app
+#~ * MARKET : https://gchange.fr
 
-U Planet : ${myUPLANET}
-Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
+#~ U Planet : ${myUPLANET}
+#~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
 
 echo
 echo "$(${MY_PATH}/face.sh friendly)"
