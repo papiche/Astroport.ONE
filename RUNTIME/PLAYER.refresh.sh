@@ -233,6 +233,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         && echo "# CHAIN : ${CURCHAIN} -> ${ZCHAIN}" \
         && [[ ${CURCHAIN} != "" && ${ZCHAIN} != "" ]]  \
         && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+    else
+        ## COUNT NO CHANGE
+        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange 2>/dev/null) || try=0
+        ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange
     fi
     ##############################################################
 
