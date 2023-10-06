@@ -501,3 +501,5 @@ Did you ever dring a beer bought in G1 ?
 You can pay me a beer or more by contributing to our OpenCollective
 https://opencollective.com/monnaie-libre#category-ABOUT
 
+## IPFS Ecosystem Directory Submission Form
+https://airtable.com/appLWiIrg9SQaEtEq/shrjwvk9pAeAk0Ci7

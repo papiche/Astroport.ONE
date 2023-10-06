@@ -48,6 +48,15 @@ espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/RUNTIME/PLAYER.refresh.sh
 
+espeak "REFRESHING SWARM" > /dev/null 2>&1
+# Refresh ~/.zen/game/players/PLAYER
+~/.zen/Astroport.ONE/RUNTIME/MAP.refresh.sh
+
+espeak "REFRESHING UPLANET" > /dev/null 2>&1
+# Refresh ~/.zen/game/players/PLAYER
+~/.zen/Astroport.ONE/RUNTIME/UPLANET.refresh.sh
+
+
     ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
     espeak "bootstrap refresh" > /dev/null 2>&1
@@ -68,7 +77,7 @@ echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 # ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh ## COULD FORWARD LOCAL TCP PORT TO SWARM
 rm ~/.zen/game/players/localhost/latest
 
-## MAIL LOG : support@qo-op.com
+## MAIL LOG : support@qo-op.com ##
 $MY_PATH/tools/mailjet.sh "support@g1sms.fr" "/tmp/20h12.log"
 
 espeak "duration was $dur seconds" > /dev/null 2>&1

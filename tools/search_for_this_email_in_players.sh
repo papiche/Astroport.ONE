@@ -26,19 +26,27 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ## TODO ? SEARCH WITH DNSLINK
     echo "export TW=${INDEX}"
 
-    ## EXTRACT DATA FROM TW
-    mkdir -p ~/.zen/tmp/${MOATS}
-    rm -f ~/.zen/tmp/${MOATS}/Astroport.json
+    # SWARM CACHE index.html contains
+    # <meta http-equiv="refresh" content="0; url='/ipns/$EXTERNAL'" />
+    EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
 
-    tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+    if [[ ! ${EXTERNAL} ]]; then
+        ## EXTRACT DATA FROM TW
+        mkdir -p ~/.zen/tmp/${MOATS}
+        rm -f ~/.zen/tmp/${MOATS}/Astroport.json
 
-    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-    ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].g1pub)
+        tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
 
-    ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
-    ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astronautens)
-    [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
-    [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS=""
+        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+        ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].g1pub)
+
+        ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
+        ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astronautens)
+        [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
+        [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS=""
+    else
+        ASTRONAUTENS="/ipns/${EXTERNAL}"
+    fi
 
     rm -Rf ~/.zen/tmp/${MOATS}
     # cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r

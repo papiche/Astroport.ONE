@@ -281,10 +281,4 @@ for PLAYER in ${PLAYERONE[@]}; do
 done
 echo "PLAYER.refresh DONE."
 
-echo "REFRESHING MAP"
-${MY_PATH}/MAP.refresh.sh
-
-echo "REFRESHING UPLANET"
-${MY_PATH}/UPLANET.refresh.sh
-
 exit 0

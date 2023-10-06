@@ -374,6 +374,26 @@ myHtml() {
     [ -n "$myHtml" ] && echo "$myHtml"
 }
 
+mySalt() {
+    local mySalt=$($RUN sed \
+        -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
+        -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
+        -e "s~http://127.0.0.1:33101~http://${myHOST}:33101~g" \
+        -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
+        -e "s~http://g1billet.localhost:33101~${myG1BILLET}~g" \
+        -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+        -e "s~g1billet.localhost~${myIP}~g" \
+        -e "s~_HOSTNAME_~$(hostname)~g" \
+        -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
+      ~/.zen/Astroport.ONE/templates/saltpepper.http)
+    [ -z "$isLAN" ] \
+     || mySalt=$($RUN echo "$mySalt" | sed \
+      -e "s~<input type='"'hidden'"' name='"'salt'"' value='"'0'"'>~<input name='"'salt'"' value='"''"'>~g" \
+      -e "s~<input type='"'hidden'"' name='"'pepper'"' value='"'0'"'>~<input name='"'pepper'"' value='"''"'>~g")
+    [ -n "$mySalt" ] && echo "$mySalt"
+}
+
+
 myTs() {
     local myTs=$(date +%s)
     [ -n "$myTs" ] && echo "$myTs"
