@@ -7,7 +7,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
-. "${MY_PATH}/my.sh"
+. "${MY_PATH}/../tools/my.sh"
 
 ! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
 ################################################################################
