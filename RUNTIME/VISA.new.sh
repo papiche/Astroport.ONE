@@ -317,7 +317,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         # TODO : NODE COULD FORGET PASS THEN DECODE  ${PLAYER}/secret.dunikey FROM TW # PROD #
         MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
         #~ echo "# CRYPTO ENCODING  _SECRET_ "
-        ${MY_PATH}/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
+        ${MY_PATH}/../tools/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
         ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
         sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
@@ -325,7 +325,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         #~ echo "# CRYPTO DECODING TESTING..."
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
-        ${MY_PATH}/natools.py decrypt -f pubsec -k $HOME/.zen/game/myswarm_secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
+        ${MY_PATH}/../tools/natools.py decrypt -f pubsec -k $HOME/.zen/game/myswarm_secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
         #~ echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
 ###########
         ## CRYPTO PROCESS VALIDATED
