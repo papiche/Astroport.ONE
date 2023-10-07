@@ -27,7 +27,6 @@ MOATS=$9
 COOKIE=$10"
 PORT="$1" THAT="$2" AND="$3" THIS="$4"  APPNAME="$5" WHAT="$6" OBJ="$7" VAL="$8" MOATS="$9" COOKIE="$10"
 ### transfer variables according to script
-QRCODE=$(echo "$THAT" | cut -d ':' -f 1) # G1nkgo compatible
 
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: ${myASTROPORT}
@@ -102,6 +101,7 @@ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
 VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
 [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
 echo "PASS for Umap $LAT $LON is $PASS"
+
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
 
@@ -121,22 +121,6 @@ EMAIL="${PLAYER,,}" # lowercase
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     echo "VALID ${EMAIL} EMAIL OK"
-    ###################################################
-    ## GET NETWORK CACHE - UNLEASHED LAT LON COMMON BLOCKCHAIN
-    echo "ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/"
-    ipfs --timeout 30s get -o ~/.zen/tmp/${MOATS}/ /ipns/${UMAPNS}/
-
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "UMAP CONTAINS"
-    ls ~/.zen/tmp/${MOATS}/ ## LOG
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-
-    ## FORMAT CONTROL
-    [[ ! -d ~/.zen/tmp/${MOATS}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${LAT}_${LON} ]] \
-            && echo ">>> UMAP IS BAD FORMAT - RESET -" \
-            && rm -Rf ~/.zen/tmp/${MOATS}/*.* \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
 
     ## CHECK if TW is HERE
     [[ -s ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]] \
@@ -149,14 +133,6 @@ else
     (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
 
 fi
-
-###########################################
-## NEW EMAIL : CREATE PLAYER with GPS UMAP link
-###########################################
-### CREATE Umap G1VISA & G1Card
-echo "${MY_PATH}/../tools/VISA.print.sh" "${EMAIL}"  "'"$LAT"'" "'"$LON"'" "'"$PASS"'" "'"$PASS"'"
-${MY_PATH}/../tools/VISA.print.sh "${EMAIL}"  "$LAT" "$LON" "$PASS" "${PASS}"##
-[[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
 
 # UPLANET #############################################
 ## OCCUPY COMMON CRYPTO KEY CYBERSPACE
@@ -180,27 +156,6 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
-## CREATE HTML for LAST of U Keys
-echo "<img src=G1Card.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UCard.html
-echo "<img src=G1Visa.${EMAIL}.jpg \>" > ~/.zen/tmp/${MOATS}/UVisa.html
-
-## ADD TO VISITOR LIST : UFriends
-echo "${EMAIL}" >> ~/.zen/tmp/${MOATS}/UFriends.txt
-
-## COPYING FILES   from ABROAD to PUBLISH on UMap
-rm -f ~/.zen/tmp/${MOATS}/G1*.jpg ## DELETE VISA FROM PREVIOUS VISITOR
-cp ~/.zen/tmp/${PASS}##/G1Visa.${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Visa.${EMAIL}.jpg
-cp -f ~/.zen/tmp/${PASS}##/${PASS}.jpg ~/.zen/tmp/${MOATS}/G1Card.${EMAIL}.jpg
-
-ls ~/.zen/tmp/${MOATS}/
-
-    ### SECURE UMap private keys key with PGP
-    cat ~/.zen/tmp/${MOATS}/_ipns.priv | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/_ipns.priv.${EMAIL}.asc
-    rm ~/.zen/tmp/${MOATS}/_ipns.priv
-
-    cat ~/.zen/tmp/${MOATS}/_cesium.key | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/_cesium.key.${EMAIL}.asc
-    rm ~/.zen/tmp/${MOATS}/_cesium.key
-
 ### CREATE A G1VISA FOR PLAYER (NO TW EXISTS YET for EMAIL)
 if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
 
@@ -211,6 +166,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
 
         ## Create a redirection to PLAYER (EMAIL/PASS) TW
         mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
+
         ## CREATE TW LINK /ipns/TWADD
         NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$NPASS"
