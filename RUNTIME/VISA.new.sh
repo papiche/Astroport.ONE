@@ -508,10 +508,10 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "* Public Wallet <a href=${NID}/ipns/${ASTRONAUTENS}#G1Visa>G1Visa</a>"
+echo "* Public Key <a href=${NID}/ipns/${ASTRONAUTENS}#G1Visa>G1Visa</a>"
 echo "   "
-echo "*  G1Card with PASS: <b>$PASS</b>"
-echo "   <a href=${NID}/ipns/${ASTRONAUTENS}#AstroID>AstroID</a>"
+echo "*  AstroID with PASS: <b>$PASS</b>"
+echo "   <a href=${NID}/ipns/${ASTRONAUTENS}#AstroID>G1Card</a>"
 echo
 echo "* <a href=${myIPFS}${URL}> U Map _$LAT_$LON</a>"
 echo
