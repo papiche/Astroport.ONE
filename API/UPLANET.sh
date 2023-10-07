@@ -97,7 +97,7 @@ else
 fi
 
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
-## RECEIVED PASS
+## RECEIVED PASS ## CAN BE USED TO SELECT TW TEMPLATE
 VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
 [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
 echo "PASS for Umap $LAT $LON is $PASS"
@@ -151,8 +151,10 @@ mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
 
 ipfs key rm ${G1PUB} > /dev/null 2>&1
 rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
+
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
+
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
@@ -164,16 +166,7 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
         [[ ${ASTROTW} ]] && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
-        ## Create a redirection to PLAYER (EMAIL/PASS) TW
-        mkdir -p ~/.zen/tmp/${MOATS}/TW/${EMAIL}
-
-        ## CREATE TW LINK /ipns/TWADD
         NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}.priv "$EMAIL" "$NPASS"
-        TWADD=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}.priv)
-        ipfs key rm ${MOATS} && rm ~/.zen/tmp/${MOATS}.priv
-
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TWADD}'\" />" > ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html
 
         ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
         (
@@ -184,81 +177,6 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
 
 fi
 
-# EMAIL have access to the "Key of the Land"
-## MAKE A MESSAGE: ACCESS TO THE UMAP KEY & MAP
-echo "<html>
-    <head>
-    <title>[Astroport] $LAT $LON WELCOME ${EMAIL} </title>
-        <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
-            padding: 20px;
-        }
-        h1 {
-            color: #0077cc;
-        }
-        h2 {
-            color: #333;
-        }
-        img {
-            cursor: pointer;
-        }
-    </style>
-    </head><body>
-    <button id='printButton'>Print</button>
-    <h1>U Planet ID registration : $LAT/$LON </h1>
-    <h2>${EMAIL}</h2>
-    <br>    <img width='300' height='300' src='Umap.jpg'  alt='UPlanet map Image' \><img width='300' height='300' src='Usat.jpg'  alt='UPlanet sat Image' \>
-    <br> <a href='Umap.html' >MAP</a> | <a href='Usat.html' >SAT</a>
-    <br> UMap Key Drive <br>
-    <a target=localhost href=http://ipfs.localhost:8080/ipns/${UMAPNS}>LOCAL</a> | <a target=localhost href=${myIPFS}/ipns/${UMAPNS}>GLOBAL</a>
-
-<h2>Umap Visa</h2>
-<br>    <img src=G1Visa.${EMAIL}.jpg alt='Umap G1Visa' \>
-<h2>Umap Card</h2>
-<br>    <img src=G1Card.${EMAIL}.jpg alt='Umap G1Card' \>
-<br>
-    <script>
-        function printPage() {
-            window.print();
-        }
-        document.getElementById('printButton').addEventListener('click', printPage);
-    </script>
-
-    <h2>See <a href='./TW'>TW's</a> here</h2>
-
-<br> Can you <a href='./_ipns.priv.${EMAIL}.asc'>decode this key</a>? Want to know how to use a private key in a browser? <a href='mailto:support@qo-op.com'>Contact us</a>. Let's enhance UPLANET.sh together
-        <br><br>ASTROPORT REGISTERED Crypto Commons : $LAT $LON : ${MOATS} : $(date)
-     </body></html>" > ~/.zen/tmp/${MOATS}/MESSAGE.html
-
-### USED BY UPLANET.refresh.sh : inform which IPFSNODEID's are UMAP keepers
-UREFRESH="${HOME}/.zen/tmp/${MOATS}/${LAT}_${LON}/UMAP.refresh"
-[[ ! $(cat ${UREFRESH} | grep ${IPFSNODEID} ) ]] \
-    && echo "${IPFSNODEID}" >> ${UREFRESH}
-########################################
-
-## TAKING CARE OF THE CHAIN
-########################################
-IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1)
-########################################
-ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_chain  | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}/_moats 2>/dev/null)
-[[ ${ZCHAIN} && ${ZMOATS} ]] \
-    && cp ~/.zen/tmp/${MOATS}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${G1PUB}/_chain.${ZMOATS} \
-    && echo "UPDATING MOATS"
-
-## UPDATE HPASS last G1Visa PASS
-HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
-echo "${HPASS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_${EMAIL}.HPASS
-
-## DOES CHAIN CHANGED or INIT ?
-[[ ${ZCHAIN} != ${IPFSROOT} || ${ZCHAIN} == "" ]] \
-    && echo "${MOATS}:${IPFSNODEID}:${IPFSROOT}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_chain \
-    && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${G1PUB}/_moats \
-    && IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
-
 ########################################
 ################################################################################
 ## WRITE INTO 12345 SWARM CACHE LAYER
@@ -266,16 +184,6 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
 echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
 ########################################
-
-########################################
-echo "PUBLISHING NEW IPFSROOT : ${myIPFS}/ipfs/${IPFSROOT}"
-
-    (
-    ipfs name publish --key=${G1PUB} /ipfs/${IPFSROOT}
-    end=`date +%s`
-    ipfs key rm ${G1PUB} ## REMOVE UMAP IPNS KEY
-    echo "(UMAP) IPNS PUBLISH FINISHED at "`expr $end - $start` seconds.
-    ) &
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
