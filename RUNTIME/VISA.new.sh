@@ -69,7 +69,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         #~ echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
         #~ echo
         #~ echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
-        cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+
+        [[ ${LON} && ${LAT} ]] \
+            && cp ${MY_PATH}/../templates/minimal.html ~/.zen/tmp/${MOATS}/TW/index.html \
+            || cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
     #############################################
@@ -109,6 +112,8 @@ fi
 ################################################################################
 TWMODEL="/ipfs/bafybeiaaf52awrqliwn5mqleua6tcv4qv5oxjfa6j2web6nh42vzdtjkiu"
 # ipfs cat $TWMODEL > templates/twdefault.html
+MINIMAL="/ipfs/bafybeidgyo756zmsltbq5ptxjdn2spncv5pccn6vxes3j7cqubqlohjr2e"
+# ipfs cat $MINIMAL > templates/minimal.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 #~ echo "=============================================

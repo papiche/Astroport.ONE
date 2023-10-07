@@ -1,5 +1,13 @@
 #!/bin/bash
-# Run After PLAYER.entrance.sh
+################################################################################
+# Author: Fred (support@qo-op.com)
+# Version: 0.1
+# License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
+################################################################################
+# Takes care of analysing GChange+ Pod key and stars relations
+################################################################################
+# TODO: could make better ES stars requests
+# https://forum.monnaie-libre.fr/t/proposition-damelioration-de-gchange/1940/49
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized

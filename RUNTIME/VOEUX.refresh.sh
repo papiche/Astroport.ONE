@@ -38,7 +38,7 @@ INDEX="$3"
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu
 
 ## PROTOCOL EVOLUTION RUN & REMOVE
-rm -Rf -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}
 
 
 ###############################
