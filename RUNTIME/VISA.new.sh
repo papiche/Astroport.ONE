@@ -474,7 +474,7 @@ echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 #~ [[ -l ~/.zen/game/players/.current ]] \
 #~ && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
-. "${MY_PATH}/my.sh"
+. "${MY_PATH}/../tools/my.sh"
 
 #################################################################
 #### make player ipfs docker ## TODO
@@ -495,17 +495,17 @@ echo "$PASS" > ~/.zen/game/players/${PLAYER}/.pass
 #~ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
-${MY_PATH}/Connect_PLAYER_To_Gchange.sh "${PLAYER}" 1>/dev/null
+${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" 1>/dev/null
 
 ### IF PRINTER -> PRINT VISA
 LP=$(ls /dev/usb/lp* 2>/dev/null)
-[[ $LP ]] && ${MY_PATH}/VISA.print.sh "${PLAYER}" &
+[[ $LP ]] && ${MY_PATH}/../tools/VISA.print.sh "${PLAYER}" &
 
 ## INIT FRIENDSHIP CAPTAIN/ASTRONAUTS (LATER THROUGH GCHANGE)
 ## ${MY_PATH}/FRIENDS.init.sh
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "$(${MY_PATH}/face.sh cool)"
+echo "$(${MY_PATH}/../tools/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
 echo "* Public Key <a href=${NID}/ipns/${ASTRONAUTENS}#G1Visa>G1Visa</a>"
@@ -530,7 +530,7 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 #~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
 
 echo
-echo "$(${MY_PATH}/face.sh friendly)"
+echo "$(${MY_PATH}/../tools/face.sh friendly)"
 #~ DISCONNECT : $DISCO&logout=${PLAYER}
 #~ CONNECT : $DISCO&login=${PLAYER}"
 
