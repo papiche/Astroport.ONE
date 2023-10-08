@@ -59,8 +59,8 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
     ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
 
 ## PUBLISH CHANNEL IPNS
-    echo "/ipns/$CHAN" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.ipns
-    rm ~/.zen/tmp/${IPFSNODEID}/.MySwarm.ipns ## TO REMOVE
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
+    rm ~/.zen/tmp/${IPFSNODEID}/_MySwarm.ipns 2>/dev/null ## REMOVE AFTER PROTOCOL UPDATE PROPAGATION
 
 ############################################################
 ############################################################
@@ -133,6 +133,7 @@ while true; do
         ## - MAKES MY BALISE PRESENT IN BOOTSTRAP SWARM KEY  -
         if [[  $iptype == "ip4" || $iptype == "ip6" ]]; then
 
+            ############ UPSYNC CALL
             echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
             curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json
 
