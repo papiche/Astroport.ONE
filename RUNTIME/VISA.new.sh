@@ -84,10 +84,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
         AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
         HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
-        #~ echo "AstroID=$AstroID ($HPass)"
+        echo "AstroID=$AstroID ($HPass)"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'G1Visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
         G1Visa=$(cat ~/.zen/tmp/${MOATS}/G1Visa.json | jq -r .[]._canonical_uri)
-        #~ echo "G1Visa=$G1Visa"
+        echo "G1Visa=$G1Visa"
 
         if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
 
@@ -213,9 +213,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     #~ echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
 
     ## PGP ENCODING SALT/PEPPER API ACCESS
-    echo "${DISCO}" > ~/.zen/tmp/topgp
-    cat ~/.zen/tmp/topgp | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
-    rm ~/.zen/tmp/topgp
+    echo "${DISCO}" > ~/.zen/tmp/${MOATS}/topgp
+    cat ~/.zen/tmp/${MOATS}/topgp | gpg --symmetric --armor --batch --passphrase "$PASS" -o ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc
+    rm ~/.zen/tmp/${MOATS}/topgp
     #~ openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in ~/.zen/game/players/${PLAYER}/secret.june -out "$HOME/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec" -k "$PASS"
     #~ PASsec=$(cat ~/.zen/tmp/${MOATS}/enc.${PSEUDO}.sec  | base64 -w 0 | jq -sRr '@uri' )
     #~ HPass=$(echo "$PASS" | sha512sum | cut -d ' ' -f 1)
@@ -508,12 +508,14 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/../tools/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "* Public Key <a href=${NID}/ipns/${ASTRONAUTENS}#G1Visa>G1Visa</a>"
+echo "* Public Key : G1Visa
+${NID}/ipns/${ASTRONAUTENS}#G1Visa"
 echo "   "
-echo "*  AstroID with PASS: <b>$PASS</b>"
-echo "   <a href=${NID}/ipns/${ASTRONAUTENS}#AstroID>G1Card</a>"
+echo "*  AstroID : G1Card with PASS : $PASS"
+echo "${NID}/ipns/${ASTRONAUTENS}#AstroID"
 echo
-echo "* <a href=${myIPFS}${URL}> U Map _$LAT_$LON</a>"
+echo "* UMap_$LAT_$LON
+${myIPFS}${URL}"
 echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 #~ echo "BIENVENUE"
