@@ -224,7 +224,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='xastro' selected>G1CARD+TW</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
+            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;

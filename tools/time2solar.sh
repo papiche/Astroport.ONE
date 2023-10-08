@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Correct Time to give the real 20H12 time (on UTC table) at a given longitude
 # Input longitude in degrees (positive for East, negative for West)
 longitude=$1
 
@@ -40,4 +40,5 @@ new_time=$(date -u -d "@$new_time_seconds" +%H:%M:%S)
 echo "Longitude: $longitude degrees $direction"
 echo "Time Offset: $offset_minutes minutes"
 echo "Local Solar Noon (midday) Time: $local_solar_noon_time"
-echo "Local Solar Noon + 8h 12mn: $new_time"
+echo "Local Solar Noon + 8h 12mn:
+$new_time"
