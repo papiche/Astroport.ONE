@@ -327,7 +327,7 @@ do
             echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) : IFRIENDHEAD=" ${IFRIENDHEAD}
 
 
-            echo "APP=RSS : PLAYER  FPLAYER RSS PUBLICATION READY"
+            echo "APP=RSS : PLAYER  $FPLAYER RSS PUBLICATION READY"
             echo "~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/${FPLAYER}.rss.json"
 
         fi
