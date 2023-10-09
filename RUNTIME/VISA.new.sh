@@ -18,10 +18,10 @@ PEPPER="$2"
 PLAYER="$3"
 PSEUDO="$4"
 
-## Fill UP TW with VIDEO URL
+## Fill UP TW with VIDEO URL or UMAP NS
 URL="$5"
 
-## UPLANET PLAYER
+## UPLANET SECTOR
 LAT="$6"
 LON="$7"
 
@@ -29,19 +29,20 @@ LON="$7"
 YOU=$(myIpfsApi);
 LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 ################################################################################
-
+## LIST TW MODELS
 ################################################################################
-
-## CHECK if PLAYER resolve any ASTRONAUTENS
-#~ [[ ${PLAYER} ]] && ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
-#~ [[ ${ASTRONAUTENS} ]] && echo "WARNING IPNS ${PLAYER} EXISTANT ${myIPFS}/ipns/${ASTRONAUTENS} - EXIT -" && exit 0
+TWMODEL="/ipfs/bafybeiaaf52awrqliwn5mqleua6tcv4qv5oxjfa6j2web6nh42vzdtjkiu"
+# ipfs cat $TWMODEL > templates/twdefault.html
+MINIMAL="/ipfs/bafybeidp2vvvtdi3hdq3tknwfzuhjqqa6tfkepc233bdr2rg2ws4qnbvum"
+# ipfs cat $MINIMAL > templates/minimal.html
+################################################################################
 
 mkdir -p ~/.zen/tmp/${MOATS}/TW
 
 ## Chargement TW !!!
 if [[ $SALT != "" && PEPPER != "" ]]; then
-    ASTRO=""
 
+    ## Creating SALT/PEPPER IPNS KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/player.key "$SALT" "$PEPPER" 2>/dev/null
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
     # echo "/ipns/${ASTRONAUTENS}"
@@ -57,6 +58,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     && read ENTER \
     && [[ $ENTER != "" ]] && rm ~/.zen/tmp/${MOATS}/TW/index.html
 
+    # EXTEND SEARCH IN WEB2.0
     #~ [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
     #~ && echo "Trying curl on $LIBRA" \
     #~ && curl -m 30 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
@@ -65,11 +67,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ## AUCUN RESULTAT
     if [ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]; then
 
-        ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
-        #~ echo "CREATION TW Astronaute" ## Nouveau Compte Astronaute
-        #~ echo
-        #~ echo "***** Activation du Canal TW Astronaute ${PLAYER} *****"
-
+        # COPY TW TEMPLATE
         [[ ${LON} && ${LAT} ]] \
             && cp ${MY_PATH}/../templates/minimal.html ~/.zen/tmp/${MOATS}/TW/index.html \
             || cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
@@ -102,18 +100,13 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
         fi
 
-        ipfs key rm ${MOATS} 2>/dev/null ## CLEANING
-
     fi
+
+    ipfs key rm ${MOATS} 2>/dev/null ## CLEANING MOATS KEY
 
 fi
 
 
-################################################################################
-TWMODEL="/ipfs/bafybeiaaf52awrqliwn5mqleua6tcv4qv5oxjfa6j2web6nh42vzdtjkiu"
-# ipfs cat $TWMODEL > templates/twdefault.html
-MINIMAL="/ipfs/bafybeidp2vvvtdi3hdq3tknwfzuhjqqa6tfkepc233bdr2rg2ws4qnbvum"
-# ipfs cat $MINIMAL > templates/minimal.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 #~ echo "=============================================
@@ -148,8 +141,8 @@ PLAYER=${PLAYER,,}
 [[ ! $PSEUDO ]] && PSEUDO="Anonymous"
 # echo "Crypto ID PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
 
-# 6 DIGIT PASS CODE TO PROTECT QRSEC
-PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+# 4 DIGIT PASS CODE TO PROTECT QRSEC
+PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
 ############################################################
 ######### TODO Ajouter d'autres clefs IPNS, GPG ?
@@ -508,13 +501,13 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/../tools/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "* Public Key : G1Visa
+echo "* G1Visa : Public Key and Wallet
 ${NID}/ipns/${ASTRONAUTENS}#G1Visa"
 echo "   "
 echo "*  AstroID : G1Card with PASS : $PASS"
 echo "${NID}/ipns/${ASTRONAUTENS}#AstroID"
 echo
-echo "* UMap_$LAT_$LON
+echo "* UMap registration : ${LAT}, ${LON}
 ${myIPFS}${URL}"
 echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"

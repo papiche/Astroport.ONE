@@ -420,7 +420,8 @@ myIP="$(myIp)" # "127.0.0.1"
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-myUPLANET="https://ipfs.copylaradio.com/ipns/copylaradio.com"
+myUPLANET="https://ipfs.copylaradio.com/ipns/copylaradio.com" ## WRITE IPFS GATEWAY
+myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
 
 myASTROPORT="http://astroport.localhost:1234"
 myASTRONEF="http://astroport.localhost:1234"

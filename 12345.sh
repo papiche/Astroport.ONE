@@ -133,7 +133,16 @@ while true; do
     if [[ $URL == "/" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
-        mySalt | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        if [ -z "$isLAN" ]; then
+        echo $(mySalt) | \
+            sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
+            sed "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" | \
+            nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        else
+        echo $(mySalt) | \
+            sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
+            nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+        fi
 
         #~ echo "$HTTPCORS
         #~ <html>
