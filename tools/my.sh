@@ -121,7 +121,7 @@ myHName() {
 }
 
 zIp() {
-    zip=$(cat ~/.zen/♥Box | head -n 1 2>/dev/null)
+    zip=$(cat ~/.zen/♥Box 2>/dev/null | head -n 1 )
     [ -n "$zip" ] && echo "$zip" || false
 }
 
@@ -378,6 +378,7 @@ mySalt() {
     local mySalt=$($RUN sed \
         -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
+        -e "s~http://127.0.1.1:1234~${myASTROPORT}~g" \
         -e "s~http://127.0.0.1:33101~http://${myHOST}:33101~g" \
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
         -e "s~http://g1billet.localhost:33101~${myG1BILLET}~g" \
