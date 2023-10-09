@@ -1,0 +1,15 @@
+123.123.123.123
+#########################################################
+# Indicate your Internet BOX public IPv4 and save the file to "~/.zen/♥Box"
+
+#########################################################
+## TO BECOME OFFICIAL La♥Box
+# Your Station is on your LAN but can be available on WAN
+#########################################################
+# Activate DMZ or see OpenPORTS.png to know which port should be forwarded
+# For SSL gateway, install https://nginxproxymanager.com/
+#########################################################
+#
+# Once done, your node could be part of the "Bootraps List"
+# Hosting and publishing TW on UPlanet like others for friends...
+#

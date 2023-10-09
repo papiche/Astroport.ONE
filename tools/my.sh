@@ -121,7 +121,7 @@ myHName() {
 }
 
 zIp() {
-    zip=$(cat ~/.zen/♥Box 2>/dev/null)
+    zip=$(cat ~/.zen/♥Box | head -n 1 2>/dev/null)
     [ -n "$zip" ] && echo "$zip" || false
 }
 
