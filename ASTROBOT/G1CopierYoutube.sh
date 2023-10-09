@@ -299,7 +299,7 @@ fi
 done  < ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER} # FINISH YID loop 1
 
 ## COPY PLAYER CACHE TO STATION SWARM CACHE
-cp ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/* \
+cp -r ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/* \
     ~/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/
 
 exit 0

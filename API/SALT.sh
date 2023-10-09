@@ -433,7 +433,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         if [[ $APPNAME == "login" ]]; then
 
             ## INSTALL PLAYER IPNS KEY ON STATION
-            PLAYER=${WHAT}
+            [[ "${SALT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+            && PLAYER=${SALT} \
+            || PLAYER=${WHAT}
+
             ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
             ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
@@ -469,7 +472,10 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         if [[ $APPNAME == "logout" ]]; then
 
             ## REMOVE PLAYER IPNS KEY FROM STATION
-            PLAYER=${WHAT}
+            [[ "${SALT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+            && PLAYER=${SALT} \
+            || PLAYER=${WHAT}
+
             echo "<h1>$PLAYER LOGOUT OK</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
 
             ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log

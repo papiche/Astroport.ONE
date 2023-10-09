@@ -218,8 +218,11 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             if [[ $APPNAME == "logout" ]]; then
 
                 ## REMOVE PLAYER IPNS KEY FROM STATION
-                PLAYER=${WHAT}
-                echo "<h1>$PLAYER LOGOUT OK</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
+                [[ "${salt}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                && PLAYER=${salt} \
+                || PLAYER=${WHAT}
+
+                echo "<h1>$PLAYER LOGOUT OK ?</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
 
                 ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log
                 ipfs key rm ${PLAYER} >> ~/.zen/tmp/coucou/${MOATS}.log
@@ -234,7 +237,10 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ $APPNAME == "login" ]]; then
 
-                PLAYER=${WHAT}
+                [[ "${salt}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                && PLAYER=${salt} \
+                || PLAYER=${WHAT}
+
                 ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
                 echo "IS THERE ? $ISTHERE"
                 [[ ${ISTHERE} == "" ]] \

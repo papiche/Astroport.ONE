@@ -106,7 +106,7 @@ while true; do
 
         ## IPFS GET TO /swarm/${ipfsnodeid}
         echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-        ipfs --timeout 360s get -o ~/.zen/tmp/swarm/_${ipfsnodeid}/ /ipns/${ipfsnodeid}/
+        ipfs --timeout 720s get -o ~/.zen/tmp/swarm/_${ipfsnodeid}/ /ipns/${ipfsnodeid}/
 
         ## SHOW WHAT WE GET
         echo "__________________________________________________"

@@ -267,24 +267,24 @@ for PLAYER in ${PLAYERONE[@]}; do
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
 
-    ## Publish on LAT/ON key on 12345 CACHE
-    [[ ${LAT} && ${LON} ]] \
-        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_index.html
-
-    # PROTOCOL EVOLUTION (CORRECT & REMOVE)
-    rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html 2>/dev/null
-
-    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
-    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
-
 ######################### REPLACE TW with REDIRECT (reduce 12345 cache size)
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
+
+    ## Publish on LAT/ON key on 12345 CACHE
+    [[ ${LAT} && ${LON} ]] \
+        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
+        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
+        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/${PLAYER} \
+        && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/${PLAYER}/ \
+        && echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_index.html
+
+    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+
 
 done
 echo "PLAYER.refresh DONE."

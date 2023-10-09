@@ -61,13 +61,13 @@ mkdir ~/.zen/tmp/${MOATS}
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
-        RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json))
+        RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
         for RSSFILE in ${RSSFILES[@]}; do
             cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
         done
 
 ## COLLECT TW LINKS FOR SWARM
-        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html))
+        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
             mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}
