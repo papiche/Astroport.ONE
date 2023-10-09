@@ -534,7 +534,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
             WISHNAME=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
             WISHNS=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
 
-            [[ ${WISHNS} == null ]] && WISHNS=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns') ## KEEP OLD PROTOCOL COMPATIBLE
+            [[ ${WISHNS} == null ]] && WISHNS="/ipns/"$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns') ## KEEP OLD PROTOCOL COMPATIBLE
 
             echo "${WISHNAME} : ${WISHNS} "
             [[ "G1${WISHNAME}" == "$VOEU" ]] \
