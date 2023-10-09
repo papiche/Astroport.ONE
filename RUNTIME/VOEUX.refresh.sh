@@ -208,9 +208,9 @@ do
 
         ### APPLY FOR ${WISHNAME} APP MODEL : make index.html
         ################################## ${WISHNAME}/index.html
-        if [[ -s ${MY_PATH}/../www/${WISHNAME}/index.html ]]; then
+        if [[ -s ${MY_PATH}/../WWW/${WISHNAME}/index.html ]]; then
 
-        cat ${MY_PATH}/../www/${WISHNAME}/index.html \
+        cat ${MY_PATH}/../WWW/${WISHNAME}/index.html \
         | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
                     -e "s~_G1VOEU_~${WISHNAME}~g" \
                     -e "s~_PLAYER_~${PLAYER}~g" \

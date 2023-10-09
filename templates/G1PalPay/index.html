@@ -1,0 +1,301 @@
+<html>
+    <head>
+    <meta charset="utf-8">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+     <link rel="icon" type="image/x-icon" href="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/favicon.ico">
+    <title>♥Box Ğ1Station - Astroport Ŋ1 - </title>
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/demo.css">
+
+    <script src="http://127.0.0.1:8080/ipfs/QmYD4y1pXHVnGxxFcn2LWo84ytwmWdNbkyUeFnPCbrpUQy/openpgp.min.js"></script>
+
+    <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
+
+    <script src="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
+    <script src="http://127.0.0.1:8080/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/instascan.min.js"></script>
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/decoration.css" type="text/css" />
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmaCh8mywWfxkXF3JziFzqZS6yZFo3eNS5fSfnzJqdSQvX/layout.css" type="text/css" />
+    <style>
+
+body {
+    background-image:url("http://127.0.0.1:8080/ipfs/QmSFgatcq3q898J56epa8SyGbH651vRBFnv93kQSwfoi83/background.014.jpg");
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    padding: 0;
+    margin: 0;
+    font-family: sans-serif;
+}
+html {
+    height: 100%
+}
+header {
+    opacity: 0.8;
+}
+    input[type=submit] {
+    width: 12em;  height: 4em;
+    }
+    input[type=checkbox] {
+    width: 2em;  height: 2em;
+    }
+    input {
+    width: 26em;  height: 2em;
+    }
+  #aframe {
+      background: white;
+      color: black;
+  }
+#yellow {
+      background: black;
+      color: white;
+      position: absolute;
+      bottom: 2%;
+      left: 2%;
+      width: 60%;
+      visibility: hidden;
+    }
+#ainfo {
+      position: absolute;
+      top: 2%;
+      left: 50%;
+    }
+h1 {
+    margin-top: 10px;
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #777;
+}
+
+a {
+    color: white;
+}
+
+#demo {
+    overflow: hidden;
+}
+
+#description {
+    text-align: left;
+    float: left;
+    width: 49%;
+    max-width: 500px;
+    padding-top: 15px;
+    padding-left: 20px;
+}
+
+#showoff {
+    float: right;
+    width: 30%;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#container {
+    top: 40px;
+    right: 0px;
+    position: absolute;
+    display: inline-block;
+    width: 400px;
+    height: 400px;
+}
+
+    </style>
+
+  </head>
+<body>
+
+<div id="demo">
+    <div id="description">
+        <header>
+        <h1><a href="http://astroport.localhost:1234"><span>♥Box</span> Ğ1Station </a></h1><br>
+        </header>
+        <form method='get' action='http://127.0.0.1:33101' target='aframe'>
+            <input type='hidden' name='montant' value='0' >
+            <label for='type'>Type :</label><select name='type'>
+                <option value=''>G1BILLET+ ( x 6 )</option>
+                <option value='jeu' selected>G1Card</option>
+                <option value='xastro'>G1Card+TW</option>
+                </select><input type='hidden' name='dice' value='6' >&nbsp;&nbsp;&nbsp;&nbsp;
+            <button type='submit'>Lancer Fabrication</button>
+        </form>
+        <h3>Oubliez la crise !</h3>
+        <h2>Utilisez la Monnaie Libre.</h2>
+        <h3>Explorez le Monde en confiance...</h3>
+    </div>
+</div>
+    <div id="showoff">
+        <div id="container">
+
+            <video id="preview" style="transform: scaleX(-1);width: 240px;height: 240px;" autoplay="autoplay" class="active"></video>
+
+                <h1><div id="countdown">___</div></h1>
+                <input type="hidden" id="PASS" value="PASS"/>
+                <p><input type="text" id="g1pub" value="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"/></p>
+                <p><b>G1PUB</b>  destinataire</p>
+
+                <div id="appname">
+                  <input type="radio" id="r0" name="appname" value="login"> LOGIN
+                  <input type="radio" id="r1" name="appname" value="friend"> (★★★★★)
+                  <input type="radio" id="r2" name="appname" value="history"> Historique
+                  <input type="radio" id="r3" name="appname" value="pay"> Virement
+                  <input type="radio" id="r4" name="appname" value="balance" checked="checked"> Balance
+                  <input type="radio" id="r5" name="appname" value="logout"> LOGOUT
+                </div>
+                <p><b></b>"G1Card" pperations</p>
+
+                <strong><div id="resu"></div></strong>
+
+                <p> <strong>Scan QRCODE</strong> </p>
+
+        </div>
+    </div>
+<a href="https://opencollective.com/monnaie-libre/" target="funding">- (^‿‿^) -</a>
+    <script type="text/javascript">
+
+        async function fetchAstroport(myURL) {
+          try {
+
+            let one = await fetch(myURL); // Gets a promise
+            var doc =  await one.text();
+            var regex = /url='([^']+)/i; // Get response PORT
+            var redirectURL = doc.match(regex)[1]
+
+            console.log(redirectURL)
+
+            // start countdown
+            var timeLeft = 20;
+            var elem = document.getElementById("countdown");
+            var timerId = setInterval(countdown, 1000);
+
+            function countdown() {
+                if (timeLeft == -1) {
+                    clearTimeout(timerId);
+                    elem.innerHTML = "<a target='aframe' href='"+redirectURL+"'>OK</a>";
+                    window.open( redirectURL, "AstroTab");
+                } else {
+                    elem.innerHTML = timeLeft + " s";
+                    timeLeft--;
+                }
+            }
+
+          } catch (err) {
+            console.log('Fetch error:' + err); // Error handling
+          }
+        }
+
+      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
+      scanner.addListener('scan', function (content) {
+            alert(content);
+            if (content.startsWith('~~~~~')) {
+                // GET APPNAME
+                var appname = document.querySelector('input[name="appname"]:checked').value;
+
+                // GET PASS TO DECODE PGP
+                var oldpass = document.getElementById("PASS").value;
+                if ( oldpass == 'PASS') {
+                    var pass = prompt("Saisir PASS:");
+                } else {
+                    var pass = oldpass;
+                }
+
+                // PREVIOUS G1PUB SCAN
+                var g1pub = document.getElementById("g1pub").value;
+
+                // MEMORIZE
+                if ( appname == 'pay') {
+                    document.getElementById("PASS").value = pass;
+                } else {
+                    document.getElementById("PASS").value = "PASS";
+                }
+
+                // APPNAME : DATA COLLECT & ARRANGE
+                if ( appname == 'pay') {
+                    var amount = prompt("MONTANT (Ğ1) ?");
+                    alert('PAY TO ' + g1pub + ' = ' +  amount);
+                }
+
+                if ( appname == 'friend') {
+                    var amount = prompt("Entre 1 et 5 (★) ?");
+                    alert( amount + '★ > ' + g1pub );
+                }
+
+                if ( appname == 'login' || appname == 'logout' ) {
+                    var amount = prompt("Saisir EMAIL:");
+                }
+
+                if ( amount == 'undefined' || amount == '' ) {
+                    var amount = document.getElementById("g1pub").value;
+                }
+
+                var myU = 'http://astroport.localhost:1234/?qrcode=' + content +'&pass=' + pass + '&' + appname + '=' + amount + '&g1pub=' + g1pub ;
+                console.log(myU);
+
+                if ( appname == 'login') {
+                    homeAstroportStation(myU, 'tab', 5000)
+                } else {
+                    homeAstroportStation(myU, 'aframe', 12000)
+                }
+
+            } else {
+
+                // COPY QRCODE IN g1pub input
+                document.getElementById("g1pub").value = content;
+                // document.getElementById("resu").innerHTML = content;
+                var myU = 'http://astroport.localhost:1234/?qrcode=' + content;
+                console.log(myU);
+                homeAstroportStation(myU, 'aframe', 12000)
+            }
+
+
+
+            // fetchAstroport(myU)
+
+      });
+
+      Instascan.Camera.getCameras().then(function (cameras) {
+
+        if (cameras.length > 0) {
+
+          scanner.start(cameras[0]);
+
+        } else {
+
+          console.error('No cameras found.');
+
+        }
+
+      }).catch(function (e) {
+
+        console.error(e);
+
+      });
+
+    </script>
+    <h1><button id="ainfo" onclick="javascript:var x = document.getElementById('yellow'); if (x.style.visibility === 'hidden') {x.style.visibility = 'visible';} else {x.style.visibility = 'hidden';}">0/1</button></h1>
+    <div id="yellow" ><a href="_STATION_" target="aframe">MENU</a>
+        <iframe name="aframe" id="aframe" src="_STATION_" width="100%" height="320px"></iframe>
+    </div>
+
+    <script>
+
+    let cookies = document.cookie;
+    console.log(cookies);
+
+    const el = document.getElementById('yellow');
+
+    setTimeout(() => {
+      el.style.visibility = 'visible';
+    }, 3000); // 👈️ delay in milliseconds
+
+    </script>
+
+</body></html>
