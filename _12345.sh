@@ -115,7 +115,7 @@ while true; do
 
         ## LOCAL CACHE SWITCH WITH LATEST
         if [[ -s ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats  ]]; then
-            if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) == "" ]]; then
+            if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null) == "" ]]; then
                 rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
                 mv ~/.zen/tmp/swarm/_${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
                  echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
@@ -139,7 +139,7 @@ while true; do
 
             ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
             echo "ANALYSING BOOTSTRAP SWARM MAP"
-            itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.myswarm' | rev | cut -d '/' -f 1 | rev )
+            itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
             ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 
             echo "ZNODS LIST"
