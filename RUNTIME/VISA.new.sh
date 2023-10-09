@@ -526,10 +526,8 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo " ★ GCHANGE MARKET ★"
 echo "Use $SALT and $PEPPER to register on https://gchange.fr and exchange ★ with friends"
 echo "$(${MY_PATH}/../tools/face.sh friendly)"
-#~ DISCONNECT : $DISCO&logout=${PLAYER}
-#~ CONNECT : $DISCO&login=${PLAYER}"
 
-echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
+echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh # DEPRECATED ?
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 
