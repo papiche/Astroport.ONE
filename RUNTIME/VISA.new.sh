@@ -523,7 +523,7 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 #~ U Planet : ${myUPLANET}
 #~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
-echo "★ GCHANGE ★"
+echo " ★ GCHANGE MARKET ★"
 echo "Use $SALT and $PEPPER to register on https://gchange.fr and exchange ★ with friends"
 echo "$(${MY_PATH}/../tools/face.sh friendly)"
 #~ DISCONNECT : $DISCO&logout=${PLAYER}
@@ -533,7 +533,17 @@ echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 
+### SEND AstroID and G1Visa to EMAIL
+(
+echo "Print your G1Visa : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
+mpack -a -s "UPlanet : G1Visa" -d ~/.zen/tmp/${MOATS}/intro.txt \
+    ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
+echo "Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
+mpack -a -s "UPlanet : AstroID" -d ~/.zen/tmp/${MOATS}/intro.txt \
+    $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
+
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
+) &
 
 exit 0
