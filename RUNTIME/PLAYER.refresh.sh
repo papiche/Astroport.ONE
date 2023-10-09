@@ -282,8 +282,9 @@ for PLAYER in ${PLAYERONE[@]}; do
 ######################### REPLACE TW with REDIRECT (reduce 12345 cache size)
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />" \
-                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/feed.html
+                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
 done
 echo "PLAYER.refresh DONE."
