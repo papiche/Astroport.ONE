@@ -134,12 +134,12 @@ while true; do
         echo "/ CONTACT :  $HOSTP"
 
         if [ -z "$isLAN" ]; then
-        echo $(mySalt) | \
+        mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
             sed "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" | \
             nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         else
-        echo $(mySalt) | \
+        mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
             nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
         fi

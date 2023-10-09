@@ -6,8 +6,6 @@ As we use IPFS, we can record any data structure as a "blockchain" by just copyi
 IPNS key publishes evolving "Solid State" (like archive.org). Any ECC key is an IPNS key.
 So Duniter/Cesium, GChange, SSH, PGP, ... can benefit a side shared storage onto IPFS.
 
-
-
 Astroport.ONE is collecting is map through the bootstrap nodes in ~/.zen/Astroport.ONE/A_boostrap_nodes.txt
 A new list makes a new "Station Tribe". Some bootstrap scenario could initiate automatic key creation & cross signatures
 (ex: Create 25 PLAYERs to start a 5x5 document emitting with random cross signature)
@@ -15,7 +13,7 @@ A new list makes a new "Station Tribe". Some bootstrap scenario could initiate a
 PLAYER key & wishes can be controled through : ```~/.zen/Astroport.ONE/command.sh``` or directly through TW (Tag="voeu")
 Each wish, is a derivated key, it has an IPNS publishing and can be associated to its own ASTROBOT program to take care about Friends data collect & merge.
 
-VISA.new.sh is creating TW from ```templates/twdefault.html```
+VISA.new.sh is creating TW from ```templates/twdefault.html``` and ```templates/minimal.html```
 This script is important as it initialize PLAYER... It could allow different templating.
 
 ## 20H12
@@ -33,6 +31,25 @@ Sequence is run in that order:
 
 This process is run almost every hour. Stations are getting and publishing
 Each time MAP.refresh.sh is running it takes data from PLAYERs caches (~/.zen/game/players/.../) and publish it on Station IPNS key.
+
+## UPlanet
+
+UMap shared keys introduce common blockchains.
+
+PROTOCOL
+
+To avoid collisions and maintain data freshness.
+20H12 process time should be adjusted on real sun time based on longitude.
+
+Every 4 minute next 0.01 longitude is processed.
+Every UMap is then processed by latitude...
+
+So the planet sectors act like a "Virtual Hard Drive" giving 24s to each sector for being refreshed.
+To spread blockchain next step calculations, key management will be given to the closest Astroport Station.
+
+CONTROL AGENT
+
+Disfunctions and protocol break can be detected by every Stations thus they can identify bad IPFS NODE publiher(s) and blacklist them
 
 ## REVERSE CODE
 
