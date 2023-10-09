@@ -504,6 +504,8 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
     if [[ -s  ${INDEX} ]]; then
 
+        echo "OK FOUND TW: ${INDEX}"
+
         if [[ ${APPNAME} == "json" ]]; then
         ##############################################
             echo "DIRECT Tag = ${VOEU} OUTPUT"
@@ -531,6 +533,9 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
             [[ ${WISH} == "" || ${WISH} == "null" ]] && echo "BLURP. EMPTY WISH" && continue
             WISHNAME=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .title')
             WISHNS=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .wishns')
+
+            [[ ! ${WISHNS} ]] && WISHNS=$(cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq .[] | jq -r 'select(.wish=="'${WISH}'") | .ipns') ## KEEP OLD PROTOCOL COMPATIBLE
+
             echo "${WISHNAME} : ${WISHNS} "
             [[ "G1${WISHNAME}" == "$VOEU" ]] \
             && echo "FOUND" \
@@ -541,8 +546,9 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
     fi
 
-    ## REDIRECT TO G1VOEU IPNS ADDRESS
     [[ $LINK == "" ]] && LINK="$myIPFS/ipfs/QmWUZr62SpriLPuqauMbMxvw971qnu741hV8EhrHmKF2Y4" ## 404 LOST IN CYBERSPACE
+
+    ## REDIRECT TO G1VOEU IPNS ADDRESS
     echo "#>>> DISPLAY WISHNS >>>> # $VOEU : $LINK"
     sed "s~_TWLINK_~${LINK}~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
