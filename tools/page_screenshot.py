@@ -3,7 +3,10 @@ import sys
 from pyppeteer import launch
 
 async def take_screenshot(url, output_file, width, height):
-    browser = await launch(headless=True)
+    browser = await launch(
+        headless=True,
+        args=['--disable-gpu']  # Add this line to disable GPU
+    )
     page = await browser.newPage()
 
     try:
