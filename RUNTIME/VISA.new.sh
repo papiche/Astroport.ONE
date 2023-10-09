@@ -112,7 +112,7 @@ fi
 ################################################################################
 TWMODEL="/ipfs/bafybeiaaf52awrqliwn5mqleua6tcv4qv5oxjfa6j2web6nh42vzdtjkiu"
 # ipfs cat $TWMODEL > templates/twdefault.html
-MINIMAL="/ipfs/bafybeidgyo756zmsltbq5ptxjdn2spncv5pccn6vxes3j7cqubqlohjr2e"
+MINIMAL="/ipfs/bafybeidp2vvvtdi3hdq3tknwfzuhjqqa6tfkepc233bdr2rg2ws4qnbvum"
 # ipfs cat $MINIMAL > templates/minimal.html
 ##################################################### # NEW PLAYER ###############
 ################################################################################
@@ -530,8 +530,8 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 #~ U Planet : ${myUPLANET}
 #~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
-
-echo
+echo "★ GCHANGE ★"
+echo "Use $SALT and $PEPPER to register on https://gchange.fr and exchange ★ with friends"
 echo "$(${MY_PATH}/../tools/face.sh friendly)"
 #~ DISCONNECT : $DISCO&logout=${PLAYER}
 #~ CONNECT : $DISCO&login=${PLAYER}"
