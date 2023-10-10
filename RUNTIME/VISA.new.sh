@@ -523,8 +523,8 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 #~ U Planet : ${myUPLANET}
 #~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
-echo "$(${MY_PATH}/../tools/face.sh friendly) ★ GCHANGE MARKET ★"
-echo "Use $SALT and $PEPPER to register on https://gchange.fr and exchange ★ with friends"
+echo "$(${MY_PATH}/../tools/face.sh friendly) ★ GCHANGE LIBRE MARKET ★"
+echo "Use $SALT and $PEPPER to register on https://cesium.app and https://gchange.fr to ★ friends"
 echo ""
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh # DEPRECATED ?
