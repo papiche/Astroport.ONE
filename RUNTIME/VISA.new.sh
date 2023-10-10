@@ -504,10 +504,10 @@ echo
 echo "* G1Visa : Public Key and Wallet
 ${NID}/ipns/${ASTRONAUTENS}#G1Visa"
 echo "   "
-echo "*  AstroID : G1Card with PASS : $PASS"
+echo "* AstroID : G1Card with PASS : $PASS"
 echo "${NID}/ipns/${ASTRONAUTENS}#AstroID"
 echo
-echo "* UMap registration : ${LAT}, ${LON}
+echo "* UMap : registration at ${LAT}, ${LON}
 ${myIPFS}${URL}"
 echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -523,9 +523,9 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 #~ U Planet : ${myUPLANET}
 #~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
-echo " ★ GCHANGE MARKET ★"
+echo "$(${MY_PATH}/../tools/face.sh friendly) ★ GCHANGE MARKET ★"
 echo "Use $SALT and $PEPPER to register on https://gchange.fr and exchange ★ with friends"
-echo "$(${MY_PATH}/../tools/face.sh friendly)"
+echo ""
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh # DEPRECATED ?
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -534,9 +534,11 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 ### SEND AstroID and G1Visa to EMAIL
 (
 echo "Print your G1Visa : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
+echo "It is your personal TW address and secured messaging inbox on https://gchange.fr" >> ~/.zen/tmp/${MOATS}/intro.txt
 mpack -a -s "UPlanet : G1Visa" -d ~/.zen/tmp/${MOATS}/intro.txt \
     ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
 echo "Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
+echo "Use it to LOG in or out your TW and take control of your personal wallet on https://cesium.app" >> ~/.zen/tmp/${MOATS}/intro.txt
 mpack -a -s "UPlanet : AstroID" -d ~/.zen/tmp/${MOATS}/intro.txt \
     $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
 

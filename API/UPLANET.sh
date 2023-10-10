@@ -189,6 +189,9 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/
 echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
 ########################################
 
+## Calculating TW IPNS ADDRESS
+TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${EMAIL}" "${NPASS}")
+
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
     <html>
@@ -217,8 +220,13 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    <br><h2>${EMAIL}<br> your TW PASS is<br></h2>
+    Your Key seeds are:<br>
+    <br>
+    <h2>${EMAIL}</h2>
     <h1>${NPASS}</h1>
+
+    Use this credentials to continue registration on <a target='_blank' href='https://cesium.app'>Cesium</a> & <a target='_blank' href='https://gchange.fr'>Gchange</a>
+    <br>
     ---
     <br>Try <a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TWPORTATION</a>
     <br>in
