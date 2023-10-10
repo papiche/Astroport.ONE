@@ -96,11 +96,14 @@ else
     LON="${input_number}"
 fi
 
-PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
-## RECEIVED PASS ## CAN BE USED TO SELECT TW TEMPLATE
-VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
-[[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
-echo "PASS for Umap $LAT $LON is $PASS"
+# NOT RECEIVING PASS. WAS USED TO SECURE PLAYER UMAP KEY... (24s sectors strategy apply now)
+#~ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+#~ ## RECEIVED PASS ## CAN BE USED TO SELECT TW TEMPLATE
+#~ VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
+#~ [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
+#~ echo "PASS for Umap $LAT $LON is $PASS"
+############################################
+#### TODO USE THIS PARAMETER TO SELECT TW TEMPLATE
 
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
