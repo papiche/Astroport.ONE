@@ -178,6 +178,10 @@ if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
         ${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
         ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
+        ## TO REMOVE : MONITOR
+        ${MY_PATH}/../tools/mailjet.sh "support@g1sms.fr" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+
+
         end=`date +%s`
         echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
         ) &
