@@ -222,10 +222,11 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 && PLAYER=${salt} \
                 || PLAYER=${WHAT}
 
-                echo "<h1>$PLAYER LOGOUT OK ?</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
-
+                echo "TW : $myIPFS/ipns/$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)" > ~/.zen/tmp/coucou/${MOATS}.log
+                echo "<h1>$PLAYER LOGOUT ...</h1>" >> ~/.zen/tmp/coucou/${MOATS}.log
                 ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log
                 ipfs key rm ${PLAYER} >> ~/.zen/tmp/coucou/${MOATS}.log
+                ipfs key rm "${PLAYER}_feed" >> ~/.zen/tmp/coucou/${MOATS}.log
 
                 echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                 end=`date +%s`
@@ -243,14 +244,25 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
                 echo "IS THERE ? $ISTHERE"
+
                 [[ ${ISTHERE} == "" ]] \
                 && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/secret.ipns  "$salt" "$pepper" \
                 && ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/secret.ipns \
+                && ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/secret.ipns \
                 && ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) \
                 || ASTRONAUTENS=${ISTHERE}
 
+                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$salt" "$G1PUB"
+                FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
+
                 ( ## 1 HOUR SESSION
-                    [[ ${ISTHERE} == "" ]] && echo "${PLAYER} SESSION START" && sleep 3600 && echo "${PLAYER} SESSION END" && ipfs key rm ${PLAYER}
+                    [[ ${ISTHERE} == "" ]] \
+                        && echo "${PLAYER} SESSION STARTED" \
+                        && sleep 3600 \
+                        && echo "${PLAYER} SESSION ENDED" \
+                        && ipfs key rm ${PLAYER} \
+                        && ipfs key rm ${PLAYER}_feed \
+                        && ipfs key rm ${G1PUB}
                 ) &
 
                 REPLACE=${myIPFS}/ipns/${ASTRONAUTENS}

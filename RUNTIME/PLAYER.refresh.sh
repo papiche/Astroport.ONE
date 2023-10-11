@@ -54,24 +54,30 @@ for PLAYER in ${PLAYERONE[@]}; do
 
 
     ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
-    [[ ! ${ASTRONAUTENS} ]] \
-        && echo "WARNING No ${PLAYER} in keystore WARNING WARNING" \
-        && ASTRONAUTENS=$ASTRONS
+    ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
+
+    if [[ ! ${ASTRONAUTENS} ]]; then
+
+        echo "${PLAYER} TW IS DISCONNECTED... RECREATING IPNS KEYS"
+
+        ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
+        ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
+
+        source ~/.zen/game/players/${PLAYER}/secret.june
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
+        FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
+
+        ##
+        ASTRONAUTENS=$ASTRONS && ASTRONS=""
+
+    fi
+
 
     [[ ! ${ASTRONAUTENS} ]] && echo "ERROR BAD ${PLAYER} - CONTINUE" && continue
 
     echo ">>> $myIPFS/ipns/${ASTRONAUTENS}"
 
-    ## MY PLAYER : RESTORE PLAYER KEY FROM G1PUB (IN CASE IS MISSING : PLAYER LOGOUT)
-    [[ ! $(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) ]] \
-        && ipfs key export ${G1PUB} -o ~/.zen/tmp/${MOATS}/${PLAYER}.key \
-        && ipfs key import ${PLAYER} ~/.zen/tmp/${MOATS}/${PLAYER}.key \
-        && rm ~/.zen/tmp/${MOATS}/${PLAYER}.key
-
     ## REFRESH PLAYER IN STATION CACHE
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/ 2>/dev/null ## CORRECT OLD PUBLISH FORMAT REMOVE
-
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
@@ -284,6 +290,13 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
+
+    ## MAINTAIN R/RW TW STATE
+    [[ ${ASTRONS} == "" ]] \
+    && echo "${PLAYER} DISCONNECT" \
+    && ipfs key rm ${PLAYER} \
+    && ipfs key rm ${PLAYER}_feed \
+    && ipfs key rm ${G1PUB}
 
 
 done
