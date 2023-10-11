@@ -104,7 +104,8 @@ mkdir ~/.zen/tmp/${MOATS}
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
         # SHUFFLE UMAP.refresh
-        cat ${UREFRESH} | shuf > ${UREFRESH}.shuf
+        echo ${IPFSNODEID} >> ${UREFRESH}
+        cat ${UREFRESH} | uniq | shuf  > ${UREFRESH}.shuf
         mv ${UREFRESH}.shuf ${UREFRESH}
         ## NEXT REFRESHER
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
