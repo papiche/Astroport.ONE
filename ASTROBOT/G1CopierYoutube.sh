@@ -112,7 +112,7 @@ if [[ ! ${TIDDLER} ]]; then
         echo "COPIE : $ZYURL"
 
         ## LIMIT TO 12 MAXIMUM COPY PER DAY PER PLAYER
-        [[ $tot == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && continue
+        [[ $tot == 13 ]] && echo "MAXIMUM COPY REACHED FOR TODAY" && break
 
         TITLE="$(/usr/local/bin/yt-dlp $BROWSER --print "%(title)s" "${ZYURL}"  | detox --inline)"
         [[ ! $TITLE ]] && echo "NO TITLE" && continue
