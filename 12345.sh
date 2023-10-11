@@ -137,22 +137,13 @@ while true; do
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
             sed "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" | \
-            nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         else
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
-            nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         fi
 
-        #~ echo "$HTTPCORS
-        #~ <html>
-        #~ <head>
-    #~ <title>[Astroport] :powered: Station</title>
-    #~ <meta http-equiv=\"refresh\" content=\"3; url='https://astroport.com'\" />
-    #~ </head>
-        #~ DING : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-        end=`date +%s`
-        echo " (‿/‿) $myHOST:$PORT / Execution time was "`expr $end - $start` seconds.
         continue
     fi
 
