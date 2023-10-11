@@ -207,16 +207,16 @@ for PLAYER in ${PLAYERONE[@]}; do
         #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
         #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
-        ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
-        FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
-        echo "FRIENDS qo-op FEEDS : "${FRIENDSFEEDS}
-        echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
+        #~ ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
+        #~ FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
+        #~ echo "FRIENDS qo-op FEEDS : "${FRIENDSFEEDS}
+        #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
+          #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
 
         ## WRITE TIDDLERS IN TW
         tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                         --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
-                        --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \
                         --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
         ## CHECK IT IS OK
@@ -269,6 +269,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
+
+    ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE
 
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
