@@ -93,6 +93,8 @@ mkdir ~/.zen/tmp/${MOATS}
             done
         done
 
+        [[ ! ${ACTINGNODE} ]] && ACTINGNODE=${IPFSNODEID}
+
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
             && continue
