@@ -297,6 +297,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
             sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
             sed -i "s~${OUMAP}~${UMAP}~g" ~/.zen/tmp/${MOATS}/GPS.json
         fi
+
+        SECTOR=_$(echo $LAT | xargs printf '%.1f\n' | sed s~,~.~g)_$(echo $LON | xargs printf '%.1f\n' | sed s~,~.~g) ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
+        echo "UPlanet 0.1° SECTOR : ${SECTOR}"
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
@@ -325,7 +328,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED STATION TW KEY " \
                                                         || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
 
-###########
+########### SECTOR = 0.1° UPLANET SLICE
+    OSECTOR=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].sector)
+    [[ ${OSECTOR} != "null" ]] && sed -i "s~${OSECTOR}~${SECTOR}~g" ~/.zen/tmp/${MOATS}/MadeInZion.json
 
     ### CREATE ${NID} ADDRESS FOR API & ROUND ROBIN FOR GW
     cat ${MY_PATH}/../templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
@@ -363,6 +368,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/MadeInZion.json "application/json" \
     --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_api.json" "application/json" \
     --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
                             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"

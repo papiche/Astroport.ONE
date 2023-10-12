@@ -33,14 +33,14 @@ mkdir ~/.zen/tmp/${MOATS}
         LAT=$(echo ${UMAP} | cut -d '_' -f 2)
         LON=$(echo ${UMAP} | cut -d '_' -f 3)
 
-        [[ $LAT == "" || $LON == "" ]] && echo ">> ERROR BAD $LAT $LON" && continue
-        [[ $LAT == "null" || $LON == "null" ]] && echo ">> ERROR BAD $LAT $LON" && continue
+        [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
+        [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
         ##############################################################
-        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "$LAT" "$LON")
+        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${LAT}" "${LON}")
         [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
         echo "ACTUAL UMAP WALLET : ${G1PUB}"
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/WALLET.priv "$LAT" "$LON"
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/WALLET.priv "${LAT}" "${LON}"
         ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/WALLET.priv)
         ##############################################################
@@ -61,17 +61,19 @@ mkdir ~/.zen/tmp/${MOATS}
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
+        cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
         RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
         for RSSFILE in ${RSSFILES[@]}; do
-            cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
+            cp -v ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
         done
 
 ## COLLECT TW LINKS FOR SWARM
+        cp R ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/
         TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
             mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}
-            cp ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}/
+            cp -v ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}/
         done
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,12 +81,12 @@ mkdir ~/.zen/tmp/${MOATS}
         ## NODE  SELECTION in UMAP.refresh
         UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
         ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
-        [[ ! ${ALLNODES} ]] && ALLNODES=${IPFSNODEID} && echo ${IPFSNODEID} > ${UREFRESH}
+        [[ ! ${ALLNODES} ]] && ALLNODES=${IPFSNODEID}
 
         STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
         # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))
         IAMINBOOTSTRAP=$(echo ${STRAPS[@]} | grep ${IPFSNODEID})
-        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=${ALLNODES[-1]} ## LAST NODE
+        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
 
         # PRIORITY TO BOOSTRAP
         for NODE in ${ALLNODES[@]}; do
@@ -112,12 +114,23 @@ mkdir ~/.zen/tmp/${MOATS}
         ######################################################## # NODE  SELECTION in UMAP.refresh
 
 
-        ## ISM2IPFS UMAP GENESYS
-        UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
-        USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=$LAT&southWestLon=$LON&deg=0.01"
+        ## OSM2IPFS
+### UMAP = 0.01° Planet Slice
+        UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+        USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
 
+### SECTOR = 0.1° Planet Slice
+        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}"
+
+ ### REGION = 1° Planet Slice
+        ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}"
+
+
+## ¤$£€
+        ## # GET SCREENSHOT UMAP SECTOR & REGION JPG
+        ## PROBLEM ON LIBRA ... MORE TEST NEEDED ... TODO
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg ]] \
             && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg 900 900 \
             && [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg ]] && killall chrome
@@ -125,7 +138,6 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] \
             && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg 900 900 \
             && [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] && killall chrome
-
 
         ##############################################################
         ## ERASE FOR ALL NODE PROTOCOL UGRADE
@@ -136,8 +148,8 @@ mkdir ~/.zen/tmp/${MOATS}
         ## CALCULATE SURROUNDING UMAPS
         ##############################################################
         # North Umap
-        NLAT=$(echo "$LAT + 0.01" | bc)
-        NLON="$LON"
+        NLAT=$(echo "${LAT} + 0.01" | bc)
+        NLON="${LON}"
         NWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$NLAT" "$NLON")
         [[ ! ${NWALLET} ]] && echo "ERROR generating NWALLET" && exit 1
         echo "NORTH UMAP NWALLET : ${NWALLET}"
@@ -148,8 +160,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # South Umap
-        SLAT=$(echo "$LAT - 0.01" | bc)
-        SLON="$LON"
+        SLAT=$(echo "${LAT} - 0.01" | bc)
+        SLON="${LON}"
         SWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$SLAT" "$SLON")
         [[ ! ${SWALLET} ]] && echo "ERROR generating SWALLET" && exit 1
         echo "SOUTH UMAP SWALLET : ${SWALLET}"
@@ -160,8 +172,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # West Umap
-        WLAT="$LAT"
-        WLON=$(echo "$LON - 0.01" | bc)
+        WLAT="${LAT}"
+        WLON=$(echo "${LON} - 0.01" | bc)
         WWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$WLAT" "$WLON")
         [[ ! ${WWALLET} ]] && echo "ERROR generating WWALLET" && exit 1
         echo "WEST UMAP WWALLET : ${WWALLET}"
@@ -172,8 +184,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # East Umap
-        ELAT="$LAT"
-        ELON=$(echo "$LON + 0.01" | bc)
+        ELAT="${LAT}"
+        ELON=$(echo "${LON} + 0.01" | bc)
         EWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$ELAT" "$ELON")
         [[ ! ${EWALLET} ]] && echo "ERROR generating EWALLET" && exit 1
         echo "EAST UMAP EWALLET : ${EWALLET}"
@@ -184,8 +196,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # South West Umap
-        SWLAT=$(echo "$LAT - 0.01" | bc)
-        SWLON=$(echo "$LON - 0.01" | bc)
+        SWLAT=$(echo "${LAT} - 0.01" | bc)
+        SWLON=$(echo "${LON} - 0.01" | bc)
         SWWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$SWLAT" "$SWLON")
         [[ ! ${SWWALLET} ]] && echo "ERROR generating SWWALLET" && exit 1
         echo "SOUTH WEST UMAP SWWALLET : ${SWWALLET}"
@@ -196,8 +208,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # North West Umap
-        NWLAT=$(echo "$LAT + 0.01" | bc)
-        NWLON=$(echo "$LON - 0.01" | bc)
+        NWLAT=$(echo "${LAT} + 0.01" | bc)
+        NWLON=$(echo "${LON} - 0.01" | bc)
         NWWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$NWLAT" "$NWLON")
         [[ ! ${NWWALLET} ]] && echo "ERROR generating NWWALLET" && exit 1
         echo "NORTH WEST UMAP NWWALLET : ${NWWALLET}"
@@ -208,8 +220,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # North East Umap
-        NELAT=$(echo "$LAT + 0.01" | bc)
-        NELON=$(echo "$LON + 0.01" | bc)
+        NELAT=$(echo "${LAT} + 0.01" | bc)
+        NELON=$(echo "${LON} + 0.01" | bc)
         NEWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$NELAT" "$NELON")
         [[ ! ${NEWALLET} ]] && echo "ERROR generating NEWALLET" && exit 1
         echo "NORTH EAST UMAP NEWALLET : ${NEWALLET}"
@@ -220,8 +232,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ##############################################################
         # South East Umap
-        SELAT=$(echo "$LAT - 0.01" | bc)
-        SELON=$(echo "$LON + 0.01" | bc)
+        SELAT=$(echo "${LAT} - 0.01" | bc)
+        SELON=$(echo "${LON} + 0.01" | bc)
         SEWALLET=$(${MY_PATH}/../tools/keygen -t duniter "$SELAT" "$SELON")
         [[ ! ${SEWALLET} ]] && echo "ERROR generating SEWALLET" && exit 1
         echo "SOUTH EAST UMAP SEWALLET : ${SEWALLET}"
@@ -245,10 +257,13 @@ mkdir ~/.zen/tmp/${MOATS}
 
     fi
 
-### EXTRA SCRAPPING
+####################################
+        ## MAKE GET POI's
+
+### JSON UMAP SCRAPPING
 ####################################
         ## RECORD P4N SPOT DATA
-        curl -s "https://www.park4night.com/api/places/around?lat=$LAT&lng=$LON&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
+        curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
         [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
         && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
 

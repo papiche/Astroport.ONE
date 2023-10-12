@@ -88,7 +88,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## IPFS / HTTP / LOCAL
     #~ DISABLED || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "$LIBRA/ipns/${ASTRONAUTENS}" \
 
-    ipfs --timeout 360s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS} \
+    ipfs --timeout 480s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS} \
     || cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     ## PLAYER TW IS ONLINE ?
