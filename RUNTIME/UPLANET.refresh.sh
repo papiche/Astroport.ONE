@@ -57,23 +57,17 @@ mkdir ~/.zen/tmp/${MOATS}
         ########################################################
         ## NODE  SELECTION in UMAP.refresh
         UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
-        ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
-        [[ ! ${ALLNODES} ]] && ALLNODES=${IPFSNODEID}
+        ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
 
-        STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
-        # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))
-        IAMINBOOTSTRAP=$(echo ${STRAPS[@]} | grep ${IPFSNODEID})
-        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
-
-        # PRIORITY TO BOOSTRAP
-        for NODE in ${ALLNODES[@]}; do
+        if [[ ! ${ALLNODES} ]]; then         # UPDATE BOOSTRAP UREFRESH LIST
+            STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
             for STRAP in ${STRAPS[@]}; do
-                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresh file with all STRAPS
-                [[ "${NODE}" == "${STRAP}" ]] && ACTINGNODE=${NODE} ## PREFER NODE BEING BOOSTRAP
+                    echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresh file with all STRAPS
             done
-        done
+            ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
+        fi
 
-        [[ ! ${ACTINGNODE} ]] && ACTINGNODE=${IPFSNODEID}
+        ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
@@ -85,8 +79,10 @@ mkdir ~/.zen/tmp/${MOATS}
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
         # SHUFFLE UMAP.refresh
-        echo ${IPFSNODEID} >> ${UREFRESH}
-        cat ${UREFRESH} | uniq | shuf  > ${UREFRESH}.shuf
+        for STRAP in ${STRAPS[@]}; do
+            echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresh file with all STRAPS
+        done
+        cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
         mv ${UREFRESH}.shuf ${UREFRESH}
         ## NEXT REFRESHER
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
