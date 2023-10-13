@@ -53,6 +53,46 @@ mkdir ~/.zen/tmp/${MOATS}
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ########################################################
+        ## NODE  SELECTION in UMAP.refresh
+        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
+        ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
+        [[ ! ${ALLNODES} ]] && ALLNODES=${IPFSNODEID}
+
+        STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
+        # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))
+        IAMINBOOTSTRAP=$(echo ${STRAPS[@]} | grep ${IPFSNODEID})
+        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
+
+        # PRIORITY TO BOOSTRAP
+        for NODE in ${ALLNODES[@]}; do
+            for STRAP in ${STRAPS[@]}; do
+                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresh file with all STRAPS
+                [[ "${NODE}" == "${STRAP}" ]] && ACTINGNODE=${NODE} ## PREFER NODE BEING BOOSTRAP
+            done
+        done
+
+        [[ ! ${ACTINGNODE} ]] && ACTINGNODE=${IPFSNODEID}
+
+        [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
+            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
+            && rm -Rf ~/.zen/tmp/${MOATS}
+            && continue
+            ########################################
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
+
+        ## NEXT REFRESHER
+        # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
+        # SHUFFLE UMAP.refresh
+        echo ${IPFSNODEID} >> ${UREFRESH}
+        cat ${UREFRESH} | uniq | shuf  > ${UREFRESH}.shuf
+        mv ${UREFRESH}.shuf ${UREFRESH}
+        ## NEXT REFRESHER
+        echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
+        ######################################################## # NODE  SELECTION in UMAP.refresh
+
+
         ## FORMAT CONTROL WARNING
         [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
@@ -77,44 +117,6 @@ mkdir ~/.zen/tmp/${MOATS}
             mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}
             cp -v ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}/
         done
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ########################################################
-        ## NODE  SELECTION in UMAP.refresh
-        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
-        ALLNODES=($(cat ${UREFRESH})) # ${ALLNODES[@]}
-        [[ ! ${ALLNODES} ]] && ALLNODES=${IPFSNODEID}
-
-        STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
-        # STRAPS=($(cat ${MY_PATH}/../A_boostrap_nodes.txt | grep -Ev "#"))
-        IAMINBOOTSTRAP=$(echo ${STRAPS[@]} | grep ${IPFSNODEID})
-        [[ ! ${IAMINBOOTSTRAP} ]] && ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
-
-        # PRIORITY TO BOOSTRAP
-        for NODE in ${ALLNODES[@]}; do
-            for STRAP in ${STRAPS[@]}; do
-                [[ "${NODE}" == "${STRAP}" ]] && ACTINGNODE=${NODE} ## PREFER NODE BEING BOOSTRAP
-            done
-        done
-
-        [[ ! ${ACTINGNODE} ]] && ACTINGNODE=${IPFSNODEID}
-
-        [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
-            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-            && rm -Rf ~/.zen/tmp/${MOATS}
-            && continue
-            ########################################
-            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
-
-        ## NEXT REFRESHER
-        # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
-        # SHUFFLE UMAP.refresh
-        echo ${IPFSNODEID} >> ${UREFRESH}
-        cat ${UREFRESH} | uniq | shuf  > ${UREFRESH}.shuf
-        mv ${UREFRESH}.shuf ${UREFRESH}
-        ## NEXT REFRESHER
-        echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
-        ######################################################## # NODE  SELECTION in UMAP.refresh
 
 
         ## OSM2IPFS
