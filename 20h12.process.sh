@@ -10,7 +10,6 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
-## CLEANING  ~/.zen/tmp
 rm -Rf ~/.zen/tmp/*
 
 ## IPFS DAEMON STATUS

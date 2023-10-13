@@ -57,23 +57,25 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
+
+        mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
+        mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
-        cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
+        cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
         RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
         for RSSFILE in ${RSSFILES[@]}; do
-            cp -v ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/RSS/
+            cp -v ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
         done
 
 ## COLLECT TW LINKS FOR SWARM
-        cp R ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/
+        cp R ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/
         TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
-            mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}
-            cp -v ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/TW/${ZMAIL}/
+            mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}
+            cp -v ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}/
         done
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,6 +101,7 @@ mkdir ~/.zen/tmp/${MOATS}
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
+            && rm -Rf ~/.zen/tmp/${MOATS}
             && continue
             ########################################
             # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER

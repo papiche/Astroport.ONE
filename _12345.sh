@@ -60,7 +60,6 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
 ## PUBLISH CHANNEL IPNS
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
-    rm ~/.zen/tmp/${IPFSNODEID}/_MySwarm.ipns 2>/dev/null ## REMOVE AFTER PROTOCOL UPDATE PROPAGATION
 
 ############################################################
 ############################################################
