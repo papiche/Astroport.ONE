@@ -48,11 +48,9 @@ espeak "Players refresh" > /dev/null 2>&1
 ~/.zen/Astroport.ONE/RUNTIME/PLAYER.refresh.sh
 
 espeak "REFRESHING SWARM" > /dev/null 2>&1
-# Refresh ~/.zen/game/players/PLAYER
-~/.zen/Astroport.ONE/RUNTIME/MAP.refresh.sh
+~/.zen/Astroport.ONE/RUNTIME/SWARM.refresh.sh
 
 espeak "REFRESHING UPLANET" > /dev/null 2>&1
-# Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/RUNTIME/UPLANET.refresh.sh
 
 

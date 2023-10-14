@@ -78,7 +78,7 @@ while true; do
     duree=$(expr ${MOATS} - $lastrun)
 
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
-    if [[ duree -gt 3600000 ]]; then
+    if [[ ${duree} -gt 3600000 ]]; then
 
     #####################################
     ( ##### SUB-PROCESS RUN
