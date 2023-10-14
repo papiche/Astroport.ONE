@@ -53,6 +53,30 @@ mkdir ~/.zen/tmp/${MOATS}
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+        ## FORMAT CONTROL WARNING
+        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
+            && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
+
+        mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
+        mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
+
+ # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
+                ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
+                # ZMOATS SHOULD BE MORE THAT 20 HOURS.
+                MOATS_SECONDS=$(date -d "$MOATS" +%s)
+                ZMOATS_SECONDS=$(date -d "$ZMOATS" +%s)
+                DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
+                    echo "UMAP DATA is ${DIFF_SECONDS} seconds "
+                # IF LESS.
+                if [ ${DIFF_SECONDS} -lt 72000 ]; then
+                    echo "GETTING YESTERDAY UMAP.refresh"
+                    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+                    ## GET UMAP.refresh from PREVIOUS _chain ...
+                    ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresh > ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh
+                fi
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ########################################################
         ## NODE  SELECTION in UMAP.refresh
@@ -68,6 +92,18 @@ mkdir ~/.zen/tmp/${MOATS}
         fi
 
         ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
+        SECTORNODE=${ALLNODES[-2]}
+        REGIONNODE=${ALLNODES[-3]}
+
+        echo "* ACTINGNODE=${ACTINGNODE}"
+        echo "* SECTORNODE=${SECTORNODE}"
+        echo "* REGIONNODE=${REGIONNODE}"
+
+### SECTOR = 0.1° Planet Slice
+        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${SECTORNODE}"
+
+ ### REGION = 1° Planet Slice
+       ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${REGIONNODE}"
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
@@ -88,15 +124,6 @@ mkdir ~/.zen/tmp/${MOATS}
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
         ######################################################## # NODE  SELECTION in UMAP.refresh
 
-
-        ## FORMAT CONTROL WARNING
-        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
-            && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
-
-        mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
-        mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
         cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
@@ -121,13 +148,6 @@ mkdir ~/.zen/tmp/${MOATS}
         USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
-
-### SECTOR = 0.1° Planet Slice
-        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}"
-
- ### REGION = 1° Planet Slice
-        ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}"
-
 
 ## ¤$£€
         ## # GET SCREENSHOT UMAP SECTOR & REGION JPG
