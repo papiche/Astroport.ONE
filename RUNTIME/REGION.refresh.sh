@@ -21,8 +21,7 @@ MOATS=$3
 UMAP=$4
 REGIONNODE=$5
 
-
-[[ ! $(ls ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined}) ]] && echo "MISSING UMAP CONTEXT" && exit 1
+[[ ! -d ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined} ]] && echo "MISSING UMAP CONTEXT" && exit 1
 
 CLAT=$(echo ${LAT} | cut -d '.' -f 1)
 CLON=$(echo ${LON} | cut -d '.' -f 1)

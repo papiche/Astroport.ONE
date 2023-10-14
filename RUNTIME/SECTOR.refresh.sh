@@ -21,7 +21,7 @@ MOATS=$3
 UMAP=$4
 SECTORNODE=$5
 
-[[ ! $(ls ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined}) ]] && echo "MISSING UMAP CONTEXT" && exit 1
+[[ ! -d ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined} ]] && echo "MISSING UMAP CONTEXT" && exit 1
 
 SLAT=$(echo ${LAT} | xargs printf '%.1f\n' | sed s~,~.~g)
 SLON=$(echo ${LON} | xargs printf '%.1f\n' | sed s~,~.~g)
