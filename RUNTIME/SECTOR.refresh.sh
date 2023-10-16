@@ -28,7 +28,7 @@ SLON=$(echo ${LON} | xargs printf '%.1f\n' | sed s~,~.~g)
 SECTOR="_${SLAT}_${SLON}"
 echo "SECTOR ${SECTOR}"
 
-[[ "${REGIONNODE}" == "${IPFSNODEID}" ]] && echo ">> MANAGING SECTOR PUBLICATION" || exit 0
+[[ "${SECTORNODE}" == "${IPFSNODEID}" ]] && echo ">> MANAGING SECTOR PUBLICATION" || exit 0
 
 ##############################################################
 SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")

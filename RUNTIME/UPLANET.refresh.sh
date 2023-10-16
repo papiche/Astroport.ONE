@@ -132,7 +132,7 @@ mkdir ~/.zen/tmp/${MOATS}
         done
 
 ## COLLECT TW LINKS FOR SWARM
-        cp R ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/
+        cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/
         TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
@@ -159,9 +159,6 @@ mkdir ~/.zen/tmp/${MOATS}
             && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg 900 900 \
             && [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] && killall chrome
 
-        ##############################################################
-        ## ERASE FOR ALL NODE PROTOCOL UGRADE
-        rm ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json
         ##############################################################
     if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
         ##############################################################
@@ -290,23 +287,12 @@ mkdir ~/.zen/tmp/${MOATS}
         ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
         ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
-        ## CREATE GCHANGE ACCOUNT ??!!
+        ## CREATE GCHANGE ACCOUNT ??!! DO ANYTHING RELATED TO UMAP
 
 
     ### SET navigator.html ## MAKE EVOLVE template/umap.html
         cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
         cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
-
-    ### REFRESH PLAYERS DATA (SHOULD BE THERE, but Station rebuilds it )
-    # FIND WHICH PLAYERS MATCH SAME "_LAT_LON" IN ~/.zen/game/players/*/.umap
-        find ~/.zen/game/players -type f -name ".umap" -exec grep -l "${UMAP}" {} \; | while read umap_file; do
-            player_dir=$(dirname "$umap_file")
-            player_name=$(basename "$player_dir")
-            echo "MATCHING $player_name"
-            playertw=$(cat ${player_dir}/.playerns)
-            mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}
-            echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${playertw}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/TW/${player_name}/index.html
-        done
 
 ########################################################
 ## ACTIVATE IN CASE OF PROTOCOL BRAKE
@@ -331,7 +317,7 @@ mkdir ~/.zen/tmp/${MOATS}
             && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats \
             && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
-        echo "PUBLISHING NEW UMAPROOT : http://ipfs.localhost:8080/ipfs/${UMAPROOT}"
+        echo "PUBLISHING NEW UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
 
             ipfs name publish --key=${G1PUB} /ipfs/${UMAPROOT}
             end=`date +%s`
