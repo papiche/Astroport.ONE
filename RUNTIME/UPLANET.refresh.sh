@@ -114,7 +114,6 @@ mkdir ~/.zen/tmp/${MOATS}
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-            && rm -Rf ~/.zen/tmp/${MOATS} \
             && continue
             ########################################
             # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
