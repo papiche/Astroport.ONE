@@ -12,7 +12,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # LOAD EXTRA DATA TO CACHE ~/.zen/tmp/${IPFSNODEID}/
 # PUBLISH STATION BALISE
 ############################################
-echo "## RUNNING MAP.refresh"
+echo "## RUNNING NODE.refresh"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 #################################################################
@@ -44,6 +44,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
         cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
     done
 
+    cp ~/.zen/GPS ~/.zen/tmp/${IPFSNODEID}/
     echo "############################################ MY MAP "
     ls ~/.zen/tmp/${IPFSNODEID}/
     echo "############################################"
