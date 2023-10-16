@@ -23,10 +23,16 @@ mkdir ~/.zen/tmp/${MOATS}
     ## RUNING FOR ALL UMAP FOUND IN STATION MAP CACHE : "_LAT_LON"
 
     ## SEARCH UMAP (created by PLAYER.refresh.sh)
-    UMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
-    echo "FOUND : ${UMAPS[@]}" # "_LAT_LON" directories
+    MEMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
+    echo "FOUND : ${MEMAPS[@]}" # "_LAT_LON" directories
 
-    for UMAP in ${UMAPS[@]}; do
+    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/* | rev | cut -d '/' -f 1 | rev | sort | uniq 2>/dev/null) )
+    echo "FOUND : ${SWARMMAPS[@]}" # "_LAT_LON" directories
+
+    combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
+    unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+
+    for UMAP in ${unique_combined[@]}; do
 
         start=`date +%s`
         echo ">>> REFRESHING ${UMAP}"
@@ -39,7 +45,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ##############################################################
         G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${LAT}" "${LON}")
         [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
-        COINS=$($MY_PATH/tools/COINScheck.sh ${G1PUB} | tail -n 1)
+        COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
         echo "UMAP (${COINS} G1) WALLET : ${G1PUB}"
 
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv "${LAT}" "${LON}"
@@ -118,11 +124,15 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
+        STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
+            for STRAP in ${STRAPS[@]}; do
+                    echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+            done
         # SHUFFLE UMAP.refresher
         cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
         mv ${UREFRESH}.shuf ${UREFRESH}
         ## NEXT REFRESHER
-        echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
+        echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
         ######################################################## # NODE  SELECTION in UMAP.refresher
 
 
@@ -145,8 +155,8 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## OSM2IPFS
 ### UMAP = 0.01° Planet Slice
-        UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-        USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+        UMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
+        USATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
 

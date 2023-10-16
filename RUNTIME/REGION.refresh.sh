@@ -34,7 +34,7 @@ echo "REGION ${REGION}"
 ##############################################################
 REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${REGION}" "${REGION}")
 [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
-        COINS=$($MY_PATH/tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
+        COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
         echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${REGION}" "${REGION}"

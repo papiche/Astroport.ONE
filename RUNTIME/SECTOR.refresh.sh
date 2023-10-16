@@ -34,7 +34,7 @@ echo "SECTOR ${SECTOR}"
 ##############################################################
 SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
 [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
-        COINS=$($MY_PATH/tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+        COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
         echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SECTOR.priv "${SECTOR}" "${SECTOR}"
