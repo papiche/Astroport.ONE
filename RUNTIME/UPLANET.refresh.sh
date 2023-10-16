@@ -99,7 +99,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
 
         if [[ ${ALLNODES[@]} == "" ]]; then
-            STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
+            STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
             for STRAP in ${STRAPS[@]}; do
                     echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
             done
