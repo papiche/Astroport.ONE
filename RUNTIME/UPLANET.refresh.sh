@@ -62,6 +62,10 @@ mkdir ~/.zen/tmp/${MOATS}
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
+
+    ## PROTOCOL MIGRATION (TODO REMOVE)
+    rm ${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh
+
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
                 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
                 # ZMOATS SHOULD BE MORE THAT 20 HOURS.
@@ -71,27 +75,27 @@ mkdir ~/.zen/tmp/${MOATS}
                     echo "UMAP DATA is ${DIFF_SECONDS} seconds "
                 # IF LESS.
                 if [ ${DIFF_SECONDS} -lt 72000 ]; then
-                    echo "GETTING YESTERDAY UMAP.refresh"
+                    echo "GETTING YESTERDAY UMAP.refresher"
                     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-                    ## GET UMAP.refresh from PREVIOUS _chain ...
-                    ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresh > ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh
+                    ## GET UMAP.refresher from PREVIOUS _chain ...
+                    ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresher > ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher
                 fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ########################################################
-        ## NODE  SELECTION in UMAP.refresh
-        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh"
+        ## NODE  SELECTION in UMAP.refresher
+        UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher"
         ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
 
-        if [[ ! ${ALLNODES} ]]; then         # UPDATE BOOSTRAP UREFRESH LIST
+        [[ ${ALLNODES[@]} == "" ]]; then
             STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
             for STRAP in ${STRAPS[@]}; do
-                    echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresh file with all STRAPS
+                    echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
             done
             ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
         fi
 
-        ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresh
+        ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresher
         SECTORNODE=${ALLNODES[-2]}
         REGIONNODE=${ALLNODES[-3]}
 
@@ -114,15 +118,12 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
-        # SHUFFLE UMAP.refresh
-        for STRAP in ${STRAPS[@]}; do
-            echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresh file with all STRAPS
-        done
+        # SHUFFLE UMAP.refresher
         cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
         mv ${UREFRESH}.shuf ${UREFRESH}
         ## NEXT REFRESHER
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | tail -n 1)"
-        ######################################################## # NODE  SELECTION in UMAP.refresh
+        ######################################################## # NODE  SELECTION in UMAP.refresher
 
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
