@@ -98,19 +98,15 @@ mkdir ~/.zen/tmp/${MOATS}
             ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
         fi
 
-        ACTINGNODE=${ALLNODES[-1]} ## LAST NODE IN UMAP.refresher
-        SECTORNODE=${ALLNODES[-2]}
-        REGIONNODE=${ALLNODES[-3]}
+        ACTINGNODE=${ALLNODES[1]} ## FIST NODE IN UMAP.refresher
 
         echo "* ACTINGNODE=${ACTINGNODE}"
-        echo "* SECTORNODE=${SECTORNODE}"
-        echo "* REGIONNODE=${REGIONNODE}"
 
 ### SECTOR = 0.1° Planet Slice
-        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${SECTORNODE}"
+        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
 
  ### REGION = 1° Planet Slice
-       ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${REGIONNODE}"
+       ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \

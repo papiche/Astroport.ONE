@@ -28,11 +28,6 @@ CLON=$(echo ${LON} | cut -d '.' -f 1)
 REGION="_${CLAT}_${CLON}"
 echo "REGION ${REGION}"
 
-REGIONMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1"
-REGIONSATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1"
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
-
 [[ "${REGIONNODE}" == "${IPFSNODEID}" ]] && echo ">>> MANAGING REGION PUBLICATION" || exit 0
 
 ##############################################################
@@ -45,6 +40,11 @@ ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
 REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
 ##############################################################
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.IPNS.html
+
+REGIONMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+REGIONSATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
+echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
 
        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -60,8 +60,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > 
         TOTL=$((${NL}+${NS}))
 
 echo "Number of RSS : "${TOTL}
-        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/${TOTL}
-        IPFSPOP=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/${TOTL})
+        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_RSS
+        IPFSPOP=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/N_RSS)
 
         ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
 

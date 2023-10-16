@@ -28,12 +28,6 @@ SLON=$(echo ${LON} | xargs printf '%.1f\n' | sed s~,~.~g)
 SECTOR="_${SLAT}_${SLON}"
 echo "SECTOR ${SECTOR}"
 
-SECTORMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1"
-SECTORSATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1"
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
-##############################################################
-
 [[ "${REGIONNODE}" == "${IPFSNODEID}" ]] && echo ">> MANAGING SECTOR PUBLICATION" || exit 0
 
 ##############################################################
@@ -46,6 +40,13 @@ ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
 SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SECTOR.priv)
 
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.IPNS.html
+
+SECTORMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
+SECTORSATGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
+echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
+echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
+##############################################################
+
 
        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -61,8 +62,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > 
         TOTL=$((${NL}+${NS}))
 
 echo "Number of RSS : "${TOTL}
-        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/${TOTL}
-        IPFSPOP=$(ipfs add -q ~/.zen/tmp/${MOATS}/${SECTOR}/${TOTL})
+        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS
+        IPFSPOP=$(ipfs add -q ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS)
 
         ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
 
