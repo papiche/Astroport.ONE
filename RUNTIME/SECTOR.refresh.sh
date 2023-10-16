@@ -27,13 +27,15 @@ SLAT=$(echo ${LAT} | xargs printf '%.1f\n' | sed s~,~.~g)
 SLON=$(echo ${LON} | xargs printf '%.1f\n' | sed s~,~.~g)
 SECTOR="_${SLAT}_${SLON}"
 echo "SECTOR ${SECTOR}"
+[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.IPNS.html ]] && echo "ALREADY DONE" && exit 0
 
 [[ "${SECTORNODE}" == "${IPFSNODEID}" ]] && echo ">> MANAGING SECTOR PUBLICATION" || exit 0
 
 ##############################################################
 SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
 [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
-echo "${SECTOR} WALLET : ${SECTORG1PUB}"
+        COINS=$($MY_PATH/tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+        echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SECTOR.priv "${SECTOR}" "${SECTOR}"
 ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT

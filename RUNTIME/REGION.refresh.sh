@@ -27,13 +27,15 @@ CLAT=$(echo ${LAT} | cut -d '.' -f 1)
 CLON=$(echo ${LON} | cut -d '.' -f 1)
 REGION="_${CLAT}_${CLON}"
 echo "REGION ${REGION}"
+[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.IPNS.html ]] && echo "ALREADY DONE" && exit 0
 
 [[ "${REGIONNODE}" == "${IPFSNODEID}" ]] && echo ">>> MANAGING REGION PUBLICATION" || exit 0
 
 ##############################################################
 REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${REGION}" "${REGION}")
 [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
-echo "REGION WALLET : ${REGIONG1PUB}"
+        COINS=$($MY_PATH/tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
+        echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${REGION}" "${REGION}"
 ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT

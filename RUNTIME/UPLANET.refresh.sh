@@ -39,7 +39,9 @@ mkdir ~/.zen/tmp/${MOATS}
         ##############################################################
         G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${LAT}" "${LON}")
         [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
-        echo "ACTUAL UMAP WALLET : ${G1PUB}"
+        COINS=$($MY_PATH/tools/COINScheck.sh ${G1PUB} | tail -n 1)
+        echo "UMAP (${COINS} G1) WALLET : ${G1PUB}"
+
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv "${LAT}" "${LON}"
         ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
