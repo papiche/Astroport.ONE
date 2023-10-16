@@ -40,9 +40,10 @@ mkdir ~/.zen/tmp/${MOATS}
         G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${LAT}" "${LON}")
         [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
         echo "ACTUAL UMAP WALLET : ${G1PUB}"
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/WALLET.priv "${LAT}" "${LON}"
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv "${LAT}" "${LON}"
         ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/WALLET.priv)
+        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
+        echo "${myIPFS}/ipns/${UMAPNS}"
         ##############################################################
 
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -62,15 +63,17 @@ mkdir ~/.zen/tmp/${MOATS}
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
+    echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/"
 
     ## PROTOCOL MIGRATION (TODO REMOVE)
-    rm ${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh
+    rm ${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh 2>/dev/null
+    # 8< ----
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
                 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
                 # ZMOATS SHOULD BE MORE THAT 20 HOURS.
-                MOATS_SECONDS=$(date -d "$MOATS" +%s)
-                ZMOATS_SECONDS=$(date -d "$ZMOATS" +%s)
+                MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+                ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
                     echo "UMAP DATA is ${DIFF_SECONDS} seconds "
                 # IF LESS.
