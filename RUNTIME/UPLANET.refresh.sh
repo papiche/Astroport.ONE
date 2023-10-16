@@ -87,7 +87,7 @@ mkdir ~/.zen/tmp/${MOATS}
         UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher"
         ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
 
-        [[ ${ALLNODES[@]} == "" ]]; then
+        if [[ ${ALLNODES[@]} == "" ]]; then
             STRAPS=($(ipfs bootstrap | rev | cut -f 1 -d'/' | rev)) ## ${STRAPS[@]}
             for STRAP in ${STRAPS[@]}; do
                     echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
