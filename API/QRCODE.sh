@@ -222,16 +222,16 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 && PLAYER=${salt} \
                 || PLAYER=${WHAT}
 
-                echo "TW : $myIPFS/ipns/$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)" > ~/.zen/tmp/coucou/${MOATS}.log
-                echo "<h1>$PLAYER LOGOUT ...</h1>" >> ~/.zen/tmp/coucou/${MOATS}.log
-                ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log
-                ipfs key rm ${PLAYER} >> ~/.zen/tmp/coucou/${MOATS}.log
-                ipfs key rm "${PLAYER}_feed" >> ~/.zen/tmp/coucou/${MOATS}.log
+                echo "TW : $myIPFS/ipns/$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)" > ~/.zen/tmp/${MOATS}/${MOATS}.log
+                echo "<h1>$PLAYER LOGOUT ...</h1>" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
+                ipfs key rm ${G1PUB} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
+                ipfs key rm ${PLAYER} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
+                ipfs key rm "${PLAYER}_feed" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
 
-                echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+                echo "$HTTPCORS $(cat ~/.zen/tmp/${MOATS}/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
                 end=`date +%s`
                 echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
-                rm ~/.zen/tmp/coucou/${MOATS}.*
+                rm ~/.zen/tmp/${MOATS}/${MOATS}.*
                 exit 0
 
             fi
@@ -272,7 +272,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}.index.redirect
                 (
                     cat ~/.zen/tmp/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-                    echo "BLURP " && rm -Rf ~/.zen/tmp/${MOATS} && rm ~/.zen/tmp/coucou/${MOATS}*
+                    echo "BLURP " && rm -Rf ~/.zen/tmp/${MOATS} && rm ~/.zen/tmp/${MOATS}/${MOATS}*
                 ) &
                 exit 0
 
@@ -413,16 +413,16 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             G1VOEUNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1VOEUPUB})
             ## RETRIEVE IPNS CONTENT
             echo "http://127.0.0.1:8080/ipns/$G1VOEUNS"
-            if [[ ! -s ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt ]]; then
+            if [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]]; then
                 HELLO="@PASS :: G1BILLET+ :: ${G1VOEUPUB} :: $(date) :: ${player} :: ${PLAYERORIG1}"
                 echo "${HELLO}"
                 avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$G1VOEUNS' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
                 [[ ! $avanla ]] \
-                    && ( ipfs cat /ipns/$G1VOEUNS > ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt \
-                                && [[ ! -s ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt ]] \
+                    && ( ipfs cat /ipns/$G1VOEUNS > ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt \
+                                && [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]] \
                                 && echo "@PASS G1BILLET+ INIT" \
-                                && echo "${HELLO}" > ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt \
-                                && MILGRAM=$(ipfs add -q ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt) \
+                                && echo "${HELLO}" > ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt \
+                                && MILGRAM=$(ipfs add -q ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt) \
                                 && ipfs name publish -k ${player}_${VoeuName} /ipfs/${MILGRAM} &
                             ) &
 
@@ -435,7 +435,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
             fi
             echo "<br><br>" >> ~/.zen/tmp/${MOATS}/disco
-            cat ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
+            cat ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
 
             [[ ${NEWLINE} == "" || ${NEWLINE} == "undefined"  ]] && echo "<br> NO NEW LINE <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${DESTMAIL} == "" || ${DESTMAIL} == "undefined" ]] && echo "<br> Missing Destination EMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco
@@ -466,14 +466,14 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 ## ADD NEWLINE TO MESSAGE
                 if [[ ${NEWLINE} != "" ]]; then
                     CLINE=$(echo "${NEWLINE}" | detox --inline)
-                    echo "$CLINE" >> ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt ## NB: File could still being into "ipfs cat" process... TODO MAKE BETTER
+                    echo "$CLINE" >> ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ## NB: File could still being into "ipfs cat" process... TODO MAKE BETTER
                 fi
 
                 echo "UPDATED" >> ~/.zen/tmp/${MOATS}/disco
-                cat ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
+                cat ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt >> ~/.zen/tmp/${MOATS}/disco
                 echo "<br><img src=/ipfs/$NEWIMAGIC />" >> ~/.zen/tmp/${MOATS}/disco
 
-                MILGRAM=$(ipfs add -q ~/.zen/tmp/coucou/${PLAYERORIG1}.${VoeuName}.missive.txt)
+                MILGRAM=$(ipfs add -q ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt)
 
                 (
                     ipfs name publish -k ${DESTMAIL}_${VoeuName} /ipfs/${MILGRAM}
@@ -693,12 +693,12 @@ else
         ## GET G1 WALLET HISTORY
         if [[ ${VISITORCOINS} != "null" && ${VISITORCOINS} -gt 0 ]]; then
 
-            [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.g1history.json ]] \
-            && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/coucou/${QRCODE}.g1history.json
+            [[ ! -s ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json ]] \
+            && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json
 
             echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
             echo "<h1>Solde $VISITORCOINS Ǧ1</h1>" >> ~/.zen/tmp/${MOATS}/index.redirect
-            echo "<h2><a target=_blank href="$myIPFS/ipfs/$(ipfs add -q ~/.zen/tmp/coucou/${QRCODE}.g1history.json)">HISTORIQUE ${QRCODE}</a></h2>"  >> ~/.zen/tmp/${MOATS}/index.redirect
+            echo "<h2><a target=_blank href="$myIPFS/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json)">HISTORIQUE ${QRCODE}</a></h2>"  >> ~/.zen/tmp/${MOATS}/index.redirect
             (
             cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
             echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -708,10 +708,10 @@ else
         fi
 
         ## SCAN GCHANGE +
-        [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.gchange.json ]] \
-        && ${MY_PATH}/../tools/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/coucou/${QRCODE}.gchange.json &
+        [[ ! -s ~/.zen/tmp/${MOATS}/${QRCODE}.gchange.json ]] \
+        && ${MY_PATH}/../tools/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/${QRCODE}.gchange.json &
 
-        GFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.gchange.json | jq -r '.found')
+        GFOUND=$(cat ~/.zen/tmp/${MOATS}/${QRCODE}.gchange.json | jq -r '.found')
         echo "FOUND IN GCHANGE+ ? $GFOUND"
 
         if [[ $GFOUND == "false" ]]; then
@@ -723,14 +723,14 @@ else
             exit 0
         else
             [[ $VISITORCOINS == "null" ]] && PALPE=10 \
-            && echo "~/.zen/tmp/coucou/${QRCODE}.gchange.json CHECK : PALPE=10"
+            && echo "~/.zen/tmp/${MOATS}/${QRCODE}.gchange.json CHECK : PALPE=10"
         fi
 
         ## SCAN CESIUM +
-        [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.gplus.json ]] \
-        && ${MY_PATH}/../tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/coucou/${QRCODE}.gplus.json 2>/dev/null &
+        [[ ! -s ~/.zen/tmp/${MOATS}/${QRCODE}.gplus.json ]] \
+        && ${MY_PATH}/../tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${QRCODE} > ~/.zen/tmp/${MOATS}/${QRCODE}.gplus.json 2>/dev/null &
 
-        GCFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.gplus.json | jq -r '.found')
+        GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${QRCODE}.gplus.json | jq -r '.found')
         echo "FOUND IN CESIUM+ ? $GCFOUND"
 
         if [[ $GCFOUND == "false" ]]; then
@@ -742,11 +742,11 @@ else
             exit 0
         else
             [[ $VISITORCOINS == "null" ]] && PALPE=50 \
-            && echo "~/.zen/tmp/coucou/${QRCODE}.gplus.json CHECK : PALPE=50"
+            && echo "~/.zen/tmp/${MOATS}/${QRCODE}.gplus.json CHECK : PALPE=50"
         fi
 
         ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
-        CPLUS=$(cat ~/.zen/tmp/coucou/${QRCODE}.gchange.json | jq -r '._source.pubkey' 2>/dev/null)
+        CPLUS=$(cat ~/.zen/tmp/${MOATS}/${QRCODE}.gchange.json | jq -r '._source.pubkey' 2>/dev/null)
         echo "CPLUS=$CPLUS"
         ## SCAN GPUB CESIUM +
 
@@ -754,10 +754,10 @@ else
         if [[ $CPLUS != "" && $CPLUS != 'null' && $CPLUS != $QRCODE ]]; then
 
             ## SCAN FOR CPLUS CESIUM + ACCOUNT
-            [[ ! -s ~/.zen/tmp/coucou/${QRCODE}.cplus.json ]] \
-            && ${MY_PATH}/../tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/coucou/${QRCODE}.cplus.json 2>/dev/null &
+            [[ ! -s ~/.zen/tmp/${MOATS}/${QRCODE}.cplus.json ]] \
+            && ${MY_PATH}/../tools/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${QRCODE}.cplus.json 2>/dev/null &
 
-            CCFOUND=$(cat ~/.zen/tmp/coucou/${QRCODE}.cplus.json | jq -r '.found')
+            CCFOUND=$(cat ~/.zen/tmp/${MOATS}/${QRCODE}.cplus.json | jq -r '.found')
 
             if [[ $CCFOUND == "false" ]]; then
                 echo "AUCUN CCPLUS : MEMBRE LIE"

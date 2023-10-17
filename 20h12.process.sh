@@ -12,8 +12,10 @@ espeak "Ding" > /dev/null 2>&1
 
 ## REMOVE TMP BUT KEEP SWARM
 mv ~/.zen/tmp/swarm ~/.zen/swarm
+mv ~/.zen/tmp/coucou ~/.zen/coucou
 rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
+mv ~/.zen/coucou ~/.zen/tmp/coucou
 
 ## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
@@ -84,7 +86,7 @@ espeak "duration was $dur seconds" > /dev/null 2>&1
 
 espeak "Restarting Astroport Station API" > /dev/null 2>&1
 ## CLOSING API PORT
-[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid)
+[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) > /dev/null 2>&1
 ## KILL ALL REMAINING nc
 killall nc 12345.sh
 ## OPEN API ENGINE

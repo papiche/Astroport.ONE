@@ -24,6 +24,7 @@ Server: Astroport.ONE
 Content-Type: text/html; charset=UTF-8
 
 "
+mkdir -p ~/.zen/tmp/${MOATS}/
 
         [[ ! $APPNAME || $SALT == "pepper" ]] && echo "NO APPNAME - BAD APP - CONTINUE" &&  (echo "$HTTPCORS ERROR - BAD CREDENTIALS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
         ############################################################################
@@ -36,19 +37,19 @@ Content-Type: text/html; charset=UTF-8
 
         ## SAVE "salt" "pepper" DEBUG REMOVE OR PASS ENCRYPT FOR SECURITY REASON
         echo "PLAYER : \"$SALT\" \"$PEPPER\" : $APPNAME ($WHAT)"
-        echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/coucou/${MOATS}.secret.june
+        echo "\"$SALT\" \"$PEPPER\"" > ~/.zen/tmp/${MOATS}/${MOATS}.secret.june
 
         # CALCULATING ${MOATS}.secret.key + G1PUB
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/coucou/${MOATS}.secret.key  "$SALT" "$PEPPER"
-        G1PUB=$(cat ~/.zen/tmp/coucou/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.secret.key  "$SALT" "$PEPPER"
+        G1PUB=$(cat ~/.zen/tmp/${MOATS}/${MOATS}.secret.key | grep 'pub:' | cut -d ' ' -f 2)
         [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
         echo "G1PUB : ${G1PUB}"
 
         ## CALCULATING ${MOATS}.${G1PUB}.ipns.key ADDRESS
         ipfs key rm ${G1PUB} > /dev/null 2>&1
-        rm -f ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
-        ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key )
+        rm -f ~/.zen/tmp/${MOATS}/${MOATS}.${G1PUB}.ipns.key
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.${G1PUB}.ipns.key "$SALT" "$PEPPER"
+        ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${MOATS}.${G1PUB}.ipns.key )
         [[ ! ${ASTRONAUTENS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - ASTRONAUTENS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 
         echo "TW ADDRESS : $myIPFS/ipns/${ASTRONAUTENS}"
@@ -67,29 +68,29 @@ Content-Type: text/html; charset=UTF-8
 
             echo "Extracting ${G1PUB} messages..."
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/coucou/messin.${G1PUB}.json
-            [[ ! -s ~/.zen/tmp/coucou/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/coucou/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/coucou/messin.${G1PUB}.json
+            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json
+            [[ ! -s ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json
 
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/coucou/messout.${G1PUB}.json
-            [[ ! -s ~/.zen/tmp/coucou/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/coucou/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/coucou/messout.${G1PUB}.json
+            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json
+            [[ ! -s ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json
 
-            echo "Creating messages In/Out JSON ~/.zen/tmp/coucou/${MOATS}.messaging.json"
-            echo '[' > ~/.zen/tmp/coucou/${MOATS}.messaging.json
-            cat ~/.zen/tmp/coucou/messin.${G1PUB}.json >> ~/.zen/tmp/coucou/${MOATS}.messaging.json
-            echo "," >> ~/.zen/tmp/coucou/${MOATS}.messaging.json
-            cat ~/.zen/tmp/coucou/messout.${G1PUB}.json >> ~/.zen/tmp/coucou/${MOATS}.messaging.json
-            echo ']' >> ~/.zen/tmp/coucou/${MOATS}.messaging.json
+            echo "Creating messages In/Out JSON ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json"
+            echo '[' > ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json
+            cat ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json >> ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json
+            echo "," >> ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json
+            cat ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json >> ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json
+            echo ']' >> ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json
 
             ## ADDING HTTP/1.1 PROTOCOL HEADER
-            echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            cat ~/.zen/tmp/coucou/${MOATS}.messaging.json >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+            sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+            cat ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json >> ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
 
             ## SEND REPONSE PROCESS IN BACKGROUD
-            ( cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/coucou/${MOATS}* ) &
+            ( cat ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/${MOATS}/${MOATS}* ) &
                 #~ ( ## USING IPNS SESSION KEY
-                #~ REPONSE=$(cat ~/.zen/tmp/coucou/${MOATS}.messaging.json | ipfs add -q)
+                #~ REPONSE=$(cat ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json | ipfs add -q)
                 #~ ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
                 #~ echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
                 #~ ) &
@@ -119,17 +120,17 @@ Content-Type: text/html; charset=UTF-8
                 echo ${REPLACE}
 
                 ## REDIRECT TO TW OR GCHANGE PROFILE
-                sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                sed "s~_TWLINK_~${REPLACE}/~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
                 ## USED BY https://git.p2p.legal/La_Bureautique/zeg1jeux/src/branch/main/lib/Fred.class.php#L81
-                echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
 
                 ###  REPONSE=$(echo $myGCHANGE/#/app/user/${G1PUB}/ | ipfs add -q)
                 ### ipfs name publish --allow-offline --key=${PORT} /ipfs/$REPONSE
                 ### echo "SESSION ${myIPFS}/ipns/$SESSIONNS "
                 (
-                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                cat ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
                 ${MY_PATH}/../tools/TW.cache.sh ${ASTRONAUTENS} ${MOATS}
-                rm ~/.zen/tmp/coucou/${MOATS}*
+                rm ~/.zen/tmp/${MOATS}/${MOATS}*
                 ) &
                 end=`date +%s`
                 echo $APPNAME" (0‿‿0) ${WHAT} Execution time was "`expr $end - $start` seconds.
@@ -304,11 +305,11 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 #            cp ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${RWHAT}.${TWHAT}
 
             ## REPONSE ON PORT
-                echo "$HTTPCORS" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/coucou/${MOATS}.index.redirect
-                cat ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+                echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+                sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+                cat ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT} >> ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
 
-                (cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/coucou/${MOATS}.* ) &
+                (cat ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && rm ~/.zen/tmp/${MOATS}/${MOATS}.* ) &
 
             ## REPONSE ON IPFSNODEID
                 (
@@ -387,13 +388,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             g1friend=${WHAT}
             stars=${VAL:-1} // Default 1 ★
 
-            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/coucou/${MOATS}.secret.key stars -p $g1friend -n $stars > ~/.zen/tmp/coucou/${MOATS}.log
+            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key stars -p $g1friend -n $stars > ~/.zen/tmp/${MOATS}/${MOATS}.log
 
             (
-                echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                echo "$HTTPCORS $(cat ~/.zen/tmp/${MOATS}/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1
             ) &
 
-            rm ~/.zen/tmp/coucou/${MOATS}.*
+            rm ~/.zen/tmp/${MOATS}/${MOATS}.*
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) ${MESTAR} Execution time was "`expr $end - $start` seconds.
             exit 0
@@ -408,7 +409,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             url='"${ASTRONAUTENS}"'" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo "SLURP getipns : ${ASTRONAUTENS}" ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
-            rm ~/.zen/tmp/coucou/${MOATS}.*
+            rm ~/.zen/tmp/${MOATS}/${MOATS}.*
             exit 0
         fi
 
@@ -423,7 +424,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             ) &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) /ipns/${ASTRONAUTENS} Execution time was "`expr $end - $start` seconds.
-            rm ~/.zen/tmp/coucou/${MOATS}*
+            rm ~/.zen/tmp/${MOATS}/${MOATS}*
             exit 0
         fi
 
@@ -437,7 +438,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             && PLAYER=${SALT} \
             || PLAYER=${WHAT}
 
-            ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/coucou/${MOATS}.${G1PUB}.ipns.key
+            ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${MOATS}.${G1PUB}.ipns.key
             ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
 
             #~ WSTATION=$(cat ~/.zen/tmp/WSTATION 2>/dev/null)
@@ -450,16 +451,16 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             USALT=$(echo "$SALT" | jq -Rr @uri)
             UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
             echo "/?salt=${USALT}&pepper=${UPEPPER} IS LOGIN - OPEN TW -"
-            sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            sed "s~_TWLINK_~${REPLACE}~g" ~/.zen/Astroport.ONE/templates/index.302  > ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
             ## SET COOKIE
-            #~ sed -i "s~_USALT_~${USALT}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            #~ sed -i "s~_UPEPPER_~${UPEPPER}~g" ~/.zen/tmp/coucou/${MOATS}.index.redirect
-            echo "url='"${REPLACE}"'" >> ~/.zen/tmp/coucou/${MOATS}.index.redirect
+            #~ sed -i "s~_USALT_~${USALT}~g" ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+            #~ sed -i "s~_UPEPPER_~${UPEPPER}~g" ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+            echo "url='"${REPLACE}"'" >> ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
             (
-                cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                cat ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
                 echo "BLURP ${PORT}"
             ) &
-            rm ~/.zen/tmp/coucou/${MOATS}*
+            rm ~/.zen/tmp/${MOATS}/${MOATS}*
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
             exit 0
@@ -476,15 +477,15 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
             && PLAYER=${SALT} \
             || PLAYER=${WHAT}
 
-            echo "<h1>$PLAYER LOGOUT OK</h1>" > ~/.zen/tmp/coucou/${MOATS}.log
+            echo "<h1>$PLAYER LOGOUT OK</h1>" > ~/.zen/tmp/${MOATS}/${MOATS}.log
 
-            ipfs key rm ${G1PUB} >> ~/.zen/tmp/coucou/${MOATS}.log
-            ipfs key rm ${PLAYER} >> ~/.zen/tmp/coucou/${MOATS}.log
+            ipfs key rm ${G1PUB} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
+            ipfs key rm ${PLAYER} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
 
-            echo "$HTTPCORS $(cat ~/.zen/tmp/coucou/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+            echo "$HTTPCORS $(cat ~/.zen/tmp/${MOATS}/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
             end=`date +%s`
             echo $APPNAME "(☉_☉ ) Execution time was "`expr $end - $start` seconds.
-            rm ~/.zen/tmp/coucou/${MOATS}.*
+            rm ~/.zen/tmp/${MOATS}/${MOATS}.*
             exit 0
 
         fi
@@ -496,13 +497,13 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
 
         ## END RESPONDING
-        [[ ! -s ~/.zen/tmp/coucou/${MOATS}.index.redirect ]] && echo "$HTTPCORS  PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 url=/user/$G1PUB" > ~/.zen/tmp/coucou/${MOATS}.index.redirect
-        cat ~/.zen/tmp/coucou/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/coucou/${MOATS}.official.swallow &
+        [[ ! -s ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect ]] && echo "$HTTPCORS  PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9 url=/user/$G1PUB" > ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect
+        cat ~/.zen/tmp/${MOATS}/${MOATS}.index.redirect | nc -l -p ${PORT} -q 1 > ~/.zen/tmp/${MOATS}/${MOATS}.official.swallow &
         echo "HTTP 1.1 PROTOCOL DOCUMENT READY"
         echo "${MOATS} -----> PAGE AVAILABLE -----> http://${myHOST}:${PORT}"
 
         end=`date +%s`
         echo $type" (J‿‿J) Execution time was "`expr $end - $start` seconds.
-        rm ~/.zen/tmp/coucou/${MOATS}.*
+        rm ~/.zen/tmp/${MOATS}/${MOATS}.*
 
 exit 0
