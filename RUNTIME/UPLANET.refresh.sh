@@ -64,7 +64,7 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## FORMAT CONTROL WARNING
         [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
-            && echo ">>> WARNING - UMAP IS BAD FORMAT - PLEASE MONITOR KEY -" \
+            && echo ">>> INFO - INTIALIZE UMAP FORMAT - NEW UMAP KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
 

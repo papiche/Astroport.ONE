@@ -58,10 +58,21 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+            for RSS in ${RSSNODE[@]}; do
+                echo ${RSS}
+            done
         NL=${#RSSNODE[@]}
         RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+            for RSS in ${RSSWARM[@]}; do
+                echo ${RSS}
+            done
         NS=${#RSSWARM[@]}
         TOTL=$((${NL}+${NS}))
+
+
+        ## GET ALL RSS json's AND Feed SECTOR TW with it
+
+
 
 echo "Number of RSS : "${TOTL}
         echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS

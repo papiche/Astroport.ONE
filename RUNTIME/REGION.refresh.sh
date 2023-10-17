@@ -56,8 +56,14 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${CLAT}*_${CLON}*/RSS/*.rss.json 2>/dev/null))
+            for RSS in ${RSSNODE[@]}; do
+                echo ${RSS}
+            done
         NL=${#RSSNODE[@]}
         RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${CLAT}*_${CLON}*/RSS/*.rss.json 2>/dev/null))
+            for RSS in ${RSSWARM[@]}; do
+                echo ${RSS}
+            done
         NS=${#RSSWARM[@]}
         TOTL=$((${NL}+${NS}))
 
