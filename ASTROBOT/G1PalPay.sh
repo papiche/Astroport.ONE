@@ -147,8 +147,8 @@ while read LINE; do
 
         [[ ! ${ASTROG1} ]] \
         && echo "SORRY ${EMAIL} MISSING ASTROG1" \
-        && echo " $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous au Collectif https://www.copylaradio.com/" > ~/.zen/tmp/palpay.bro \
-        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" "BRO. " ~/.zen/tmp/palpay.bro \
+        && echo " BRO.  $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous à UPlanet https://www.qo-op.com/" > ~/.zen/tmp/palpay.bro \
+        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro \
         && continue
 
 
@@ -236,15 +236,16 @@ while read LINE; do
         ## SEND nb JUNE TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
         ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "OK PalPay : $MSG"
+        echo "OK PalPay : $MSG" > ~/.zen/tmp/${MOATS}/g1message
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
         echo "PAYMENT SENT --- PINNING $TOPIN"
 
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
         ipfs pin add $TOPIN
 
     else
-
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${emails[@]}"
+        echo "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${emails[@]}"  > ~/.zen/tmp/${MOATS}/g1message
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
         echo "NO ACCOUNT FOUND"
 
     fi
