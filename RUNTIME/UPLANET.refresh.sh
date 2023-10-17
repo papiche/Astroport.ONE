@@ -140,7 +140,7 @@ mkdir ~/.zen/tmp/${MOATS}
         cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
         RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
         for RSSFILE in ${RSSFILES[@]}; do
-            cp -v ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
+            cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
         done
 
 ## COLLECT TW LINKS FOR SWARM
@@ -149,7 +149,7 @@ mkdir ~/.zen/tmp/${MOATS}
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
             mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}
-            cp -v ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}/
+            cp ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}/
         done
 
 

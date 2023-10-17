@@ -57,26 +57,39 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/
         ipfs get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
-            for RSS in ${RSSNODE[@]}; do
-                echo ${RSS}
-            done
-        NL=${#RSSNODE[@]}
-        RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
-            for RSS in ${RSSWARM[@]}; do
-                echo ${RSS}
-            done
-        NS=${#RSSWARM[@]}
-        TOTL=$((${NL}+${NS}))
+
+        ## INIT TW WITH TEMPLATE
+        [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
+            && mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TW \
+            && cp ${MY_PATH}/../templates/minimal.html ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
 
 
         ## GET ALL RSS json's AND Feed SECTOR TW with it
+        ## TODO Make function to CONTROL Tiddlers with same Title from different WT and detect conflict.
+        RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+        NL=${#RSSNODE[@]}
+
+        for RSS in ${RSSNODE[@]}; do
+
+            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}"
+
+        done
 
 
+        RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+        NS=${#RSSWARM[@]}
+
+        for RSS in ${RSSWARM[@]}; do
+
+            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}"
+
+        done
+
+        TOTL=$((${NL}+${NS}))
 
 echo "Number of RSS : "${TOTL}
         echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS
-        IPFSPOP=$(ipfs add -q ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS)
+        IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
         ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
 
