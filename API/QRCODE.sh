@@ -155,8 +155,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                             if [ $? == 0 ]; then
 
                                 ## TODO : MEMORIZE TX TO VERIFY ASTRO/DUNITER SYNC
-                                COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
-                                DESTFILE="$HOME/.zen/tmp/coucou/${VAL}.COINS"
+                                COINSFILE="$HOME/.zen/tmp/${MOATS}/${G1PUB}.COINS"
+                                DESTFILE="$HOME/.zen/tmp/${MOATS}/${VAL}.COINS"
 
                                 CUR=$(cat ${COINSFILE})
                                 [[ ${CUR} != "" && ${CUR} != "null" ]] \
@@ -624,7 +624,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
     ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
     echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
     VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
-    COINSFILE=$HOME/.zen/tmp/coucou/${QRCODE}.COINS
+    COINSFILE=$HOME/.zen/tmp/${MOATS}/${QRCODE}.COINS
 
 ### PATCH COPY G1BILLET G1PUB TO MALKE PAYMENT WHEN RECONNECT
     cp $COINSFILE ~/live/

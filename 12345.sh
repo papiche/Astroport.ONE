@@ -88,24 +88,24 @@ while true; do
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
-    echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${MOATS}.myHOST.http
-    myHtml >> ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${PORT}.myHOST.http
+    myHtml >> ~/.zen/tmp/coucou/${PORT}.myHOST.http
 
     ## REPLACE RESPONSE PORT
     sed -i -e "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" \
-        ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+        ~/.zen/tmp/coucou/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
     [ -z "$isLAN" ] \
-        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/coucou/${PORT}.myHOST.http
 
     ## UPLANET HOME LINK REPLACEMENT
-    sed -i -e "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" ~/.zen/tmp/coucou/${MOATS}.myHOST.http
+    sed -i -e "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" ~/.zen/tmp/coucou/${PORT}.myHOST.http
 
     ############################################################################
-    ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${MOATS}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
+    ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${PORT}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
-    REQ=$(cat $HOME/.zen/tmp/coucou/${MOATS}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/coucou/${MOATS}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
+    REQ=$(cat $HOME/.zen/tmp/coucou/${PORT}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/coucou/${PORT}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
 
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
