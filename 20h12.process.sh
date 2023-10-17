@@ -10,7 +10,10 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
+## REMOVE TMP BUT KEEP SWARM
+mv ~/.zen/tmp/swarm ~/.zen/swarm
 rm -Rf ~/.zen/tmp/*
+mv ~/.zen/swarm ~/.zen/tmp/swarm
 
 ## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
