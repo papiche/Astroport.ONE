@@ -14,6 +14,9 @@ Rejoindre l'équipe d'Astroport, c'est contribuer à une cause qui va bien au-de
 
 Alors, si vous êtes prêt à relever le défi et à participer à la construction d'un avenir où la censure n'a pas sa place, rejoignez-nous dès aujourd'hui et laissez votre empreinte sur le monde avec Astroport. Ensemble, nous pouvons libérer le potentiel de la technologie et créer un avenir plus ouvert pour tous.
 
+[PRESENTATION UPLANET](https://pad.p2p.legal/Astroport.old.ONE#)
+[BASH ENGINE FOR A CRYPTO PLAYGROUND](https://pad.p2p.legal/p/G1FabLab#)
+
 
 ## https://astroport.com
 
@@ -34,7 +37,7 @@ L'architecture attachée à chaque clefs publiques se déploie et en forme de "p
 Des clefs dérivées sont crées pour exporter et explorer les "G1MotsClefs" associés au Tiddlers.
 A chaque copie le tiddlers reçoit une nouvelle signature et déclenche le processus "G1PalPay".
 
-[DOCUMENTATION](https://pad.p2p.legal/s/Astroport.ONE)
+[DOCUMENTATION](https://pad.p2p.legal/Astroport.old.ONE#)
 
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
