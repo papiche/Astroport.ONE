@@ -40,7 +40,8 @@ for title in "$titles"; do
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
             && rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
-            && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
+            && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
+            && echo "SECTOR TW UPDATED"
 
     else
 

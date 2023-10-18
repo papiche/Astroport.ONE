@@ -23,8 +23,8 @@ SECTORNODE=$5
 
 [[ ! -d ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined} ]] && echo "MISSING UMAP CONTEXT" && exit 1
 
-SLAT=$(echo ${LAT} | xargs printf '%.1f\n' | sed s~,~.~g)
-SLON=$(echo ${LON} | xargs printf '%.1f\n' | sed s~,~.~g)
+SLAT="${LAT::-1}"
+SLON="${LON::-1}"
 SECTOR="_${SLAT}_${SLON}"
 echo "SECTOR ${SECTOR}"
 [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.IPNS.html ]] && echo "ALREADY DONE" && exit 0
