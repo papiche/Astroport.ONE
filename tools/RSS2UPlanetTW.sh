@@ -90,17 +90,20 @@ for title in "$titles"; do
             echo "Email addresses unique to NEMAILS: ${NUNIQUE[*]}"
             echo "Email addresses unique to IEMAILS: ${IUNIQUE[*]}"
 
+            combined=("${IEMAILS[@]}" "${NEMAILS[@]}")
+            unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+
             NEWTID=$(ipfs add -q ~/.zen/tmp/${MOATS}/NEW.json | tail -n 1)
             INSIDETID=$(ipfs add -q ~/.zen/tmp/${MOATS}/INSIDE.json | tail -n 1)
 
-            for email in "${COMMON[@]}"; do
+            for email in "${unique_combined[@]}"; do
 
-echo "Hello ${COMMON[*]}\n\n
-A copy of your Tiddler has been made by ${NUNIQUE[*]} ${IUNIQUE[*]}\n\n
-$title\n
-Please import into your TW grabbing it from\n
+echo "Hello\n\n
+Tiddler with same title is existing in ${unique_combined[*]} TW(s) \n\n
+$title\n\n
+Please choose update your TW grabbing it from\n
 * ACTUAL: ${myIPFS}/ipfs/${INSIDETID}\n
-* NEW: ${myIPFS}/ipfs/${NEWTID}\n
+* NEW: ${myIPFS}/ipfs/${NEWTID}\n\n
 or fork modifying titles
 
 You can discuss about it in room ${MOATS}\n
