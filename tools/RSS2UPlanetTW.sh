@@ -90,9 +90,16 @@ for title in "$titles"; do
             echo "Email addresses unique to NEMAILS: ${NUNIQUE[*]}"
             echo "Email addresses unique to IEMAILS: ${IUNIQUE[*]}"
 
+            TIDIPFS=$(ipfs add -q ~/.zen/tmp/${MOATS}/NEW.json | tail -n 1)
+
             for email in "${COMMON[@]}"; do
 
-                echo "Hello ${COMMON[*]}\n\nA copy of your Tiddler has been made by ${NUNIQUE[*]} ${IUNIQUE[*]}\n\nPlease merge it\n or fork your title : $title" > ~/.zen/tmp/${MOATS}/g1message
+echo "Hello ${COMMON[*]}\n\n
+A copy of your Tiddler has been made by ${NUNIQUE[*]} ${IUNIQUE[*]}\n\n
+$title\n
+Please import into your TW grabbing it from ${myIPFS}/ipfs/${TIDIPFS}\n
+or fork modifying titles" > ~/.zen/tmp/${MOATS}/g1message
+
                 ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message
 
             done
