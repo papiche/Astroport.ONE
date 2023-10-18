@@ -21,14 +21,14 @@ MOATS=$3
 echo ${RSS}
 titles=$(cat "${RSS}" | jq -r '.[] | .title')
 
-for title in $titles; do
+for title in "$titles"; do
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
     rm -f ~/.zen/tmp/${MOATS}/TMP.json
     tiddlywiki --load ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html  --output ~/.zen/tmp/${MOATS} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
     ISHERE=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r ".[].title")
 
-    if [[ ${ISHERE} != ${title} ]]; then
+    if [[ "${ISHERE}" != "${title}" ]]; then
 
         ## NEW TIDDLER
         echo "Importing Title: $title"
