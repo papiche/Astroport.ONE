@@ -108,7 +108,7 @@ echo "Number of RSS : "${TOTL}
 ######################################################
 
         (
-            echo "PUBLISHING ${SECTOR} SECTOR "
+            echo "PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
             start=`date +%s`
             ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
             ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
