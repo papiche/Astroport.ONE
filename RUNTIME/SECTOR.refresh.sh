@@ -89,11 +89,36 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/
 
 echo "Number of RSS : "${TOTL}
         echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS
+
+###################################################### CHAINING BACKUP
+        mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
         IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
-        ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
+        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
+        [[ ${ZCHAIN} && ${ZMOATS} ]] \
+            && cp ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain.${ZMOATS} \
+            && echo "UPDATING MOATS"
 
-ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
+        ## DOES CHAIN CHANGED or INIT ?
+        [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
+            && echo "${MOATS}:${IPFSNODEID}:${IPFSPOP}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain \
+            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats \
+            && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
+######################################################
+
+        (
+            echo "PUBLISHING ${SECTOR} SECTOR "
+            start=`date +%s`
+            ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
+            ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
+            end=`date +%s`
+            echo "(SECTOR) PUBLISH time was "`expr $end - $start` seconds.
+        ) &
+
+######################################################
+
+
 
 
 exit 0
