@@ -119,9 +119,9 @@ while true; do
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
-    echo "************************************************************************* $(date)"
-    echo "ASTROPORT 1234 UP & RUNNING.......................... $myASTROPORT"
-    echo "${MOATS} NEXT COMMAND DELIVERY PAGE http://$myHOST:${PORT}"
+    echo "******* ${MOATS}  ********************************** $(date)"
+    echo "ASTROPORT 1234 UP & RUNNING // API : $myASTROPORT //  IPFS : $myIPFS"
+    echo "NEXT COMMAND DELIVERY PAGE http://$myHOST:${PORT}"
 
     # echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
