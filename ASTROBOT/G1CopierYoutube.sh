@@ -157,7 +157,9 @@ if [[ ! ${TIDDLER} ]]; then
 
             if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${YID}.TW.json ]]; then
                 rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" 2>/dev/null
-                ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${YID}.TW.json" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+                cd ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
+                ln -s "./${YID}.TW.json" "${ZFILE}.json"
+                cd -
             else
                 ## REMOVE FILE FROM .yt-dlp.list - RETRY NEXT TIME
                 grep -v -- "$YID" ${HOME}/.zen/.yt-dlp.list > /tmp/.yt-dlp.list
@@ -285,8 +287,9 @@ fi
         if [[ -s ~/.zen/tmp/${IPFSNODEID}/newindex.html ]]; then
 
             ## COPY JSON TIDDLER TO PLAYER
-            ln -s "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/$YID.TW.json" \
-                    "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json"
+            cd ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
+            ln -s "./$YID.TW.json" "${ZFILE}.json"
+            cd -
 
             [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] \
                 && mv ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} \
