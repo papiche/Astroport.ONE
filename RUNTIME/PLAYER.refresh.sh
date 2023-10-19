@@ -87,21 +87,23 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## IPFS / HTTP / LOCAL
     #~ DISABLED || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "$LIBRA/ipns/${ASTRONAUTENS}" \
+    # || cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-    ipfs --timeout 480s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS} \
-    || cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+    rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html 2>/dev/null
+    ipfs --timeout 480s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
 
     ## PLAYER TW IS ONLINE ?
     if [ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ]; then
 
+        LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         echo "ERROR_PLAYERTW_OFFLINE : /ipns/${ASTRONAUTENS}"
         echo "------------------------------------------------"
         echo "MANUAL PROCEDURE NEEDED"
         echo "------------------------------------------------"
-        echo "$myIPFS/ipfs/"
-        echo "/ipfs/"$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
-        echo "ipfs name publish  -t 24h --key=${PLAYER} ..."
+        echo "${myIPFS}/ipfs/${LASTCHAIN}"
+        echo ""
+        echo "ipfs name publish --key=${PLAYER} /ipfs/${LASTCHAIN}"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
         continue

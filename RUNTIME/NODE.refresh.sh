@@ -39,9 +39,10 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "FOUND : ${PLAYERONE[@]}"
     ## RUNING FOR ALL LOCAL PLAYERS
     for PLAYER in ${PLAYERONE[@]}; do
-        echo "${PLAYER} SEEKING OWN FRIENDS"
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
-        cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/FRIENDS/
+        echo "${PLAYER} GCHANGE FRIENDS"
+        [[ -d ~/.zen/tmp/${IPFSNODEID}/${PLAYER} && ${PLAYER} != "" ]] && rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/ ## TODO REMOVE (PROTOCOL UPGRADE)
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/FRIENDS/
+        cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/FRIENDS/
     done
 
     cp ~/.zen/GPS ~/.zen/tmp/${IPFSNODEID}/
