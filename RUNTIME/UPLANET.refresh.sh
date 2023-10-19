@@ -97,9 +97,9 @@ mkdir ~/.zen/tmp/${MOATS}
         ## NODE  SELECTION in UMAP.refresher
         UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher"
         ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
+        STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
 
         if [[ ${ALLNODES[@]} == "" ]]; then
-            STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
             for STRAP in ${STRAPS[@]}; do
                     echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
             done
@@ -107,6 +107,9 @@ mkdir ~/.zen/tmp/${MOATS}
         fi
 
         ACTINGNODE=${ALLNODES[1]} ## FIST NODE IN UMAP.refresher
+
+        ## IN CASE OLD BOOSTRAP IS STILL IN CHARGE - CHOOSE 1ST STRAP -
+        [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[1]}
 
         echo "* ACTINGNODE=${ACTINGNODE}"
 
@@ -124,10 +127,9 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
-            STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
-            for STRAP in ${STRAPS[@]}; do
-                    echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
-            done
+        for STRAP in ${STRAPS[@]}; do
+                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+        done
         # SHUFFLE UMAP.refresher
         cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
         mv ${UREFRESH}.shuf ${UREFRESH}
