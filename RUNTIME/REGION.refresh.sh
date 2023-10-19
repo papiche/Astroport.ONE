@@ -27,7 +27,7 @@ CLAT=$(echo ${LAT} | cut -d '.' -f 1)
 CLON=$(echo ${LON} | cut -d '.' -f 1)
 REGION="_${CLAT}_${CLON}"
 echo "REGION ${REGION}"
-[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.IPNS.html ]] && echo "ALREADY DONE" && exit 0
+[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html ]] && echo "ALREADY DONE" && exit 0
 
 [[ "${REGIONNODE}" == "${IPFSNODEID}" ]] && echo ">>> MANAGING REGION PUBLICATION" || exit 0
 
@@ -41,7 +41,8 @@ ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${REGION}
 ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
 REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
 ##############################################################
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.IPNS.html
+mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html
 
 REGIONMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
 REGIONSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"

@@ -27,7 +27,7 @@ SLAT="${LAT::-1}"
 SLON="${LON::-1}"
 SECTOR="_${SLAT}_${SLON}"
 echo "SECTOR ${SECTOR}"
-[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.IPNS.html ]] && echo "ALREADY DONE" && exit 0
+[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html ]] && echo "ALREADY DONE" && exit 0
 
 [[ "${SECTORNODE}" == "${IPFSNODEID}" ]] && echo ">> MANAGING SECTOR PUBLICATION" || exit 0
 
@@ -44,7 +44,8 @@ SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MO
 ## PROTOCOL UPDATE : TODO REMOVE
 rm -f ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR*.html
 
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.IPNS.html
+mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html
 
 SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}/TW"
 SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}/TW"
