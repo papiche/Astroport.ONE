@@ -156,6 +156,7 @@ header {
 </main>
 </body>
 <script>
+
   // Extract latitude and longitude from URL parameters
 document.addEventListener('DOMContentLoaded', function() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -185,9 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var latMAP = (parseFloat(latElement.value) - 0.05).toFixed(2); // Subtract 0.05 from latElement
     var lonMAP = (parseFloat(lonElement.value) - 0.05).toFixed(2); // Subtract 0.05 from lonElement
 
-    const satURL = `https://ipfs.copylaradio.com/ipfs/Qmduhh6ERX74dx1LhJzB4Bw3ZzM91kAqmPE47BVfMWwYfm/sat_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
+    const satURL = `http://127.0.0.1:8080/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/sat_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
     document.getElementById("satLink").href = satURL;
-    const mapURL = `https://ipfs.copylaradio.com/ipfs/Qmduhh6ERX74dx1LhJzB4Bw3ZzM91kAqmPE47BVfMWwYfm/map_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
+    const mapURL = `http://127.0.0.1:8080/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/map_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
     document.getElementById("mapLink").href = mapURL;
 
     document.getElementById("LAT").innerHTML = latElement.value ;
