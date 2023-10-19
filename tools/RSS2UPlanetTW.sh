@@ -14,9 +14,11 @@ ME="${0##*/}"
 RSS=$1
 SECTOR=$2
 MOATS=$3
+INDEX=$4
 
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
-[[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] && echo "BAD UPLANET CONTEXT" && exit 1
+[[ -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
+[[ ! -s ${INDEX} ]] && echo "BAD TW INDEX" && exit 1
 
 echo ${RSS}
 titles=$(cat "${RSS}" | jq -r '.[] | .title')
@@ -25,7 +27,7 @@ for title in "$titles"; do
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
     rm -f ~/.zen/tmp/${MOATS}/TMP.json
-    tiddlywiki --load ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html  --output ~/.zen/tmp/${MOATS} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
+    tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
     ISHERE=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r ".[].title")
 
     if [[ "${ISHERE}" != "${title}" ]]; then
@@ -34,13 +36,13 @@ for title in "$titles"; do
         echo "Importing Title: $title"
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
-        tiddlywiki  --load ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
+        tiddlywiki  --load ${INDEX} \
             --import ~/.zen/tmp/${MOATS}/NEW.json "application/json" \
             --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "${SECTOR}.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
-            && rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
-            && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
+            && rm ${INDEX} \
+            && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX} \
             && echo "SECTOR TW UPDATED"
 
     else
@@ -54,7 +56,7 @@ for title in "$titles"; do
 
         [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]] && echo "... Tiddlers are similar ..." && continue
 
-        ## CHECK FOR EMAIL SIGNATURES
+        ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
         NEMAILS=($(echo "$NTAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         N=${#NEMAILS[@]}
@@ -114,26 +116,26 @@ https://vdo.copylaradio.com
 
             done
 
-        ## WAIT FOR FORK TO BE SOLVED
+        ## WAIT TITLE FORK TO BE SOLVED
         continue
 
         fi
 
         ## DIFFERENT
-        NCREATED=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .created)
-        ICREATED=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .created)
+        NMODIFIED=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
+        IMODIFIED=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .modified)
 
-        if [ ${NCREATED} -gt ${ICREATED} ]; then
+        if [ ${NMODIFIED} -gt ${IMODIFIED} ]; then
 
             echo "Newer Tiddler version... Updating TW"
 
-            tiddlywiki  --load ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
+            tiddlywiki  --load ${INDEX} \
                 --import ~/.zen/tmp/${MOATS}/NEW.json "application/json" \
                 --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "${SECTOR}.html" "text/plain"
 
             [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
-                && rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html \
-                && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
+                && rm ${INDEX} \
+                && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX}
 
         fi
 

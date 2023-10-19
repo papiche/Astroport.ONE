@@ -41,6 +41,9 @@ ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SECTOR.priv "${SECTOR}
 ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
 SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SECTOR.priv)
 
+## PROTOCOL UPDATE : TODO REMOVE
+rm -f ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR*.html
+
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.IPNS.html
 
 SECTORMAPGEN="/ipfs/QmRG3ZAiXWvKBccPFbv4eUTZFPMsfXG25PiZQD6N8M8MMM/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
@@ -57,48 +60,58 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/
         ipfs get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        ## CONTROL CHAIN TIME
+        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
+        [[ ${ZCHAIN} && ${ZMOATS} ]] \
+            && cp ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain.${ZMOATS} \
+            && echo "UPDATING MOATS"
+
+                MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+                ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
+                DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
+                echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old"
+                [ ${DIFF_SECONDS} -lt 36000 ] && echo "less than 10 hours... EXIT." && exit 0
 
         ## INIT TW WITH TEMPLATE
         [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
-            && mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TW \
-            && cp ${MY_PATH}/../templates/minimal.html ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
+            && mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TW
 
+            ## NEW TW TEMPLATE ( UPDATE PROTOCOL SWITCHING index.html / index.htm )
+            rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ## TODO REMOVE
+            [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm ]] \
+                && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm
+
+            INDEX=~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm
 
         ## GET ALL RSS json's AND Feed SECTOR TW with it
-        ## TODO Make function to CONTROL Tiddlers with same Title from different WT and detect conflict.
         RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
         NL=${#RSSNODE[@]}
 
         for RSS in ${RSSNODE[@]}; do
 
-            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}"
+            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
 
         done
-
 
         RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
         NS=${#RSSWARM[@]}
 
         for RSS in ${RSSWARM[@]}; do
 
-            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}"
+            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
 
         done
 
         TOTL=$((${NL}+${NS}))
 
 echo "Number of RSS : "${TOTL}
-        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS
+        rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
+        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS_${TOTL}
 
 ###################################################### CHAINING BACKUP
         mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
         IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
-
-        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
-        [[ ${ZCHAIN} && ${ZMOATS} ]] \
-            && cp ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain.${ZMOATS} \
-            && echo "UPDATING MOATS"
 
         ## DOES CHAIN CHANGED or INIT ?
         [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
