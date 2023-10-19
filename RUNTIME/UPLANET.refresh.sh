@@ -113,17 +113,17 @@ mkdir ~/.zen/tmp/${MOATS}
 
         echo "* ACTINGNODE=${ACTINGNODE}"
 
-### SECTOR = 0.1° Planet Slice
-        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
-
- ### REGION = 1° Planet Slice
-       ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
-
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
             && continue
             ########################################
             # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
+
+### SECTOR = 0.1° Planet Slice
+        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
+
+ ### REGION = 1° Planet Slice
+       ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
 
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
