@@ -75,14 +75,14 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/
 
         ## INIT TW WITH TEMPLATE
         [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
-            && mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TW
+            && mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
 
             ## NEW TW TEMPLATE ( UPDATE PROTOCOL SWITCHING index.html / index.htm )
-            rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ## TODO REMOVE
-            [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm ]] \
-                && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm
+            rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm ## TODO REMOVE
+            [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] \
+                && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
 
-            INDEX=~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm
+            INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
 
         ## GET ALL RSS json's AND Feed SECTOR TW with it
         RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))

@@ -17,10 +17,10 @@ MOATS=$3
 INDEX=$4
 
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
-[[ -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
+[[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
 [[ ! -s ${INDEX} ]] && echo "BAD TW INDEX" && exit 1
 
-echo ${RSS}
+echo "SECTOR TW INSERTING" ${RSS}
 titles=$(cat "${RSS}" | jq -r '.[] | .title')
 
 for title in "$titles"; do
