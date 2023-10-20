@@ -35,7 +35,7 @@ mkdir ~/.zen/tmp/${MOATS}
     for UMAP in ${unique_combined[@]}; do
 
         start=`date +%s`
-        echo ">>> REFRESHING ${UMAP}"
+        echo "____________REFRESHING ${UMAP}__________"
         LAT=$(echo ${UMAP} | cut -d '_' -f 2)
         LON=$(echo ${UMAP} | cut -d '_' -f 3)
 
@@ -58,7 +58,7 @@ mkdir ~/.zen/tmp/${MOATS}
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         ## IPFS GET ONLINE UMAPNS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-        ipfs get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
+        ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

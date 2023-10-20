@@ -53,7 +53,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         #~ ## IPFS GET ONLINE SECTORNS
         mkdir ~/.zen/tmp/${MOATS}/${REGION}
-        ipfs get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${REGIONNS}/
+        ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${REGIONNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${CLAT}*_${CLON}*/RSS/*.rss.json 2>/dev/null))
