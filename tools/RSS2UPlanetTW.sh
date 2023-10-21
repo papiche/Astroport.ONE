@@ -26,6 +26,9 @@ cat "${RSS}" | jq -r '.[] | .title' > ~/.zen/tmp/${MOATS}/titles.list
 
 while read title; do
 
+    [[ ${title} == "GettingStarted" || ${title} == "GPS" || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" ]] \
+        && echo "FILTERED TITLE" && continue
+
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
     rm -f ~/.zen/tmp/${MOATS}/TMP.json
     tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
