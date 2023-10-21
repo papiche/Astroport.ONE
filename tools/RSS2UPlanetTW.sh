@@ -21,9 +21,10 @@ INDEX=$4
 [[ ! -s ${INDEX} ]] && echo "BAD TW INDEX" && exit 1
 
 echo "SECTOR TW INSERTING" ${RSS}
-titles=$(cat "${RSS}" | jq -r '.[] | .title')
 
-for title in "$titles"; do
+cat "${RSS}" | jq -r '.[] | .title' > ~/.zen/tmp/${MOATS}/titles.list
+
+while read title; do
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
     rm -f ~/.zen/tmp/${MOATS}/TMP.json
@@ -141,4 +142,4 @@ https://vdo.copylaradio.com
 
     fi
 
-done
+done < ~/.zen/tmp/${MOATS}/titles.list
