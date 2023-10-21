@@ -122,7 +122,7 @@ mkdir ~/.zen/tmp/${MOATS}
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
         for STRAP in ${STRAPS[@]}; do
-                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+                echo ${STRAP} > ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
         done
         # SHUFFLE UMAP.refresher
         cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
@@ -130,6 +130,54 @@ mkdir ~/.zen/tmp/${MOATS}
         ## NEXT REFRESHER
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
         ######################################################## # NODE  SELECTION in UMAP.refresher
+
+## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    SLAT="${LAT::-1}"
+    SLON="${LON::-1}"
+    SECTOR="_${SLAT}_${SLON}"
+    echo "SECTOR ${SECTOR}"
+    ##############################################################
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
+    [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+    echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
+
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${SECTOR}" "${SECTOR}"
+    ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
+    ipfs key rm ${SECTORG1PUB}
+    ##############################################################
+    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html
+
+    SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
+    SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
+
+## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    CLAT=$(echo ${LAT} | cut -d '.' -f 1)
+    CLON=$(echo ${LON} | cut -d '.' -f 1)
+    REGION="_${CLAT}_${CLON}"
+    echo "REGION ${REGION}"
+    ##############################################################
+    REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${REGION}" "${REGION}")
+    [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
+    echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
+
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${REGION}" "${REGION}"
+    ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
+    ipfs key rm ${REGIONG1PUB}
+    ##############################################################
+    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html
+
+    REGIONMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+    REGIONSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
 
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
@@ -148,7 +196,7 @@ mkdir ~/.zen/tmp/${MOATS}
             cp ${TWRED} ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}/
         done
 
-
+##################################
         ## OSM2IPFS
 ### UMAP = 0.01° Planet Slice
         UMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
@@ -167,12 +215,16 @@ mkdir ~/.zen/tmp/${MOATS}
             && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg 900 900 2>/dev/null \
             && [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] && killall chrome
 
-        ##############################################################
+
+## GEOLINKING SURROUNDING UMAPS  ###############################
     if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
 
         ${MY_PATH}/../tools/Umap_geolinks.sh "${LAT}" "${LON}" "${UMAP}" "${MOATS}"
 
     fi
+    ### SET navigator.html ## MAKE EVOLVE template/umap.html
+    cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
+    cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
 
 ####################################
         ## MAKE GET POI's
@@ -189,18 +241,12 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## CREATE GCHANGE ACCOUNT ??!! DO ANYTHING RELATED TO UMAP
 
-
-    ### SET navigator.html ## MAKE EVOLVE template/umap.html
-        cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
-        cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
-
 ########################################################
 ## ACTIVATE IN CASE OF PROTOCOL BRAKE
 ## TODO : BACKUP STATE IN // PRIVATE KEY
 ## TODO : SNIFF IPFS DHT MODIFICATIONS ## FAIL2BAN ## DEFCON
 ########################################################
-SLAT="${LAT::-1}"
-SLON="${LON::-1}"
+
         ##############################################################
         ############################ PUBLISHING UMAP
         ##############################################################
@@ -230,8 +276,8 @@ SLON="${LON::-1}"
 
 
 ### SECTOR = 0.1° Planet Slice
-        ${MY_PATH}/SECTOR.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
+        ${MY_PATH}/SECTOR.refresh.sh "${unique_combined[@]}"
 
  ### REGION = 1° Planet Slice
-       ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
+       # ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
 

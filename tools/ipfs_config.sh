@@ -56,7 +56,7 @@ ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
 ######### CLEAN DEFAULT BOOTSTRAP ADD Astroport.ONE Officials ###########
 ipfs bootstrap rm --all
 
-for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do
         ipfsnodeid=${bootnode##*/}
         ipfs bootstrap add $bootnode

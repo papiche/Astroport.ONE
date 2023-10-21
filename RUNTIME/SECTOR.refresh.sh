@@ -8,130 +8,165 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
 ################################################################################
+start=`date +%s`
 ## SECTOR REFRESH
 # SHARE & UPDATE IPNS TOGETHER
 ############################################
 echo "## RUNNING SECTOR.refresh"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+mkdir ~/.zen/tmp/${MOATS}
+
 ## CALLED BY UPLANET.refresh.sh
-LAT=$1
-LON=$2
-MOATS=$3
-UMAP=$4
-SECTORNODE=$5
+for i in $*; do
+    UMAPS=("$i" ${UMAPS[@]})
+done
 
-[[ ! -d ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined} ]] && echo "MISSING UMAP CONTEXT" && exit 1
+######## INIT SECTORS ########################
+for UMAP in ${UMAPS[@]}; do
 
-SLAT="${LAT::-1}"
-SLON="${LON::-1}"
-SECTOR="_${SLAT}_${SLON}"
-echo "SECTOR ${SECTOR}"
-[[ -s ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html ]] && echo "ALREADY DONE" && exit 0
+    LAT=$(echo ${UMAP} | cut -d '_' -f 2)
+    LON=$(echo ${UMAP} | cut -d '_' -f 3)
 
-[[ "${SECTORNODE}" == "${IPFSNODEID}" ]] && echo ">> MANAGING SECTOR PUBLICATION" || exit 0
+    [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
+    [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
+
+    SLAT="${LAT::-1}"
+    SLON="${LON::-1}"
+
+    MYSECTORS=("_${SLAT}_${SLON}" ${MYSECTORS[@]})
+
+done
+
+SECTORS=($(echo "${MYSECTORS[@]}" | tr ' ' '\n' | sort -u))
+
+[[ ${SECTORS[@]} == "" ]] && echo "NO SECTOR FOUND" && exit 0
+#########################################################""
+echo ${SECTORS[@]}
+
+for SECTOR in ${SECTORS[@]}; do
+
+    echo "SECTOR ${SECTOR}"
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN
+
+    ##############################################################
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
+    [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+    echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
+
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${SECTOR}" "${SECTOR}"
+    ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
+    rm ~/.zen/tmp/${MOATS}/${SECTOR}.priv
+
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    #~ ## IPFS GET ONLINE SECTORNS
+    ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ## CONTROL CHAIN TIME
+    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+    ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
+    [[ ${ZCHAIN} && ${ZMOATS} ]] \
+        && cp ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain.${ZMOATS} \
+        && echo "UPDATING MOATS"
+
+    MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+    ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
+    DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
+    echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old"
+    [ ${DIFF_SECONDS} -lt 36000 ] && echo "less than 10 hours... CONTINUE." && continue
+
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ## CONTROL ACTINGNODE SWAPPING
+    UREFRESH="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher"
+    ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
+    STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
+
+    if [[ ${ALLNODES[@]} == "" ]]; then
+        for STRAP in ${STRAPS[@]}; do
+                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+        done
+        ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
+    fi
+
+    ACTINGNODE=${ALLNODES[1]} ## FIST NODE IN UMAP.refresher
+
+    [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
+            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
+            && continue
+
+### NEXT REFRESHER SHUFFLE
+    for STRAP in ${STRAPS[@]}; do
+            echo ${STRAP} > ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+    done
+    # SHUFFLE UMAP.refresher
+    cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
+    mv ${UREFRESH}.shuf ${UREFRESH}
+    echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
 
 ##############################################################
-SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
-[[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
-        COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
-        echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
+    ## FEED SECTOR TW WITH UMAPS RSS
+    [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
+        && mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
 
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/SECTOR.priv "${SECTOR}" "${SECTOR}"
-ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/SECTOR.priv)
+    ## NEW TW TEMPLATE
+    [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] \
+        && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
 
-## PROTOCOL UPDATE : TODO REMOVE
-rm -f ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR*.html
+    INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
 
-mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html
+    ## GET ALL RSS json's AND Feed SECTOR TW with it
+    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+    NL=${#RSSNODE[@]}
 
-SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}/TW"
-SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}/TW"
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
-echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
+    for RSS in ${RSSNODE[@]}; do
+
+        ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
+
+    done
+
+    RSSWARM=($(ls ~/.zen/tmp/swarm/12D*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+    NS=${#RSSWARM[@]}
+
+    for RSS in ${RSSWARM[@]}; do
+
+        ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
+
+    done
 ##############################################################
 
-
-       # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        #~ ## IPFS GET ONLINE SECTORNS
-        mkdir ~/.zen/tmp/${MOATS}/${SECTOR}
-        ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
-        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        ## CONTROL CHAIN TIME
-        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
-        [[ ${ZCHAIN} && ${ZMOATS} ]] \
-            && cp ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain.${ZMOATS} \
-            && echo "UPDATING MOATS"
-
-                MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
-                ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
-                DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-                echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old"
-                [ ${DIFF_SECONDS} -lt 36000 ] && echo "less than 10 hours... EXIT." && exit 0
-
-        ## INIT TW WITH TEMPLATE
-        [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
-
-            ## NEW TW TEMPLATE ( UPDATE PROTOCOL SWITCHING index.html / index.htm )
-            rm ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.htm ## TODO REMOVE
-            [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] \
-                && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
-
-            INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
-
-        ## GET ALL RSS json's AND Feed SECTOR TW with it
-        RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
-        NL=${#RSSNODE[@]}
-
-        for RSS in ${RSSNODE[@]}; do
-
-            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
-
-        done
-
-        RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
-        NS=${#RSSWARM[@]}
-
-        for RSS in ${RSSWARM[@]}; do
-
-            ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
-
-        done
-
-        TOTL=$((${NL}+${NS}))
+    TOTL=$((${NL}+${NS}))
 
 echo "Number of RSS : "${TOTL}
-        rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
-        echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS_${TOTL}
+    rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
+    echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS_${TOTL}
 
 ###################################################### CHAINING BACKUP
-        mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
-        IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
+    IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
-        ## DOES CHAIN CHANGED or INIT ?
-        [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
-            && echo "${MOATS}:${IPFSNODEID}:${IPFSPOP}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain \
-            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats \
-            && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
+    ## DOES CHAIN CHANGED or INIT ?
+    [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
+        && echo "${MOATS}:${IPFSNODEID}:${IPFSPOP}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain \
+        && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats \
+        && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
 
-        (
-            echo "PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
-            start=`date +%s`
-            ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
-            ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
-            end=`date +%s`
-            echo "(SECTOR) PUBLISH time was "`expr $end - $start` seconds.
-        ) &
+    (
+        echo "PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
+        start=`date +%s`
+        ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
+        ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
+        end=`date +%s`
+        echo "(SECTOR) PUBLISH time was "`expr $end - $start` seconds.
+    ) &
 
 ######################################################
 
+done
 
 
 

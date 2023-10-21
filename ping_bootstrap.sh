@@ -2,7 +2,7 @@
 
 ipfs stats dht wan
 
-for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#");
+for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')
     do
         echo
         ipfsnodeid=${bootnode##*/}

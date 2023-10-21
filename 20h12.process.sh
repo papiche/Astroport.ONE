@@ -64,7 +64,7 @@ espeak "REFRESHING UPLANET" > /dev/null 2>&1
     espeak "bootstrap refresh" > /dev/null 2>&1
 
     ipfs bootstrap rm --all > /dev/null 2>&1
-    for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+    for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$') # remove comments & empty lines
     do
         ipfsnodeid=${bootnode##*/}
         ipfs bootstrap add $bootnode
