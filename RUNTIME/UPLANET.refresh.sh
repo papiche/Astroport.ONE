@@ -79,13 +79,13 @@ mkdir ~/.zen/tmp/${MOATS}
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
                 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
-                # ZMOATS SHOULD BE MORE THAT 20 HOURS.
+                # ZMOATS SHOULD BE MORE THAT 5 HOURS.
                 MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
                 ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
                     echo "UMAP DATA is ${DIFF_SECONDS} seconds "
                 # IF LESS.
-                if [ ${DIFF_SECONDS} -lt 72000 ]; then
+                if [ ${DIFF_SECONDS} -lt 18000 ]; then
                     echo "GETTING YESTERDAY UMAP.refresher"
                     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
                     ## GET UMAP.refresher from PREVIOUS _chain ...

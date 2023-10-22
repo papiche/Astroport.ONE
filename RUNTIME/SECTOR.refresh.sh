@@ -77,8 +77,8 @@ for SECTOR in ${SECTORS[@]}; do
     MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
     ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
     DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-    echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old"
-    [ ${DIFF_SECONDS} -lt 36000 ] && echo "less than 10 hours... CONTINUE." && continue
+    echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old" # 5 Heures
+    [ ${DIFF_SECONDS} -lt 18000 ] && echo "less than 5 hours... CONTINUE." && continue
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## CONTROL ACTINGNODE SWAPPING
