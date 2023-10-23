@@ -48,7 +48,7 @@ echo ${SECTORS[@]}
 for SECTOR in ${SECTORS[@]}; do
 
     echo "SECTOR ${SECTOR}"
-    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
 
     ##############################################################
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
@@ -83,17 +83,20 @@ for SECTOR in ${SECTORS[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## CONTROL ACTINGNODE SWAPPING
     UREFRESH="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher"
-    ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
+    ALLNODES=($(cat ${UREFRESH}  | grep -v '^[[:space:]]*$' 2>/dev/null)) # ${ALLNODES[@]} without empty line
     STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
 
     if [[ ${ALLNODES[@]} == "" ]]; then
         for STRAP in ${STRAPS[@]}; do
-                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+                echo ${STRAP} >> ${UREFRESH} ## FILL SECTOR.refresher file with all STRAPS
         done
         ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
     fi
 
-    ACTINGNODE=${ALLNODES[1]} ## FIST NODE IN UMAP.refresher
+    ACTINGNODE=${ALLNODES[0]} ## FIST NODE IN SECTOR.refresher
+
+    ## IN CASE OLD BOOSTRAP IS STILL IN CHARGE - CHOOSE 1ST STRAP -
+    [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
@@ -101,7 +104,7 @@ for SECTOR in ${SECTORS[@]}; do
 
 ### NEXT REFRESHER SHUFFLE
     for STRAP in ${STRAPS[@]}; do
-            echo ${STRAP} > ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+            echo ${STRAP} > ${UREFRESH} ## RESET SECTOR.refresher file with actual STRAPS
     done
     # SHUFFLE UMAP.refresher
     cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
@@ -123,23 +126,20 @@ for SECTOR in ${SECTORS[@]}; do
     RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
     NL=${#RSSNODE[@]}
 
-    for RSS in ${RSSNODE[@]}; do
-
-        ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
-
-    done
-
     RSSWARM=($(ls ~/.zen/tmp/swarm/12D*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
     NS=${#RSSWARM[@]}
 
-    for RSS in ${RSSWARM[@]}; do
+    combinedrss=("${RSSNODE[@]}" "${RSSWARM[@]}")
+    RSSALL=($(echo "${combinedrss[@]}" | tr ' ' '\n' | sort -u))
+
+    for RSS in ${RSSALL[@]}; do
 
         ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
 
     done
-##############################################################
 
     TOTL=$((${NL}+${NS}))
+##############################################################
 
 echo "Number of RSS : "${TOTL}
     rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
@@ -156,12 +156,12 @@ echo "Number of RSS : "${TOTL}
 ######################################################
 
     (
-        echo "PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
+        echo "_____PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
         start=`date +%s`
         ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
         ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
         end=`date +%s`
-        echo "(SECTOR) PUBLISH time was "`expr $end - $start` seconds.
+        echo "_____SECTOR${SECTOR} PUBLISH time was "`expr $end - $start` seconds.
     ) &
 
 ######################################################

@@ -139,7 +139,7 @@ myIpfs() {
 }
 
 myIpfsApi() {
-    ipfs --api "$(cat "$(myHome)"/.ipfs/api)" swarm peers >/dev/null 2>&1 \
+    ipfs --timeout 10s --api "$(cat "$(myHome)"/.ipfs/api)" swarm peers >/dev/null 2>&1 \
      && local myIpfsApi=$(cat "$(myHome)"/.ipfs/api)
     [ -n "$myIpfsApi" ] && echo "$myIpfsApi"
 }

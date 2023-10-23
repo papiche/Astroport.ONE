@@ -106,10 +106,10 @@ mkdir ~/.zen/tmp/${MOATS}
             ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
         fi
 
-        ACTINGNODE=${ALLNODES[1]} ## FIST NODE IN UMAP.refresher
+        ACTINGNODE=${ALLNODES[0]} ## FIST NODE IN UMAP.refresher
 
         ## IN CASE OLD BOOSTRAP IS STILL IN CHARGE - CHOOSE 1ST STRAP -
-        [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[1]}
+        [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
         echo "* ACTINGNODE=${ACTINGNODE}"
 

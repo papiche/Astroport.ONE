@@ -298,8 +298,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
             sed -i "s~${OUMAP}~${UMAP}~g" ~/.zen/tmp/${MOATS}/GPS.json
         fi
 
-        SECTOR=_$(echo $LAT | xargs printf '%.1f\n' | sed s~,~.~g)_$(echo $LON | xargs printf '%.1f\n' | sed s~,~.~g) ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
+        SECTOR="_${LAT::-1}_${LON::-1}" ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
         echo "UPlanet 0.1° SECTOR : ${SECTOR}"
+        sed -i "s~_SECTOR_~${SECTOR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
