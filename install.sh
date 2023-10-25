@@ -44,7 +44,7 @@ echo "#############################################"
 echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
-for i in git make cmake fail2ban npm netcat-traditional ncdu chromium miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
+for i in git make cmake fail2ban npm netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -143,16 +143,14 @@ for i in pip setuptools wheel cryptography==3.4.8 Ed25519 base58 google duniterp
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python3 -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
 done
 
-cat /tmp/install.errors.log
-
 echo "#############################################"
 echo "######### IMPRIMANTE & G1BILLET ##############"
 echo "#############################################"
 
 ########### QRCODE : G1VISA / G1BILLET : PRINTER ##############
 if [[ $USER != 'xbian' ]]; then
-    echo "INSTALL PRINTER FOR G1BILLET G1CARD G1VISA ? ENTER 'yes' or Hit enter to bypass."
-    read saisie
+    echo "INSTALL PRINTER FOR G1BILLET G1CARD G1VISA ..."
+    saisie="OK"
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
@@ -180,10 +178,11 @@ echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
 echo "#############################################"
 
-echo "=== SETUP IPFS SYSTEM"
+echo "=== SETUP IPFS"
 ~/.zen/Astroport.ONE/tools/ipfs_setup.sh
 echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
+echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
 
@@ -201,10 +200,13 @@ echo "#############################################"
 ) &
 fi
 
+
 echo "#############################################"
+echo "### ANY ERRORS ?"
+cat /tmp/install.errors.log
 echo "#############################################"
-    echo "Astroport.ONE INSTALLATION FINISHED"
-    end=`date +%s`
+echo "Astroport.ONE INSTALLATION FINISHED"
+end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
 echo "CREEZ VOTRE COMPTE SUR"
@@ -216,6 +218,7 @@ echo "#############################################"
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
     espeak "Please create a player"
+
     [[ $XDG_SESSION_TYPE == 'x11' ]] \
     && xdg-open "http://astroport.localhost:1234" \
     || ~/.zen/Astroport.ONE/command.sh

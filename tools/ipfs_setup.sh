@@ -78,7 +78,7 @@ User=_USER_
 RestartSec=1
 Restart=always
 Environment=IPFS_FD_MAX=8192
-ExecStart=/usr/local/bin/ipfs daemon --migrate
+ExecStart=/usr/local/bin/ipfs daemon --migrate --enable-namesys-pubsub
 CPUAccounting=true
 CPUQuota=60%
 

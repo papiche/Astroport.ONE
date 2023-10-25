@@ -101,7 +101,7 @@ ACTUAL=$(cat /etc/resolv.conf | grep -w nameserver | head -n 1)
 
 if [[ $(echo $ACTUAL | grep "1.1.1.1") == "" ]] ; then
 ########################################################################
-echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS LAN COUNTRY RESTRICTIONS" # Avoid provider restrictions
+echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS COUNTRY RESTRICTIONS" # Avoid provider restrictions
 ########################################################################
     sudo chattr -i /etc/resolv.conf
 
@@ -124,9 +124,9 @@ if [[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /tmp/hosts
     sudo cp /tmp/hosts /etc/hosts && rm /tmp/hosts
 fi
+
 ### ADD 20h12.sh CRON ###############
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
-
 
 echo "#############################################"
 ## INSTALL yt-dlp & SYMLINK youtube-dl
