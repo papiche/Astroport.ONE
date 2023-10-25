@@ -123,6 +123,9 @@ for SECTOR in ${SECTORS[@]}; do
     [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] \
         && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
 
+    ## TEMPORAL TO REMOVE RESET SECTOR TW (correct SLAT SLON previous bug)
+    sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
+
     INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
