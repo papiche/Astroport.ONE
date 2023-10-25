@@ -32,10 +32,10 @@ for UMAP in ${UMAPS[@]}; do
     [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
     [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
-    SLAT="${LAT::-1}"
-    SLON="${LON::-1}"
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
 
-    MYSECTORS=("_${SLAT}_${SLON}" ${MYSECTORS[@]})
+    MYSECTORS=("_${SECLAT}_${SECLON}" ${MYSECTORS[@]})
 
 done
 
@@ -49,6 +49,8 @@ for SECTOR in ${SECTORS[@]}; do
 
     echo "SECTOR ${SECTOR}"
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
+    SLAT=$(echo ${SECTOR} | cut -d '_' -f 2)
+    SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
 
     ##############################################################
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
@@ -61,6 +63,7 @@ for SECTOR in ${SECTORS[@]}; do
     SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
     rm ~/.zen/tmp/${MOATS}/${SECTOR}.priv
 
+    echo "${myIPFS}/ipns/${SECTORNS}/"
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE SECTORNS
