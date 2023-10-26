@@ -63,8 +63,8 @@ while true; do
 
     # ZIP
     if [[ $(zIp) ]]; then
-        PORT=$((PORT+1)) && [ ${PORT} -ge 45781 ] && PORT=45780 ## ♥Box : OPEN FIREWALL 1234 12345 45780 45781 ... 45790
-    fi
+        PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## ♥Box LAN Boostrap : OPEN FIREWALL 1234 12345 45780 45781
+    fi ## Use "nginx proxy manager" for SSL
 
     PORT=$((PORT+1)) && [ ${PORT} -ge 45791 ] && PORT=45780 ## WAN ASTROPORT 45780 45781 ... 45790
 
