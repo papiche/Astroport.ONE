@@ -81,29 +81,26 @@ for PLAYER in ${PLAYERONE[@]}; do
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
+    ################### GET LATEST TW
     echo "Getting latest online TW..."
-    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    echo "/ipns/${ASTRONAUTENS} ON $LIBRA"
-
-    ## IPFS / HTTP / LOCAL
-    #~ DISABLED || curl -m 60 -so ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "$LIBRA/ipns/${ASTRONAUTENS}" \
-    # || cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
-
+    echo "/ipns/${ASTRONAUTENS}"
     rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html 2>/dev/null
     ipfs --timeout 480s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
 
     ## PLAYER TW IS ONLINE ?
     if [ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ]; then
 
+        NOWCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain)
         LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         echo "ERROR_PLAYERTW_OFFLINE : /ipns/${ASTRONAUTENS}"
         echo "------------------------------------------------"
-        echo "MANUAL PROCEDURE NEEDED"
+        echo ">> MANUAL CONTROL NEEDED"
         echo "------------------------------------------------"
-        echo "${myIPFS}/ipfs/${LASTCHAIN}"
+        echo "LAST : ${myIPFS}/ipfs/${LASTCHAIN}"
+        echo "NOW : ${myIPFS}/ipfs/${NOWCHAIN}"
         echo ""
-        echo "ipfs name publish --key=${PLAYER} /ipfs/${LASTCHAIN}"
+        echo "ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
         continue
