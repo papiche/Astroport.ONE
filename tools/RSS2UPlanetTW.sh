@@ -73,7 +73,7 @@ while read title; do
 
         ## NB: COULD NEED SORTING (TODO)
 
-        if [[ "${NEMAILS[*]}" != "${IEMAILS[*]}" ]; then
+        if [[ "${NEMAILS[*]}" != "${IEMAILS[*]}" ]]; then
 
             ## DIFFERENCE IN EMAIL SIGNATURES
             COMMON=()
