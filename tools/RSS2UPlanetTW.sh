@@ -96,9 +96,9 @@ while read title; do
             done
 
             # Print the results
-            echo "Common email addresses: ${COMMON[*]}"
-            echo "Email addresses unique to NEMAILS: ${NUNIQUE[*]}"
-            echo "Email addresses unique to IEMAILS: ${IUNIQUE[*]}"
+            echo "Common email addresses : ${COMMON[*]}"
+            echo "Email addresses unique in NEW Tiddler : ${NUNIQUE[*]}"
+            echo "Email addresses unique in ACTUAL Tiddler : ${IUNIQUE[*]}"
 
             combined=("${IEMAILS[@]}" "${NEMAILS[@]}")
             unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
@@ -121,6 +121,8 @@ https://vdo.copylaradio.com
 " > ~/.zen/tmp/${MOATS}/g1message
 
                 ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message
+
+                ${MY_PATH}/mailjet.sh "support@q1sms.fr" ~/.zen/tmp/${MOATS}/g1message ## DEBUG LOG ANALYSE # TODO REMOVE #
 
             done
 

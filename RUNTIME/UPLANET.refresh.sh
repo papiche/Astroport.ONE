@@ -149,6 +149,7 @@ mkdir ~/.zen/tmp/${MOATS}
     ##############################################################
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html
+    mv ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR} ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/
 
     SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
     SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
@@ -173,6 +174,7 @@ mkdir ~/.zen/tmp/${MOATS}
     ##############################################################
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html
+    mv ~/.zen/tmp/${MOATS}/${UMAP}/${REGION} ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}/
 
     REGIONMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
     REGIONSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
