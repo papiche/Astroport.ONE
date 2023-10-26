@@ -132,7 +132,7 @@ mkdir ~/.zen/tmp/${MOATS}
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
         ######################################################## # NODE  SELECTION in UMAP.refresher
 
-## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${SLAT}_${SLON}
     SLAT="${LAT::-1}"
     SLON="${LON::-1}"
     SECTOR="_${SLAT}_${SLON}"
@@ -155,9 +155,11 @@ mkdir ~/.zen/tmp/${MOATS}
     SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
     SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
+    mv ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
+    mv ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
 
-## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${CLAT}_${CLON}
     CLAT=$(echo ${LAT} | cut -d '.' -f 1)
     CLON=$(echo ${LON} | cut -d '.' -f 1)
     REGION="_${CLAT}_${CLON}"
@@ -180,8 +182,9 @@ mkdir ~/.zen/tmp/${MOATS}
     REGIONMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
     REGIONSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
+    mv ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Map.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
-
+    mv ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Sat.html
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
         cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
