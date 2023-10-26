@@ -121,8 +121,9 @@ mkdir ~/.zen/tmp/${MOATS}
 
         ## NEXT REFRESHER
         # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
+        rm  ${UREFRESH}
         for STRAP in ${STRAPS[@]}; do
-                echo ${STRAP} > ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
+                echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
         done
         # SHUFFLE UMAP.refresher
         cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf

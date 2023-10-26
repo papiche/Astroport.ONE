@@ -106,8 +106,9 @@ for SECTOR in ${SECTORS[@]}; do
             && continue
 
 ### NEXT REFRESHER SHUFFLE
+    rm ${UREFRESH}
     for STRAP in ${STRAPS[@]}; do
-            echo ${STRAP} > ${UREFRESH} ## RESET SECTOR.refresher file with actual STRAPS
+            echo ${STRAP} >> ${UREFRESH} ## RESET SECTOR.refresher file with actual STRAPS
     done
     # SHUFFLE UMAP.refresher
     cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
