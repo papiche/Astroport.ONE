@@ -81,8 +81,12 @@ for SECTOR in ${SECTORS[@]}; do
     ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
     DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
     echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old" # 5 Heures
-    [ ${DIFF_SECONDS} -lt 18000 ] && echo "less than 5 hours... CONTINUE." && continue
-
+    if [ ${DIFF_SECONDS} -lt 18000 ]; then
+                    echo "less than 5 hours..."
+                    echo "GETTING YESTERDAY SECTOR.refresher"
+                    ## GET UMAP.refresher from PREVIOUS _chain ...
+                    ipfs cat /ipfs/${ZCHAIN}/CHAIN/SECTOR.refresher > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher
+    fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## CONTROL ACTINGNODE SWAPPING
     UREFRESH="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher"
