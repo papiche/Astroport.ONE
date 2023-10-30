@@ -166,14 +166,12 @@ echo "Number of RSS : "${TOTL}
         && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
 
-    (
         echo "_____PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
         start=`date +%s`
         ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
         ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
         end=`date +%s`
         echo "_____SECTOR${SECTOR} PUBLISH time was "`expr $end - $start` seconds.
-    ) &
 
 ######################################################
 
