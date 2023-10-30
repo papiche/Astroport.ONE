@@ -12,7 +12,7 @@ start=`date +%s`
 ## SECTOR REFRESH
 # SHARE & UPDATE IPNS TOGETHER
 ############################################
-echo "## RUNNING SECTOR.refresh"
+echo "> RUNNING SECTOR.refresh"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -41,13 +41,13 @@ done
 
 SECTORS=($(echo "${MYSECTORS[@]}" | tr ' ' '\n' | sort -u))
 
-[[ ${SECTORS[@]} == "" ]] && echo "NO SECTOR FOUND" && exit 0
+[[ ${SECTORS[@]} == "" ]] && echo "> NO SECTOR FOUND" && exit 0
 #########################################################""
 echo ${SECTORS[@]}
 
 for SECTOR in ${SECTORS[@]}; do
 
-    echo "SECTOR ${SECTOR}"
+    echo "_____SECTOR ${SECTOR}"
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
     SLAT=$(echo ${SECTOR} | cut -d '_' -f 2)
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
@@ -65,10 +65,13 @@ for SECTOR in ${SECTORS[@]}; do
 
     echo "${myIPFS}/ipns/${SECTORNS}/"
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE SECTORNS
     ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            end=`date +%s`
+            echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## CONTROL CHAIN TIME
     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
@@ -117,7 +120,7 @@ for SECTOR in ${SECTORS[@]}; do
     # SHUFFLE UMAP.refresher
     cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
     mv ${UREFRESH}.shuf ${UREFRESH}
-    echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
+    echo "SETTING NEXT REFRESHER : $(cat ${UREFRESH} | head -n 1)"
 
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS
@@ -152,7 +155,7 @@ for SECTOR in ${SECTORS[@]}; do
     TOTL=$((${NL}+${NS}))
 ##############################################################
 
-echo "Number of RSS : "${TOTL}
+    echo "Number of RSS : "${TOTL}
     rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS_${TOTL}
 
@@ -166,7 +169,7 @@ echo "Number of RSS : "${TOTL}
         && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
 
-        echo "_____PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
+        echo "% START PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
         start=`date +%s`
         ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
         ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
