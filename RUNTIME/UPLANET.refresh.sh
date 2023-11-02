@@ -111,6 +111,11 @@ mkdir ~/.zen/tmp/${MOATS}
         ## IN CASE OLD BOOSTRAP IS STILL IN CHARGE - CHOOSE 1ST STRAP -
         [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
+        ## IF NOT UPDATED FOR TOO LONG
+        [ ${DIFF_SECONDS} -gt 100800 ] \
+            && echo "More than 28H update" \
+            && ACTINGNODE=${STRAPS[0]}
+
         echo "* ACTINGNODE=${ACTINGNODE}"
 
         [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
