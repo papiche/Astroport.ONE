@@ -61,9 +61,9 @@ while true; do
             echo "ASTROPORT ONE"
             echo "VISA pour le vaisseau spatial TERRE."
             read -p "Appuyez sur [ENTER] pour activer votre Station Astroport.ONE"
-            espeak "Astronaut. TW activation" > /dev/null 2>&1
+            espeak "Astroport Command" > /dev/null 2>&1
 
-            ~/.zen/Astroport.ONE/start.sh
+            ~/.zen/Astroport.ONE/command.sh
 
             fi
         exit

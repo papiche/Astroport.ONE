@@ -26,8 +26,7 @@ G1PUB="$3"
 [[ -s $HOME/.zen/tmp/coucou/${G1PUB}.COINS ]] \
     && COINS=$(cat $HOME/.zen/tmp/coucou/${G1PUB}.COINS) \
     && [[ ${COINS} == "null" || ${COINS} == "" ]] \
-    && echo ">>> ${COINS} : DESACTIVATED - NEED G1 TO MAKE A WISH - EXIT - " \
-    && exit 0
+    && echo ">>> ${COINS} : G1 NEEDED TO EXECUTE A WISH"
 
 ## EXPORT [tag[voeu]]
 echo "## EXTRACTION DE NOUVEAUX VOEUX pour $PLAYER TW"
@@ -35,7 +34,7 @@ echo "$INDEX  [tag[voeu]]  ?"
 rm -f ~/.zen/tmp/voeu.json 2>/dev/null
 tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' 'voeu.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[voeu]]'
 
-[[ ! -s ~/.zen/tmp/voeu.json ]] && echo "AUCUN VOEU - EXIT -" && exit 0
+[[ ! -s ~/.zen/tmp/voeu.json ]] && echo "AUCUN VOEU A ACTIVER" && exit 0
 
 ## Tous les tiddlers comportant le tag "voeu" lancent la création d'un G1VOEU ayant le titre du Voeu comme génrateur de clef TW (pepper).
 cat ~/.zen/tmp/voeu.json | jq -r '.[].title' >  ~/.zen/tmp/$PLAYER.voeux.create.list
