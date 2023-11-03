@@ -157,8 +157,8 @@ mkdir ~/.zen/tmp/${MOATS}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html
     mv ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR} ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/
 
-    SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
-    SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${SECTORNS}"
+    SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=1&ipns=${SECTORNS}"
+    SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=1&ipns=${SECTORNS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
     mv ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
