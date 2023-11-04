@@ -179,7 +179,7 @@ select zwish in "${vlist[@]}"; do
                 ## USE TEXT FROM TIDDLER
                 cat ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/${PLAYER}.${VoeuName}.json | jq -r '.[].text' | html2text > ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
                 echo "
-                Signalez que vous pouvez réaliser ce voeu? Sinon passez le billet un ami." >> ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
+                ${VoeuName} [ ${PLAYER} ] ${UPASS}" >> ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt
                 MILGRAM=$(ipfs add -q ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/g1voeu/index.txt)
 
                 xdg-open http://ipfs.localhost:8080/ipfs/${IMAGIC}

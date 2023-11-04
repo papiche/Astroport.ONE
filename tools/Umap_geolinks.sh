@@ -10,6 +10,7 @@ LAT=$1
 LON=$2
 UMAP=$3
 MOATS=$4
+UMAPNS=$5
 
 [[ ! -d ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined}/${LAT}_${LON} ]] && echo "MUST BE CALLED FROM UPLANET.refresh.sh - EXIT -" && exit 1
 

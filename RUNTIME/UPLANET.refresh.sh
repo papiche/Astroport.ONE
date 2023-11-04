@@ -153,16 +153,13 @@ mkdir ~/.zen/tmp/${MOATS}
     SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
     ipfs key rm ${SECTORG1PUB}
     ##############################################################
-    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR}/index.html
-    mv ~/.zen/tmp/${MOATS}/${UMAP}/${SECTOR} ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/
+    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/index.html
 
     SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=1&ipns=${SECTORNS}"
     SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=1&ipns=${SECTORNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html
-    mv ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Map.html ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html
-    mv ~/.zen/tmp/${MOATS}/${UMAP}/SECTOR${SECTOR}.Sat.html ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
 
 ## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${CLAT}_${CLON}
     CLAT=$(echo ${LAT} | cut -d '.' -f 1)
@@ -180,16 +177,13 @@ mkdir ~/.zen/tmp/${MOATS}
     REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ipfs key rm ${REGIONG1PUB}
     ##############################################################
-    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html
-    mv ~/.zen/tmp/${MOATS}/${UMAP}/${REGION} ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}/
+    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}/index.html
 
     REGIONMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
     REGIONSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
-    mv ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
-    mv ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Sat.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Map.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Sat.html
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
         cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
@@ -230,7 +224,7 @@ mkdir ~/.zen/tmp/${MOATS}
 ## GEOLINKING SURROUNDING UMAPS  ###############################
     if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
 
-        ${MY_PATH}/../tools/Umap_geolinks.sh "${LAT}" "${LON}" "${UMAP}" "${MOATS}"
+        ${MY_PATH}/../tools/Umap_geolinks.sh "${LAT}" "${LON}" "${UMAP}" "${MOATS}" "${UMAPNS}"
 
     fi
     ### SET navigator.html ## MAKE EVOLVE template/umap.html

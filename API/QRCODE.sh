@@ -318,10 +318,13 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
         echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch"
         cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
 
+        ## G1CARD COULD BE UP TO 12 MONTH OLD
         if [[ ! -s ~/.zen/tmp/${MOATS}/decoded ]]; then
-            ## COULD BE ONE MONTH OLDER (TODO CHOOSE VALIDITY TIME TO MOVE)
-            UPASS=$(date -d "1 month ago" +"%Y%m")
-            cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${UPASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
+            for ((i = 1; i < 13; i++)); do
+                UPASS=$(date -d "$i months ago" +"%Y%m")
+                cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${UPASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
+                [[ -s ~/.zen/tmp/${MOATS}/decoded ]] && WARNING="=== CARD IS ${i} MONTH OLD ===" && CAGE=${i} && break
+            done
         fi
 
         # cat ~/.zen/tmp/${MOATS}/disco
@@ -408,11 +411,12 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             G1VOEUCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${G1VOEUPUB} | tail -n 1)
             echo "<br><b>${VoeuName} $G1VOEUCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
 
+            echo ${WARNING} >> ~/.zen/tmp/${MOATS}/disco
 
             #CONVERT TO IPNS KEY
             G1VOEUNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1VOEUPUB})
             ## RETRIEVE IPNS CONTENT
-            echo "http://127.0.0.1:8080/ipns/$G1VOEUNS"
+            echo "${myIPFS}/ipns/$G1VOEUNS"
             if [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]]; then
                 HELLO="@PASS :: G1BILLET+ :: ${G1VOEUPUB} :: $(date) :: ${player} :: ${PLAYERORIG1}"
                 echo "${HELLO}"
