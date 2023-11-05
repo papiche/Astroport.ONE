@@ -141,11 +141,11 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ## GET DESTINATION ACCOUNT AMOUNT
             DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${VAL} | tail -n 1)
 
-            if [[ $APPNAME == "pay" ]]; then
+            if [[ ${APPNAME} == "pay" ]]; then
 
                  if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} -gt ${WHAT} ]]; then
                     ## COMMAND A PAYMENT
-                        if [[ $WHAT =~ ^[0-9]+$ ]]; then
+                        if [[ ${WHAT} =~ ^[0-9]+$ ]]; then
 
                             echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'G1CARD:${MOATS}' -m"
                             ${MY_PATH}/../tools/timeout.sh -t 5 \
@@ -160,21 +160,23 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                                 CUR=$(cat ${COINSFILE})
                                 [[ ${CUR} != "" && ${CUR} != "null" ]] \
-                                    && echo $((CUR-WHAT)) > ${COINSFILE} \
-                                    || echo ${WHAT} > ${COINSFILE}
+                                    && echo $((CUR - WHAT)) > ${COINSFILE} \
+                                    || echo "-${WHAT}" > ${COINSFILE}
                                 cat ${COINSFILE}
 
                                 DES=$(cat ${DESTFILE})
                                 [[ ${DES} != "" && ${DES} != "null" ]] \
-                                    && echo $((DES+WHAT)) > ${DESTFILE} \
-                                    || echo ${WHAT} > ${DESTFILE}
+                                    && echo $((DES + WHAT)) > ${DESTFILE} \
+                                    || echo "${WHAT}" > ${DESTFILE}
                                 cat ${DESTFILE}
-
+                                ## MUST BE DONE BETTER ...
                                 ## VERIFY AND INFORM OR CONFIRM PAYMENT
 
                                 echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                             fi
+                        else
+                            echo "<h2>${WHAT} PROBLEM</h2>" >> ~/.zen/tmp/${MOATS}/disco
                         fi
 
                 else
@@ -184,7 +186,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
-            if [[ $APPNAME == "history" || $APPNAME == "read" ]]; then
+            if [[ ${APPNAME} == "history" || ${APPNAME} == "read" ]]; then
 
                 ## history & read ## CANNOT USE jaklis CLI formated output (JSON output)
                 echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
@@ -195,7 +197,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
-            if [[ $APPNAME == "balance" ]]; then
+            if [[ ${APPNAME} == "balance" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
@@ -206,7 +208,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
-            if [[ $APPNAME == "friend" ]]; then
+            if [[ ${APPNAME} == "friend" ]]; then
                 ## Send ॐ★ॐ
                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${VAL} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco
 
@@ -215,7 +217,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 ##############################################
 # LOGIN / LOGOUT
 ##############################################
-            if [[ $APPNAME == "logout" ]]; then
+            if [[ ${APPNAME} == "logout" ]]; then
 
                 ## REMOVE PLAYER IPNS KEY FROM STATION
                 [[ "${salt}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
@@ -236,7 +238,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
-            if [[ $APPNAME == "login" ]]; then
+            if [[ ${APPNAME} == "login" ]]; then
 
                 [[ "${salt}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
                 && PLAYER=${salt} \
@@ -345,7 +347,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             player=$(echo $salt | cut -d '_' -f 1 | cut -d ' ' -f 1 | grep '@')
             echo "player=$player"
 
-            # # G1BILLET+ interlinked ? ##
+            # # G1BILLET+ interlinked ? ## POSSIBLE BUG WITH EMAIL CONTAINING "_" # TODO
             [[ $(echo "$salt" | grep '_') ]] \
                 && echo "G1BILLET+ interlinked : salt pepper refining" \
                 && murge=($(echo $salt | cut -d '_' -f 2- | sed 's/_/ /g' | xargs)) \

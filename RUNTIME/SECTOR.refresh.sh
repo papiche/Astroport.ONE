@@ -109,8 +109,8 @@ for SECTOR in ${SECTORS[@]}; do
     [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
     ## IF NOT UPDATED FOR TOO LONG
-    [ ${DIFF_SECONDS} -gt 100800 ] \
-        && echo "More than 28H update" \
+    [ ${DIFF_SECONDS} -gt 86400 ] \
+        && echo "More than 24H update" \
         && ACTINGNODE=${STRAPS[0]}
 
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
