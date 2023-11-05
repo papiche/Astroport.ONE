@@ -116,7 +116,7 @@ sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
 sudo chmod 640 /etc/ssmtp/ssmtp.conf
 sudo chgrp mail /etc/ssmtp/ssmtp.conf
 
-echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
+echo "$USER:support@g1sms.fr:mail.g1sms.fr:465" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
 
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
