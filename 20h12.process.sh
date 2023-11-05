@@ -94,9 +94,9 @@ if [[ ! -f /etc/systemd/system/astroport.service ]]; then
 else
     sudo systemctl restart astroport
     [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
-    echo "systemd restart"
+    echo "Astroport processes systemd restart"
 fi
-
+echo $LOWMODE
 ## IPFS DISABLED : STOP IT
 [[ $LOWMODE != "" ]] && sleep 360 && sudo systemctl stop ipfs
 
