@@ -25,17 +25,17 @@ else
     echo $ts > ~/.zen/adventure/meteo.anim.eu/.ts
 
     PSEUDO=$(cat ~/.zen/adventure/players/.current/.pseudo 2>/dev/null)
-    OLDID=$(cat ~/.zen/adventure/players/.current/.meteo.index 2>/dev/null)
+    OLDID=$(cat ~/.zen/adventure/.meteo.index 2>/dev/null)
     sed s/_OLDID_/$OLDID/g ${MY_PATH}/../templates/meteo_chain.html > /tmp/index.html
     sed -i s/_IPFSID_/$IPFSID/g /tmp/index.html
     sed -i s/_DATE_/$(date -u "+%Y-%m-%d#%H:%M:%S")/g /tmp/index.html
-    sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/adventure/players/.current/public/index.html
+    sed s/_PSEUDO_/$PSEUDO/g /tmp/index.html > ~/.zen/adventure/index.html
 
     # Copy style css
     cp -R ${MY_PATH}/../templates/styles ~/.zen/adventure/players/.current/public/
 
-    INDEXID=$(ipfs add -rHq ~/.zen/adventure/players/.current/public | tail -n 1)
-    echo $INDEXID > ~/.zen/adventure/players/.current/.meteo.index
+    INDEXID=$(ipfs add -rHq ~/.zen/adventure/index.html | tail -n 1)
+    echo $INDEXID > ~/.zen/adventure/.meteo.index
     echo "LAST VIDEO INDEX http://127.0.0.1:8080/ipfs/$INDEXID"
     IPFS=$(ipfs add -Rw ~/.zen/adventure/meteo.anim.eu/)
     echo $IPFS > ~/.zen/adventure/meteo.anim.eu/.chain
