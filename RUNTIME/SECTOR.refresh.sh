@@ -132,6 +132,8 @@ for SECTOR in ${SECTORS[@]}; do
     [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
         && mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
 
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}
+
     ## NEW TW TEMPLATE
     [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] \
         && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
