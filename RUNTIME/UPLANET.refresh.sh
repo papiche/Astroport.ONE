@@ -156,8 +156,8 @@ mkdir ~/.zen/tmp/${MOATS}
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/index.html
 
-    SECTORMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=1&ipns=${SECTORNS}"
-    SECTORSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=1&ipns=${SECTORNS}"
+    SECTORMAPGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/map_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
+    SECTORSATGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/sat_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
 
@@ -180,8 +180,8 @@ mkdir ~/.zen/tmp/${MOATS}
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}/index.html
 
-    REGIONMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
-    REGIONSATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+    REGIONMAPGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/map_render.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+    REGIONSATGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/sat_render.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Map.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Sat.html
 
@@ -204,8 +204,8 @@ mkdir ~/.zen/tmp/${MOATS}
 ##################################
         ## OSM2IPFS
 ### UMAP = 0.01° Planet Slice
-        UMAPGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
-        USATGEN="/ipfs/QmReVMqhMNcKWijAUVmj3EDmHQNfztVUT413m641eV237z/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
+        UMAPGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
+        USATGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
 

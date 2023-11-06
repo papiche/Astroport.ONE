@@ -17,9 +17,12 @@ rm -f ~/.zen/adventure/meteo.anim.eu/meteo.png
 curl  -m 20 --output ~/.zen/adventure/meteo.anim.eu/meteo.png https://s.w-x.co/staticmaps/wu/wu/satir1200_cur/europ/animate.png
 
 if [[ ! -f  ~/.zen/adventure/meteo.anim.eu/meteo.png ]]; then
+
     echo "Impossible de vous connecter au service meteo"
     exit 1
+
 else
+
     echo "NEED HTML TEMPLATING"
     echo "Mise à jour archive points meteo : $ts"
     echo $ts > ~/.zen/adventure/meteo.anim.eu/.ts
@@ -39,8 +42,6 @@ else
     echo "LAST VIDEO INDEX http://127.0.0.1:8080/ipfs/$INDEXID"
     IPFS=$(ipfs add -Rw ~/.zen/adventure/meteo.anim.eu/)
     echo $IPFS > ~/.zen/adventure/meteo.anim.eu/.chain
-
-
 
 fi
 
