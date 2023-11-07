@@ -46,7 +46,7 @@ echo "Tout autour la forêt. Des feuillus. Quelques arbustres épineux."
 echo "Sous vos pieds. Le sol est rouge parsemé de cailloux blancs."
 echo
 echo "Vous pouvez vous diriger selon les points cardinaux."
-echo "Au nord un chemin remonte, au sud un passage descend, à l'est, la bergerie, à l'ouest, une trace d'animaux"
+echo "Au nord un chemin remonte, au sud un passage descend, à l'est, la bergerie, à l'ouest, des traces d'animaux"
 echo
 echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u et h."
 
@@ -63,7 +63,7 @@ while true; do
         w ) ./green.sh
             exit ;;
         u ) echo "Vous ouvrez votre sac il contient une tente, des vêtements, un termos, une scie pliante et un couteau" ;;     # Something to say? You can also just echo.
-        h ) echo "Comment avez-vous pu arriver ici.? Des souvenirs vous reviennent... https://oasis.astroport.com/a-quel-jeu-voulons-nous-jouer/" ;;
+        h ) echo "Comment avez-vous pu arriver ici.? Des souvenirs vous reviennent... https://web.archive.org/web/20211129105224/https://oasis.astroport.com/a-quel-jeu-voulons-nous-jouer/" ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
