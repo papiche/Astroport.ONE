@@ -1,4 +1,8 @@
 #!/bin/bash
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+
 clear
 # Initialise the Title Art
 file1="../art/titleart.ben"
@@ -55,16 +59,22 @@ while true; do
             echo
             echo
             echo "____ Astroport déclenche à 20:12 la synchronisation de ses ambassades..."
-            echo "Rapport 2022 : /ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR"
+            echo "Rapport 2022 : https://ipfs.asycn.io/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR"
             sleep 3
             echo
             echo "ASTROPORT ONE"
             echo "VISA pour le vaisseau spatial TERRE."
-            read -p "Appuyez sur [ENTER] pour activer votre Station Astroport.ONE"
-            espeak "Astroport Command" > /dev/null 2>&1
+                if [[ -d ~/.zen/Astroport.ONE ]]; then
+                    read -p "Appuyez sur [ENTER] pour activer votre Station Astroport.ONE"
+                    espeak "Astroport Command" > /dev/null 2>&1
 
-            ~/.zen/Astroport.ONE/command.sh
-
+                    ~/.zen/Astroport.ONE/command.sh
+                else
+                    espeak "Please Install Astroport" > /dev/null 2>&1
+                    echo "Install Astroport.ONE ..."
+                    echo  "bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh)"
+                    ./end.sh
+                fi
             fi
         exit
         ;;

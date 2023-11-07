@@ -62,7 +62,7 @@ while true; do
             exit ;;
         w ) ./green.sh
             exit ;;
-        u ) echo "Vous ouvrez votre sac il contient une tente, des vêtements, un termos, une scie pliante et un couteau" ;;     # Something to say? You can also just echo.
+        u ) echo "Vous ouvrez votre sac il contient une tente, des vêtements, un thermos, une scie pliante et un couteau" ;;     # Something to say? You can also just echo.
         h ) echo "Comment avez-vous pu arriver ici.? Des souvenirs vous reviennent... https://web.archive.org/web/20211129105224/https://oasis.astroport.com/a-quel-jeu-voulons-nous-jouer/" ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac

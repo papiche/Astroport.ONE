@@ -15,7 +15,7 @@ do
 done <"$file1"
 echo
 sleep 1
-echo "Voic la fin de cette petite aventure."
+echo "Voici la fin de cette petite aventure."
 echo
 sleep 4
 echo "Vous venez de visiter la forêt où s'est posé Astroport ONE."
@@ -25,7 +25,7 @@ echo "Une oeuvre habitable. Un jardin sur sol vivant. Un progamme pair à pair i
 sleep 4
 echo
 echo "Les terraformeurs"
-echo "En quête de la meilleure façon de vivre sur le vaisseau spatal Terre..."
+echo "En quête de la meilleure façon de vivre sur le vaisseau spatial Terre..."
 echo
 sleep 5
 echo "Vous aussi ouvrez votre Ambassade."
