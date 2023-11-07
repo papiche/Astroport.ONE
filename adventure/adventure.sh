@@ -1,6 +1,6 @@
 #!/bin/bash
-
-# This Launch script is based on BashVenture. https://github.com/apetro/BashVenture
+###################################################################
+# This Launch script is based on BashVenture.
 # It runs on Astroport Stations and allow players to create their own digital stories
 # First you have to install IPFS in order to play with everyone in the same network
 #
@@ -12,14 +12,14 @@
 ###################################################################
 # Here we check to see if uuidgen is installed - if not it will default to single-user mode. To run this on a server
 # and support multipe-users, check you have everything set up correctly.
-# Follow the instructions in the original ReadMe file : https://github.com/apetro/BashVenture/blob/master/README.md
+# Read the original instructions  : https://github.com/apetro/BashVenture/blob/master/README.md
 ###################################################################
 # Guide avancé d'écriture des scripts Bash : https://abs.traduc.org/abs-fr/
 ###################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-
+###################################################################
 if hash uuidgen 2>/dev/null; then
     homefolder=$(pwd)
     newplayer=$(uuidgen)
@@ -30,20 +30,21 @@ if hash uuidgen 2>/dev/null; then
     cp -r $MY_PATH/script $HOME/.zen/adventure/$newplayer/script
     cp -r $MY_PATH/logic $HOME/.zen/adventure/$newplayer/logic
 fi
-
+###################################################################
 echo "Loading..."
 echo
 sleep 4
-
+###################################################################
 if hash uuidgen 2>/dev/null; then
     cd $HOME/.zen/adventure/$newplayer/rooms
 else
     cd rooms
 fi
 ./start.sh
+###################################################################
 if hash uuidgen 2>/dev/null; then
-cd "$homefolder"
-rm -r $HOME/.zen/adventure/$newplayer
+    cd "$homefolder"
+    rm -r $HOME/.zen/adventure/$newplayer
 fi
-echo
+echo "To continue..."
 exit
