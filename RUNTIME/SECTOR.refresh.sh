@@ -129,19 +129,15 @@ for SECTOR in ${SECTORS[@]}; do
 
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS
-    [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/TW ]] \
-        && mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
-
-    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}/TW
+    INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
 
     ## NEW TW TEMPLATE
-    [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html ]] \
-        && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
+    [[ ! -s ${INDEX} ]] \
+        && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ${INDEX}
 
-    ## TEMPORAL TO REMOVE RESET SECTOR TW (correct SLAT SLON previous bug)
-    sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ~/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html
-
-    INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
+    ## SET SECTOR
+    sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
     RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
