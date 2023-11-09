@@ -73,9 +73,10 @@ mkdir ~/.zen/tmp/${MOATS}
 
     echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/"
 
-    ## PROTOCOL MIGRATION (TODO REMOVE)
-    rm ${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresh 2>/dev/null
-    # 8< ----
+ ## zday of the week for IPFSNODEID
+rm ~/.zen/tmp/${MOATS}/${UMAP}/z$(date -d "yesterday" +%A)
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A)
+
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
                 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)

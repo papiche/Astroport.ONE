@@ -162,6 +162,10 @@ for SECTOR in ${SECTORS[@]}; do
     rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS_${TOTL}
 
+## zday of the week for IPFSNODEID
+rm ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date -d "yesterday" +%A)
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A)
+
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
