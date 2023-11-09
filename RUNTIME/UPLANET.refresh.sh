@@ -58,7 +58,7 @@ mkdir ~/.zen/tmp/${MOATS}
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         ## IPFS GET ONLINE UMAPNS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-        ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
+        ipfs --timeout 120s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

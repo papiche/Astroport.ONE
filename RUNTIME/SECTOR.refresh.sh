@@ -68,7 +68,7 @@ for SECTOR in ${SECTORS[@]}; do
             start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE SECTORNS
-    ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
+    ipfs --timeout 120s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             end=`date +%s`
             echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
