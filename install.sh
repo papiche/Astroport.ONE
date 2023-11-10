@@ -9,11 +9,6 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 
-[[ ${MY_PATH} != ${HOME}/.zen/Astroport.ONE ]] \
-    && mkdir-p ~/.zen \
-    && mv ${MY_PATH} ${HOME}/.zen/Astroport.ONE \
-    && echo "NOTICE : Astroport.ONE code moved to ${HOME}/.zen/Astroport.ONE"
-
 ##################################################################  SUDO
 ########################################################################
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. " && exit 1
