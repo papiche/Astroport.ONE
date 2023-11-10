@@ -10,5 +10,5 @@ done
 
 ~/.venvs/astro/bin/python -m pip install -r requirements.txt
 
-sed "s~/usr/bin/env python3~$HOME/.venvs/astro/bin/python~g" jaklis.py > ~/.local/bin/
+sed "s~/usr/bin/env python3~$HOME/.venvs/astro/bin/python~g" jaklis.py > ~/.local/bin/jaklis.py
 chmod u+x ~/.local/bin/jaklis.py
