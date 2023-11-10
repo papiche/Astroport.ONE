@@ -129,7 +129,7 @@ for SECTOR in ${SECTORS[@]}; do
 
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS
-    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}/TW
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
     INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
 
     ## NEW TW TEMPLATE
