@@ -124,7 +124,7 @@ def createTmpDunikey():
 
     key = SigningKey.from_credentials(getpass.getpass("Identifiant: "), getpass.getpass("Mot de passe: "), None)
     key.save_pubsec_file(keyPath)
-    
+
     return keyPath
 
 # Check if we need dunikey

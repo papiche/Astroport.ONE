@@ -7,3 +7,4 @@ python-dotenv
 gql==3.0.0a5
 #gql==2.0
 requests
+websockets==10.0
