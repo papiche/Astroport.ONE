@@ -1,7 +1,7 @@
 #!/bin/bash
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
 
-mkdir ~/.zen/tmp
+mkdir -p ~/.zen/tmp
 cd  ~/.zen/tmp
 
 # Check processor architecture
