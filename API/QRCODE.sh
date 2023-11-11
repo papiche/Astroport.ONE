@@ -186,6 +186,16 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             fi
 
+            if [[ ${APPNAME} == "flipper" ]]; then
+
+                LINK="${myIPFS}/ipfs/QmZdhQVfWe1cEk4Uzuhk7CShSYtXbRWh2yB1hsvuaCdAD5?qrcode=${QRCODE}&pass=${PASS}"
+                ## history & read ## CANNOT USE jaklis CLI formated output (JSON output)
+                sed "s~_TWLINK_~${LINK}~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/disco
+                sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/disco
+                echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/disco
+
+            fi
+
             if [[ ${APPNAME} == "history" || ${APPNAME} == "read" ]]; then
 
                 ## history & read ## CANNOT USE jaklis CLI formated output (JSON output)
