@@ -195,7 +195,7 @@ fi
 RUN echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" > "/etc/sudoers.d/$USER"
 
 # config ssmtp
-RUN echo "$USER:support@g1sms.fr:mail.asycn.io:587" >> /etc/ssmtp/revaliases
+RUN echo "$USER:support@g1sms.fr:mail.g1sms.fr:645" >> /etc/ssmtp/revaliases
 
 # config crontab
 RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
