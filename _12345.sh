@@ -95,6 +95,9 @@ while true; do
 
         [[ ${ipfsnodeid} == "null" || ${ipfsnodeid} == "" ]] && echo "BAD ${IPFSNODEID} - CONTINUE" && continue
 
+        ## SWARM CONNECT
+        ipfs swarm connect ${bootnode}
+
         ## PREPARE TO REFRESH SWARM LOCAL CACHE
         mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
         mkdir -p ~/.zen/tmp/swarm/_${ipfsnodeid}

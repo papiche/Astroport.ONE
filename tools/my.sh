@@ -472,4 +472,4 @@ fi
 
 ASTROJSCID="/ipfs/"
 LOGINCID="/ipfs/"
-GETRECEIVERCID="/ipfs/QmVCAET43hP37XsSsRmj8P3hEJMXpgcdCAxeQhAyDCKpuE"
+GETRECEIVERCID="/ipfs/QmXctju7CKDEwpesQSvSyfxfVdZqhdMdfMx3MikB6u7mLd"

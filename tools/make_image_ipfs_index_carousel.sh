@@ -93,9 +93,12 @@ if [[ ! -d $img_dir ]]; then
         # ADD IT
         composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/one.png
 
+        # CONVERT COINS to ZEN
+        ZEN=$(echo "$COINS * 10" | bc)
+
         ## WRITE ON IT : ASK FOR REFILL
         convert -font 'Liberation-Sans' \
-        -pointsize 80 -fill purple -draw 'text 50,120 "'"$COINS(_) ZEN"'"' \
+        -pointsize 80 -fill purple -draw 'text 50,120 "'"$ZEN ZEN"'"' \
         -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
         -pointsize 14 -fill white -draw 'text 40, 200 "'"${birthdate}"'"' \
         "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
