@@ -147,36 +147,49 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                     ## COMMAND A PAYMENT
                         if [[ ${WHAT} =~ ^[0-9]+$ ]]; then
 
+                            ## CREATE game pending TX
+                            mkdir -p $HOME/.zen/game/pending/${G1PUB}/
+                            echo "UNKNOWN" > $HOME/.zen/game/pending/${G1PUB}/${MOATS}_${VAL}+${WHAT}.TX
+                            ######################## ~/.zen/game/pending/*/*_G1WHO+*.TX
+
                             echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'G1CARD:${MOATS}' -m"
                             ${MY_PATH}/../tools/timeout.sh -t 5 \
                             ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1CARD:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
                             #################################### SYSTEM IS NOT DUNITER OVER POOL RESISTANT
+
                             if [ $? == 0 ]; then
+                                echo "SENT" > $HOME/.zen/game/pending/${G1PUB}/${MOATS}_${VAL}+${WHAT}.TX
+                                ## Make calculation
+                                COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
+                                DESTFILE="$HOME/.zen/tmp/coucou/${VAL}.COINS"
 
-                                ## TODO : MEMORIZE TX TO VERIFY ASTRO/DUNITER SYNC
-                                COINSFILE="$HOME/.zen/tmp/${MOATS}/${G1PUB}.COINS"
-                                DESTFILE="$HOME/.zen/tmp/${MOATS}/${VAL}.COINS"
-
-                                CUR=$(cat ${COINSFILE})
-                                [[ ${CUR} != "" && ${CUR} != "null" ]] \
-                                    && echo $((CUR - WHAT)) > ${COINSFILE} \
-                                    || echo "-${WHAT}" > ${COINSFILE}
-                                cat ${COINSFILE}
+                               CUR=$(cat "${COINSFILE}")
+                                if [[ ! -z "$CUR" && "$CUR" != "null" ]]; then
+                                    RESULT=$(echo "$CUR - $WHAT" | bc)
+                                    echo "$RESULT" > "${COINSFILE}"
+                                else
+                                    echo "-${WHAT}" > "${COINSFILE}"
+                                fi
+                                cat "${COINSFILE}"
 
                                 DES=$(cat ${DESTFILE})
                                 [[ ${DES} != "" && ${DES} != "null" ]] \
-                                    && echo $((DES + WHAT)) > ${DESTFILE} \
+                                    && echo "$DES + $WHAT" | bc  > ${DESTFILE} \
                                     || echo "${WHAT}" > ${DESTFILE}
                                 cat ${DESTFILE}
-                                ## MUST BE DONE BETTER ...
+
                                 ## VERIFY AND INFORM OR CONFIRM PAYMENT
 
                                 echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
+                            else
+
+                                echo "NOK" > $HOME/.zen/game/pending/${G1PUB}/${MOATS}_${VAL}+${WHAT}.TX
+
                             fi
                         else
-                            echo "<h2>${WHAT} PROBLEM</h2>" >> ~/.zen/tmp/${MOATS}/disco
+                            echo "<h2>${WHAT} FORMAT ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
                         fi
 
                 else
@@ -187,12 +200,12 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             fi
 
             if [[ ${APPNAME} == "flipper" ]]; then
+                ## Open OSM2IPF getreceiver App
 
-                LINK="${myIPFS}/ipfs/QmZdhQVfWe1cEk4Uzuhk7CShSYtXbRWh2yB1hsvuaCdAD5?qrcode=${QRCODE}&pass=${PASS}"
-                ## history & read ## CANNOT USE jaklis CLI formated output (JSON output)
-                sed "s~_TWLINK_~${LINK}~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/disco
-                sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/disco
-                echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/disco
+                LINK="${myIPFS}${GETRECEIVERCID}/?qrcode=${QRCODE}&pass=${PASS}&coins=${CURCOINS}"
+                echo "LINK:$LINK"
+                echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
+                echo "<script>window.location.href = '${LINK}';</script>" >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 

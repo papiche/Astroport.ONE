@@ -40,13 +40,15 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu
 ## PROTOCOL EVOLUTION RUN & REMOVE
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}
 
-
 ###############################
-####### NEED G1 TO RUN
+####### NEED G1 / ZEN TO RUN
     [[ ${COINS} == "null" || ${COINS} == "" ]] \
     && echo ">>> ${COINS} : DESACTIVATED - NEED G1 TO REFRESH WISH - EXIT - " \
     && exit 0
-echo "%% $COINS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+echo "%% ${COINS} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
+[ ${COINS} -lt 2 ] && echo ">>> ${COINS} ONLY : 20 ZEN NEEDED TO CONTINUE" && exit 0
+
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
 echo "Exporting ${PLAYER} TW [tag[G1Voeu]]"

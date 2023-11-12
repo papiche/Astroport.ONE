@@ -469,3 +469,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
     haut=$((height-200))
 ###
 fi
+
+ASTROJSCID="/ipfs/"
+LOGINCID="/ipfs/"
+GETRECEIVERCID="/ipfs/QmVCAET43hP37XsSsRmj8P3hEJMXpgcdCAxeQhAyDCKpuE"
