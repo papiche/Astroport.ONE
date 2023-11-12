@@ -1,5 +1,5 @@
 root=support@g1sms.fr
-mailhub=mail.g1sms.fr:465
+mailhub=mail.asycn.io:587
 rewriteDomain=g1sms.fr
 FromLineOverride=YES
 AuthUser=support@g1sms.fr
