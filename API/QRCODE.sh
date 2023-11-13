@@ -770,7 +770,7 @@ else
         echo "VISITEUR POSSEDE ${VISITORCOINS} G1"
 
         ## GET G1 WALLET HISTORY
-        if [[ ${VISITORCOINS} != "null" && ${VISITORCOINS} -gt 0 ]]; then
+        if [[ ${VISITORCOINS} != "null" && ${VISITORCOINS} > 0 ]]; then
 
             [[ ! -s ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json ]] \
             && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json
@@ -855,7 +855,7 @@ else
     ## DOES CURRENT IS RICHER THAN 100 G1
     ## IF GCHANGE ACCOUNT FOUND => SEND PALPE JUNE.
     # SEND MESSAGE TO GCHANGE MESSAGING. SEND 5 ★
-    if [[ $CURCOINS -gt 100 && $PALPE != 0 ]]; then
+    if [[ $CURCOINS > 100 && $PALPE != 0 ]]; then
 
             ## LE COMPTE VISITOR EST VIDE
             echo "## AUTOGRAPH $CURPLAYER SEND $PALPE TO ${QRCODE}"
