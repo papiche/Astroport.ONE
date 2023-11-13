@@ -27,10 +27,13 @@ if [[ ! -d $img_dir ]]; then
 
         pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
 
-        # Get PLAYER wallet amount :: ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/COINS
+        # Get PLAYER wallet amount
         echo "$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance"
         COINS=$($MY_PATH/COINScheck.sh ${pub} | tail -n 1)
         echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
+
+        # CONVERT COINS to ZEN
+        ZEN=$(echo "$COINS * 10" | bc)
 
         ## USE G1BARRE OR G1WorldMap.png AS 1ST IMAGE
         #~ curl -m 3 -so ~/.zen/tmp/carousel/${pub}.one.png \
@@ -44,8 +47,8 @@ if [[ ! -d $img_dir ]]; then
 ##################
         ## PREPARE LOOP LINK LINE
         ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
-        [[ $COINS -gt 0 ]] \
-        && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'page', '3000')\" title=\"$PLAYER ($COINS G1) CHARGEUR DE G1BILLET \">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
+        [[ $COINS > 0 ]] \
+        && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'page', '3000')\" title=\"$PLAYER ($ZEN ZEN) CHARGEUR DE G1BILLET \">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
         || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
         ## EXTRACT G1Voeu FROM PLAYER TW
@@ -92,9 +95,6 @@ if [[ ! -d $img_dir ]]; then
         convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 250 ~/.zen/tmp/QR.png
         # ADD IT
         composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/one.png
-
-        # CONVERT COINS to ZEN
-        ZEN=$(echo "$COINS * 10" | bc)
 
         ## WRITE ON IT : ASK FOR REFILL
         convert -font 'Liberation-Sans' \
