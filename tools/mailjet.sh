@@ -18,7 +18,7 @@ echo '
 ### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
 ## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
 mail="$1" # EMAIL DESTINATAIRE
-[[ ! $1 ]] && mail="fred@g1sms.fr"
+[[ ! $1 ]] && mail="support@qo-op.com"
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
@@ -33,7 +33,7 @@ echo "
 
 echo "From: support@g1sms.fr
 To: EMAIL
-Bcc: fred@g1sms.fr
+Bcc: support@qo-op.com
 Subject: SUBJECT
 MESSAGE
 " > ~/.zen/tmp/email.txt
