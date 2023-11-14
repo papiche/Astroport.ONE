@@ -82,6 +82,7 @@ while true; do
 
     #####################################
     ( ##### SUB-PROCESS RUN
+    exec 2>&1 >> ~/.zen/tmp/_12345.log
     start=`date +%s`
 
     ############# GET BOOTSTRAP SWARM DATA
