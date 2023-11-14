@@ -186,8 +186,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                                 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1CARD:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
                                 if [ $? == 0 ]; then
-                                    mv ${PENDING} ${PENDING}.SENT ## TODO MONITOR CHAIN REJECTION
-
+                                    echo "SENT" > ${PENDING} ## _12345.sh run MONITOR checking CHAIN REJECTION
                                     ## CHANGE COINS CACHE
                                     COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
                                     DESTFILE="$HOME/.zen/tmp/coucou/${VAL}.COINS"
@@ -197,6 +196,10 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                                         RESULT=$(echo "$CUR - $WHAT" | bc)
                                         echo "$RESULT" > "${COINSFILE}"
                                     else
+                                        ## UNKNOWN CARD or G1 Problem
+                                        echo "MISSING COINS for ${G1PUB}.COINS" >> ~/.zen/tmp/${MOATS}/disco
+                                        echo PORT="$1" THAT="$2" AND="$3" THIS="$4"  APPNAME="$5" WHAT="$6" OBJ="$7" VAL="$8" MOATS="$9" COOKIE="$10" >> ~/.zen/tmp/${MOATS}/disco
+                                        ${MY_PATH}/../tools/mailjet.sh 'fred@q1sms.fr' ~/.zen/tmp/${MOATS}/disco
                                         echo "-${WHAT}" > "${COINSFILE}"
                                     fi
                                     cat "${COINSFILE}"

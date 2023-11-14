@@ -85,6 +85,18 @@ while true; do
     exec 2>&1 >> ~/.zen/tmp/_12345.log
     start=`date +%s`
 
+    # MONITOR pending
+    for player in ${PLAYERONE[@]}; do
+        g1pub=$(cat ~/.zen/game/players/${player}/.g1pub 2>/dev/null)
+        # Check Station PLAYER payments
+        PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX"))
+        for pending in "${PENDINGS[@]}"; do
+             echo ${pending}
+             # TODO TREAT PENDINGS
+             #
+        done
+    done
+
     ############# GET BOOTSTRAP SWARM DATA
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do

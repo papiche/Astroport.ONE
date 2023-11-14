@@ -174,6 +174,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
     ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
 
+    ### CHECK FOR pending
+
+
     ###############
     # VOEUX.create.sh #
     ##############################################################
