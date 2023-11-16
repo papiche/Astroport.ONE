@@ -298,7 +298,7 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 
 check available "logo.png" in [./images](./images)
 
-## ➤ UPLANET : Create Umap, G1Card & G1Visa for PLAYER (email)
+## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
 ### ```/?uplanet=${PLAYER}&salt=${LAT}&pepper=${LON}&g1pub=${PASS}```
 
 | Parameter | Type     | Description                       |
@@ -306,7 +306,7 @@ check available "logo.png" in [./images](./images)
 | `uplanet` | `email` | **Required** Your EMAIL token |
 | `salt` | `decimal` | **Required** LATITUDE with 2 decimals digits |
 | `pepper` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
-| `g1pub` | `string` | **Facultative** choose Umap G1Card PASS |
+| `g1pub` | `string` | **Facultative** choose Umap AstroID PASS |
 
 Create à Umap key (LAT/LON), then a PLAYER TW with GPS as Umap IPNS reference
 This API is used by OSM2IPFS code.
@@ -315,17 +315,17 @@ DEMO : https://ipfs.copylaradio.com/ipns/copylaradio.com
 
 ### QRCODE (API SandBox)
 ```http
-GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_G1CARD_STRING}
+GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_ASTROID_STRING}
 ```
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
-| `qrcode` | `string` | **Required**. Your G1PUB or ASTRONAUTENS or PGP_G1CARD token |
+| `qrcode` | `string` | **Required**. Your G1PUB or ASTRONAUTENS or PGP_ASTROID token |
 
 > Look for details & extend as you like in [~/.zen/Astroport.ONE/API/QRCODE.sh](API/QRCODE.sh)
 
 ### CODE BEHAVIOUR. monitor && rewards || fork signal
 
-* Is IPNS key & PLAYER is local ? Redirect to [make a G1CARD (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
+* Is IPNS key & PLAYER is local ? Redirect to [make a ASTROID (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
 
 * Is G1*? Redirect to G1WishApp / Export Tagged Tiddlers json from TW
 
@@ -336,13 +336,13 @@ redirect to
 [http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](https://astroport.copylaradio.com/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
 redirect to pure "tag=" result  json
 
-* Is G1PUB ... (FROM NEW G1CARD or empty G1BILLET)
+* Is G1PUB ... (FROM NEW ASTROID or empty G1BILLET)
 
     * If balance is "null" : Send 1 G1 (G1BILLET)
     * if GChange+ account exists : send 10 G1
     * if Cesium+ account exists : send 50 G1
 
-* Is G1CARD
+* Is ASTROID
     * decode with PASS and make operation (same functions as SALT API are available)
 
 

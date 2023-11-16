@@ -33,7 +33,7 @@ if [[ ! -d $img_dir ]]; then
         echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 
         # CONVERT COINS to ZEN
-        ZEN=$(echo "$COINS * 10" | bc)
+        ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
         ## USE G1BARRE OR G1WorldMap.png AS 1ST IMAGE
         #~ curl -m 3 -so ~/.zen/tmp/carousel/${pub}.one.png \

@@ -161,7 +161,7 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
-### CREATE A G1VISA FOR PLAYER (NO TW EXISTS YET for EMAIL)
+### CREATE A ZENCARD FOR PLAYER (NO TW EXISTS YET for EMAIL)
 if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
 
         ## CHECK IF TW EXISTS FOR THIS EMAIL ALREADY

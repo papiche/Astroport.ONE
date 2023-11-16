@@ -29,7 +29,7 @@ PPASS=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
 ############################################################ G1Voeu.sh use
 ############################################################ PRINT G1Milgram (once a month)
     if [[ ${G1PUB} != "" && ${VoeuName} != "" && ${MOATS} != "" ]]; then
-        echo "MAKE G1CARD+@"
+        echo "MAKE ASTROID+@"
         mkdir -p ~/.zen/tmp/${MOATS}
         #################################################################
         ## MAKING SPECIAL amrzqr => G1Milgram TICKET = G1Missive
@@ -83,7 +83,7 @@ PPASS=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
 
         cp ${MY_PATH}/../images/g1magicien.png ~/.zen/tmp/${MOATS}/result.png
 
-        ## MAKE amzqr WITH @@@@@ PGP G1CARD FORMAT (%40)
+        ## MAKE amzqr WITH @@@@@ PGP ASTROID FORMAT (%40)
         amzqr "$(cat ~/.zen/tmp/${MOATS}/gpg.asc  | tr '-' '@' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
                     -d "$HOME/.zen/tmp/${MOATS}" \
                     -l H \

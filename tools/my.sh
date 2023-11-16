@@ -58,7 +58,7 @@ myAstroPath() {
     #~ if [[ ! "$myAstroPlayersPage" ]]; then
         #~ counter=1
         #~ for tw in ls ~/.zen/game/players/*/ipfs/moa/index.html; do
-            #~ tiddlywiki --load $tw --output ~/.zen/tmp --render '.' "${counter}G1Visa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+            #~ tiddlywiki --load $tw --output ~/.zen/tmp --render '.' "${counter}ZenCard.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
 
             #~ ((counter++))
         #~ done

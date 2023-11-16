@@ -83,9 +83,9 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
         HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
         echo "AstroID=$AstroID ($HPass)"
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'G1Visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
-        G1Visa=$(cat ~/.zen/tmp/${MOATS}/G1Visa.json | jq -r .[]._canonical_uri)
-        echo "G1Visa=$G1Visa"
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'ZenCard.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
+        ZenCard=$(cat ~/.zen/tmp/${MOATS}/ZenCard.json | jq -r .[]._canonical_uri)
+        echo "ZenCard=$ZenCard"
 
         if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
 
@@ -273,7 +273,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
         sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## AstroID G1CARD Update
+        ## AstroID ASTROID Update
         [[ ! ${AstroID} ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
         sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -433,12 +433,12 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         convert -gravity northwest -pointsize 25 -fill black -draw "text 300,140 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/game/players/${PLAYER}/ID.png
 
         # INSERTED IMAGE IPFS
-        # IASTRO=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ID.png | tail -n 1) ## G1VISA PUBLIC / PRIVATE
-        IASTRO="/ipfs/$(ipfs add -Hq ~/.zen/tmp/${MOATS}/pseudo.png | tail -n 1)" ## G1VISA PUBLIC ONLY
+        # IASTRO=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ID.png | tail -n 1) ## ZENCARD PUBLIC / PRIVATE
+        IASTRO="/ipfs/$(ipfs add -Hq ~/.zen/tmp/${MOATS}/pseudo.png | tail -n 1)" ## ZENCARD PUBLIC ONLY
 
-        ## Update G1Visa
-        [[ ! $G1Visa ]] && G1Visa="/ipfs/bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a"
-        sed -i "s~${G1Visa}~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        ## Update ZenCard
+        [[ ! $ZenCard ]] && ZenCard="/ipfs/bafybeidhghlcx3zdzdah2pzddhoicywmydintj4mosgtygr6f2dlfwmg7a"
+        sed -i "s~${ZenCard}~${IASTRO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     echo
     echo "♥ IPFS Ŋ1 TW INIT ♥"
@@ -508,10 +508,10 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/../tools/face.sh cool)"
 echo " 'Astronaute'  $PSEUDO"
 echo
-echo "* G1Visa : Public Key and Wallet
-${NID}/ipns/${ASTRONAUTENS}#G1Visa"
+echo "* ZenCard : Public Key and Wallet
+${NID}/ipns/${ASTRONAUTENS}#ZenCard"
 echo "   "
-echo "* AstroID : G1Card with PASS : $PASS"
+echo "* AstroID : AstroID with PASS : $PASS"
 echo "${NID}/ipns/${ASTRONAUTENS}#AstroID"
 echo
 echo "* UMap : registration at ${LAT}, ${LON}
@@ -538,11 +538,11 @@ echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh # DEPRECATED ?
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 
-### SEND AstroID and G1Visa to EMAIL
+### SEND AstroID and ZenCard to EMAIL
 (
-echo "Print your G1Visa : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
+echo "Print your ZenCard : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
 echo "It is your personal TW address and secured messaging inbox on https://gchange.fr" >> ~/.zen/tmp/${MOATS}/intro.txt
-mpack -a -s "UPlanet : G1Visa" -d ~/.zen/tmp/${MOATS}/intro.txt \
+mpack -a -s "UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
 echo "Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
 echo "Use it to LOG in or out your TW and take control of your personal wallet on https://cesium.app" >> ~/.zen/tmp/${MOATS}/intro.txt

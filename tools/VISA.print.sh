@@ -40,7 +40,7 @@ if [[ ${SALT} == ""  || ${PEPPER} == "" ]]; then
 
 else
 
-    echo "VIRTUAL PLAYER ${PLAYER} WELCOME - CREATING G1Card"
+    echo "VIRTUAL PLAYER ${PLAYER} WELCOME - CREATING AstroID"
     VIRTUAL=1
     G1PUB=$(${MY_PATH}/keygen -t duniter "${SALT}" "${PEPPER}")
     ASTRONAUTENS=$(${MY_PATH}/keygen -t ipfs "${SALT}" "${PEPPER}")
@@ -93,23 +93,23 @@ convert -gravity NorthEast -pointsize 15 -fill black -draw "text 42,32 \"$PLAYER
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
 convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PASS}\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
 convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
-convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/G1Visa.${PASS}.jpg
+convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/G1Visa.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
 
 ## PRINT VISA
 [[ $LP ]] \
-&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/G1Visa.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
 && sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
-## PRINT PGP G1Card
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.G1Card.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+## PRINT PGP AstroID
+convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.AstroID.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/ASTROPORT.png ~/.zen/tmp/${MOATS}/one.png
 
-composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
+composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/G1Card.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 [[ $LP ]] \
 && brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${PASS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \

@@ -81,7 +81,7 @@ header {
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
     <h1><span>Astroport</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
     <div id="yellow">
-        <h2>G1Card SECRETS</h2>
+        <h2>AstroID SECRETS</h2>
         <input name='salt' value='0'>
 <h3><a title="YOUR ASTRO PORT" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
         <input name='pepper' value='0'>
@@ -119,7 +119,7 @@ header {
                 <a href="https://olympe.network">Olympe.Network</a><br>
                 Astroport.ONE est un logiciel libre développé sous licence AGPL v3
         </center>
-            <a target="gchange" href="https://gchange.fr">Une fois votre G1CARD obtenu, direction https://gchange.fr !</a>
+            <a target="gchange" href="https://gchange.fr">Une fois votre ASTROID obtenu, direction https://gchange.fr !</a>
         </h1>
     </div>
 </article>
@@ -224,7 +224,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>G1CARD</option><option value='@astroport'>G1CARD+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
+            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><label for='type'>Type :</label><select name='type'><option value=''>G1BILLET+ ( x 6 )</option><option value='jeu'>ASTROID</option><option value='@astroport'>ASTROID+@</option></select><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>Lancer Fabrication</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;

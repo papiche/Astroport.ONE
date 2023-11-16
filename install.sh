@@ -150,9 +150,9 @@ echo "#############################################"
 echo "######### IMPRIMANTE & G1BILLET ##############"
 echo "#############################################"
 
-########### QRCODE : G1VISA / G1BILLET : PRINTER ##############
+########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
 if [[ $USER != 'xbian' ]]; then
-    echo "INSTALL PRINTER FOR G1BILLET G1CARD G1VISA ..."
+    echo "INSTALL PRINTER FOR G1BILLET ASTROID ZENCARD ..."
     saisie="OK"
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS

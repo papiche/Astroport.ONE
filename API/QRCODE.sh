@@ -181,9 +181,9 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                             ######################## ~/.zen/game/pending/*/*_G1WHO+*.TX
                             if [[ ! -f ~/.zen/game/pending/*/*_${VAL}+*.TX ]]; then
                                 # MAKE PAYMENT
-                                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'G1CARD:${MOATS}' -m"
+                                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTROID:${MOATS}' -m"
                                 ${MY_PATH}/../tools/timeout.sh -t 5 \
-                                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "G1CARD:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+                                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "ASTROID:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
                                 if [ $? == 0 ]; then
                                     echo "SENT" > ${PENDING} ## _12345.sh run MONITOR checking CHAIN REJECTION
@@ -396,7 +396,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
         echo "cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch"
         cat ~/.zen/tmp/${MOATS}/disco.aes | gpg -d --passphrase "${PASS}" --batch > ~/.zen/tmp/${MOATS}/decoded
 
-        ## G1CARD COULD BE UP TO 12 MONTH OLD
+        ## ASTROID COULD BE UP TO 12 MONTH OLD
         if [[ ! -s ~/.zen/tmp/${MOATS}/decoded ]]; then
             for ((i = 1; i < 13; i++)); do
                 UPASS=$(date -d "$i months ago" +"%Y%m")
@@ -696,7 +696,7 @@ fi
 ## TEST G1 TYPE ( should convert to ipfs )
 ASTROTOIPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPFS} ]] \
-        && echo "INVALID QRCODE : ${QRCODE}" \
+        && echo "${PORT} INVALID QRCODE : ${QRCODE}" \
         && (echo "$HTTPCORS ERROR - INVALID QRCODE : ${QRCODE}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 1
 ################################################################################
@@ -893,7 +893,7 @@ else
 
 fi
 
-## USE PLAYER API OR MOVE TO G1CARD PGP QRCODE
+## USE PLAYER API OR MOVE TO ASTROID PGP QRCODE
 ###################################################################################################
 # API TWO : ?qrcode=G1PUB&url=____&type=____
 

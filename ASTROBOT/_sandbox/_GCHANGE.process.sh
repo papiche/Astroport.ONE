@@ -33,7 +33,7 @@ g1pub=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' 
 
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'carte.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Carte'
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'gchange.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Gchange'
-tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'g1visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'G1Visa'
+tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'g1visa.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
 tiddlywiki --load ~/.zen/game/players/$PLAYER/ipfs/moa/index.html --output ~/.zen/tmp/gchange --render '.' 'MOA.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
 
 GPS=$(cat ~/.zen/tmp/gchange/carte.json | jq -r .[].gps)
