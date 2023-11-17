@@ -708,6 +708,8 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPFS"
     VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
     COINSFILE=$HOME/.zen/tmp/${MOATS}/${QRCODE}.COINS
 
+    ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+
 ### PATCH COPY G1BILLET G1PUB TO MALKE PAYMENT WHEN RECONNECT
     cp $COINSFILE ~/live/
 
@@ -726,16 +728,16 @@ CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
 echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1}"
 CURCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${CURG1} | tail -n 1)
 echo "AUTOGRAPH $CURPLAYER : $CURCOINS G1"
-ZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+
 
 ## WALLET VIERGE
 ###########################################
 if [[ $VISITORCOINS == "null" || $CURCOINS == "null" ]]; then
 
-    echo "NULL. PLEASE CHARGE. OR CHECK STATION"
+    echo ""
 
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "<h1>SCAN $VISITORCOINS Ǧ1 (CURRENT $CURCOINS Ǧ1)</h1>
+    echo "<h1>NULL. PLEASE CHARGE. OR CHECK STATION</h1>
     ... Any problem? Contact <a href='mailto:support@qo-op.com'>support</a>
     ($myHOST)"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
