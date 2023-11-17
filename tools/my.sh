@@ -470,4 +470,4 @@ if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ###
 fi
 
-FLIPPERCID="/ipfs/QmbnqZz17U6Kiea5UzKb9B9gWfXBRmvrd8u5TDRQCJ749u/coinflip"
+FLIPPERCID="/ipfs/Qmb7eXoTXpiwhFVFQavX5wooKsRuM6gvrfPoZY9k5W4cPq/coinflip"
