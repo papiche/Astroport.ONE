@@ -177,7 +177,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                             ## CREATE game pending TX
                             mkdir -p $HOME/.zen/game/pending/${G1PUB}/
                             PENDING="$HOME/.zen/game/pending/${G1PUB}/${MOATS}_${VAL}+${WHAT}.TX"
-                            echo "UNKNOWN" > ${PENDING}
+                            echo "START" > ${PENDING}
                             ######################## ~/.zen/game/pending/*/*_G1WHO+*.TX
                             if [[ ! -f ~/.zen/game/pending/*/*_${VAL}+*.TX ]]; then
                                 # MAKE PAYMENT
@@ -254,8 +254,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             if [[ ${APPNAME} == "flipper" ]]; then
                 ## Open OSM2IPF "getreceiver" App
 
-                BASE="qrcode=$(urlencode "${QRCODE}")&pass=${PASS}"
-                LINK="${myIPFS}${GETRECEIVERCID}/?${BASE}&coins=${CURCOINS}"
+                BASE="qrcode=${QRCODE}&pass=${PASS}"
+                LINK="${myIPFS}${FLIPPERCID}/?${BASE}&coins=${CURCOINS}"
                 echo "LINK:$LINK"
                 echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
                 echo "<script>window.location.href = '${LINK}';</script>" >> ~/.zen/tmp/${MOATS}/disco
@@ -566,8 +566,8 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
         else
             ## TODO : EMPTY WALLET BACK TO ORIGIN
-            echo "<br><h1>${PASS} ${UPASS} TOO OLD</h1>" >> ~/.zen/tmp/${MOATS}/disco
-            echo "<br><img src='http://127.0.0.1:8080/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg' />" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><h1>${PASS} ${UPASS} ARE BAD</h1>" >> ~/.zen/tmp/${MOATS}/disco
+            echo "<br><img src='/ipfs/QmVnQ3GkQjNeXw9qM7Fb1TFzwwxqRMqD9AQyHfgx47rNdQ/your-own-data-cloud.svg' />" >> ~/.zen/tmp/${MOATS}/disco
 
         fi
 
@@ -726,6 +726,7 @@ CURG1=$(cat ~/.zen/game/players/.current/.g1pub)
 echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CURG1}"
 CURCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${CURG1} | tail -n 1)
 echo "AUTOGRAPH $CURPLAYER : $CURCOINS G1"
+ZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
 
 ## WALLET VIERGE
 ###########################################
@@ -750,7 +751,7 @@ fi
 if [[ ${CURG1} == ${QRCODE} ]]; then
     ## SCANNED G1PUB IS CURRENT STATION PLAYER : RETURN BALANCE
     echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "<h1>$CURPLAYER WALLET : $CURCOINS Ǧ1</h1>"  >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "<h1>$CURPLAYER WALLET : $ZEN ẐEN</h1>"  >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -763,14 +764,14 @@ else
 
     ## EMPTY WALLET ? PREPARE PALPE WELCOME
     if [[ $VISITORCOINS == "null" ]]; then
-        # CADEAU DE 10 JUNE (Si le .current en a plus que 100)
+        # CADEAU DE 10 ZEN (Si le .current a plus de 100 G1)
         PALPE=1
         echo "PALPE=1"
     else
         PALPE=0
     fi
 
-        echo "VISITEUR POSSEDE ${VISITORCOINS} G1"
+        echo "VISITEUR POSSEDE ${VISITORCOINS} G1 ($ZEN ZEN)"
 
         ## GET G1 WALLET HISTORY
         if [[ ${VISITORCOINS} != "null" && ${VISITORCOINS} > 0 ]]; then
@@ -779,7 +780,7 @@ else
             && ${MY_PATH}/../tools/timeout.sh -t 20 $MY_PATH/../tools/jaklis/jaklis.py history -p ${QRCODE} -j > ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json
 
             echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-            echo "<h1>Solde $VISITORCOINS Ǧ1</h1>" >> ~/.zen/tmp/${MOATS}/index.redirect
+            echo "<h1>Solde $ZEN ẐEN</h1>" >> ~/.zen/tmp/${MOATS}/index.redirect
             echo "<h2><a target=_blank href="$myIPFS/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/${QRCODE}.g1history.json)">HISTORIQUE ${QRCODE}</a></h2>"  >> ~/.zen/tmp/${MOATS}/index.redirect
             (
             cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
@@ -850,7 +851,7 @@ else
             else
                 ## MESSAGE TO LINKED CESIUM WALLET
                 $MY_PATH/../tools/jaklis/jaklis.py -n $myCESIUM -k ${MYPLAYERKEY} send -d "${CPLUS}" -t "COUCOU" \
-                -m "VOTRE PORTEFEUILLE ${QRCODE} A ETE SCANNE PAR $myASTROPORT - IL CONTIENT ${VISITORCOINS} G1 -"
+                -m "VOTRE PORTEFEUILLE ${QRCODE} A ETE SCANNE PAR $myASTROPORT - IL CONTIENT ${ZEN} ZEN -"
             fi
 
         fi

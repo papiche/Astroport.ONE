@@ -470,6 +470,4 @@ if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ###
 fi
 
-ASTROJSCID="/ipfs/"
-LOGINCID="/ipfs/"
-GETRECEIVERCID="/ipfs/QmXctju7CKDEwpesQSvSyfxfVdZqhdMdfMx3MikB6u7mLd"
+FLIPPERCID="/ipfs/QmbnqZz17U6Kiea5UzKb9B9gWfXBRmvrd8u5TDRQCJ749u/coinflip"

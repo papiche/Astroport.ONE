@@ -40,7 +40,7 @@ PPASS=$(cat ~/.zen/game/players/.current/.pass 2>/dev/null)
         SECRET1="${PLAYER}"
         SECRET2="G1${VoeuName} ${G1PUB}"
 
-        ## ATTACHED G1BILLET+
+        ## ATTACHED G1BILLET+ "EMAIL_SEC1_SEC2"
         [[ $(echo ${PLAYER_} | grep '_' ) ]] \
             && echo "G1BILLET+ interlinked : salt pepper refining" \
             && murge=($(echo "${PLAYER_}" | cut -d '_' -f 2- | sed 's/_/ /g' | xargs)) \
