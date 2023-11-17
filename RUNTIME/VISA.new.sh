@@ -119,10 +119,10 @@ fi
 
 #~ echo "Inscription..."
 
-[[ $SALT == "" ]] && SALT=$(${MY_PATH}/diceware.sh 4 | xargs)
+[[ $SALT == "" ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 4 | xargs)
 #~ echo "-> ID : $SALT"
 
-[[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/diceware.sh 2 | xargs)
+[[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/../tools/diceware.sh 2 | xargs)
 #~ echo "-> PASS : $PEPPER"
 
 PSEUDO=${PLAYER%%[0-9]*}
@@ -133,7 +133,7 @@ PSEUDO=${PLAYER%%[0-9]*}
 [[ $(ls ~/.zen/game/players/$PSEUDO 2>/dev/null) ]] && echo "$PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 
 # PSEUDO=${PSEUDO,,} #lowercase
-[[ ! ${PLAYER} ]] && PLAYER=${PSEUDO}${RANDOM:0:3}@$(${MY_PATH}/diceware.sh 1 | xargs).${RANDOM:0:3} \
+[[ ! ${PLAYER} ]] && PLAYER=${PSEUDO}${RANDOM:0:3}@$(${MY_PATH}/../tools/diceware.sh 1 | xargs).${RANDOM:0:3} \
                             && echo "ADRESSE EMAIL ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
 
 PLAYER=${PLAYER,,}
@@ -530,8 +530,8 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 #~ U Planet : ${myUPLANET}
 #~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
-echo "$(${MY_PATH}/../tools/face.sh friendly) ★ GCHANGE LIBRE MARKET ★"
-echo "Use $SALT and $PEPPER to register on https://cesium.app and https://gchange.fr to ★ friends"
+#~ echo "$(${MY_PATH}/../tools/face.sh friendly) ★ GCHANGE LIBRE MARKET ★"
+#~ echo "Use $SALT and $PEPPER to register on https://cesium.app and https://gchange.fr to ★ friends"
 echo ""
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to start.sh # DEPRECATED ?
@@ -541,11 +541,11 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 ### SEND AstroID and ZenCard to EMAIL
 (
 echo "Print your ZenCard : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
-echo "It is your personal TW address and secured messaging inbox on https://gchange.fr" >> ~/.zen/tmp/${MOATS}/intro.txt
+echo "It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/intro.txt
 mpack -a -s "UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
 echo "Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
-echo "Use it to LOG in or out your TW and take control of your personal wallet on https://cesium.app" >> ~/.zen/tmp/${MOATS}/intro.txt
+echo "Use it to send Zen to other Uplanet players https://qo-op.com" >> ~/.zen/tmp/${MOATS}/intro.txt
 mpack -a -s "UPlanet : AstroID" -d ~/.zen/tmp/${MOATS}/intro.txt \
     $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
 

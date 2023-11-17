@@ -57,7 +57,7 @@ fi
 
 LP=$(ls /dev/usb/lp* | head -n 1 2>/dev/null)
 
-[[ ${PASS} == "" ]] && PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
+[[ ${PASS} == "" ]] && PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
 # USE G1BILLET GENERATOR
 [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] \
@@ -89,11 +89,11 @@ composite -compose Over -gravity NorthEast -geometry +42+72 ~/.zen/tmp/${MOATS}/
 composite -compose Over -gravity NorthWest -geometry +0+12 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/astroport.png
 # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/${PLAYER}/QRsec.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
 
-convert -gravity NorthEast -pointsize 15 -fill black -draw "text 42,32 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/image.png
-convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
+convert -gravity NorthEast -pointsize 18 -fill black -draw "text 42,32 \"$PLAYER\"" ~/.zen/tmp/${MOATS}/astroport.png ~/.zen/tmp/${MOATS}/image.png
+convert -gravity NorthWest -pointsize 18 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/image.png ~/.zen/tmp/${MOATS}/pseudo.png
 convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PASS}\"" ~/.zen/tmp/${MOATS}/pseudo.png ~/.zen/tmp/${MOATS}/pass.png
-convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
-convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
+convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
+convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
 
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
 
@@ -103,7 +103,7 @@ convert -gravity SouthEast -pointsize 13 -fill black -draw "text 10,10 \"$PEPPER
 && sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
 ## PRINT PGP AstroID
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.AstroID.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.ZENCARD.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/ASTROPORT.png ~/.zen/tmp/${MOATS}/one.png
 
 composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
@@ -112,7 +112,7 @@ composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.p
 [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 [[ $LP ]] \
-&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${PASS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
 && sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
 echo "DEBUG"

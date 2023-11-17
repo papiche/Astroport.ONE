@@ -36,12 +36,12 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=( "PRINT G1CARTE" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=( "ZENCARD DEMO" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
 
     select fav in "${players[@]}"; do
         case $fav in
-        "PRINT G1CARTE")
+        "ZENCARD DEMO")
             ## DIRECT VISA.print.sh
             echo "'Email ?'"
             read EMAIL
