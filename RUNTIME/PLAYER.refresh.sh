@@ -174,7 +174,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
     ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
 
-    ### CHECK FOR pending
+    # G1PalPay - Check for G1 TX incoming comments #
+    ${MY_PATH}/G1PalPay.sh ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
+
+    ### CHECK FOR pending (TODO)
 
 
     ###############
