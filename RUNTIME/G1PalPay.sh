@@ -76,10 +76,10 @@ while read NLINE; do
     TH=$(echo ${COMMENT} | cut -d ':' -f 2)
     TRAIL=$(echo ${COMMENT} | cut -d ':' -f 3-)
 
-    if [[ -s ${MY_PATH}/${CMD}.sh ]]; then
+    if [[ -s ${MY_PATH}/../ASTROBOT/${CMD}.sh ]]; then
 
         echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
-        ${MY_PATH}/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH} ${TRAIL}
+        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH} ${TRAIL}
         ## WELL DONE .
         [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST IDATE
 
