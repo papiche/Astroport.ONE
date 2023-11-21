@@ -211,4 +211,5 @@ RUN mkdir -p "/home/$USER/.zen/game/players" \
 
 HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
 
+USER "$USER"
 WORKDIR "/home/$USER"
