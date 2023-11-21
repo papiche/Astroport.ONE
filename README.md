@@ -122,12 +122,13 @@ Une fois votre Station Astroport démarrée:
 
 ⚠ ASTROPORT NETCAT SYSTEM ⚠
 
-Astroport utilise l'outil réseau le plus simple "netcat".
-Il s'agit d'un moteur STEP donnant accès à une "API BASH".
-Les requêtes se font en HTTP GET.
-Vous effectuez un regexp sur "url=ADRESSE:PORT" ou (◕‿‿◕) pour y obtenir le résultat.
+Astroport n'a pas besoin de serveur web pour fonctionner. Nous utilisons l'outil réseau le plus simple "**netcat**".
+Le fonctionnement donne accès à une "API BASH" (script du répertoire API)
 
-En voici des exemples.
+Les requêtes se font en HTTP GET sur le port 1234, le PORT de réponse se trouve dans la page chargée.
+Effectuez un regexp sur "url=ADRESSE:PORT" ou (◕‿‿◕) pour découvrir lequel.
+
+Voici des exemples sur comment procéder.
 
 ## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
 ### CLI (BASH)
@@ -169,12 +170,11 @@ async function fetchAstroport(myURL) {
       }
     }
 ```
-Utilisez "[astro.js](templates/G1PalPay/G1PalPay_fichiers/astro.js)" comme dans l'Application DEMO templates/G1PalPay (accessible sur "Open Station")
+
+Utilisez "[astro.js](templates/G1PalPay/G1PalPay_fichiers/astro.js)"
 ```
     <script src="https://ipfs.asycn.io/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```
-
-
 
 ## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
