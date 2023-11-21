@@ -30,28 +30,55 @@ Avec cette technologie, nous établissons le "Crypto Département 96" dont la ca
 Chaque Station "Astroport.ONE" est une ambassade numérique qui dialogue et se synchronise avec ses pairs.
 Les utilisateurs peuvent "déplacer leur compte". La dernière utilisée dans la journée devient "station officielle".
 
-L'architecture attachée à chaque clefs publiques se déploie et en forme de "pétales de fleur" selon les cercles de confiance Ŋ1 et Ŋ2.
+L'architecture attachée à chaque clef publiquesse déploie et en forme de "pétales de fleur" selon les cercles de confiance Ŋ1 et Ŋ2 et les flux de données produit par les clefs dérivées.
 
 ![N.ONE.2](https://www.copylaradio.com/web/image/6038/ASTROPORT_multiWoTNet.png)
 
-Des clefs dérivées sont crées pour exporter et explorer les "G1MotsClefs" associés au Tiddlers.
-A chaque copie le tiddlers reçoit une nouvelle signature et déclenche le processus "G1PalPay".
+Contrat intelligent déclenchés par "G1Tag" (clefs dérivées) assure l'extraction les "G1MotsClefs" des Tiddlers "environnant".
 
-[DOCUMENTATION](https://pad.p2p.legal/Astroport.old.ONE#)
+Introduit dans [UPlanet](https://git.p2p.legal/qo-op/OSM2IPFS), inscrit dans le système de fichier interplanétaire, nos TiddlyWiki sont la base d'un système d'information planétaire Libre.
+Le contrat intelligent de base consiste à collecter les données produites par chaque TW pour les remonter au niveau de la couche d'information supérieure.
 
+* 0.01°: Les Tiddlers sont inscrit au niveau local et possèdent une signature (votre email). Chaque jour un processus en analyse les nouveaux pour vous informer de la détection de "doublons différents". Le "conflit" est résolu en
+* 0.1° : > 2 signatures
+* 1° : > 3 signatures
+* 10° : > 4 signatures
+* UPlanet : 5 signatures et plus.
+
+Afin de déclencher l’exécution de "contrat intelligent personnel", il vous suffit de créer un "voeu" (et de lui attribuer quelques Zen)
+A ce moment, "ASTROBOT" publiera les données relatives au Tag concerné sur une nouvelle "clef dérivée IPNS personnelle"
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
-```
-# GIT.P2P.LEGAL
+There is 2 methods one for server and one for Linux Mint desktop
 
+## SERVER : Using DOCKER (and MyOS)
+
+Server & printer only, the easiest way to automaticaly deploy Astroport.ONE services
+
+```
+sudo apt install docker-compose make
+make install
+
+```
+
+> PLEASE REPORT ANY ISSUES
+
+## DESKTOP : Using install.sh script
+
+With desktop. Best for "Linux Mint" (or Debian compatible)
+
+```
+# install on system wide
+# SOURCE GIT.P2P.LEGAL
 bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
 
-# GITHHUB
+# SOURCE GITHUB
 bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh)
 
-
 ```
+
+> PLEASE REPORT ANY ISSUES
 
 Si tout s'est bien déroulé, vous devriez trouver ces processus en cours d'execution...
 
