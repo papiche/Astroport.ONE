@@ -3,7 +3,7 @@
 set -euo errexit
 
 ASTROPORT_DIR=/home/zen/.zen/Astroport.ONE
-ASTROPORT_REPO=https://git.p2p.legal/qo-op/Astroport.ONE.git
+ASTROPORT_REPO=https://github.com/papiche/Astroport.ONE.git
 
 cron() {
   sudo service cron start
@@ -14,8 +14,8 @@ log() {
 }
 
 zen() {
-  mkdir -p /home/zen/Astroport
   sudo chown zen:users /home/zen /home/zen/.zen /home/zen/.zen/game /home/zen/.zen/game/players
+  mkdir -p /home/zen/Astroport
   [ -d "$ASTROPORT_DIR" ] && cd "$ASTROPORT_DIR" && git pull -q || git clone -q "$ASTROPORT_REPO" "$ASTROPORT_DIR"
 }
 

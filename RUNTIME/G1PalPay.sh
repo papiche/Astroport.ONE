@@ -4,6 +4,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 # PAD COCODING : https://pad.p2p.legal/s/G1PalPay
+# This script monitors G1 Blockchain
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -48,15 +49,15 @@ mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
 mkdir -p $HOME/.zen/tmp/${MOATS}
 echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
-# CHECK TODAY INCOMING PAYMENT
+# CHECK LAST 10 INCOMING PAYMENTS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json ]] \
 && echo "NO PAYMENT HISTORY" \
 && exit 1
-
-########################################################################################
+##############################
+##########################################################
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
 #################################################################
 
@@ -97,7 +98,7 @@ done < ~/.zen/tmp/${MOATS}/myN1.json
 #################################################################
 
 # IF COMMENT CONTAINS EMAIL ADDRESSES
-# THEN AND SEND PAIMENT TO NEXT (REMOVING IT FROM LIST)
+# SPREAD & TRANSFER AMOUNT TO NEXT (REMOVING IT FROM LIST)... Other G1PalPay will continue the transmission...
 ########################################################################
 # this could lead in several account creation sharing % of incomes each time
 
@@ -124,7 +125,7 @@ while read LINE; do
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#ICOMMENT[@]}"
     N=${#ICOMMENT[@]}
-    SHARE=$(echo "$IAMOUNT / $N" | bc -l | cut -d '.' -f 1) ## INTEGER ROUNDED VALUE
+    SHARE=$(echo "scale=2; $IAMOUNT / $N" | bc)
 
     echo $IDATE $IPUBKEY $IAMOUNT [$IAMOUNTUD] $ICOMMENT % $SHARE %
 
@@ -133,8 +134,7 @@ while read LINE; do
         [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
 
         echo "EMAIL : ${EMAIL}"
-        ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
-
+        ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED="" # RESET VAR
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
         echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
         [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
@@ -147,7 +147,7 @@ while read LINE; do
 
         [[ ! ${ASTROG1} ]] \
         && echo "SORRY ${EMAIL} MISSING ASTROG1" \
-        && echo " BRO.  $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Joignez-vous à UPlanet https://www.qo-op.com/" > ~/.zen/tmp/palpay.bro \
+        && echo " BRO.  $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Inscrivez-vous sur UPlanet https://qo-op.com/" > ~/.zen/tmp/palpay.bro \
         && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro \
         && continue
 
@@ -218,32 +218,35 @@ while read LINE; do
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
+    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10
 
     ## Get first zmail
     ZMAIL="${emails}"
 
-    MSG="SEND + $nb G1 TO BROs : ${emails[@]}"
+    MSG="SEND + $zen ZEN TO BROs : ${emails[@]}"
     echo $MSG
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
-    #### SEARCH FOR PALPAY ACOUNTS : TODO BETTER §§§
+    #### SEARCH FOR PALPAY ACOUNTS : USING PALPAY RELAY - COULD BE DONE BY A LOOP ?? §§§
     $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
     echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
     [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
-        ## SEND nb JUNE TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
+        ## SEND zen ZEN (G1 dice JUNE) TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a $nb -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1 ## PalPay $nb G1
+        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
+                                                                                                                                                                        ## Filling comment with email list will make players resend to all ## MAY BE A BAD IDEA ###
         echo "OK PalPay : $MSG" > ~/.zen/tmp/${MOATS}/g1message
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
-        echo "PAYMENT SENT --- PINNING $TOPIN"
-
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
-        ipfs pin add $TOPIN
+        [[ ! -z $TOPIN ]] && ipfs pin add $TOPIN &&  echo "PINNING $TOPIN" >> ~/.zen/tmp/${MOATS}/g1message
+
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
+
 
     else
+
         echo "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${emails[@]}"  > ~/.zen/tmp/${MOATS}/g1message
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
         echo "NO ACCOUNT FOUND"
