@@ -31,9 +31,9 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeiaaf52awrqliwn5mqleua6tcv4qv5oxjfa6j2web6nh42vzdtjkiu"
+TWMODEL="/ipfs/QmPr5SpFiaTVyjJuBmhyckwSCP1gHbhJbZFjC5YyxNHmJa"
 # ipfs cat $TWMODEL > templates/twdefault.html
-MINIMAL="/ipfs/bafybeiem3kmasvaeljmrfyiwjy4x2lhp7meo2qv22w5rbl4ijf5jl6a7lm"
+MINIMAL="/ipfs/bafybeiepnfnej3e3dwsotcs36b3whwigxng2dyejzfffpducs3axlgau4i"
 # ipfs cat $MINIMAL > templates/minimal.html
 ################################################################################
 
@@ -192,13 +192,13 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     TWNS=$(ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 
-    mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure
+    mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "DEPRECATED"
 
     qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"
     cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
-    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$LIBRA/ipns/${ASTRONAUTENS}"
+    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$myLIBRA/ipns/${ASTRONAUTENS}"
 
 ############################################################################
     ## SEC PASS PROTECTED QRCODE : base58 secret.june / openssl(pass)

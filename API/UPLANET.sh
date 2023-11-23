@@ -114,7 +114,7 @@ EMAIL="${PLAYER,,}" # lowercase
 ### SESSION "$LAT" "$LON" KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
-    ipfs key rm ${MOATS} && echo "IPNS key identified"
+    ipfs key rm ${MOATS} && echo "$LAT" "$LON" "IPNS key identified"
 ###
 
     REDIR="${myIPFS}/ipns/${UMAPNS}"
@@ -125,10 +125,12 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     echo "VALID ${EMAIL} EMAIL OK"
 
-    ## CHECK if TW is HERE
-    [[ -s ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]] \
-        && (echo  "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}/TW/${EMAIL}/index.html'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
-        && echo "TW is HERE : $EMAIL" && exit 0
+    ## CHECK if PLAYER exists in SWARM
+        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+        [[ ${ASTROTW} ]] \
+            && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+            && exit 0
 
 else
 
@@ -161,32 +163,25 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
-### CREATE A ZENCARD FOR PLAYER (NO TW EXISTS YET for EMAIL)
-if [[ ! -f ~/.zen/tmp/${MOATS}/TW/${EMAIL}/index.html ]]; then
+## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
+NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
 
-        ## CHECK IF TW EXISTS FOR THIS EMAIL ALREADY
-        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
-        [[ ${ASTROTW} ]] && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
+## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
+(
+echo VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
+                    ##### (☉_☉ ) #######
+${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
-        NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
+# ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
-        ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
-        (
-        echo VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
-                            ##### (☉_☉ ) #######
-        ${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
-
-        ## TO REMOVE : MONITOR
-        ${MY_PATH}/../tools/mailjet.sh "support@g1sms.fr" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+## TO REMOVE : MONITOR
+${MY_PATH}/../tools/mailjet.sh "support@g1sms.fr" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
 
-        end=`date +%s`
-        echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
-        ) &
+end=`date +%s`
+echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
+) &
 
-fi
 
 ########################################
 ################################################################################

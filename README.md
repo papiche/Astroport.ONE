@@ -54,19 +54,27 @@ There is 2 methods one for server and one for Linux Mint desktop
 
 ## SERVER : Using DOCKER (and MyOS)
 
-Server & printer only, the easiest way to automaticaly deploy Astroport.ONE services
+the easiest way to automaticaly deploy and host Astroport.ONE services
 
 ```
-sudo apt install docker-compose make
+# install minimal requirements
+sudo apt install git docker make
+
+# clone Astroport.ONE repo
+git clone https://github.com/papiche/Astroport.ONE.git
+
+cd Astroport.ONE
+make
 make install
 
 ```
+If your computer is running 24/24, you can join our "Boostrap list" & officially become a [TW UPlanet hoster](https://talk.tiddlywiki.org/t/uplanet-a-planet-full-of-tws/8193?u=papiche)
 
 > PLEASE REPORT ANY ISSUES
 
 ## DESKTOP : Using install.sh script
 
-With desktop. Best for "Linux Mint" (or Debian compatible)
+Tested on "Linux Mint" (Debian like distro compatible), the **hacker way for using & buidling new blockchain services** ...
 
 ```
 # install on system wide
@@ -83,7 +91,7 @@ bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/
 Si tout s'est bien déroulé, vous devriez trouver ces processus en cours d'execution...
 
 ```
-/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesy
+/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
 /bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
  \_ /bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
    \_ nc -l -p 33101 -q 1
@@ -97,7 +105,7 @@ Si tout s'est bien déroulé, vous devriez trouver ces processus en cours d'exec
 
 # LANCEMENT
 
-Après l'installation, vous devriez avoir 2 nouveaux raccourcis sur votre "Bureau"
+Après l'installation, vous devriez avoir 3 nouveaux raccourcis sur votre "Bureau"
 
 * "Astroport" qui ouvre le portail de votre Station : http://astroport.localhost:1234
 * "REC" qui permet d'enregistrer vos fichiers sur IPFS et publier leur Capusle dans votre TW
@@ -114,7 +122,8 @@ Permet la Gestion des PLAYER (et des G1VoeuX) en mode CLI
 ## http://astroport.localhost:1234
 
 Une fois votre Station Astroport démarrée:
-* le port 1234 publie API (REPONSE PORT TCP 12245 à 12445 )
+* le port 1234 publie API (REPONSE PORT TCP 45780 45781 ( jusqu'à ... 45790 )
+
 * le port 12345 publie MAP(*) (CARTE DE L'ESSAIM - BOOTSTRAP / STATIONS)
 * le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
 
