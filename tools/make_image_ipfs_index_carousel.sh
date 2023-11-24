@@ -90,7 +90,7 @@ if [[ ! -d $img_dir ]]; then
 
 
         # CREATE G1 AMZQR
-        CIMG="$MY_PATH/../images/g1ticket.png"
+        CIMG="$MY_PATH/../images/zenticket.png"
         amzqr ${pub} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
         convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 250 ~/.zen/tmp/QR.png
         # ADD IT

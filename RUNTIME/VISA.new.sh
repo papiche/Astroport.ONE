@@ -194,7 +194,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
     mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "DEPRECATED"
 
-    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"
+    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB:ZEN" ## ZEN specific G1PUB QRCODE - break G1 compatibility -
     cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
@@ -337,8 +337,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     cat ${MY_PATH}/../templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
     cat ${MY_PATH}/../templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
-    # Create"${PLAYER}_feed" Key ! DERIVATED !  "$SALT" "$G1PUB"
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
+    # Create"${PLAYER}_feed" Key ! DERIVATED !  "$SALT" "$PEPPER $G1PUB"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $G1PUB"
     FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
 
     ## MAKE LightBeam Plugin Tiddler ${PLAYER}_feed
@@ -384,7 +384,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 ############################################################################ G1TW
 #### MAKE G1TW
         [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] && \
-        ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xastro" "$ASTRONAUTENS" "$PLAYER"
+        ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "${PSEUDO-xastro}" "$ASTRONAUTENS" "$PLAYER"
 #### MADE # BILLETNAME=$(echo "$SALT" | sed 's/ /_/g') ##
 # IMAGE ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg
 ############################################################################
@@ -393,12 +393,12 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         if [[ $(which amzqr) ]]; then
 
             GIMG="${MY_PATH}/../images/moa_net.png"
-            CIMG="${MY_PATH}/../images/g1ticket.png"
+            CIMG="${MY_PATH}/../images/zenticket.png"
 
             # QRG1avatar.png
-            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
             # QRTWavatar.png
-            [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr ${myIPFSGW}/ipns/$ASTRONAUTENS -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr "${myIPFSGW}/ipns/${ASTRONAUTENS}" -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
 
         else
 

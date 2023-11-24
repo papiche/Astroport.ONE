@@ -161,7 +161,7 @@ select zwish in "${vlist[@]}"; do
             ;;
 
             "Ğ1")
-                qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png" "${voeu}"
+                qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png" "${voeu}:ZEN"
                 convert $HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png -resize 600 ~/.zen/tmp/${MOATS}/START.png
                 break
             ;;

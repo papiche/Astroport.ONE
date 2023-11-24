@@ -47,8 +47,8 @@ else
     PSEUDO="${PLAYER}"
 
     mkdir -p ~/.zen/game/players/${PLAYER}/
-    CIMG="${MY_PATH}/../images/g1ticket.png"
-    amzqr ${G1PUB} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+    CIMG="${MY_PATH}/../images/zenticket.png"
+    amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
 
 fi
 
@@ -61,8 +61,8 @@ LP=$(ls /dev/usb/lp* | head -n 1 2>/dev/null)
 
 # USE G1BILLET GENERATOR
 [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] \
-&& echo ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xastro" "$ASTRONAUTENS" "$PLAYER" \
-&& ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "xastro" "$ASTRONAUTENS" "$PLAYER" \
+&& echo ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "${PSEUDO-xastro}" "$ASTRONAUTENS" "$PLAYER" \
+&& ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "${PSEUDO-xastro}" "$ASTRONAUTENS" "$PLAYER" \
 || ( echo "MISSING G1BILLET ENGINE - ERROR - " && exit 1 )
 
 s=$(${MY_PATH}/diceware.sh 1 | xargs)

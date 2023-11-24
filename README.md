@@ -109,6 +109,7 @@ Après l'installation, vous devriez avoir 3 nouveaux raccourcis sur votre "Burea
 
 * "Astroport" qui ouvre le portail de votre Station : http://astroport.localhost:1234
 * "REC" qui permet d'enregistrer vos fichiers sur IPFS et publier leur Capusle dans votre TW
+* "G1BILLET" permet de créer des ZenCard et autres QRCodes utiles
 
 ## Comment Gérer votre "Astroport" !
 
@@ -390,7 +391,8 @@ We choose to use "NaCl" (secret1 / secret) 2 key generation, so it is easy to un
 
 **(SECRET1/SECRET2) mixing**
 
-* If PLAYER key is (SECRET1/SECRET2) and G1PUB and EMAIL + TW
+* If PLAYER key is (SECRET1 / SECRET2) and G1PUB and EMAIL + TW
+    * feed key (SECRET1 / SECRET2 G1PUB)
     * wishes keys are (SECRET2 / WishName EMAIL)
         * sub-wishes are (EMAIL / G1WishName G1PUB)
             * wish-billets are (EMAIL_dice_words / G1WishName G1PUB)

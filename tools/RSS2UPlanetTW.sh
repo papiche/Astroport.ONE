@@ -4,7 +4,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 # INSERT NEW TIDDLERS FROM RSS JSON INTO UPLANET TW
-# DETECTING CONFLICT WITH ON SAME TITLE
+# DETECTING CONFLICT WITH SAME TITLE
 # ASKING TO EXISTING SIGNATURES TO UPDATE THEIR TW OR FORK TITLE
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -21,12 +21,13 @@ INDEX=$4
 [[ ! -s ${INDEX} ]] && echo "BAD TW INDEX" && exit 1
 
 echo "SECTOR TW INSERTING" ${RSS}
+## NEW RULE. ONLY 2 SIGNATURES TIDDLERS COMES UP
 
 cat "${RSS}" | jq -r '.[] | .title' > ~/.zen/tmp/${MOATS}/titles.list
 
 while read title; do
 
-    [[ ${title} == "GettingStarted" || ${title} == "GPS" || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "ZenCard" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
+    [[ ${title} == "GettingStarted" || ${title} == "GPS" || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
         && echo "FILTERED TITLE ${title}" && continue
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW

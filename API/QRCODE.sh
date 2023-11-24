@@ -277,7 +277,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
-                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}"
+                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}:ZEN"
                 QRURL=${myIPFS}/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/disco.qr.png)
                 ONVADIRE="<h1> ~ ${CURCOINS} Ğ1</h1>${G1PUB}<br><br><img src=${QRURL} />"
                 echo "${ONVADIRE}" >> ~/.zen/tmp/${MOATS}/disco
@@ -372,6 +372,13 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
+
+fi
+
+### THIS QRCODE IS EMAIL/PASS/PIN STYLE
+if [[ ${QRCODE:0:5} == "ẑẑẑẑẑ" ]]; then
+    PASS=$(urldecode ${THIS})
+    echo "ZENCARD UPlanet QRCODE : PIN=${PASS}"
 
 fi
 
