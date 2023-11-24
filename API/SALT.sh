@@ -170,7 +170,7 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
                     ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
-                    echo "Le code de votre ASTROID est ${PASS}, scannez-le sur La♥Box Ğ1Station (demo : https://astroport.copylaradio.com)" > ~/.zen/tmp/${MOATS}/intro.txt
+                    echo "Le code de votre ASTROID est ${PASS}, scannez-le sur La♥Box ẐenStation (demo : https://astroport.copylaradio.com)" > ~/.zen/tmp/${MOATS}/intro.txt
 
                     ## EXECUTE LAST LINE
                     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt | tail -n 1)
