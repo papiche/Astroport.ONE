@@ -3,6 +3,8 @@ version: '3.8'
 services:
   astroport:
     build:
+      args:
+      - DOCKER_REPOSITORY=${DOCKER_REPOSITORY}
       dockerfile: docker/astroport/Dockerfile.vdi
     cap_add:
     - IPC_LOCK # ecryptfs

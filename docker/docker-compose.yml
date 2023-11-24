@@ -5,9 +5,15 @@ services:
     build:
       args:
       - DOCKER_BUILD_DIR=docker/astroport
+      - GID=${HOST_GID:-123}
       - IPFS_VERSION=${IPFS_VERSION:-0.24.0}
+      - UID=${HOST_UID:-123}
       context: ../
       dockerfile: docker/astroport/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-localhost}-astroport
+    domainname: ${DOMAINNAME:-localhost}
+    hostname: ${HOSTNAME:-astroport}
+    image: ${DOCKER_REPOSITORY:-localhost}/astroport:${DOCKER_IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
     - 1234
