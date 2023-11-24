@@ -87,18 +87,18 @@ RUN set -x && buildDeps=' \
  && mkdir -p /usr/local/src/jaklis \
  && wget -qO - https://github.com/aynicos/jaklis/archive/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/jaklis -xzf - \
- && pip3 install -r /usr/local/src/jaklis/requirements.txt \
+ && pip3 install --break-system-packages -r /usr/local/src/jaklis/requirements.txt \
  && ln -s /usr/local/src/jaklis/jaklis.py /usr/local/bin/jaklis \
  && chmod 0755 /usr/local/bin/jaklis \
  && /usr/local/bin/jaklis --help >/dev/null \
  && mkdir -p /usr/local/src/dpgpid \
  && wget -qO - https://github.com/aynicos/dpgpid/archive/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/dpgpid -xzf - \
- && pip3 install -r /usr/local/src/dpgpid/requirements.txt \
+ && pip3 install --break-system-packages -r /usr/local/src/dpgpid/requirements.txt \
  && ln -s /usr/local/src/dpgpid/keygen /usr/local/bin/keygen \
  && chmod 0755 /usr/local/bin/keygen \
  && /usr/local/bin/keygen --help >/dev/null \
- && pip3 install amzqr \
+ && pip3 install --break-system-packages amzqr pdf2docx pyppeteer \
  && rm -rf /root/.cache \
  && apt-get clean
 
@@ -106,22 +106,18 @@ RUN npm install -g tiddlywiki
 
 ARG COMPOSE_REMOTE=https://github.com/docker/compose
 ARG COMPOSE_VERSION=2.5.0
+ARG IPFS_VERSION=0.24.0
 
-RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
-    ARCH="$(echo ${DOCKER_MACHINE})"; \
-    wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
- && chmod +x /usr/bin/docker-compose
-
-ARG IPFS_VERSION=0.16.0
-
-RUN { OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
-    ARCH="$(echo ${DOCKER_MACHINE})"; \
-    wget -qO - https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.${OS}.${ARCH}.tar.xz \
-     |tar --strip-components 1 -C /usr/local/bin -xJf - shellcheck-stable/shellcheck; } \
- && { OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
-    ARCH="$(echo ${DOCKER_MACHINE} |awk '/x86_64/ {print "amd64"}; /aarch64/ {print "arm64"}')"; \
-    wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \
-     |tar --strip-components 1 -C /usr/local/bin -xzf - kubo/ipfs; } \
+RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')" \
+ && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /armv7l/ ? "armv7" : $0}')" \
+ && wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
+ && chmod +x /usr/bin/docker-compose \
+ && ARCH="$(echo ${DOCKER_MACHINE})" \
+ && wget -qO - https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.${OS}.${ARCH}.tar.xz \
+     |tar --strip-components 1 -C /usr/local/bin -xJf - shellcheck-stable/shellcheck \
+ && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /x86_64/ ? "amd64" : /arch64/ ? "arm64" : /armv(6|7)/ ? "arm" : $0}')" \
+ && wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \
+     |tar --strip-components 1 -C /usr/local/bin -xzf - kubo/ipfs \
  && mkdir -p /usr/local/lib/shellspec \
  && wget -qO - https://github.com/shellspec/shellspec/archive/refs/heads/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/lib/shellspec -xzf - \

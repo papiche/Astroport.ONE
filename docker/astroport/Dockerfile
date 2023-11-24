@@ -113,22 +113,18 @@ RUN npm install -g tiddlywiki
 
 ARG COMPOSE_REMOTE=https://github.com/docker/compose
 ARG COMPOSE_VERSION=2.5.0
+ARG IPFS_VERSION=0.24.0
 
-RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
-    ARCH="$(echo ${DOCKER_MACHINE})"; \
-    wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
- && chmod +x /usr/bin/docker-compose
-
-ARG IPFS_VERSION=0.22.0
-
-RUN { OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
-    ARCH="$(echo ${DOCKER_MACHINE})"; \
-    wget -qO - https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.${OS}.${ARCH}.tar.xz \
-     |tar --strip-components 1 -C /usr/local/bin -xJf - shellcheck-stable/shellcheck; } \
- && { OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')"; \
-    ARCH="$(echo ${DOCKER_MACHINE} |awk '/x86_64/ {print "amd64"}; /aarch64/ {print "arm64"}')"; \
-    wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \
-     |tar --strip-components 1 -C /usr/local/bin -xzf - kubo/ipfs; } \
+RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')" \
+ && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /armv7l/ ? "armv7" : $0}')" \
+ && wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
+ && chmod +x /usr/bin/docker-compose \
+ && ARCH="$(echo ${DOCKER_MACHINE})" \
+ && wget -qO - https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.${OS}.${ARCH}.tar.xz \
+     |tar --strip-components 1 -C /usr/local/bin -xJf - shellcheck-stable/shellcheck \
+ && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /x86_64/ ? "amd64" : /arch64/ ? "arm64" : /armv(6|7)/ ? "arm" : $0}')" \
+ && wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \
+     |tar --strip-components 1 -C /usr/local/bin -xzf - kubo/ipfs \
  && mkdir -p /usr/local/lib/shellspec \
  && wget -qO - https://github.com/shellspec/shellspec/archive/refs/heads/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/lib/shellspec -xzf - \
@@ -195,7 +191,7 @@ fi
 RUN echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" > "/etc/sudoers.d/$USER"
 
 # config ssmtp
-RUN echo "$USER:support@g1sms.fr:mail.g1sms.fr:645" >> /etc/ssmtp/revaliases
+RUN echo "$USER:support@g1sms.fr:mail.asycn.io:587" >> /etc/ssmtp/revaliases
 
 # config crontab
 RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
