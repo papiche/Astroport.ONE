@@ -376,7 +376,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 fi
 
 ### THIS QRCODE IS EMAIL/PASS/PIN STYLE
-if [[ ${QRCODE:0:5} == "ẑẑẑẑẑ" ]]; then
+if [[ ${QRCODE:0:5} == "&&&&&" ]]; then
     PASS=$(urldecode ${THIS})
     echo "ZENCARD UPlanet QRCODE : PIN=${PASS}"
 
