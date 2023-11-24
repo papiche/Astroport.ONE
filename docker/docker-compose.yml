@@ -5,7 +5,7 @@ services:
     build:
       args:
       - DOCKER_BUILD_DIR=docker/astroport
-      - IPFS_VERSION=${IPFS_VERSION:-0.20.0}
+      - IPFS_VERSION=${IPFS_VERSION:-0.24.0}
       context: ../
       dockerfile: docker/astroport/Dockerfile
     restart: unless-stopped
