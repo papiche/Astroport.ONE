@@ -211,7 +211,8 @@ while read LINE; do
     TCREATED=$(echo ${LINE} | jq -r .created)
     TTITLE=$(echo ${LINE} | jq -r .title)
     TTAGS=$(echo ${LINE} | jq -r .tags)
-    TOPIN=$(echo ${LINE} | jq -r .ipfs)
+    TOPIN=$(echo ${LINE} | jq -r .ipfs) ## Tiddler produced by "Astroport Desktop"
+    [[ -z ${TOPIN} ]] && TOPIN=$(echo ${LINE} | jq -r ._canonical_uri) ## Tiddler is exported to IPFS
 
     echo "$TTITLE"
 
