@@ -145,7 +145,7 @@ mkdir -p ~/.zen/tmp/${MOATS}/
                 [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
                 ## CHECK WHAT IS EMAIL
-                if [[ "${EMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+                if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
                     echo "VALID EMAIL OK"
                 else
                     echo "BAD EMAIL"
@@ -434,7 +434,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         if [[ $APPNAME == "login" ]]; then
 
             ## INSTALL PLAYER IPNS KEY ON STATION
-            [[ "${SALT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+            [[ "${SALT}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
             && PLAYER=${SALT} \
             || PLAYER=${WHAT}
 
@@ -473,7 +473,7 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
         if [[ $APPNAME == "logout" ]]; then
 
             ## REMOVE PLAYER IPNS KEY FROM STATION
-            [[ "${SALT}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+            [[ "${SALT}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
             && PLAYER=${SALT} \
             || PLAYER=${WHAT}
 

@@ -304,7 +304,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             if [[ ${APPNAME} == "logout" ]]; then
 
                 ## REMOVE PLAYER IPNS KEY FROM STATION
-                [[ "${salt}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                [[ "${salt}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
                 && PLAYER=${salt} \
                 || PLAYER=${WHAT}
 
@@ -324,7 +324,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ ${APPNAME} == "login" ]]; then
 
-                [[ "${salt}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                [[ "${salt}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
                 && PLAYER=${salt} \
                 || PLAYER=${WHAT}
 
@@ -538,7 +538,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             [[ ${DESTMAIL} == "" || ${DESTMAIL} == "undefined" ]] && echo "<br> Missing Destination EMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco
 
             ## CHECK VALID EMAIL FORMAT
-            [[ "${DESTMAIL}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+            [[ "${DESTMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
                 &&  echo "<br> GOOD $DESTMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco \
                 && GOMAIL=1
 

@@ -63,12 +63,12 @@ while read title; do
 
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
-        NEMAILS=($(echo "$NTAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+        NEMAILS=($(echo "$NTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         N=${#NEMAILS[@]}
         echo "New Tiddler signatures : ${NEMAILS[*]}"
 
         ITAGS=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .tags)
-        IEMAILS=($(echo "$ITAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+        IEMAILS=($(echo "$ITAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         I=${#IEMAILS[@]}
         echo "Inside Tiddler signatures : ${IEMAILS[*]}"
 

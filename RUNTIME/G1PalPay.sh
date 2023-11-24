@@ -120,7 +120,7 @@ while read LINE; do
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
 
     ## GET EMAILS FROM COMMENT
-    ICOMMENT=($(echo "$COMMENT" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    ICOMMENT=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#ICOMMENT[@]}"
@@ -217,7 +217,7 @@ while read LINE; do
     echo "$TTITLE"
 
     ## Count emails found
-    emails=($(echo "$TTAGS" | grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
     zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10
 

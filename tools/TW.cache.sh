@@ -36,7 +36,7 @@ fi
             PLAYER=$(cat ~/.zen/tmp/${MOATS}MadeInZion.json | jq -r .[].player)
 
             ## EMAIL STYLE
-            if [[ "${PLAYER}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+            if [[ "${PLAYER}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
                 echo "${ME} : VALID PLAYER (✜‿‿✜) $PLAYER "
 
                 tiddlywiki --load ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' ${MOATS}'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
