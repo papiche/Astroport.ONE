@@ -22,7 +22,7 @@ PORT=45779
     TUBE=$(myTube)
     echo "TUBE=$TUBE"
 
-mkdir -p ~/.zen/tmp/coucou/ ~/.zen/game/players/localhost #
+mkdir -p ~/.zen/tmp ~/.zen/game/players/localhost # ~/.zen & myos compatibility
 
 ## CHECK FOR ANY ALREADY RUNNING nc
 ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
@@ -51,22 +51,16 @@ while true; do
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    mkdir -p ~/.zen/tmp/${MOATS}
 
     PORT=$(cat ~/.zen/tmp/PORT) || PORT=45779
 
-    # EACH VISITOR RECEIVE COMMAND RESPONSE ON
-    #~ ## RANDOM PORT = RESPONSE SOCKET & IPNS SESSION TOKEN
-    #~ [ ${PORT} -le 12345 ] && PORT=$((PORT+${RANDOM:0:2})) || PORT=$((PORT-${RANDOM:0:2}))
-                #~ ## RANDOM PORT SWAPPINESS AVOIDING COLLISION
+    PORT=$((PORT+1)) && [ ${PORT} -ge 45791 ] && PORT=45780 ## WAN ASTROPORT 45780 45781 ... 45790
 
-    #~ [ ${PORT} -eq 12345 ] && PORT=$((PORT+1)) ## AVOID _12345.sh SWARM SUBMAP PORT
-
-    # ZIP
+    # ZIP (LAN Boostrap)
     if [[ $(zIp) ]]; then
         PORT=$((PORT+1)) && [ ${PORT} -ge 45782 ] && PORT=45780 ## ♥Box LAN Boostrap : OPEN FIREWALL 1234 12345 45780 45781
     fi ## Use "nginx proxy manager" for SSL
-
-    PORT=$((PORT+1)) && [ ${PORT} -ge 45791 ] && PORT=45780 ## WAN ASTROPORT 45780 45781 ... 45790
 
     echo ${PORT} > ~/.zen/tmp/PORT
 
@@ -88,24 +82,24 @@ while true; do
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
-    echo "$HTTPCORS" >  ~/.zen/tmp/coucou/${PORT}.myHOST.http
-    myHtml >> ~/.zen/tmp/coucou/${PORT}.myHOST.http
+    echo "$HTTPCORS" >  ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+    myHtml >> ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## REPLACE RESPONSE PORT
     sed -i -e "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" \
-        ~/.zen/tmp/coucou/${PORT}.myHOST.http
+        ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
     [ -z "$isLAN" ] \
-        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/coucou/${PORT}.myHOST.http
+        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## UPLANET HOME LINK REPLACEMENT
-    sed -i -e "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" ~/.zen/tmp/coucou/${PORT}.myHOST.http
+    sed -i -e "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ############################################################################
-    ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/coucou/${PORT}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
+    ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
-    REQ=$(cat $HOME/.zen/tmp/coucou/${PORT}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/coucou/${PORT}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
+    REQ=$(cat $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
 
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
@@ -115,15 +109,13 @@ while true; do
     COOKIE=$(echo "$REQ" | grep '^Cookie:' | cut -d ' ' -f2)
     echo "COOKIE=$COOKIE"
     ###############    ###############    ###############    ###############
-    [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Ding" >/dev/null 1>&2 &
+    [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Dong" >/dev/null 1>&2 &
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
 
     echo "******* ${MOATS}  ********************************** $(date)"
     echo "ASTROPORT 1234 UP & RUNNING // API : $myASTROPORT //  IPFS : $myIPFS"
     echo "NEXT COMMAND DELIVERY PAGE http://$myHOST:${PORT}"
-
-    # echo "URL" > ~/.zen/tmp/coucou/${MOATS}.url ## LOGGING URL
 
     ############################################################################
     start=`date +%s`
