@@ -130,24 +130,37 @@ Une fois votre Station Astroport démarrée:
 
 * le port 8080, 4001 et 5001 sont ceux de la passerelle IPFS
 
-⚠ ASTROPORT NETCAT SYSTEM ⚠
+Liste des ports à activer.
 
-Astroport n'a pas besoin de serveur web pour fonctionner. Nous utilisons l'outil réseau le plus simple "**netcat**".
-Le fonctionnement donne accès à une "API BASH" (script du répertoire API)
+![](https://ipfs.asycn.io/ipfs/QmWzwL9fZKDGuqsvDjkA8v9sAcU4zQ4BvjKDRwnZQBT97y)
+
+Pour ajouter votre Station à notre essaim, inscrivez l'IP de votre BOX dans le fichier ```~/.zen/♥Box ```
+
+exemple
+```
+frd@scorpio:~ $ cat ~/.zen/♥Box
+86.210.184.173
+
+```
+
+⚠ API ASTROPORT = NETCAT SYSTEM ⚠
+
+**Astroport n'a pas besoin de serveur web pour fonctionner**. Nous utilisons l'outil réseau le plus simple "**netcat**".
+Le fonctionnement donne accès à une "API BASH" (classée par le même nom que le premier paramètre GET reçu dans le répertoire API)
 
 Les requêtes se font en HTTP GET sur le port 1234, le PORT de réponse se trouve dans la page chargée.
-Effectuez un regexp sur "url=ADRESSE:PORT" ou (◕‿‿◕) pour découvrir lequel.
+Effectuez un regexp sur "url=ADRESSE:PORT" ou (♥‿‿♥) pour découvrir lequel.
 
 Voici des exemples sur comment procéder.
 
-## RECUPERATION DU PORT DE REPONSE API : (◕‿‿◕)
+## RECUPERATION DU PORT DE REPONSE API : (♥‿‿♥)
 ### CLI (BASH)
 ```
     # PLAYER COPIER "_URL_" FAVORITE
     curl -so ~/.zen/tmp/${MOATS}/astro.port "http://astroport.localhost:1234/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
 
-    TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 2 | cut -d '/' -f 3)
-    TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(◕‿‿◕)" | cut -d ':' -f 3 | cut -d '"' -f 1)
+    TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(♥‿‿♥)" | cut -d ':' -f 2 | cut -d '/' -f 3)
+    TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(♥‿‿♥)" | cut -d ':' -f 3 | cut -d '"' -f 1)
 
                 sleep 30
 
