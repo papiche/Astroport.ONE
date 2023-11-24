@@ -1,4 +1,4 @@
-# THE ART OF BOOTSTRAPING
+# THE ART OF BOOSTRAPING
 
 "Blockchain" has special treatment during "heart beats" making evolve change of "State".
 
@@ -10,46 +10,33 @@ Astroport.ONE is collecting is map through the bootstrap nodes in ~/.zen/Astropo
 A new list makes a new "Station Tribe". Some bootstrap scenario could initiate automatic key creation & cross signatures
 (ex: Create 25 PLAYERs to start a 5x5 document emitting with random cross signature)
 
+THIS IS ALREADY THE CASE WITH PGP.
+Instead you can convert your SSH key and benefit from Astroport Data Layer Protocol
+```
+## SEE EXERCICE
+keygen --help
+```
+
 PLAYER key & wishes can be controled through : ```~/.zen/Astroport.ONE/command.sh``` or directly through TW (Tag="voeu")
 Each wish, is a derivated key, it has an IPNS publishing and can be associated to its own ASTROBOT program to take care about Friends data collect & merge.
 
 VISA.new.sh is creating TW from ```templates/twdefault.html``` and ```templates/minimal.html```
-This script is important as it initialize PLAYER... It could allow different templating.
+This script is important as it initialize PLAYER and connect him to STATION... You can add more different templates...
+
+Visit https://tiddlywiki.com to understand all the capacities this tools have inside.
 
 ## 20H12
 Every day (20H12.process.sh) activates automation.
-Sequence is run in that order:
-
-1. PLAYER.refresh
-2. Connect_PLAYER_To_Gchange.sh
-3. VOEUX.create.sh
-4. VOEUX.refresh.sh
-5. ASTROBOT/G1WishName.sh
-
+Sequence is run every night :
+1. PLAYER.refresh (distributed USERs key management)
+2. UPLANET.refresh (UPlanet key refresh only Station in Boostrap list)
 
 ## _12345.sh : The MAP maintainer
 
 This process is run almost every hour. Stations are getting and publishing
 Each time MAP.refresh.sh is running it takes data from PLAYERs caches (~/.zen/game/players/.../) and publish it on Station IPNS key.
 
-## UPlanet
-
-UMap shared keys introduce common blockchains.
-
-PROTOCOL
-
-To avoid collisions and maintain data freshness.
-20H12 process time should be adjusted on real sun time based on longitude.
-
-Every 4 minute next 0.01 longitude is processed.
-Every UMap is then processed by latitude...
-
-So the planet sectors act like a "Virtual Hard Drive" giving 24s to each sector for being refreshed.
-To spread blockchain next step calculations, key management will be given to the closest Astroport Station.
-
-CONTROL AGENT
-
-Disfunctions and protocol break can be detected by every Stations thus they can identify bad IPFS NODE publiher(s) and blacklist them
+Boostrap Stations gets LANCoeurBOX through 12345 client call, asking for IPNS retrieval so SWARM data are collected.
 
 ## REVERSE CODE
 

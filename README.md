@@ -125,7 +125,7 @@ Permet la Gestion des PLAYER (et des G1VoeuX) en mode CLI
 Une fois votre Station Astroport démarrée:
 * le port 1234 publie API (REPONSE PORT TCP 45780 45781 ( jusqu'à ... 45790 )
 
-* le port 12345 publie MAP(*) (CARTE DE L'ESSAIM - BOOTSTRAP / STATIONS)
+* le port 12345 publie MAP(*) (CARTE DE L'ESSAIM - BOOSTRAP / STATIONS)
 * le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
 
 * le port 8080, 4001 et 5001 sont ceux de la passerelle IPFS

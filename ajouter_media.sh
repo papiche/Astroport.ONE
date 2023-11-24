@@ -156,7 +156,7 @@ case $? in
 esac
 fi
 
-## CHANGE ASTROPORT BOOTSTRAP
+## CHANGE ASTROPORT BOOSTRAP
 if [[ $1 == "on" ]]; then
     STRAP=$(ipfs bootstrap)
     BOOT=$(zenity --entry --width 300 --title="Catégorie" --text="$STRAP Changez de Bootstrap" --entry-text="Aucun" Astroport Public)

@@ -10,7 +10,7 @@ ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
 ### USE 12345 MAP
-## EXPLORE SWARM BOOTSTRAP REPLICATED TW CACHE
+## EXPLORE SWARM BOOSTRAP REPLICATED TW CACHE
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

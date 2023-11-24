@@ -285,8 +285,16 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             fi
 
             if [[ ${APPNAME} == "friend" ]]; then
+
+                # CHECK IF ${VAL} HAS A PROFILE
+                ${MY_PATH}/../tools/timeout.sh -t 5 \
+                    curl -s ${myDATA}/user/profile/${VAL} > ~/.zen/tmp/${MOATS}/gchange.json
+
                 ## Send ॐ★ॐ
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${VAL} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco
+                [[ -s ~/.zen/tmp/${MOATS}/gchange.json ]] \
+                    && ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${VAL} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco \
+                    && rm ~/.zen/tmp/${MOATS}/gchange.json \
+                    || echo "/${VAL} profile is not existing yet..." >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 

@@ -67,7 +67,7 @@ echo 0 > ~/.zen/tmp/random.sleep
 ###################
 # NEVER ENDING LOOP
 ###################################################################
-## WILL SCAN ALL BOOTSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
+## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
 ###################################################################
 while true; do
 
@@ -97,7 +97,7 @@ while true; do
         done
     done
 
-    ############# GET BOOTSTRAP SWARM DATA
+    ############# GET BOOSTRAP SWARM DATA
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do
 
@@ -144,8 +144,8 @@ while true; do
             continue
         fi
 
-        ## ASK BOOTSTRAP NODE TO GET MY MAP UPSYNC
-        ## - MAKES MY BALISE PRESENT IN BOOTSTRAP SWARM KEY  -
+        ## ASK BOOSTRAP NODE TO GET MY MAP UPSYNC
+        ## - MAKES MY BALISE PRESENT IN BOOSTRAP SWARM KEY  -
         if [[  $iptype == "ip4" || $iptype == "ip6" ]]; then
 
             ############ UPSYNC CALL
@@ -153,7 +153,7 @@ while true; do
             curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json
 
             ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
-            echo "ANALYSING BOOTSTRAP SWARM MAP"
+            echo "ANALYSING BOOSTRAP SWARM MAP"
             itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
             ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 

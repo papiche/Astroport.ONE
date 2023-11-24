@@ -171,11 +171,17 @@ for PLAYER in ${PLAYERONE[@]}; do
     # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW
     ##############################################################
     echo "##################################################################"
-    echo "## GCHANGE+ & Ŋ1 EXPLORATION:  Connect_PLAYER_To_Gchange.sh"
-    ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
 
-    # G1PalPay - Check for G1 TX incoming comments #
-    ${MY_PATH}/G1PalPay.sh ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
+    [[ ${COINS} > 100 ]] \
+        && echo "## Connect_PLAYER_To_Gchange.sh" \
+        && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
+        || echo "1000 ẑen needed to activate star system"
+
+    # G1PalPay - 10 ZEN mini -> Check for G1 TX incoming comments #
+    [[ ${COINS} > 1 ]] \
+        && echo "## RUNNING G1PalPay " \
+        && ${MY_PATH}/G1PalPay.sh ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" \
+        || echo "> INSUFFICIENT ${COINS} - 10 ẑen minimum"
 
     ### CHECK FOR pending (TODO)
 

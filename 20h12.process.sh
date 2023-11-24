@@ -56,7 +56,7 @@ espeak "REFRESHING UPLANET" > /dev/null 2>&1
 
 
     ## if [[ ! $isLAN ]]; then
-    ## REFRESH BOOTSTRAP LIST (OFFICIAL SWARM)
+    ## REFRESH BOOSTRAP LIST (OFFICIAL SWARM)
     espeak "bootstrap refresh" > /dev/null 2>&1
 
     ipfs bootstrap rm --all > /dev/null 2>&1

@@ -42,7 +42,10 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/
     ${MY_PATH}/timeout.sh -t 20 \
     curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
     [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH GCHANGE+ NODE ${myDATA} xxxxx" && exit 1
-    [[ ! $(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null) ]] && echo "xxxxx GCHANGE+ DATA ERROR ${myDATA} xxxxx" && exit 1
+    [[ ! $(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null) ]] \
+        && echo "xxxxx GCHANGE+ MISSING ACCOUNT ${myDATA} xxxxx" \
+        && ${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n " " -v " " -a " " -d " " -pos 0.00 0.00 -s https://qo-op.com -A ${MY_PATH}/../images/plain.png \
+        && exit 0
 
     # $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
     ## GET AVATAR PICTURE
