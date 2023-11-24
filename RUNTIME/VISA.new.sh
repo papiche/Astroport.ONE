@@ -192,7 +192,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     TWNS=$(ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 
-    mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "DEPRECATED"
+    mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "old scarf code"
 
     qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB:ZEN" ## ZEN specific G1PUB QRCODE - break G1 compatibility -
     cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
