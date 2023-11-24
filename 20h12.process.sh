@@ -77,15 +77,16 @@ echo "20H12 (♥‿‿♥) Execution time was $dur" seconds.
 rm ~/.zen/game/players/localhost/latest
 
 ## MAIL LOG : support@qo-op.com ##
-$MY_PATH/tools/mailjet.sh "support@g1sms.fr" "/tmp/20h12.log"
+$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
 
 espeak "duration was $dur seconds" > /dev/null 2>&1
 
-espeak "Restarting Astroport Station API" > /dev/null 2>&1
+espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) > /dev/null 2>&1
 ## KILL ALL REMAINING nc
-killall nc 12345.sh
+killall nc 12345.sh > /dev/null 2>&1
+
 ## OPEN API ENGINE
 if [[ ! -f /etc/systemd/system/astroport.service ]]; then
     ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
@@ -94,10 +95,17 @@ if [[ ! -f /etc/systemd/system/astroport.service ]]; then
 else
     sudo systemctl restart astroport
     [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
+    sudo systemctl restart ipfs
     echo "Astroport processes systemd restart"
+
 fi
-echo $LOWMODE
+
+echo "IPFS LOW MODE ?"
 ## IPFS DISABLED : STOP IT
-[[ $LOWMODE != "" ]] && sleep 360 && sudo systemctl stop ipfs
+[[ $LOWMODE != "" ]] \
+    && echo "$LOWMODE"
+    && sleep 360 \
+    && sudo systemctl stop ipfs \
+    || sudo systemctl restart ipfs
 
 exit 0
