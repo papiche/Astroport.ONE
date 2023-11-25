@@ -165,6 +165,7 @@ echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
 NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
+NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 8) ## STRONGER TW SECURITY "AlpH4nUm"
 
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
@@ -175,8 +176,7 @@ ${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/i
 # ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
 ## TO REMOVE : MONITOR
-${MY_PATH}/../tools/mailjet.sh "support@g1sms.fr" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
-
+${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
 end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
