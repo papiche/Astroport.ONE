@@ -217,8 +217,11 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     ## Add logo to QRCode
     cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
 
-    ## MAKE amzqr WITH astro:// ---- PGP LINK
-    amzqr  "$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )" \
+    ## ASTROID ~~~~~  || &&&&&
+    ASTROIDQR="$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
+    [[ ${PSEUDO} == "UPlanet" ]] && ASTROIDQR="$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '&' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
+    ## MAKE amzqr ASTROID PGP QRCODE
+    amzqr  "${ASTROIDQR}" \
                 -d ~/.zen/tmp/${MOATS} \
                 -l H \
                 -p ~/.zen/tmp/${MOATS}/fond.png 1>/dev/null

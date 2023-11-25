@@ -196,9 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var latMAP = (parseFloat(latElement.value) - 0.05).toFixed(2); // Subtract 0.05 from latElement
     var lonMAP = (parseFloat(lonElement.value) - 0.05).toFixed(2); // Subtract 0.05 from lonElement
 
-    const satURL = `http://127.0.0.1:8080/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/sat_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
+    const satURL = `https://ipfs.copylaradio.com/ipns/copylaradio.com/sat_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
     document.getElementById("satLink").href = satURL;
-    const mapURL = `http://127.0.0.1:8080/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/map_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
+    const mapURL = `https://ipfs.copylaradio.com/ipns/copylaradio.com/map_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
     document.getElementById("mapLink").href = mapURL;
 
     document.getElementById("LAT").innerHTML = latElement.value ;
