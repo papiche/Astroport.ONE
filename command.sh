@@ -25,6 +25,8 @@ Ambassade numérique pair à pair sur IPFS.
 ASTROPORT
 VISA : MadeInZion
 @@@@@@@@@@@@@@@@@@'
+CURRENT=$(cat ~/.zen/game/players/.current/.player)
+echo "CURRENT = ${CURRENT}"
 echo
 
 ## VERIFY SOFTWARE DEPENDENCIES
@@ -36,12 +38,13 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=( "ZENCARD DEMO" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=( "CREATE ZENCARD" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
+
 
     select fav in "${players[@]}"; do
         case $fav in
-        "ZENCARD DEMO")
+        "CREATE ZENCARD")
             ## DIRECT VISA.print.sh
             echo "'Email ?'"
             read EMAIL
@@ -101,8 +104,12 @@ echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read PASS
 # openssl enc -aes-256-cbc -d -in "$HOME/.zen/game/players/${PLAYER}/enc.secret.dunikey" -out "$HOME/.zen/tmp/${PLAYER}.dunikey" -k $pass 2>&1>/dev/null
 [[ $PASS != $pass ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
-rm -f ~/.zen/game/players/.current
-ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current
+## CURRENT CHANGE ?
+[[  ${CURRENT} !=  ${PLAYER} ]] \
+&& echo "BECOME ADMIN ? hit ENTER for NO, write something for YES" && read ADM \
+&& [[ ${ADM} != "" ]] \
+&& rm -f ~/.zen/game/players/.current \
+&& ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 echo "________LOGIN OK____________";
 echo
@@ -124,7 +131,7 @@ echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choisissez : __ "
-choices=("MAKE UN VOEU" "PRINT QRVOEU" "PRINT VISA" "UNPLUG PLAYER" "QUIT")
+choices=("MAKE A WHISH" "PRINT WHISH" "PRINT VISA" "UNPLUG PLAYER" "QUIT")
 select fav in  "${choices[@]}"; do
     case $fav in
     "PRINT VISA")
@@ -147,7 +154,7 @@ select fav in  "${choices[@]}"; do
         #~ ${MY_PATH}/tools/vlc_webcam.sh "$PLAYER"
         #~ ;;
 
-    "MAKE UN VOEU")
+    "MAKE A WHISH")
         echo "QRCode à coller sur les lieux ou objets portant une Gvaleur"
         cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
         ${MY_PATH}/RUNTIME/G1Voeu.sh "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"

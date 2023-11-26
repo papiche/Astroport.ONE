@@ -16,7 +16,9 @@ ME="${0##*/}"
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 G1DEST="$1"
+IDTX="$2"
 COMMENT="$2"
+
 
 # ${MY_PATH}/jaklis/jaklis.py history -p $G1DEST  -n 10 -j
 # THIS SCRIPT IS LAUNCHED AFTER A PAYMENT IS DONE

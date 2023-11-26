@@ -44,7 +44,7 @@ else
     VIRTUAL=1
     G1PUB=$(${MY_PATH}/keygen -t duniter "${SALT}" "${PEPPER}")
     ASTRONAUTENS=$(${MY_PATH}/keygen -t ipfs "${SALT}" "${PEPPER}")
-    PSEUDO="${PLAYER}"
+    PSEUDO="UPlanet"
 
     mkdir -p ~/.zen/game/players/${PLAYER}/
     CIMG="${MY_PATH}/../images/zenticket.png"
@@ -57,7 +57,7 @@ fi
 
 LP=$(ls /dev/usb/lp* | head -n 1 2>/dev/null)
 
-[[ ${PASS} == "" ]] && PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
+[[ ${PASS} == "" ]] && PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5) ## GENERATE 4 DIGIT PIN
 
 # USE G1BILLET GENERATOR
 [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] \
