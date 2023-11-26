@@ -57,7 +57,7 @@ header {
 }
 
 #console {
-    visibility: visible;
+    visibility: hidden;
     background: rgba(0, 0, 0, 0.9); /* Adjust the background color and opacity as needed */
     color: white;
     width: 570px;
@@ -116,6 +116,7 @@ a:active{
         <button onclick="homeAstroportStation('/?qrcode=station', 'tab', 33000)">ẐenStation</button>
         </div>
 -->
+        <button style="position: fixed; top: 10px; right: 10px;" onclick="document.getElementById('console').style.visibility = (document.getElementById('console').style.visibility === 'hidden' ? 'visible' : 'hidden');">(-/+)</button>
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
         <button onclick="document.getElementById('console').style.visibility = 'visible'; homeAstroportStation( qrURL, 'aframe', 7000);">UMap QR</button>
@@ -148,17 +149,17 @@ a:active{
 
 </form>
 
-            <div id="console"> ___ <a href="https://pad.p2p.legal/p/G1Fablab#/" target="aframe">Astroport.ONE : Web3 - IPFS - PlayGround </a> ___ <button onclick="document.getElementById('console').style.visibility = 'hidden';"> X </button>
-                <iframe name="aframe" id="aframe" src="https://pad.p2p.legal/s/Astroport.ONE#Application-name--U-Planet" width="100%" height="100%"></iframe>
+            <div id="console"> ___ <a href="https://zen.g1sms.fr" target="aframe">Made In Ẑen</a> ___ <button onclick="document.getElementById('console').style.visibility = 'hidden';"> X </button>
+                <iframe name="aframe" id="aframe" src="https://pad.p2p.legal/p/Astroport_AIDE" width="100%" height="100%"></iframe>
             </div>
 
 <br>
-   <span><a href="https://pad.p2p.legal/s/Astroport.ONE">Astroport</a>.<a href="https://github.com/papiche/Astroport.ONE">ONE</a>
-   <br> - Crypto Commons Playground -</span>
-
+<a href="https://opencollective.com/made-in-zen/" target="funding">(...+-+ [[ € == Ẑ ]] +-+...)</a>
 <br>
-<a href="https://opencollective.com/made-in-zen/" target="funding">- (€‿|‿Ẑ) -</a>
+<span> - Libre Crypto Grid -
 <br>
+<a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a>
+</span>
 
 <b>Welkom - Mirë se vini -  Willkommen - Welkomma - Welcome - Marhaban - Bari galoust - Xos gelmissiniz - Welkum -  Ongi etorri- Swagata - Ansuf yiswen - ščyra zaprašajem - Kyo tzo pa eit - ॐ★ॐ - Ani kié - Dobro došli - Dagemer mat - Dobre doshŭl - Benvinguts - Ulihebisdi - ௐ- Huān yíng - Karibu - Eoso eoseyo - Benvenuti - Bel bonjou - Bienvini - Dobrodošli - Velkommen - Bienvenido -  Bonvenon - Tere tulemast - Gabitê - Vælkomin -  Tervetuloa - Welkom - Wìllkòmme - Binvignut - Fàilte - Benvido - Croeso - Planvenguda - Mikouabô - Kalos irthate - Eguahé porá - Baroukh habaim - ﷽ </b><br>
 
@@ -223,10 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-const el = document.getElementById('yellow');
+const yel = document.getElementById('yellow');
 
 setTimeout(() => {
-    el.style.visibility = 'visible';
+    yel.style.visibility = 'visible';
 }, 5456); // 👈️ delay in milliseconds
 
 </script>

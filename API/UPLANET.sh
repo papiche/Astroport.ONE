@@ -222,15 +222,16 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    Your Key seeds are:<br>
+    AstroID seeds are:<br>
     <br>
     <h2>${EMAIL}</h2>
     <h1>${NPASS}</h1>
 
-    Use this credentials to continue registration on <a target='_blank' href='https://cesium.app'>Cesium</a> & <a target='_blank' href='https://gchange.fr'>Gchange</a>
+    Generating account...
+    <br>Please check your mail box to get your ZenCard and PIN code.
     <br>
     ---
-    <br>Try <a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TWPORTATION</a>
+    <br><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW PORTATION</a>
     <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
@@ -253,11 +254,14 @@ echo "$HTTPCORS
     ( ⚆_⚆) <br>CONSOLE<br>
     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
     <br>(☉_☉ )<br>
-    <br><br>${EMAIL} REGISTERED on UMAP : $LAT/$LON : ${MOATS} : $(date)
+    <br><br>${EMAIL} REGISTERED on UPlanet UMAP : $LAT/$LON : ${MOATS} : $(date)
      </body>
      </html>" > ~/.zen/tmp/${MOATS}/http.rep
-cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
+(
+cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
 end=`date +%s`
 echo "(UPLANET) Operation time was "`expr $end - $start` seconds.
+) &
+
 exit 0
