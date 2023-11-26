@@ -125,11 +125,8 @@ fi
 [[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/../tools/diceware.sh 2 | xargs)
 #~ echo "-> PASS : $PEPPER"
 
-PSEUDO=${PLAYER%%[0-9]*}
-
-[[ ! $PSEUDO ]] && PSEUDO="qo-op"
-# PSEUDO=${PSEUDO%%[0-9]*}
-
+[[ ! $PSEUDO ]] && PSEUDO=${PLAYER%%[0-9]*}
+[[ ! $PSEUDO ]] && PSEUDO="Anonymous"
 [[ $(ls ~/.zen/game/players/$PSEUDO 2>/dev/null) ]] && echo "$PSEUDO EST DEJA UN PLAYER. EXIT" && exit 1
 
 # PSEUDO=${PSEUDO,,} #lowercase
@@ -137,9 +134,6 @@ PSEUDO=${PLAYER%%[0-9]*}
                             && echo "ADRESSE EMAIL ?" && read OPLAYER && [[ $OPLAYER ]] && PLAYER=$OPLAYER
 
 PLAYER=${PLAYER,,}
-
-[[ ! $PSEUDO ]] && PSEUDO="Anonymous"
-# echo "Crypto ID PLAYER :"; sleep 1; echo "${PLAYER}"; sleep 2
 
 # 4 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)

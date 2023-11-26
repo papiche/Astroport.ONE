@@ -680,6 +680,7 @@ fi
 ################################################################################
 ## QRCODE IS IPNS FORMAT : CHANGE .current AND MAKE G1BILLETS
 ASTROPATH=$(grep -r $QRCODE  ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+## NB : COULD BE EXTENDED TO SWARM SEARCH (TODO)
 if [[ ${ASTROPATH} != "" && $APPNAME == "" ]]; then
 
     PLAYER=$(echo ${ASTROPATH} | rev | cut -d '/' -f 3 | rev)
@@ -689,7 +690,7 @@ if [[ ${ASTROPATH} != "" && $APPNAME == "" ]]; then
     echo "LINKING ${PLAYER} to .current"
     #### SELECT PARRAIN "G1PalPay"
 
-    echo "#>>>>>>>>>>>> # REDIRECT TO CREATE G1BILLETS"
+    echo "#>>>>>>>>>>>> # REDIRECT TO CREATE ZENCARD"
     sed "s~_TWLINK_~${myG1BILLET}?montant=0\&style=${PLAYER}~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myG1BILLET}"?montant=0\&style=${PLAYER}'" >> ~/.zen/tmp/${MOATS}/index.redirect
