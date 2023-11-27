@@ -20,7 +20,7 @@ Join us in the construction of Astroport – a groundbreaking distributed storag
 As network engineers and system administrators committed to the Common Good, we understand the importance of freedom and security.
 Say goodbye to the limitations of traditional systems and the uncertainties of distributed storage.
 
-[BASH ENGINE FOR A CRYPTO PLAYGROUND](https://pad.p2p.legal/p/G1FabLab#)
+[BASH ENGINE FOR A CRYPTO PLAYGROUND](https://pad.p2p.legal/p/G1Fablab#)
 
 ## https://astroport.com
 
