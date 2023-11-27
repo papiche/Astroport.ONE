@@ -38,6 +38,9 @@ mkdir -p ~/.zen/tmp/${MOATS}
     rm ~/.zen/tmp/${MOATS}/_ipns.priv
     ### GET IMAPNS
 
+    ## TRANSERT PLAYER WALLET TO UMAP OR MASTER WALLET
+
+
 ## DOES IT NEED UMAP CORRECTION ?
     if [[ ${IMAPNS} != ${TWMAPNS} ]]; then
         echo "ERROR TW/GPS ERROR : IMAPNS ${IMAPNS}"

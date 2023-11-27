@@ -1,52 +1,46 @@
-# Préambule - [read this introduction in english](https://github.com/papiche/Astroport.ONE/blob/master/README.en.md) -
+# Introduction
 
-Bienvenue dans l'équipe d'Astroport, le réseau pair-à-pair (P2P) révolutionnaire qui repousse les limites de la liberté d'information et d'interaction ! Si vous êtes un développeur passionné à la recherche d'un projet novateur et audacieux, alors vous êtes au bon endroit.
+Astroport: Decentralized Storage for the Future
 
-Astroport offre une plateforme sécurisée et décentralisée permettant le partage d'informations, en particulier de vidéos, via IPFS. Notre objectif est de contrer les restrictions de censure qui pourraient être imposées par les futures lois de fact-checking avancées par l'Union Européenne. Nous croyons fermement en la liberté d'expression et nous nous engageons à protéger cette valeur fondamentale.
+Astroport is not just another distributed storage software; it's a paradigm shift in how we handle data.
+Utilizing IPFS (InterPlanetary File System), Astroport introduces a master boot record (MBR) and an allocation table to data written in Tiddlywiki.
+Each piece of information is meticulously organized, ensuring reliability and accessibility across the network.
 
-Mais ce n'est pas tout ! Astroport va bien au-delà du simple partage d'informations. Notre plateforme vous permet également d'identifier les ressources autour de vous, qu'il s'agisse de nourriture, d'amis, de services ou de biens. Grâce à Astroport, vous serez en mesure de trouver et de partager les ressources nécessaires à votre vie quotidienne de manière simple et efficace.
+In the UPlanet format system, Astroport slices the planet into precise 0.01° segments.
+This granular approach allows for efficient data management, ensuring that Tiddlers (data units) are registered locally with a unique signature,
+ typically your email. A daily process analyzes new Tiddlers, detecting and resolving conflicts based on the number of unique signatures:
 
-Et ce n'est pas tout ! Nous souhaitons également intégrer un "[build guide](https://ipfs.copylaradio.com/ipfs/QmNcNcYRDUFmR1Ey1MAyhzzZRJEi1Dfq8YXRTXq6XZ9n4A/#)" à Astroport, inspiré par les célèbres livres de recettes de Minecraft. Vous pourrez utiliser ce guide pour apprendre à créer des objets réels, en utilisant les matériaux disponibles sur notre place de marché. Imaginez un tutoriel détaillé pour fabriquer des meubles, des objets de décoration, voire même des outils pratiques pour votre quotidien. Astroport met la créativité entre vos mains.
+* 0.01°: Contains TiddlyWiki, and detects same tiddlers with 2 signatures
+* 0.1°: Collect Tiddlers with more than 3 signatures
+* 1°: Collect Tiddlers with more than 4 signatures
+* 10°: Collect Tiddlers with 5 or more signatures
 
-Nous nous sommes également associés à la [monnaie libre Ğ1](https://monnaie-libre.fr) et à sa place de marché, [gchange.fr](https://gchange.fr). Cela signifie que vous pourrez commander les matériaux nécessaires à la réalisation de vos projets directement depuis Astroport. Tout est à portée de clic, dans une seule et même application.
+Join us in the construction of Astroport – a groundbreaking distributed storage solution where you can actively contribute and shape the future of data management.
 
-Rejoindre l'équipe d'Astroport, c'est contribuer à une cause qui va bien au-delà de la simple programmation. C'est faire partie d'un mouvement qui aspire à défendre les principes de liberté, de partage et de créativité. C'est travailler sur un projet qui a le potentiel de changer la façon dont nous interagissons avec l'information et les ressources qui nous entourent.
+As network engineers and system administrators committed to the Common Good, we understand the importance of freedom and security.
+Say goodbye to the limitations of traditional systems and the uncertainties of distributed storage.
 
-Alors, si vous êtes prêt à relever le défi et à participer à la construction d'un avenir où la censure n'a pas sa place, rejoignez-nous dès aujourd'hui et laissez votre empreinte sur le monde avec Astroport. Ensemble, nous pouvons libérer le potentiel de la technologie et créer un avenir plus ouvert pour tous.
-
-[PRESENTATION UPLANET](https://pad.p2p.legal/Astroport.old.ONE#)
 [BASH ENGINE FOR A CRYPTO PLAYGROUND](https://pad.p2p.legal/p/G1FabLab#)
-
 
 ## https://astroport.com
 
-Avec cette technologie, nous devenons chacun hébergeur et fournisseur d'accès, souverain monétaire et médiatique.
-Avec cette technologie, nous établissons le "Crypto Département 96" dont la carte relie les territoires au delà des frontières et des pays.
+With this technology, we each become host and access provider and media sovereign.
 
-**Astroport ONE propulse un monde numérique fait de toiles confiances interconnectées**
+**Astroport ONE propels a digital world of interconnected trust webs**.
 
 # Astroport.ONE
+Each "Astroport.ONE" station is a digital embassy that communicates and synchronizes with its peers.
+Users can "move their account". The last one used during the day becomes the "official station".
 
-Chaque Station "Astroport.ONE" est une ambassade numérique qui dialogue et se synchronise avec ses pairs.
-Les utilisateurs peuvent "déplacer leur compte". La dernière utilisée dans la journée devient "station officielle".
-
-L'architecture attachée à chaque clef publiquesse déploie et en forme de "pétales de fleur" selon les cercles de confiance Ŋ1 et Ŋ2 et les flux de données produit par les clefs dérivées.
+The architecture attached to each public key is deployed in the form of "flower petals" according to the circles of trust Ŋ1 and Ŋ2 and the data flows produced by the derived keys.
 
 ![N.ONE.2](https://www.copylaradio.com/web/image/6038/ASTROPORT_multiWoTNet.png)
 
-Contrat intelligent déclenchés par "G1Tag" (clefs dérivées) assure l'extraction les "G1MotsClefs" des Tiddlers "environnant".
+ASTROBOT "Intelligent contract in BASH"
+Programs are triggered by "G1Tag" (derived keys) ensures extraction of "G1WordClefs" from "surrounding" Tiddlers.
 
-Introduit dans [UPlanet](https://git.p2p.legal/qo-op/OSM2IPFS), inscrit dans le système de fichier interplanétaire, nos TiddlyWiki sont la base d'un système d'information planétaire Libre.
-Le contrat intelligent de base consiste à collecter les données produites par chaque TW pour les remonter au niveau de la couche d'information supérieure.
-
-* 0.01°: Les Tiddlers sont inscrit au niveau local et possèdent une signature (votre email). Chaque jour un processus en analyse les nouveaux pour vous informer de la détection de "doublons différents". Le "conflit" est résolu en
-* 0.1° : > 2 signatures
-* 1° : > 3 signatures
-* 10° : > 4 signatures
-* UPlanet : 5 signatures et plus.
-
-Afin de déclencher l’exécution de "contrat intelligent personnel", il vous suffit de créer un "voeu" (et de lui attribuer quelques Zen)
-A ce moment, "ASTROBOT" publiera les données relatives au Tag concerné sur une nouvelle "clef dérivée IPNS personnelle"
+To trigger the execution of a "personal intelligent contract", simply create a "wish" (Tag=voeu)
+At this point, if it exists "ASTROBOT/G1Tag.sh" program will publish the data relating to the Tag concerned on a new "personal IPNS derived key", if not a default "json from all with same wish" is created (see RUNTIME/VOEUX.refresh.sh)
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
@@ -88,7 +82,7 @@ bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/
 
 > PLEASE REPORT ANY ISSUES
 
-Si tout s'est bien déroulé, vous devriez trouver ces processus en cours d'execution...
+If all has gone well, you should find these processes running...
 
 ```
 /usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
@@ -103,38 +97,41 @@ Si tout s'est bien déroulé, vous devriez trouver ces processus en cours d'exec
 
 ```
 
-# LANCEMENT
+# LAUNCH
 
-Après l'installation, vous devriez avoir 3 nouveaux raccourcis sur votre "Bureau"
+After installation, you should have 3 new shortcuts on your desktop
 
-* "Astroport" qui ouvre le portail de votre Station : http://astroport.localhost:1234
-* "REC" qui permet d'enregistrer vos fichiers sur IPFS et publier leur Capusle dans votre TW
-* "G1BILLET" permet de créer des ZenCard et autres QRCodes utiles
+* Astroport", which opens your station portal: http://astroport.localhost:1234
+* REC" allows you to save your files on IPFS and publish their Capusle in your TW.
+* G1BILLET" lets you create ZenCards and other useful QRCodes
 
-## Comment Gérer votre "Astroport" !
+## How to manage your "Astroport"!
 
+You need to create a "PLAYER".
+It is defined by email, salt, pepper, lat, lon and PASS
 
 ```
 ~/.zen/Astroport.ONE/command.sh
 ```
-Permet la Gestion des PLAYER (et des G1VoeuX) en mode CLI
+Browse available functions
+
+A Station can host multiple "PLAYER and its TiddlyWiki".
+
 
 # "BASH API" : "♥BOX"
 ## http://astroport.localhost:1234
 
-Une fois votre Station Astroport démarrée:
-* le port 1234 publie API (REPONSE PORT TCP 45780 45781 ( jusqu'à ... 45790 )
+Once your Astroport Station is started:
+* port 1234 publishes API (REPONSE PORT TCP 45780 45781 ( up to ... 45790 )
+* port 12345 publishes MAP(*) (ESSAIM MAP - BOOSTRAP / STATIONS)
+* port 33101 publishes G1BILLETS (REPLY TCP PORT 33102)
+* port 8080, 4001 and 5001 are IPFS gateway ports.
 
-* le port 12345 publie MAP(*) (CARTE DE L'ESSAIM - BOOSTRAP / STATIONS)
-* le port 33101 publie G1BILLETS  (REPONSE PORT TCP 33102)
-
-* le port 8080, 4001 et 5001 sont ceux de la passerelle IPFS
-
-Liste des ports à activer.
+List of ports to activate.
 
 ![](https://ipfs.asycn.io/ipfs/QmWzwL9fZKDGuqsvDjkA8v9sAcU4zQ4BvjKDRwnZQBT97y)
 
-Pour ajouter votre Station à notre essaim, inscrivez l'IP de votre BOX dans le fichier ```~/.zen/♥Box ```
+To add your Station to our swarm, enter the IP of your BOX in the file ``~/.zen/♥Box ````.
 
 exemple
 ```
@@ -145,26 +142,27 @@ frd@scorpio:~ $ cat ~/.zen/♥Box
 
 ⚠ API ASTROPORT = NETCAT SYSTEM ⚠
 
-**Astroport n'a pas besoin de serveur web pour fonctionner**. Nous utilisons l'outil réseau le plus simple "**netcat**".
-Le fonctionnement donne accès à une "API BASH" (classée par le même nom que le premier paramètre GET reçu dans le répertoire API)
+**Astroport doesn't need a web server to work**. We use the simplest network tool, **netcat**.
+Operation gives access to an "API BASH" (classified by the same name as the first GET parameter received in the API directory).
 
-Les requêtes se font en HTTP GET sur le port 1234, le PORT de réponse se trouve dans la page chargée.
-Effectuez un regexp sur "url=ADRESSE:PORT" ou (♥‿‿♥) pour découvrir lequel.
+Requests are made in HTTP GET on port 1234, with the response PORT in the loaded page.
+Perform a regexp on "url=ADRESSE:PORT" or (♥‿‿♥) to find out which.
 
-Voici des exemples sur comment procéder.
+Here are some examples of how to do it.
 
-## RECUPERATION DU PORT DE REPONSE API : (♥‿‿♥)
+## ANSWER PORT RECOVERY API : (♥‿‿♥)
 ### CLI (BASH)
 ```
-    # PLAYER COPIER "_URL_" FAVORITE
+    # OPEN ASTROPORT HOME PAGE
     curl -so ~/.zen/tmp/${MOATS}/astro.port "http://astroport.localhost:1234/?salt=0&pepper=0&g1pub=_URL_&email=${EMAIL}"
 
+    # GREP NEXT PORT IN PAGE CODE
     TELETUBE=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(♥‿‿♥)" | cut -d ':' -f 2 | cut -d '/' -f 3)
     TELEPORT=$(cat ~/.zen/tmp/${MOATS}/astro.port | grep "(♥‿‿♥)" | cut -d ':' -f 3 | cut -d '"' -f 1)
 
                 sleep 30
 
-    # RECUPERER SON JETON PLAYER
+    # ACCESS TO FINAL RESULT
     curl -so ~/.zen/tmp/${MOATS}/astro.rep "http://$TELETUBE:$TELEPORT"
 ```
 ### JS
@@ -194,7 +192,7 @@ async function fetchAstroport(myURL) {
     }
 ```
 
-Utilisez "[astro.js](templates/G1PalPay/G1PalPay_fichiers/astro.js)"
+USE "[astro.js](templates/G1PalPay/G1PalPay_fichiers/astro.js)"
 ```
     <script src="https://ipfs.asycn.io/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```
