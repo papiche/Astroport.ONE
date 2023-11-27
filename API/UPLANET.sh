@@ -112,7 +112,7 @@ EMAIL="${PLAYER,,}" # lowercase
 
 ################################ START WORKING WITH KEYS
 ### SESSION "$LAT" "$LON" KEY
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
     ipfs key rm ${MOATS} && echo "$LAT" "$LON" "IPNS key identified"
 ###
@@ -145,7 +145,7 @@ fi
 ######################################################
 echo "UMAP = $LAT:$LON"
 echo "# CALCULATING UMAP G1PUB WALLET"
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/_cesium.key  "$LAT" "$LON"
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/_cesium.key   "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
 G1PUB=$(cat ~/.zen/tmp/${MOATS}/_cesium.key | grep 'pub:' | cut -d ' ' -f 2)
 [[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAP G1PUB : ${G1PUB}"
@@ -157,7 +157,7 @@ mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
 ipfs key rm ${G1PUB} > /dev/null 2>&1
 rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
 
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1

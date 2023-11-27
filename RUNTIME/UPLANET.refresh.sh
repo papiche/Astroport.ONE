@@ -43,12 +43,12 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
         ##############################################################
-        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${LAT}" "${LON}")
+        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
         [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
         echo "UMAP (${COINS} G1) WALLET : ${G1PUB}"
 
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv "${LAT}" "${LON}"
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
         ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
         echo "${myIPFS}/ipns/${UMAPNS}"
@@ -143,13 +143,13 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" 
     SLON="${LON::-1}"
     SECTOR="_${SLAT}_${SLON}"
     echo "SECTOR ${SECTOR}"
-    ##############################################################
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
+    ############################################################## "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${SECTOR}" "${SECTOR}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
     ipfs key rm ${SECTORG1PUB}
@@ -168,12 +168,12 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" 
     REGION="_${CLAT}_${CLON}"
     echo "REGION ${REGION}"
     ##############################################################
-    REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${REGION}" "${REGION}")
+    REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
     echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${REGION}" "${REGION}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"
     ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ipfs key rm ${REGIONG1PUB}

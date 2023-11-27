@@ -1,24 +1,51 @@
 # Introduction
 
-Astroport: Decentralized Storage for the Future
+**Embark on a Cosmic Journey with ZenCard Payment System and Astroport.ONE**
 
-Astroport is not just another distributed storage software; it's a paradigm shift in how we handle data.
-Utilizing IPFS (InterPlanetary File System), Astroport introduces a master boot record (MBR) and an allocation table to data written in Tiddlywiki.
-Each piece of information is meticulously organized, ensuring reliability and accessibility across the network.
+Are you weary of the constraints of traditional payment systems and concerned about the reliability
+of your distributed storage solutions? Look no further! Our revolutionary ZenCard Payment System
+and Astroport.ONE v1.0 seamlessly blend cutting-edge blockchain technology with interplanetary storage,
+offering you a commission-free and secure solution.
 
-In the UPlanet format system, Astroport slices the planet into precise 0.01° segments.
-This granular approach allows for efficient data management, ensuring that Tiddlers (data units) are registered locally with a unique signature,
- typically your email. A daily process analyzes new Tiddlers, detecting and resolving conflicts based on the number of unique signatures:
+**Astroport.ONE v1.0: Decentralized Storage Beyond Borders**
 
-* 0.01°: Contains TiddlyWiki, and detects same tiddlers with 2 signatures
-* 0.1°: Collect Tiddlers with more than 3 signatures
-* 1°: Collect Tiddlers with more than 4 signatures
-* 10°: Collect Tiddlers with 5 or more signatures
+Astroport.ONE isn't just a distributed storage software; it's a reimagining of data management.
+Utilizing IPFS and introducing a master boot record (MBR) and allocation table to Tiddlywiki data,
+Astroport.ONE organizes information with unprecedented precision. In the UPlanet format system,
+the planet is sliced into 0.01° segments, ensuring locally registered Tiddlers with unique signatures.
 
-Join us in the construction of Astroport – a groundbreaking distributed storage solution where you can actively contribute and shape the future of data management.
+As a network engineer and system administrator committed to the Common Good, join us in constructing
+Astroport.ONE and shaping the future of secure and reliable distributed storage.
 
-As network engineers and system administrators committed to the Common Good, we understand the importance of freedom and security.
-Say goodbye to the limitations of traditional systems and the uncertainties of distributed storage.
+**ZenCard Payment System: Empowering Transactions, Empowering Dreams**
+
+As blockchain makers, our ZenCard Payment System is not merely a crypto wallet; it's a game-changing payment card and terminal solution.
+Our controlled coin-emitting blockchain transfers 1 coin to your ZenCard per fiat money unit saved in the fiscal host.
+This unique approach makes blockchain accessible to everyone.
+
+Become a donor and a shareholder, receiving Coins equivalent to the Euros paid. Achieve a stable coin state of "1=1" through seamless transactions
+with a Host capable of sending and receiving Euros to users with zero fees, facilitated by PayPal integration.
+
+Activate your account on UPlanet, make donations to https://opencollective.com/made-in-zen, and receive encrypted wallets via email—printed
+in QRCode format for added security. Step into a future where financial transactions are commission-free,
+and data is securely stored across the cosmos.
+
+**Station Extra-Terrestre Astroport.ONE: Where Innovation Meets Tranquility**
+
+In the midst of this technological revolution, discover the Station Extra-Terrestre Astroport.ONE.
+A haven for volunteers striving to live in peace and harmony within a spaceship turned garden,
+it unveils a new "Jeu de Société" developed by and for the Astronauts of MadeInZion.
+
+Embark on an exploration of "Voeux," wishes funded collaboratively through donations in the Libre currency G1.
+These wishes encapsulate ideas, plans, explanations, and even mistakes, marking the journey toward their realization.
+
+In this digital game manifesting in real life, your digital identity is in your hands, and a new Internet unfolds,
+built according to our "Toiles de confiance" (Webs of Trust)!
+
+Join us in this cosmic journey where peace, harmony, and the spirit of exploration reign supreme.
+Send your love to the Extraordinary Earthlings at https://qo-op.com.
+
+Welcome to a universe where wishes become reality, and the possibilities are boundless.
 
 [BASH ENGINE FOR A CRYPTO PLAYGROUND](https://pad.p2p.legal/p/G1Fablab#)
 

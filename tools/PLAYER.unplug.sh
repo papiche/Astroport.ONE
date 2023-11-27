@@ -33,35 +33,12 @@ mkdir -p ~/.zen/tmp/${MOATS}
     rm ~/.zen/tmp/${MOATS}/GPS.json
 
     ### IPNS "$LAT" "$LON" KEY
-    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "$LAT" "$LON"
+    ${MY_PATH}/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "${UPLANETNAME}$LAT" "${UPLANETNAME}$LON"
     IMAPNS="/ipns/"$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
     rm ~/.zen/tmp/${MOATS}/_ipns.priv
     ### GET IMAPNS
 
-    ## TRANSERT PLAYER WALLET TO UMAP OR MASTER WALLET
-
-
-## DOES IT NEED UMAP CORRECTION ?
-    if [[ ${IMAPNS} != ${TWMAPNS} ]]; then
-        echo "ERROR TW/GPS ERROR : IMAPNS ${IMAPNS}"
-        echo " - MANUAL GPS CORRECTION NEEDED "
-        echo "- CONTINUE -"
-    else
-        # Modifying UMAP
-        echo "ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ ${TWMAPNS}/"
-        ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/ ${TWMAPNS}/
-        ## REMOVE PLAYER REFERENCES from UMAP
-        rm -f ~/.zen/tmp/${MOATS}/*/_${PLAYER}.HPASS
-        rm -f ~/.zen/tmp/${MOATS}/*${PLAYER}.asc
-        rm -f ~/.zen/tmp/${MOATS}/*${PLAYER}.jpg
-        rm -Rf ~/.zen/tmp/${MOATS}/TW/${PLAYER}
-        ## UPDATE IPFSROOT
-        IPFSROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/* | tail -n 1) && echo "UMAP NEW ROOT ${IPFSROOT}"
-        ## PUBLISH NEW UMAPNS
-        ipfs name publish --key=${MOATS} /ipfs/${IPFSROOT}
-        ipfs key rm ${MOATS} && echo "UMAP IPNS PUBLISHING FINISHED"
-        ###
-    fi
+    ## TRANSERT PLAYER WALLET TO UMAP OR MASTER WALLET : TODO
 
 ## REMOVING PLAYER from ASTROPORT
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};

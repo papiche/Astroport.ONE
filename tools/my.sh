@@ -472,3 +472,6 @@ FLIPPERCID="${EARTHCID}/coinflip"
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
 myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
+
+## UPLANETNAME LAT UPLANETNAME LON keys translation
+UPLANETNAME=""
