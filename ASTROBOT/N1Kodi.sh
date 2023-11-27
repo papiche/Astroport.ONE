@@ -56,14 +56,14 @@ mkdir -p $HOME/.zen/tmp/${MOATS} && echo $HOME/.zen/tmp/${MOATS}
 
 ## EXTRACT TIDDLER
 tiddlywiki  --load ${INDEX} \
-                --output ~/.zen/.zen/tmp/${MOATS} \
+                --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'TH.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[thash['${TH}']]'
 
-if [[ $(cat ~/.zen/.zen/tmp/${MOATS}/TH.json) != "[]" ]]; then
+if [[ $(cat ~/.zen/tmp/${MOATS}/TH.json) != "[]" ]]; then
 # FOUND GETTING CYPHERED IPFS LINK
-    TITLE=$(cat ~/.zen/.zen/tmp/${MOATS}/TH.json | jq -r '.[].title')
+    TITLE=$(cat ~/.zen/tmp/${MOATS}/TH.json | jq -r '.[].title')
 
-    IPFSONE=$(cat ~/.zen/.zen/tmp/${MOATS}/TH.json | jq -r '.[].ipfs_one')
+    IPFSONE=$(cat ~/.zen/tmp/${MOATS}/TH.json | jq -r '.[].ipfs_one')
     echo "${IPFSONE}" | base16 -d > ~/.zen/tmp/${MOATS}/source.one.enc
 
     ## DECRYPTING ipfs_one
