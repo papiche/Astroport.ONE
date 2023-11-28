@@ -837,7 +837,7 @@ else
         if [[ $GCFOUND == "false" ]]; then
             echo "PAS DE COMPTE CESIUM POUR CETTE CLEF GCHANGE"
             sed "s~_TWLINK_~https://demo.cesium.app/#/app/wot/$QRCODE/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
-            echo "url='"${myASTRONEF}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+            echo "url='"${myASTROPORT}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
             sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
             ( cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1) &
             exit 0
