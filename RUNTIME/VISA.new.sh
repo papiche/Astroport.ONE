@@ -153,7 +153,8 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 [[ ! $G1PUB ]] && echo "Désolé. clef Cesium absente. ERROR" && exit 1
 
     ## CREATE Player personnal files storage and IPFS publish directory
-    mkdir -p ~/.zen/game/players/${PLAYER} # Prepare PLAYER datastructure
+    mkdir -p ~/.zen/game/players/${PLAYER}/.ipfs # Prepare PLAYER datastructure
+    echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
 
         # PLAYER=geg-la_debrouille@super.chez-moi.com
 YUSER=$(echo ${PLAYER} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
