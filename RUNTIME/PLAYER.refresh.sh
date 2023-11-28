@@ -33,6 +33,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         && echo "${PLAYER} WAS BADLY PLUGGED" \
         && continue
 
+    ### UPGRADE PLAYER for myos IPFS API ### DOUBLON WITH VISA.new (TO REMOVE)
+    mkdir -p ~/.zen/game/players/${PLAYER}/.ipfs # Prepare PLAYER datastructure
+    echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
+
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
 
