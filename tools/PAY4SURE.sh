@@ -17,7 +17,7 @@ G1PUB="$3"
 COMMENT="$4"
 MOATS="$5" ## RECALL PENDING
 
-[[ -z $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") || echo "FAILED PAYMENT NEW TRY $MOATS"
+[[ -z $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") || echo "WAY A FAILED PAYMENT NEW TRY $MOATS"
 
 ## CHECKING PAYOUT WALLET (dunikey file)
 [[ -s ${KEYFILE} ]] \
@@ -51,10 +51,9 @@ echo '#!/bin/bash
 bash ${ME} "${KEYFILE}" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${MOATS}"
 ' > ${PENDINGDIR}/${MOATS}_replay.sh
 
+rm -f ${PENDINGDIR}/${MOATS}.result
 # MAKE PAYMENT
-${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c '${COMMENT}' -m 2>/dev/null
-
-if [ $? == 0 ]; then
+${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c '${COMMENT}' -m 2>&1> ${PENDINGDIR}/${MOATS}.result
 
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
@@ -80,7 +79,7 @@ if [ $? == 0 ]; then
     <br> ${ZENCUR} - ${ZENAMOUNT} </h3>
     <h3>${G1PUB}
     <br> ${ZENDES} + ${ZENAMOUNT} </h3>
-    <h2>OK</h2>" > ${PENDINGDIR}/${MOATS}.result
+    <h2>OK</h2>" >> ${PENDINGDIR}/${MOATS}.result
 
     $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result
 
@@ -94,7 +93,7 @@ else
     rm ${PENDINGFILE}
     echo "<h2>BLOCKCHAIN CONNEXION ERROR</h2>
     <h1>-  MUST RETRY -</h1>
-    LAUNCHING SUB SHELL" > ${PENDINGDIR}/${MOATS}.result
+    LAUNCHING SUB SHELL" >> ${PENDINGDIR}/${MOATS}.result
 
     ## COUNT NUMBER OF TRY
     try=$(cat ${PENDINGDIR}/${MOATS}.try 2>/dev/null) || try=0
