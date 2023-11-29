@@ -6,7 +6,7 @@
 ################################################################################
 ## API: UPLANET
 ## Dedicated to OSM2IPFS & UPlanet Client App
-# ?uplanet=EMAIL&salt=LAT&pepper=LON&g1pub=PASS
+# ?uplanet=EMAIL&zlat=LAT&zlon=LON&g1pub=PASS
 ## https://git.p2p.legal/qo-op/OSM2IPFS
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -50,9 +50,9 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
 ## GET & VERIFY PARAM
 PLAYER=${THAT}
-[[ ${PLAYER} == "salt"  ]] && PLAYER="@"
+[[ ${PLAYER} == "zlat"  ]] && PLAYER="@"
 
-[[ ${AND} != "salt" ]] \
+[[ ${AND} != "zlat" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
 SALT=${THIS}
@@ -76,7 +76,7 @@ fi
 
 PEPPER=${WHAT}
 
-[[ ${APPNAME} != "pepper" ]] \
+[[ ${APPNAME} != "zlon" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
 [[ ${PEPPER} == "0" ]] && PEPPER="0.00"

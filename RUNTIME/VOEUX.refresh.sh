@@ -260,7 +260,7 @@ do
 
         #~ echo "************************************************************"
         #~ echo "Hop, 0.1 JUNE pour le Voeu $WISHNAME"
-        #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:$${IPNS_VOEUNS} G1Voeu $WISHNAME"\' -m
+        #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:${IPNS_VOEUNS} G1Voeu $WISHNAME"\' -m
         #~ echo "************************************************************"
         #~ echo "************************************************************"
 

@@ -130,6 +130,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
+            BIRTHDATE=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].birthdate)
             ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## Raccorded G1Station IPNS address
             CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
             [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] \
@@ -163,7 +164,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
                 echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
                 echo "UNPLUG PLAYER"
-                ${MY_PATH}/../tools/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}"
+                ${MY_PATH}/../tools/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "FREE"
                 echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
                 continue
             fi
@@ -285,7 +286,21 @@ for PLAYER in ${PLAYERONE[@]}; do
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
-    ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE
+    ##################################
+    #### PLAYER ACCOUNT CLEANING #########
+    ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE + null G1
+    [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
+        && echo "RSS IS EMPTY" \
+        && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
+        && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
+        && [[ $(( SNOW - SBIRTH )) >= $(( 27 * 24 * 60 * 60 ))  ]] \
+        && echo "YOUR ACOUNT WILL BE UNPLUGGED IN 3.2.1 DAYS" > ~/.zen/tmp/alert \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
+        && [[ $(( SNOW - SBIRTH )) > $(( 30 * 24 * 60 * 60 ))  ]] \
+        && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
+        && echo ">>>> PLAYER UNPLUGGED >>>>> BYE BYE ${PLAYER}" \
+        && continue
+    #################################### UNPLUG ACCOUNT
 
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}

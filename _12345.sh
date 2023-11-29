@@ -51,6 +51,7 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
     echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
         SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
         SECRET2=${IPFSNODEID}
+        echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
         ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipfskey "$SECRET1" "$SECRET2"
         ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/myswarm_secret.dunikey "$SECRET1" "$SECRET2"
         ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipfskey
@@ -98,7 +99,7 @@ while true; do
     done
 
     ############# GET BOOSTRAP SWARM DATA
-    for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$') # remove comments and empty lines
+    for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do
 
         echo "############# RUN LOOP ######### $(date)"

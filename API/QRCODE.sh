@@ -164,32 +164,43 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
-            VAL=$(echo "$VAL" | cut -d ':' -f 1)
+            G1DEST=$(echo "$VAL" | cut -d ':' -f 1) ## G1PUB:CHK format
+            CHK=$(echo "$VAL" | cut -d ':' -f 2) ## G1 CHECKSUM or ZEN
+            if [[ ${CHK::3} != "ZEN" ]]; then
+                echo "INVALID ZENCARD"
+                echo "<br>INVALID ZENCARD" >> ~/.zen/tmp/${MOATS}/disco
+                (
+                cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+                ) &
+                exit 0
+            fi
+
             ## GET DESTINATION ACCOUNT AMOUNT
-            DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${VAL} | tail -n 1)
+            DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${G1DEST} | tail -n 1)
 
             if [[ ${APPNAME} == "pay" ]]; then
 
-                 if [[ ${WHAT} != "" && ${VAL} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} > ${WHAT} ]]; then
+                 if [[ ${WHAT} != "" && ${G1DEST} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} > ${WHAT} ]]; then
                     ## COMMAND A PAYMENT (less than 999.99)
                         if [[ ${WHAT} =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
 
                             ## CREATE game pending TX
                             mkdir -p $HOME/.zen/game/pending/${G1PUB}/
-                            PENDING="$HOME/.zen/game/pending/${G1PUB}/${MOATS}_${VAL}+${WHAT}.TX"
+                            PENDING="$HOME/.zen/game/pending/${G1PUB}/${MOATS}_${G1DEST}+${WHAT}.TX"
                             echo "START" > ${PENDING}
                             ######################## ~/.zen/game/pending/*/*_G1WHO+*.TX
-                            if [[ ! -f ~/.zen/game/pending/*/*_${VAL}+*.TX ]]; then
+                            if [[ ! -f ~/.zen/game/pending/*/*_${G1DEST}+*.TX ]]; then
                                 # MAKE PAYMENT
-                                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c 'ASTROID:${MOATS}' -m"
+                                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${G1DEST} -c 'ASTROID:${MOATS}' -m"
                                 ${MY_PATH}/../tools/timeout.sh -t 5 \
-                                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${VAL} -c "ASTROID:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
+                                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${G1DEST} -c "ASTROID:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
 
                                 if [ $? == 0 ]; then
                                     echo "SENT" > ${PENDING} ## _12345.sh run MONITOR checking CHAIN REJECTION
                                     ## CHANGE COINS CACHE
                                     COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
-                                    DESTFILE="$HOME/.zen/tmp/coucou/${VAL}.COINS"
+                                    DESTFILE="$HOME/.zen/tmp/coucou/${G1DEST}.COINS"
 
                                    CUR=$(cat "${COINSFILE}")
                                     if [[ ! -z "$CUR" && "$CUR" != "null" ]]; then
@@ -212,12 +223,12 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                                     ## VERIFY AND INFORM OR CONFIRM PAYMENT
 
-                                    echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${VAL} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
+                                    echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${G1DEST} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                                 else
 
                                     ## INFORM SYSTEM MUST RENEW OPERATION
-                                    echo "NOK" > $HOME/.zen/game/pending/${G1PUB}/${MOATS}_${VAL}+${WHAT}.TX
+                                    echo "NOK" > $HOME/.zen/game/pending/${G1PUB}/${MOATS}_${G1DEST}+${WHAT}.TX
                                     echo "<h2>BLOCKCHAIN CONNEXION ERROR</h2><h1>- PLEASE RETRY -</h1>\
                                                 if the problem persists, please contact support@qo-op.com" >> ~/.zen/tmp/${MOATS}/disco
 
@@ -240,7 +251,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 else
 
-                     echo "<h2>${WHAT} ${VAL} ${CURCOINS} GLOBAL ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
+                     echo "<h2>${WHAT} ${G1DEST} ${CURCOINS} GLOBAL ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                 fi
 
@@ -286,15 +297,15 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ ${APPNAME} == "friend" ]]; then
 
-                # CHECK IF ${VAL} HAS A PROFILE
+                # CHECK IF ${G1DEST} HAS A PROFILE
                 ${MY_PATH}/../tools/timeout.sh -t 5 \
-                    curl -s ${myDATA}/user/profile/${VAL} > ~/.zen/tmp/${MOATS}/gchange.json
+                    curl -s ${myDATA}/user/profile/${G1DEST} > ~/.zen/tmp/${MOATS}/gchange.json
 
                 ## Send ॐ★ॐ
                 [[ -s ~/.zen/tmp/${MOATS}/gchange.json ]] \
-                    && ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${VAL} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco \
+                    && ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${G1DEST} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco \
                     && rm ~/.zen/tmp/${MOATS}/gchange.json \
-                    || echo "/${VAL} profile is not existing yet..." >> ~/.zen/tmp/${MOATS}/disco
+                    || echo "/${G1DEST} profile is not existing yet..." >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 
