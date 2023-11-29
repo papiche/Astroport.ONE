@@ -107,6 +107,9 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
+        echo "YOUR TW REFRESH IS BROKEN...  PLEASE EDIT AND SAVE : ${myIPFS}/ipfs/${NOWCHAIN}" > ~/.zen/tmp/result
+        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result
+
         continue
 
     else
@@ -297,8 +300,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         && echo "YOUR ACOUNT WILL BE UNPLUGGED IN 3.2.1 DAYS" > ~/.zen/tmp/alert \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
         && [[ $(( SNOW - SBIRTH )) > $(( 30 * 24 * 60 * 60 ))  ]] \
+        && echo ">>>> PLAYER UNPLUG >>>>> BYE BYE ${PLAYER}" \
         && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
-        && echo ">>>> PLAYER UNPLUGGED >>>>> BYE BYE ${PLAYER}" \
         && continue
     #################################### UNPLUG ACCOUNT
 
