@@ -55,6 +55,8 @@ rm -f ${PENDINGDIR}/${MOATS}.result
 # MAKE PAYMENT
 ${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c '${COMMENT}' -m 2>&1> ${PENDINGDIR}/${MOATS}.result
 
+if [ $? == 0 ]; then
+
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
     ## CHANGE COINS CACHE
