@@ -1,7 +1,7 @@
 #!/bin/bash
 # ROUGHLY CONVERT MOATS IN SECONDS
 MOATS=$1
-[[ ${MOATS} == "" ]] && MOATS=0
+[[ ${MOATS} == "" ]] && echo 0 & exit 1
 ZMOATS=${MOATS::-4}
 
 # Calculate the number of days in the specified month (for simplicity, assuming 30 days per month)

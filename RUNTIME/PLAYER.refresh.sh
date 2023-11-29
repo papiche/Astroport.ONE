@@ -293,7 +293,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         && echo "RSS IS EMPTY" \
         && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
         && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
-        && [[ $(( SNOW - SBIRTH )) >= $(( 27 * 24 * 60 * 60 ))  ]] \
+        && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \
         && echo "YOUR ACOUNT WILL BE UNPLUGGED IN 3.2.1 DAYS" > ~/.zen/tmp/alert \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
         && [[ $(( SNOW - SBIRTH )) > $(( 30 * 24 * 60 * 60 ))  ]] \
