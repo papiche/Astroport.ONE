@@ -285,6 +285,12 @@ do
                 && rm -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me} \
                 && continue
 
+            tiddlywiki --load ${FTW} --output ~/.zen/tmp --render '.' "${liking_me}.Astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+            [[ ! -s ~/.zen/tmp/${liking_me}.Astroport.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) BAD ~/.zen/tmp/${liking_me}.Astroport.json ~~~" && continue
+            FASTRONAUTENS=$(cat ~/.zen/tmp/${liking_me}.Astroport.json | jq -r .[].astronautens)
+            export ASTRONAUTS="$FASTRONAUTENS\n${ASTRONAUTS}"
+            echo "${ASTRONAUTS}" > ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTS
+
             ## CREATING 30 DAYS RSS STREAM
             tiddlywiki --load ${FTW} \
                                 --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${FPLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]]'

@@ -33,7 +33,7 @@ echo "
 
 echo "From: support@g1sms.fr
 To: EMAIL
-Bcc: fred@g1sms.fr
+Bcc: support@qo-op.com
 Subject: SUBJECT
 MESSAGE
 " > ~/.zen/tmp/email.txt

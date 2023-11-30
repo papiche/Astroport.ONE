@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>UPlanet : _SECTOR_ :  TW from UMAPS </title>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/demo.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery-ui.min.css">
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/requestanimationframe.polyfill.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/instascan.min.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/html5-qrcode.min.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery-ui.0.min.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/sphere-hacked.js"></script>
+
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery.earth-3d.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/demo.js"></script>
+
+    <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
+
+
+    <script type="text/javascript">
+    examples['simple_mars'] = function() {
+    $('#sphere').earth3d({
+        texture: 'http://127.0.0.1:8080/ipfs/QmNNSAJyzVSF2m16dReYgmqmiRkKa5HMKvFUgwhbRzTYto/mars1024x1024.jpg', // texture used by G1Wish planet
+        dragElement: $('#locations') // where do we catch the mouse drag
+    });
+    };
+    </script>
+
+   <style>
+    body {
+      padding: 0;
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    .slidecontainer {
+      width: 80%;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .gif-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .gif-container img {
+      margin: 10px;
+      max-width: 200px;
+    }
+
+    .slider {
+      width: 100%;
+      text-align: center;
+    }
+
+    .slider #prev {
+      float: left;
+      font-size: 40px;
+    }
+
+    .slider #next {
+      float: right;
+      font-size: 40px;
+    }
+
+#glow-shadows.earth {
+    background: url(http://127.0.0.1:8080/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/earth-glow-shadows.png);
+}
+
+#glow-shadows.mars {
+    background: url(http://127.0.0.1:8080/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/mars-glow-shadows.png);
+}
+
+.flight {
+    position: absolute;
+    width: 24px;
+    height: 25px;
+    left: 10px;
+    top: 10px;
+    background: url(http://127.0.0.1:8080/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/plain.png);
+    background-size: 100% 100%;
+    margin-left: -12px;
+    margin-top: -12.5px;
+    cursor: pointer;
+}
+
+#yellow {
+      background: black;
+      position: absolute;
+      top: 2%;
+      right: 4%;
+      width: 55%;
+}
+
+#green {
+      background: black;
+      position: absolute;
+      top: 12%;
+      right: 5%;
+      width: 45%;
+}
+
+#ainfo {
+      background: grey;
+      position: absolute;
+      top: 1%;
+      right: 1%;
+}
+  </style>
+  </head>
+
+  <body>
+
+    <div id="demo">
+      <div id="description">
+
+    <div id="showoff">
+       <div id="yellow" >
+        <div id="container">
+        <br><br>
+        <br><br>
+          <canvas id="sphere" width="400" height="400"></canvas>
+          <div id="glow-shadows" class="earth"></div>
+          <canvas id="flights" width="400" height="400"></canvas>
+          <div id="locations"></div>
+        </div>
+    </div>
+
+
+        <p><a target="_SECTOR_" href="http://127.0.0.1:8080/ipns/_SECTORNS_">"_SECTOR_"</a></p>
+
+        <p>
+        <br>
+        <br> 👍 IPFS DATA STORAGE 👍 </p>
+        <p>Powered by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
+        <p>/ <a href="https://opencollective.com/monnaie-libre/projects/stiits">STI</a> / <a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a> /
+
+      </div>
+
+ </div>
+
+</body></html>
+

@@ -18,7 +18,7 @@ INDEX="$1"
 PLAYER="$2"
 [[ ! -s ~/.zen/game/players/${PLAYER}/secret.dunikey ]] && echo "PLAYER ${PLAYER} NOT FOUND - EXIT -" && exit 1
 
-FREE="$3"
+ONE="$3"
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
@@ -39,7 +39,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     SWARMG1PUB=$(cat ~/.zen/game/myswarm_secret.dunikey | grep "pub:" | cut -d ' ' -f 2)
     [[ ! -z ${SWARMG1PUB} ]] \
     && ALL="ALL" \
-    && [[ $FREE == "FREE" ]] && ALL=1 \
+    && [[ $ONE == "ONE" ]] && ALL=1 \
     && ./PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SWARMG1PUB}" "ZEN:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT

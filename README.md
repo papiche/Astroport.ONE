@@ -219,7 +219,7 @@ async function fetchAstroport(myURL) {
     }
 ```
 
-USE "[astro.js](templates/G1PalPay/G1PalPay_fichiers/astro.js)"
+USE "[astro.js](templates/ZenStation/G1PalPay_fichiers/astro.js)"
 ```
     <script src="https://ipfs.asycn.io/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```

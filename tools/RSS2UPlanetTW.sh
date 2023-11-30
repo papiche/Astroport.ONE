@@ -123,8 +123,6 @@ https://vdo.copylaradio.com
 
                 ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message
 
-                ${MY_PATH}/mailjet.sh "support@q1sms.fr" ~/.zen/tmp/${MOATS}/g1message ## DEBUG LOG ANALYSE # TODO REMOVE #
-
             done
 
         ##  TITLE FORK TO BE SOLVED. NEED "SAME EMAILS SIGNATURES"

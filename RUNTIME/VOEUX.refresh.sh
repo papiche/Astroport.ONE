@@ -170,6 +170,7 @@ do
             # Extract Origin G1Voeu Tiddler
             tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
             FWISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
+#            FWISHPROG=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].text')
             [[ $FWISHNS == "null" ]] && echo "NO FWISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
             echo ">>> ${myIPFS}${FWISHNS}"
 
@@ -232,7 +233,8 @@ do
         ##################################
 
 ###########################################################################################
-        ## DATA POST TREATMENT PROGRAM
+    ## N1Program are run through PLAYER G1PalPay RUNTIME
+        ## CAN BE EXTENDED WITH DATA POST TREATMENT PROGRAMS
         ## RUN Z1Program ASTROBOT PROGRAM
         #~ if [[ -s $MY_PATH/../ASTROBOT/Z1${WISHNAME}.sh ]]; then
             #~ echo "........................ Astrobot Z1${WISHNAME}.sh post-treatment found !"
@@ -259,7 +261,7 @@ do
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
         #~ echo "************************************************************"
-        #~ echo "Hop, 0.1 JUNE pour le Voeu $WISHNAME"
+        #~ echo "Hop, 1 ZEN pour le Voeu $WISHNAME"
         #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:${IPNS_VOEUNS} G1Voeu $WISHNAME"\' -m
         #~ echo "************************************************************"
         #~ echo "************************************************************"

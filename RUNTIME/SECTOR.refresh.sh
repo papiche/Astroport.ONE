@@ -162,6 +162,66 @@ for SECTOR in ${SECTORS[@]}; do
     rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS*
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS_${TOTL}
 
+###########################################################################################
+## MAKE SECTOR PLANET WITH ASTONAUTENS LINKS
+###########################################################################################
+
+        ## PREPARE Ŋ1 WORLD MAP
+        echo "var examples = {};
+        examples['locations'] = function() {
+        var locations = {
+        " > ~/.zen/tmp/world.js
+        floop=1
+
+        UMAPTW=($(cat ~/.zen/tmp/swarm/*/UPLANET/_*_*/TW/*/index.html | grep -o "/ipns/[^\"]*" | sed "s/'$//"))
+
+        for TWADD in ${UMAPTW[@]};
+        do
+
+
+            ## ADD ASTRONAUTNS ON SECTOR WORLD MAP
+            echo "${floop}: {
+              alpha: Math.random() * 2 * Math.PI,
+              delta: Math.random() * 2 * Math.PI,
+              name: '"${floop}"',
+              link: '"${TWADD}"'
+            }
+            ," >> ~/.zen/tmp/world.js
+
+            ((floop++))
+        done
+
+        # REMOVE la dernière virgule
+        sed -i '$ d' ~/.zen/tmp/world.js
+        ##################################
+        ## FINISH LOCATIONS
+        echo "
+        };
+           \$('#sphere').earth3d({
+            locationsElement: \$('#locations'),
+            dragElement: \$('#locations'),
+            locations: locations
+          });
+        };
+        " >> ~/.zen/tmp/world.js
+
+        IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
+        echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
+
+        ### APPLY ON APP MODEL
+        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
+        | sed -e "s~_SECTOR_~${SECTOR}~g" \
+                  -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
+                  -e "s~_SECTORNS_~${SECTORNS}~g" \
+                  -e "s~http://127.0.0.1:8080~~g" \
+        > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
+
+        ##################################
+
+###########################################################################################
+
+
+
 ## zday of the week for IPFSNODEID
 rm ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date -d "yesterday" +%A)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A)

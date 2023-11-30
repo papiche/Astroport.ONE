@@ -21,6 +21,8 @@ echo "FOUND : ${PLAYERONE[@]}"
 
 echo "CLEANING UPLANET KEYS ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*"
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*
+echo "CLEANING TW KEYS ~/.zen/tmp/${IPFSNODEID}/TW/"
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
@@ -36,6 +38,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ### UPGRADE PLAYER for myos IPFS API ### DOUBLON WITH VISA.new (TO REMOVE)
     mkdir -p ~/.zen/game/players/${PLAYER}/.ipfs # Prepare PLAYER datastructure
     echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
+    ######## WORK IN PROGRESS #### myos integration
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
@@ -48,14 +51,15 @@ for PLAYER in ${PLAYERONE[@]}; do
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
     # Get PLAYER wallet amount
     COINS=$($MY_PATH/../tools/COINScheck.sh $G1PUB | tail -n 1)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _"
-    #~ ## IF WALLET IS EMPTY : WHAT TODO ?
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
+
+    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ZEN (= 1 €OC) ?
     echo "##################################################################"
 
     echo "##################################################################"
     echo "################### REFRESH ASTRONAUTE TW ###########################"
     echo "##################################################################"
-
 
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
@@ -71,24 +75,21 @@ for PLAYER in ${PLAYERONE[@]}; do
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
         FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
 
-        ##
+        ## IF ASTRONS="" KEY WILL BE DELETED AFTER REFRESH
         ASTRONAUTENS=$ASTRONS && ASTRONS=""
 
     fi
-
 
     [[ ! ${ASTRONAUTENS} ]] && echo "ERROR BAD ${PLAYER} - CONTINUE" && continue
 
     echo ">>> $myIPFS/ipns/${ASTRONAUTENS}"
 
-    ## REFRESH PLAYER IN STATION CACHE
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
+    ## ACTIVATE PLAYER TW IN STATION CACHE
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
     ################### GET LATEST TW
-    echo "Getting latest online TW..."
-    echo "/ipns/${ASTRONAUTENS}"
-    rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html 2>/dev/null
+    echo "GETTING TW..."
+
     ipfs --timeout 480s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
 
     ## PLAYER TW IS ONLINE ?
@@ -97,17 +98,34 @@ for PLAYER in ${PLAYERONE[@]}; do
         NOWCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain)
         LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        echo "ERROR_PLAYERTW_OFFLINE : /ipns/${ASTRONAUTENS}"
-        echo "------------------------------------------------"
-        echo ">> MANUAL CONTROL NEEDED"
+        echo "TW REFRESH FAILED : $myIPFS/ipns/${ASTRONAUTENS}"
+        echo ">> %%% WARNING %%%"
         echo "------------------------------------------------"
         echo "LAST : ${myIPFS}/ipfs/${LASTCHAIN}"
         echo "NOW : ${myIPFS}/ipfs/${NOWCHAIN}"
-        echo ""
-        echo "ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ## SEND AN EMAIL ALERT TO PLAYER
+        echo "TW REFRESH FAILED : $myIPFS/ipns/${ASTRONAUTENS}" > ~/.zen/tmp/result
+        echo "------------------------------------------------" >> ~/.zen/tmp/result
+        echo "" >> ~/.zen/tmp/result
+        echo "NOW CHAIN : ${myIPFS}/ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
+        echo "PREVIOUS : ${myIPFS}/ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
+        echo "" >> ~/.zen/tmp/result
+        echo " %%% WARNING %%%" >> ~/.zen/tmp/result
+        echo "------------------------------------------------" >> ~/.zen/tmp/result
+        echo "PLEASE REPAIR BY SAVING ONLINE" >> ~/.zen/tmp/result
+        echo "OR RUNNING CLI COMMAND : ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
 
-        echo "TW REFRESH HAS FAILED...  USE IT ONLINE : ${myIPFS}/ipfs/${NOWCHAIN}" > ~/.zen/tmp/result
+        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.try 2>/dev/null) || try=3
+
+        [[ $try == 0 ]] \
+            && echo "PLAYER ${PLAYER} UNPLUG" \
+            && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
+            && continue
+
+        try=$((try-1))
+        echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
+        echo " %%% WARNING %%%  ${PLAYER} STATION UNPLUG IN $try DAY(S)." >> ~/.zen/tmp/result
         $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result
 
         continue
@@ -143,6 +161,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
 
+            ######################################
+            #### UPLANET GEO COORD EXTRACTION
             ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
@@ -167,7 +187,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
                 echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
                 echo "UNPLUG PLAYER"
-                ${MY_PATH}/../tools/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "FREE"
+                ${MY_PATH}/../tools/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
                 echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
                 continue
             fi
@@ -180,18 +200,18 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##############################################################
     echo "##################################################################"
 
-    [[ ${COINS} > 100 ]] \
+    [[ ${COINS} >= 2 ]] \
         && echo "## Connect_PLAYER_To_Gchange.sh" \
         && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        || echo "1000 ẑen needed to activate star system"
+        || echo "1 G1 + 10 ẑen needed to activate ★★★★★ system"
 
-    # G1PalPay - 10 ZEN mini -> Check for G1 TX incoming comments #
+    # G1PalPay - 1 G1 + 10 ZEN mini -> Check for G1 TX incoming comments #
     [[ ${COINS} > 1 ]] \
-        && echo "## RUNNING G1PalPay " \
+        && echo "## RUNNING G1PalPay Wallet Monitoring " \
         && ${MY_PATH}/G1PalPay.sh ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" \
-        || echo "> INSUFFICIENT ${COINS} - 10 ẑen minimum"
+        || echo "> ZenCard is not activated ($ZEN)"
 
-    ### CHECK FOR pending (TODO)
+    ### CHECK FOR pending (TODO! In case PAY4SURE have abandonned pendings)
 
 
     ###############
@@ -226,11 +246,15 @@ for PLAYER in ${PLAYERONE[@]}; do
         #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
         #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
-        #~ ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
-        #~ FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
-        #~ echo "FRIENDS qo-op FEEDS : "${FRIENDSFEEDS}
+        ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
+        FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
+        echo "★★★★★ FRIENDS  FEEDS : "${FRIENDSFEEDS}
+        ASTRONAUTES=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTES 2>/dev/null)
+        echo "★★★★★ FRIENDS TW : "${ASTRONAUTES}
+
+        ## Change TW FRIENDFEED ie PLAYER RSS IPNS (must fix TW plugin to work)
         #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
-          #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
+        #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
 
         ## WRITE TIDDLERS IN TW
         tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -263,6 +287,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## COUNT NO CHANGE
         try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange 2>/dev/null) || try=0
         ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange
+        echo "NO CHANGE $try TIMES"
     fi
     ##############################################################
 
@@ -276,6 +301,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ipfs name publish --key=${PLAYER} /ipfs/${TW}
 
     [[ $DIFF ]] && echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
+
     echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     echo "================================================"
@@ -293,7 +319,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     #### PLAYER ACCOUNT CLEANING #########
     ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE + null G1
     [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
-        && echo "RSS IS EMPTY" \
+        && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
+        && [[ $COINS < 2.1 ]] \
         && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
         && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
         && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \
@@ -309,10 +336,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
 
 ######################### REPLACE TW with REDIRECT (reduce 12345 cache size)
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />" \
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />" \
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
     ## Publish on LAT/ON key on 12345 CACHE

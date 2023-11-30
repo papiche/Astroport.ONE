@@ -75,7 +75,6 @@ RUN apt-get update \
         x11-utils \
         xclip \
         xz-utils \
-        yt-dlp \
         zenity \
  && sed -i '/PDF/d' /etc/ImageMagick-6/policy.xml \
  && ln -f -s  /usr/bin/python3 /usr/bin/python \
