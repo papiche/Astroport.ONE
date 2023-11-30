@@ -216,6 +216,9 @@ for SECTOR in ${SECTORS[@]}; do
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
+        ## Make it root App for SECTORNS key
+        mv ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html \
+                ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
         ##################################
 
 ###########################################################################################
