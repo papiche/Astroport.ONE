@@ -173,7 +173,7 @@ for SECTOR in ${SECTORS[@]}; do
         " > ~/.zen/tmp/world.js
         floop=1
 
-        UMAPTW=($(cat ~/.zen/tmp/swarm/*/UPLANET/_*_*/TW/*/index.html | grep -o "/ipns/[^\"]*" | sed "s/'$//"))
+        UMAPTW=($(cat ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/TW/*/index.html | grep -o "/ipns/[^\"]*" | sed "s/'$//" | sort | uniq))
 
         for TWADD in ${UMAPTW[@]};
         do
