@@ -107,7 +107,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-        echo "YOUR TW REFRESH IS BROKEN...  PLEASE EDIT AND SAVE : ${myIPFS}/ipfs/${NOWCHAIN}" > ~/.zen/tmp/result
+        echo "TW REFRESH HAS FAILED...  USE IT ONLINE : ${myIPFS}/ipfs/${NOWCHAIN}" > ~/.zen/tmp/result
         $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result
 
         continue
