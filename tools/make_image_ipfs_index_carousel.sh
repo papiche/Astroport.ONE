@@ -47,7 +47,7 @@ if [[ ! -d $img_dir ]]; then
 ##################
         ## PREPARE LOOP LINK LINE
         ASTRONAUTENS=$(cat ~/.zen/game/players/${PLAYER}/.playerns)
-        [[ $COINS > 0 ]] \
+        (( $(echo "$COINS > 0" | bc -l) )) \
         && echo "<a href=\"javascript:homeAstroportStation('"$myASTROPORT"/?qrcode="$ASTRONAUTENS"', 'page', '3000')\" title=\"$PLAYER ($ZEN ZEN) CHARGEUR DE G1BILLET \">_REPLACE_</a>" > ~/.zen/tmp/carousel/${pub}.insert \
         || echo "_REPLACE_" > ~/.zen/tmp/carousel/${pub}.insert
 
