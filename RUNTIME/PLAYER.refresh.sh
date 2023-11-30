@@ -320,7 +320,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE + null G1
     [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
         && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
-        && [[ $(echo "$COINS < 2.1" | bc -l) ]] \
+        && (( $(echo "$COINS < 2.1" | bc -l) )) \
         && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
         && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
         && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \
