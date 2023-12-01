@@ -239,18 +239,77 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" 
 ####################################
         ## RECORD P4N SPOT DATA
         curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
-        [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
-        && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
 
+        echo "P4N : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
+        [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+            && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json) ]] \
+            && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+            && echo "UPDATED" \
+            || echo "NO CHANGE"
+
+        echo "GET GCHANGE ADS..."
         ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
         ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
         ## CREATE GCHANGE ACCOUNT ??!! DO ANYTHING RELATED TO UMAP
 
 ########################################################
-## ACTIVATE IN CASE OF PROTOCOL BRAKE
-## TODO : BACKUP STATE IN // PRIVATE KEY
-## TODO : SNIFF IPFS DHT MODIFICATIONS ## FAIL2BAN ## DEFCON
+       ## PREPARE Ŋ1 WORLD MAP ##################################################################
+        echo "var examples = {};
+        examples['locations'] = function() {
+        var locations = {
+        " > ~/.zen/tmp/world.js
+        floop=1
+
+        ZONETW=($(cat ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html | grep -o "/ipns/[^\"]*" | sed "s/'$//" | sort | uniq))
+
+        for TWADD in ${ZONETW[@]};
+        do
+
+
+            ## ADD ASTRONAUTNS ON SECTOR WORLD MAP
+            echo "${floop}: {
+              alpha: Math.random() * 2 * Math.PI,
+              delta: Math.random() * 2 * Math.PI,
+              name: '"${floop}"',
+              link: '"${TWADD}"'
+            }
+            ," >> ~/.zen/tmp/world.js
+
+            ((floop++))
+        done
+
+        # REMOVE la dernière virgule
+        sed -i '$ d' ~/.zen/tmp/world.js
+        ##################################
+        ## FINISH LOCATIONS
+        echo "
+        };
+           \$('#sphere').earth3d({
+            locationsElement: \$('#locations'),
+            dragElement: \$('#locations'),
+            locations: locations
+          });
+        };
+        " >> ~/.zen/tmp/world.js
+
+        IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
+        echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
+###########################################################################################
+        ### APPLY ON APP MODEL
+        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
+        | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
+                  -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
+                  -e "s~_ZONENS_~${UMAPNS}~g" \
+                  -e "s~http://127.0.0.1:8080~~g" \
+        > ~/.zen/tmp/${MOATS}/${UMAP}/_index.html
+
+        ## Make it root App for ZONENS key
+        #~ mv ~/.zen/tmp/${MOATS}/${UMAP}/_index.html \
+                #~ ~/.zen/tmp/${MOATS}/${UMAP}/index.html
+        ##################################
+
+###########################################################################################
 ########################################################
 
         ##############################################################

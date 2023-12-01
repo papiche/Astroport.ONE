@@ -165,8 +165,8 @@ for SECTOR in ${SECTORS[@]}; do
 ###########################################################################################
 ## MAKE SECTOR PLANET WITH ASTONAUTENS LINKS
 ###########################################################################################
-
-        ## PREPARE Ŋ1 WORLD MAP
+###########################################################################################
+        ## PREPARE Ŋ1 WORLD MAP ##################################################################
         echo "var examples = {};
         examples['locations'] = function() {
         var locations = {
@@ -207,12 +207,12 @@ for SECTOR in ${SECTORS[@]}; do
 
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
-
+###########################################################################################
         ### APPLY ON APP MODEL
         cat ${MY_PATH}/../templates/UPlanetSector/index.html \
-        | sed -e "s~_SECTOR_~${SECTOR}~g" \
+        | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                  -e "s~_SECTORNS_~${SECTORNS}~g" \
+                  -e "s~_ZONENS_~${SECTORNS}~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
