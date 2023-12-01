@@ -47,7 +47,7 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}
     && exit 0
 echo "%% ${COINS} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
-(( $(echo "$COIN < 2" | bc -l) )) && echo ">>> ${COINS} ONLY : 20 ZEN NEEDED TO CONTINUE" && exit 0
+[[ $(echo "$COINS < 2" | bc -l) -eq 1 ]] && echo ">>> ${COINS} ONLY : 1 G1 + 10 ZEN NEEDED TO CONTINUE" && exit 0
 
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW

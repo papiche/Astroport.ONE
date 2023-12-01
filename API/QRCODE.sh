@@ -888,7 +888,7 @@ else
     ## DOES CURRENT IS RICHER THAN 100 G1
     ## IF GCHANGE ACCOUNT FOUND => SEND PALPE JUNE.
     # SEND MESSAGE TO GCHANGE MESSAGING. SEND 5 ★
-    if (( $(echo "$CURCOINS > 100" | bc -l) )) && [ "$PALPE" != 0 ]; then
+    if [[ $(echo "$CURCOINS > 100" | bc -l) -eq 1 ]] && [ "$PALPE" != 0 ]; then
 
             ## LE COMPTE VISITOR EST VIDE
             echo "## AUTOGRAPH $CURPLAYER SEND $PALPE TO ${QRCODE}"

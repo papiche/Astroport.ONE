@@ -200,13 +200,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##############################################################
     echo "##################################################################"
 
-    (( $(echo "$COIN > 2" | bc -l) )) \
+    [[ $(echo "$COINS > 2" | bc -l) -eq 1 ]]  \
         && echo "## Connect_PLAYER_To_Gchange.sh" \
         && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
         || echo "1 G1 + 10 ẑen needed to activate ★★★★★ system"
 
     # G1PalPay - 1 G1 + 10 ZEN mini -> Check for G1 TX incoming comments #
-    (( $(echo "$COIN > 1" | bc -l) )) \
+    [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]  \
         && echo "## RUNNING G1PalPay Wallet Monitoring " \
         && ${MY_PATH}/G1PalPay.sh ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" \
         || echo "> ZenCard is not activated ($ZEN)"
@@ -320,7 +320,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE + null G1
     [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
         && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
-        && (( $(echo "$COINS < 2.1" | bc -l) )) \
+        && [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]] \
         && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
         && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
         && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \

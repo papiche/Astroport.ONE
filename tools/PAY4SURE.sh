@@ -28,7 +28,7 @@ COINS=$($MY_PATH/COINScheck.sh ${PAYOUTPUB} | tail -n 1)
 ###### TEST INPUT VALUES
 [[ $AMOUNT == "ALL" ]] && AMOUNT=$COINS ## ALL MEAN EMPTY ORIGIN WALLET
 [[ -z $AMOUNT ]] && echo "ERROR : ${PAYOUTPUB}=$COINS MISSING AMOUNT" && exit 1
-(( $( echo "$COINS < $AMOUNT" | bc -l) )) && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
+[[ $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]] && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
 [[ -z $G1PUB ]] && echo "ERROR : ${PAYOUTPUB}=$COINS ($AMOUNT) MISSING DESTINATION" && exit 1
 
 echo "PAYMENT PROCESSOR ID ${MOATS}"
