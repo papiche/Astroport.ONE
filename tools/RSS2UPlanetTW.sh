@@ -109,15 +109,22 @@ while read title; do
 
             for email in "${unique_combined[@]}"; do
 
-echo "Hello\n\n
-A tiddler with same title is existing in ${unique_combined[*]} TW(s) \n\n
-$title\n\n
-Please choose update your TW grabbing it from\n
-* ACTUAL : ${myIPFS}/ipfs/${INSIDETID}\n
-* NEW : ${myIPFS}/ipfs/${NEWTID}\n\n
+echo "Hello
+
+Tiddler with same title is existing in ${unique_combined[*]} TW(s)
+
+$title
+
+* ACTUAL : ${myIPFS}/ipfs/${INSIDETID}
+Email addresses unique in ACTUAL Tiddler : ${IUNIQUE[*]}
+
+* NEW : ${myIPFS}/ipfs/${NEWTID}
+Email addresses unique in NEW Tiddler : ${NUNIQUE[*]}
+
+Make common email addresses : ${COMMON[*]}
 or fork modifying titles
 
-You can discuss about it in room ${MOATS}\n
+Open discussion in room ${MOATS}\n
 https://vdo.copylaradio.com
 " > ~/.zen/tmp/${MOATS}/g1message
 
@@ -130,11 +137,19 @@ https://vdo.copylaradio.com
 
         fi
 
-        ## DIFFERENT
-        NMODIFIED=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
-        IMODIFIED=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .modified)
+        ## CHECK DIFFERENCE
+        DATENEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
+        TEXTNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .text)
+        TAGSNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
+        DATEINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .modified)
+        TEXTINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .text)
+        TAGSINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .tags)
 
-        if [ ${NMODIFIED} -gt ${IMODIFIED} ]; then
+        TIDLEREMAILSNEW=($(echo "$TAGSNEW" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b")) ## MUST BE SAME IN BOTH
+        TIDLEREMAILSINSIDE=($(echo "$TAGSINSIDE" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b")) ## MUST BE SAME IN BOTH
+        # [[ "${TIDLEREMAILSNEW[*]}" == "${TIDLEREMAILSINSIDE[*]}" ]]
+
+        if [ ${DATENEW} -gt ${DATEINSIDE} ]; then
 
             echo "Newer Tiddler version... Updating TW"
 
