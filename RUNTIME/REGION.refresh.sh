@@ -23,29 +23,29 @@ REGIONNODE=$5
 
 [[ ! -d ~/.zen/tmp/${MOATS-undefined}/${UMAP-undefined} ]] && echo "MISSING UMAP CONTEXT" && exit 1
 
-CLAT=$(echo ${LAT} | cut -d '.' -f 1)
-CLON=$(echo ${LON} | cut -d '.' -f 1)
-REGION="_${CLAT}_${CLON}"
+REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
+REGLON=$(echo ${LON} | cut -d '.' -f 1)
+REGION="_${REGLAT}_${REGLON}"
 echo "REGION ${REGION}"
 [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html ]] && echo "ALREADY DONE" && exit 0
 
 [[ "${REGIONNODE}" == "${IPFSNODEID}" ]] && echo ">>> MANAGING REGION PUBLICATION" || exit 0
 
 ##############################################################
-REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${REGION}" "${REGION}")
+REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
 [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
         echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${REGION}" "${REGION}"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"
 ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
 REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
 ##############################################################
 mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html
 
-REGIONMAPGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Umap.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
-REGIONSATGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Usat.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
+REGIONMAPGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Umap.html?southWestLat=${REGLAT}&southWestLon=${REGLON}&deg=1&ipns=${REGIONNS}"
+REGIONSATGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Usat.html?southWestLat=${REGLAT}&southWestLon=${REGLON}&deg=1&ipns=${REGIONNS}"
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
 
@@ -56,12 +56,12 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/
         ipfs --timeout 42s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${REGIONNS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${CLAT}*_${CLON}*/RSS/*.rss.json 2>/dev/null))
+        RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${REGLAT}*_${REGLON}*/RSS/*.rss.json 2>/dev/null))
             for RSS in ${RSSNODE[@]}; do
                 echo ${RSS}
             done
         NL=${#RSSNODE[@]}
-        RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${CLAT}*_${CLON}*/RSS/*.rss.json 2>/dev/null))
+        RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${REGLAT}*_${REGLON}*/RSS/*.rss.json 2>/dev/null))
             for RSS in ${RSSWARM[@]}; do
                 echo ${RSS}
             done

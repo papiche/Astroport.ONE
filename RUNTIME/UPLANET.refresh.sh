@@ -74,8 +74,9 @@ mkdir ~/.zen/tmp/${MOATS}
     echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/"
 
  ## zday of the week for IPFSNODEID
-rm ~/.zen/tmp/${MOATS}/${UMAP}/z$(date -d "yesterday" +%A)
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A)
+rm ~/.zen/tmp/${MOATS}/${UMAP}/z* ## TODO RESTRICT T O z*.html
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
@@ -193,7 +194,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" 
             cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
         done
 
-## COLLECT TW LINKS FOR SWARM
+## COLLECT TW LINKS FROM NODE & SWARM
         cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
         TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         for TWRED in ${TWFILES[@]}; do
@@ -261,17 +262,16 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" 
         " > ~/.zen/tmp/world.js
         floop=1
 
-        ZONETW=($(cat ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html | grep -o "/ipns/[^\"]*" | sed "s/'$//" | sort | uniq))
-
-        for TWADD in ${ZONETW[@]};
-        do
-
+        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
+        for TWRED in ${TWFILES[@]}; do
+            ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
+            TWADD=$(cat ${TWRED}  | grep -o "/ipns/[^\"]*" | sed "s/'$//")
 
             ## ADD ASTRONAUTNS ON SECTOR WORLD MAP
             echo "${floop}: {
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
-              name: '"${floop}"',
+              name: '"${ZMAIL}"',
               link: '"${TWADD}"'
             }
             ," >> ~/.zen/tmp/world.js
@@ -297,10 +297,17 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" 
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
         ### APPLY ON APP MODEL
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
+        SECTOR="_${SECLAT}_${SECLON}"
+        SECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+
         cat ${MY_PATH}/../templates/UPlanetSector/index.html \
         | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
+                  -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                   -e "s~_ZONENS_~${UMAPNS}~g" \
+                  -e "s~_UPZONENS_~${SECTORNS}~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.html
 

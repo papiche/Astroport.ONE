@@ -53,12 +53,12 @@ for SECTOR in ${SECTORS[@]}; do
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
 
     ##############################################################
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${SECTOR}" "${SECTOR}")
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${SECTOR}" "${SECTOR}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
     rm ~/.zen/tmp/${MOATS}/${SECTOR}.priv
@@ -149,12 +149,10 @@ for SECTOR in ${SECTORS[@]}; do
     combinedrss=("${RSSNODE[@]}" "${RSSWARM[@]}")
     RSSALL=($(echo "${combinedrss[@]}" | tr ' ' '\n' | sort -u))
 
+    ################################## TRANSFER SIGNED TIDDLER IN SECTOR TW
     for RSS in ${RSSALL[@]}; do
-
         ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
-
     done
-
     TOTL=$((${NL}+${NS}))
 ##############################################################
 
@@ -209,10 +207,17 @@ for SECTOR in ${SECTORS[@]}; do
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
         ### APPLY ON APP MODEL
+        REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
+        REGLON=$(echo ${LON} | cut -d '.' -f 1)
+        REGION="_${REGLAT}_${REGLON}"
+        REGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+
         cat ${MY_PATH}/../templates/UPlanetSector/index.html \
-        | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
+                | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
+                  -e "s~_UPZONE_~REGION ${REGION}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                   -e "s~_ZONENS_~${SECTORNS}~g" \
+                  -e "s~_UPZONENS_~${REGIONNS}~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
