@@ -248,11 +248,19 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
             && echo "UPDATED" \
             || echo "NO CHANGE"
 
+####################################
         echo "GET GCHANGE ADS..."
         ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
         ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
-        ## CREATE GCHANGE ACCOUNT ??!! DO ANYTHING RELATED TO UMAP
+        ## CREATE INDEX LOADING JSONs ON OPENSTREETMAP
+        cat ${MY_PATH}/../templates/P4N/index.html \
+        | sed -e "s~43.2218~${LAT}~g" \
+                  -e "s~1.3977~${LON}~g" \
+                  -e "s~_SERVICE_~Park4Night~g" \
+                  -e "s~_UMAP_~${UMAP}~g" \
+                  -e "s~http://127.0.0.1:8080~~g" \
+        > ~/.zen/tmp/${MOATS}/${UMAP}/_index.p4n.html
 
 ########################################################
        ## PREPARE Ŋ1 WORLD MAP ##################################################################
