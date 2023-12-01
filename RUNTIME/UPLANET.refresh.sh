@@ -257,7 +257,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         cat ${MY_PATH}/../templates/P4N/index.html \
         | sed -e "s~43.2218~${LAT}~g" \
                   -e "s~1.3977~${LON}~g" \
-                  -e "s~_SERVICE_~Park4Night~g" \
+                  -e "s~_SERVICE_~Commons~g" \
                   -e "s~_UMAP_~${UMAP}~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.p4n.html
