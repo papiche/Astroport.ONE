@@ -26,8 +26,8 @@ echo "SECTOR TW INSERTING" ${RSS}
 cat "${RSS}" | jq -r '.[] | .title' > ~/.zen/tmp/${MOATS}/titles.list
 
 while read title; do
-
-    [[ ${title} == "GettingStarted" || ${title} == "GPS" || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
+    # FILTER Astroport and les than 3 characters title Tiddlers (ex: GPS, ...)
+    [[ ${title} == "GettingStarted" || ${title::3} == ${title} || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
         && echo "FILTERED TITLE ${title}" && continue
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW

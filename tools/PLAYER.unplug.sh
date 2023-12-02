@@ -40,11 +40,13 @@ mkdir -p ~/.zen/tmp/${MOATS}
     [[ ! -z ${SWARMG1PUB} ]] \
     && ALL="ALL" \
     && [[ $ONE == "ONE" ]] && ALL=1 \
+    && echo "ZEN:${ALL} WALLET MOVE" \
     && ./PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SWARMG1PUB}" "ZEN:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
-    for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* | rev | cut -d / -f 1 | rev); do
+    for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
+        echo "removing wish ${vk}"
         ipfs key rm ${vk}
     done
 

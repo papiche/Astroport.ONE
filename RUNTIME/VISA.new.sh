@@ -271,9 +271,16 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
         sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## AstroID ASTROID Update
-        [[ ! ${AstroID} ]] && AstroID="/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i"
-        sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        ## AstroID Tiddler UPGRADE
+        cat ${MY_PATH}/../templates/data/AstroID.json \
+            | sed -e "s~/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i~${ASTROQR}~g" \
+                    -e "s~_PLAYER_~${PLAYER}~g" \
+                    -e "s~_G1PUB_~${G1PUB}~g" \
+                    -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                    -e "s~_HPASS_~${HPASS}~g" \
+                > ~/.zen/tmp/${MOATS}/AstroID.json
+
+        sed -i "s~${AstroID}~${ASTROQR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ## NOT CYPHERED AstroID
 
         sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -367,6 +374,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
                             --import ~/.zen/tmp/${MOATS}/local.api.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/local.gw.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
+                            --import ~/.zen/tmp/${MOATS}/AstroID.json "application/json" \
                             --import ~/.zen/tmp/${MOATS}/MadeInZion.json "application/json" \
     --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_api.json" "application/json" \
     --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
