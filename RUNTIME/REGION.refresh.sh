@@ -44,8 +44,8 @@ REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MO
 mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${REGION}/index.html
 
-REGIONMAPGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Umap.html?southWestLat=${REGLAT}&southWestLon=${REGLON}&deg=1&ipns=${REGIONNS}"
-REGIONSATGEN="/ipfs/QmWRfn9wszPzCmo7VHxc5f6tTJmAnLUrBiygsjjnU99HA2/Usat.html?southWestLat=${REGLAT}&southWestLon=${REGLON}&deg=1&ipns=${REGIONNS}"
+REGIONMAPGEN="${EARTHCID}/Umap.html?southWestLat=${REGLAT}&southWestLon=${REGLON}&deg=1&ipns=${REGIONNS}"
+REGIONSATGEN="${EARTHCID}/Usat.html?southWestLat=${REGLAT}&southWestLon=${REGLON}&deg=1&ipns=${REGIONNS}"
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Map.html
 echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/REGION${REGION}.Sat.html
 

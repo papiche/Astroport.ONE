@@ -24,13 +24,10 @@ mkdir ~/.zen/tmp/${MOATS}
 
     ## SEARCH UMAP (created by PLAYER.refresh.sh)
     MEMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
-    echo "FOUND : ${MEMAPS[@]}" # "_LAT_LON" directories
-
     SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/* | rev | cut -d '/' -f 1 | rev | sort | uniq 2>/dev/null) )
-    echo "FOUND : ${SWARMMAPS[@]}" # "_LAT_LON" directories
-
     combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
     unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+    echo "ACTIVATED UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
 
     for UMAP in ${unique_combined[@]}; do
 
@@ -86,8 +83,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
                 ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
                     echo "UMAP DATA is ${DIFF_SECONDS} seconds "
-                # IF LESS.
-                if [ ${DIFF_SECONDS} -lt 18000 ]; then
+                # IF LESS THAN 5 HOURS
+                if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
                     echo "GETTING YESTERDAY UMAP.refresher"
                     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
                     ## GET UMAP.refresher from PREVIOUS _chain ...
