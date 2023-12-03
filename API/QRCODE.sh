@@ -688,6 +688,7 @@ fi
 
 ################################################################################
 ## QRCODE = IPNS or G1PUB ? Can be ASTRONAUTENS or G1PUB format
+QRCODE="${QRCODE%%:*}" ## TRIM :ZEN :ChK
 ################################################################################
 ## QRCODE IS IPNS FORMAT : CHANGE .current AND MAKE G1BILLETS
 ASTROPATH=$(grep -r $QRCODE  ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
@@ -696,9 +697,9 @@ if [[ ${ASTROPATH} != "" && $APPNAME == "" ]]; then
 
     PLAYER=$(echo ${ASTROPATH} | rev | cut -d '/' -f 3 | rev)
 
-    rm ~/.zen/game/players/.current
-    ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
-    echo "LINKING ${PLAYER} to .current"
+    #~ rm ~/.zen/game/players/.current
+    #~ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+    #~ echo "LINKING ${PLAYER} to .current"
     #### SELECT PARRAIN "G1PalPay"
 
     echo "#>>>>>>>>>>>> # REDIRECT TO CREATE ZENCARD"
