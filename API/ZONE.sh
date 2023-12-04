@@ -58,11 +58,26 @@ LAT=${THIS}
 LON=${WHAT}
 [[ -z $LON ]] && LON=0.00
 
+function makecoord() {
+    local input="$1"
+
+    if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
+        input="${input}0"
+    elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
+        input="${input}.00"
+    fi
+
+    echo "${input}"
+}
+
 # PREPARE HTTP RESPONSE (application/json)
 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
 
 if [[ $DEG == "0.001" ]]; then
+
+        LAT=$(makecoord $LAT)
+        LON=$(makecoord $LON)
 
         G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
@@ -73,7 +88,7 @@ if [[ $DEG == "0.001" ]]; then
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
     rm -Rf ~/.zen/tmp/${MOATS}/
     end=`date +%s`
-    echo "(EXPLORE ZONE $DEG) Operation time was "`expr $end - $start` seconds.
+    echo "(EXPLORE ZONE $DEG)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
     exit 0
 fi
 
