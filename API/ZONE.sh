@@ -58,11 +58,22 @@ LAT=${THIS}
 LON=${WHAT}
 [[ -z $LON ]] && LON=0.00
 
-echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": SCAN}] }'
-
+# PREPARE HTTP RESPONSE (application/json)
 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
+
+if [[ $DEG == "0.001" ]]; then
+    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "ENTER UPLANET" } ] }' >> ~/.zen/tmp/${MOATS}.http
+    cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+    rm -Rf ~/.zen/tmp/${MOATS}/
+    end=`date +%s`
+    echo "(ZONE $DEG) Operation time was "`expr $end - $start` seconds.
+    exit 0
+fi
+
+## ALL OTHER DEG : SEARCH FOR UPLANET TW NUMBERS
 echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http
+
 for i in $(seq 0 9);
 do
     ZLAT=$(echo "$LAT + $DEG * $i" | bc -l)
@@ -71,9 +82,14 @@ do
             ZLON=$(echo "$LON + $DEG * $j" | bc -l)
       #      [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
             ## SEARCH HOW MUCH TW
-            twnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-            [[ $twnum -gt 0 ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": '${twnum}'}
-            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* = $twnum"
+            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            totnum=$(( swarmnum + nodenum ))
+
+            [[ $totnum -gt 9 ]] && totnum="X"
+
+            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'" }
+            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'" }'
 
         done
 done
@@ -83,19 +99,6 @@ sed -i '$ d' ~/.zen/tmp/${MOATS}.http ## REMOVE LAST ','
 echo ']}'  >> ~/.zen/tmp/${MOATS}.http
 
 cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
-
-# PRODUCE A JSON COUNTING PLAYERS TW IN EACH UMAP
-# UPLANET OCCUPANCY LIST
-#~ {
-  #~ "gridNumbers": [
-    #~ {"lat": 0.05, "lon": 0.05, "number": 1},
-    #~ {"lat": 0.05, "lon": 0.15, "number": 2},
-    #~ {"lat": 0.15, "lon": 0.05, "number": 3},
-    #~ {"lat": 0.15, "lon": 0.15, "number": 4},
-    #~ // Add more grid cells with their corresponding latitude, longitude, and number
-  #~ ]
-#~ }
 
 rm -Rf ~/.zen/tmp/${MOATS}/
 end=`date +%s`

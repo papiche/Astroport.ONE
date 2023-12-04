@@ -43,7 +43,7 @@ SECTORS=($(echo "${MYSECTORS[@]}" | tr ' ' '\n' | sort -u))
 
 [[ ${SECTORS[@]} == "" ]] && echo "> NO SECTOR FOUND" && exit 0
 #########################################################""
-echo ${SECTORS[@]}
+echo "ACTIVATED SECTORS : ${SECTORS[@]}"
 
 for SECTOR in ${SECTORS[@]}; do
 
@@ -84,11 +84,13 @@ for SECTOR in ${SECTORS[@]}; do
     ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
     DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
     echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old" # 5 Heures
-    if [ ${DIFF_SECONDS} -lt 18000 ]; then
-                    echo "less than 5 hours..."
+    if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
                     echo "GETTING YESTERDAY SECTOR.refresher"
+                    YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/CHAIN/SECTOR.refresher | head -n 1)
                     ## GET UMAP.refresher from PREVIOUS _chain ...
-                    ipfs cat /ipfs/${ZCHAIN}/CHAIN/SECTOR.refresher > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher
+                    echo "TODAY : $(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher | head -n 1)"
+                    echo "YESTERDAY : ${YESTERDAY}"
+                    continue
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## CONTROL ACTINGNODE SWAPPING
@@ -109,7 +111,7 @@ for SECTOR in ${SECTORS[@]}; do
     [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
     ## IF NOT UPDATED FOR TOO LONG
-    [ ${DIFF_SECONDS} -gt 86400 ] \
+    [ ${DIFF_SECONDS} -gt $(( 24 * 60 * 60 )) ] \
         && echo "More than 24H update" \
         && ACTINGNODE=${STRAPS[0]}
 

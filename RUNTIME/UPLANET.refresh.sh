@@ -82,13 +82,16 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
                 MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
                 ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-                    echo "UMAP DATA is ${DIFF_SECONDS} seconds "
+                echo "UMAP DATA is ${DIFF_SECONDS} seconds "
+
                 # IF LESS THAN 5 HOURS
                 if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
                     echo "GETTING YESTERDAY UMAP.refresher"
-                    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+                    YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresher | head -n 1)
                     ## GET UMAP.refresher from PREVIOUS _chain ...
-                    ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresher > ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher
+                    echo "TODAY : $(cat ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher | head -n 1)"
+                    echo "YESTERDAY : ${YESTERDAY}"
+                    continue
                 fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -160,10 +163,10 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
 
-## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${CLAT}_${CLON}
-    CLAT=$(echo ${LAT} | cut -d '.' -f 1)
-    CLON=$(echo ${LON} | cut -d '.' -f 1)
-    REGION="_${CLAT}_${CLON}"
+## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${RLAT}_${RLON}
+    RLAT=$(echo ${LAT} | cut -d '.' -f 1)
+    RLON=$(echo ${LON} | cut -d '.' -f 1)
+    REGION="_${RLAT}_${RLON}"
     echo "REGION ${REGION}"
     ##############################################################
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
@@ -176,13 +179,13 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ipfs key rm ${REGIONG1PUB}
     ##############################################################
-    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}/index.html
+    mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
 
-    REGIONMAPGEN="${EARTHCID}/map_render.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
-    REGIONSATGEN="${EARTHCID}/sat_render.html?southWestLat=${CLAT}&southWestLon=${CLON}&deg=1&ipns=${REGIONNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${CLAT}_${CLON}.REGION.Sat.html
+    REGIONMAPGEN="${EARTHCID}/map_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
+    REGIONSATGEN="${EARTHCID}/sat_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Map.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Sat.html
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
         cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
