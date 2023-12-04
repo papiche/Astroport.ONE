@@ -63,11 +63,17 @@ echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
 
 if [[ $DEG == "0.001" ]]; then
-    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "ENTER UPLANET" } ] }' >> ~/.zen/tmp/${MOATS}.http
+
+        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
+
+    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "UMAP_'${LAT}'_'${LON}'", "ipns": "'${UMAPNS}'" } ] }' >> ~/.zen/tmp/${MOATS}.http
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
     rm -Rf ~/.zen/tmp/${MOATS}/
     end=`date +%s`
-    echo "(ZONE $DEG) Operation time was "`expr $end - $start` seconds.
+    echo "(EXPLORE ZONE $DEG) Operation time was "`expr $end - $start` seconds.
     exit 0
 fi
 
@@ -88,8 +94,8 @@ do
 
             [[ $totnum -gt 9 ]] && totnum="X"
 
-            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'" }
-            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'" }'
+            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "" }
+            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "" }'
 
         done
 done
