@@ -173,17 +173,20 @@ for SECTOR in ${SECTORS[@]}; do
         " > ~/.zen/tmp/world.js
         floop=1
 
-        UMAPTW=($(cat ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/TW/*/index.html | grep -o "/ipns/[^\"]*" | sed "s/'$//" | sort | uniq))
+        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+        TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
 
-        for TWADD in ${UMAPTW[@]};
-        do
-
+        for TWRED in ${TWFILES[@]}; do
+            ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
+            TWADD=$(cat ${TWRED}  | grep -o "/ipns/[^\"]*" | sed "s/'$//")
+            [[ -z ${TWADD} ]] && TWADD=$(cat ${TWRED}  | grep -o "/ipfs/[^\"]*" | sed "s/'$//")
 
             ## ADD ASTRONAUTNS ON SECTOR WORLD MAP
             echo "${floop}: {
               alpha: Math.random() * 2 * Math.PI,
               delta: Math.random() * 2 * Math.PI,
-              name: '"${floop}"',
+              name: '"${ZMAIL}"',
               link: '"${TWADD}"'
             }
             ," >> ~/.zen/tmp/world.js
