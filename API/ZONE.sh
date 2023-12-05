@@ -74,7 +74,7 @@ if [[ $DEG == "0.001" ]]; then
 
     ## TODO : REDIRECT TO THE STATION WITH THE MORE OF THIS UMAP ;)
 
-    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "UMAP_'${LAT}'_'${LON}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}'" } ] }' >> ~/.zen/tmp/${MOATS}.http
+    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "UMAP_'${LAT}'_'${LON}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
     rm -Rf ~/.zen/tmp/${MOATS}/
     end=`date +%s`
