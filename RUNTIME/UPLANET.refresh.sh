@@ -306,7 +306,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         " >> ~/.zen/tmp/world.js
 
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
-        echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
+        echo "JSON TW WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
         ### APPLY ON APP MODEL
         SECLAT="${LAT::-1}"

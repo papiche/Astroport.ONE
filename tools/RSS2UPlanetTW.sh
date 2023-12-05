@@ -23,9 +23,12 @@ INDEX=$4
 echo "SECTOR TW INSERTING" ${RSS}
 ## NEW RULE. ONLY 2 SIGNATURES TIDDLERS COMES UP
 
-cat "${RSS}" | jq -r '.[] | .title' > ~/.zen/tmp/${MOATS}/titles.list
+cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/titles.list
 
 while read title; do
+
+    [[ ${floop} -gt 3 ]] && echo "Considering older Tiddlers are similaR... BREAK" && break
+
     # FILTER Astroport and les than 3 characters title Tiddlers (ex: GPS, ...)
     [[ ${title} == "GettingStarted" || ${title::3} == ${title} || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
         && echo "FILTERED TITLE ${title}" && continue
@@ -59,7 +62,12 @@ while read title; do
         cat ~/.zen/tmp/${MOATS}/TMP.json | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
-        [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]] && echo "... Tiddlers are similar ..." && continue
+        if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
+            echo "... Tiddlers are similar ..."
+            ((floop++))
+            continue
+        fi
+        floop=1
 
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
