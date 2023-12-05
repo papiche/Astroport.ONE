@@ -58,18 +58,6 @@ LAT=${THIS}
 LON=${WHAT}
 [[ -z $LON ]] && LON=0.00
 
-function makecoord() {
-    local input="$1"
-
-    if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
-        input="${input}0"
-    elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
-        input="${input}.00"
-    fi
-
-    echo "${input}"
-}
-
 # PREPARE HTTP RESPONSE (application/json)
 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http

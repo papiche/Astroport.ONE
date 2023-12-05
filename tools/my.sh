@@ -412,6 +412,18 @@ myAstroTube() {
     [ -n "$myAstroTube" ] && echo "$myAstroTube"
 }
 
+function makecoord() {
+    local input="$1"
+
+    if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
+        input="${input}0"
+    elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
+        input="${input}.00"
+    fi
+
+    echo "${input}"
+}
+
 IPFSNODEID="$(myIpfsPeerId)"
 [[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"

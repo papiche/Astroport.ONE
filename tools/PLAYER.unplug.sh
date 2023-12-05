@@ -34,14 +34,21 @@ mkdir -p ~/.zen/tmp/${MOATS}
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
 
+    ## COULD TRANSERT TO my_swarm G1PUB (IPFSNODEID/MACHINE RELATED KEY)
+    #~ SWARMG1PUB=$(cat ~/.zen/game/myswarm_secret.dunikey | grep "pub:" | cut -d ' ' -f 2)
+    ########## SEND COINS TO UMAPG1PUB - ẐEN VIRTUAL BANK - EVERY 800 METERS - ;)
+        LAT=$(makecoord $LAT)
+        LON=$(makecoord $LON)
+        UMAPG1PUB=$(${MY_PATH}/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+        [[ ! ${UMAPG1PUB} ]] && echo "ERROR generating UMAP WALLET ${UPLANETNAME}${LAT}/${UPLANETNAME}${LON}" && exit 1
+        COINS=$($MY_PATH/../tools/COINScheck.sh ${UMAPG1PUB} | tail -n 1)
+        echo "TRANSFERING TO UMAP (${COINS} G1) WALLET : ${UMAPG1PUB}"
 
-    ## TRANSERT PLAYER WALLET TO my_swarm G1PUB (IPFSNODEID/MACHINE RELATED KEY)
-    SWARMG1PUB=$(cat ~/.zen/game/myswarm_secret.dunikey | grep "pub:" | cut -d ' ' -f 2)
-    [[ ! -z ${SWARMG1PUB} ]] \
+    [[ ! -z ${UMAPG1PUB} ]] \
     && ALL="ALL" \
     && [[ $ONE == "ONE" ]] && ALL=1 \
     && echo "ZEN:${ALL} WALLET MOVE" \
-    && ./PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SWARMG1PUB}" "ZEN:${ALL}"
+    && ./PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UMAPG1PUB}" "ZEN:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
