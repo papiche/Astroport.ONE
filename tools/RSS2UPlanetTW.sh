@@ -27,7 +27,7 @@ cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/
 
 while read title; do
 
-    [[ ${floop} -gt 3 ]] && echo "Considering older Tiddlers are similaR... BREAK" && break
+    [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK" && break
 
     # FILTER Astroport and les than 3 characters title Tiddlers (ex: GPS, ...)
     [[ ${title} == "GettingStarted" || ${title::3} == ${title} || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
