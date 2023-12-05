@@ -212,8 +212,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
 
 ## ¤$£€
-        ## # GET SCREENSHOT UMAP SECTOR & REGION JPG
-        ## PROBLEM ON LIBRA ... MORE TEST NEEDED ... TODO
+        ## TODO # GET SCREENSHOT UMAP SECTOR & REGION JPG
+        ## PROBLEM ON LIBRA ... MORE TEST NEEDED ...
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg ]] \
             && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg 900 900 2>/dev/null \
             && [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg ]] && killall chrome
@@ -221,9 +221,9 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] \
             && python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg 900 900 2>/dev/null \
             && [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]] && killall chrome
+#### NOT WORKING !!!
 
-
-## GEOLINKING SURROUNDING UMAPS  ###############################
+## GEOLINKING CALCULATE SURROUNDING UMAPS  ###############################
     if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
 
         ${MY_PATH}/../tools/Umap_geolinks.sh "${LAT}" "${LON}" "${UMAP}" "${MOATS}" "${UMAPNS}"
@@ -270,7 +270,10 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         " > ~/.zen/tmp/world.js
         floop=1
 
-        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
+        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
+        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}*_${LON}*/TW/*/index.html 2>/dev/null))
+        TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
+
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
             TWADD=$(cat ${TWRED}  | grep -o "/ipns/[^\"]*" | sed "s/'$//")

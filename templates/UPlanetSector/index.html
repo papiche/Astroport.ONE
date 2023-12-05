@@ -99,8 +99,8 @@
 #yellow {
       background: black;
       position: absolute;
-      top: 2%;
-      right: 4%;
+      top: 5%;
+      right: 5%;
       width: 55%;
 }
 
@@ -131,47 +131,40 @@
     padding: 5px;
     box-sizing: border-box;
 }
+
   </style>
   </head>
 
-  <body>
-        <button style="position: fixed; top: 10px; left: 10px;" onclick="document.getElementById('console').style.visibility = (document.getElementById('console').style.visibility === 'visible' ? 'hidden' : 'visible');">(-/+)</button>
+ <body>
+    <button style="position: fixed; top: 10px; left: 10px;" onclick="document.getElementById('console').style.visibility = (document.getElementById('console').style.visibility === 'visible' ? 'hidden' : 'visible');">(-/+)</button>
     <div id="demo">
-      <div id="description">
-
-    <div id="showoff">
-       <div id="yellow" >
-        <div id="container">
-        <br><br>
-        <br><br>
-          <canvas id="sphere" width="400" height="400"></canvas>
-          <div id="glow-shadows" class="earth"></div>
-          <canvas id="flights" width="400" height="400"></canvas>
-          <div id="locations"></div>
+        <div id="description">
+            <div id="showoff">
+                <div id="yellow">
+                    <div id="container">
+                        <br><br><br><br>
+                        <canvas id="sphere" width="400" height="400"></canvas>
+                        <div id="glow-shadows" class="earth"></div>
+                        <canvas id="flights" width="400" height="400"></canvas>
+                        <div id="locations"></div>
+                    </div>
+                </div>
+                <br>
+                <p><a href="http://127.0.0.1:8080/ipns/_UPZONENS_">"_UPZONE_"</a></p>
+                <p><a href="http://127.0.0.1:8080/ipns/_ZONENS_">"_ZONE_"</a></p>
+                <p>👍 UPlanet Ditributed Ẑen Banks</p>
+                <br>
+                <p>powered by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
+                <p>designed by <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a></p>
+                <p>juiced by <a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a></p>
+            </div>
         </div>
-
     </div>
-
-        <br>
-        <p><a href="http://127.0.0.1:8080/ipns/_UPZONENS_">"_UPZONE_"</a></p>
-        <p><a href="http://127.0.0.1:8080/ipns/_ZONENS_">"_ZONE_"</a></p>
-
-        <p>
-            👍 UPlanet Ditributed Data Storage
-        </p>
-        <br>
-        <p> 👍 powered by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a>
-        <br> designed by <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a>
-        <br> juiced by <a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a>
-        </p>
-
-      </div>
-
- </div>
-
-    <div id="console"><a href="_index.p4n.html" target="aframe">O</a> ___ <a href="/ipns/_ZONENS_/TW" target="aframe">ZONE TW _ZONE_ (@@@) </a> ___ <button onclick="document.getElementById('console').style.visibility = 'hidden';"> X </button>
+    <div id="console">
+        <a href="_index.p4n.html" target="aframe">O</a> ___ <a href="/ipns/_ZONENS_/TW" target="aframe">ZONE TW _ZONE_ (@@@) </a> ___
+        <button onclick="document.getElementById('console').style.visibility = 'hidden';"> X </button>
         <iframe name="aframe" id="aframe" src="_index.p4n.html" width="100%" height="100%"></iframe>
     </div>
-
-</body></html>
+</body>
+</html>
 
