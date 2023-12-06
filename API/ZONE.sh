@@ -92,7 +92,7 @@ do
         for j in $(seq 0 9); do
             ZLON=$(echo "$LON + $DEG * $j" | bc -l)
       #      [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
-            ## SEARCH HOW MUCH TW
+            echo " ## SEARCH _${ZLAT}*_${ZLON}*"
             swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
             nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
             totnum=$(( swarmnum + nodenum ))
