@@ -128,7 +128,7 @@ a:active{
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
 
     <h1><a href="/">U</a><span>Planet</span>
-    <br><span><a id="satLink" href="#" title="Sat">&nbsp;*&nbsp;</a>(<a href="https://ipfs.copylaradio.com/ipns/copylaradio.com">qo-op</a>)<a id="mapLink" href="#" title="Map">&nbsp;*&nbsp;</a></span></h1>
+    <br><span><a id="satLink" href="#" title="Sat">&nbsp;*&nbsp;</a>(<a href="https://qo-op.com">qo-op</a>)<a id="mapLink" href="#" title="Map">&nbsp;*&nbsp;</a></span></h1>
 
         <span>Email : </span><input name=uplanet value=''></br>
 
@@ -196,9 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var latMAP = (parseFloat(latElement.value) - 0.05).toFixed(2); // Subtract 0.05 from latElement
     var lonMAP = (parseFloat(lonElement.value) - 0.05).toFixed(2); // Subtract 0.05 from lonElement
 
-    const satURL = `https://ipfs.copylaradio.com/ipns/copylaradio.com/sat_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
+    const satURL = `https://qo-op.com/sat_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
     document.getElementById("satLink").href = satURL;
-    const mapURL = `https://ipfs.copylaradio.com/ipns/copylaradio.com/map_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
+    const mapURL = `https://qo-op.com/map_render.html?southWestLat=${latMAP}&southWestLon=${lonMAP}&deg=0.1`;
     document.getElementById("mapLink").href = mapURL;
 
     document.getElementById("LAT").innerHTML = latElement.value ;

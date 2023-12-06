@@ -94,7 +94,7 @@ while true; do
         && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## UPLANET HOME LINK REPLACEMENT
-    sed -i -e "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+    sed -i -e "s~https://qo-op.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
@@ -129,12 +129,12 @@ while true; do
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
             sed "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" | \
-            sed  "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" | \
+            sed  "s~https://qo-op.com~${myUPLANET}~g" | \
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         else
         mySalt | \
-            sed "s~http://127.0.0.1:12345~http://${myASTROPORT}:${PORT}~g" | \
-            sed  "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" | \
+            sed "s~http://127.0.0.1:12345~${myASTROPORT}:${PORT}~g" | \
+            sed  "s~https://qo-op.com~${myUPLANET}~g" | \
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         fi
 
