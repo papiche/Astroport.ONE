@@ -133,7 +133,7 @@ while true; do
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         else
         mySalt | \
-            sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
+            sed "s~http://127.0.0.1:12345~http://${myASTROPORT}:${PORT}~g" | \
             sed  "s~https://ipfs.copylaradio.com/ipns/copylaradio.com~${myUPLANET}~g" | \
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         fi

@@ -121,7 +121,7 @@ fi
 
 if [[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     cat /etc/hosts > /tmp/hosts
-    echo "127.0.1.1    $(hostname) $(hostname).local astroport astroport.local" >> /tmp/hosts
+    echo "127.0.1.1    $(hostname) $(hostname).local astroport.$(hostname).local ipfs.$(hostname).local astroport.local" >> /tmp/hosts
     sudo cp /tmp/hosts /etc/hosts && rm /tmp/hosts
 fi
 
