@@ -231,10 +231,11 @@ for SECTOR in ${SECTORS[@]}; do
 ###########################################################################################
 
 
+## zday marking
+rm ~/.zen/tmp/${MOATS}/${SECTOR}/z*
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
-## zday of the week for IPFSNODEID
-rm ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date -d "yesterday" +%A)
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${IPFSNODEID}'\" />" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A)
 
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
