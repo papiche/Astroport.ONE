@@ -119,17 +119,9 @@ a {
         </header>
         <form method='get' action='http://127.0.0.1:33101' target='aframe'>
             <input type='hidden' name='montant' value='0' >
-            <input type='text' name='type' value='@' >
-<!--
-            <label for='type'>Type :</label>
-            <select name='type'>
-                <option value=''>G1BILLET+ ( x 6 )</option>
-                <option value='jeu' selected>AstroID</option>
-                <option value='xastro'>AstroID+TW</option>
-            </select>
--->
+            <input type='text' name='type' value='UPlanet' >
                 <input type='hidden' name='dice' value='6' >&nbsp;&nbsp;&nbsp;&nbsp;
-            <button type='submit'>you want ZenCard</button>
+            <button type='submit'>create ZenCard</button>
         </form>
     </div>
 </div>
@@ -141,22 +133,22 @@ a {
                 <h1><div id="countdown">___</div></h1>
                 <input type="hidden" id="PASS" value="PASS"/>
                 <p><input type="text" id="g1pub" value="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"/></p>
-                <p><b>G1PUB</b>  destinataire</p>
+                <p><b>ZenCard</b>  destinataire</p>
 
                 <div id="appname">
-                  <input type="radio" id="r0" name="appname" value="login"> LOGIN
+                  <input type="radio" id="r0" name="appname" value="login" checked="checked"> LOGIN
                   <input type="radio" id="r6" name="appname" value="logout"> LOGOUT
                   <input type="radio" id="r1" name="appname" value="friend"> (★★★★★)
                   <input type="radio" id="r2" name="appname" value="history"> Historique
                   <input type="radio" id="r3" name="appname" value="pay"> Virement
                   <input type="radio" id="r4" name="appname" value="balance"> Balance
-                  <input type="radio" id="r5" name="appname" value="flipper" checked="checked"> ZEN
+                  <input type="radio" id="r5" name="appname" value="flipper"> Flipper
                 </div>
-                <p><b></b>"AstroID" operations</p>
+                <p><b></b>select operation</p>
 
                 <strong><div id="resu"></div></strong>
 
-                <p> <strong>Scan QRCODE</strong> </p>
+                <p> <strong>Scan "AstroID" QRCODE</strong> </p>
 
         </div>
     </div>
