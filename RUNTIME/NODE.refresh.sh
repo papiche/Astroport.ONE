@@ -15,6 +15,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 echo "## RUNNING NODE.refresh"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
@@ -31,8 +33,12 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
 
     ## COPY COINS VALUE OF THE DAY
+    rm -Rf ~/.zen/tmp/${IPFSNODEID}/COINS/
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/COINS/
     cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
+
+    ## COPY 20h12.log
+    cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/
 
     ## COPY FRIENDS
     PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
@@ -46,6 +52,11 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     done
 
     cp ~/.zen/GPS ~/.zen/tmp/${IPFSNODEID}/
+
+    ## REFRESH TIMESTAMPING
+    echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
+
     echo "############################################ MY MAP "
     ls ~/.zen/tmp/${IPFSNODEID}/
     echo "############################################"

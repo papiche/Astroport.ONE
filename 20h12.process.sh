@@ -48,11 +48,11 @@ espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 ~/.zen/Astroport.ONE/RUNTIME/PLAYER.refresh.sh
 
-espeak "REFRESHING NODE" > /dev/null 2>&1
-~/.zen/Astroport.ONE/RUNTIME/NODE.refresh.sh
-
 espeak "REFRESHING UPLANET" > /dev/null 2>&1
 ~/.zen/Astroport.ONE/RUNTIME/UPLANET.refresh.sh
+
+espeak "REFRESHING NODE" > /dev/null 2>&1
+~/.zen/Astroport.ONE/RUNTIME/NODE.refresh.sh
 
 
     ## if [[ ! $isLAN ]]; then

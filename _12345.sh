@@ -175,13 +175,15 @@ while true; do
                     # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LASTEST
                 fi
 
-                ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats)
+                ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats 2>/dev/null)
                 MOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${MOATS})
                 ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
                 if [ ${DIFF_SECONDS} -gt $(( 3 * 24 * 60 * 60 )) ]; then
                     echo "STATION IS STUCK... FOR TOO LONG... REMOVING  FROM SWARM"
                     rm -Rf ~/.zen/tmp/swarm/${znod}/
+                else
+                    echo "${DIFF_SECONDS} seconds old"
                 fi
 
             done
