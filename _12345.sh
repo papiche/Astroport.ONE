@@ -134,7 +134,7 @@ while true; do
             if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null) == "" ]]; then
                 rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
                 mv ~/.zen/tmp/swarm/_${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
-                 echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
+                echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
             else
                 echo "TimeStamp unchanged : $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats)"
                 rm -Rf ~/.zen/tmp/swarm/_${ipfsnodeid}/
@@ -174,6 +174,16 @@ while true; do
                     echo "____________ KNOW ${znod}"
                     # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LASTEST
                 fi
+
+                ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats)
+                MOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${MOATS})
+                ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
+                DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
+                if [ ${DIFF_SECONDS} -gt $(( 3 * 24 * 60 * 60 )) ]; then
+                    echo "STATION IS STUCK... FOR TOO LONG... REMOVING  FROM SWARM"
+                    rm -Rf ~/.zen/tmp/swarm/${znod}/
+                fi
+
             done
             echo "============================================"
 
