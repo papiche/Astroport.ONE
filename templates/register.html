@@ -88,6 +88,12 @@ a:focus{
 a:active{
   color:red;
 }
+input[name="uplanet"] {
+  padding: 10px; /* Adjust the padding as needed */
+  font-size: 18px; /* Adjust the font size as needed */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  margin: 10px; /* Adjust the margin as needed */
+}
 
     </style>
     <!-- Astro API JS LIB -->
@@ -125,12 +131,14 @@ a:active{
 <main>
 
 <center>
+    <br><br>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
 
     <h1><a href="/">U</a><span>Planet</span>
     <br><span><a id="satLink" href="#" title="Sat">&nbsp;*&nbsp;</a>(<a href="https://qo-op.com">qo-op</a>)<a id="mapLink" href="#" title="Map">&nbsp;*&nbsp;</a></span></h1>
 
-        <span>Email : </span><input name=uplanet value=''></br>
+        <span>Email</span></br>
+        <input name=uplanet value=''></br>
 
 <br> [<span id='LAT'></span>]-[<span id='LON'></span>] <span>registration</span><br>
 
