@@ -691,9 +691,15 @@ fi
 ZCHK="${QRCODE#*:}" # ChK or ZEN
 QRCODE="${QRCODE%%:*}" ## TRIM :ZEN :ChK
 ################################################################################
-## QRCODE IS IPNS FORMAT :
 ################################################################################
-## TEST G1 TYPE ( should convert to ipfs )
+## QRCODE IS IPNS FORMAT "12D3Koo"  ( try ipfs_to_g1 )
+IPNS2G1=$(${MY_PATH}/../tools/ipfs_to_g1.py ${QRCODE} 2>/dev/null)
+[[ ${IPNS2G1} != "" ]] \
+        && echo "${PORT} QRCODE IS IPNS ADDRESS : ${myIPFS}/ipns/${QRCODE}" \
+        && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${myIPFS}/ipns/${QRCODE}'\" />Loading from IPFS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && exit 0
+
+## TEST G1 TYPE  ( try g1_to_ipfs )
 ASTROTOIPNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPNS} ]] \
         && echo "${PORT} INVALID QRCODE : ${QRCODE}" \
