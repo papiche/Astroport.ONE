@@ -11,6 +11,8 @@ MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 
 ! ipfs swarm peers >/dev/null 2>&1 && echo "Lancez 'ipfs daemon' SVP" && exit 1
 ################################################################################
+[[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+
 mkdir -p ~/.zen/tmp/${MOATS}
 
 SALT="$1"

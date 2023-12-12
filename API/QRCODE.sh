@@ -128,7 +128,7 @@ fi
 ################################################################################
 if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
    PASS=$(urldecode ${THIS})
-   echo "## THIS IS A PGP ENCRYPTED QRCODE LOOK - PASS ${PASS} - $APPNAME"
+   echo "## THIS IS A PGP ENCRYPTED QRCODE ZENCARD - PASS ${PASS} - $APPNAME"
 
     if [[ ${PASS} != "" ]]; then
         echo "WHAT=${WHAT} VAL=${VAL}"
@@ -159,89 +159,29 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ${MY_PATH}/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
             cat ~/.zen/tmp/${G1PUB}.curcoin
             CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | cut -d '.' -f 1) ## ROUNDED G1 COIN
-            echo "WALLET CONTAINS : $CURCOINS G1"
+            CURZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+            echo "SOURCE WALLET : $CURCOINS G1 / $CURZEN ZEN"
 
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
             G1DEST=$(echo "$VAL" | cut -d ':' -f 1) ## G1PUB:CHK format
             CHK=$(echo "$VAL" | cut -d ':' -f 2) ## G1 CHECKSUM or ZEN
-            if [[ ${CHK::3} != "ZEN" ]]; then
-                echo "INVALID ZENCARD"
-                echo "<br>INVALID ZENCARD" >> ~/.zen/tmp/${MOATS}/disco
-                (
-                cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-                echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
-                ) &
-                exit 0
-            fi
+            [[ ${CHK::3} == "ZEN" ]] && echo "ZENCARD $VAL"
 
             ## GET DESTINATION ACCOUNT AMOUNT
             DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${G1DEST} | tail -n 1)
+            DESTMZEN=$(echo "($DESTM - 1) * 10" | bc | cut -d '.' -f 1)
+            echo "DEST WALLET : $DESTM G1 / $DESTMZEN ZEN"
 
             if [[ ${APPNAME} == "pay" ]]; then
 
                  if [[ ${WHAT} != "" && ${G1DEST} != "" && ${CURCOINS} != "null" && ${CURCOINS} != "" &&  ${CURCOINS} > ${WHAT} ]]; then
-                    ## COMMAND A PAYMENT (less than 999.99)
+                    ## COMMAND PAYMENT MAX : 999.99
                         if [[ ${WHAT} =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
 
-                            ## CREATE game pending TX
-                            mkdir -p $HOME/.zen/game/pending/${G1PUB}/
-                            PENDING="$HOME/.zen/game/pending/${G1PUB}/${MOATS}_${G1DEST}+${WHAT}.TX"
-                            echo "START" > ${PENDING}
-                            ######################## ~/.zen/game/pending/*/*_G1WHO+*.TX
-                            if [[ ! -f ~/.zen/game/pending/*/*_${G1DEST}+*.TX ]]; then
-                                # MAKE PAYMENT
-                                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${G1DEST} -c 'ASTROID:${MOATS}' -m"
-                                ${MY_PATH}/../tools/timeout.sh -t 5 \
-                                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key pay -a ${WHAT} -p ${G1DEST} -c "ASTROID:${MOATS}" -m 2>&1 >> ~/.zen/tmp/${MOATS}/disco
-
-                                if [ $? == 0 ]; then
-                                    echo "SENT" > ${PENDING} ## _12345.sh run MONITOR checking CHAIN REJECTION
-                                    ## CHANGE COINS CACHE
-                                    COINSFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
-                                    DESTFILE="$HOME/.zen/tmp/coucou/${G1DEST}.COINS"
-
-                                   CUR=$(cat "${COINSFILE}")
-                                    if [[ ! -z "$CUR" && "$CUR" != "null" ]]; then
-                                        RESULT=$(echo "$CUR - $WHAT" | bc)
-                                        echo "$RESULT" > "${COINSFILE}"
-                                    else
-                                        ## UNKNOWN CARD or G1 Problem
-                                        echo "MISSING COINS for ${G1PUB}.COINS" >> ~/.zen/tmp/${MOATS}/disco
-                                        echo PORT="$1" THAT="$2" AND="$3" THIS="$4"  APPNAME="$5" WHAT="$6" OBJ="$7" VAL="$8" MOATS="$9" COOKIE="$10" >> ~/.zen/tmp/${MOATS}/disco
-                                        ${MY_PATH}/../tools/mailjet.sh 'fred@q1sms.fr' ~/.zen/tmp/${MOATS}/disco
-                                        echo "-${WHAT}" > "${COINSFILE}"
-                                    fi
-                                    cat "${COINSFILE}"
-
-                                    DES=$(cat ${DESTFILE})
-                                    [[ ${DES} != "" && ${DES} != "null" ]] \
-                                        && echo "$DES + $WHAT" | bc  > ${DESTFILE} \
-                                        || echo "${WHAT}" > ${DESTFILE}
-                                    cat ${DESTFILE}
-
-                                    ## VERIFY AND INFORM OR CONFIRM PAYMENT
-
-                                    echo "<h1>OPERATION</h1> <h3>${G1PUB} <br> $CUR - ${WHAT}</h3> <h3>${G1DEST} <br> $DES + ${WHAT} </h3><h2>OK</h2>" >> ~/.zen/tmp/${MOATS}/disco
-
-                                else
-
-                                    ## INFORM SYSTEM MUST RENEW OPERATION
-                                    echo "NOK" > $HOME/.zen/game/pending/${G1PUB}/${MOATS}_${G1DEST}+${WHAT}.TX
-                                    echo "<h2>BLOCKCHAIN CONNEXION ERROR</h2><h1>- PLEASE RETRY -</h1>\
-                                                if the problem persists, please contact support@qo-op.com" >> ~/.zen/tmp/${MOATS}/disco
-
-                                fi
-
-
-                            else
-
-                                # ONE PLAY A DAY
-                                echo "ALREADY PLAYED TODAY" >> ~/.zen/tmp/${MOATS}/disco
-                            fi
-                            #################################### TODO : MONITOR DUNITER TX OK
-
+                            ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/secret.key "${WHAT}" "${G1DEST}" "ZEN:${MOATS}"
+                            echo "<h1>OK</h1><h2>PAYMENT PROCESSING</h2>ZEN:${MOATS}" >> ~/.zen/tmp/${MOATS}/disco
 
                         else
 
@@ -251,13 +191,13 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 else
 
-                     echo "<h2>${WHAT} ${G1DEST} ${CURCOINS} GLOBAL ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
+                     echo "<h2> ERROR - ${G1DEST} ? ${CURCOINS} < ${WHAT} ? - ERROR </h2>" >> ~/.zen/tmp/${MOATS}/disco
 
                 fi
 
             else
 
-                echo "<h2>DISCO DECODE ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
+                echo "<h2>ERROR - INVALID PIN - ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
                 cat ~/.zen/tmp/${MOATS}/disco.aes >> ~/.zen/tmp/${MOATS}/disco
 
             fi
@@ -290,7 +230,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
                 qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}:ZEN"
                 QRURL=${myIPFS}/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/disco.qr.png)
-                ONVADIRE="<h1> ~ ${CURCOINS} Ğ1</h1>${G1PUB}<br><br><img src=${QRURL} />"
+                ONVADIRE="<h1> ${CURZEN} ẐEN </h1>${G1PUB}<br><br><img src=${QRURL} />"
                 echo "${ONVADIRE}" >> ~/.zen/tmp/${MOATS}/disco
 
             fi
