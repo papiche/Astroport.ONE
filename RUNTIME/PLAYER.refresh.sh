@@ -343,7 +343,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
-    ## Publish on LAT/ON key on 12345 CACHE
+    ## Publish on LAT/ON key on IPFSNODEID 12345 CACHE
     [[ ${LAT} && ${LON} ]] \
         && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
         && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
