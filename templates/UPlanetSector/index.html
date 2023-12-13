@@ -18,7 +18,10 @@
     <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/sphere-hacked.js"></script>
 
 
-    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery.earth-3d.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmeNpiKtvmejJExRNVrmsXUSFQbGuLjmwi49kz9Tuxi5vn/index_fichiers/jquery.sector-3d.js"></script>
+<!--
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmQMHHefHe9SV5nLyaQNc89H6UsvsACtndG272CVDfQKp2/index_fichiers/jquery.sector-3d.js"></script>
+-->
 
     <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js"></script>
 
@@ -41,38 +44,6 @@
       padding: 0;
       margin: 0;
       font-family: sans-serif;
-    }
-
-    .slidecontainer {
-      width: 80%;
-      margin: 0 auto;
-      text-align: center;
-    }
-
-    .gif-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .gif-container img {
-      margin: 10px;
-      max-width: 200px;
-    }
-
-    .slider {
-      width: 100%;
-      text-align: center;
-    }
-
-    .slider #prev {
-      float: left;
-      font-size: 40px;
-    }
-
-    .slider #next {
-      float: right;
-      font-size: 40px;
     }
 
 #glow-shadows.earth {
@@ -156,7 +127,6 @@ iframe {
  <body>
 
 <button id="toggleConsoleButton" onclick="toggleConsole()">(-/+)</button>
-
     <button style="position: fixed; top: 10px; left: 10px;" onclick="document.getElementById('console').style.visibility = (document.getElementById('console').style.visibility === 'visible' ? 'hidden' : 'visible');">(-/+)</button>
     <div id="demo">
         <div id="description">
@@ -171,6 +141,8 @@ iframe {
                     </div>
                 </div>
                 <br>
+                <h1>_ZONE_</h1>
+
                 <p><a href="https://qo-op.com">"UPlanet"</a></p>
                 <p><a href="http://127.0.0.1:8080/ipns/_UPZONENS_">"_UPZONE_"</a></p>
                 <p><a href="http://127.0.0.1:8080/ipns/_ZONENS_">"_ZONE_"</a></p>
