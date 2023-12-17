@@ -3,6 +3,7 @@
 # Author: Fred (support@qo-op.com)
 # Version: 2022.10.28
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
+
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -30,16 +31,52 @@ echo "
 # $SUBJECT + $messfile -> $mail
 ########################################################################"
 
+#~ echo "From: support@g1sms.fr
+#~ To: EMAIL
+#~ Bcc: support@qo-op.com
+#~ Subject: SUBJECT
+#~ MESSAGE
+#~ " > ~/.zen/tmp/email.txt
+#~ [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
+#~ || echo "$messfile" >> ~/.zen/tmp/email.txt
+#~ cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | /usr/sbin/ssmtp ${mail}
 
-echo "From: support@g1sms.fr
-To: EMAIL
-Bcc: support@qo-op.com
-Subject: SUBJECT
-MESSAGE
-" > ~/.zen/tmp/email.txt
+############# USING MAILJET API ###############
 
+export MJ_APIKEY_PUBLIC='02b075c3f28b9797d406f0ca015ca984'
+export MJ_APIKEY_PRIVATE='58256ba8ea62f68965879f53bbb29f90'
+export SENDER_EMAIL='support@g1sms.fr'
+export RECIPIENT_EMAIL=${mail}
+
+echo "$MESSAGE" > ~/.zen/tmp/email.txt
 [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 || echo "$messfile" >> ~/.zen/tmp/email.txt
 
+# Run:
+# POSSIBLE ! "HTMLPart": "<h3>Dear member, you have a message for you on <a href=\"https://qo-op.com/\">UPlanet</a>!</h3><br />May the good vibes be with you!"
+curl -s \
+    -X POST \
+    --user "$MJ_APIKEY_PUBLIC:$MJ_APIKEY_PRIVATE" \
+    https://api.mailjet.com/v3.1/send \
+    -H 'Content-Type: application/json' \
+    -d '{
+        "Messages":[
+                {
+                        "From": {
+                                "Email": "'$SENDER_EMAIL'",
+                                "Name": "UPlanet support"
+                        },
+                        "To": [
+                                {
+                                        "Email": "'$RECIPIENT_EMAIL'",
+                                        "Name": "Astronaut TW"
+                                }
+                        ],
+                        "Subject": "'$SUBJECT'",
+                        "TextPart": "'$(cat ~/.zen/tmp/email.txt)'"
+                }
+        ]
+    }'
 
-cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | /usr/sbin/ssmtp ${mail}
+
+
