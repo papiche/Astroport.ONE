@@ -129,7 +129,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
         echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
         [[ ${ASTROTW} ]] \
-            && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+            && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
             && exit 0
 
 else
@@ -222,7 +222,7 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    AstroID seeds are:<br>
+    Your AstroID seeds are:<br>
     <br>
     <h2>${EMAIL}</h2>
     <h1>${NPASS}</h1>
