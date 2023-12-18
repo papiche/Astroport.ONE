@@ -8,6 +8,19 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 ################################################################################
+## Mélange de peintures et création d’un secret partagé (Diffie-Hellman)
+# https://www.youtube.com/watch?v=F4Bbd0wjxSE
+
+function get_hex_code_from_image() {
+    local image_path=$1
+    # Use identify to get the average color of the image
+    average_color=$(convert "$image_path" -format "%[pixel:s]\n" info: | head -n 1)
+    # Extract RGB values and convert to hex
+    hex_code=$(printf "#%02x%02x%02x\n" \
+        $(echo $average_color | sed 's/.*(\([0-9]\+\),\([0-9]\+\),\([0-9]\+\)).*/\1 \2 \3/'))
+
+    echo "$hex_code"
+}
 
 PLAYER="$1"
 [[ ! -s ~/.zen/game/players/${PLAYER}/secret.dunikey ]] && PLAYER=".current"
@@ -34,6 +47,7 @@ color_hex=$(echo -n ${IPFSNODEID} | sha256sum | awk '{print $1}')
 color_hex=${color_hex:0:6}
 convert -size 100x100 xc:"#${color_hex}" ~/.zen/tmp/base_white.png
 echo "Base Hex: #$color_hex"
+get_hex_code_from_image ~/.zen/tmp/base_white.png
 
 # Step 3: Mixing Colors
 composite -compose Multiply ~/.zen/tmp/base_white.png \
@@ -41,29 +55,10 @@ composite -compose Multiply ~/.zen/tmp/base_white.png \
                                                         ~/.zen/tmp/mixed_color.png
 
 xdg-open ~/.zen/tmp/mixed_color.png
+get_hex_code_from_image ~/.zen/tmp/mixed_color.png
 
-echo "Sharing 'mixed_color.png' on ipfs pubsub channel"
-
-# Step 4: Exchange Mixed Colors using IPFS pubsub
-ipfs_pubsub_channel="diffie_hellman_colors_channel"
-
-ipfs_pubsub_pub_cmd="ipfs pubsub pub $ipfs_pubsub_channel"
-ipfs_pubsub_sub_cmd="ipfs pubsub sub $ipfs_pubsub_channel"
-
-$ipfs_pubsub_pub_cmd < ~/.zen/tmp/mixed_color.png
-
-# Wait for Bob to publish his mixed color
-echo "Waiting for Other to publish his mixed color..."
-mixed_bob_ipfs=$(eval $ipfs_pubsub_sub_cmd)
-echo "Received Bob's mixed color from IPFS pubsub."
-
-# Save Bob's mixed color to a file
-echo "$mixed_bob_ipfs" > ~/.zen/tmp/mixed_bob_from_ipfs.png
-
-# Step 5: Final Color Agreement
-composite -compose Multiply ~/.zen/tmp/mixed_bob_from_ipfs.png \
-                                                        ~/.zen/game/players/${PLAYER}/private_color.png \
-                                                         ~/.zen/tmp/shared_secret.png
-
-echo "Completed. You have a ~/.zen/tmp/shared_secret.png"
-xdg-open ~/.zen/tmp/shared_secret.png
+echo "WAITING FOR ANOTHER mixed_color to reveal our shared secret"
+# Final Color Agreement
+#~ composite -compose Multiply ~/.zen/tmp/input_mixed_color.png \
+                                                        #~ ~/.zen/game/players/${PLAYER}/private_color.png \
+                                                         #~ ~/.zen/tmp/shared_secret.png

@@ -330,6 +330,17 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 
 ###########################################################################################
 ########################################################
+    ## COMBINE ALL JSON
+        json_array=()
+        # Loop through each *.rss.json file and append its content to the array
+        for file in ~/.zen/tmp/${MOATS}/${UMAP}/RSS/*.rss.json; do
+            # Use jq to extract the JSON array from each file
+            data=$(jq '.' "$file")
+            json_array+=("$data")
+        done
+        # Convert the array to a single JSON object
+        merged_json=$(jq -n '{"data": [ $json_array[] ]}')
+        echo "$merged_json" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/all.json
 
         ##############################################################
         ############################ PUBLISHING UMAP
