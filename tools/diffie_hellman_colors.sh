@@ -32,7 +32,8 @@ fi
 # Choosing IPFSNODEID Base Color
 color_hex=$(echo -n ${IPFSNODEID} | sha256sum | awk '{print $1}')
 color_hex=${color_hex:0:6}
-convert -size 100x100 xc:"#${color_hex}" ~/.zen/base_white.png
+convert -size 100x100 xc:"#${color_hex}" ~/.zen/tmp/base_white.png
+echo "Base Hex: #$color_hex"
 
 # Step 3: Mixing Colors
 composite -compose Multiply ~/.zen/tmp/base_white.png \
