@@ -340,7 +340,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         done
         # Convert the array to a single JSON object
         merged_json=$(jq -n '{"data": [ $json_array[] ]}')
-        echo "$merged_json" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/all.json
+        echo "$merged_json" > ~/.zen/tmp/${MOATS}/${UMAP}/RSS/all.json
 
         ##############################################################
         ############################ PUBLISHING UMAP
