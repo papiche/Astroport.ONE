@@ -548,15 +548,23 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 
 ### SEND AstroID and ZenCard to EMAIL
 (
-echo "Print your ZenCard : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
-echo "It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/intro.txt
-mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
-    ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
+echo "✅ UPlanet : ZenCard<br>Print your ZenCard : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
+echo "<br>It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/intro.txt
+echo "<br><a href='$myIPFS/$IASTRO'>ẐenCard</a>" >> ~/.zen/tmp/${MOATS}/intro.txt
 
-echo "Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
-echo "Use it to send Zen to other Uplanet players https://qo-op.com" >> ~/.zen/tmp/${MOATS}/intro.txt
-mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
-    $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt
+
+#~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
+    #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
+
+echo "✅ UPlanet : AstroID ($PASS)<br>Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
+echo "<br>Use it to send Zen to other Uplanet players https://qo-op.com" >> ~/.zen/tmp/${MOATS}/intro.txt
+echo "<br><a href='$myIPFS/$ASTROQR'>AstroID</a>" >> ~/.zen/tmp/${MOATS}/intro.txt
+
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt
+
+#~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
+    #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
