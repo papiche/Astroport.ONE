@@ -480,7 +480,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ###
 fi
 
-EARTHCID="/ipfs/QmY4635kWcaesa3TyZHycB7AaPvp3fFBf58DZf3HidwKuu"
+EARTHCID="/ipfs/QmYcvhodbC1R3B2NoCxJNt9Qh6vWJ17oEDxYNTcFffTBQd"
 FLIPPERCID="${EARTHCID}/coinflip"
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
