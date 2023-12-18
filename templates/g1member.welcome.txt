@@ -1,0 +1,17 @@
+Objet : Bienvenue dans la communauté de la Monnaie Libre Ğ1 !
+
+Cher(e) nouveau/nouvelle membre de la toile de confiance Ğ1,
+
+Tout d'abord, permettez-moi de vous souhaiter chaleureusement la bienvenue au sein de notre communauté dédiée à la Monnaie Libre. Je suis Fred, membre engagé de ce collectif passionné qui croit fermement en l'idée d'une société du partage, basée sur la gestion collective du Commun.
+
+Notre groupe, la Société des Technologies Informatiques (STI), rassemble des ingénieurs experts en logiciels libres, prêts à partager leurs connaissances avec tous ceux qui aspirent à utiliser quotidiennement des logiciels libres et des algorithmes clairs. Nous sommes là pour vous accompagner pas à pas, que ce soit pour installer un nœud Duniter, héberger votre propre serveur NextCloud, synchroniser votre smartphone, apprendre à auto-héberger votre site tout en préservant le contrôle sur vos données, et même explorer les arcanes de l'IA Open Source.
+
+Dans un contexte de virage numérique totalitaire en cours, nous croyons fermement en la nécessité d'accentuer le mouvement de décentralisation. La Monnaie Libre, à l'image des logiciels libres, représente un pilier essentiel de cette transition vers une société où la liberté numérique est préservée.
+
+N'hésitez pas à participer activement, poser des questions et partager vos expériences au sein de notre communauté. Ensemble, nous pouvons contribuer à façonner un avenir où la liberté, la transparence et la coopération sont au cœur de nos échanges.
+
+Encore une fois, bienvenue parmi nous ! Nous sommes impatients de construire ensemble un monde numérique plus libre et équitable.
+
+Cordialement,
+
+Fred
