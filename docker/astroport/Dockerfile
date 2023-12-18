@@ -7,6 +7,7 @@ ARG DOCKER_SYSTEM=Linux
 RUN apt-get update \
  && apt-get -fy upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get -fy install \
+        argon2 \
         basez \
         bash \
         bc \

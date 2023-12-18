@@ -23,23 +23,31 @@ mail="$1" # EMAIL DESTINATAIRE
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
-SUBJECT="[(♥‿‿♥)] Station Astroport : $(myHostName)"
-MESSAGE="( ◕‿◕)\n\n Bonjour $PLAYER\n\n UN MESSAGE POUR VOUS.\n\nAstroport\n/ipns/$IPFSNODEID"
+SUBJECT="[UPlanet] Astroport : $(myHostName)"
+MESSAGE="Bonjour $PLAYER
+UN MESSAGE POUR VOUS.
+
+Astroport
+/ipns/$IPFSNODEID
+"
 
 echo "
 ########################################################################
 # $SUBJECT + $messfile -> $mail
 ########################################################################"
 
+### SMTP RELAY
 #~ echo "From: support@g1sms.fr
 #~ To: EMAIL
 #~ Bcc: support@qo-op.com
 #~ Subject: SUBJECT
-#~ MESSAGE
+#~ $MESSAGE
 #~ " > ~/.zen/tmp/email.txt
+
 #~ [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 #~ || echo "$messfile" >> ~/.zen/tmp/email.txt
-#~ cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | sed "s~MESSAGE~${MESSAGE}~g" | /usr/sbin/ssmtp ${mail}
+
+#~ cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | /usr/sbin/ssmtp ${mail}
 
 ############# USING MAILJET API ###############
 
@@ -52,31 +60,56 @@ echo "$MESSAGE" > ~/.zen/tmp/email.txt
 [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 || echo "$messfile" >> ~/.zen/tmp/email.txt
 
+EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
+echo "/ipfs/${EMAILZ}"
+
+TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
+HTMLPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/<br>/g' | tr '"' '\\\"')
+
+export TEXTPART="${myIPFS}/ipfs/${EMAILZ}"
+
+json_payload='{
+    "Messages": [
+        {
+            "From": {
+                "Email": "'${SENDER_EMAIL}'",
+                "Name": "UPlanet"
+            },
+            "To": [
+                {
+                    "Email": "'${RECIPIENT_EMAIL}'",
+                    "Name": "Astronaut"
+                }
+            ],
+            "Subject": "'${SUBJECT}'",
+            "TextPart": "'${myIPFS}/ipfs/${EMAILZ}'",
+            "HTMLPart": "<h3>You have a message <br><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
+        }
+    ]
+}'
+
+# Verify the JSON structure with jq
+echo "$json_payload" | jq .
 # Run:
-# POSSIBLE ! "HTMLPart": "<h3>Dear member, you have a message for you on <a href=\"https://qo-op.com/\">UPlanet</a>!</h3><br />May the good vibes be with you!"
+# POSSIBLE ! "HTMLPart": "<h3>You have a message <br><a href=\"https://qo-op.com/\">UPlanet</a>!</h3><br />May the good vibes be with you!"
 curl -s \
     -X POST \
-    --user "$MJ_APIKEY_PUBLIC:$MJ_APIKEY_PRIVATE" \
+    --user "${MJ_APIKEY_PUBLIC}:${MJ_APIKEY_PRIVATE}" \
     https://api.mailjet.com/v3.1/send \
     -H 'Content-Type: application/json' \
-    -d '{
-        "Messages":[
-                {
-                        "From": {
-                                "Email": "'$SENDER_EMAIL'",
-                                "Name": "UPlanet support"
-                        },
-                        "To": [
-                                {
-                                        "Email": "'$RECIPIENT_EMAIL'",
-                                        "Name": "Astronaut TW"
-                                }
-                        ],
-                        "Subject": "'$SUBJECT'",
-                        "TextPart": "'$(cat ~/.zen/tmp/email.txt)'"
-                }
-        ]
-    }'
+    -d "$json_payload"
 
-
-
+# This call sends an email to one recipient.
+#~ curl -s \
+    #~ -X POST \
+    #~ --user "$MJ_APIKEY_PUBLIC:$MJ_APIKEY_PRIVATE" \
+    #~ https://api.mailjet.com/v3/send \
+    #~ -H 'Content-Type: application/json' \
+    #~ -d '{
+        #~ "FromEmail":"'${SENDER_EMAIL}'",
+        #~ "FromName":"UPlanet Support Team",
+        #~ "Subject":"Message from Astroport",
+        #~ "Text-part":"'${TEXTPART}'",
+        #~ "Html-part":"'${HTMLPART}'",
+        #~ "Recipients":[{"Email":"'${RECIPIENT_EMAIL}'"}]
+    #~ }'
