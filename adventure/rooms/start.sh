@@ -48,12 +48,14 @@ echo
 echo "Vous pouvez vous diriger selon les points cardinaux."
 echo "Au nord un chemin remonte, au sud un passage descend, à l'est, la bergerie, à l'ouest, des traces d'animaux"
 echo
-echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u et h."
+echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u, d et h."
 
 # Now we wait for their response - and send them somewhere accordingly.
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
+        d ) ./riddle.sh
+            exit ;;     
         n ) ./white.sh
             exit ;;       # These lines will take the player to a new room - a new script file.
         s ) ./brown.sh
