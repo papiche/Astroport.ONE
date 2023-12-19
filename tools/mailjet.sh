@@ -78,7 +78,7 @@ json_payload='{
             "To": [
                 {
                     "Email": "'${RECIPIENT_EMAIL}'",
-                    "Name": "Astronaut"
+                    "Name": "UPlanet Astronaut"
                 }
             ],
             "Subject": "'${SUBJECT}'",
