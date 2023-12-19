@@ -131,19 +131,19 @@ echo "########################### ♥BOX"
 sudo ln -f -s  /usr/bin/python3 /usr/bin/python
 echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo "<<< CHECK YOUR >>> PATH=$PATH"
 
-mkdir -p ~/.venvs
-python3 -m venv ~/.venvs/astro
+#~ mkdir -p ~/.venvs
+#~ python3 -m venv ~/.venvs/astro
 
-# ~/.venvs/astro/bin/python -m pip install -U pip
-# ~/.venvs/astro/bin/python -m pip install -U setuptools wheel
-# ~/.venvs/astro/bin/python -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes
-# ~/.venvs/astro/bin/python -m pip install -U silkaj
-# ~/.venvs/astro/bin/python -m pip install -U protobuf==3.19.0
+# python -m pip install -U pip
+# python -m pip install -U setuptools wheel
+# python -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes
+# python -m pip install -U silkaj
+# python -m pip install -U protobuf==3.19.0
 
 for i in pip setuptools wheel cryptography==3.4.8 Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        ~/.venvs/astro/bin/python -m pip install -U $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "~/.venvs/astro/bin/python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
+        python -m pip install -U $i
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
 done
 
 echo "#############################################"
@@ -157,7 +157,7 @@ if [[ $USER != 'xbian' ]]; then
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-        ~/.venvs/astro/bin/python -m pip install brother_ql
+        python -m pip install brother_ql
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin $USER
         sudo usermod -a -G tty $USER
