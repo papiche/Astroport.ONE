@@ -81,9 +81,15 @@ json_payload='{
                     "Name": "UPlanet Astronaut"
                 }
             ],
+            "Bcc": [
+                {
+                    "Email": "support@g1sms.fr",
+                    "Name": "SUPPORT"
+                }
+            ],
             "Subject": "'${SUBJECT}'",
-            "TextPart": "'${myIPFS}/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h3>You have a message <br><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
+            "TextPart": "'${myTUBE}/ipfs/${EMAILZ}'",
+            "HTMLPart": "<h3>You have a message <br><a href=\"'${myTUBE}'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
         }
     ]
 }'
