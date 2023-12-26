@@ -98,7 +98,7 @@ if [[ ! -d $img_dir ]]; then
 
         ## WRITE ON IT : ASK FOR REFILL
         convert -font 'Liberation-Sans' \
-        -pointsize 80 -fill purple -draw 'text 50,120 "'"$ZEN Ẑen"'"' \
+        -pointsize 80 -fill purple -draw 'text 50,120 "'"$ZEN Zen"'"' \
         -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
         -pointsize 14 -fill white -draw 'text 40, 200 "'"${birthdate}"'"' \
         "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
