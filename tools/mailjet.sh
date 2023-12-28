@@ -88,8 +88,8 @@ json_payload='{
                 }
             ],
             "Subject": "'${SUBJECT}'",
-            "TextPart": "'${myTUBE}/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h3>You have a message <br><a href=\"'${myTUBE}'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
+            "TextPart": "'${myIpfsGw}/ipfs/${EMAILZ}'",
+            "HTMLPart": "<h3>You have a message <br><a href=\"'${myIpfsGw}'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
         }
     ]
 }'
