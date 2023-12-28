@@ -123,10 +123,10 @@ Tiddler with same title is existing in ${unique_combined[*]} TW(s)
 
 $title
 
-* ACTUAL : ${myIPFS}/ipfs/${INSIDETID}
+* ACTUAL : ${myIpfsGw}/ipfs/${INSIDETID}
 Email addresses unique in ACTUAL Tiddler : ${IUNIQUE[*]}
 
-* NEW : ${myIPFS}/ipfs/${NEWTID}
+* NEW : ${myIpfsGw}/ipfs/${NEWTID}
 Email addresses unique in NEW Tiddler : ${NUNIQUE[*]}
 
 Make common email addresses : ${COMMON[*]}
