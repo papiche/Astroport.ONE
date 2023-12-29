@@ -51,7 +51,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
         [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating UMAP WALLET ${UPLANETNAME}${LAT}/${UPLANETNAME}${LON}" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
-        echo "TRANSFERING TO UMAP (${COINS} G1) WALLET : ${SECTORG1PUB}"
+        echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
     [[ ! -z ${SECTORG1PUB} ]] \
     && ALL="ALL" \
