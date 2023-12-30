@@ -338,9 +338,12 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
             data=$(jq '.' "$file")
             json_array+=("$data")
         done
-        # Convert the array to a single JSON object
-        merged_json=$(jq -n '{"data": [ $json_array[] ]}')
-        echo "$merged_json" > ~/.zen/tmp/${MOATS}/${UMAP}/RSS/all.json
+        temp_file=$(mktemp)
+        printf '%s\n' "${json_array[@]}" > "$temp_file"
+        # Use jq to read the array from the temporary file and create the merged JSON
+        jq -n --slurpfile array "$temp_file" '{"data": $array}' > ~/.zen/tmp/${MOATS}/${UMAP}/RSS/all.json
+        # Remove the temporary file
+        rm "$temp_file"
 
         ##############################################################
         ############################ PUBLISHING UMAP
