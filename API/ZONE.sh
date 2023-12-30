@@ -60,18 +60,16 @@ LON=$(makecoord $LON)
 
 echo "REQUEST $LAT / $LON / $DEG"
 
-## REGION LEVEL
-if [[ $DEG == "0.1" ]]; then
-    # /ipfs/QmYNpzG3qi6GzciP6D6NsLgv5KwcsKtYJ5EZt7s23ToaNj/map_render.html?southWestLat=43.60&southWestLon=1.40&deg=0.1
+## REGION & ABOVE LEVEL
+if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
     LAT=$(echo ${LAT} | cut -d '.' -f 1)
     LON=$(echo ${LON} | cut -d '.' -f 1)
-    REGION="_${LAT}_${LON}"
-    echo "REGION = ${REGION}"
+    ZONE="_${LAT}_${LON}"
+    echo "ZONE = ${REGION}"
 fi
 
 ## SECTOR LEVEL
 if [[ $DEG == "0.01" ]]; then
-    # /ipfs/QmYNpzG3qi6GzciP6D6NsLgv5KwcsKtYJ5EZt7s23ToaNj/map_render.html?southWestLat=43.60&southWestLon=1.40&deg=0.1
     SECLAT="${LAT::-1}"
     SECLON="${LON::-1}"
     SECTOR="_${SECLAT}_${SECLON}"
