@@ -23,7 +23,7 @@ mail="$1" # EMAIL DESTINATAIRE
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
-SUBJECT="[UPlanet] Astroport : $(myHostName)"
+SUBJECT="[UPlanet/Astroport] : $(myHostName)"
 MESSAGE="Bonjour $PLAYER
 UN MESSAGE POUR VOUS.
 
@@ -78,7 +78,7 @@ json_payload='{
             "To": [
                 {
                     "Email": "'${RECIPIENT_EMAIL}'",
-                    "Name": "UPlanet Astronaut"
+                    "Name": "Astronaut"
                 }
             ],
             "Bcc": [
