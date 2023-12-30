@@ -240,12 +240,13 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 ####################################
         ## RECORD P4N SPOT DATA
         echo "P4N : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
-        [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
-            && curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \\
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] && echo "" > ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+            && curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
             && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json) ]] \
             && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json \
-            && echo "UPDATED" \
-            || echo "NO CHANGE"
+            && echo "UPDATED PARK4NIGHT" \
+            || rm ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
 
 ####################################
         echo "GET GCHANGE ADS..."
