@@ -69,6 +69,8 @@ while read title; do
         fi
         floop=1
 
+        ## TODO EXTEND CONTROL TO text AND ipfs _canonical_url
+
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
         NEMAILS=($(echo "$NTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
@@ -123,10 +125,10 @@ Tiddler with same title is existing in ${unique_combined[*]} TW(s)
 
 $title
 
-* ACTUAL : ${myIpfsGw}/ipfs/${INSIDETID}
+* ACTUAL : $(myIpfsGw)/ipfs/${INSIDETID}
 Email addresses unique in ACTUAL Tiddler : ${IUNIQUE[*]}
 
-* NEW : ${myIpfsGw}/ipfs/${NEWTID}
+* NEW : $(myIpfsGw)/ipfs/${NEWTID}
 Email addresses unique in NEW Tiddler : ${NUNIQUE[*]}
 
 Make common email addresses : ${COMMON[*]}

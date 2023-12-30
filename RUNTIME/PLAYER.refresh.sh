@@ -325,7 +325,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
         && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \
         && echo "WARNNG. Your TW will be UNPLUGGED in 3 days" > ~/.zen/tmp/alert \
-        && echo "${myIpfsGw}/ipfs/${CURCHAIN}" >> ~/.zen/tmp/alert \
+        && echo "$(myIpfsGw)/ipfs/${CURCHAIN}" >> ~/.zen/tmp/alert \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
         && [[ $(( SNOW - SBIRTH )) > $(( 30 * 24 * 60 * 60 ))  ]] \
         && echo ">>>> PLAYER UNPLUG >>>>> BYE BYE ${PLAYER}" \

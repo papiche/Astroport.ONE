@@ -49,7 +49,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     ##############################################################
 
-        [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating UMAP WALLET ${UPLANETNAME}${LAT}/${UPLANETNAME}${LON}" && exit 1
+        [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating UMAP WALLET ${UPLANETNAME}${SECTOR}/${UPLANETNAME}${SECTOR}" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
         echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 

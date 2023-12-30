@@ -65,7 +65,10 @@ if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
     LAT=$(echo ${LAT} | cut -d '.' -f 1)
     LON=$(echo ${LON} | cut -d '.' -f 1)
     ZONE="_${LAT}_${LON}"
-    echo "ZONE = ${REGION}"
+    echo "ZONE = ${ZONE}"
+    ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
+
 fi
 
 ## SECTOR LEVEL
