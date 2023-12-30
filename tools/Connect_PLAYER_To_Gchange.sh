@@ -44,7 +44,8 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/
     [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH GCHANGE+ NODE ${myDATA} xxxxx" && exit 1
     [[ ! $(cat ~/.zen/game/players/${PLAYER}/ipfs/gchange.json | jq -r '.title' 2>/dev/null) ]] \
         && echo "xxxxx GCHANGE+ MISSING ACCOUNT ${myDATA} xxxxx" \
-        && ${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n " " -v " " -a " " -d " " -pos 0.00 0.00 -s https://qo-op.com -A ${MY_PATH}/../images/plain.png \
+        && ${MY_PATH}/timeout.sh -t 20 \
+        ${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n " " -v " " -a " " -d " " -pos 0.00 0.00 -s https://qo-op.com -A ${MY_PATH}/../images/plain.png \
         && exit 0
 
     # $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >  ~/.zen/game/players/${PLAYER}/ipfs/gchange.json
@@ -264,6 +265,7 @@ do
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
+            ${MY_PATH}/timeout.sh -t 20 \
             $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
             ## +1 TRY
@@ -360,7 +362,10 @@ do
         ## COOL FEATURE FOR GCHANGE ACCOUNT CONFIDENCE
         ## IS IT REALLY A FRIEND I LIKE ?
         echo "BRO?"
+        ${MY_PATH}/timeout.sh -t 20 \
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
+
+        ${MY_PATH}/timeout.sh -t 20 \
         $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/
         try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
