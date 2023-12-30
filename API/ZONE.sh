@@ -40,14 +40,7 @@ Content-Type: text/html; charset=UTF-8
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
-## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
-alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-if [[ ${alreadypublishing} ]]; then
-     echo "$HTTPCORS {[error: ALREADY IPNS ERROR]}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-     exit 1
-fi
-
-## START MANAGING UPLANET LAT/LON & PLAYER
+## RUNNING UPLANET LAT/LON TW DETECTION
 mkdir -p ~/.zen/tmp/${MOATS}/
 # GET RECEPTION : zone=0.001&ulat=0.02&ulon=0.01
 DEG=${THAT}
@@ -62,17 +55,17 @@ LON=${WHAT}
 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
 
+LAT=$(makecoord $LAT)
+LON=$(makecoord $LON)
+
+echo "REQUEST $LAT / $LON / $DEG"
+
 if [[ $DEG == "0.001" ]]; then
 
-        LAT=$(makecoord $LAT)
-        LON=$(makecoord $LON)
-
-        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
-
-    ## TODO : REDIRECT TO THE STATION WITH THE MORE OF THIS UMAP ;)
+    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
     echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "UMAP_'${LAT}'_'${LON}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
@@ -80,6 +73,7 @@ if [[ $DEG == "0.001" ]]; then
     end=`date +%s`
     echo "(EXPLORE ZONE $DEG)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
     exit 0
+
 fi
 
 ## ALL OTHER DEG : SEARCH FOR UPLANET TW NUMBERS
