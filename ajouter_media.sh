@@ -21,17 +21,17 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
-LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
-# echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
-if [[ $LOWMODE != "" ]]; then
-    espeak "Low Mode"
-    sudo systemctl start ipfs
-fi
+#~ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+#~ # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
+#~ if [[ $LOWMODE != "" ]]; then
+    #~ espeak "Low Mode"
+    #~ sudo systemctl start ipfs
+#~ fi
 
-########################################################################
+#~ ########################################################################
 
-espeak "restarting I P F S daemon"
-[[ "$isLAN" ]] && sudo systemctl restart ipfs
+#~ espeak "restarting I P F S daemon"
+#~ [[ "$isLAN" ]] && sudo systemctl restart ipfs
 
 ## CHECK IF IPFS DAEMON IS STARTS WELL
 floop=0

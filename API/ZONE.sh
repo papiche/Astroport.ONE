@@ -59,7 +59,16 @@ LAT=$(makecoord $LAT)
 LON=$(makecoord $LON)
 
 echo "REQUEST $LAT / $LON / $DEG"
+if [[ $DEG == "0.01" ]]; then
+    # /ipfs/QmYNpzG3qi6GzciP6D6NsLgv5KwcsKtYJ5EZt7s23ToaNj/map_render.html?southWestLat=43.60&southWestLon=1.40&deg=0.1
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
+    SECTOR="_${SECLAT}_${SECLON}"
+    echo "SECTOR = ${SECTOR}"
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    SECTORTW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")"/TW"
 
+fi
 if [[ $DEG == "0.001" ]]; then
 
     G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
@@ -81,11 +90,13 @@ echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http
 
 for i in $(seq 0 9);
 do
-    ZLAT=$(echo "$LAT + $DEG * $i" | bc -l)
-   # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
+    ZLAT=$(echo "$LAT + $DEG * $i" | bc -l )
+    [[ -z  ${ZLAT} ]] && ZLAT=0
+    # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
         for j in $(seq 0 9); do
-            ZLON=$(echo "$LON + $DEG * $j" | bc -l)
-      #      [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
+            ZLON=$(echo "$LON + $DEG * $j" | bc -l )
+            [[ -z  ${ZLON} ]] && ZLON=0
+            # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
             echo " ## SEARCH _${ZLAT}*_${ZLON}*"
             swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
             nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
@@ -93,8 +104,8 @@ do
 
             [[ $totnum -gt 9 ]] && totnum="X"
 
-            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "" }
-            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "" }'
+            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${SECTORTW}'" }
+            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${SECTORTW}'" }'
 
         done
 done
