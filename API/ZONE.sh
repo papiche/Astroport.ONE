@@ -59,16 +59,29 @@ LAT=$(makecoord $LAT)
 LON=$(makecoord $LON)
 
 echo "REQUEST $LAT / $LON / $DEG"
+
+## REGION LEVEL
+if [[ $DEG == "0.1" ]]; then
+    # /ipfs/QmYNpzG3qi6GzciP6D6NsLgv5KwcsKtYJ5EZt7s23ToaNj/map_render.html?southWestLat=43.60&southWestLon=1.40&deg=0.1
+    LAT=$(echo ${LAT} | cut -d '.' -f 1)
+    LON=$(echo ${LON} | cut -d '.' -f 1)
+    REGION="_${LAT}_${LON}"
+    echo "REGION = ${REGION}"
+fi
+
+## SECTOR LEVEL
 if [[ $DEG == "0.01" ]]; then
     # /ipfs/QmYNpzG3qi6GzciP6D6NsLgv5KwcsKtYJ5EZt7s23ToaNj/map_render.html?southWestLat=43.60&southWestLon=1.40&deg=0.1
     SECLAT="${LAT::-1}"
     SECLON="${LON::-1}"
     SECTOR="_${SECLAT}_${SECLON}"
     echo "SECTOR = ${SECTOR}"
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-    SECTORTW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")"/TW"
+    ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")"/TW"
 
 fi
+
+## UMAP LEVEL
 if [[ $DEG == "0.001" ]]; then
 
     G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
@@ -104,8 +117,8 @@ do
 
             [[ $totnum -gt 9 ]] && totnum="X"
 
-            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${SECTORTW}'" }
-            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${SECTORTW}'" }'
+            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONETW}'" }
+            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONETW}'" }'
 
         done
 done
