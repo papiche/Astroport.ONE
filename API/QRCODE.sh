@@ -101,7 +101,7 @@ if [[ ${QRCODE} == "station" ]]; then
     fi
         ## SHOW G1PALPAY FRONT (IFRAME)
         sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
-        [[ ! $isLAN ]] && sed -i "s~MENU~DEMO~g" ~/.zen/tmp/${MOATS}/index.htm
+        [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm

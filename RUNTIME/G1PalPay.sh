@@ -236,12 +236,17 @@ while read LINE; do
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
         ## SEND zen ZEN (G1 dice JUNE) TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
+        #~ ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+        #~ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
                                                                                                                                                                         ## Filling comment with email list will make players resend to all ## MAY BE A BAD IDEA ###
+
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${zen}" "${ASTROG1}" "${emails[@]} $TTITLE"
+
         echo "OK PalPay : $MSG" > ~/.zen/tmp/${MOATS}/g1message
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
-        [[ ! -z $TOPIN ]] && ipfs pin add $TOPIN &&  echo "PINNING $TOPIN" >> ~/.zen/tmp/${MOATS}/g1message
+        [[ ! -z $TOPIN ]] \
+            && ipfs pin add $TOPIN \
+            &&  echo "PINNING $TOPIN" >> ~/.zen/tmp/${MOATS}/g1message
 
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
 
