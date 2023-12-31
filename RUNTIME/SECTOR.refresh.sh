@@ -233,7 +233,7 @@ for SECTOR in ${SECTORS[@]}; do
 
 
 ## zday marking
-rm ~/.zen/tmp/${MOATS}/${SECTOR}/z*
+rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 

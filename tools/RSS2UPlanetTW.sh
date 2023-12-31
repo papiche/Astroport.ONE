@@ -51,7 +51,7 @@ while read title; do
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
             && rm ${INDEX} \
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX} \
-            && echo "SECTOR TW UPDATED"
+            && echo "SECTOR TW INSERTED ${title}"
 
     else
 
