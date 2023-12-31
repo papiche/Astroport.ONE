@@ -57,6 +57,7 @@ for SECTOR in ${SECTORS[@]}; do
     [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
@@ -230,7 +231,18 @@ for SECTOR in ${SECTORS[@]}; do
         ##################################
 
 ###########################################################################################
-
+## ADD SECTOR ZENPUB.png & INFO.png
+if [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png ]]; then
+    convert -font 'Liberation-Sans' \
+            -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
+            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
+            $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
+    # CREATE SECTORG1PUB AMZQR
+    amzqr ${SECTORG1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
+    convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
+    # ADD IT
+    composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
+fi
 
 ## zday marking
 rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null

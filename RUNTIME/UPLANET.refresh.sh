@@ -314,7 +314,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         SECTOR="_${SECLAT}_${SECLON}"
         SECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
 
-        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
+        cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
         | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
                   -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
