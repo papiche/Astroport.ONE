@@ -320,6 +320,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                   -e "s~_ZONENS_~${UMAPNS}~g" \
                   -e "s~_UPZONENS_~${SECTORNS}~g" \
+                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.html
 
