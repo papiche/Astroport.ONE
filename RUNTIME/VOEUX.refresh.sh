@@ -288,6 +288,7 @@ echo "***** PLAYER $PLAYER *************************************"
 echo "SEND ${ZENGRATITUDE} ZEN
 to ${SECTOR} WALLET ${SECTORG1PUB}"
 echo "************************************************************"
+WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
 ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "IPFS:${WISHFLUX}"
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
