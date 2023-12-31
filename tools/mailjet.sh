@@ -23,14 +23,16 @@ mail="$1" # EMAIL DESTINATAIRE
 
 pseudo=$(echo $mail | cut -d '@' -f 1)
 
-messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
+messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 
 SUBJECT="[UPlanet/Astroport] $pseudo : $(myHostName)"
-MESSAGE="Bonjour $PLAYER
-UN MESSAGE POUR VOUS.
+MESSAGEUP="MESSAGE
+===
+"
 
-Astroport
-/ipns/$IPFSNODEID
+MESSAGESIGN="---
+Astroport $(myHostName)
+$(myIpfsGw)/ipns/$IPFSNODEID
 "
 
 echo "
@@ -43,7 +45,7 @@ echo "
 #~ To: EMAIL
 #~ Bcc: support@qo-op.com
 #~ Subject: SUBJECT
-#~ $MESSAGE
+#~ $MESSAGEUP
 #~ " > ~/.zen/tmp/email.txt
 
 #~ [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
@@ -58,12 +60,14 @@ export MJ_APIKEY_PRIVATE='58256ba8ea62f68965879f53bbb29f90'
 export SENDER_EMAIL='support@g1sms.fr'
 export RECIPIENT_EMAIL=${mail}
 
-# MESSAGE HEADER
-echo "$MESSAGE" > ~/.zen/tmp/email.txt
+# MESSAGEUP HEADER
+echo "$MESSAGEUP" > ~/.zen/tmp/email.txt
 
 # + HTML in FILE
 [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 || echo "$messfile" >> ~/.zen/tmp/email.txt
+
+echo $MESSAGESIGN >> ~/.zen/tmp/email.txt
 
 EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
@@ -71,7 +75,7 @@ echo "/ipfs/${EMAILZ}"
 TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
 HTMLPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/<br>/g' | tr '"' '\\\"')
 
-export TEXTPART="${myIPFS}/ipfs/${EMAILZ}"
+export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 
 json_payload='{
     "Messages": [
