@@ -132,12 +132,6 @@ sed -i '$ d' ~/.zen/tmp/${MOATS}.http ## REMOVE LAST ','
 
 echo ']}'  >> ~/.zen/tmp/${MOATS}.http
 
-## UMAP LEVEL
-if [[ $UMAP == "ONE" ]]; then
-
-
-fi
-
 ### SEND RESPONSE ON PORT
 cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 

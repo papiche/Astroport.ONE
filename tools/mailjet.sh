@@ -87,7 +87,7 @@ json_payload='{
             "To": [
                 {
                     "Email": "'${RECIPIENT_EMAIL}'",
-                    "Name": "Astronaut"
+                    "Name": "'${pseudo}' Astronaut"
                 }
             ],
             "Bcc": [

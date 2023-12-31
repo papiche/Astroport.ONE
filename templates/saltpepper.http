@@ -104,7 +104,7 @@ header {
 </h2>
 </br>
             <p>
-            <b><a target="pad" href="http://127.0.0.1:8080/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=cocoding">LIVE VIDEO ROOM</a></b>
+            <b><a target="pad" href="http://127.0.0.1:8080/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=cocoding">JOIN VIDEO ROOM</a> (WebRTC protocol)</b>
             </p>
 </header>
 
