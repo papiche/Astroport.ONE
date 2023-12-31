@@ -104,7 +104,7 @@ header {
 </h2>
 </br>
             <p>
-            <b><a target="pad" href="https://vdo.copylaradio.com/?room=cocoding">COCODING CHAT ROOM</a></b>
+            <b><a target="pad" href="http://127.0.0.1:8080/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=cocoding">COCODING CHAT ROOM</a></b>
             </p>
 </header>
 
@@ -119,14 +119,13 @@ header {
                 <a href="https://olympe.network">Olympe.Network</a><br>
                 Astroport.ONE est un logiciel libre développé sous licence AGPL v3
         </center>
-            <a target="gchange" href="https://gchange.fr">Une fois votre ASTROID obtenu, direction https://gchange.fr !</a>
         </h1>
     </div>
 </article>
 <article>
     <div class="row justify-center">
         <ul>
-            <li>Installez Astroport.ONE puis ajoutez <a href="http://127.0.0.1:8080/ipns/docs.ipfs.tech/install/ipfs-companion/" target="doc"><b>ipfs-companion</b></a> à votre navigateur </li>
+            <li>Ajoutez <a href="http://127.0.0.1:8080/ipns/docs.ipfs.tech/install/ipfs-companion/" target="doc"><b>ipfs-companion</b></a> à votre navigateur </li>
         </ul>
     </div>
 </article>
