@@ -82,19 +82,23 @@ if [[ $DEG == "0.01" ]]; then
 
 fi
 
-## UMAP LEVEL
 if [[ $DEG == "0.001" ]]; then
+
+    swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+    nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+    totnum=$(( swarmnum + nodenum ))
+    echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
 
     G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
-    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "UMAP_'${LAT}'_'${LON}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
+    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
     rm -Rf ~/.zen/tmp/${MOATS}/
     end=`date +%s`
-    echo "(EXPLORE ZONE $DEG)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
+    echo "(UMAP)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
     exit 0
 
 fi
@@ -116,9 +120,9 @@ do
             nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
             totnum=$(( swarmnum + nodenum ))
 
-            [[ $totnum -gt 9 ]] && totnum="X"
+            [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum
 
-            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONETW}'" }
+            [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONETW}'" }
             ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONETW}'" }'
 
         done
@@ -128,9 +132,19 @@ sed -i '$ d' ~/.zen/tmp/${MOATS}.http ## REMOVE LAST ','
 
 echo ']}'  >> ~/.zen/tmp/${MOATS}.http
 
+## UMAP LEVEL
+if [[ $UMAP == "ONE" ]]; then
+
+
+fi
+
+### SEND RESPONSE ON PORT
 cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
+## CLEANING
 rm -Rf ~/.zen/tmp/${MOATS}/
+
+## TIMING
 end=`date +%s`
 echo "(ZONE) Operation time was "`expr $end - $start` seconds.
 exit 0
