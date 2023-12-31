@@ -171,6 +171,7 @@ do
             tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
             FWISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
 #            FWISHPROG=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].text')
+# TIDDLER COULD CONTAIN #!/bin/bash PROGRAM !!!
             [[ $FWISHNS == "null" ]] && echo "NO FWISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
             echo ">>> ${myIPFS}${FWISHNS}"
 
@@ -260,17 +261,36 @@ do
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
-        #~ echo "************************************************************"
-        #~ echo "Hop, 1 ZEN pour le Voeu $WISHNAME"
-        #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:${IPNS_VOEUNS} G1Voeu $WISHNAME"\' -m
-        #~ echo "************************************************************"
-        #~ echo "************************************************************"
-
-        #~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c "ASTRO:$VOEUXNS G1Voeu $WISHNAME" -m
-        #~ [[ ! $? == 0 ]] \
-        #~ && echo "POOOOOOOOOOOOOOOOOOOORRRRRR GUY. YOU CANNOT PAY A G1 FOR YOUR WISH"
-
 done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
+
+################################################
+### SEND GRATITUDE TO SECTOR
+## GET "GPS" TIDDLER
+tiddlywiki --load ${INDEX} \
+    --output ~/.zen/tmp/${MOATS} \
+    --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+LAT=$(makecoord $LAT)
+LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+LON=$(makecoord $LON)
+echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
+rm ~/.zen/tmp/${MOATS}/GPS.json
+SECLAT="${LAT::-1}"
+SECLON="${LON::-1}"
+SECTOR="_${SECLAT}_${SECLON}"
+##############################################################
+SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+##############################################################
+GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
+G1AMOUNT=$((GRATITUDE / 10))
+echo "***** PLAYER $PLAYER *************************************"
+echo "SEND ${ZENGRATITUDE} ZEN
+to ${SECTOR} WALLET ${SECTORG1PUB}"
+echo "************************************************************"
+${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "IPFS:${WISHFLUX}"
+################################################
+################################################ GRATITUDE SENT TO SECTOR
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "TODO : REFRESH WORLD SAME WISH CACHE"

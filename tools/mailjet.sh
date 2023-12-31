@@ -25,7 +25,7 @@ pseudo=$(echo $mail | cut -d '@' -f 1)
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 
-SUBJECT="[UPlanet/Astroport] $pseudo : $(myHostName)"
+SUBJECT="[UPlanet] $pseudo : $(myHostName)"
 MESSAGEUP="MESSAGE
 ===
 "
