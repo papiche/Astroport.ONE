@@ -21,9 +21,11 @@ echo '
 mail="$1" # EMAIL DESTINATAIRE
 [[ ! $1 ]] && mail="support@qo-op.com"
 
+pseudo=$(echo $mail | cut -d '@' -f 1)
+
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
-SUBJECT="[UPlanet/Astroport] : $(myHostName)"
+SUBJECT="[UPlanet/Astroport] $pseudo : $(myHostName)"
 MESSAGE="Bonjour $PLAYER
 UN MESSAGE POUR VOUS.
 
@@ -56,7 +58,10 @@ export MJ_APIKEY_PRIVATE='58256ba8ea62f68965879f53bbb29f90'
 export SENDER_EMAIL='support@g1sms.fr'
 export RECIPIENT_EMAIL=${mail}
 
+# MESSAGE HEADER
 echo "$MESSAGE" > ~/.zen/tmp/email.txt
+
+# + HTML in FILE
 [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 || echo "$messfile" >> ~/.zen/tmp/email.txt
 
@@ -89,7 +94,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h3>You have a message <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
+            "HTMLPart": "<h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">MESSAGE</a>!</h3><br />May the good vibes be with you!<br>Astroport UPlanet"
         }
     ]
 }'
