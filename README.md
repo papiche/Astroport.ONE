@@ -91,7 +91,7 @@ make install
 ```
 If your computer is running 24/24, you can join our "Boostrap list" & officially become a [TW UPlanet hoster](https://talk.tiddlywiki.org/t/uplanet-a-planet-full-of-tws/8193?u=papiche)
 
-> PLEASE REPORT ANY ISSUES
+> DOCKER MODE NOT READY TO USE !! FOLLOW AND ADAPT NEXT STEP
 
 ## DESKTOP : Using install.sh script
 

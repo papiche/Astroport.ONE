@@ -26,14 +26,8 @@ pseudo=$(echo $mail | cut -d '@' -f 1)
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 
 SUBJECT="[UPlanet] $pseudo : $(myHostName)"
-MESSAGEUP="MESSAGE
-===
-"
 
-MESSAGESIGN="---
-Astroport $(myHostName)
-$(myIpfsGw)/ipns/$IPFSNODEID
-"
+MESSAGESIGN="---<br>Astroport <a href=$(myIpfsGw)/ipns/$IPFSNODEID>$(myHostName)</a>"
 
 echo "
 ########################################################################
@@ -60,20 +54,13 @@ export MJ_APIKEY_PRIVATE='58256ba8ea62f68965879f53bbb29f90'
 export SENDER_EMAIL='support@g1sms.fr'
 export RECIPIENT_EMAIL=${mail}
 
-# MESSAGEUP HEADER
-echo "$MESSAGEUP" > ~/.zen/tmp/email.txt
 
 # + HTML in FILE
 [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 || echo "$messfile" >> ~/.zen/tmp/email.txt
 
-echo $MESSAGESIGN >> ~/.zen/tmp/email.txt
-
 EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
-
-TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
-HTMLPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/<br>/g' | tr '"' '\\\"')
 
 export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 
@@ -98,7 +85,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">MESSAGE</a>!</h3><br />May the good vibes be with you!<br>Astroport UPlanet"
+            "HTMLPart": "<h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">MESSAGE</a>!</h3><br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
         }
     ]
 }'
@@ -115,6 +102,8 @@ curl -s \
     -d "$json_payload"
 
 # This call sends an email to one recipient.
+#~ TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
+#~ HTMLPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/<br>/g' | tr '"' '\\\"')
 #~ curl -s \
     #~ -X POST \
     #~ --user "$MJ_APIKEY_PUBLIC:$MJ_APIKEY_PRIVATE" \

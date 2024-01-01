@@ -65,6 +65,18 @@ for i in qrencode pv gnupg pandoc ca-certificates basez jq bc file gawk ffmpeg d
     fi
 done
 
+echo "#############################################"
+echo "######### FUN INSTALL ASCII ART TOOLS ######"
+echo "#############################################"
+for i in cmatrix cowsay; do
+    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        sudo apt install -y $i
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+
+    fi
+done
+
 if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 echo "#############################################"
 echo "######### INSTALL DESKTOP TOOLS  ######"
