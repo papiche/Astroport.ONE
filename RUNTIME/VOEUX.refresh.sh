@@ -271,8 +271,10 @@ tiddlywiki --load ${INDEX} \
     --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
 TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
 LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+[[ ${LAT} == "null" ]] && LAT="0.00"
 LAT=$(makecoord $LAT)
 LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+[[ ${LON} == "null" ]] && LON="0.00"
 LON=$(makecoord $LON)
 echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
 rm ~/.zen/tmp/${MOATS}/GPS.json
@@ -288,8 +290,8 @@ echo "***** PLAYER $PLAYER *************************************"
 echo "SEND ${ZENGRATITUDE} ZEN
 to ${SECTOR} WALLET ${SECTORG1PUB}"
 echo "************************************************************"
-WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "IPFS:${WISHFLUX}"
+MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
+${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "IPFS:${MYWISHFLUX}"
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
 

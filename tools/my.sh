@@ -420,7 +420,6 @@ function makecoord() {
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
         input="${input}.00"
     fi
-
     echo "${input}"
 }
 

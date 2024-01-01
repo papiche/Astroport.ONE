@@ -20,7 +20,14 @@ G1PUB="$3"
 COMMENT="$4"
 MOATS="$5" ## RECALL PENDING
 
-[[ -z $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") || echo "WAY A FAILED PAYMENT NEW TRY $MOATS"
+echo "KEYFILE=${KEYFILE}
+AMOUNT=${AMOUNT}
+G1PUB=${G1PUB}
+COMMENT=${COMMENT}"
+
+[[ -z $MOATS ]] \
+    && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") \
+    || echo "OLD PAYMENT FAILURE = NEW TRY $MOATS"
 
 ## CHECKING PAYOUT WALLET (dunikey file)
 [[ -s ${KEYFILE} ]] \
