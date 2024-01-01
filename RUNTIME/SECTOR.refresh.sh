@@ -84,7 +84,10 @@ for SECTOR in ${SECTORS[@]}; do
     MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
     ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
     DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-    echo "SECTOR DATA is about ${DIFF_SECONDS} seconds old" # 5 Heures
+    hours=$((DIFF_SECONDS / 3600))
+    minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
+    seconds=$((DIFF_SECONDS % 60))
+    echo "SECTOR DATA is ${hours} hours ${minutes} minutes ${seconds} seconds OLD"
     if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
                     echo "GETTING YESTERDAY SECTOR.refresher"
                     YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/CHAIN/SECTOR.refresher | head -n 1)

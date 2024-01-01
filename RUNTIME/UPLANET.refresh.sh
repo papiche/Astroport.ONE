@@ -82,7 +82,10 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
                 MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
                 ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-                echo "UMAP DATA is ${DIFF_SECONDS} seconds "
+                hours=$((DIFF_SECONDS / 3600))
+                minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
+                seconds=$((DIFF_SECONDS % 60))
+                echo "UMAP DATA is ${hours} hours ${minutes} minutes ${seconds} seconds "
 
                 # IF LESS THAN 5 HOURS
                 if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
