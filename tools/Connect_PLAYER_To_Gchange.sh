@@ -291,6 +291,7 @@ do
             [[ ! -s ~/.zen/tmp/${liking_me}.Astroport.json ]] && echo "~~~ BROKEN $FTW (☓‿‿☓) BAD ~/.zen/tmp/${liking_me}.Astroport.json ~~~" && continue
             FASTRONAUTENS=$(cat ~/.zen/tmp/${liking_me}.Astroport.json | jq -r .[].astronautens)
             export ASTRONAUTS="$FASTRONAUTENS\n${ASTRONAUTS}"
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/
             echo "${ASTRONAUTS}" > ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTS
 
             ## CREATING 30 DAYS RSS STREAM
