@@ -287,7 +287,7 @@ SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "$
 GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
 G1AMOUNT=$((GRATITUDE / 10))
 echo "***** PLAYER $PLAYER *************************************"
-echo "SEND ${ZENGRATITUDE} ZEN
+echo "SEND ${GRATITUDE} ZEN = ${G1AMOUNT} G1
 to ${SECTOR} WALLET ${SECTORG1PUB}"
 echo "************************************************************"
 MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
