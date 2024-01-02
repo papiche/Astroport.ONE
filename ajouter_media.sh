@@ -38,7 +38,7 @@ floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 1
     ((floop++)) && [ $floop -gt 10 ] \
-        && echo "ERROR. IPFS daemon not running on port 5001"
+        && echo "ERROR. IPFS daemon not running on port 5001" \
         && espeak 'ERROR. IPFS daemon not started' \
         &&  exit 1
 done

@@ -49,7 +49,6 @@ mkdir -p ~/.zen/tmp/${MOATS}
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     ##############################################################
 
-        [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating UMAP WALLET ${UPLANETNAME}${SECTOR}/${UPLANETNAME}${SECTOR}" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
         echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
@@ -65,6 +64,10 @@ mkdir -p ~/.zen/tmp/${MOATS}
         echo "removing wish ${vk}"
         ipfs key rm ${vk}
     done
+
+## SEND PLAYER LAST KNOW TW
+TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
+${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body>Hello ${PLAYER},<br> Your TW is unplugged from Astroport Station : <a href='${myIPFSGW}/ipfs/${TW}'>TW LAST STATE</a>.<br><br>May the force be with you.</body></html>"
 
     echo "PLAYER IPNS KEYS UNPLUGED"
     echo "rm -Rf ~/.zen/game/players/${PLAYER}"
