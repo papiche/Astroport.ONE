@@ -128,14 +128,16 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ## CHECK if PLAYER exists in SWARM
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
         echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+
         [[ ${ASTROTW} ]] \
             && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
             && exit 0
 
 else
 
-    echo "BAD EMAIL $LAT $LON - OPEN UMAP IPNS LINK -"
-    (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+    echo "BAD EMAIL $EMAIL $LAT $LON"
+    echo "$HTTPCORS <html>BAD EMAIL $EMAIL $LAT $LON <a href=${REDIR}> - OPEN UMAP LINK - </a></html>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+    exit 0
 
 fi
 

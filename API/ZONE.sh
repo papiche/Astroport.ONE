@@ -78,10 +78,11 @@ if [[ $DEG == "0.01" ]]; then
     SECTOR="_${SECLAT}_${SECLON}"
     echo "SECTOR = ${SECTOR}"
     ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")"/TW"
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
 
 fi
 
+## UMAP LEVEL
 if [[ $DEG == "0.001" ]]; then
 
     swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
