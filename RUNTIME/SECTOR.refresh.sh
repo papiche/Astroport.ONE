@@ -233,6 +233,7 @@ for SECTOR in ${SECTORS[@]}; do
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
         ##################################
+        cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
 
 ###########################################################################################
 ## ADD SECTOR ZENPUB.png & INFO.png
@@ -251,7 +252,7 @@ fi
 ## zday marking
 rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
 
 ###################################################### CHAINING BACKUP
