@@ -376,7 +376,7 @@ check available "logo.png" in [./images](./images)
 Create à Umap key (LAT/LON), then a PLAYER TW with GPS as Umap IPNS reference
 This API is used by OSM2IPFS code.
 
-DEMO : https://ipfs.copylaradio.com/ipns/copylaradio.com
+UPlanet Entrance : https://qo-op.com
 
 ### ➤ QRCODE (API SandBox)
 ```http
