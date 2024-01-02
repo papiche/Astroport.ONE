@@ -29,8 +29,8 @@ while read title; do
 
     [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK" && break
 
-    # FILTER Astroport and les than 3 characters title Tiddlers (ex: GPS, ...)
-    [[ ${title} == "GettingStarted" || ${title::3} == ${title} || ${title} == "AstroID" || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
+    # FILTER Astroport and les than 4 characters title Tiddlers (ex: GPS, ...)
+    [[ ${title} == "GettingStarted" || ${title::4} == ${title} || ${title} == "AstroID" || ${title} == "Voeu1.png"  || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
         && echo "FILTERED TITLE ${title}" && continue
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
