@@ -146,8 +146,8 @@ while read LINE; do
         fi
 
         [[ ! ${ASTROG1} ]] \
-        && echo "SORRY ${EMAIL} MISSING ASTROG1" \
-        && echo " BRO.  $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Inscrivez-vous sur UPlanet https://qo-op.com/" > ~/.zen/tmp/palpay.bro \
+        && echo "<html><body><h1>SORRY ${EMAIL} YOUR ACCOUNT IS MISSING</h1>" \
+        && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>... Join <a href='https://qo-op.com'>UPlanet</a> and receive it</body></html>" > ~/.zen/tmp/palpay.bro \
         && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro \
         && continue
 
@@ -181,6 +181,7 @@ echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
 
 ########################################################################################
 ## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
+#  This can could happen in case Tiddler is copied OR PLAYER manualy adds an email tag to Tiddler to share with someone...
 #################################################################
 echo "# EXTRACT TODAY TIDDLERS"
 tiddlywiki --load ${INDEX} \
@@ -197,28 +198,33 @@ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddl
 
 # LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
-
 echo "******************TIDDLERS with EMAIL in TAGS treatment"
 #~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
 
 ## EXTRACT NOT MY EMAIL
 while read LINE; do
 
-    echo "---------------------------------- PalPé mec"
+    echo "---------------------------------- Sava PalPé mec"
     echo "${LINE}"
     echo "---------------------------------- PalPAY for Tiddler"
     TCREATED=$(echo ${LINE} | jq -r .created)
     TTITLE=$(echo ${LINE} | jq -r .title)
     TTAGS=$(echo ${LINE} | jq -r .tags)
+
+    ## PREPARE PINNING -
     TOPIN=$(echo ${LINE} | jq -r .ipfs) ## Tiddler produced by "Astroport Desktop"
     [[ -z ${TOPIN} ]] && TOPIN=$(echo ${LINE} | jq -r ._canonical_uri) ## Tiddler is exported to IPFS
+    [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] \
+        && [[ ! -z ${TOPIN} ]] \
+        && echo "EXTERNAL ${TOPIN}" \
+        && TOPIN=""
 
     echo "$TTITLE"
 
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
-    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10
+    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10, 1 zen each
 
     ## Get first zmail
     ZMAIL="${emails}"
@@ -252,9 +258,16 @@ while read LINE; do
 
     else
 
-        echo "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${emails[@]}"  > ~/.zen/tmp/${MOATS}/g1message
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
-        echo "NO ACCOUNT FOUND"
+        ## SEND MESSAGE TO INFORM ${ZMAIL} OF THIS EXISTING TIDDLER
+        echo "<html><body>
+        <h1>BRO. </h1>
+        <br>
+        <a href='${myIPFSGW}'/ipns/${ASTROTW}>${PLAYER}</a> HAS SHARED A TIDDLER WITH YOU.
+        <br><b>${TTITLE}</b><br>
+        ... Join <a href='https://qo-op.com'>UPlanet</a> open a TW !
+        </body></html>" > ~/.zen/tmp/palpay.bro
+
+       ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro
 
     fi
 
