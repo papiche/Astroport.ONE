@@ -285,7 +285,7 @@ SECTOR="_${SECLAT}_${SECLON}"
 SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
 ##############################################################
 GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
-G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s/,/./g" )
+G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" )
 echo "***** PLAYER $PLAYER *************************************"
 echo "SEND ${GRATITUDE} ZEN = ${G1AMOUNT} G1
 to ${SECTOR} WALLET ${SECTORG1PUB}"
