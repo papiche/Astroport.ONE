@@ -20,11 +20,18 @@ INDEX=$4
 [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
 [[ ! -s ${INDEX} ]] && echo "BAD TW INDEX" && exit 1
 
-echo "SECTOR TW INSERTING" ${RSS}
-## NEW RULE. ONLY 2 SIGNATURES TIDDLERS COMES UP
+## EXTRACT PLAYER FROM RSS FILE NAME
+PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
+$($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## GET PLAYER INFORMATION
+echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
+echo "==================================================================
+SECTOR ${SECTOR} TW INSERTING ${PLAYER}
+${RSS}
+=================================================================="
 cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/tiddlers.list
-
+##
+gloops=0
 while read title; do
 
     [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK" && break
@@ -50,14 +57,14 @@ while read title; do
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
             && rm ${INDEX} \
+            && ((gloops++)) \
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX} \
-            && echo "SECTOR TW INSERTED ${title}"
+            && echo "SECTOR (${gloops}) : ${title}"
 
     else
 
         ## SAME TIDDLER
         echo "TIDDLER WITH TITLE $title ALREADY EXISTS..."
-        # IS IT FROM SAME PLAYER
 
         cat ~/.zen/tmp/${MOATS}/TMP.json | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
@@ -70,6 +77,7 @@ while read title; do
         floop=1
 
         ## TODO EXTEND CONTROL TO text & ipfs & _canonical_url
+## NEED SIGNATURES & TIDDLER SIMILARITY TO COME UP
 
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
@@ -81,8 +89,6 @@ while read title; do
         IEMAILS=($(echo "$ITAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         I=${#IEMAILS[@]}
         echo "Inside Tiddler signatures : ${IEMAILS[*]}"
-
-        ## NB: COULD NEED SORTING (TODO)
 
         if [[ "${NEMAILS[*]}" != "${IEMAILS[*]}" ]]; then
 
@@ -170,10 +176,32 @@ To Refuse<br>
                 && rm ${INDEX} \
                 && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX}
 
+            ## TODO : NEWER EMAIL SENDS N GRATITUDE TO ALL PLAYER
+            # can use G1PalPay WISH sending it tho 1st, relaying to others...
+
         fi
 
     fi
 
 done < ~/.zen/tmp/${MOATS}/tiddlers.list
+
+
+################################################
+## SECTOR SENDS GRATITUDE TO PUBLISHING PLAYER
+###################################################
+
+if [[ ${gloups} -gt 0 && ${ASTROG1} ]]; then
+    # GENERATE SECTOR PIVATE KEY ################################
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+    ##############################################################
+    GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
+    G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" )
+    echo "***** SECTOR $SECTOR *************************************"
+    echo "SEND ${GRATITUDE} ZEN = ${G1AMOUNT} G1
+    to ${PLAYER} WALLET ${ASTROG1}"
+    echo "************************************************************"
+    ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"
+    ################################################ GRATITUDE SENT
+fi
 
 exit 0
