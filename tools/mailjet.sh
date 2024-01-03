@@ -56,6 +56,7 @@ export RECIPIENT_EMAIL=${mail}
 
 
 # + HTML in FILE
+touch ~/.zen/tmp/email.txt
 [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
 || echo "$messfile" >> ~/.zen/tmp/email.txt
 

@@ -119,24 +119,25 @@ while read title; do
 
             for email in "${unique_combined[@]}"; do
 
-echo "Hello
+echo "<html><body>
+<h1>Hello</h1>
 
 Tiddler with same title is existing in ${unique_combined[*]} TW(s)
-
-$title
-
-* ACTUAL : $(myIpfsGw)/ipfs/${INSIDETID}
-Email addresses unique in ACTUAL Tiddler : ${IUNIQUE[*]}
-
-* NEW : $(myIpfsGw)/ipfs/${NEWTID}
-Email addresses unique in NEW Tiddler : ${NUNIQUE[*]}
-
-Make common email addresses : ${COMMON[*]}
-or fork modifying titles
-
-Open discussion in room ${MOATS}\n
-https://vdo.copylaradio.com
-" > ~/.zen/tmp/${MOATS}/g1message
+<br>
+<ul>
+<li>$title</li>
+<li><a href='$(myIpfsGw)/ipfs/${INSIDETID}'>Actual Tiddler</a></li>
+<li><a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> being introduced by : ${NUNIQUE[*]}</li>
+</ul>
+<br>
+To Accept<br>
+ ${COMMON[*]} have to copy <a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> in their TW
+<br><br>
+To Refuse<br>
+ ${NUNIQUE[*]} must fork by deleting or modifying New Tiddler title.
+<br>
+<h2><a href='$(myIpfsGw)/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=${MOATS}'>Actual Tiddler</a>Engage discussion about it...</a></h2>
+</body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
                 ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message
 
