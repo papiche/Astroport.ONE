@@ -345,27 +345,27 @@ echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 
             if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
-                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m"
-                ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${WHAT} -p ${VAL} -c 'Bro' -m 2>&1 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                echo "${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${MOATS}.secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro'"
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.secret.key" "${WHAT}" "${VAL}" "Bro"
+                echo "PAY4SURE " >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
             fi
 
             if [[ "$WHAT" == "history" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
                 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             if [[ "$WHAT" == "get" ]]; then
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
                 ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             if [[ "$WHAT" == "balance" ]]; then
                     ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-                    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+                    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
             fi
 
             cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http

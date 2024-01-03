@@ -1,5 +1,7 @@
 # Introduction
 
+[Astroport DEV Journal](https://pad.p2p.legal/s/AstroportDEVJournal#)
+
 **Embark on a Cosmic Journey with ZenCard Payment System and Astroport.ONE**
 
 Are you weary of the constraints of traditional payment systems and concerned about the reliability
