@@ -239,23 +239,20 @@ for SECTOR in ${SECTORS[@]}; do
 
 ###########################################################################################
 ## ADD SECTOR ZENPUB.png & INFO.png
-if [[ ! -s ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png ]]; then
-    convert -font 'Liberation-Sans' \
-            -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
-            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
-            $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
-    # CREATE SECTORG1PUB AMZQR
-    amzqr ${SECTORG1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
-    convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
-    # ADD IT
-    composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
-fi
+convert -font 'Liberation-Sans' \
+        -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
+        -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
+        $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
+# CREATE SECTORG1PUB AMZQR
+amzqr ${SECTORG1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
+convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
+# ADD IT
+composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
 
 ## zday marking
 rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
-
 
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)

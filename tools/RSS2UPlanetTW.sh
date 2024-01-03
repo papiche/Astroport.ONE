@@ -22,10 +22,11 @@ INDEX=$4
 
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
-$($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## GET PLAYER INFORMATION
+## GET PLAYER INFORMATION
+$($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL})
 echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
-echo "==================================================================
+echo "======= ${INDEX} =======
 SECTOR ${SECTOR} TW INSERTING ${PLAYER}
 ${RSS}
 =================================================================="
@@ -124,7 +125,7 @@ while read title; do
             for email in "${unique_combined[@]}"; do
 
 echo "<html><body>
-<h1>Hello</h1>
+<h1>(ᵔ◡◡ᵔ)</h1>
 
 Tiddler with same title is existing in ${unique_combined[*]} TW(s)
 <br>

@@ -144,7 +144,7 @@ while read LINE; do
 
         [[ ! ${ASTROG1} ]] \
         && echo "<html><body><h1>SORRY ${EMAIL} YOUR ACCOUNT IS MISSING</h1>" \
-        && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>... Join <a href='https://qo-op.com'>UPlanet</a> and receive it</body></html>" > ~/.zen/tmp/palpay.bro \
+        && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>(♥‿‿♥)... Join <a href='https://qo-op.com'>UPlanet</a> and receive it</body></html>" > ~/.zen/tmp/palpay.bro \
         && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro \
         && continue
 
@@ -212,8 +212,7 @@ while read LINE; do
     TOPIN=$(echo ${LINE} | jq -r .ipfs) ## Tiddler produced by "Astroport Desktop"
     [[ -z ${TOPIN} ]] && TOPIN=$(echo ${LINE} | jq -r ._canonical_uri) ## Tiddler is exported to IPFS
     [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] \
-        && [[ ! -z ${TOPIN} ]] \
-        && echo "EXTERNAL ${TOPIN}" \
+        && echo "NOT COMPATIBLE ${TOPIN}" \
         && TOPIN=""
 
     echo "$TTITLE"
@@ -241,17 +240,18 @@ while read LINE; do
         #~ ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
         #~ ${MY_PATH}/../tools/PAY4SURE.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
                                                                                                                                                                         ## Filling comment with email list will make players resend to all ## MAY BE A BAD IDEA ###
+        echo ${LINE} > ~/.zen/tmp/${MOATS}/line
+        LINEH=$(ipfs add -q ~/.zen/tmp/${MOATS}/line)
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${zen}" "${ASTROG1}" "${emails[@]} /ipfs/$LINEH"
 
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${zen}" "${ASTROG1}" "${emails[@]} $TTITLE"
-
-        echo "OK PalPay : $MSG" > ~/.zen/tmp/${MOATS}/g1message
+        echo "<html><body><h1>BRO ${PLAYER}</h1> : $MSG" > ~/.zen/tmp/${MOATS}/g1message
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
         [[ ! -z $TOPIN ]] \
             && ipfs pin add $TOPIN \
-            &&  echo "PINNING $TOPIN" >> ~/.zen/tmp/${MOATS}/g1message
+            &&  echo "<h2>PINNING $TOPIN</h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
+            ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
-
 
     else
 
@@ -260,7 +260,7 @@ while read LINE; do
         <h1>BRO. </h1>
         <br>
         <a href='${myIPFSGW}'/ipns/${ASTROTW}>${PLAYER}</a> HAS SHARED A TIDDLER WITH YOU.
-        <br><b>${TTITLE}</b><br>
+        <br><b>${TTITLE}</b><br>(✜‿‿✜)
         ... Join <a href='https://qo-op.com'>UPlanet</a> open a TW !
         </body></html>" > ~/.zen/tmp/palpay.bro
 
