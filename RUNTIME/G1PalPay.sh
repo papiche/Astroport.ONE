@@ -51,9 +51,9 @@ echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
 # CHECK LAST 10 INCOMING PAYMENTS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
+${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
-[[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json ]] \
+[[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY" \
 && exit 1
 ##############################
@@ -62,27 +62,27 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 #################################################################
 
 ## TREAT ANY COMMENT STARTING WITH N1
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
 
 while read NLINE; do
     ## COMMENT FORMAT = N1$CMD:$TH:$TRAIL
-    IDATE=$(echo ${NLINE} | jq -r .date)
-    IPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
+    TXIDATE=$(echo ${NLINE} | jq -r .date)
+    TXIPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
 
     COMMENT=$(echo ${NLINE} | jq -r .comment)
     CMD=$(echo ${COMMENT} | cut -d ':' -f 1 | cut -c -12 ) # Maximum 12 characters CMD
 
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $IDATE ]]  && echo "$CMD $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $TXIDATE ]]  && echo "$CMD $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" && continue
 
     TH=$(echo ${COMMENT} | cut -d ':' -f 2)
     TRAIL=$(echo ${COMMENT} | cut -d ':' -f 3-)
 
     if [[ -s ${MY_PATH}/../ASTROBOT/${CMD}.sh ]]; then
 
-        echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
-        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH} ${TRAIL}
+        echo "RECEIVED CMD=${CMD} from ${TXIPUBKEY}"
+        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${TXIPUBKEY} ${TH} ${TRAIL}
         ## WELL DONE .
-        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST IDATE
+        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST TXIDATE
 
     else
 
@@ -94,42 +94,39 @@ done < ~/.zen/tmp/${MOATS}/myN1.json
 
 ########################################################################################
 ############# CHECK FOR EMAILs IN PAYMENT COMMENT
-## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
+## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -r
 #################################################################
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
 
 # IF COMMENT CONTAINS EMAIL ADDRESSES
 # SPREAD & TRANSFER AMOUNT TO NEXT (REMOVING IT FROM LIST)... Other G1PalPay will continue the transmission...
 ########################################################################
-# this could lead in several account creation sharing % of incomes each time
-
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
-
 ## GET @ in JSON INLINE
 while read LINE; do
 
     echo "MATCHING IN COMMENT"
     echo "${LINE}"
     JSON=${LINE}
-    IDATE=$(echo $JSON | jq -r .date)
-    IPUBKEY=$(echo $JSON | jq -r .pubkey)
-    IAMOUNT=$(echo $JSON | jq -r .amount)
-    IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
+    TXIDATE=$(echo $JSON | jq -r .date)
+    TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
+    TXIAMOUNT=$(echo $JSON | jq -r .amount)
+    TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS IDATE=$IDATE FORMAT ??)"
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS TXIDATE=$TXIDATE FORMAT ??)"
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" && continue
 
     ## GET EMAILS FROM COMMENT
-    ICOMMENT=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
     ## DIVIDE INCOMING AMOUNT TO SHARE
-    echo "N=${#ICOMMENT[@]}"
-    N=${#ICOMMENT[@]}
-    SHARE=$(echo "scale=2; $IAMOUNT / $N" | bc)
+    echo "N=${#TXIMAILS[@]}"
+    N=${#TXIMAILS[@]}
+    SHARE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
 
-    echo $IDATE $IPUBKEY $IAMOUNT [$IAMOUNTUD] $ICOMMENT % $SHARE %
+    echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
 
-    for EMAIL in "${ICOMMENT[@]}"; do
+    for EMAIL in "${TXIMAILS[@]}"; do
 
         [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
 
@@ -161,7 +158,7 @@ while read LINE; do
 
         if [[ ${ASTROG1} != ${G1PUB} ]]; then
 
-            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "G1PalPay:$N:$IPUBKEY"
+            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "G1PalPay:$N:$TXIPUBKEY"
             STAMP=$?
 
         else
@@ -171,7 +168,7 @@ while read LINE; do
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST IDATE
+        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST TXIDATE
 
     done
 
