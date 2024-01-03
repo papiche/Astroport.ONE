@@ -23,7 +23,7 @@ INDEX=$4
 echo "SECTOR TW INSERTING" ${RSS}
 ## NEW RULE. ONLY 2 SIGNATURES TIDDLERS COMES UP
 
-cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/titles.list
+cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/tiddlers.list
 
 while read title; do
 
@@ -69,7 +69,7 @@ while read title; do
         fi
         floop=1
 
-        ## TODO EXTEND CONTROL TO text AND ipfs _canonical_url
+        ## TODO EXTEND CONTROL TO text & ipfs & _canonical_url
 
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
@@ -86,10 +86,8 @@ while read title; do
 
         if [[ "${NEMAILS[*]}" != "${IEMAILS[*]}" ]]; then
 
-            ## DIFFERENCE IN EMAIL SIGNATURES
-            COMMON=()
-            NUNIQUE=()
-            IUNIQUE=()
+            ## SEARCH FOR DIFFERENCE IN EMAIL SIGNATURES TAGS
+            COMMON=(); NUNIQUE=(); IUNIQUE=()
 
             # Detect common and unique elements
             for email in "${NEMAILS[@]}"; do
@@ -176,4 +174,6 @@ To Refuse<br>
 
     fi
 
-done < ~/.zen/tmp/${MOATS}/titles.list
+done < ~/.zen/tmp/${MOATS}/tiddlers.list
+
+exit 0

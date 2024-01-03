@@ -221,6 +221,7 @@ for SECTOR in ${SECTORS[@]}; do
         REGION="_${REGLAT}_${REGLON}"
         REGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
 
+        PHONEBOOTH="${SECTORG1PUB::30}"
         cat ${MY_PATH}/../templates/UPlanetSector/index.html \
                 | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~_UPZONE_~REGION ${REGION}~g" \
@@ -228,6 +229,7 @@ for SECTOR in ${SECTORS[@]}; do
                   -e "s~_ZONENS_~${SECTORNS}~g" \
                   -e "s~_UPZONENS_~${REGIONNS}~g" \
                   -e "s~_SECTORG1PUB_~${SECTORG1PUB}~g" \
+                  -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html

@@ -59,25 +59,27 @@ mkdir ~/.zen/tmp/${MOATS}
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+        ## FORMAT MUTATION CODE TODO REMOVE
+        [[ -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} ]] && mv ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN
         ## FORMAT CONTROL WARNING
-        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
+        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> INFO - INTIALIZE UMAP FORMAT - NEW UMAP KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN
 
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
-    echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/"
+    echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/"
 
  ## zday of the week for IPFSNODEID
 rm ~/.zen/tmp/${MOATS}/${UMAP}/z* ## TODO RESTRICT T O z*.html
-ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
-                ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
+                ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
                 # ZMOATS SHOULD BE MORE THAT 5 HOURS.
                 MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
                 ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
@@ -161,10 +163,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/index.html
 
-    SECTORMAPGEN="${EARTHCID}/map_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
-    SECTORSATGEN="${EARTHCID}/sat_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
+    #~ SECTORMAPGEN="${EARTHCID}/map_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
+    #~ SECTORSATGEN="${EARTHCID}/sat_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
+    #~ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
+    #~ echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
+    rm ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR*.html ## CODE CLEANING TODO REMOVE
 
 ## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${RLAT}_${RLON}
     RLAT=$(echo ${LAT} | cut -d '.' -f 1)
@@ -185,10 +188,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
 
-    REGIONMAPGEN="${EARTHCID}/map_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
-    REGIONSATGEN="${EARTHCID}/sat_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Sat.html
+    #~ REGIONMAPGEN="${EARTHCID}/map_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
+    #~ REGIONSATGEN="${EARTHCID}/sat_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
+    #~ echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Map.html
+    #~ echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Sat.html
+    rm ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION*.html ## CODE CLEANING TODO REMOVE
 
  ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
         cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
@@ -243,7 +247,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 ####################################
         ## RECORD P4N SPOT DATA
         echo "P4N : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
-        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] && echo "" > ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
             && curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
             && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json) ]] \
@@ -317,12 +321,14 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         SECTOR="_${SECLAT}_${SECLON}"
         SECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
 
+        PHONEBOOTH="${SECTORNS::30}"
         cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
         | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
                   -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                   -e "s~_ZONENS_~${UMAPNS}~g" \
                   -e "s~_UPZONENS_~${SECTORNS}~g" \
+                  -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html?southWestLat=${LAT}\&southWestLon=${LON}\&deg=0.01~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.html
@@ -354,16 +360,16 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         ##############################################################
         UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1)
 
-        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
+        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
         [[ ${ZCHAIN} && ${ZMOATS} ]] \
-            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain.${ZMOATS} \
+            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain.${ZMOATS} \
             && echo "UPDATING MOATS"
 
         ## DOES CHAIN CHANGED or INIT ?
         [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
-            && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain \
-            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats \
+            && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain \
+            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats \
             && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
         echo "PUBLISHING NEW UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
