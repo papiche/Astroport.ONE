@@ -56,14 +56,18 @@ while read title; do
         echo "Importing Title: $title"
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json
 
+        cat ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json | jq
+
+        echo "tiddlywiki  --load ${INDEX} --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json 'application/json'--output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' '"${SECTOR}.html"' 'text/plain'"
+
         tiddlywiki  --load ${INDEX} \
             --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json "application/json" \
             --output ~/.zen/tmp/${MOATS}/${SECTOR} --render "$:/core/save/all" "${SECTOR}.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ]] \
             && rm ${INDEX} \
-            && ((gloops++)) \
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
+            && ((gloops++)) \
             && echo "SECTOR (${gloops}) : ${title}" \
             || { echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && continue; }
 
