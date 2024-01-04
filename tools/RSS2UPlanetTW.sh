@@ -47,7 +47,8 @@ while read title; do
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
     rm -f ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json
     tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
-    ISHERE=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r ".[].title")
+    ISHERE=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json | jq -r ".[].title")
+
     [[ ! "${ISHERE}" ]] && echo "No Tiddler found in ${INDEX}"
 
     if [[ "${ISHERE}" != "${title}" ]]; then
@@ -60,7 +61,7 @@ while read title; do
 
         echo "tiddlywiki  --load ${INDEX} --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json 'application/json'--output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' '"${SECTOR}.html"' 'text/plain'"
 
-        tiddlywiki  --load ${INDEX} \
+        tiddlywiki --load ${INDEX} \
             --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json "application/json" \
             --output ~/.zen/tmp/${MOATS}/${SECTOR} --render "$:/core/save/all" "${SECTOR}.html" "text/plain"
 
@@ -69,7 +70,7 @@ while read title; do
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
             && ((gloops++)) \
             && echo "SECTOR (${gloops}) : ${title}" \
-            || { echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && continue; }
+            || { echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && break; }
 
     else
 
