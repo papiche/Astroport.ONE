@@ -67,9 +67,11 @@ while read title; do
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ]] \
             && echo "UPDATING INDEX" && rm ${INDEX} \
-            && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} && ((gloops++)) \
-            && echo "SECTOR (${gloops}) : ${title}" \
-            || { echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && break; }
+            && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
+            && ((gloops++)) \
+            && echo "SECTOR (${gloops}) : ${title}"
+
+         [[ ! -s ${INDEX} ]] && echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && exit 1
 
     else
 
