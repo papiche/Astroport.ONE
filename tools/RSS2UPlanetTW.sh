@@ -59,7 +59,8 @@ while read title; do
 
         cat ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json | jq
 
-        echo "tiddlywiki  --load ${INDEX} --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json 'application/json'--output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' '"${SECTOR}.html"' 'text/plain'"
+        echo "DEBUG"
+        echo "tiddlywiki  --load ${INDEX} --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json 'application/json' --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' '"${SECTOR}.html"' 'text/plain'"
 
         tiddlywiki --load ${INDEX} \
             --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json "application/json" \
