@@ -61,8 +61,8 @@ while read title; do
             && rm ${INDEX} \
             && ((gloops++)) \
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
-            && echo "SECTOR (${gloops}) : ${title}"
-            || {echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json"; continue; }
+            && echo "SECTOR (${gloops}) : ${title}" \
+            || { echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && continue; }
 
     else
 
