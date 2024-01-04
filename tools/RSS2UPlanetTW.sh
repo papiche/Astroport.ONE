@@ -30,44 +30,46 @@ echo "======= ${INDEX} =======
 SECTOR ${SECTOR} TW INSERTING ${PLAYER}
 ${RSS}
 =================================================================="
-cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/tiddlers.list
+cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 ##
 gloops=0
 while read title; do
 
     [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK" && break
 
-    # FILTER Astroport and les than 4 characters title Tiddlers (ex: GPS, ...)
+    # FILTER Astroport and les than 4 characters title Tiddlers (ex: GPS, ...). extend to allow personnal Tiddlers
     [[ ${title} == "GettingStarted" || ${title::4} == ${title} || ${title} == "AstroID" || ${title} == "Voeu1.png"  || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
         && echo "FILTERED TITLE ${title}" && continue
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
-    rm -f ~/.zen/tmp/${MOATS}/TMP.json
-    tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
+    rm -f ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json
+    tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
     ISHERE=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r ".[].title")
+    [[ "${ISHERE}" == "null" ]] && echo "No Tiddler found in ${INDEX}"
 
     if [[ "${ISHERE}" != "${title}" ]]; then
 
         ## NEW TIDDLER
         echo "Importing Title: $title"
-        cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
+        cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json
 
         tiddlywiki  --load ${INDEX} \
-            --import ~/.zen/tmp/${MOATS}/NEW.json "application/json" \
-            --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "${SECTOR}.html" "text/plain"
+            --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json "application/json" \
+            --output ~/.zen/tmp/${MOATS}/${SECTOR} --render "$:/core/save/all" "${SECTOR}.html" "text/plain"
 
-        [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
+        [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ]] \
             && rm ${INDEX} \
             && ((gloops++)) \
-            && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX} \
+            && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
             && echo "SECTOR (${gloops}) : ${title}"
+            || {echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json"; continue; }
 
     else
 
         ## SAME TIDDLER
         echo "TIDDLER WITH TITLE $title ALREADY EXISTS..."
 
-        cat ~/.zen/tmp/${MOATS}/TMP.json | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/INSIDE.json
+        cat ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/${SECTOR}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
         if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
@@ -184,7 +186,7 @@ To Refuse<br>
 
     fi
 
-done < ~/.zen/tmp/${MOATS}/tiddlers.list
+done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 
 
 ################################################
