@@ -18,10 +18,12 @@ echo "> RUNNING SECTOR.refresh"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir ~/.zen/tmp/${MOATS}
 
-## CALLED BY UPLANET.refresh.sh
+## UMAPS list made BY UPLANET.refresh.sh
 for i in $*; do
     UMAPS=("$i" ${UMAPS[@]})
 done
+
+[[ ${#UMAPS[@]} == 0 ]] && UMAPS="_0.00_0.00"
 
 ######## INIT SECTORS ########################
 for UMAP in ${UMAPS[@]}; do
@@ -39,6 +41,7 @@ for UMAP in ${UMAPS[@]}; do
 
 done
 
+## GET UNIQ SECTORS LIST
 SECTORS=($(echo "${MYSECTORS[@]}" | tr ' ' '\n' | sort -u))
 
 [[ ${SECTORS[@]} == "" ]] && echo "> NO SECTOR FOUND" && exit 0
