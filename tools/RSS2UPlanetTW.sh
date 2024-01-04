@@ -66,9 +66,8 @@ while read title; do
             --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' "${SECTOR}.html" 'text/plain'
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ]] \
-            && rm ${INDEX} \
-            && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
-            && ((gloops++)) \
+            && echo "UPDATING INDEX" && rm ${INDEX} \
+            && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} && ((gloops++)) \
             && echo "SECTOR (${gloops}) : ${title}" \
             || { echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && break; }
 
