@@ -18,7 +18,10 @@ INDEX=$4
 
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
 [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
-[[ ! -s ${INDEX} ]] && echo "BAD TW INDEX" && exit 1
+[[ ! -s ${INDEX} ]] \
+    && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ${INDEX} \
+    && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
+
 
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
@@ -45,7 +48,7 @@ while read title; do
     rm -f ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json
     tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
     ISHERE=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r ".[].title")
-    [[ "${ISHERE}" == "null" ]] && echo "No Tiddler found in ${INDEX}"
+    [[ ! "${ISHERE}" ]] && echo "No Tiddler found in ${INDEX}"
 
     if [[ "${ISHERE}" != "${title}" ]]; then
 
