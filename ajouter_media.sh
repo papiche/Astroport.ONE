@@ -37,9 +37,9 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 1
-    ((floop++)) && [ $floop -gt 10 ] \
+    ((floop++)) && [ $floop -gt 5] \
         && echo "ERROR. IPFS daemon not running on port 5001" \
-        && espeak 'ERROR. IPFS daemon not started' \
+        && espeak 'ERROR. I P F S daemon not running' \
         &&  exit 1
 done
 
