@@ -263,14 +263,14 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 if [[ ! ${ISTHERE} ]]; then
                     (
                         echo "$HTTPCORS
-                        LOGIN ERROR<br>Could not find PLAYER on ZEN Station" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 \
+                        <h1>LOGOUT ERROR</h1><h2>${PLAYER} keys not found on ZEN Station</h2>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 \
                         && echo "SLURP PLAYER ERROR ${player}"
                     ) &
                     exit 0
                 fi
 
-                echo "TW : $myIPFS/ipns/$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)" > ~/.zen/tmp/${MOATS}/${MOATS}.log
-                echo "<h1>$PLAYER LOGOUT ...</h1>" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
+                echo "<h1><a href='$myIPFS/ipns/${ISTHERE}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/${MOATS}.log
+                echo "<h2>$PLAYER LOGOUT ...</h2>removing keys : " >> ~/.zen/tmp/${MOATS}/${MOATS}.log
                 ipfs key rm ${G1PUB} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
                 ipfs key rm ${PLAYER} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
                 ipfs key rm "${PLAYER}_feed" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
