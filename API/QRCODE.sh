@@ -645,7 +645,8 @@ QRCODE="${QRCODE%%:*}" ## TRIM :ZEN :ChK
 ################################################################################
 ################################################################################
 ## QRCODE IS IPNS FORMAT "12D3Koo"  ( try ipfs_to_g1 )
-IPNS2G1=$(${MY_PATH}/../tools/ipfs_to_g1.py ${QRCODE} 2>/dev/null) ## NOT SURE. works on any string ;)
+IPNS2G1=$(${MY_PATH}/../tools/ipfs_to_g1.py ${QRCODE} 2>/dev/null)
+echo "IPNS2G1=${IPNS2G1} ZCHK=${ZCHK}"
 [[ ${ZCHK} == "" && ${#IPNS2G1} -ge 40 && ${QRCODE::4} == "12D3" ]] \
         && echo "${PORT} QRCODE IS IPNS ADDRESS : ${myIPFS}/ipns/${QRCODE}" \
         && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${myIPFS}/ipns/${QRCODE}'\" />Loading from IPFS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
