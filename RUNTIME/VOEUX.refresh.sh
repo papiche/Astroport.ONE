@@ -58,7 +58,8 @@ tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1vo
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 0
 
 cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
-echo $(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)" VOEUX : ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
+wishnumbers=$(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)
+echo "${wishnumbers} VOEUX : ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
 
 ## ${PLAYER}.g1wishes.txt contains all TW G1PUB : IPNS key name
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -266,32 +267,34 @@ done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 ################################################
 ### SEND GRATITUDE TO SECTOR
 ## GET "GPS" TIDDLER
-tiddlywiki --load ${INDEX} \
-    --output ~/.zen/tmp/${MOATS} \
-    --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
-TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
-LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-[[ ${LAT} == "null" ]] && LAT="0.00"
-LAT=$(makecoord $LAT)
-LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-[[ ${LON} == "null" ]] && LON="0.00"
-LON=$(makecoord $LON)
-echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
-rm ~/.zen/tmp/${MOATS}/GPS.json
-SECLAT="${LAT::-1}"
-SECLON="${LON::-1}"
-SECTOR="_${SECLAT}_${SECLON}"
-##############################################################
-SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-##############################################################
-GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
-G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" )
-echo "***** PLAYER $PLAYER *************************************"
-echo "SEND ${GRATITUDE} ZEN = ${G1AMOUNT} G1
-to ${SECTOR} WALLET ${SECTORG1PUB}"
-echo "************************************************************"
-MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "IPFS:${MYWISHFLUX}"
+if [[ ${wishnumbers} -gt 0 ]]; then
+    tiddlywiki --load ${INDEX} \
+        --output ~/.zen/tmp/${MOATS} \
+        --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+    TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+    LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+    [[ ${LAT} == "null" ]] && LAT="0.00"
+    LAT=$(makecoord $LAT)
+    LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+    [[ ${LON} == "null" ]] && LON="0.00"
+    LON=$(makecoord $LON)
+    echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
+    rm ~/.zen/tmp/${MOATS}/GPS.json
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
+    SECTOR="_${SECLAT}_${SECLON}"
+    ##############################################################
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    ##############################################################
+    GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
+    G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" )
+    echo "***** PLAYER $PLAYER *************************************"
+    echo "SEND ${GRATITUDE} ZEN = ${G1AMOUNT} G1
+    to ${SECTOR} WALLET ${SECTORG1PUB}"
+    echo "************************************************************"
+    MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "IPFS:${MYWISHFLUX}"
+fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
 
