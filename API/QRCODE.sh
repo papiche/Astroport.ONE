@@ -155,14 +155,14 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
             G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
 
-            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1PUB}"
+            echo "COINScheck.sh ${G1PUB}"
             ${MY_PATH}/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
             cat ~/.zen/tmp/${G1PUB}.curcoin
             CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | cut -d '.' -f 1) ## ROUNDED G1 COIN
             CURZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
-            echo "SOURCE WALLET : $CURCOINS G1 / $CURZEN ZEN"
+            echo "= $CURCOINS G1 / $CURZEN ZEN"
 
-            [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${WHAT} == "" ]] &&  echo "<br> Missing WHAT <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
             G1DEST=$(echo "$VAL" | cut -d ':' -f 1) ## G1PUB:CHK format
@@ -172,7 +172,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ## GET DESTINATION ACCOUNT AMOUNT
             DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${G1DEST} | tail -n 1)
             DESTMZEN=$(echo "($DESTM - 1) * 10" | bc | cut -d '.' -f 1)
-            echo "DEST WALLET : $DESTM G1 / $DESTMZEN ZEN"
+            echo "DEST WALLET = $DESTM G1 / $DESTMZEN ZEN"
 
             if [[ ${APPNAME} == "pay" ]]; then
 
@@ -254,10 +254,21 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 ##############################################
             if [[ ${APPNAME} == "logout" ]]; then
 
+                player=$(echo "${salt}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kind
                 ## REMOVE PLAYER IPNS KEY FROM STATION
-                [[ "${salt}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
-                && PLAYER=${salt} \
+                [[ "${player}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                && PLAYER=${player} \
                 || PLAYER=${WHAT}
+
+                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+                if [[ ! ${ISTHERE} ]]; then
+                    (
+                        echo "$HTTPCORS
+                        LOGIN ERROR<br>Could not find PLAYER on ZEN Station" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 \
+                        && echo "ERROR PLAYER SLURP"
+                    ) &
+                    exit 0
+                fi
 
                 echo "TW : $myIPFS/ipns/$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)" > ~/.zen/tmp/${MOATS}/${MOATS}.log
                 echo "<h1>$PLAYER LOGOUT ...</h1>" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
@@ -275,8 +286,10 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ ${APPNAME} == "login" ]]; then
 
-                [[ "${salt}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
-                && PLAYER=${salt} \
+                player=$(echo "${salt}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kind
+
+                [[ "${player}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
                 ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
