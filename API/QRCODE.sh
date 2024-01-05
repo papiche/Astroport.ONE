@@ -664,25 +664,27 @@ echo "##########################################################################
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
 
     ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
-    echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
+    echo "${ZCHK}  COINScheck ${QRCODE}"
     VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
     COINSFILE=$HOME/.zen/tmp/${MOATS}/${QRCODE}.COINS
 
-    ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+    [[ ${VISITORCOINS} != "null" ]] \
+        && ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1) \
+        || ZEN="-10"
 
     DISPLAY="$VISITORCOINS G1"
-    [[ $ZCHK == "ZEN" ]] && DISPLAY="$ZEN ẐEN"
+    [[ ${ZCHK} == "ZEN" ]] && DISPLAY="$ZEN ẐEN"
 
     ## WALLET VIERGE
     ###########################################
-    if [[ $VISITORCOINS == "null" ]]; then
+    if [[ $VISITORCOINS == "null" || ${ZEN} -lt 10 ]]; then
 
-        echo ""
+        echo "!! LOW ZEN WALLET ZEN=${ZEN}"
 
         echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-        echo "<h1>EMPTY. PLEASE CHARGE. </h1>
-        ... Send ZEN ? Contact <a href='mailto:support@qo-op.com'>support</a>
-        ($myHOST)"  >> ~/.zen/tmp/${MOATS}/index.redirect
+        echo "<h1>LOW ZEN WARNING</h1>
+        PLEASE CHARGE... only ${ZEN} ZEN
+        "  >> ~/.zen/tmp/${MOATS}/index.redirect
         (
         cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
         echo "BLURP null ZEN $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -693,7 +695,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
 
     ## WE SEND WALLET AMOUNT DISPLAY
     (
-    echo "$HTTPCORS  <h2>${ZCHK} : ${QRCODE}</h2><h1>${DISPLAY}</h1>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP ${DISPLAY} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 
