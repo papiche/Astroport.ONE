@@ -1,4 +1,11 @@
 #!/bin/bash
+##########################
+## GRATITUDE BOX SIMULATOR
+##########################
+## distribute 30 units on 10 coins.
+##  get a random coin, read units
+##  GRATITUDE ~= 3 ( min = 1  max = 21 )
+##########################
 
 put_units_on_coins() {
       local coins=()
