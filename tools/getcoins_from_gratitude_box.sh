@@ -2,15 +2,23 @@
 ##########################
 ## GRATITUDE BOX SIMULATOR
 ##########################
-## distribute 30 units on 10 coins.
+## distribute $1 units on $2 coins.
 ##  get a random coin, read units
 ##  GRATITUDE ~= 3 ( min = 1  max = 21 )
 ##########################
+# Set coins & units parameters
+total_units=$1
+[[ $total_units == ""  ]] && total_units=30
+total_coins=$2
+[[ $total_coins == ""  ]] && total_coins=10
+
+
+[[ $total_units -lt $total_coins ]] \
+    && echo 0 \
+    && exit 1
 
 put_units_on_coins() {
       local coins=()
-      total_units=30
-      total_coins=10
 
       # Initialize an array to store the units for each coin
       declare -a coin_units
@@ -33,9 +41,8 @@ put_units_on_coins() {
         #echo "Coin $((i + 1)): ${coin_units[$i]} units"
       done
 
-       echo "${coins[@]}"
+      echo "${coins[@]}"
 }
-
 
 # Function to randomly pick one coin
 pick_random_coin() {
@@ -45,8 +52,10 @@ pick_random_coin() {
   echo "$picked_coin"
 }
 
-# Simulate putting 30 units on 10 coins
+# Simulate putting units on coins
 coin_values=($(put_units_on_coins))
+# debug
 # echo "${coin_values[@]}"
 # Randomly pick one coin
 pick_random_coin "${coin_values[@]}"
+exit 0
