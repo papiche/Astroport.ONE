@@ -78,7 +78,7 @@ while read title; do
         ## SAME TIDDLER
         echo "TIDDLER WITH TITLE $title ALREADY EXISTS..."
 
-        cat ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/${SECTOR}/INSIDE.json
+        cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json ~/.zen/tmp/${MOATS}/${SECTOR}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
         if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
