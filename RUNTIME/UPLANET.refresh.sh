@@ -242,11 +242,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 
 ####################################
         ## MAKE GET POI's
-
+        echo "################### WEB2.0 SCRAPING TIME >>>>>>>>>>>>>>>>"
 ### JSON UMAP SCRAPPING
 ####################################
         ## RECORD P4N SPOT DATA
-        echo "P4N : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
+        echo "* park4night : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
         [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
             && curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
@@ -256,10 +256,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
             || rm ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
 
 ####################################
-        echo "GET GCHANGE ADS..."
+        echo "* gchange : ./tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON}"
         ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
         ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
+        echo "MAKING _index.p4n.html with ./templates/P4N/index.html"
         ## CREATE INDEX LOADING JSONs ON OPENSTREETMAP
         cat ${MY_PATH}/../templates/P4N/index.html \
         | sed -e "s~43.2218~${LAT}~g" \
@@ -270,6 +271,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.p4n.html
 
 ########################################################
+       echo "CREATING SPHERICAL LOCATIONS"
        ## PREPARE Ŋ1 WORLD MAP ##################################################################
         echo "var examples = {};
         examples['locations'] = function() {
@@ -313,7 +315,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         " >> ~/.zen/tmp/world.js
 
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
-        echo "JSON TW WORLD READY /ipfs/${IAMAP}/world.js"
+        echo "JSON UMAP WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
         ### APPLY ON APP MODEL
         SECLAT="${LAT::-1}"
@@ -321,7 +323,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         SECTOR="_${SECLAT}_${SECLON}"
         SECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
 
-        PHONEBOOTH="${SECTORNS::30}"
+        PHONEBOOTH="${G1PUB::30}"
         cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
         | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
                   -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
