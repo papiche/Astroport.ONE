@@ -125,6 +125,11 @@ zIp() {
     [ -n "$zip" ] && echo "$zip" || false
 }
 
+UPlanetSharedSecret() {
+    UPlanetSharedSecret=$(cat ~/.zen/UPlanetSharedSecret 2>/dev/null | head -n 1 )
+    [ -n "$UPlanetSharedSecret" ] && echo "$UPlanetSharedSecret" || false
+}
+
 myIp() {
     local myIp=$(hostname -I | awk '{print $1}' | head -n 1)
     local myZip=$(zIp)
@@ -485,5 +490,7 @@ FLIPPERCID="${EARTHCID}/coinflip"
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
 myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
 
-## UPLANETNAME LAT UPLANETNAME LON keys translation
-UPLANETNAME=""
+## UPLANETNAME could be defined in ~/.zen/UPlanetSharedSecret
+[ -n "$(UPlanetSharedSecret)" ] \
+    && UPLANETNAME="$(UPlanetSharedSecret)" \
+    || UPLANETNAME=""
