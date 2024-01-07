@@ -285,8 +285,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
     else
         ## COUNT NO CHANGE
-        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange 2>/dev/null) || try=0
-        ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange
+        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/_nochange 2>/dev/null) || try=0
+        ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/_nochange
         echo "NO CHANGE $try TIMES"
     fi
     ##############################################################
@@ -323,12 +323,15 @@ for PLAYER in ${PLAYERONE[@]}; do
         && [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]] \
         && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
         && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
-        && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \
-        && echo "<html><body><h1>WARNING.</h1>  Publish or your TW will be UNPLUGGED from Astroport and stop being published..." > ~/.zen/tmp/alert \
-        && echo "<a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW </a></body></html>" >> ~/.zen/tmp/alert \
+        && DIFF_SECONDS=$(( SNOW - SBIRTH )) \
+        && [[ ${DIFF_SECONDS} -gt $(( 27 * 24 * 60 * 60 ))  ]] \
+        && days=$((DIFF_SECONDS / 60 / 60 / 24)) \
+        && echo "<html><body><h1>WARNING.</h1>  Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert \
+        && echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3></body></html>" >> ~/.zen/tmp/alert \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
-        && [[ $(( SNOW - SBIRTH )) > $(( 30 * 24 * 60 * 60 ))  ]] \
-        && echo ">>>> PLAYER UNPLUG >>>>> BYE BYE ${PLAYER}" \
+        && echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days" \
+        && [[ ${DIFF_SECONDS} -gt $(( 30 * 24 * 60 * 60 ))  ]] \
+        && echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER}" \
         && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
         && continue
     #################################### UNPLUG ACCOUNT
