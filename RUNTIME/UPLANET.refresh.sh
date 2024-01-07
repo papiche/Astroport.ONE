@@ -75,7 +75,7 @@ mkdir ~/.zen/tmp/${MOATS}
  ## zday of the week for IPFSNODEID
 rm ~/.zen/tmp/${MOATS}/${UMAP}/z* ## TODO RESTRICT T O z*.html
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
