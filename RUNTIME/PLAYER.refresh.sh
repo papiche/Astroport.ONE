@@ -310,13 +310,15 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "================================================"
 
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
-    ## CREATING 30 DAYS RSS STREAM
+    ## CREATING 30 DAYS JSON RSS STREAM
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
-    ## TODO EXPORT RSS.XML ATOM FEED FORMAT
+    ## TODO CREATING 30 DAYS XML RSS STREAM
     ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
+    # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
+    ### $:/plugins/sycom/atom-feed/atom.xml
     #~ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
 
