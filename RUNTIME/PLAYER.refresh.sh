@@ -322,6 +322,11 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
 
+    SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
+    SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+    DIFF_SECONDS=$(( SNOW - SBIRTH ))
+    days=$((DIFF_SECONDS / 60 / 60 / 24))
+    echo "PLAYER TW was created $days ago"
 
     ##################################
     #### PLAYER ACCOUNT CLEANING #########
@@ -329,11 +334,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
         && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
         && [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]] \
-        && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
-        && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
-        && DIFF_SECONDS=$(( SNOW - SBIRTH )) \
         && [[ ${DIFF_SECONDS} -gt $(( 27 * 24 * 60 * 60 ))  ]] \
-        && days=$((DIFF_SECONDS / 60 / 60 / 24)) \
         && echo "<html><body><h1>WARNING.</h1>  Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert \
         && echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3></body></html>" >> ~/.zen/tmp/alert \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
@@ -374,8 +375,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     && ipfs key rm ${PLAYER}_feed \
     && ipfs key rm ${G1PUB}
 
+    ## CLEANING CACHE
+    rm -Rf ~/.zen/tmp/${MOATS}
 
 done
-echo "PLAYER.refresh DONE."
+echo "============================================ PLAYER.refresh DONE."
 
 exit 0

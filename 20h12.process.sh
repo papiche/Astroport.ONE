@@ -104,11 +104,15 @@ else
 fi
 
 echo "IPFS LOW MODE ?"
-## IPFS DISABLED : STOP IT
+## IF IPFS DAEMON DISABLED : WAIT 1H & STOP IT
 [[ $LOWMODE != "" ]] \
     && echo "ON. $LOWMODE" \
     && sleep 360 \
-    && sudo systemctl stop ipfs \
-    || { echo "OFF. RESTART IPFS" && sleep 360 && sudo systemctl restart ipfs; }
+    && sudo systemctl stop ipfs
+    && exit 0
+
+echo "OFF. RESTART IPFS"
+sleep 60
+sudo systemctl restart ipfs
 
 exit 0
