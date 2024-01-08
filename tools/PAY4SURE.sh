@@ -60,14 +60,19 @@ rm -f ${PENDINGFILE} 2>/dev/null ## CLEAN START
 ## PREPARE CALLING MYSELF AGAIN COMMAND
 cp ${KEYFILE} ${PENDINGDIR}/secret.key 2>/dev/null
 echo '#!/bin/bash
-bash ${ME} "${KEYFILE}" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${MOATS}"
+bash '${ME}' "'${KEYFILE}'" "'${AMOUNT}'" "'${G1PUB}'" "'${COMMENT}'" "'${MOATS}'"
 ' > ${PENDINGDIR}/${MOATS}_replay.sh
+chmod +x ${PENDINGDIR}/${MOATS}_replay.sh
 
 rm -f ${PENDINGDIR}/${MOATS}.result
-# MAKE PAYMENT
-${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c '${COMMENT}' -m 2>&1> ${PENDINGDIR}/${MOATS}.result
 
-if [ $? == 0 ]; then
+################################################
+# MAKE PAYMENT
+${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result
+CHK=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 1 )
+echo ${CHK}
+
+if [ $? == 0 || ${CHK} == 'Le document généré est conforme.' ]; then
 
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
@@ -88,12 +93,12 @@ if [ $? == 0 ]; then
     ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
-    echo "<h1>ẐEN OPERATION</h1>
+    echo "<html><h1>ẐEN OPERATION</h1>
     <h3>${PAYOUTPUB}
     <br> ${ZENCUR} - ${ZENAMOUNT} </h3>
     <h3>${G1PUB}
     <br> ${ZENDES} + ${ZENAMOUNT} </h3>
-    <h2>OK</h2>" >> ${PENDINGDIR}/${MOATS}.result
+    <h2>OK</h2></html>" >> ${PENDINGDIR}/${MOATS}.result
 
     $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result
 
@@ -105,9 +110,9 @@ else
 
     ## INFORM SYSTEM MUST RENEW OPERATION
     rm ${PENDINGFILE}
-    echo "<h2>BLOCKCHAIN CONNEXION ERROR</h2>
+    echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
     <h1>-  MUST RETRY -</h1>
-    LAUNCHING SUB SHELL" >> ${PENDINGDIR}/${MOATS}.result
+    LAUNCHING SUB SHELL</html>" >> ${PENDINGDIR}/${MOATS}.result
 
     ## COUNT NUMBER OF TRY
     try=$(cat ${PENDINGDIR}/${MOATS}.try 2>/dev/null) || try=0
