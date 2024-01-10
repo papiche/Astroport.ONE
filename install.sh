@@ -216,28 +216,28 @@ echo "#############################################"
 fi
 
 
-echo "#############################################"
-echo "### ANY ERRORS ?"
+echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+echo "xXX ERRORS XXx"
 cat /tmp/install.errors.log
-echo "#############################################"
-echo "Astroport.ONE INSTALLATION FINISHED"
+echo "################XXXX#########################"
+echo "Astroport.ONE Welcome Space Kitty"
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
-echo "CREEZ VOTRE COMPTE SUR"
-echo "    http://astroport.localhost:1234"
-echo "%%%%%%%%  OU ~/.zen/Astroport.ONE/command.sh "
+echo "Please finish keygen procedure"
+echo "    https://pad.p2p.legal/keygen"
 echo "#############################################"
 
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
-    espeak "Please create a player"
+    espeak "Welcome Space Kitty"
 
-    [[ $XDG_SESSION_TYPE == 'x11' ]] \
-    && xdg-open "http://astroport.localhost:1234" \
-    || ~/.zen/Astroport.ONE/command.sh
+    #~ [[ $XDG_SESSION_TYPE == 'x11' ]] \
+    #~ && xdg-open "http://astroport.localhost:1234" \
+    #~ || ~/.zen/Astroport.ONE/command.sh
 
+    xdg-open "https://chaton.g1sms.fr"
 
 else
 
