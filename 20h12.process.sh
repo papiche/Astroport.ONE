@@ -108,7 +108,7 @@ echo "IPFS LOW MODE ?"
 [[ $LOWMODE != "" ]] \
     && echo "ON. $LOWMODE" \
     && sleep 360 \
-    && sudo systemctl stop ipfs
+    && sudo systemctl stop ipfs \
     && exit 0
 
 echo "OFF. RESTART IPFS"
