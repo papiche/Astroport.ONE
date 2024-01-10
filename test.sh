@@ -6,14 +6,23 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
-echo "LISTING IPFS SWARM PEER"
+echo "TiddlyWiki RW"
+which tiddlywiki
+tw=$?
+
+echo "IPFS SWARM PEER"
 ipfs swarm peers
+ipfs=$?
 
-echo "GENERATING KEY"
-~/.zen/tools/keygen "coucou" "coucou"
 
-echo "ACCESS BLOCKCHAIN"
-~/.zen/tools/jaklis/jaklis.py history -p ${WORLDG1PUB}
+echo "keygen can GENERATE KEY"
+${MY_PATH}/tools/keygen "coucou" "coucou"
+keygen=$?
 
-echo "RW TW"
-tiddlywiki
+echo "jaklis can ACCESS BLOCKCHAIN"
+${MY_PATH}/tools/jaklis/jaklis.py history -p ${WORLDG1PUB}
+jaklis=$?
+
+
+echo $tw $ipfs $keygen $jaklis
+exit 0
