@@ -169,7 +169,7 @@ if [[ $USER != 'xbian' ]]; then
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-        python -m pip install brother_ql
+        python -m pip --break-system-packages install brother_ql
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin $USER
         sudo usermod -a -G tty $USER

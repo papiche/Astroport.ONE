@@ -69,11 +69,14 @@ rm -f ${PENDINGDIR}/${MOATS}.result
 ################################################
 # MAKE PAYMENT
 ${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result
-CHK=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 2 )
-echo ${CHK}
+CHK1=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 1 )
+CHK2=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 2 )
 
-if [ $? == 0 || $(echo "${CHK}" | grep 'succès') ]; then
+echo ${CHK1}
+echo ${CHK2}
 
+if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 'conforme' ) ]]; then
+    echo "TRANSACTION SENT"
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
     ## CHANGE COINS CACHE
@@ -107,6 +110,8 @@ if [ $? == 0 || $(echo "${CHK}" | grep 'succès') ]; then
     mv ${PENDINGFILE} ${PENDINGFILE}.DONE
 
 else
+
+    echo "TRANSACTION ERROR"
 
     ## INFORM SYSTEM MUST RENEW OPERATION
     rm ${PENDINGFILE}
