@@ -69,10 +69,10 @@ rm -f ${PENDINGDIR}/${MOATS}.result
 ################################################
 # MAKE PAYMENT
 ${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result
-CHK=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 1 )
+CHK=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 2 )
 echo ${CHK}
 
-if [ $? == 0 || ${CHK} == 'Le document généré est conforme.' ]; then
+if [ $? == 0 || $(echo "${CHK}" | grep 'succès') ]; then
 
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 

@@ -100,20 +100,20 @@ if [[ ${QRCODE} == "station" ]]; then
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
         ## SHOW G1PALPAY FRONT (IFRAME)
-        sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
+        sed "s~_STATION_~${myIPFSW}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
         [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
-        sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
+        sed -i "s~http://127.0.0.1:8080~${myIPFSW}~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
 
         WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
         echo $WSTATION > ~/.zen/tmp/WSTATION
         end=`date +%s`
-        echo "NEW WSTATION ${myIPFS}${WSTATION} Execution time was "`expr $end - $start` seconds.
+        echo "NEW WSTATION ${myIPFSW}${WSTATION} Execution time was "`expr $end - $start` seconds.
     ## SEND TO WSTATION PAGE
-    sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed "s~_TWLINK_~${myIPFSW}${WSTATION}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFSW}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -696,7 +696,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
 
     ## WE SEND WALLET AMOUNT DISPLAY
     (
-    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1><h2><a href='$myUPLANET/g1gate/?pubkey=$G1PUB'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP ${DISPLAY} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 

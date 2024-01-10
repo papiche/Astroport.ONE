@@ -437,7 +437,7 @@ myIP="$(myIp)" # "127.0.0.1"
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-myASTROPORT="http://$(hostname).local:1234" #astroport.localhost
+myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
 myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
 myAPI="http://${myIP}:5001"
 myDATA="https://data.gchange.fr"
@@ -446,7 +446,7 @@ myCESIUM="https://g1.data.e-is.pro"
 myG1BILLET="http://${myIP}:33101"
 myHOST="$(myHostName)"
 
-myIPFS="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFS="http://${myIP}:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
@@ -494,3 +494,10 @@ myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
+
+## DEV fred@g1sms.fr UPlanet World Keeper.
+[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="EniaswqLCeWRJfz39VJRQwC6QDbAhkRHV9tn2fjhcrnc"
+## when UPlanetSharedSecret is set.
+## All TW wallet are created with 1 G1 "primal transaction"
+## making UPlanet blockchains secured.
+########################################
