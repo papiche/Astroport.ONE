@@ -67,4 +67,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
 fi
 
+## CLEANING SWARM 30 DAYS OLD
+find  ~/.zen/tmp/swarm/ -mtime +30 -type d -exec rm -Rf '{}' \;
+
 exit 0
