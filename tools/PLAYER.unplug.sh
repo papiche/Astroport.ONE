@@ -69,9 +69,13 @@ mkdir -p ~/.zen/tmp/${MOATS}
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Hello ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='${myIPFSGW}/ipfs/${TW}'>LAST TW STATE</a>.<br><h3>May the force be with you.</h3></body></html>"
 
-    echo "PLAYER IPNS KEYS UNPLUGED"
-    echo "rm -Rf ~/.zen/game/players/${PLAYER}"
-    rm -Rf ~/.zen/game/players/${PLAYER}
+echo "PLAYER IPNS KEYS UNPLUGED"
+echo "#######################"
+echo "CLEANING ~/.zen/game/players/${PLAYER}"
+rm -Rf ~/.zen/game/players/${PLAYER-empty}
+
+echo "CLEANING NODE CACHE ~/.zen/tmp/${IPFSNODEID-empty}/*/${PLAYER-empty}*"
+rm -Rf ~/.zen/tmp/${IPFSNODEID-empty}/*/${PLAYER-empty}*
 
 echo "CLEANING SESSION CACHE"
 rm -Rf ~/.zen/tmp/${MOATS}
