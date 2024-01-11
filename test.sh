@@ -10,7 +10,7 @@ echo "TiddlyWiki RW"
 which tiddlywiki
 tw=$?
 
-echo "IPFS SWARM PEER"
+echo "IPFS can connect SWARM"
 ipfs swarm peers
 ipfs=$?
 
@@ -23,9 +23,18 @@ echo "jaklis can ACCESS BLOCKCHAIN"
 ${MY_PATH}/tools/jaklis/jaklis.py history -p ${WORLDG1PUB}
 jaklis=$?
 
-test=$tw$ipfs$keygen$jaklis
+echo "amzqr can CREATE QR CODE"
+amzqr "COUCOU" -l H -c -p ${MY_PATH}/images/TV.png -n TV.png -d /tmp
+amzqr=$?
 
-[[ $test == "0000" ]] && echo "PERFECT" && exit 0
+xdg-open /tmp/TV.png
+x11=$?
+
+[[ $x11 != "0" ]] && echo "HEADLESS MODE"
+
+test=$tw$ipfs$keygen$jaklis$amzqr
+
+[[ $test == "00000" ]] && echo "PERFECT" && exit 0
 
 [[ ${test::1} == "1" ]] && echo "PROBLEM WITH TiddlyWiki"
 [[ ${test:2:2} == "11" ]] && echo "CRYPTO LAYER MALFUNCTION"
