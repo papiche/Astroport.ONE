@@ -474,7 +474,7 @@ myASTROTUBE="https://$(myAstroTube)"
 
 
 ###
-if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
+if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 # GET SCREEN DIMENSIONS
     screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
     width=$(echo $screen | cut -d 'x' -f 1)

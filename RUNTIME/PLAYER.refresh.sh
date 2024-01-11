@@ -97,23 +97,23 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         NOWCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain)
         LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
-        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        echo "TW REFRESH FAILED : $myIPFS/ipns/${ASTRONAUTENS}"
+        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<br>"
+        echo "<a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>"
         echo ">> %%% WARNING %%%"
         echo "------------------------------------------------"
-        echo "LAST : ${myIPFS}/ipfs/${LASTCHAIN}"
-        echo "NOW : ${myIPFS}/ipfs/${NOWCHAIN}"
+        echo " * <a href='${myIPFS}/ipfs/${LASTCHAIN}'>LAST</a>"
+        echo " *<a href='${myIPFS}/ipfs/${NOWCHAIN}'>NOW</a>"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         ## SEND AN EMAIL ALERT TO PLAYER
-        echo "TW REFRESH FAILED : $myIPFS/ipns/${ASTRONAUTENS}" > ~/.zen/tmp/result
-        echo "------------------------------------------------" >> ~/.zen/tmp/result
+        echo "<html><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>" > ~/.zen/tmp/result
+        echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
         echo "" >> ~/.zen/tmp/result
-        echo "NOW CHAIN : ${myIPFS}/ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
-        echo "PREVIOUS : ${myIPFS}/ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>ANCIENT</a>" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>NEW</a>" >> ~/.zen/tmp/result
         echo "" >> ~/.zen/tmp/result
-        echo " %%% WARNING %%%" >> ~/.zen/tmp/result
-        echo "------------------------------------------------" >> ~/.zen/tmp/result
-        echo "PLEASE REPAIR BY SAVING ONLINE" >> ~/.zen/tmp/result
+        echo "<br> %%% WARNING %%%" >> ~/.zen/tmp/result
+        echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
+        echo "<br>PLEASE REPAIR BY SAVING ONLINE</body></html>" >> ~/.zen/tmp/result
         echo "OR RUNNING CLI COMMAND : ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
 
         try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.try 2>/dev/null) || try=3

@@ -64,7 +64,7 @@ fi
         fi
 
 dur=`expr $(date +%s) - $start`
-[[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "$dur seconds for $(cat ~/.zen/tmp/${MOATS}Astroport.json | jq -r .[].pseudo) TW caching"
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && espeak "$dur seconds for $(cat ~/.zen/tmp/${MOATS}Astroport.json | jq -r .[].pseudo) TW caching"
 
 echo "${ME} : (0‿‿0) Execution time was $dur seconds."
 exit 0

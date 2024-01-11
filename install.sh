@@ -37,7 +37,7 @@ echo "################  TW Ŋ1 PROTOCOL #############"
 echo "##################################################"
 
 echo ; echo "UPDATING SYSTEM REPOSITORY"
-#~ [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
+#~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
 sudo apt-get update
 
 echo "#############################################"
@@ -77,7 +77,7 @@ for i in cmatrix cowsay; do
     fi
 done
 
-if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
+if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 echo "#############################################"
 echo "######### INSTALL DESKTOP TOOLS  ######"
 echo "#############################################"
@@ -201,7 +201,7 @@ echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
 
-if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' ]]; then
+if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 echo "#############################################"
 echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
 echo "#############################################"
@@ -233,7 +233,7 @@ echo "#############################################"
     # ~/.zen/Astroport.ONE/start.sh
     espeak "Welcome Space Kitty"
 
-    #~ [[ $XDG_SESSION_TYPE == 'x11' ]] \
+    #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
     #~ && xdg-open "http://astroport.localhost:1234" \
     #~ || ~/.zen/Astroport.ONE/command.sh
 

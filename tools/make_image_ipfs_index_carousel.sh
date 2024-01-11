@@ -220,7 +220,7 @@ cat $core_file >> $html_file
 echo "</body></html>" >> $html_file
 
 htmlipfs=$(ipfs add -q $html_file)
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
 
 echo "/ipfs/$htmlipfs"
 

@@ -54,7 +54,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     [[ $YOU ]] \
     && ipfs --timeout 180s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
-    [[ $XDG_SESSION_TYPE == 'x11' ]] \
+    [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
     && [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
     && echo "TW FOUND ENTER 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
     && read ENTER \
@@ -477,7 +477,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 # ls ~/.zen/game/players/${PLAYER}
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
 ################# PREPARE DOCKERIZATION
 #~ [[ -l ~/.zen/game/players/.current ]] \

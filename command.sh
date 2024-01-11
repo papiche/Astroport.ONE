@@ -127,7 +127,7 @@ echo "$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) TW/Moa"
 echo "$myIPFS/ipns/$ASTRONAUTENS"
 echo "Activation Réseau P2P Astroport !"
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
 echo
 PS3="$PLAYER choisissez : __ "
