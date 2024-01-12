@@ -484,7 +484,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 ###
 fi
 
-EARTHCID="/ipfs/QmaQ5XbhjM6hriSdaWadNsf6FhvkE2bQScPG1E1gsRj6is"
+EARTHCID="/ipfs/QmTepoka99jCNMkYT2covaJtGRMC91WEzwo5g9xYLU91bL"
 FLIPPERCID="${EARTHCID}/coinflip"
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
