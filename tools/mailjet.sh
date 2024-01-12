@@ -30,7 +30,10 @@ pseudo="${CLYUSER}_${YOMAIN}"
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 
-SUBJECT="[UPlanet] $pseudo : $(myHostName)"
+## add a tittle in message
+title="$3"
+
+SUBJECT="[UPlanet] ${title} ${pseudo} : $(myHostName)"
 
 MESSAGESIGN="---<br>this message is relayed to you by <a href=$(myIpfsGw)/ipns/$IPFSNODEID>$(myHostName)</a> ♥BOX Astroport.ONE Station"
 
@@ -91,7 +94,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">MESSAGE</a>!</h3> on UPlanet<br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title-MESSAGE}'</a>!</h3> on UPlanet<br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
         }
     ]
 }'

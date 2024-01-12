@@ -180,7 +180,7 @@ ${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}" "${EMA
 # ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
 
 ## TO REMOVE : MONITOR
-${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG VISA.new $EMAIL" ## Send VISA.new log to EMAIL
 
 end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.

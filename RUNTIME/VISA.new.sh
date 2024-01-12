@@ -553,7 +553,7 @@ echo "<html><body><h1>UPlanet : ZenCard</h1>Print your ZenCard : Public key (and
 echo "<br>It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/intro.txt
 echo "<br><a href='$myIPFSGW/$IASTRO'>ZenCard</a><br><img src='$myIPFSGW/$IASTRO'\></body></html>" >> ~/.zen/tmp/${MOATS}/intro.txt
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt "ZenCard"
 
 #~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
@@ -562,7 +562,7 @@ echo "<html><body><h1>UPlanet : AstroID ($PASS)</h1>Print your AstroID : Private
 echo "<br>Use it to send Zen to other <a href='https://qo-op.com'>Uplanet</a> players" >> ~/.zen/tmp/${MOATS}/intro.txt
 echo "<br><a href='$myIPFSGW/$ASTROQR'>AstroID</a><br><img src='$myIPFSGW/$ASTROQR'\></body></html>" >> ~/.zen/tmp/${MOATS}/intro.txt
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt "AstroID"
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}

@@ -103,7 +103,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     <br> ${ZENDES} + ${ZENAMOUNT} </h3>
     <h2>OK</h2></html>" > ${PENDINGDIR}/${MOATS}.result
 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "ZEN OPERATION"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
     rm ${PENDINGDIR}/${MOATS}_replay.sh
@@ -124,9 +124,9 @@ else
 
     [ $try -gt 2 ] \
     && echo "${MOATS} TOO MANY TRY ( $try )" >> ${PENDINGDIR}/${MOATS}.result \
-    && $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result \
+    && $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "PAYMENT CANCELED" \
     && exit 1 \
-    || $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result
+    || $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "PAYMENT REPLAY"
 
    (
     ((try++)) && echo $try > ${PENDINGDIR}/${MOATS}.try

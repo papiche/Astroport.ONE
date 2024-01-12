@@ -155,7 +155,7 @@ To Refuse<br>
 <h2><a href='$(myIpfsGw)/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=${MOATS}'>Actual Tiddler</a>Engage discussion about it...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
-                ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message
+                ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "TIDDLER COLLISION"
 
             done
 

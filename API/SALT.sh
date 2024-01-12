@@ -168,7 +168,7 @@ mkdir -p ~/.zen/tmp/${MOATS}/
                     #~ echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${WHAT}\"" > ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
                     ${MY_PATH}/../RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
-                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG ZenCard creation" ## Send VISA.new log to EMAIL
 
                     echo "Le code de votre ASTROID est ${PASS}, scannez-le sur La♥Box ẐenStation (demo : https://astroport.copylaradio.com)" > ~/.zen/tmp/${MOATS}/intro.txt
 

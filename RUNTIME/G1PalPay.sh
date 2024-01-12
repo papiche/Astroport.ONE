@@ -145,7 +145,7 @@ while read LINE; do
         [[ ! ${ASTROG1} ]] \
         && echo "<html><body><h1>SORRY ${EMAIL} YOUR ACCOUNT IS MISSING</h1>" \
         && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>(♥‿‿♥)... Join <a href='https://qo-op.com'>UPlanet</a> and receive it</body></html>" > ~/.zen/tmp/palpay.bro \
-        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro \
+        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "NEED FOR ACCOUNT" \
         && continue
 
 
@@ -251,7 +251,7 @@ while read LINE; do
             &&  echo "<h2>PINNING $TOPIN</h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
             ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "PIN TIDDLER"
 
     else
 
@@ -264,7 +264,7 @@ while read LINE; do
         ... Join <a href='https://qo-op.com'>UPlanet</a> open a TW !
         </body></html>" > ~/.zen/tmp/palpay.bro
 
-       ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro
+       ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "TIDDLER TW SHARING"
 
     fi
 

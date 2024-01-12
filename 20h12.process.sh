@@ -81,7 +81,7 @@ echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 rm ~/.zen/game/players/localhost/latest
 
 ## MAIL LOG : support@qo-op.com ##
-$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
+$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
