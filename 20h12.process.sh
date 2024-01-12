@@ -19,7 +19,7 @@ mv ~/.zen/coucou ~/.zen/tmp/coucou
 
 ## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
-[[ $LOWMODE == "" ]] && LOWMODE=$(ipfs --timeout 10s swarm peers 2>&1 | grep Error) ## IPFS IS STOPPED
+[[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]] && LOWMODE="NO 5001" ## IPFS IS STOPPED
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 sudo systemctl restart ipfs && sleep 10

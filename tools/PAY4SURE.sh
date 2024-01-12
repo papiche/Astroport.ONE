@@ -96,7 +96,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
-    echo "<html><h1>ẐEN OPERATION</h1>
+    echo "<html><h1>ZEN OPERATION</h1>
     <h3>${PAYOUTPUB}
     <br> ${ZENCUR} - ${ZENAMOUNT} </h3>
     <h3>${G1PUB}

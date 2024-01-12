@@ -73,6 +73,8 @@ echo "/ipfs/${EMAILZ}"
 
 export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 
+[[ $title == "" ]] && title="MESSAGE"
+
 json_payload='{
     "Messages": [
         {
@@ -94,7 +96,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title-MESSAGE}'</a>!</h3> on UPlanet<br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on UPlanet<br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
         }
     ]
 }'
