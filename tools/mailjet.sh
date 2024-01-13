@@ -21,12 +21,14 @@ echo '
 mail="$1" # EMAIL DESTINATAIRE
 [[ ! $1 ]] && mail="support@qo-op.com"
 
+#~ echo "DEST=$mail"
 # mail=geg-la_debrouille@super.chez-moi.com
 YUSER=$(echo ${mail} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 pseudo="${CLYUSER}_${YOMAIN}"
+#~ echo "PSEUDO=$pseudo"
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 
@@ -35,7 +37,7 @@ title="$3"
 
 SUBJECT="[UPlanet] ${title} ${pseudo} : $(myHostName)"
 
-MESSAGESIGN="---<br>this message is sent to you by <a href=$(myIpfsGw)/ipns/$IPFSNODEID>$(myHostName)</a> your ♥BOX Astroport.ONE Station"
+MESSAGESIGN="---<br>this message is sent to you by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your ♥BOX Astroport.ONE Station"
 
 echo "
 ########################################################################
@@ -96,11 +98,11 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href="https://qo-op.com">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
         }
     ]
 }'
-
+echo "$json_payload"
 # Verify the JSON structure with jq
 echo "$json_payload" | jq .
 # Run:
