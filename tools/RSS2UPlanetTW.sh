@@ -20,7 +20,7 @@ INDEX=$4 ## SECTOR TW index file
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
 [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
 [[ ! -s ${INDEX} ]] \
-    && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ${INDEX} \
+    && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
     && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
 
 

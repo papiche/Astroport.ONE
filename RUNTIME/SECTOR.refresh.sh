@@ -143,7 +143,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     ## NEW TW TEMPLATE
     [[ ! -s ${INDEX} ]] \
-        && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/empty.html > ${INDEX} \
+        && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
         && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
 
     ## SET SECTOR

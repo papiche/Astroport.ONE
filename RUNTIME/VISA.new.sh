@@ -36,7 +36,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 TWMODEL="/ipfs/bafybeie6sx76balvpeehvbh5du7oc5fhjuwydryympeh3qnm5s3b2jrvwe"
 # ipfs cat $TWMODEL > templates/twdefault.html
 MINIMAL="/ipfs/bafybeicpfrsx44lkib4352eulvohmgdpaww3sau3qtbj7fzj6qw7xsokhy"
-# ipfs cat $MINIMAL > templates/minimal.html
+# ipfs cat $MINIMAL > templates/twuplanet.html
 ################################################################################
 
 mkdir -p ~/.zen/tmp/${MOATS}/TW
@@ -71,7 +71,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
         # COPY TW TEMPLATE
         [[ ${LON} && ${LAT} ]] \
-            && cp ${MY_PATH}/../templates/minimal.html ~/.zen/tmp/${MOATS}/TW/index.html \
+            && cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html \
             || cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
