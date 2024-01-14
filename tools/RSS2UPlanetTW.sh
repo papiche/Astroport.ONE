@@ -195,16 +195,6 @@ To Refuse<br>
 
 done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 
-###################################################
-## EXTRACT LAST WEEK TIDDLERS TO IPFSNODEID CACHE
-    echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
-    rm -f ~/.zen/tmp/${IPFSNODEID}/${SECTOR}.week.rss.json
-    ## CREATING 7 DAYS JSON RSS STREAM
-    tiddlywiki --load ${INDEX} \
-                        --output ~/.zen/tmp/${IPFSNODEID} --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
-
-    ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
-    ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28
 
 ####################################################
 ################################################

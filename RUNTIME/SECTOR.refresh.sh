@@ -288,8 +288,18 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 
 ######################################################
 
+###################################################
+## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE
+    echo "(☉_☉ ) ${SECTOR}.week.rss.json  (☉_☉ )"
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/SECTORS/
+    rm -f ~/.zen/tmp/${IPFSNODEID}/SECTORS/${SECTOR}.week.rss.json
+    ## CREATING 7 DAYS JSON RSS STREAM
+    tiddlywiki --load ${INDEX} \
+                        --output ~/.zen/tmp/${IPFSNODEID}/SECTORS --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
+
+    ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
+    ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28
+
 done
-
-
 
 exit 0
