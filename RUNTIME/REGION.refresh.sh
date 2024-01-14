@@ -100,7 +100,7 @@ for REGION in ${REGIONS[@]}; do
 
             echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
 
-            IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/)
+            IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
             ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
 
 
