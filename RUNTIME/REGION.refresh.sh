@@ -95,13 +95,14 @@ for REGION in ${REGIONS[@]}; do
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "Numbers of REGION WEEK RSS : "${TOTL}
 
-            echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
-            IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/)
-
-            ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
-
     echo "EXTRACT MORE THAN 2 SIGNATURES TIDDLERS.
     FEED WITH IA. LOADING CONTEXT FROM." > ~/.zen/tmp/${MOATS}/${REGION}/TODO
+
+            echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
+
+            IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/)
+            ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
+
 
     ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1
 
