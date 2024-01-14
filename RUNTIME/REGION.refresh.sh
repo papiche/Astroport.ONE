@@ -25,7 +25,7 @@ done
 
 [[ ${#UMAPS[@]} == 0 ]] && UMAPS="_0.00_0.00"
 
-######## INIT SECTORS ########################
+######## INIT REGIONS ########################
 for UMAP in ${UMAPS[@]}; do
 
     LAT=$(echo ${UMAP} | cut -d '_' -f 2)
@@ -41,12 +41,12 @@ for UMAP in ${UMAPS[@]}; do
 
 done
 
-## GET UNIQ SECTORS LIST
+## GET UNIQ REGIONS LIST
 REGIONS=($(echo "${MYREGIONS[@]}" | tr ' ' '\n' | sort -u))
 
 [[ ${REGIONS[@]} == "" ]] && echo "> NO REGION FOUND" && exit 0
 
-echo "ACTIVATED SECTORS : ${SECTORS[@]}"
+echo "ACTIVATED REGIONS : ${REGIONS[@]}"
 
 for REGION in ${REGIONS[@]}; do
 
@@ -59,7 +59,7 @@ for REGION in ${REGIONS[@]}; do
     ## FOR NOW ONLY 1ST BOOSTRAP PUBLISH REGION KEYS
     # with bigger planetary swam will be closest "IA Station", or it could be choosen according to ZEN value...
     STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
-    ACTINGNODE=${STRAPS[0]} ## FIST NODE IN SECTOR.refresher
+    ACTINGNODE=${STRAPS[0]} ## FIST NODE IN STRAPS
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
             && continue
@@ -93,7 +93,7 @@ for REGION in ${REGIONS[@]}; do
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    echo "Numbers of SECTOR WEEK RSS : "${TOTL}
+    echo "Numbers of REGION WEEK RSS : "${TOTL}
 
             echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
             IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/)
