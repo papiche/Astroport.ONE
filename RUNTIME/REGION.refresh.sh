@@ -59,7 +59,7 @@ for REGION in ${REGIONS[@]}; do
     ## FOR NOW ONLY 1ST BOOSTRAP PUBLISH REGION KEYS
     # with bigger planetary swam will be closest "IA Station", or it could be choosen according to ZEN value...
     STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
-    ACTINGNODE=${ALLNODES[0]} ## FIST NODE IN SECTOR.refresher
+    ACTINGNODE=${STRAPS[0]} ## FIST NODE IN SECTOR.refresher
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
             && continue
