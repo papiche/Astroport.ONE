@@ -6,15 +6,16 @@
 # INSERT NEW TIDDLERS FROM RSS JSON INTO UPLANET TW
 # DETECTING CONFLICT WITH SAME TITLE
 # ASKING TO EXISTING SIGNATURES TO UPDATE THEIR TW OR FORK TITLE
+# CALLED BY "SECTOR.refresh.sh"
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-RSS=$1
-SECTOR=$2
-MOATS=$3
-INDEX=$4
+RSS=$1 ## filepath to RSS
+SECTOR=$2 ## Sector identifier _0.0_0.0
+MOATS=$3 ## temp cache access
+INDEX=$4 ## SECTOR TW index file
 
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
 [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
@@ -94,13 +95,13 @@ while read title; do
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
         NEMAILS=($(echo "$NTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
-        N=${#NEMAILS[@]}
-        echo "New Tiddler signatures : ${NEMAILS[*]}"
+        NSIGN=${#NEMAILS[@]}
+        echo "New Tiddler $NSIGN signatures : ${NEMAILS[*]}"
 
         ITAGS=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .tags)
         IEMAILS=($(echo "$ITAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
-        I=${#IEMAILS[@]}
-        echo "Inside Tiddler signatures : ${IEMAILS[*]}"
+        ISIGN=${#IEMAILS[@]}
+        echo "Inside Tiddler $ISIGN signatures : ${IEMAILS[*]}"
 
         if [[ "${NEMAILS[*]}" != "${IEMAILS[*]}" ]]; then
 
@@ -188,16 +189,24 @@ To Refuse<br>
                 && rm ${INDEX} \
                 && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX}
 
-            ## TODO : NEWER EMAIL SENDS N GRATITUDE TO ALL PLAYER
-            # can use G1PalPay WISH sending it tho 1st, relaying to others...
-
         fi
 
     fi
 
 done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 
+###################################################
+## EXTRACT LAST WEEK TIDDLERS TO IPFSNODEID CACHE
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
+    rm -f ~/.zen/tmp/${IPFSNODEID}/${SECTOR}.week.rss.json
+    ## CREATING 7 DAYS JSON RSS STREAM
+    tiddlywiki --load ${INDEX} \
+                        --output ~/.zen/tmp/${IPFSNODEID} --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
 
+    ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
+    ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28
+
+####################################################
 ################################################
 ## SECTOR SENDS GRATITUDE TO PUBLISHING PLAYER
 ###################################################
@@ -205,6 +214,9 @@ done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 if [[ ${gloups} -gt 0 && ${ASTROG1} ]]; then
     # GENERATE SECTOR PIVATE KEY ################################
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+    G1SECTOR=$(cat ~/.zen/tmp/${MOATS}/sector.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+    cp -f ~/.zen/tmp/coucou/${G1SECTOR}.COINS ~/.zen/tmp/${IPFSNODEID}/${SECTOR}.COINS
+
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )

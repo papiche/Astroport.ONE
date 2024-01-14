@@ -94,8 +94,10 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
                     echo "GETTING YESTERDAY UMAP.refresher"
                     YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresher | head -n 1)
                     ## GET UMAP.refresher from PREVIOUS _chain ...
-                    echo "TODAY : $(cat ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher | head -n 1)"
+                    TODAY=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher | head -n 1)
+                    echo "TODAY : ${TODAY}"
                     echo "YESTERDAY : ${YESTERDAY}"
+                    echo "------------------------------------------------->>>>>>>>>>>>>>>>"
                     continue
                 fi
 
@@ -378,5 +380,6 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
         ${MY_PATH}/SECTOR.refresh.sh "${unique_combined[@]}"
 
  ### REGION = 1° Planet Slice
-       # ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
+        ${MY_PATH}/REGION.refresh.sh  "${unique_combined[@]}"
+
 
