@@ -60,7 +60,7 @@ echo "
 ############# USING MAILJET API ###############
 
 export MJ_APIKEY_PUBLIC='02b075c3f28b9797d406f0ca015ca984'
-export MJ_APIKEY_PRIVATE='58256ba8ea62f68965879f53bbb29f90'
+export MJ_APIKEY_PRIVATE='79522360a6e0bcffbfa928a47150d169'
 export SENDER_EMAIL='support@g1sms.fr'
 export RECIPIENT_EMAIL=${mail}
 
