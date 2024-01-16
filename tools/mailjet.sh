@@ -67,8 +67,9 @@ export RECIPIENT_EMAIL=${mail}
 
 # + HTML in FILE
 rm -f ~/.zen/tmp/email.txt
-[[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
-|| echo "$messfile" >> ~/.zen/tmp/email.txt
+[[ -s $messfile ]] \
+    && cat $messfile >> ~/.zen/tmp/email.txt \
+    || echo "$messfile" >> ~/.zen/tmp/email.txt
 
 EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"

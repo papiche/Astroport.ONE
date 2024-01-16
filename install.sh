@@ -56,7 +56,7 @@ echo "#############################################"
 echo "######### INSTALL MULTIMEDIA TOOLS  ######"
 echo "#############################################"
 # removed : sqlite
-for i in qrencode pv gnupg pandoc ca-certificates basez jq bc file gawk ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
+for i in qrencode pv gnupg gpa pandoc ca-certificates basez jq bc file gawk ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -225,7 +225,6 @@ end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
 echo "Please finish keygen procedure"
-echo "    https://pad.p2p.legal/keygen"
 echo "#############################################"
 
 ##########################################################
@@ -237,7 +236,7 @@ echo "#############################################"
     #~ && xdg-open "http://astroport.localhost:1234" \
     #~ || ~/.zen/Astroport.ONE/command.sh
 
-    xdg-open "https://chaton.g1sms.fr"
+    xdg-open "https://pad.p2p.legal/keygen"
 
 else
 

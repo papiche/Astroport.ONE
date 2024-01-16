@@ -12,6 +12,9 @@ done
 
 python -m pip install -r requirements.txt
 
+## INSTALL SYSTEM WIDE
 mkdir -p ~/.local/bin/
-cp ${MY_PATH}/jaklis.py > ~/.local/bin/jaklis.py
-chmod u+x ~/.local/bin/jaklis.py
+
+cp ${MY_PATH}/jaklis.py ~/.local/bin/jaklis
+cp ${MY_PATH}/.env ~/.local/bin/
+chmod u+x ~/.local/bin/jaklis
