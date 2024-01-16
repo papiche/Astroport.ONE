@@ -79,13 +79,17 @@ for REGION in ${REGIONS[@]}; do
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS
-            ## START WITH LOCAL WEEK
-            cp -f ~/.zen/tmp/${IPFSNODEID}/_${REGLAT}_${REGLON}.week.rss.json \
-                    ~/.zen/tmp/${MOATS}/${REGION}/RSS/ 2>/dev/null \
-                    && NL=1 \
-                    || NL=0
-            ## ADD SWARM RSS WEEK
-            RSSWARM=($(ls ~/.zen/tmp/swarm/*/_${REGLAT}_${REGLON}.week.rss.json 2>/dev/null))
+            rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+
+            ## START WITH LOCAL SECTORS RSS WEEK
+            RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
+                for RSS in ${RSSNODE[@]}; do
+                    cat ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+                done
+            NL=${#RSSNODE[@]}
+
+            ## ADD SWARM SECTORS RSS WEEK
+            RSSWARM=($(ls ~/.zen/tmp/swarm/*/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSWARM[@]}; do
                     cat ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
                 done
@@ -93,7 +97,7 @@ for REGION in ${REGIONS[@]}; do
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    echo "Numbers of REGION WEEK RSS : "${TOTL}
+    echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
     echo "EXTRACT MORE THAN 2 SIGNATURES TIDDLERS.
     FEED WITH IA. LOADING CONTEXT FROM." > ~/.zen/tmp/${MOATS}/${REGION}/TODO
