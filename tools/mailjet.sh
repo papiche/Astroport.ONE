@@ -18,8 +18,28 @@ echo '
 ########################################################################'
 ### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
 ## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
+[[ ! $1 ]] \
+    && echo "MISSING DESTINATION EMAIL" \
+    && exit 1
+
 mail="$1" # EMAIL DESTINATAIRE
-[[ ! $1 ]] && mail="support@qo-op.com"
+
+
+############# USING MAILJET API ###############
+[[ ! -s ~/.zen/MJ_APIKEY ]] \
+    && echo "MISSING ~/.zen/MJ_APIKEY
+    PLEASE PROVIDE MAILJET KEY : MJ_APIKEY_PUBLIC= & MJ_APIKEY_PRIVATE" \
+    && exit 1
+
+## LOAD SENDER API KEYS
+###################################
+######### ~/.zen/MJ_APIKEY contains
+# export MJ_APIKEY_PUBLIC='publickey'
+# export MJ_APIKEY_PRIVATE='privatekey'
+# export SENDER_EMAIL='me@source.tld'
+###################################
+source ~/.zen/MJ_APIKEY
+export RECIPIENT_EMAIL=${mail}
 
 #~ echo "DEST=$mail"
 # mail=geg-la_debrouille@super.chez-moi.com
@@ -43,27 +63,6 @@ echo "
 ########################################################################
 # $SUBJECT + $messfile -> $mail
 ########################################################################"
-
-### SMTP RELAY
-#~ echo "From: support@g1sms.fr
-#~ To: EMAIL
-#~ Bcc: support@qo-op.com
-#~ Subject: SUBJECT
-#~ $MESSAGEUP
-#~ " > ~/.zen/tmp/email.txt
-
-#~ [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
-#~ || echo "$messfile" >> ~/.zen/tmp/email.txt
-
-#~ cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | /usr/sbin/ssmtp ${mail}
-
-############# USING MAILJET API ###############
-
-export MJ_APIKEY_PUBLIC='02b075c3f28b9797d406f0ca015ca984'
-export MJ_APIKEY_PRIVATE='79522360a6e0bcffbfa928a47150d169'
-export SENDER_EMAIL='support@g1sms.fr'
-export RECIPIENT_EMAIL=${mail}
-
 
 # + HTML in FILE
 rm -f ~/.zen/tmp/email.txt

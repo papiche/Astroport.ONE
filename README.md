@@ -443,6 +443,16 @@ So ASTROBOT while applying ScuttleButt replications will ".chain.ts" data and ch
 Data can't be lost, but protocol chain can be break !
 In case of some annoyance, we can monitor IPFS protocol to identify which IPFSNODEID key is acting badly and apply reaction based on DEFCON level (look into astrXbian code)
 
+### MAILJET
+
+In order for "Boostrap Station" to send emails to PLAYERs, we use [mailjet service](https://mailjet.com/).
+
+```
+## CREDENTIALS FILE
+~/.zen/MJ_APIKEY
+# IS USED BY
+~/.zen/Astroport.ONE/tools/mailjet.sh
+```
 
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
 ```
