@@ -243,6 +243,7 @@ for SECTOR in ${SECTORS[@]}; do
                   -e "s~_ZONENS_~${SECTORNS}~g" \
                   -e "s~_UPZONENS_~${REGIONNS}~g" \
                   -e "s~_SECTORG1PUB_~${SECTORG1PUB}~g" \
+                  -e "s~_RWEEKCID_~/ipfs/QmY4rLRgSXjhhsW3WoKUJYpLe2A1dJCFXb7stNLcAp95w9~g" \
                   -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
                   -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=0.1~g" \
