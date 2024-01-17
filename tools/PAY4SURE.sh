@@ -31,26 +31,26 @@ COMMENT=${COMMENT}"
 
 ## CHECKING PAYOUT WALLET (dunikey file)
 [[ -s ${KEYFILE} ]] \
-    && PAYOUTPUB=$(cat ${KEYFILE} | grep "pub:" | cut -d ' ' -f 2) \
-    || { echo "ERROR : MISSING SECRET KEY FILE"  && exit 1; }
+    && ISSUERPUB=$(cat ${KEYFILE} | grep "pub:" | cut -d ' ' -f 2) \
+    || { echo "ERROR : MISSING SECRET DUNIKEY FILE"  && exit 1; }
 
-COINS=$($MY_PATH/COINScheck.sh ${PAYOUTPUB} | tail -n 1)
+COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
 ###### TEST INPUT VALUES
 [[ $AMOUNT == "ALL" ]] && AMOUNT=$COINS ## ALL MEAN EMPTY ORIGIN WALLET
-[[ -z $AMOUNT ]] && echo "ERROR : ${PAYOUTPUB}=$COINS MISSING AMOUNT" && exit 1
+[[ -z $AMOUNT ]] && echo "ERROR : ${ISSUERPUB}=$COINS MISSING AMOUNT" && exit 1
 [[ $AMOUNT =~ ^[0-9]+([.][0-9]+)?$ ]] && echo "Valid AMOUNT=${AMOUNT}" || { echo "ERROR NOT a valid AMOUNT : ${AMOUNT}" && exit 1; }
 
-[[ $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]] && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
-[[ -z $G1PUB ]] && echo "ERROR : ${PAYOUTPUB}=$COINS ($AMOUNT) MISSING DESTINATION" && exit 1
+[[ $(echo "$COINS <= $AMOUNT" | bc -l) -eq 1 ]] && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
+[[ -z $G1PUB ]] && echo "ERROR : ${ISSUERPUB}=$COINS ($AMOUNT) MISSING DESTINATION" && exit 1
 
 echo "PAYMENT PROCESSOR ID ${MOATS}"
-echo "KEYFILE: $HOME/.zen/game/pending/${PAYOUTPUB}/"
-echo "${PAYOUTPUB} : (${AMOUNT}) -> ${G1PUB}"
+echo "KEYFILE: $HOME/.zen/game/pending/${ISSUERPUB}/"
+echo "${ISSUERPUB} : (${AMOUNT}) -> ${G1PUB}"
 echo "COMMENT : ${COMMENT}"
 
 [[ -z $COMMENT ]] && COMMENT="ZEN:${MOATS}"
 
-PENDINGDIR=$HOME/.zen/game/pending/${PAYOUTPUB}
+PENDINGDIR=$HOME/.zen/game/pending/${ISSUERPUB}
 ### PREPARE PENDINGFILE INFO ZONE
 mkdir -p ${PENDINGDIR}
 PENDINGFILE=${PENDINGDIR}/${MOATS}_${AMOUNT}+${G1PUB}.TX
@@ -58,9 +58,9 @@ PENDINGFILE=${PENDINGDIR}/${MOATS}_${AMOUNT}+${G1PUB}.TX
 rm -f ${PENDINGFILE} 2>/dev/null ## CLEAN START
 
 ## PREPARE CALLING MYSELF AGAIN COMMAND
-cp ${KEYFILE} ${PENDINGDIR}/secret.key 2>/dev/null
+cp ${KEYFILE} ${PENDINGDIR}/${MOATS}.key 2>/dev/null
 echo '#!/bin/bash
-bash '${ME}' "'${KEYFILE}'" "'${AMOUNT}'" "'${G1PUB}'" "'${COMMENT}'" "'${MOATS}'"
+bash '${ME}' "'${PENDINGDIR}'/'${MOATS}'.key" "'${AMOUNT}'" "'${G1PUB}'" "'${COMMENT}'" "'${MOATS}'"
 ' > ${PENDINGDIR}/${MOATS}_replay.sh
 chmod +x ${PENDINGDIR}/${MOATS}_replay.sh
 
@@ -68,7 +68,7 @@ rm -f ${PENDINGDIR}/${MOATS}.result
 
 ################################################
 # MAKE PAYMENT
-${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/secret.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result
+${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/${MOATS}.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result
 CHK1=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 1 )
 CHK2=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 2 )
 
@@ -80,7 +80,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
     ## CHANGE COINS CACHE
-    COINSFILE="$HOME/.zen/tmp/coucou/${PAYOUTPUB}.COINS"
+    COINSFILE="$HOME/.zen/tmp/coucou/${ISSUERPUB}.COINS"
     DESTFILE="$HOME/.zen/tmp/coucou/${G1PUB}.COINS"
 
     ## DECREASE SOURCE IN "coucou" CACHE
@@ -97,7 +97,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
     echo "<html><h1>ZEN OPERATION</h1>
-    <h3>${PAYOUTPUB}
+    <h3>${ISSUERPUB}
     <br> ${ZENCUR} - ${ZENAMOUNT} </h3>
     <h3>${G1PUB}
     <br> ${ZENDES} + ${ZENAMOUNT} </h3>
@@ -106,8 +106,9 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "${ZENAMOUNT} ZEN OPERATION"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
+    rm ${PENDINGDIR}/${MOATS}.key
     rm ${PENDINGDIR}/${MOATS}_replay.sh
-    mv ${PENDINGFILE} ${PENDINGFILE}.DONE
+    rm ${PENDINGFILE}
 
 else
 

@@ -52,11 +52,16 @@ mkdir -p ~/.zen/tmp/${MOATS}
         COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
         echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
+    ## UNPLUG => SEND 10 Zen to SECTORG1PUB
+    ## ALL => SEND ALL to $WORLDG1PUB
+
+    ALL="ALL"
+    [[ $ONE == "ONE" ]] && ALL=1
+    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB"
+
     [[ ! -z ${SECTORG1PUB} ]] \
-    && ALL="ALL" \
-    && [[ $ONE == "ONE" ]] && ALL=1 \
-    && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
-    && ./PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "ZEN:${ALL}"
+        && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
+        && ${MY_PATH}/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "UNPLUG:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
