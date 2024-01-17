@@ -105,14 +105,19 @@ for REGION in ${REGIONS[@]}; do
             mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
                     ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
 
+            ## PREPARING AiApi link
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/REGIONS
+            RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json)
+            echo ${RWEEKCID} > ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid
+
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
-    echo "EXTRACT MORE THAN 2 SIGNATURES TIDDLERS.
-    FEED WITH IA. LOADING CONTEXT FROM." > ~/.zen/tmp/${MOATS}/${REGION}/TODO
+    echo "SHOW TROPHY" > ~/.zen/tmp/${MOATS}/${REGION}/TODO
 
             echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
+            echo ${RWEEKCID} > ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID
 
             IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
             ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
