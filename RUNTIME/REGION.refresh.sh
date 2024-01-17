@@ -84,16 +84,26 @@ for REGION in ${REGIONS[@]}; do
             ## START WITH LOCAL SECTORS RSS WEEK
             RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSNODE[@]}; do
-                    cat ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+                    [[ $(cat ${RSS}) != "[]" ]] && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/
                 done
             NL=${#RSSNODE[@]}
 
             ## ADD SWARM SECTORS RSS WEEK
             RSSWARM=($(ls ~/.zen/tmp/swarm/*/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSWARM[@]}; do
-                    cat ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+                    [[ $(cat ${RSS}) != "[]" ]] && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/
                 done
             NS=${#RSSWARM[@]}
+
+            ## CREATE /.all.json FROM *.rss.json
+            ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${MOATS}/${REGION}/RSS
+
+            ## REMOVE SECTORS PARTS
+            rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/*.week.rss.json
+
+            ## MAKE FINAL _${REGLAT}_${REGLON}.week.rss.json
+            mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
+                    ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
