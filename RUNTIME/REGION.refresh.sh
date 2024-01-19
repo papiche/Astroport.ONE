@@ -101,6 +101,8 @@ for REGION in ${REGIONS[@]}; do
             ## REMOVE SECTORS PARTS
             rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/*.week.rss.json
 
+            ## TODO MAKE PAGE FROM JSON # BETTER FOR AIAPI
+
             ## MAKE FINAL _${REGLAT}_${REGLON}.week.rss.json
             mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
                     ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json

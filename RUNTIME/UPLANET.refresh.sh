@@ -337,7 +337,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.html
 
-        ## Make it root App for ZONENS key
+        ## Make it root App
         #~ mv ~/.zen/tmp/${MOATS}/${UMAP}/_index.html \
                 #~ ~/.zen/tmp/${MOATS}/${UMAP}/index.html
         ##################################
