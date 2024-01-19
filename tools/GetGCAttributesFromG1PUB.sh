@@ -25,57 +25,44 @@ QRNS=$(${MY_PATH}/g1_to_ipfs.py ${G1PUB})
 [[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
-VISITORCOINS=$(${MY_PATH}/COINScheck.sh ${G1PUB} | tail -n 1)
-ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+COINS=$(${MY_PATH}/COINScheck.sh ${G1PUB} | tail -n 1)
+ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
-## EMPTY WALLET ? PREPARE PALPE WELCOME
-if [[ $VISITORCOINS == "null" ]]; then
-    PALPE=1
-    echo "PALPE=1"
-else
-    PALPE=0
-fi
-
-echo "VISITOR POSSESS ${VISITORCOINS} G1 / ${ZEN} ZEN"
+echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN"
 
 ## GET G1 WALLET HISTORY
-if [[ ${VISITORCOINS} != "null" && ${VISITORCOINS} -gt 0 ]]; then
+if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
 
     [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] \
-    && ${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+    && ${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 100 -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
 
     HISTOLNK=$myIPFS/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json)
 
     echo "<a href=${HISTOLNK}>HISTORY</a>" > ~/.zen/tmp/${MOATS}/response
-    echo "<h1>Solde $VISITORCOINS Ǧ1</h1>" >> ~/.zen/tmp/${MOATS}/response
+    echo "<h1>Solde $COINS Ǧ1</h1>" >> ~/.zen/tmp/${MOATS}/response
 
 fi
 
 ## SCAN GCHANGE +
-[[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json ]] \
-&& ${MY_PATH}/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json &
-
+${MY_PATH}/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json
 GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json | jq -r '.found')
-echo "FOUND IN GCHANGE+ ? $GFOUND"
 
 if [[ $GFOUND == "false" ]]; then
-    echo "NO GCHANGE YET. REDIRECT" >> ~/.zen/tmp/${MOATS}/response
+    echo "-- NO GCHANGE " >> ~/.zen/tmp/${MOATS}/response
 else
-    [[ $VISITORCOINS == "null" ]] && PALPE=10 \
-    && echo "~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json CHECK : PALPE=10"
+    echo "++ FOUND IN GCHANGE+"
+    [[ $COINS == "null" ]] && PALPE=10 ## 10 ZEN REWARD
 fi
 
 ## SCAN CESIUM +
-[[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.gplus.json ]] \
-&& ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gplus.json 2>/dev/null &
-
-GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gplus.json | jq -r '.found')
-echo "FOUND IN CESIUM+ ? $GCFOUND"
+${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null
+GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json | jq -r '.found')
 
 if [[ $GCFOUND == "false" ]]; then
-    echo "PAS DE COMPTE CESIUM POUR CETTE CLEF" >> ~/.zen/tmp/${MOATS}/response
+    echo "-- NO CESIUM" >> ~/.zen/tmp/${MOATS}/response
 else
-    echo "~/.zen/tmp/${MOATS}/${G1PUB}.gplus.json CHECK : PALPE=50" >> ~/.zen/tmp/${MOATS}/response
+    echo "++ FOUND IN CESIUM+ : $GCFOUND"
+    [[ $COINS == "null" ]] && PALPE=50 ## REWARD
 fi
 
 ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
@@ -86,9 +73,8 @@ echo "CPLUS=$CPLUS" >> ~/.zen/tmp/${MOATS}/response
 ##### DO WE HAVE A DIFFERENT KEY LINKED TO GCHANGE ??
 if [[ $CPLUS != "" && $CPLUS != 'null' && $CPLUS != $G1PUB ]]; then
 
-    ## SCAN FOR CPLUS CESIUM + ACCOUNT
-    [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json ]] \
-    && ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json 2>/dev/null &
+    echo "SCAN GPLUS CESIUM + ACCOUNT"
+    ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json 2>/dev/null
 
     CCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json | jq -r '.found')
 
@@ -97,9 +83,12 @@ if [[ $CPLUS != "" && $CPLUS != 'null' && $CPLUS != $G1PUB ]]; then
     else
         CPLUSCOIN=$(${MY_PATH}/COINScheck.sh ${CPLUS} | tail -n 1)
         echo "${G1PUB} IS LINKED TO MEMBER ${CPLUS} POSSESSING  ${CPLUSCOIN} G1" >> ~/.zen/tmp/${MOATS}/response
-
     fi
 
 fi
 
+ls ~/.zen/tmp/${MOATS}/
+
 cat  ~/.zen/tmp/${MOATS}/response
+
+exit 0
