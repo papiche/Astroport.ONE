@@ -53,10 +53,15 @@ COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 CURCOINS=$(cat $COINSFILE 2>/dev/null)
 echo "$CURCOINS (G1)"
 
+## GET EXTERNAL G1 DATA
+${MY_PATH}/GetGCAttributesFromG1PUB.sh ${G1PUB} &
+
 ## NO or NULL RESULT in CACHE : REFRESHING
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+
+
 
     echo "$CURCOINS" > "$COINSFILE"
 

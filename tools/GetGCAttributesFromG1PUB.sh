@@ -9,15 +9,13 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/my.sh"
 
-G1PUB="$1"
-MOATS="$2"
-echo "#################################################"
-echo "WARNING NOT TESTED. PASS A G1PUBKEY AS PARAMETER."
-echo "#################################################
+[[ ${1} == "-h" || ${1} == "--help" ]] && echo "#################################################
 # GIVEN A PUBKEY -
 # This program scan for presence in GChange & Cesium Elastic Search Databases
 # So it detect attributes attached to actual key $G1PUB
 #################################################"
+G1PUB="$1"
+MOATS="$2"
 
 QRNS=$(${MY_PATH}/g1_to_ipfs.py ${G1PUB})
 [[ ! ${QRNS} ]] && echo "PROVIDED KEY IS NOT CONVERTIBLE." && exit 1
@@ -25,7 +23,7 @@ QRNS=$(${MY_PATH}/g1_to_ipfs.py ${G1PUB})
 [[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
-COINS=$(${MY_PATH}/COINScheck.sh ${G1PUB} | tail -n 1)
+COINS=$(cat ~/.zen/tmp/coucou/${G1PUB}.COINS)
 ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
 echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN"
@@ -35,11 +33,7 @@ if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
 
     [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] \
     && ${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 100 -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
-
-    HISTOLNK=$myIPFS/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json)
-
-    echo "<a href=${HISTOLNK}>HISTORY</a>" > ~/.zen/tmp/${MOATS}/response
-    echo "<h1>Solde $COINS Ǧ1</h1>" >> ~/.zen/tmp/${MOATS}/response
+    echo "++ HISTORY OK" >> ~/.zen/tmp/${MOATS}/response
 
 fi
 
@@ -50,7 +44,7 @@ GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json | jq -r '.found')
 if [[ $GFOUND == "false" ]]; then
     echo "-- NO GCHANGE " >> ~/.zen/tmp/${MOATS}/response
 else
-    echo "++ FOUND IN GCHANGE+"
+    echo "++ FOUND IN GCHANGE+ : $GFOUND" >> ~/.zen/tmp/${MOATS}/response
     [[ $COINS == "null" ]] && PALPE=10 ## 10 ZEN REWARD
 fi
 
@@ -61,7 +55,7 @@ GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json | jq -r '.found')
 if [[ $GCFOUND == "false" ]]; then
     echo "-- NO CESIUM" >> ~/.zen/tmp/${MOATS}/response
 else
-    echo "++ FOUND IN CESIUM+ : $GCFOUND"
+    echo "++ FOUND IN CESIUM+ : $GCFOUND" >> ~/.zen/tmp/${MOATS}/response
     [[ $COINS == "null" ]] && PALPE=50 ## REWARD
 fi
 
@@ -73,7 +67,7 @@ echo "CPLUS=$CPLUS" >> ~/.zen/tmp/${MOATS}/response
 ##### DO WE HAVE A DIFFERENT KEY LINKED TO GCHANGE ??
 if [[ $CPLUS != "" && $CPLUS != 'null' && $CPLUS != $G1PUB ]]; then
 
-    echo "SCAN GPLUS CESIUM + ACCOUNT"
+    echo "SCAN GPLUS CESIUM + ACCOUNT" >> ~/.zen/tmp/${MOATS}/response
     ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json 2>/dev/null
 
     CCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json | jq -r '.found')
@@ -87,8 +81,18 @@ if [[ $CPLUS != "" && $CPLUS != 'null' && $CPLUS != $G1PUB ]]; then
 
 fi
 
-ls ~/.zen/tmp/${MOATS}/
-
 cat  ~/.zen/tmp/${MOATS}/response
+
+## REFRESH ~/.zen/tmp/coucou/
+[[ ! -s ~/.zen/tmp/coucou/${G1PUB}.g1history.json && -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] \
+    && cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ~/.zen/tmp/coucou/
+[[ ! -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json && -s ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json ]] \
+    && cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json ~/.zen/tmp/coucou/
+[[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json && -s ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json ]] \
+    && cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json ~/.zen/tmp/coucou/
+[[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json && -s ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json ]] \
+    && cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json ~/.zen/tmp/coucou/
+
+rm -Rf ~/.zen/tmp/${MOATS}/
 
 exit 0
