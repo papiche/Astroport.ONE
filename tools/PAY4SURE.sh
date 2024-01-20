@@ -11,8 +11,8 @@ ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
 
-## REDIRECT OUTPUT TO "coucou/pay4sure.log"
-exec 2>&1 >> ~/.zen/tmp/coucou/pay4sure.log
+## REDIRECT OUTPUT TO "pay4sure.log"
+exec 2>&1 >> ~/.zen/tmp/pay4sure.log
 
 KEYFILE="$1"
 AMOUNT="$2"
