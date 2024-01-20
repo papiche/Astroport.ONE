@@ -141,8 +141,6 @@ for SECTOR in ${SECTORS[@]}; do
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
     INDEX="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/TW/index.html"
 
-    mv ${INDEX} ${INDEX}.old ## SECTOR MIGRATION TODO REMOVE
-
     ## NEW TW TEMPLATE
     [[ ! -s ${INDEX} ]] \
         && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
