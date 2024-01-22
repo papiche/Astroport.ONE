@@ -19,9 +19,10 @@ sudo systemctl restart ipfs && sleep 10
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 10
-    ((floop++)) && [ $floop -gt 9 ] \
+    ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \
-        &&  exit 1
+        && $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
+        && exit 1
 done
 # espeak "CODE git pull" > /dev/null 2>&1
 
