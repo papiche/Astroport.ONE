@@ -114,6 +114,8 @@ for REGION in ${REGIONS[@]}; do
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/REGIONS
             RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL)
 
+            cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
+                ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.JOURNAL.md
 
             rm ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid 2>/dev/null ## TODO REMOVE
 
