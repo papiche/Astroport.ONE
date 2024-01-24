@@ -80,18 +80,23 @@ for REGION in ${REGIONS[@]}; do
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS
             rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+            rm -f ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
 
             ## START WITH LOCAL SECTORS RSS WEEK
             RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSNODE[@]}; do
-                    [[ $(cat ${RSS}) != "[]" ]] && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/
+                    [[ $(cat ${RSS}) != "[]" ]] \
+                        && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
+                        && ${MY_PATH}/../tools/RSS2WEEKnewsfile.sh ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
+
                 done
             NL=${#RSSNODE[@]}
 
             ## ADD SWARM SECTORS RSS WEEK
             RSSWARM=($(ls ~/.zen/tmp/swarm/*/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSWARM[@]}; do
-                    [[ $(cat ${RSS}) != "[]" ]] && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/
+                    [[ $(cat ${RSS}) != "[]" ]] && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
+                        && ${MY_PATH}/../tools/RSS2WEEKnewsfile.sh ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
                 done
             NS=${#RSSWARM[@]}
 
@@ -101,16 +106,21 @@ for REGION in ${REGIONS[@]}; do
             ## REMOVE SECTORS PARTS
             rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/*.week.rss.json
 
-            ## TODO MAKE PAGE FROM JSON # BETTER FOR AIAPI
-
             ## MAKE FINAL _${REGLAT}_${REGLON}.week.rss.json
             mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
                     ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
 
             ## PREPARING AiApi link
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/REGIONS
-            RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json)
-            echo ${RWEEKCID} > ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid
+            RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL)
+
+
+            rm ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid 2>/dev/null ## TODO REMOVE
+
+            ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
+            echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
+                        > ~/.zen/tmp/${MOATS}/${REGION}/Ask.IA._${REGLAT}_${REGLON}.redir.html
+
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -118,8 +128,12 @@ for REGION in ${REGIONS[@]}; do
 
     echo "SHOW TROPHY" > ~/.zen/tmp/${MOATS}/${REGION}/TODO
 
+rm ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID 2>/dev/null  ## TODO REMOVE
+
             echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
-            echo ${RWEEKCID} > ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID
+
+            echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${RWEEKCID}'\" />" \
+                        > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.redir.html
 
             IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
             ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
