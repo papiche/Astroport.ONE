@@ -37,7 +37,7 @@ find  ~/.zen/tmp/coucou/ -mtime +1 -type f -name "${G1PUB}.g1history.json" -exec
 [ $? == 0 ] && echo "Cleaning ${G1PUB}.g1history.json"
 #######################################################
 
-## IDENTIFY IF "ASTROPORT" or "COUCOU" PLAYER
+## IDENTIFY IF "ASTROPORT" PLAYER
 # echo "ASTROPATH ? "
 ASTROPATH=$(grep $G1PUB ~/.zen/game/players/*/.g1pub | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
 echo $ASTROPATH
@@ -49,19 +49,17 @@ fi
 mkdir -p $HOME/.zen/tmp/coucou/
 COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 
+## GET EXTERNAL G1 DATA
+${MY_PATH}/GetGCAttributesFromG1PUB.sh ${G1PUB}
+
 # echo "ACTUAL $COINSFILE CONTAINS"
 CURCOINS=$(cat $COINSFILE 2>/dev/null)
 echo "$CURCOINS (G1)"
-
-## GET EXTERNAL G1 DATA
-${MY_PATH}/GetGCAttributesFromG1PUB.sh ${G1PUB} &
 
 ## NO or NULL RESULT in CACHE : REFRESHING
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(~/.zen/Astroport.ONE/tools/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
-
-
 
     echo "$CURCOINS" > "$COINSFILE"
 
