@@ -35,11 +35,11 @@ COMMENT=${COMMENT}"
     || { echo "ERROR : MISSING SECRET DUNIKEY FILE"  && exit 1; }
 
 COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
+[[ -z $COINS ]] && echo "ERROR : ${ISSUERPUB}=$COINS EMPTY WALLET" && exit 1
 ###### TEST INPUT VALUES
 [[ $AMOUNT == "ALL" ]] && AMOUNT=$COINS ## ALL MEAN EMPTY ORIGIN WALLET
 [[ -z $AMOUNT ]] && echo "ERROR : ${ISSUERPUB}=$COINS MISSING AMOUNT" && exit 1
 [[ $AMOUNT =~ ^[0-9]+([.][0-9]+)?$ ]] && echo "Valid AMOUNT=${AMOUNT}" || { echo "ERROR NOT a valid AMOUNT : ${AMOUNT}" && exit 1; }
-
 [[ $(echo "$COINS <= $AMOUNT" | bc -l) -eq 1 ]] && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
 [[ -z $G1PUB ]] && echo "ERROR : ${ISSUERPUB}=$COINS ($AMOUNT) MISSING DESTINATION" && exit 1
 
