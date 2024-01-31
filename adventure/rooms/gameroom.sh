@@ -46,10 +46,10 @@ while true; do
             echo "INTERNET est dangereux. il vend vos information personnelles pour que vous deveniez un produit.  "
             sleep 2
             echo
-            echo "Rebootez INTERNET. Activez votre TW sur le Système de Fichiers Interplanétaire (IPFS)."
+            echo "Rebootez INTERNET. Activez votre TW sur UPlanet (IPFS crypto drive) "
             sleep 2
             echo
-            echo "On y échange en pair à pair. La monnaie y est Libre."
+            echo "On y échange en pair à pair. La monnaie y est Libre. https://qo-op.com"
             sleep 4
             file1="../art/astrored.ben"
             while IFS= read -r line
