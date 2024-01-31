@@ -35,7 +35,7 @@ Alors que les fichiers des salles contiennent la majorité des mots spéciaux de
 Ce qui fait d'une aventure en mode texte plus qu'un simple jeu de labyrinthe, c'est la logique. Vous pouvez placer des interrupteurs, demander aux utilisateurs de faire correspondre des mots ou de trouver des secrets. Vous pouvez en ajouter autant que vous le souhaitez !
 
 
-[![](game_map.png)
+![](game_map.png)
 
 
 ---
