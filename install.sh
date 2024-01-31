@@ -201,19 +201,19 @@ echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
 
-if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
-echo "#############################################"
-echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
-echo "#############################################"
-(
-    mkdir -p ~/.zen/tmp/kodi
-    echo "PATIENTEZ..."
-    ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
-    echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
-    mv ~/.kodi ~/.kodi.back 2>/dev/null
-    mv ~/.zen/tmp/kodi ~/.kodi
-) &
-fi
+#~ if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
+#~ echo "#############################################"
+#~ echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
+#~ echo "#############################################"
+#~ (
+    #~ mkdir -p ~/.zen/tmp/kodi
+    #~ echo "PATIENTEZ..."
+    #~ ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
+    #~ echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
+    #~ mv ~/.kodi ~/.kodi.back 2>/dev/null
+    #~ mv ~/.zen/tmp/kodi ~/.kodi
+#~ ) &
+#~ fi
 
 
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
