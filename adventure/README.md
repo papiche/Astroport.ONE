@@ -26,8 +26,6 @@ Tout le monde aime un peu d'art ASCII, n'est-ce pas ? Il y a quelques fichiers d
 
 Chaque "pièce" du jeu est stockée dans un fichier de pièce séparé. Il s'agit d'une pièce métaphorique - il peut s'agir d'une zone boisée, d'une grotte, de la lune, de la spaaaaaace, peu importe. Dans cette démo, il y a des pièces et des couloirs - les fichiers sont identiques. Tout est dans la formulation.
 
-![game_map.png]
-
 ### script
 
 Alors que les fichiers des salles contiennent la majorité des mots spéciaux de chaque salle, les fichiers de ce dossier contiennent des morceaux d'histoire plus longs et le texte d'introduction. Si vous souhaitez afficher de gros morceaux de texte provenant de fichiers dans votre jeu, c'est dans le dossier scripts qu'il faut les placer.
@@ -35,6 +33,10 @@ Alors que les fichiers des salles contiennent la majorité des mots spéciaux de
 ### logic
 
 Ce qui fait d'une aventure en mode texte plus qu'un simple jeu de labyrinthe, c'est la logique. Vous pouvez placer des interrupteurs, demander aux utilisateurs de faire correspondre des mots ou de trouver des secrets. Vous pouvez en ajouter autant que vous le souhaitez !
+
+
+[![](game_map.png)
+
 
 ---
 
