@@ -24,6 +24,12 @@ fi
 # RESTORE OLD KODI
 [[ -e ~/.kodi.old ]] && echo "RESTORE KODI" && rm -Rf ~/.kodi && mv ~/.kodi.old ~/.kodi
 
+########################################################################
+# RESTORE resolv.conf
+[[ -s /etc/resolv.conf.backup ]] &&  echo "RESTORE resolv.conf" \
+            && sudo chattr -i /etc/resolv.conf \
+            && sudo cat /etc/resolv.conf.backup > /etc/resolv.conf
+
 
 ########################################################################
 echo "REMOVE cron_MINUTE from CRONTAB"
