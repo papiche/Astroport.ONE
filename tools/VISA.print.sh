@@ -48,7 +48,7 @@ else
 
     mkdir -p ~/.zen/game/players/${PLAYER}/
     CIMG="${MY_PATH}/../images/zenticket.png"
-    amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+    amzqr "${G1PUB}" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
 
 fi
 
