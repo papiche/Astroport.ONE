@@ -192,7 +192,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
     mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "old scarf code"
 
-    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB:ZEN" ## ZEN specific G1PUB QRCODE - break G1 compatibility -
+    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"
     cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
@@ -405,7 +405,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
             CIMG="${MY_PATH}/../images/zenticket.png"
 
             # QRG1avatar.png
-            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
             # QRTWavatar.png
             [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr "${myIPFSGW}/ipns/${ASTRONAUTENS}" -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
 

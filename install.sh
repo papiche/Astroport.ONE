@@ -227,22 +227,32 @@ end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
 echo
-echo "### JOIN BOOSTRAP LIST #############################"
-echo "###  SET MAILJET CREDENTIALS...
+echo "(DES) ACTIVATE with
+ ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON (OFF)"
+echo
+echo "### FOR JOINING BOOSTRAP LIST #############################"
+echo "### MAILJET CREDENTIALS
 contact support@qo-op.com for initial UPlanet ~/.zen/MJ_APIKEY"
 echo "#############################################"
-echo "Continue with keygen procedure..."
+echo ">>> Welcome Space Kitty <<<"
+echo "Explore Web2.0 / WEb3 frontier"
+echo "Please. Continue keygen procedure..."
+echo
+echo "COMAND INTERFACE"
+echo "CLI : ~/.zen/Astroport.ONE/command.sh"
+echo "WEB : http://127.0.0.1:1234/"
 
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
     espeak "Welcome Space Kitty" 2>/dev/null
 
+
     #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
     #~ && xdg-open "http://astroport.localhost:1234" \
     #~ || ~/.zen/Astroport.ONE/command.sh
 
-    xdg-open "https://pad.p2p.legal/keygen" 2>/dev/null
+    xdg-open "http://127.0.0.1:1234/" 2>/dev/null
 
 else
 

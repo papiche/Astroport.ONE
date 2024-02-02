@@ -227,7 +227,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
-                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}:ZEN"
+                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}"
                 QRURL=${myIPFS}/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/disco.qr.png)
                 ONVADIRE="<h1> ${CURZEN} ẐEN </h1>${G1PUB}<br><br><img src=${QRURL} />"
                 echo "${ONVADIRE}" >> ~/.zen/tmp/${MOATS}/disco
@@ -641,7 +641,7 @@ fi
 ################################################################################
 ## QRCODE = IPNS or G1PUB ? Can be ASTRONAUTENS or G1PUB format
 ZCHK="$(echo $THAT | cut -d ':' -f 2-)" # ChK or ZEN
-QRCODE="${QRCODE%%:*}" ## TRIM :ZEN :ChK
+QRCODE="${QRCODE%%:*}" ## TRIM :ChK
 ################################################################################
 ################################################################################
 ## QRCODE IS IPNS FORMAT "12D3Koo"  ( try ipfs_to_g1 )
@@ -674,7 +674,6 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
         || ZEN="-10"
 
     DISPLAY="$VISITORCOINS G1"
-    [[ ${ZCHK} == "ZEN" ]] && DISPLAY="$ZEN ẐEN"
 
     ## WALLET VIERGE
     ###########################################
