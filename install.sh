@@ -121,14 +121,13 @@ sudo npm install -g tiddlywiki
 #~ ## DES SUGGESTIONS ?
 #~ ## CONTACTER support@qo-op.com
 #~ #################################################"
-echo "######### CONFIGURE MAILJET ############"
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
-sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
-sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
-sudo chmod 640 /etc/ssmtp/ssmtp.conf
-sudo chgrp mail /etc/ssmtp/ssmtp.conf
+#~ sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
+#~ sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
+#~ sudo chmod 640 /etc/ssmtp/ssmtp.conf
+#~ sudo chgrp mail /etc/ssmtp/ssmtp.conf
 
-echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
+#~ echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
 
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
@@ -152,7 +151,7 @@ echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo
 # python -m pip install -U silkaj
 # python -m pip install -U protobuf==3.19.0
 
-for i in pip setuptools wheel cryptography==3.4.8 Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
+for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         python -m pip install --break-system-packages -U $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
@@ -219,24 +218,31 @@ echo "=== SETUP ASTROPORT"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX ERRORS XXx"
 cat /tmp/install.errors.log
+echo "xXX please report any errors encountered during install  XXx"
 echo "################XXXX#########################"
-echo "Astroport.ONE Welcome Space Kitty"
+echo
+echo "#############################################"
+echo "Astroport.ONE - Web3 Information System over IPFS - "
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
-echo "Please finish keygen procedure"
+echo
+echo "### JOIN BOOSTRAP LIST #############################"
+echo "###  SET MAILJET CREDENTIALS...
+contact support@qo-op.com for initial UPlanet ~/.zen/MJ_APIKEY"
 echo "#############################################"
+echo "Continue with keygen procedure..."
 
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
-    espeak "Welcome Space Kitty"
+    espeak "Welcome Space Kitty" 2>/dev/null
 
     #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
     #~ && xdg-open "http://astroport.localhost:1234" \
     #~ || ~/.zen/Astroport.ONE/command.sh
 
-    xdg-open "https://pad.p2p.legal/keygen"
+    xdg-open "https://pad.p2p.legal/keygen" 2>/dev/null
 
 else
 
