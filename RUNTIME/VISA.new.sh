@@ -549,9 +549,10 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 
 ### SEND AstroID and ZenCard to EMAIL
 (
-echo "<html><body><h1>UPlanet : ZenCard</h1>This is your ZenCard : your public key (book)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
-echo "<br>It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/ZenCard.txt
+echo "<html><body><h1>UPlanet : ZenCard</h1>
+This is your ZenCard : your public key (your flag)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
 echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
+<br>it contains you Ẑen and TW address
 <br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.txt
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCard"
@@ -561,12 +562,16 @@ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCa
 
 echo "<html><body>
 <h1>UPlanet : AstroID ($PASS)</h1>
-This is your AstroID : your private key (ring)" > ~/.zen/tmp/${MOATS}/AstroID.txt
-echo "<br>it contains secret1=$SALT secret2=$PEPPER secured by PIN : $PASS
-<br>Print it and keep it secure...
-<br>Lord of the Ring on <a href='https://qo-op.com'>Uplanet</a>
-<br>PLUGGED IN STATION#${IPFSNODEID}" >> ~/.zen/tmp/${MOATS}/AstroID.txt
+This is your AstroID : your private key (your ring)" > ~/.zen/tmp/${MOATS}/AstroID.txt
+echo "
+<br>You own one of the 'Rings of the Lords' on <a href='https://qo-op.com'>Uplanet</a>  0.1° SECTOR : ${SECTOR}
+<br>it is forged from SECRET1=$SALT SECRET2=$PEPPER then secured by PIN : $PASS
+<br>
+<br>Your ASTROPORT STATION is <a href='${myAPI}'>NODE#${IPFSNODEID}</a>
+" >> ~/.zen/tmp/${MOATS}/AstroID.txt
 echo "<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
+<br>
+<br>Print it and delete from TW to keep it secure.
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.txt
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.txt "AstroID"
