@@ -19,9 +19,11 @@ PLAYERONE="$1"
 
 echo "FOUND : ${PLAYERONE[@]}"
 
-echo "CLEANING UPLANET KEYS ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*"
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*
-echo "CLEANING TW KEYS ~/.zen/tmp/${IPFSNODEID}/TW/"
+echo "RENEWING UPLANET NODE CACHE
+ ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET
+echo "CLEANING TW NODE CACHE ~/.zen/tmp/${IPFSNODEID}/TW/"
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/
 
 ## RUNING FOR ALL LOCAL PLAYERS
@@ -358,16 +360,29 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
-    ## Publish on LAT/ON key on IPFSNODEID 12345 CACHE
-    [[ ${LAT} && ${LON} ]] \
-        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS \
-        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/${PLAYER} \
-        && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/${PLAYER}/ \
-        && echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_index.html
 
-    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
+    if [[ ${LAT} && ${LON} ]]; then
+        ## SECTOR BANK COORD
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
+        ## REGION
+        REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
+        REGLON=$(echo ${LON} | cut -d '.' -f 1)
+
+    ## IPFSNODEID 12345 CACHE UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+
+        cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
+            ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+
+        ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
+        cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
+
+    fi
+
+    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON} 2>/dev/null
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
     ## MAINTAIN R/RW TW STATE

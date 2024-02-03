@@ -486,7 +486,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 fi
 
 EARTHCID="/ipfs/QmdiU3JrqNXZSVyzysKySZpMAfnWXBFgN9yqqQ1jRAW2vZ"
-FLIPPERCID="${EARTHCID}/coinflip"
+FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
 myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
@@ -502,3 +502,5 @@ myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.
 ########################################
+TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
+YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')

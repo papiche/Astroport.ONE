@@ -73,6 +73,14 @@ for REGION in ${REGIONS[@]}; do
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"
     ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
+
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${YESTERDATE}${UPLANETNAME}${REGION}" "${YESTERDATE}${UPLANETNAME}${REGION}"
+    ipfs key rm ${YESTERDATE}${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    YESTERDATEREGIONNS=$(ipfs key import ${YESTERDATE}${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
+
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}"
+    ipfs key rm ${TODATE}${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    TODATEREGIONNS=$(ipfs key import ${TODATE}${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ##############################################################
     ## GET from IPNS
             ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${REGIONNS}/
@@ -88,14 +96,14 @@ for REGION in ${REGIONS[@]}; do
                     [[ $(cat ${RSS}) != "[]" ]] \
                         && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
                         && ${MY_PATH}/../tools/RSS2WEEKnewsfile.sh ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
-
                 done
             NL=${#RSSNODE[@]}
 
             ## ADD SWARM SECTORS RSS WEEK
             RSSWARM=($(ls ~/.zen/tmp/swarm/*/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSWARM[@]}; do
-                    [[ $(cat ${RSS}) != "[]" ]] && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
+                    [[ $(cat ${RSS}) != "[]" ]] \
+                        && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
                         && ${MY_PATH}/../tools/RSS2WEEKnewsfile.sh ${RSS} >> ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
                 done
             NS=${#RSSWARM[@]}
@@ -138,10 +146,10 @@ rm ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID 2>/dev/null  ## TODO REMOVE
                         > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.redir.html
 
             IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
-            ipfs name publish -k ${REGIONG1PUB} /ipfs/${IPFSPOP}
+            ipfs name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
 
 
-    ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1
+    ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} ${TODATE}${REGIONG1PUB} > /dev/null 2>&1
 
 done
 

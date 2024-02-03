@@ -67,7 +67,7 @@ if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
     ZONE="_${LAT}_${LON}"
     echo "ZONE = ${ZONE}"
     ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
-    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${ZONE}" "${YESTERDATE}${UPLANETNAME}${ZONE}")
 
 fi
 
@@ -78,20 +78,20 @@ if [[ $DEG == "0.01" ]]; then
     SECTOR="_${SECLAT}_${SECLON}"
     echo "SECTOR = ${SECTOR}"
     ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}")
 
 fi
 
 ## UMAP LEVEL
 if [[ $DEG == "0.001" ]]; then
 
-    swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
-    nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+    swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+    nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
     totnum=$(( swarmnum + nodenum ))
     echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
 
     G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
@@ -99,7 +99,7 @@ if [[ $DEG == "0.001" ]]; then
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
     rm -Rf ~/.zen/tmp/${MOATS}/
     end=`date +%s`
-    echo "(UMAP)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
+    echo "(UMAP)_${LAT}_${LON} ${YESTERDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
     exit 0
 
 fi
@@ -116,9 +116,9 @@ do
             ZLON=$(echo "$LON + $DEG * $j" | bc -l )
             [[ -z  ${ZLON} ]] && ZLON=0
             # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
-            echo " ## SEARCH _${ZLAT}*_${ZLON}*"
-            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
+            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
             totnum=$(( swarmnum + nodenum ))
 
             [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum

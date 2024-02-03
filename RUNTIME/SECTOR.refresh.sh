@@ -56,23 +56,39 @@ for SECTOR in ${SECTORS[@]}; do
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
 
     ##############################################################
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-    [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
-    echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
+    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    [[ ! ${G1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
+    echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${G1PUB}"
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
-    ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-    SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
+    ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    SECTORNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
     rm ~/.zen/tmp/${MOATS}/${SECTOR}.priv
 
-    echo "${myIPFS}/ipns/${SECTORNS}/"
+    echo "ORIGIN : ${myIPFS}/ipns/${SECTORNS}/"
+
+        ###################### SPATIO TEMPORAL KEYS
+        ## YESTERDATE ###############
+        YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}"
+        ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
+        YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
+        echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
+
+        ## TODATE #########################################
+        TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
+        ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
+        TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
+        echo "TODAY : ${myIPFS}/ipns/${TODATENS}"
+
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE SECTORNS
-    ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${SECTORNS}/
+    ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             end=`date +%s`
             echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
@@ -150,10 +166,10 @@ for SECTOR in ${SECTORS[@]}; do
     sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
-    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
     NL=${#RSSNODE[@]}
 
-    RSSWARM=($(ls ~/.zen/tmp/swarm/12D*/UPLANET/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+    RSSWARM=($(ls ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
     NS=${#RSSWARM[@]}
 
     combinedrss=("${RSSNODE[@]}" "${RSSWARM[@]}")
@@ -189,8 +205,8 @@ for SECTOR in ${SECTORS[@]}; do
         " > ~/.zen/tmp/world.js
         floop=1
 
-        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
-        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
         TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
 
         for TWRED in ${TWFILES[@]}; do
@@ -233,14 +249,14 @@ for SECTOR in ${SECTORS[@]}; do
         REGION="_${REGLAT}_${REGLON}"
         REGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
 
-        PHONEBOOTH="${SECTORG1PUB::30}"
+        PHONEBOOTH="${G1PUB::30}"
         cat ${MY_PATH}/../templates/UPlanetSector/index.html \
                 | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~_UPZONE_~REGION ${REGION}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
                   -e "s~_ZONENS_~${SECTORNS}~g" \
                   -e "s~_UPZONENS_~${REGIONNS}~g" \
-                  -e "s~_SECTORG1PUB_~${SECTORG1PUB}~g" \
+                  -e "s~_SECTORG1PUB_~${G1PUB}~g" \
                   -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_EARTHCID_~${EARTHCID}~g" \
                   -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
@@ -260,8 +276,8 @@ convert -font 'Liberation-Sans' \
         -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
         -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
         $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
-# CREATE SECTORG1PUB AMZQR
-amzqr ${SECTORG1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
+# CREATE G1PUB AMZQR
+amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
 convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
 # ADD IT
 composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
@@ -269,7 +285,7 @@ composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZE
 ## zday marking
 rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
@@ -283,8 +299,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 
         echo "% START PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
         start=`date +%s`
-        ipfs name publish -k ${SECTORG1PUB} /ipfs/${IPFSPOP}
-        ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1
+        ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
+        ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
         end=`date +%s`
         echo "_____SECTOR${SECTOR} PUBLISH time was "`expr $end - $start` seconds.
 
@@ -293,7 +309,6 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 ###################################################
 ## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE
     echo "(☉_☉ ) ${REGION}.week.rss.json  (☉_☉ )"
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/REGIONS/ ## TODO REMOVE
 
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/SECTORS/
     rm -f ~/.zen/tmp/${IPFSNODEID}/SECTORS/${SECTOR}.week.rss.json

@@ -193,7 +193,7 @@ echo "##  ADDING lazydocker ================"
 sudo usermod -aG docker $USER
 # INSTALL lazydocker GUI
 curl https://raw.githubusercontent.com/\
-papiche/lazydocker/master/scripts/\
+jesseduffield/lazydocker/master/scripts/\
 install_update_linux.sh | bash
 
 echo "#############################################"
