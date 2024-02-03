@@ -549,18 +549,25 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 
 ### SEND AstroID and ZenCard to EMAIL
 (
-echo "<html><body><h1>UPlanet : ZenCard</h1>Print your ZenCard : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
+echo "<html><body><h1>UPlanet : ZenCard</h1>This is your ZenCard : your public key (book)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
 echo "<br>It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/ZenCard.txt
-echo "<br><a href='$myIPFSGW/$IASTRO'>ZenCard</a><br><img src='$myIPFSGW/$IASTRO'\></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.txt
+echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
+<br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.txt
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCard"
 
 #~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
 
-echo "<html><body><h1>UPlanet : AstroID ($PASS)</h1>Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/AstroID.txt
-echo "<br>Use it to send Zen to other <a href='https://qo-op.com'>Uplanet</a> players" >> ~/.zen/tmp/${MOATS}/AstroID.txt
-echo "<br><a href='$myIPFSGW/$ASTROQR'>AstroID</a><br><img src='$myIPFSGW/$ASTROQR'\></body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.txt
+echo "<html><body>
+<h1>UPlanet : AstroID ($PASS)</h1>
+This is your AstroID : your private key (ring)" > ~/.zen/tmp/${MOATS}/AstroID.txt
+echo "<br>it contains secret1=$SALT secret2=$PEPPER secured by PIN : $PASS
+<br>Print it and keep it secure...
+<br>Lord of the Ring on <a href='https://qo-op.com'>Uplanet</a>
+<br>PLUGGED IN STATION#${IPFSNODEID}" >> ~/.zen/tmp/${MOATS}/AstroID.txt
+echo "<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
+</body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.txt
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.txt "AstroID"
 
