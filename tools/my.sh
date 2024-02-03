@@ -437,6 +437,8 @@ myIP="$(myIp)" # "127.0.0.1"
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
+myDOMAIN="copylaradio.com"
+
 myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
 myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
 myAPI="http://${myIP}:5001"
@@ -458,8 +460,8 @@ myASTROTUBE="https://$(myAstroTube)"
  && myAPI="https://ipfs.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
- && myG1BILLET="https://libra.copylaradio.com" \
- && myIPFSW="https://ipfs.copylaradio.com" \
+ && myG1BILLET="https://libra.${myDOMAIN}" \
+ && myIPFSW="https://ipfs.${myDOMAIN}" \
  || true
 
 ## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45790 )

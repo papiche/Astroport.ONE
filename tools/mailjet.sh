@@ -47,7 +47,7 @@ YUSER=$(echo ${mail} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-pseudo="${CLYUSER}_${YOMAIN}"
+pseudo="/ipns/${CLYUSER}${YOMAIN}.$(myDOMAIN)"
 #~ echo "PSEUDO=$pseudo"
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
@@ -55,7 +55,7 @@ messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 ## add a tittle in message
 title="$3"
 
-SUBJECT="[UPlanet] ${title} ${pseudo} : $(myHostName)"
+SUBJECT="[UPlanet] ${title} ${pseudo}"
 
 MESSAGESIGN="---<br>this message is sent to you by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your ♥BOX Astroport.ONE Station"
 
