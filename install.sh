@@ -44,7 +44,7 @@ echo "#############################################"
 echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
-for i in git make cmake fail2ban npm argon2 netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
+for i in git make cmake docker-compose fail2ban npm argon2 netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -138,18 +138,6 @@ fi
 
 echo "###########################"
 echo "##  ADDING CRYPTO LAYER ================"
-echo "########################### ♥BOX"
-sudo ln -f -s  /usr/bin/python3 /usr/bin/python
-echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo "<<< CHECK YOUR >>> PATH=$PATH"
-
-#~ mkdir -p ~/.venvs
-#~ python3 -m venv ~/.venvs/astro
-
-# python -m pip install -U pip
-# python -m pip install -U setuptools wheel
-# python -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes
-# python -m pip install -U silkaj
-# python -m pip install -U protobuf==3.19.0
 
 for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -187,6 +175,26 @@ if [[ $USER != 'xbian' ]]; then
     fi
 
 fi
+
+echo "########################### ♥BOX"
+sudo ln -f -s  /usr/bin/python3 /usr/bin/python
+
+while IFS= read -r line
+do
+    echo "$line" >> ~/.bashrc
+done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
+
+
+echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc
+echo "<<< UPDATED>>> PATH=$PATH"
+
+echo "##  ADDING lazydocker ================"
+### ADD TO DOCKER GROUP
+sudo usermod -aG docker $USER
+# INSTALL lazydocker GUI
+curl https://raw.githubusercontent.com/\
+papiche/lazydocker/master/scripts/\
+install_update_linux.sh | bash
 
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
