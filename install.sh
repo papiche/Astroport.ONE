@@ -44,7 +44,7 @@ echo "#############################################"
 echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
-for i in git make cmake docker-compose fail2ban npm argon2 netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
+for i in git make cmake docker-compose fail2ban npm argon2 netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
