@@ -243,19 +243,19 @@ for SECTOR in ${SECTORS[@]}; do
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
-        ### APPLY ON APP MODEL
+        ### APPLY ON APP MODEL TODATE REGIONNS LINKING
         REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
         REGLON=$(echo ${LON} | cut -d '.' -f 1)
         REGION="_${REGLAT}_${REGLON}"
-        REGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+        TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
 
         PHONEBOOTH="${G1PUB::30}"
         cat ${MY_PATH}/../templates/UPlanetSector/index.html \
                 | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~_UPZONE_~REGION ${REGION}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                  -e "s~_ZONENS_~${SECTORNS}~g" \
-                  -e "s~_UPZONENS_~${REGIONNS}~g" \
+                  -e "s~_ZONENS_~${TODATENS}~g" \
+                  -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
                   -e "s~_SECTORG1PUB_~${G1PUB}~g" \
                   -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_LAT_~${REGLAT}~g" \
