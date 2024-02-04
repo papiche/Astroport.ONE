@@ -487,7 +487,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 ###
 fi
 
-EARTHCID="/ipfs/QmdiU3JrqNXZSVyzysKySZpMAfnWXBFgN9yqqQ1jRAW2vZ"
+EARTHCID="/ipfs/Qmcf9jSMypdyjxgLY1ahWxavu3hoFDuqFw1sJG6DmPBK1E"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
@@ -498,7 +498,7 @@ myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
 
-## DEV fred@g1sms.fr UPlanet World Keeper.
+## DEV fred@g1sms.fr temporary UPlanet World Keeper.
 [[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="EniaswqLCeWRJfz39VJRQwC6QDbAhkRHV9tn2fjhcrnc"
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
