@@ -83,7 +83,7 @@ for REGION in ${REGIONS[@]}; do
     TODATEREGIONNS=$(ipfs key import ${TODATE}${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ##############################################################
     ## GET from IPNS
-            ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${REGIONNS}/
+            ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS

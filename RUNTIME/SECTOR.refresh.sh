@@ -87,7 +87,7 @@ for SECTOR in ${SECTORS[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #~ ## IPFS GET ONLINE SECTORNS
+    #~ ## IPFS GET ONLINE YESTERDATE SECTORNS
     ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             end=`date +%s`
@@ -299,7 +299,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
         && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
 
-        echo "% START PUBLISHING ${SECTOR} ${myIPFS}/ipns/${SECTORNS}"
+        echo "% START PUBLISHING ${SECTOR} ${myIPFS}/ipns/${TODATENS}"
         start=`date +%s`
         ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
         ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
