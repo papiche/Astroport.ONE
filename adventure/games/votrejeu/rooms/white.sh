@@ -44,7 +44,7 @@ while true; do
         w ) echo "Vous voilà face à un Jardin luxuriant. Une cloture électrique le délimite et en empêche l'accès." ;;
         h )  echo "Vous voyez à l'interieur de la Station une video en cours de projection..."
                 sleep 2
-              xdg-open "https://www.youtube.com/embed/Yk-WRXKysXM"
+              xdg-open "https://www.youtube.com/watch?v=2Z4m4lnjxkY"
             ;;
         u ) leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
