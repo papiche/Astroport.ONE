@@ -14,7 +14,7 @@ echo
 
 # It's script time again...
 sleep 1
-echo "Vous cassez la vitre puis vous pénétrez à l'intérieur de l'Astroport."
+echo "Vous pénétrez à l'intérieur de l'Astroport."
 echo
 sleep 3
 echo "Une voix synthétique vous accueille."
