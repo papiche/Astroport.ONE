@@ -19,9 +19,11 @@ PLAYERONE="$1"
 
 echo "FOUND : ${PLAYERONE[@]}"
 
-echo "CLEANING UPLANET KEYS ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*"
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/_*_*
-echo "CLEANING TW KEYS ~/.zen/tmp/${IPFSNODEID}/TW/"
+echo "RENEWING UPLANET NODE CACHE
+ ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET
+echo "CLEANING TW NODE CACHE ~/.zen/tmp/${IPFSNODEID}/TW/"
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/
 
 ## RUNING FOR ALL LOCAL PLAYERS
@@ -97,23 +99,23 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         NOWCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain)
         LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
-        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        echo "TW REFRESH FAILED : $myIPFS/ipns/${ASTRONAUTENS}"
+        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<br>"
+        echo "<a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>"
         echo ">> %%% WARNING %%%"
         echo "------------------------------------------------"
-        echo "LAST : ${myIPFS}/ipfs/${LASTCHAIN}"
-        echo "NOW : ${myIPFS}/ipfs/${NOWCHAIN}"
+        echo " * <a href='${myIPFS}/ipfs/${LASTCHAIN}'>LAST</a>"
+        echo " *<a href='${myIPFS}/ipfs/${NOWCHAIN}'>NOW</a>"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         ## SEND AN EMAIL ALERT TO PLAYER
-        echo "TW REFRESH FAILED : $myIPFS/ipns/${ASTRONAUTENS}" > ~/.zen/tmp/result
-        echo "------------------------------------------------" >> ~/.zen/tmp/result
+        echo "<html><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>" > ~/.zen/tmp/result
+        echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
         echo "" >> ~/.zen/tmp/result
-        echo "NOW CHAIN : ${myIPFS}/ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
-        echo "PREVIOUS : ${myIPFS}/ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>ANCIENT</a>" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>NEW</a>" >> ~/.zen/tmp/result
         echo "" >> ~/.zen/tmp/result
-        echo " %%% WARNING %%%" >> ~/.zen/tmp/result
-        echo "------------------------------------------------" >> ~/.zen/tmp/result
-        echo "PLEASE REPAIR BY SAVING ONLINE" >> ~/.zen/tmp/result
+        echo "<br> %%% WARNING %%%" >> ~/.zen/tmp/result
+        echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
+        echo "<br>PLEASE REPAIR BY SAVING ONLINE</body></html>" >> ~/.zen/tmp/result
         echo "OR RUNNING CLI COMMAND : ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
 
         try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.try 2>/dev/null) || try=3
@@ -126,7 +128,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         try=$((try-1))
         echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
         echo " %%% WARNING %%%  ${PLAYER} STATION UNPLUG IN $try DAY(S)." >> ~/.zen/tmp/result
-        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result
+        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "UNPLUG WARNING"
 
         continue
 
@@ -285,8 +287,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
     else
         ## COUNT NO CHANGE
-        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange 2>/dev/null) || try=0
-        ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/moa/_nochange
+        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/_nochange 2>/dev/null) || try=0
+        ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/_nochange
         echo "NO CHANGE $try TIMES"
     fi
     ##############################################################
@@ -310,24 +312,39 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "================================================"
 
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
-    ## CREATING 30 DAYS RSS STREAM
+    ## CREATING 30 DAYS JSON RSS STREAM
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
+    ## TODO CREATING 30 DAYS XML RSS STREAM
+    ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
+    # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
+    ### $:/plugins/sycom/atom-feed/atom.xml
+    #~ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                        #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
+
+    SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
+    SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+    DIFF_SECONDS=$(( SNOW - SBIRTH ))
+    days=$((DIFF_SECONDS / 60 / 60 / 24))
+    echo "PLAYER TW was created $days ago"
+
     ##################################
     #### PLAYER ACCOUNT CLEANING #########
-    ## CHECK FOR EMPTY RSS + 30 DAYS BIRTHDATE + null G1
+    ## IF ZEN < 11
+    ## && EMPTY RSS + 30 DAYS BIRTHDATE
+    ## ==> UNPLUG
     [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
         && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
         && [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]] \
-        && SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE}) \
-        && SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS}) \
-        && [[ $(( SNOW - SBIRTH )) -gt $(( 27 * 24 * 60 * 60 ))  ]] \
-        && echo "ACCOUNT WILL BE UNPLUGGED IN 3.2.1 DAYS" > ~/.zen/tmp/alert \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert \
-        && [[ $(( SNOW - SBIRTH )) > $(( 30 * 24 * 60 * 60 ))  ]] \
-        && echo ">>>> PLAYER UNPLUG >>>>> BYE BYE ${PLAYER}" \
+        && [[ ${DIFF_SECONDS} -gt $(( 27 * 24 * 60 * 60 ))  ]] \
+        && echo "<html><body><h1>WARNING.</h1>  Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert \
+        && echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3>ZEN=$ZEN </body></html>" >> ~/.zen/tmp/alert \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT" \
+        && echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days" \
+        && [[ ${DIFF_SECONDS} -gt $(( 30 * 24 * 60 * 60 ))  ]] \
+        && echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN" \
         && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
         && continue
     #################################### UNPLUG ACCOUNT
@@ -343,15 +360,29 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
-    ## Publish on LAT/ON key on IPFSNODEID 12345 CACHE
-    [[ ${LAT} && ${LON} ]] \
-        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/ \
-        && mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/${PLAYER} \
-        && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/${PLAYER}/ \
-        && echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_index.html
 
-    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON} 2>/dev/null
+    if [[ ${LAT} && ${LON} ]]; then
+        ## SECTOR BANK COORD
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
+        ## REGION
+        REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
+        REGLON=$(echo ${LON} | cut -d '.' -f 1)
+
+    ## IPFSNODEID 12345 CACHE UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+
+        cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
+            ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+
+        ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
+        cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
+
+    fi
+
+    ls -al ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON} 2>/dev/null
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
     ## MAINTAIN R/RW TW STATE
@@ -361,8 +392,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     && ipfs key rm ${PLAYER}_feed \
     && ipfs key rm ${G1PUB}
 
+    ## CLEANING CACHE
+    rm -Rf ~/.zen/tmp/${MOATS}
 
 done
-echo "PLAYER.refresh DONE."
+echo "============================================ PLAYER.refresh DONE."
 
 exit 0

@@ -133,7 +133,7 @@ if [[ ! ${TIDDLER} ]]; then
         ## EXTRA PARAM TO TRY
         #  --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
 
-        /usr/local/bin/yt-dlp  -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+        /usr/local/bin/yt-dlp -q -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
                     $BROWSER \
                     --download-archive ${HOME}/.zen/.yt-dlp.list \
                     -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \

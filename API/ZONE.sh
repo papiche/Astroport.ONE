@@ -40,14 +40,7 @@ Content-Type: text/html; charset=UTF-8
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
-## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
-alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-if [[ ${alreadypublishing} ]]; then
-     echo "$HTTPCORS {[error: ALREADY IPNS ERROR]}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-     exit 1
-fi
-
-## START MANAGING UPLANET LAT/LON & PLAYER
+## RUNNING UPLANET LAT/LON TW DETECTION
 mkdir -p ~/.zen/tmp/${MOATS}/
 # GET RECEPTION : zone=0.001&ulat=0.02&ulon=0.01
 DEG=${THAT}
@@ -62,24 +55,53 @@ LON=${WHAT}
 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
 
+LAT=$(makecoord $LAT)
+LON=$(makecoord $LON)
+
+echo "REQUEST $LAT / $LON / $DEG"
+
+## REGION & ABOVE LEVEL
+if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
+    LAT=$(echo ${LAT} | cut -d '.' -f 1)
+    LON=$(echo ${LON} | cut -d '.' -f 1)
+    ZONE="_${LAT}_${LON}"
+    echo "ZONE = ${ZONE}"
+    ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${ZONE}" "${YESTERDATE}${UPLANETNAME}${ZONE}")
+
+fi
+
+## SECTOR LEVEL
+if [[ $DEG == "0.01" ]]; then
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
+    SECTOR="_${SECLAT}_${SECLON}"
+    echo "SECTOR = ${SECTOR}"
+    ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    ZONETW="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}")
+
+fi
+
+## UMAP LEVEL
 if [[ $DEG == "0.001" ]]; then
 
-        LAT=$(makecoord $LAT)
-        LON=$(makecoord $LON)
+    swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+    nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+    totnum=$(( swarmnum + nodenum ))
+    echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
 
-        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
+    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
+    ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+    UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
-    ## TODO : REDIRECT TO THE STATION WITH THE MORE OF THIS UMAP ;)
-
-    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "UMAP_'${LAT}'_'${LON}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
+    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
     rm -Rf ~/.zen/tmp/${MOATS}/
     end=`date +%s`
-    echo "(EXPLORE ZONE $DEG)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
+    echo "(UMAP)_${LAT}_${LON} ${YESTERDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
     exit 0
+
 fi
 
 ## ALL OTHER DEG : SEARCH FOR UPLANET TW NUMBERS
@@ -87,20 +109,22 @@ echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http
 
 for i in $(seq 0 9);
 do
-    ZLAT=$(echo "$LAT + $DEG * $i" | bc -l)
-   # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
+    ZLAT=$(echo "$LAT + $DEG * $i" | bc -l )
+    [[ -z  ${ZLAT} ]] && ZLAT=0
+    # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
         for j in $(seq 0 9); do
-            ZLON=$(echo "$LON + $DEG * $j" | bc -l)
-      #      [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
-            echo " ## SEARCH _${ZLAT}*_${ZLON}*"
-            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            ZLON=$(echo "$LON + $DEG * $j" | bc -l )
+            [[ -z  ${ZLON} ]] && ZLON=0
+            # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
+            echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
+            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
             totnum=$(( swarmnum + nodenum ))
 
-            [[ $totnum -gt 9 ]] && totnum="X"
+            [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum
 
-            [[ $totnum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "" }
-            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "" }'
+            [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONETW}'" }
+            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONETW}'" }'
 
         done
 done
@@ -109,9 +133,13 @@ sed -i '$ d' ~/.zen/tmp/${MOATS}.http ## REMOVE LAST ','
 
 echo ']}'  >> ~/.zen/tmp/${MOATS}.http
 
+### SEND RESPONSE ON PORT
 cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
+## CLEANING
 rm -Rf ~/.zen/tmp/${MOATS}/
+
+## TIMING
 end=`date +%s`
 echo "(ZONE) Operation time was "`expr $end - $start` seconds.
 exit 0

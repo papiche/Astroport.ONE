@@ -109,7 +109,7 @@ while true; do
     COOKIE=$(echo "$REQ" | grep '^Cookie:' | cut -d ' ' -f2)
     echo "COOKIE=$COOKIE"
     ###############    ###############    ###############    ###############
-    [[ $XDG_SESSION_TYPE == 'x11' ]] && espeak "Dong" >/dev/null 1>&2 &
+    [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && espeak "Dong" >/dev/null 1>&2 &
     ############################################################################
     [[ $URL == "/test"  || $URL == "" ]] && continue
 

@@ -51,9 +51,9 @@ echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
 # CHECK LAST 10 INCOMING PAYMENTS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json
+${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
-[[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json ]] \
+[[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY" \
 && exit 1
 ##############################
@@ -62,27 +62,27 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 #################################################################
 
 ## TREAT ANY COMMENT STARTING WITH N1
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
 
 while read NLINE; do
     ## COMMENT FORMAT = N1$CMD:$TH:$TRAIL
-    IDATE=$(echo ${NLINE} | jq -r .date)
-    IPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
+    TXIDATE=$(echo ${NLINE} | jq -r .date)
+    TXIPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
 
     COMMENT=$(echo ${NLINE} | jq -r .comment)
     CMD=$(echo ${COMMENT} | cut -d ':' -f 1 | cut -c -12 ) # Maximum 12 characters CMD
 
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $IDATE ]]  && echo "$CMD $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $TXIDATE ]]  && echo "$CMD $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" && continue
 
     TH=$(echo ${COMMENT} | cut -d ':' -f 2)
     TRAIL=$(echo ${COMMENT} | cut -d ':' -f 3-)
 
     if [[ -s ${MY_PATH}/../ASTROBOT/${CMD}.sh ]]; then
 
-        echo "RECEIVED CMD=${CMD} from ${IPUBKEY}"
-        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${IPUBKEY} ${TH} ${TRAIL}
+        echo "RECEIVED CMD=${CMD} from ${TXIPUBKEY}"
+        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${TXIPUBKEY} ${TH} ${TRAIL}
         ## WELL DONE .
-        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST IDATE
+        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST TXIDATE
 
     else
 
@@ -94,42 +94,39 @@ done < ~/.zen/tmp/${MOATS}/myN1.json
 
 ########################################################################################
 ############# CHECK FOR EMAILs IN PAYMENT COMMENT
-## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -r
+## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -r
 #################################################################
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
 
 # IF COMMENT CONTAINS EMAIL ADDRESSES
 # SPREAD & TRANSFER AMOUNT TO NEXT (REMOVING IT FROM LIST)... Other G1PalPay will continue the transmission...
 ########################################################################
-# this could lead in several account creation sharing % of incomes each time
-
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/$PLAYER.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
-
 ## GET @ in JSON INLINE
 while read LINE; do
 
     echo "MATCHING IN COMMENT"
     echo "${LINE}"
     JSON=${LINE}
-    IDATE=$(echo $JSON | jq -r .date)
-    IPUBKEY=$(echo $JSON | jq -r .pubkey)
-    IAMOUNT=$(echo $JSON | jq -r .amount)
-    IAMOUNTUD=$(echo $JSON | jq -r .amountUD)
+    TXIDATE=$(echo $JSON | jq -r .date)
+    TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
+    TXIAMOUNT=$(echo $JSON | jq -r .amount)
+    TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS IDATE=$IDATE FORMAT ??)"
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $IDATE ]]  && echo "PalPay $IDATE from $IPUBKEY ALREADY TREATED - continue" && continue
+    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS TXIDATE=$TXIDATE FORMAT ??)"
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" && continue
 
     ## GET EMAILS FROM COMMENT
-    ICOMMENT=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
     ## DIVIDE INCOMING AMOUNT TO SHARE
-    echo "N=${#ICOMMENT[@]}"
-    N=${#ICOMMENT[@]}
-    SHARE=$(echo "scale=2; $IAMOUNT / $N" | bc)
+    echo "N=${#TXIMAILS[@]}"
+    N=${#TXIMAILS[@]}
+    SHARE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
 
-    echo $IDATE $IPUBKEY $IAMOUNT [$IAMOUNTUD] $ICOMMENT % $SHARE %
+    echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
 
-    for EMAIL in "${ICOMMENT[@]}"; do
+    for EMAIL in "${TXIMAILS[@]}"; do
 
         [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
 
@@ -146,9 +143,9 @@ while read LINE; do
         fi
 
         [[ ! ${ASTROG1} ]] \
-        && echo "SORRY ${EMAIL} MISSING ASTROG1" \
-        && echo " BRO.  $PLAYER  VEUX VOUS OFFRIR ${SHARE} G1 \n Inscrivez-vous sur UPlanet https://qo-op.com/" > ~/.zen/tmp/palpay.bro \
-        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro \
+        && echo "<html><body><h1>SORRY ${EMAIL} YOUR ACCOUNT IS MISSING</h1>" \
+        && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>(♥‿‿♥)... Join <a href='https://qo-op.com'>UPlanet</a> and receive it</body></html>" > ~/.zen/tmp/palpay.bro \
+        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "NEED FOR ACCOUNT" \
         && continue
 
 
@@ -161,8 +158,7 @@ while read LINE; do
 
         if [[ ${ASTROG1} != ${G1PUB} ]]; then
 
-            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${SHARE} -p ${ASTROG1} -c "G1PalPay:$N:$IPUBKEY" -m > /dev/null 2>&1
+            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "G1PalPay:$N:$TXIPUBKEY"
             STAMP=$?
 
         else
@@ -172,7 +168,7 @@ while read LINE; do
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$IDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST IDATE
+        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST TXIDATE
 
     done
 
@@ -182,6 +178,7 @@ echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
 
 ########################################################################################
 ## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
+#  This can could happen in case Tiddler is copied OR PLAYER manualy adds an email tag to Tiddler to share with someone...
 #################################################################
 echo "# EXTRACT TODAY TIDDLERS"
 tiddlywiki --load ${INDEX} \
@@ -198,28 +195,32 @@ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddl
 
 # LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
-
 echo "******************TIDDLERS with EMAIL in TAGS treatment"
 #~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
 
 ## EXTRACT NOT MY EMAIL
 while read LINE; do
 
-    echo "---------------------------------- PalPé mec"
+    echo "---------------------------------- Sava PalPé mec"
     echo "${LINE}"
     echo "---------------------------------- PalPAY for Tiddler"
     TCREATED=$(echo ${LINE} | jq -r .created)
     TTITLE=$(echo ${LINE} | jq -r .title)
     TTAGS=$(echo ${LINE} | jq -r .tags)
+
+    ## PREPARE PINNING -
     TOPIN=$(echo ${LINE} | jq -r .ipfs) ## Tiddler produced by "Astroport Desktop"
     [[ -z ${TOPIN} ]] && TOPIN=$(echo ${LINE} | jq -r ._canonical_uri) ## Tiddler is exported to IPFS
+    [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] \
+        && echo "NOT COMPATIBLE ${TOPIN}" \
+        && TOPIN=""
 
     echo "$TTITLE"
 
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
-    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10
+    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10, 1 zen each
 
     ## Get first zmail
     ZMAIL="${emails}"
@@ -236,21 +237,34 @@ while read LINE; do
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
         ## SEND zen ZEN (G1 dice JUNE) TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
+        #~ ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+        #~ ${MY_PATH}/../tools/PAY4SURE.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
                                                                                                                                                                         ## Filling comment with email list will make players resend to all ## MAY BE A BAD IDEA ###
-        echo "OK PalPay : $MSG" > ~/.zen/tmp/${MOATS}/g1message
+        echo ${LINE} > ~/.zen/tmp/${MOATS}/line
+        LINEH=$(ipfs add -q ~/.zen/tmp/${MOATS}/line)
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${zen}" "${ASTROG1}" "${emails[@]} /ipfs/$LINEH"
+
+        echo "<html><body><h1>BRO ${PLAYER}</h1> : $MSG" > ~/.zen/tmp/${MOATS}/g1message
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
-        [[ ! -z $TOPIN ]] && ipfs pin add $TOPIN &&  echo "PINNING $TOPIN" >> ~/.zen/tmp/${MOATS}/g1message
+        [[ ! -z $TOPIN ]] \
+            && ipfs pin add $TOPIN \
+            &&  echo "<h2>PINNING $TOPIN</h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
+            ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
-
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "PIN TIDDLER"
 
     else
 
-        echo "ERREUR PalPay : ${TTITLE} : IMPOSSIBLE DE TROUVER ${emails[@]}"  > ~/.zen/tmp/${MOATS}/g1message
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message
-        echo "NO ACCOUNT FOUND"
+        ## SEND MESSAGE TO INFORM ${ZMAIL} OF THIS EXISTING TIDDLER
+        echo "<html><body>
+        <h1>BRO. </h1>
+        <br>
+        <a href='${myIPFSGW}'/ipns/${ASTROTW}>${PLAYER}</a> HAS SHARED A TIDDLER WITH YOU.
+        <br><b>${TTITLE}</b><br>(✜‿‿✜)
+        ... Join <a href='https://qo-op.com'>UPlanet</a> open a TW !
+        </body></html>" > ~/.zen/tmp/palpay.bro
+
+       ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "TIDDLER TW SHARING"
 
     fi
 

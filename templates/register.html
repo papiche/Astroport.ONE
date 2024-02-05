@@ -56,12 +56,19 @@ header {
   color: black;
 }
 
+#toggleConsoleButton {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    cursor: pointer;
+}
+
 #console {
     visibility: hidden;
     background: rgba(0, 0, 0, 0.9); /* Adjust the background color and opacity as needed */
     color: white;
-    width: 570px;
-    height: 480px;
+    width: 80%;
+    height: 45%;
     position: absolute;
     bottom: 0;
     left: 0;
@@ -98,15 +105,29 @@ input[name="uplanet"] {
     </style>
     <!-- Astro API JS LIB -->
     <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
-    <script>
-    // Prepare QRCode generator for this same page
-    var currentURL = window.location.href;
-    const amzURL = encodeURIComponent(currentURL);
-    const rooturl = currentURL.split('/?')[0];
 
-    const qrURL = `${rooturl}/?amzqr=${amzURL}&logo=G1WorldMap`;
-    console.log('qrURL = ' + qrURL);
-    </script>
+<script>
+    function toggleConsole() {
+        const console = document.getElementById('console');
+        console.style.visibility = (console.style.visibility === 'visible' ? 'hidden' : 'visible');
+    }
+
+    function hideConsole() {
+        document.getElementById('console').style.visibility = 'hidden';
+    }
+
+    function toggleConsoleFullScreen() {
+        const console = document.getElementById('console');
+
+        if (console.style.width === '100%' && console.style.height === '100%') {
+            console.style.width = '570px';
+            console.style.height = '480px';
+        } else {
+            console.style.width = '100%';
+            console.style.height = '100%';
+        }
+    }
+</script>
 </head>
 <body>
 <header>
@@ -119,7 +140,7 @@ input[name="uplanet"] {
         <button onclick="homeAstroportStation('/?qrcode=station', 'tab', 33000)">ẐenStation</button>
         </div>
 -->
-        <button style="position: fixed; top: 10px; left: 10px;" onclick="document.getElementById('console').style.visibility = (document.getElementById('console').style.visibility === 'visible' ? 'hidden' : 'visible');">(-/+)</button>
+        <button style="position: fixed; top: 10px; left: 10px;" onclick="toggleConsole()">(-/+)</button>
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
 <!--
@@ -134,8 +155,8 @@ input[name="uplanet"] {
     <br><br>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
 
-    <h1><a href="/">U</a><span>Planet</span>
-    <br><span><a id="satLink" href="#" title="Sat">&nbsp;*&nbsp;</a>(<a href="https://qo-op.com">qo-op</a>)<a id="mapLink" href="#" title="Map">&nbsp;*&nbsp;</a></span></h1>
+    <h1><a href="/"  title="BACK OFFICE" >U</a><span>Planet</span>
+    <br><span><a id="satLink" href="#" title="OSM Sat">&nbsp;*&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;*&nbsp;</a></span></h1>
 
         <span>Enter Email</span></br>
         <input name=uplanet value=''></br>
@@ -151,25 +172,27 @@ input[name="uplanet"] {
         <input type=hidden name=g1pub value=''></br>
 
         <input id='submit' type='submit' value='(◕‿‿◕)'>
-        <span id='countdown'>UPlanet</span>
+<br>
+<a href="https://opencollective.com/monnaie-libre/" target="funding" title="ASTROPORT FUNDING">- (^‿‿^) -</a>
+<br>
 
+        <span id='countdown'>UPlanet</span>
 
 </form>
 
-            <div id="console"> ___ <a href="https://zen.g1sms.fr" target="aframe">Made In Ẑen</a> ___ <button onclick="document.getElementById('console').style.visibility = 'hidden';"> X </button>
+            <div id="console"> ___ <a href="https://pad.p2p.legal/p/Astroport_AIDE" target="aframe" title="UPlanet" >HELP</a> ___
+            <button id="fullscreenButton" onclick="toggleConsoleFullScreen()">^^</button><button onclick="hideConsole()"> X </button>
                 <iframe name="aframe" id="aframe" src="https://pad.p2p.legal/p/Astroport_AIDE" width="100%" height="100%"></iframe>
             </div>
 
-<br>
-<br>
 <span>
 <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a>
 </span>
 
 <b>Welkom - Mirë se vini -  Willkommen - Welkomma - Welcome - Marhaban - Bari galoust - Xos gelmissiniz - Welkum -  Ongi etorri- Swagata - Ansuf yiswen - ščyra zaprašajem - Kyo tzo pa eit - ॐ★ॐ - Ani kié - Dobro došli - Dagemer mat - Dobre doshŭl - Benvinguts - Ulihebisdi - ௐ- Huān yíng - Karibu - Eoso eoseyo - Benvenuti - Bel bonjou - Bienvini - Dobrodošli - Velkommen - Bienvenido -  Bonvenon - Tere tulemast - Gabitê - Vælkomin -  Tervetuloa - Welkom - Wìllkòmme - Binvignut - Fàilte - Benvido - Croeso - Planvenguda - Mikouabô - Kalos irthate - Eguahé porá - Baroukh habaim - ﷽ </b><br>
-<br>
-<a href="https://opencollective.com/made-in-zen/" target="funding">(...+-+ [[ € == Ẑ ]] +-+...)</a>
-
+            <h2>
+                <a target="pad" href="https://ipfs.copylaradio.com/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=UPLANET">UPlanet VIDEO ROOM</a>
+            </h2>
 </center>
 </main>
 </body>

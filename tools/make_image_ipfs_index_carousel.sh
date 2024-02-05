@@ -98,7 +98,7 @@ if [[ ! -d $img_dir ]]; then
 
         ## WRITE ON IT : ASK FOR REFILL
         convert -font 'Liberation-Sans' \
-        -pointsize 80 -fill purple -draw 'text 50,120 "'"$ZEN Ẑen"'"' \
+        -pointsize 80 -fill purple -draw 'text 50,120 "'"$ZEN Zen"'"' \
         -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
         -pointsize 14 -fill white -draw 'text 40, 200 "'"${birthdate}"'"' \
         "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
@@ -220,8 +220,9 @@ cat $core_file >> $html_file
 echo "</body></html>" >> $html_file
 
 htmlipfs=$(ipfs add -q $html_file)
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
 
-echo "/ipfs/$htmlipfs"
+echo "/ipfs/$htmlipfs" > ~/.zen/tmp/ISTATION
+cat ~/.zen/tmp/ISTATION
 
 exit 0

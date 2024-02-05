@@ -78,13 +78,17 @@ User=_USER_
 RestartSec=1
 Restart=always
 Environment=IPFS_FD_MAX=8192
-ExecStart=/usr/local/bin/ipfs daemon --migrate --enable-namesys-pubsub
+ExecStart=/usr/local/bin/ipfs daemon --migrate --enable-pubsub-experiment --enable-namesys-pubsub --routing=dhtclient
 CPUAccounting=true
 CPUQuota=60%
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+    ## LAN is dhtclient only
+    [[ ! $isLAN ]] \
+        && sed -i "s/--routing=dhtclient//g" /tmp/ipfs.service
 
     sudo cp -f /tmp/ipfs.service /etc/systemd/system/
     sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/ipfs.service

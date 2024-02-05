@@ -8,6 +8,9 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 
+## REDIRECT LOG
+exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+
 PLAYER="$1"
 
 [[ ${PLAYER} == "" ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)

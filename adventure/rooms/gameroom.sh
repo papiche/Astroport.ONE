@@ -21,7 +21,7 @@ echo "y est raccordé...  D'autres fils sortent de l'appareil. Une webcam. Une i
 echo
 echo "Que voulez vous faire?"
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 [[ ! $myIP || $isLAN ]] && myIP="127.0.1.1"
 
 while true; do
@@ -46,10 +46,10 @@ while true; do
             echo "INTERNET est dangereux. il vend vos information personnelles pour que vous deveniez un produit.  "
             sleep 2
             echo
-            echo "Rebootez INTERNET. Activez votre TW sur le Système de Fichiers Interplanétaire (IPFS)."
+            echo "Rebootez INTERNET. Activez votre TW sur UPlanet (IPFS crypto drive) "
             sleep 2
             echo
-            echo "On y échange en pair à pair. La monnaie y est Libre."
+            echo "On y échange en pair à pair. La monnaie y est Libre. https://qo-op.com"
             sleep 4
             file1="../art/astrored.ben"
             while IFS= read -r line

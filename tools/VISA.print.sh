@@ -48,7 +48,7 @@ else
 
     mkdir -p ~/.zen/game/players/${PLAYER}/
     CIMG="${MY_PATH}/../images/zenticket.png"
-    amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+    amzqr "${G1PUB}" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
 
 fi
 
@@ -72,9 +72,9 @@ BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
 ## GET IMAGE FROM G1BILLET ENGINE
 cp ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MOATS}/${PASS}.jpg
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ~/.zen/tmp/${MOATS}/${PASS}.jpg
 
-#~ [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png
+#~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open  ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png
 
 
 #~ [[ $LP ]] \
@@ -95,7 +95,7 @@ convert -gravity SouthEast -pointsize 30 -fill black -draw "text 100, 72 \"${PAS
 convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,25 \"$SALT\"" ~/.zen/tmp/${MOATS}/pass.png ~/.zen/tmp/${MOATS}/salt.png
 convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,10 \"$PEPPER\"" ~/.zen/tmp/${MOATS}/salt.png ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open  ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open  ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg
 
 ## PRINT VISA
 [[ $LP ]] \
@@ -109,7 +109,7 @@ convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"
 composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 [[ $LP ]] \
 && brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \

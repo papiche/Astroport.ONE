@@ -16,57 +16,63 @@ echo '
 # qo-op
 ############# '$MY_PATH/$ME'
 ########################################################################'
-### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
-## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
+[[ ! $1 ]] \
+    && echo "MISSING DESTINATION EMAIL" \
+    && exit 1
+
 mail="$1" # EMAIL DESTINATAIRE
-[[ ! $1 ]] && mail="support@qo-op.com"
 
-messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
+############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
+[[ ! -s ~/.zen/MJ_APIKEY ]] \
+    && echo "MISSING ~/.zen/MJ_APIKEY
+    PLEASE PROVIDE MAILJET KEY : MJ_APIKEY_PUBLIC= & MJ_APIKEY_PRIVATE" \
+    && exit 1
 
-SUBJECT="[UPlanet] Astroport : $(myHostName)"
-MESSAGE="Bonjour $PLAYER
-UN MESSAGE POUR VOUS.
+## LOAD SENDER API KEYS
+###################################
+######### ~/.zen/MJ_APIKEY contains
+# export MJ_APIKEY_PUBLIC='publickey'
+# export MJ_APIKEY_PRIVATE='privatekey'
+# export SENDER_EMAIL='me@source.tld'
+###################################
+source ~/.zen/MJ_APIKEY
+export RECIPIENT_EMAIL=${mail}
 
-Astroport
-/ipns/$IPFSNODEID
-"
+#~ echo "DEST=$mail"
+# mail=geg-la_debrouille@super.chez-moi.com
+YUSER=$(echo ${mail} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
+LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
+CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
+YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
+pseudo="/ipns/${CLYUSER}${YOMAIN}.${myDOMAIN}"
+#~ echo "PSEUDO=$pseudo"
+
+messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
+
+## add a tittle in message
+title="$3"
+
+SUBJECT="[UPlanet] ${title} ${pseudo}"
+
+MESSAGESIGN="---<br>this message is sent to you by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your ♥BOX Astroport.ONE Station"
 
 echo "
 ########################################################################
 # $SUBJECT + $messfile -> $mail
 ########################################################################"
 
-### SMTP RELAY
-#~ echo "From: support@g1sms.fr
-#~ To: EMAIL
-#~ Bcc: support@qo-op.com
-#~ Subject: SUBJECT
-#~ $MESSAGE
-#~ " > ~/.zen/tmp/email.txt
-
-#~ [[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
-#~ || echo "$messfile" >> ~/.zen/tmp/email.txt
-
-#~ cat ~/.zen/tmp/email.txt | sed "s~EMAIL~${mail}~g" | sed "s~SUBJECT~${SUBJECT}~g" | /usr/sbin/ssmtp ${mail}
-
-############# USING MAILJET API ###############
-
-export MJ_APIKEY_PUBLIC='02b075c3f28b9797d406f0ca015ca984'
-export MJ_APIKEY_PRIVATE='58256ba8ea62f68965879f53bbb29f90'
-export SENDER_EMAIL='support@g1sms.fr'
-export RECIPIENT_EMAIL=${mail}
-
-echo "$MESSAGE" > ~/.zen/tmp/email.txt
-[[ -s $messfile ]] && cat $messfile >> ~/.zen/tmp/email.txt \
-|| echo "$messfile" >> ~/.zen/tmp/email.txt
+# + HTML in FILE
+rm -f ~/.zen/tmp/email.txt
+[[ -s $messfile ]] \
+    && cat $messfile >> ~/.zen/tmp/email.txt \
+    || echo "$messfile" >> ~/.zen/tmp/email.txt
 
 EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
 
-TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
-HTMLPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/<br>/g' | tr '"' '\\\"')
+export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 
-export TEXTPART="${myIPFS}/ipfs/${EMAILZ}"
+[[ $title == "" ]] && title="MESSAGE"
 
 json_payload='{
     "Messages": [
@@ -78,16 +84,22 @@ json_payload='{
             "To": [
                 {
                     "Email": "'${RECIPIENT_EMAIL}'",
-                    "Name": "UPlanet Astronaut"
+                    "Name": "'${pseudo}' Astronaut"
+                }
+            ],
+            "Bcc": [
+                {
+                    "Email": "support@g1sms.fr",
+                    "Name": "SUPPORT"
                 }
             ],
             "Subject": "'${SUBJECT}'",
-            "TextPart": "'${myIPFS}/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h3>You have a message <br><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">READ ME</a>!</h3><br />May the good vibes be with you!<br>Astroport Station "
+            "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
         }
     ]
 }'
-
+echo "$json_payload"
 # Verify the JSON structure with jq
 echo "$json_payload" | jq .
 # Run:
@@ -100,6 +112,8 @@ curl -s \
     -d "$json_payload"
 
 # This call sends an email to one recipient.
+#~ TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
+#~ HTMLPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/<br>/g' | tr '"' '\\\"')
 #~ curl -s \
     #~ -X POST \
     #~ --user "$MJ_APIKEY_PUBLIC:$MJ_APIKEY_PRIVATE" \

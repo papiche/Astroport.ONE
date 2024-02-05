@@ -102,6 +102,7 @@ while true; do
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do
 
+        ## ex: /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u)
         echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
 
@@ -114,7 +115,7 @@ while true; do
 
         ## PREPARE TO REFRESH SWARM LOCAL CACHE
         mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
-        mkdir -p ~/.zen/tmp/swarm/_${ipfsnodeid}
+        mkdir -p ~/.zen/tmp/-${ipfsnodeid}
 
         ## GET bootnode IP
         iptype=$(echo ${bootnode} | cut -d '/' -f 2)
@@ -122,22 +123,22 @@ while true; do
 
         ## IPFS GET TO /swarm/${ipfsnodeid}
         echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-        ipfs --timeout 720s get -o ~/.zen/tmp/swarm/_${ipfsnodeid}/ /ipns/${ipfsnodeid}/
+        ipfs --timeout 720s get -o ~/.zen/tmp/-${ipfsnodeid}/ /ipns/${ipfsnodeid}/
 
         ## SHOW WHAT WE GET
         echo "__________________________________________________"
-        ls ~/.zen/tmp/swarm/_${ipfsnodeid}/
+        ls ~/.zen/tmp/-${ipfsnodeid}/
         echo "__________________________________________________"
 
         ## LOCAL CACHE SWITCH WITH LATEST
-        if [[ -s ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats  ]]; then
-            if [[ $(diff ~/.zen/tmp/swarm/_${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null) == "" ]]; then
+        if [[ -s ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats  ]]; then
+            if [[ $(diff ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null) == "" ]]; then
                 rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
-                mv ~/.zen/tmp/swarm/_${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
+                mv ~/.zen/tmp/-${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
                 echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
             else
                 echo "TimeStamp unchanged : $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats)"
-                rm -Rf ~/.zen/tmp/swarm/_${ipfsnodeid}/
+                rm -Rf ~/.zen/tmp/-${ipfsnodeid}/
                 continue
             fi
         else
@@ -158,7 +159,7 @@ while true; do
             itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
             ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 
-            echo "ZNODS LIST"
+            echo "================ ${nodeip}:12345 ZNODS LIST"
             cat ~/.zen/tmp/_swarm.${ipfsnodeid}
             echo "============================================"
             for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do

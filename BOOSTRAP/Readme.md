@@ -20,7 +20,7 @@ keygen --help
 PLAYER key & wishes can be controled through : ```~/.zen/Astroport.ONE/command.sh``` or directly through TW (Tag="voeu")
 Each wish, is a derivated key, it has an IPNS publishing and can be associated to its own ASTROBOT program to take care about Friends data collect & merge.
 
-VISA.new.sh is creating TW from ```templates/twdefault.html``` and ```templates/minimal.html```
+VISA.new.sh is creating TW from ```templates/twdefault.html``` and ```templates/twuplanet.html```
 This script is important as it initialize PLAYER and connect him to STATION... You can add more different templates...
 
 Visit https://tiddlywiki.com to understand all the capacities this tools have inside.

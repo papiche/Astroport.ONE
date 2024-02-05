@@ -3,6 +3,6 @@ Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Content-Type: text/html; charset=UTF-8
-Set-Cookie: /?salt=_USALT_&pepper=_UPEPPER_
+Set-Cookie: /?moats=_MOATS_
 Location: _TWLINK_
 

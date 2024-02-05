@@ -125,6 +125,11 @@ zIp() {
     [ -n "$zip" ] && echo "$zip" || false
 }
 
+UPlanetSharedSecret() {
+    UPlanetSharedSecret=$(cat ~/.zen/UPlanetSharedSecret 2>/dev/null | head -n 1 )
+    [ -n "$UPlanetSharedSecret" ] && echo "$UPlanetSharedSecret" || false
+}
+
 myIp() {
     local myIp=$(hostname -I | awk '{print $1}' | head -n 1)
     local myZip=$(zIp)
@@ -420,7 +425,6 @@ function makecoord() {
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
         input="${input}.00"
     fi
-
     echo "${input}"
 }
 
@@ -433,7 +437,9 @@ myIP="$(myIp)" # "127.0.0.1"
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-myASTROPORT="http://$(hostname).local:1234" #astroport.localhost
+myDOMAIN="copylaradio.com"
+
+myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
 myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
 myAPI="http://${myIP}:5001"
 myDATA="https://data.gchange.fr"
@@ -442,7 +448,7 @@ myCESIUM="https://g1.data.e-is.pro"
 myG1BILLET="http://${myIP}:33101"
 myHOST="$(myHostName)"
 
-myIPFS="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFS="http://${myIP}:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
@@ -454,7 +460,8 @@ myASTROTUBE="https://$(myAstroTube)"
  && myAPI="https://ipfs.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
- && myG1BILLET="https://libra.copylaradio.com" \
+ && myG1BILLET="https://libra.${myDOMAIN}" \
+ && myIPFSW="https://ipfs.${myDOMAIN}" \
  || true
 
 ## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45790 )
@@ -470,7 +477,7 @@ myASTROTUBE="https://$(myAstroTube)"
 
 
 ###
-if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
+if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 # GET SCREEN DIMENSIONS
     screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
     width=$(echo $screen | cut -d 'x' -f 1)
@@ -480,11 +487,22 @@ if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
 ###
 fi
 
-EARTHCID="/ipfs/QmYcvhodbC1R3B2NoCxJNt9Qh6vWJ17oEDxYNTcFffTBQd"
-FLIPPERCID="${EARTHCID}/coinflip"
+EARTHCID="/ipfs/QmYGS24WxVbsmmQfqWohXhXQZiwSmNswhTtSj9msVWKkNh"
+FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
 myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
 
-## UPLANETNAME LAT UPLANETNAME LON keys translation
-UPLANETNAME=""
+## UPLANETNAME could be defined in ~/.zen/UPlanetSharedSecret
+[ -n "$(UPlanetSharedSecret)" ] \
+    && UPLANETNAME="$(UPlanetSharedSecret)" \
+    || UPLANETNAME=""
+
+## DEV fred@g1sms.fr temporary UPlanet World Keeper.
+[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="EniaswqLCeWRJfz39VJRQwC6QDbAhkRHV9tn2fjhcrnc"
+## when UPlanetSharedSecret is set.
+## All TW wallet are created with 1 G1 "primal transaction"
+## making UPlanet blockchains secured.
+########################################
+TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
+YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')

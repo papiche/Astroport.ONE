@@ -33,10 +33,10 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/QmPr5SpFiaTVyjJuBmhyckwSCP1gHbhJbZFjC5YyxNHmJa"
+TWMODEL="/ipfs/bafybeie6sx76balvpeehvbh5du7oc5fhjuwydryympeh3qnm5s3b2jrvwe"
 # ipfs cat $TWMODEL > templates/twdefault.html
-MINIMAL="/ipfs/bafybeici3sdhyf5mw5edbhednqyzfbfbilaykjke6ve6zqac6hrxjawzgi"
-# ipfs cat $MINIMAL > templates/minimal.html
+MINIMAL="/ipfs/bafybeicpfrsx44lkib4352eulvohmgdpaww3sau3qtbj7fzj6qw7xsokhy"
+# ipfs cat $MINIMAL > templates/twuplanet.html
 ################################################################################
 
 mkdir -p ~/.zen/tmp/${MOATS}/TW
@@ -54,7 +54,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     [[ $YOU ]] \
     && ipfs --timeout 180s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
-    [[ $XDG_SESSION_TYPE == 'x11' ]] \
+    [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
     && [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
     && echo "TW FOUND ENTER 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
     && read ENTER \
@@ -71,7 +71,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
         # COPY TW TEMPLATE
         [[ ${LON} && ${LAT} ]] \
-            && cp ${MY_PATH}/../templates/minimal.html ~/.zen/tmp/${MOATS}/TW/index.html \
+            && cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html \
             || cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
@@ -185,13 +185,14 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/${PLAYER}/
 
     # Create Player "IPNS Key" (key import)
+    ipfs key rm ${PLAYER}
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/secret.player "$SALT" "$PEPPER"
     TWNS=$(ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 
     mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "old scarf code"
 
-    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB:ZEN" ## ZEN specific G1PUB QRCODE - break G1 compatibility -
+    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"
     cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
     echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
@@ -404,7 +405,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
             CIMG="${MY_PATH}/../images/zenticket.png"
 
             # QRG1avatar.png
-            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
+            [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
             # QRTWavatar.png
             [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr "${myIPFSGW}/ipns/${ASTRONAUTENS}" -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
 
@@ -476,7 +477,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 # ls ~/.zen/game/players/${PLAYER}
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
 ################# PREPARE DOCKERIZATION
 #~ [[ -l ~/.zen/game/players/.current ]] \
@@ -548,20 +549,32 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 
 ### SEND AstroID and ZenCard to EMAIL
 (
-echo "✅ UPlanet : ZenCard<br>Print your ZenCard : Public key (and wallet address)" > ~/.zen/tmp/${MOATS}/intro.txt
-echo "<br>It is your personal ZenCard. Use it to receive Zen." >> ~/.zen/tmp/${MOATS}/intro.txt
-echo "<br><a href='$myIPFS/$IASTRO'>ẐenCard</a>" >> ~/.zen/tmp/${MOATS}/intro.txt
+echo "<html><body><h1>UPlanet : ZenCard</h1>
+This is your ZenCard : your public key (your flag)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
+echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
+<br>it contains you Ẑen and TW address
+<br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.txt
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCard"
 
 #~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
 
-echo "✅ UPlanet : AstroID ($PASS)<br>Print your AstroID : Private control key (secured by $PASS)" > ~/.zen/tmp/${MOATS}/intro.txt
-echo "<br>Use it to send Zen to other Uplanet players https://qo-op.com" >> ~/.zen/tmp/${MOATS}/intro.txt
-echo "<br><a href='$myIPFS/$ASTROQR'>AstroID</a>" >> ~/.zen/tmp/${MOATS}/intro.txt
+echo "<html><body>
+<h1>UPlanet : AstroID ($PASS)</h1>
+This is your AstroID : your private key (your ring)" > ~/.zen/tmp/${MOATS}/AstroID.txt
+echo "
+<br>You own one of the 'Rings of the Lords' on <a href='https://qo-op.com'>Uplanet</a>  0.1° SECTOR : ${SECTOR}
+<br>it is forged from SECRET1=$SALT SECRET2=$PEPPER then secured by PIN : $PASS
+<br>
+<br>Your ASTROPORT STATION is <a href='${myAPI}'>NODE#${IPFSNODEID}</a>
+" >> ~/.zen/tmp/${MOATS}/AstroID.txt
+echo "<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
+<br>
+<br>Print it and delete from TW to keep it secure.
+</body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.txt
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/intro.txt
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.txt "AstroID"
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}

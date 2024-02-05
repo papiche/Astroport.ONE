@@ -112,7 +112,7 @@ EMAIL="${PLAYER,,}" # lowercase
 
 ################################ START WORKING WITH KEYS
 ### SESSION "$LAT" "$LON" KEY
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
     UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
     ipfs key rm ${MOATS} && echo "$LAT" "$LON" "IPNS key identified"
 ###
@@ -128,14 +128,16 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ## CHECK if PLAYER exists in SWARM
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
         echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+
         [[ ${ASTROTW} ]] \
             && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
             && exit 0
 
 else
 
-    echo "BAD EMAIL $LAT $LON - OPEN UMAP IPNS LINK -"
-    (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${REDIR}'\" /> '"   | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 0
+    echo "BAD EMAIL $EMAIL $LAT $LON"
+    echo "$HTTPCORS <html>BAD EMAIL $EMAIL $LAT $LON <a href=${REDIR}> - OPEN UMAP LINK - </a></html>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+    exit 0
 
 fi
 
@@ -157,7 +159,7 @@ mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
 ipfs key rm ${G1PUB} > /dev/null 2>&1
 rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
 
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
@@ -165,18 +167,18 @@ echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
 NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
-NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 8) ## STRONGER TW SECURITY "AlpH4nUm"
+PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 2) ## STRONGER TW SECURITY "AlpH4nUm"
+DPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 2) ## STRONGER TW SECURITY "AlpH4nUm"
+NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
 
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
-echo VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
+echo VISA.new.sh "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
                     ##### (☉_☉ ) #######
-${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-
-# ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
 ## TO REMOVE : MONITOR
-${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt ## Send VISA.new log to EMAIL
+${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG VISA.new $EMAIL" ## Send VISA.new log to EMAIL
 
 end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
@@ -184,15 +186,8 @@ echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
 
 
 ########################################
-################################################################################
-## WRITE INTO 12345 SWARM CACHE LAYER
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/index.html
-echo "${EMAIL}:${IPFSROOT}:${MOATS}" >> ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/_visitors/${EMAIL}.log
-########################################
-
 ## Calculating TW IPNS ADDRESS
-TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${EMAIL}" "${NPASS}")
+TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}")
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
@@ -224,7 +219,7 @@ echo "$HTTPCORS
     <h1>UPlanet Registration</h1>
     Your AstroID seeds are:<br>
     <br>
-    <h2>${EMAIL}</h2>
+    <h2>${EMAIL}_${PPASS}_${DPASS}</h2>
     <h1>${NPASS}</h1>
 
     Generating account...
