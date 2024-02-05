@@ -56,14 +56,14 @@ fi
 
 Autre erreur me dit que :
  
-Ça traduit une erreur d’interprétation dans le fichier « start.sh » que j’ai réglé en utilisant la commande ''dos2unix *.sh'' dans le dossier « rooms » pour convertir tous les fichiers :
+Ça traduit une erreur d’interprétation dans le fichier « start.sh » que j’ai réglé en utilisant la commande ''' dos2unix *.sh ''' dans le dossier « rooms » pour convertir tous les fichiers :
  
 BRAVO :
  
 Dans le jeu on se rend compte que cette erreur apparaît :
  
 
-Il faut installer ''sudo apt install xdg-utils'' ainsi que ''sudo apt install firefox'' pour résoudre ça 
+Il faut installer ''' sudo apt install xdg-utils ''' ainsi que ''' sudo apt install firefox ''' pour résoudre ça 
 
 Le levier ne fonctionne  pas, « ACTIVATION STATION » mais rien ne se passe. 
 
