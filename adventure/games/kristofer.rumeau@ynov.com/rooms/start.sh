@@ -1,16 +1,20 @@
 #!/bin/bash
 
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+
 clear
 
 # Logic in the game is stored in .ben files. This sample has just one 'logic' file.
 # You can add more logic files by simply adding a 'sed' command and appropriate .ben file.
 # First off, let us reset the game logic. Use this as an example.
 
-sed -i='' 's/on/off/' ../logic/leverlogic.ben
+sed -i '' 's/on/off/' ../logic/leverlogic.ben
 
 # Who doen't love ASCII text, right?
 # Next up, let's initialise the Title Art
-file1="../art/titleart.ben"
+file1="$MY_PATH/../art/titleart.ben"
 while IFS= read -r line
 do
     echo "$line"
@@ -18,8 +22,7 @@ done <"$file1"
 echo
 
 # Next up, let's load in the initial introduction. Script is also stored in .ben files.
-sleep 5
-file2="../script/opening.ben"
+file2="$MY_PATH/../script/opening.ben"
 while IFS= read -r line
 do
     echo "$line"

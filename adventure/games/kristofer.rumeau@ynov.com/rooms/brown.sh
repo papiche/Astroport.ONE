@@ -1,13 +1,17 @@
 #!/bin/bash
+
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+
 clear
 # Initialise the Title Art
-file1="../art/titleart.ben"
+file1="$MY_PATH/../art/titleart.ben"
 while IFS= read -r line
 do
     echo "$line"
 done <"$file1"
 echo
-sleep 1
 
 # Here's this room's script.
 
@@ -21,7 +25,7 @@ echo "Il ressemble à une grosse calculatrice"
 
 
 # Here we tell the player whether the lever is on or off.
-leverstate=`cat ../logic/leverlogic.ben`
+leverstate=$(cat $MY_PATH/../logic/leverlogic.ben)
             if [ "$leverstate" = "on" ]; then
                 echo "'VISA SVP' clignote sur l'écran..."
             else
@@ -42,13 +46,11 @@ while true; do
         s ) echo "Si vous continuez à marcher dans la forêt. Vous allez vous perdre. Demi tour." ;;
         e ) echo "Le chemin qui part à l'Est est plein de boue... Impossble d'aller par là." ;;
         w ) echo "Une rivière vous empêche de passer." ;;
-        u ) leverstate=`cat ../logic/leverlogic.ben`
-            if [ "$leverstate" = "on" ]; then
+        u ) if [ "$leverstate" = "on" ]; then
                 echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
-                sed -i='' 's/off/on/' ../logic/leverlogic.ben
+                sed -i 's/off/on/' $MY_PATH/../logic/leverlogic.ben
                 echo "Vous pianotez sur l'appareil..."
-                sleep 3
                 echo "A moment où vous touchez la touche '#' L'écran se met à clignoter..."
                 echo "Puis le message 'ACTIVATION STATION' défile sur les caractères lumineux."
             fi
