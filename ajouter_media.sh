@@ -21,23 +21,26 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
-LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
-# echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
-if [[ $LOWMODE != "" ]]; then
-    espeak "Low Mode"
-    sudo systemctl start ipfs
-fi
+#~ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+#~ # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
+#~ if [[ $LOWMODE != "" ]]; then
+    #~ espeak "Low Mode"
+    #~ sudo systemctl start ipfs
+#~ fi
 
-########################################################################
+#~ ########################################################################
 
-espeak "restarting I P F S daemon"
-[[ "$isLAN" ]] && sudo systemctl restart ipfs
+#~ espeak "restarting I P F S daemon"
+#~ [[ "$isLAN" ]] && sudo systemctl restart ipfs
 
 ## CHECK IF IPFS DAEMON IS STARTS WELL
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 1
-    ((floop++)) && [ $floop -gt 10 ] && espeak 'Please check but IPFS cannot start' &&  exit 1
+    ((floop++)) && [ $floop -gt 5 ] \
+        && echo "ERROR. IPFS daemon not running on port 5001" \
+        && espeak 'ERROR. I P F S daemon not running' \
+        &&  exit 1
 done
 
 . "${MY_PATH}/tools/my.sh"
@@ -50,11 +53,13 @@ shopt -s expand_aliases
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
 alias espeak='espeak 1>&2>/dev/null'
 ########################################################################
-[[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && echo "wget https://git.p2p.legal/axiom-team/astrXbian/raw/master/.install/ipfs_alone.sh -O /tmp/ipfs_install.sh && chmod +x /tmp/ipfs_install.sh && /tmp/ipfs_install.sh" && exit 1
+[[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && exit 1
 [[ $(which zenity) == "" ]] && echo "ERREUR! Installez zenity" && echo "sudo apt install zenity" && exit 1
 [[ $(which ffmpeg) == "" ]] && echo "ERREUR! Installez ffmpeg" && echo "sudo apt install ffmpeg" && exit 1
 [[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
+[[ $(which tiddlywiki) == "" ]] && echo "ERREUR! Installez tiddlywiki" && echo "sudo npm install -g tiddlywiki" && exit 1
 
+mkdir -p ~/.zen/tmp/
 exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
 
 URL="$1"
@@ -101,7 +106,7 @@ espeak "Hello $PSEUDO"
 G1PUB=$(myPlayerG1Pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-PLAYERNS=$(myPlayerNs) || ( echo "noplayerns" && exit 1 )
+PLAYERNS=$(myPlayerNs) || { echo "noplayerns" && exit 1; }
 
 ASTRONAUTENS=$(myAstroKey)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
@@ -840,16 +845,16 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
     echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
     ## GETTING LAST TW via IPFS or HTTP GW
     LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
-    rm -f ~/.zen/tmp/ajouter_media.html > /dev/null 2>&1
-    [[ $YOU ]] && echo " ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/ajouter_media.html
-    #~ [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/ajouter_media.html "$LIBRA/ipns/${ASTRONAUTENS}"
-    [[ ! -s ~/.zen/tmp/ajouter_media.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
+    rm -f ~/.zen/tmp/astronaut_TW.html > /dev/null 2>&1
+    [[ $YOU ]] && echo " ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/astronaut_TW.html
+    #~ [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/astronaut_TW.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
     ## TODO : CHECK CACHE LAST MODIFIED
     echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
-    [[ -s ~/.zen/tmp/ajouter_media.html ]] \
-    && cp -f ~/.zen/tmp/ajouter_media.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+    [[ -s ~/.zen/tmp/astronaut_TW.html ]] \
+    && cp -f ~/.zen/tmp/astronaut_TW.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
     && espeak "TW Found" \
     || espeak "USING LOCAL COPY"
     ###############################
@@ -894,7 +899,7 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
         echo "================================================"
         echo
 
-        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
+        [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
     else
 

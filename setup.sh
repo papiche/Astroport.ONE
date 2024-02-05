@@ -25,21 +25,20 @@ sudo ./setup.sh
 mkdir -p ~/.zen/tmp
 
 ########################################################################
-# CREATE ~/astroport FILESYSTEM GATE
-#~ echo '${TYPE};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME' > ~/Astroport/${PLAYER}/ajouter_video.modele.txt
-
+# open_with_linux.py install
 #######################################################################
+# DEPRECATED
 
-    echo "#############################################"
-    ## https://darktrojan.github.io/openwith/webextension.html"
-    ~/.zen/Astroport.ONE/open_with_linux.py install
+    #~ echo "#############################################"
+    #~ ## https://darktrojan.github.io/openwith/webextension.html"
+    #~ ~/.zen/Astroport.ONE/open_with_linux.py install
 
-    echo "#############################################
-    # NOURRISSEZ VOTRE BLOB depuis Firefox !!
-    # https://addons.mozilla.org/firefox/addon/open-with
-    #############################################
-    ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##
-    #############################################"
+    #~ echo "#############################################
+    #~ # NOURRISSEZ VOTRE BLOB depuis Firefox !!
+    #~ # https://addons.mozilla.org/firefox/addon/open-with
+    #~ #############################################
+    #~ ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##
+    #~ #############################################"
 
 ########################################################################
 # SUDO permissions
@@ -128,7 +127,6 @@ fi
 ### ADD 20h12.sh CRON ###############
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
-echo "#############################################"
-## INSTALL yt-dlp & SYMLINK youtube-dl
+echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
 ~/.zen/Astroport.ONE/youtube-dl.sh
 

@@ -1,8 +1,6 @@
 #!/bin/bash
 ###################################################################
 # This Launch script is based on BashVenture.
-# It runs on Astroport Stations and allow players to create their own digital stories
-# First you have to install IPFS in order to play with everyone in the same network
 #
 # Remember, kids - sharing is caring! Keep it open. Spread the love.
 #                                                      - @BenNunney
@@ -10,15 +8,16 @@
 #                                                      - @Fred
 # $AGE×365,25×24×60×60×9,807÷299792458 = RELATIVE LIGHT GRAVITY SPEED
 ###################################################################
-# Here we check to see if uuidgen is installed - if not it will default to single-user mode. To run this on a server
-# and support multipe-users, check you have everything set up correctly.
-# Read the original instructions  : https://github.com/apetro/BashVenture/blob/master/README.md
-###################################################################
 # Guide avancé d'écriture des scripts Bash : https://abs.traduc.org/abs-fr/
+# GAMESHELL : https://github.com/phyver/GameShell/
 ###################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+###################################################################
+### CREER VOTRE PROPRE VERSION DU JEU
+### CHOISIR SCENARIO
+
 ###################################################################
 if hash uuidgen 2>/dev/null; then
     homefolder=$(pwd)

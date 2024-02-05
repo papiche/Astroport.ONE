@@ -49,15 +49,19 @@ mkdir -p ~/.zen/tmp/${MOATS}
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     ##############################################################
 
-        [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating UMAP WALLET ${UPLANETNAME}${LAT}/${UPLANETNAME}${LON}" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
-        echo "TRANSFERING TO UMAP (${COINS} G1) WALLET : ${SECTORG1PUB}"
+        echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
+
+    ## UNPLUG => SEND 10 Zen to SECTORG1PUB
+    ## ALL => SEND ALL to $WORLDG1PUB
+
+    ALL="ALL"
+    [[ $ONE == "ONE" ]] && ALL=1
+    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB"
 
     [[ ! -z ${SECTORG1PUB} ]] \
-    && ALL="ALL" \
-    && [[ $ONE == "ONE" ]] && ALL=1 \
-    && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
-    && ./PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "ZEN:${ALL}"
+        && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
+        && ${MY_PATH}/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "UNPLUG:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
@@ -66,9 +70,17 @@ mkdir -p ~/.zen/tmp/${MOATS}
         ipfs key rm ${vk}
     done
 
-    echo "PLAYER IPNS KEYS UNPLUGED"
-    echo "rm -Rf ~/.zen/game/players/${PLAYER}"
-    rm -Rf ~/.zen/game/players/${PLAYER}
+## SEND PLAYER LAST KNOW TW
+TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
+${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Hello ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='${myIPFSGW}/ipfs/${TW}'>LAST TW STATE</a>.<br><h3>May the force be with you.</h3></body></html>" "LAST MESSAGE"
+
+echo "PLAYER IPNS KEYS UNPLUGED"
+echo "#######################"
+echo "CLEANING ~/.zen/game/players/${PLAYER}"
+rm -Rf ~/.zen/game/players/${PLAYER-empty}
+
+echo "CLEANING NODE CACHE ~/.zen/tmp/${IPFSNODEID-empty}/*/${PLAYER-empty}*"
+rm -Rf ~/.zen/tmp/${IPFSNODEID-empty}/*/${PLAYER-empty}*
 
 echo "CLEANING SESSION CACHE"
 rm -Rf ~/.zen/tmp/${MOATS}

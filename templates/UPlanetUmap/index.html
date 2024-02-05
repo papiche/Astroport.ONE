@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>_ZONE_ 🗺 on UPlanet </title>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/demo.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery-ui.min.css">
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/requestanimationframe.polyfill.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/instascan.min.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/html5-qrcode.min.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/jquery-ui.0.min.js"></script>
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/sphere-hacked.js"></script>
+
+
+<!--
+// loZange
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmeNpiKtvmejJExRNVrmsXUSFQbGuLjmwi49kz9Tuxi5vn/index_fichiers/jquery.sector-3d.js"></script>
+// Country
+-->
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmQMHHefHe9SV5nLyaQNc89H6UsvsACtndG272CVDfQKp2/index_fichiers/jquery.sector-3d.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js"></script>
+
+    <script type="text/javascript" src="http://127.0.0.1:8080/ipfs/QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/demo.js"></script>
+
+    <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
+
+
+    <script type="text/javascript">
+    examples['simple_mars'] = function() {
+    $('#sphere').earth3d({
+        texture: 'http://127.0.0.1:8080/ipfs/QmNNSAJyzVSF2m16dReYgmqmiRkKa5HMKvFUgwhbRzTYto/mars1024x1024.jpg', // texture used by G1Wish planet
+        dragElement: $('#locations') // where do we catch the mouse drag
+    });
+    };
+    </script>
+
+   <style>
+    body {
+      padding: 0;
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+#glow-shadows.earth {
+    background: url(http://127.0.0.1:8080/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/earth-glow-shadows.png);
+}
+
+#glow-shadows.mars {
+    background: url(http://127.0.0.1:8080/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/mars-glow-shadows.png);
+}
+
+.flight {
+    position: absolute;
+    width: 24px;
+    height: 25px;
+    left: 10px;
+    top: 10px;
+    background: url(http://127.0.0.1:8080/ipfs/QmTVspfoaNL1BK2CR1vVNrEnwo4PfUjwdQxEt57mGJjsLX/plain.png);
+    background-size: 100% 100%;
+    margin-left: -12px;
+    margin-top: -12.5px;
+    cursor: pointer;
+}
+
+#yellow {
+      background: black;
+      position: absolute;
+      top: 5%;
+      right: 5%;
+      width: 55%;
+}
+
+#green {
+      background: black;
+      position: absolute;
+      top: 12%;
+      right: 5%;
+      width: 45%;
+}
+
+#ainfo {
+      background: grey;
+      position: absolute;
+      top: 1%;
+      right: 1%;
+}
+
+#console {
+    visibility: visible;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    width: 80%;
+    height: 55%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 5px;
+    box-sizing: border-box;
+    z-index: 1000; /* Ensure the console appears above other elements */
+}
+
+#toggleConsoleButton {
+    cursor: pointer;
+}
+
+#fullscreenButton {
+    cursor: pointer;
+}
+
+iframe {
+    display: block;
+}
+  </style>
+  </head>
+
+ <body>
+    <button style="position: fixed; top: 10px; left: 10px;" onclick="toggleConsole()">(-/+)</button>
+    <div id="demo">
+        <div id="description">
+            <div id="showoff">
+                <div id="yellow">
+                    <div id="container">
+                        <br><br><br><br>
+                        <canvas id="sphere" width="400" height="400"></canvas>
+                        <div id="glow-shadows" class="earth"></div>
+                        <canvas id="flights" width="400" height="400"></canvas>
+                        <div id="locations"></div>
+                    </div>
+                </div>
+                <br>_DATE_
+                <h1>_ZONE_</h1>
+
+                <p> (✜) <a href="_UPLANETLINK_"  title="Navigate">"UPlanet Registration"</a> (✜) </p>
+                <p><a href="http://127.0.0.1:8080/ipns/_UPZONENS_">"_UPZONE_"</a></p>
+                <p><a href="http://127.0.0.1:8080/ipns/_ZONENS_">"_ZONE_"</a></p>
+
+                <br>
+                <p>Distributed Information System</p>
+                <p> refreshed by <a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
+                <p>organize by <a href="https://opencollective.com/monnaie-libre/projects/stiits">LaSTI</a></p>
+                <p>stored on <a href="https://opencollective.com/monnaie-libre/projects/coeurbox">La♥BOX</a></p>
+            </div>
+        </div>
+    </div>
+    <div id="console">
+        | <a href="_index.p4n.html" target="aframe" title="Local POI"> <img width=20 src="http://127.0.0.1:8080/ipfs/QmNp9pTJJNqz4AA9RLvd3pTDLFhAzqxiFgtUocNuZmsef2" ></a> |
+        <a href="http://127.0.0.1:8080/ipns/_ZONENS_/TW" target="aframe" title="_ZONE_ PLAYERs TW"><img width=20 src="http://127.0.0.1:8080/ipfs/QmaLzMFUR7QfKvxp63KkHkPco92maRSiNvPEgMoKNxM7Q8" ></a> |
+        <a href="https://minetest.dustlabs.io/?launch" target="aframe" title="Building Blocks UPlanet"><img width=20 src="http://127.0.0.1:8080/ipfs/Qmeaaee1gojMHkos4Quqqw8dwmF4SDP8kTCgAdnJiTeVgJ" ></a> |
+        <a href="http://127.0.0.1:8080/ipns/_UPZONENS_/TW" target="aframe" title="_UPZONE_ TW NEWS" ><img width=20 src="http://127.0.0.1:8080/ipfs/QmZX2Titv5L488iNVHwbRNeuZh2PJULSCfxoSgF4Qzv547" ></a> ♥
+        <a href="http://127.0.0.1:8080/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=_PHONEBOOTH_" target="aframe"  title="_📺_PHONEBOOTH_ vdo room_📺 "> <img width=20 src="http://127.0.0.1:8080/ipfs/QmU3JKMFDnRUWv1juLcA4YEPxHLcXrgrn9FdbXaPgZgwbT" >(° - ° )📺</a> |
+        <a href="https://g1.quest" target="aframe" title="Ğ1 Quest"> ( <img width=20 src="http://127.0.0.1:8080/ipfs/QmNSc5e4K2qzpWpiqHm47KNywxNjsnsN8R2ebpqEespyBX" > ) </a>
+        &nbsp;&nbsp;&nbsp;<button id="fullscreenButton" onclick="toggleConsoleFullScreen()"> ^^ </button>&nbsp;&nbsp;&nbsp;<button onclick="hideConsole()"> X </button>
+        <iframe name="aframe" id="aframe" src="_index.p4n.html" width="100%" height="100%"></iframe>
+    </div>
+
+<script>
+    function toggleConsole() {
+        const console = document.getElementById('console');
+        console.style.visibility = (console.style.visibility === 'visible' ? 'hidden' : 'visible');
+    }
+
+    function hideConsole() {
+        document.getElementById('console').style.visibility = 'hidden';
+    }
+
+    function toggleConsoleFullScreen() {
+        const console = document.getElementById('console');
+
+        if (console.style.width === '100%' && console.style.height === '100%') {
+            console.style.width = '570px';
+            console.style.height = '480px';
+        } else {
+            console.style.width = '100%';
+            console.style.height = '100%';
+        }
+    }
+</script>
+
+
+</body>
+</html>
+

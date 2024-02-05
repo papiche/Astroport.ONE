@@ -22,32 +22,39 @@ MADE BY
 ```
 ./ajouter_media.sh:## KEEPS KODI COMPATIBILITY (BROKEN astroport.py !! ) : TODO DEBUG
 ./ajouter_media.sh:        # Funny Crypto Level # TODO MAKE IT MORE SECURE # THIS KEY OWNS THE DOMAIN NOW
+./ajouter_media.sh:            ## NB TEXT IS MADE WITH TIDDLERS FIELDS VALUES (LEARN TODO)
+./ajouter_media.sh:        #~ ## TODO
 ./ajouter_media.sh:        FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
 ./ajouter_media.sh:    ## TODO : CHECK CACHE LAST MODIFIED
+./setup_nginx.sh: echo "TODO: make it easier ;)"
+./tools/Connect_PLAYER_To_Gchange.sh:# TODO: could make better ES stars requests
 ./tools/Connect_PLAYER_To_Gchange.sh:#### TODO RECUP ANNONCES Gchange ADD TO TW
+./tools/RSS2UPlanetTW.sh:        ## TODO EXTEND CONTROL TO text AND ipfs _canonical_url
+./tools/RSS2UPlanetTW.sh:        ## NB: COULD NEED SORTING (TODO)
+./tools/streaming/install.sh:# TODO: why is this needed?
+./tools/streaming/process-stream.sh:#TODO# Fix this one
 ./tools/make_video_gifanim_ipfs.sh:## Create gifanime ##  TODO Search for similarities BEFORE ADD
 ./tools/create_ipfsnodeid_from_tmp_secret.dunikey.py:# TODO controls
 ./tools/cron_VRFY.sh:## TODO check for Station geoposition in ~/.zen/GPS and calibrate 20H12
 ./tools/cron_VRFY.sh:cat ~/.zen/GPS 2>/dev/null && echo " TODO calibrate 20H12 with GPS"
-./RUNTIME/VISA.new.sh:######### TODO Ajouter d'autres clefs IPNS, GPG ?
-./RUNTIME/VISA.new.sh:WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
-./RUNTIME/VISA.new.sh:    ############ TODO améliorer templates, sed, ajouter index.html, etc...
-./RUNTIME/VISA.new.sh:         ## TODO : FOR STRONGER SECURITY REMOVE THIS LINE
-./RUNTIME/VISA.new.sh:# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
-./RUNTIME/VISA.new.sh:# TODO : Allow Astronaut PASS change ;)
-./tools/search_for_this_email_in_players.sh:### TODO MAKE IT WORKS BETTER
+./tools/PAY4SURE.sh:    echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
+./tools/duniter_getnode.sh:# TODO: REMOVE 777 PATCH, ACTIVATE ramdisk
 ./tools/search_for_this_email_in_players.sh:    ## TODO ? SEARCH WITH DNSLINK
 ./tools/new_file_in_astroport.sh:        ## Create gifanime ##  TODO Search for similarities BEFORE ADD
-./tools/new_file_in_astroport.sh:    ## TODO ADD "httrack" for website copying
+./tools/new_file_in_astroport.sh:# EXTRACT INDEX REFERENCE : TMDB or YOUTUBE (TODO : EXTEND)
 ./tools/new_file_in_astroport.sh:    ## TODO USE IT TO MAKE A MEDIAKEY IMAGE KEY "SONDE" FOR FILTERING ?
+./tools/new_file_in_astroport.sh:        TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
 ./tools/new_file_in_astroport.sh:## TODO : Do we keep that ?
-./tools/astroscan.sh:# TODO USE TW COMMANDS
-./ASTROBOT/PLAYER.refresh.sh:    #~ ## IF WALLET IS EMPTY : WHAT TODO ?
-./ASTROBOT/G1PalPay.sh:    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS IDATE=$IDATE FORMAT ??)"
-./ASTROBOT/G1PalPay.sh:    #### SEARCH FOR PALPAY ACOUNTS : TODO BETTER §§§
-./ASTROBOT/GCHANGE.process.sh:# Create tiddler informing ... TODO Add keyword ... Use tag="annonce" for tiddlers propagation
+./ASTROBOT/N1Kodi.sh:    ## TODO CREATE A TEMP IPNS KEY ?!
+./ASTROBOT/N1Kodi.sh:## TODO CREATE FROM FRIEND LOCAL KODI RSS
+./ASTROBOT/_sandbox/_GCHANGE.process.sh:# Create tiddler informing ... TODO Add keyword ... Use tag="annonce" for tiddlers propagation
+./ASTROBOT/_sandbox/_GCHANGE.process.sh:echo "TODO DEBUG. CONTINUE?"
+./ASTROBOT/_sandbox/_GCHANGE.process.sh:    # Message tiddlywiki TODO
+./ASTROBOT/G1CopierYoutube.sh:        ## TODO CORRECT - CACHE CHANGED -
+./ASTROBOT/G1CopierYoutube.sh:        ## TODO ACCEPT MORE WITH COINS
 ./ASTROBOT/G1CopierYoutube.sh:        # TODO : DELAY COPY OPERATION...  Astro can download quicker at 03:00 AM
+./ASTROBOT/G1CopierYoutube.sh:        ## COPY FROM YOUTUBE (TODO DOUBLE COPY & MKV to MP4 OPTIMISATION)
 ./ASTROBOT/G1CopierYoutube.sh:        ## Create gifanime ##  TODO Search for similarities BEFORE ADD
 ./ASTROBOT/G1CopierYoutube.sh:    ## TODO : ADD EMAIL TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
-./ASTROBOT/FRIENDS.manage.sh:# TODO USE WEB INTERFACE
+
 

@@ -67,49 +67,49 @@ Content-Type: text/html; charset=UTF-8
 ##############################################
 # ATPASS : /?player=PLAYER&atpass=G1PUB&$VoeuName=ONELINE
 ##############################################
-        if [[ ${APPNAME} == "atpass" ]]; then
+        #~ if [[ ${APPNAME} == "atpass" ]]; then
 
-               echo "CREATING @PASS"
+               #~ echo "CREATING @PASS"
 
-                end=`date +%s`
-                echo "(@PASS) creation time was "`expr $end - $start` seconds.
-                exit 0
-        fi
+                #~ end=`date +%s`
+                #~ echo "(@PASS) creation time was "`expr $end - $start` seconds.
+                #~ exit 0
+        #~ fi
 
 ##############################################
 # YOUTUBE : /?player=PLAYER&(youtube | pdf  | image) =_URL_
 ##############################################
-        if [[ ${APPNAME} == "youtube" || ${APPNAME} == "pdf" || ${APPNAME} == "image" ]]; then
+        #~ if [[ ${APPNAME} == "youtube" || ${APPNAME} == "pdf" || ${APPNAME} == "image" ]]; then
 
-                APPNAME=$(echo ${APPNAME} | sed -r 's/\<./\U&/g' | sed 's/ //g') ## First letter Capital
+                #~ APPNAME=$(echo ${APPNAME} | sed -r 's/\<./\U&/g' | sed 's/ //g') ## First letter Capital
 
-                [[ ! ${THIS} ]] && THIS="https://www.youtube.com/watch?v=BCl2-0HBJ2c"
+                #~ [[ ! ${THIS} ]] && THIS="https://www.youtube.com/watch?v=BCl2-0HBJ2c"
 
-                echo ">>> COPY ${APPNAME} for ${PLAYER} from ${THIS}"
+                #~ echo ">>> COPY ${APPNAME} for ${PLAYER} from ${THIS}"
 
-                G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
-                [[ ! ${G1PUB} ]] && espeak "NOT MY PLAYER " && echo "${PLAYER} IS NOT MY PLAYER" && exit 1
+                #~ G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+                #~ [[ ! ${G1PUB} ]] && espeak "NOT MY PLAYER " && echo "${PLAYER} IS NOT MY PLAYER" && exit 1
 
-                echo "================================================"
-                echo "${PLAYER} : ${myIPFS}/ipns/${ASTRONAUTENS}"
-                echo " = /ipfs/${TW}"
-                echo "================================================"
+                #~ echo "================================================"
+                #~ echo "${PLAYER} : ${myIPFS}/ipns/${ASTRONAUTENS}"
+                #~ echo " = /ipfs/${TW}"
+                #~ echo "================================================"
 
-                ${MY_PATH}/../ajouter_media.sh "${THIS}" "${PLAYER}" "${APPNAME}" &
+                #~ ${MY_PATH}/../ajouter_media.sh "${THIS}" "${PLAYER}" "${APPNAME}" &
 
-                echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.${PLAYER}.http
-                echo "${myIPFS}/ipns/${ASTRONAUTENS}" >> ~/.zen/tmp/${MOATS}.${PLAYER}.http
-                (
-                cat ~/.zen/tmp/${MOATS}.${PLAYER}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-                rm ~/.zen/tmp/${MOATS}.${PLAYER}.http
-                ) &
+                #~ echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.${PLAYER}.http
+                #~ echo "${myIPFS}/ipns/${ASTRONAUTENS}" >> ~/.zen/tmp/${MOATS}.${PLAYER}.http
+                #~ (
+                #~ cat ~/.zen/tmp/${MOATS}.${PLAYER}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+                #~ rm ~/.zen/tmp/${MOATS}.${PLAYER}.http
+                #~ ) &
 
-#  ### REFRESH CHANNEL COPY
+#~ #  ### REFRESH CHANNEL COPY
 
-                end=`date +%s`
-                echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
-                exit 0
+                #~ end=`date +%s`
+                #~ echo "(TW) MOA Operation time was "`expr $end - $start` seconds.
+                #~ exit 0
 
-        fi
+        #~ fi
 
  exit 1

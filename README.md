@@ -1,5 +1,7 @@
 # Introduction
 
+[Astroport DEV Journal](https://pad.p2p.legal/s/AstroportDEVJournal#)
+
 **Embark on a Cosmic Journey with ZenCard Payment System and Astroport.ONE**
 
 Are you weary of the constraints of traditional payment systems and concerned about the reliability
@@ -91,7 +93,7 @@ make install
 ```
 If your computer is running 24/24, you can join our "Boostrap list" & officially become a [TW UPlanet hoster](https://talk.tiddlywiki.org/t/uplanet-a-planet-full-of-tws/8193?u=papiche)
 
-> PLEASE REPORT ANY ISSUES
+> DOCKER MODE NOT READY TO USE !! FOLLOW AND ADAPT NEXT STEP
 
 ## DESKTOP : Using install.sh script
 
@@ -224,7 +226,7 @@ USE "[astro.js](templates/ZenStation/G1PalPay_fichiers/astro.js)"
     <script src="https://ipfs.asycn.io/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
 ```
 
-## ➤ PRIVATE ZONE (fonctionne sur toutes les Stations.)
+## ➤ SALT API
 ### ```/?salt=${SALT}&pepper=${PEPPER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
 ### Créer (ou téléporter) un PLAYER TW : OFFICIAL <3BOX :
@@ -337,7 +339,7 @@ GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtH
 | `pay` | `integer` | **Required** G1 AMOUNT |
 | `g1pub` | `G1PUB` |  **Required**  destination "wallet key" |
 
-## ➤ PLAYER ZONE (disponible uniquement sur la Station qui héberge ${PLAYER})
+## ➤ PLAYER (works only on LAN Station)
 ### ```/?player=${PLAYER}&${APPNAME}=${WHAT}&${OBJ}=${VAL}...```
 
 ###  Exporter Tiddlers.json depuis son TW selon valeur des "tags" ( ici TAG=G1CopierYoutube)
@@ -351,17 +353,7 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 | `moa` | `string` | **Required** APP = output format |
 | `tag` | `${VAL}` | TW filtering default G1CopierYoutube |
 
-
-###  Lancer la copie d'une URL (youtube | pdf ) par PLAYER dans son TW
-```http
-GET /?player=${PLAYER}&youtube=URLENCODED
-```
-
-| Parameter | Type     | Description                       |
-| :-------- | :------- | :-------------------------------- |
-| `player` | `string` | **Required**. Your EMAIL token |
-| `youtube or pdf` | `string` | **Required** URL kind = URL |
-
+> CAN BE EXTENDED
 
 ## ➤ AMZQR : Create a QRCode with "amzqr"
 ### ```/?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}```
@@ -374,21 +366,21 @@ GET /?player=${PLAYER}&youtube=URLENCODED
 check available "logo.png" in [./images](./images)
 
 ## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
-### ```/?uplanet=${PLAYER}&salt=${LAT}&pepper=${LON}&g1pub=${PASS}```
+### ```/?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `uplanet` | `email` | **Required** Your EMAIL token |
-| `salt` | `decimal` | **Required** LATITUDE with 2 decimals digits |
-| `pepper` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
+| `zlat` | `decimal` | **Required** LATITUDE with 2 decimals digits |
+| `zlon` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
 | `g1pub` | `string` | **Facultative** choose Umap AstroID PASS |
 
 Create à Umap key (LAT/LON), then a PLAYER TW with GPS as Umap IPNS reference
 This API is used by OSM2IPFS code.
 
-DEMO : https://ipfs.copylaradio.com/ipns/copylaradio.com
+* [UPlanet Entrance](https://qo-op.com)
 
-### QRCODE (API SandBox)
+### ➤ QRCODE (API SandBox)
 ```http
 GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_ASTROID_STRING}
 ```
@@ -397,29 +389,6 @@ GET /?qrcode=${G1PUB} | ${ASTRONAUTENS} | ${PGP_ASTROID_STRING}
 | `qrcode` | `string` | **Required**. Your G1PUB or ASTRONAUTENS or PGP_ASTROID token |
 
 > Look for details & extend as you like in [~/.zen/Astroport.ONE/API/QRCODE.sh](API/QRCODE.sh)
-
-### CODE BEHAVIOUR. monitor && rewards || fork signal
-
-* Is IPNS key & PLAYER is local ? Redirect to [make a ASTROID (security level 6)](http://g1billet.localhost:33101/?montant=0&style=xbian&dice=6)
-
-* Is G1*? Redirect to G1WishApp / Export Tagged Tiddlers json from TW
-
-[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0](https://astroport.copylaradio.com/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0)
-redirect to
-[http://ipfs.localhost:8080/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/](https://ipfs.asycn.io/ipns/k51qzi5uqu5din47zmnzk6tmk1tjqaeaj9pbb3qilmstbsf9uyc12qpdmigtd3/)
-
-[http://astroport.localhost:1234/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json](https://astroport.copylaradio.com/?qrcode=G1G1Serie&tw=k51qzi5uqu5dgobi9ozzzvdftqfd3hd7a1488nzymky1edz8j779jov7sbemc0&json)
-redirect to pure "tag=" result  json
-
-* Is G1PUB ... (FROM NEW ASTROID or empty G1BILLET)
-
-    * If balance is "null" : Send 1 G1 (G1BILLET)
-    * if GChange+ account exists : send 10 G1
-    * if Cesium+ account exists : send 50 G1
-
-* Is ASTROID
-    * decode with PASS and make operation (same functions as SALT API are available)
-
 
 ## The Art of key derivation, chaining & use
 
@@ -474,6 +443,24 @@ So ASTROBOT while applying ScuttleButt replications will ".chain.ts" data and ch
 Data can't be lost, but protocol chain can be break !
 In case of some annoyance, we can monitor IPFS protocol to identify which IPFSNODEID key is acting badly and apply reaction based on DEFCON level (look into astrXbian code)
 
+### MAILJET & GPS
+
+In order for "Boostrap Station" to send emails to PLAYERs, we use [mailjet service](https://mailjet.com/).
+
+```
+## CREDENTIALS FILE
+~/.zen/MJ_APIKEY
+# IS USED BY
+~/.zen/Astroport.ONE/tools/mailjet.sh
+```
+
+Boostrap location is specified in ~/.zen/GPS
+
+```
+cat ~/.zen/GPS
+48.87039, 2.31673
+
+```
 
 ### LOW RESSOURCE STATION CAN ACTIVATE LOW MODE (disable ipfs daemon)
 ```

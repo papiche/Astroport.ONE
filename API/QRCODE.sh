@@ -100,20 +100,20 @@ if [[ ${QRCODE} == "station" ]]; then
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
         ## SHOW G1PALPAY FRONT (IFRAME)
-        sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
-        [[ ! $isLAN ]] && sed -i "s~MENU~DEMO~g" ~/.zen/tmp/${MOATS}/index.htm
-        sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
+        sed "s~_STATION_~${myIPFSW}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
+        [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
+        sed -i "s~http://127.0.0.1:8080~${myIPFSW}~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
         sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
 
         WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
         echo $WSTATION > ~/.zen/tmp/WSTATION
         end=`date +%s`
-        echo "NEW WSTATION ${myIPFS}${WSTATION} Execution time was "`expr $end - $start` seconds.
+        echo "NEW WSTATION ${myIPFSW}${WSTATION} Execution time was "`expr $end - $start` seconds.
     ## SEND TO WSTATION PAGE
-    sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    sed "s~_TWLINK_~${myIPFSW}${WSTATION}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
-    echo "url='"${myIPFS}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
+    echo "url='"${myIPFSW}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -155,14 +155,13 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
             G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
 
-            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1PUB}"
+            echo "COINScheck.sh ${G1PUB}"
             ${MY_PATH}/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
-            cat ~/.zen/tmp/${G1PUB}.curcoin
-            CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | cut -d '.' -f 1) ## ROUNDED G1 COIN
+            CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | cut -d '.' -f 1)
             CURZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
-            echo "SOURCE WALLET : $CURCOINS G1 / $CURZEN ZEN"
+            echo "= $CURCOINS G1 / $CURZEN ZEN"
 
-            [[ ${WHAT} == "" ]] &&  echo "<br> Missing amount <br>" >> ~/.zen/tmp/${MOATS}/disco
+            [[ ${WHAT} == "" ]] &&  echo "<br> Missing WHAT <br>" >> ~/.zen/tmp/${MOATS}/disco
             [[ ${VAL} == "" || ${VAL} == "undefined" ]] &&  echo "<br> Missing Destination PublicKey <br>" >> ~/.zen/tmp/${MOATS}/disco
 
             G1DEST=$(echo "$VAL" | cut -d ':' -f 1) ## G1PUB:CHK format
@@ -172,7 +171,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ## GET DESTINATION ACCOUNT AMOUNT
             DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${G1DEST} | tail -n 1)
             DESTMZEN=$(echo "($DESTM - 1) * 10" | bc | cut -d '.' -f 1)
-            echo "DEST WALLET : $DESTM G1 / $DESTMZEN ZEN"
+            echo "DEST WALLET = $DESTM G1 / $DESTMZEN ZEN"
 
             if [[ ${APPNAME} == "pay" ]]; then
 
@@ -228,7 +227,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 ## history & read
                 # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
-                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}:ZEN"
+                qrencode -s 6 -o "${HOME}/.zen/tmp/${MOATS}/disco.qr.png" "${G1PUB}"
                 QRURL=${myIPFS}/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/disco.qr.png)
                 ONVADIRE="<h1> ${CURZEN} ẐEN </h1>${G1PUB}<br><br><img src=${QRURL} />"
                 echo "${ONVADIRE}" >> ~/.zen/tmp/${MOATS}/disco
@@ -254,13 +253,24 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 ##############################################
             if [[ ${APPNAME} == "logout" ]]; then
 
+                player=$(echo "${salt}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kind
                 ## REMOVE PLAYER IPNS KEY FROM STATION
-                [[ "${salt}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
-                && PLAYER=${salt} \
+                [[ "${player}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
-                echo "TW : $myIPFS/ipns/$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)" > ~/.zen/tmp/${MOATS}/${MOATS}.log
-                echo "<h1>$PLAYER LOGOUT ...</h1>" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
+                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+                if [[ ! ${ISTHERE} ]]; then
+                    (
+                        echo "$HTTPCORS
+                        <h1>LOGOUT ERROR</h1><h2>${PLAYER} keys not found on ZEN Station</h2>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 \
+                        && echo "SLURP PLAYER ERROR ${player}"
+                    ) &
+                    exit 0
+                fi
+
+                echo "<h1><a href='$myIPFS/ipns/${ISTHERE}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/${MOATS}.log
+                echo "<h2>$PLAYER LOGOUT ...</h2>removing keys : " >> ~/.zen/tmp/${MOATS}/${MOATS}.log
                 ipfs key rm ${G1PUB} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
                 ipfs key rm ${PLAYER} >> ~/.zen/tmp/${MOATS}/${MOATS}.log
                 ipfs key rm "${PLAYER}_feed" >> ~/.zen/tmp/${MOATS}/${MOATS}.log
@@ -275,8 +285,10 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ ${APPNAME} == "login" ]]; then
 
-                [[ "${salt}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
-                && PLAYER=${salt} \
+                player=$(echo "${salt}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kind
+
+                [[ "${player}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
                 ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
@@ -328,7 +340,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
     (
     cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    echo "BLURP ~~ $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 
@@ -545,7 +557,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
     (
     cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    echo "BLURP @@ $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 
     exit 0
@@ -584,7 +596,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
             cat ~/.zen/tmp/${MOATS}/g1voeu.json >> ~/.zen/tmp/${MOATS}/index.redirect
             (
             cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-            echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+            echo "BLURP g1voeu.json $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
             ) &
             exit 0
 
@@ -621,22 +633,24 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
     echo "url='"${LINK}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (
     cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    echo "BLURP ${LINK} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
     exit 0
 fi
 
 ################################################################################
 ## QRCODE = IPNS or G1PUB ? Can be ASTRONAUTENS or G1PUB format
-ZCHK="${QRCODE#*:}" # ChK or ZEN
-QRCODE="${QRCODE%%:*}" ## TRIM :ZEN :ChK
+ZCHK="$(echo $THAT | cut -d ':' -f 2-)" # ChK or ZEN
+QRCODE="${QRCODE%%:*}" ## TRIM :ChK
 ################################################################################
 ################################################################################
 ## QRCODE IS IPNS FORMAT "12D3Koo"  ( try ipfs_to_g1 )
 IPNS2G1=$(${MY_PATH}/../tools/ipfs_to_g1.py ${QRCODE} 2>/dev/null)
-[[ ${IPNS2G1} != "" ]] \
+echo "IPNS2G1=${IPNS2G1} ZCHK=${ZCHK}"
+[[ ${ZCHK} == "" && ${#IPNS2G1} -ge 40 && ${QRCODE::4} == "12D3" ]] \
         && echo "${PORT} QRCODE IS IPNS ADDRESS : ${myIPFS}/ipns/${QRCODE}" \
         && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${myIPFS}/ipns/${QRCODE}'\" />Loading from IPFS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && echo "PRULS /ipns/${QRCODE} $PORT" && rm -Rf ~/.zen/tmp/${MOATS} \
         && exit 0
 
 ## TEST G1 TYPE  ( try g1_to_ipfs )
@@ -644,42 +658,45 @@ ASTROTOIPNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPNS} ]] \
         && echo "${PORT} INVALID QRCODE : ${QRCODE}" \
         && (echo "$HTTPCORS ERROR - INVALID QRCODE : ${QRCODE}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && echo "PRULS INVALID ${QRCODE} $PORT" && rm -Rf ~/.zen/tmp/${MOATS} \
         && exit 1
 ################################################################################
 echo "############################################################################"
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
 
     ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
-    echo "COINScheck : ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${QRCODE}"
+    echo "${ZCHK}  COINScheck ${QRCODE}"
     VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
     COINSFILE=$HOME/.zen/tmp/${MOATS}/${QRCODE}.COINS
 
-    ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+    [[ ${VISITORCOINS} != "null" ]] \
+        && ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1) \
+        || ZEN="-10"
 
     DISPLAY="$VISITORCOINS G1"
-    [[ $ZCHK == "ZEN" ]] && DISPLAY="$ZEN ẐEN"
 
-## WALLET VIERGE
-###########################################
-if [[ $VISITORCOINS == "null" ]]; then
+    ## WALLET VIERGE
+    ###########################################
+    if [[ $VISITORCOINS == "null" || ${ZEN} -lt 10 ]]; then
 
-    echo ""
+        echo "!! LOW ZEN WALLET ZEN=${ZEN}"
 
-    echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-    echo "<h1>EMPTY. PLEASE CHARGE. </h1>
-    ... Send dotation to made-in-zen ? Contact <a href='mailto:support@qo-op.com'>support</a>
-    ($myHOST)"  >> ~/.zen/tmp/${MOATS}/index.redirect
+        echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
+        echo "<h1>LOW ZEN WARNING</h1>
+        PLEASE CHARGE... only ${ZEN} ZEN
+        "  >> ~/.zen/tmp/${MOATS}/index.redirect
+        (
+        cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+        echo "BLURP null ZEN $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+        ) &
+        exit 0
+
+    fi
+
+    ## WE SEND WALLET AMOUNT DISPLAY
     (
-    cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
-    ) &
-    exit 0
-
-fi
-
-    (
-    echo "$HTTPCORS  <h2>${ZCHK} : ${QRCODE}</h2><h1>${DISPLAY}</h1>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
+    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1><h2><a href='$myUPLANET/g1gate/?pubkey=$G1PUB'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "BLURP ${DISPLAY} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 
 exit 0

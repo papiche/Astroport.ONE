@@ -37,14 +37,14 @@ echo "################  TW Ŋ1 PROTOCOL #############"
 echo "##################################################"
 
 echo ; echo "UPDATING SYSTEM REPOSITORY"
-#~ [[ $XDG_SESSION_TYPE == 'x11' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
+#~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
 sudo apt-get update
 
 echo "#############################################"
 echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
-for i in git make cmake fail2ban npm argon2 netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli mpack; do
+for i in git make cmake docker-compose fail2ban npm argon2 netcat-traditional ncdu chromium* miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -56,7 +56,7 @@ echo "#############################################"
 echo "######### INSTALL MULTIMEDIA TOOLS  ######"
 echo "#############################################"
 # removed : sqlite
-for i in qrencode pv gnupg pandoc ca-certificates basez jq bc file gawk ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
+for i in qrencode pv gnupg gpa pandoc ca-certificates basez jq bc file gawk ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -65,7 +65,19 @@ for i in qrencode pv gnupg pandoc ca-certificates basez jq bc file gawk ffmpeg d
     fi
 done
 
-if [[ $XDG_SESSION_TYPE == 'x11' ]]; then
+echo "#############################################"
+echo "######### FUN INSTALL ASCII ART TOOLS ######"
+echo "#############################################"
+for i in cmatrix cowsay; do
+    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        sudo apt install -y $i
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+
+    fi
+done
+
+if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 echo "#############################################"
 echo "######### INSTALL DESKTOP TOOLS  ######"
 echo "#############################################"
@@ -109,14 +121,13 @@ sudo npm install -g tiddlywiki
 #~ ## DES SUGGESTIONS ?
 #~ ## CONTACTER support@qo-op.com
 #~ #################################################"
-echo "######### CONFIGURE MAILJET ############"
 ## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
-sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
-sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
-sudo chmod 640 /etc/ssmtp/ssmtp.conf
-sudo chgrp mail /etc/ssmtp/ssmtp.conf
+#~ sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
+#~ sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
+#~ sudo chmod 640 /etc/ssmtp/ssmtp.conf
+#~ sudo chgrp mail /etc/ssmtp/ssmtp.conf
 
-echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
+#~ echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
 
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
@@ -127,22 +138,10 @@ fi
 
 echo "###########################"
 echo "##  ADDING CRYPTO LAYER ================"
-echo "########################### ♥BOX"
-sudo ln -f -s  /usr/bin/python3 /usr/bin/python
-echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc; echo "<<< CHECK YOUR >>> PATH=$PATH"
 
-#~ mkdir -p ~/.venvs
-#~ python3 -m venv ~/.venvs/astro
-
-# python -m pip install -U pip
-# python -m pip install -U setuptools wheel
-# python -m pip install -U cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes
-# python -m pip install -U silkaj
-# python -m pip install -U protobuf==3.19.0
-
-for i in pip setuptools wheel cryptography==3.4.8 Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
+for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        python -m pip install -U $i
+        python -m pip install --break-system-packages -U $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
 done
 
@@ -157,7 +156,7 @@ if [[ $USER != 'xbian' ]]; then
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-        python -m pip install brother_ql
+        python -m pip --break-system-packages install brother_ql
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin $USER
         sudo usermod -a -G tty $USER
@@ -177,6 +176,26 @@ if [[ $USER != 'xbian' ]]; then
 
 fi
 
+echo "########################### ♥BOX"
+sudo ln -f -s  /usr/bin/python3 /usr/bin/python
+
+while IFS= read -r line
+do
+    echo "$line" >> ~/.bashrc
+done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
+
+
+echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc
+echo "<<< UPDATED>>> PATH=$PATH"
+
+echo "##  ADDING lazydocker ================"
+### ADD TO DOCKER GROUP
+sudo usermod -aG docker $USER
+# INSTALL lazydocker GUI
+curl https://raw.githubusercontent.com/\
+jesseduffield/lazydocker/master/scripts/\
+install_update_linux.sh | bash
+
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
 echo "#############################################"
@@ -189,43 +208,59 @@ echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
 
-if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' ]]; then
-echo "#############################################"
-echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
-echo "#############################################"
-(
-    mkdir -p ~/.zen/tmp/kodi
-    echo "PATIENTEZ..."
-    ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
-    echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
-    mv ~/.kodi ~/.kodi.back 2>/dev/null
-    mv ~/.zen/tmp/kodi ~/.kodi
-) &
-fi
+#~ if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
+#~ echo "#############################################"
+#~ echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
+#~ echo "#############################################"
+#~ (
+    #~ mkdir -p ~/.zen/tmp/kodi
+    #~ echo "PATIENTEZ..."
+    #~ ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
+    #~ echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
+    #~ mv ~/.kodi ~/.kodi.back 2>/dev/null
+    #~ mv ~/.zen/tmp/kodi ~/.kodi
+#~ ) &
+#~ fi
 
 
-echo "#############################################"
-echo "### ANY ERRORS ?"
+echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+echo "xXX ERRORS XXx"
 cat /tmp/install.errors.log
+echo "xXX please report any errors encountered during install  XXx"
+echo "################XXXX#########################"
+echo
 echo "#############################################"
-echo "Astroport.ONE INSTALLATION FINISHED"
+echo "Astroport.ONE - Web3 Information System over IPFS - "
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
-echo "CREEZ VOTRE COMPTE SUR"
-echo "    http://astroport.localhost:1234"
-echo "%%%%%%%%  OU ~/.zen/Astroport.ONE/command.sh "
+echo
+echo "(DES) ACTIVATE with
+ ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON (OFF)"
+echo
+echo "### FOR JOINING BOOSTRAP LIST #############################"
+echo "### MAILJET CREDENTIALS
+contact support@qo-op.com for initial UPlanet ~/.zen/MJ_APIKEY"
 echo "#############################################"
+echo ">>> Welcome Space Kitty <<<"
+echo "Explore Web2.0 / WEb3 frontier"
+echo "Please. Continue keygen procedure..."
+echo
+echo "COMAND INTERFACE"
+echo "CLI : ~/.zen/Astroport.ONE/command.sh"
+echo "WEB : http://127.0.0.1:1234/"
 
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
-    espeak "Please create a player"
+    espeak "Welcome Space Kitty" 2>/dev/null
 
-    [[ $XDG_SESSION_TYPE == 'x11' ]] \
-    && xdg-open "http://astroport.localhost:1234" \
-    || ~/.zen/Astroport.ONE/command.sh
 
+    #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
+    #~ && xdg-open "http://astroport.localhost:1234" \
+    #~ || ~/.zen/Astroport.ONE/command.sh
+
+    xdg-open "http://127.0.0.1:1234/" 2>/dev/null
 
 else
 

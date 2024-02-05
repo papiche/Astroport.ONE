@@ -22,9 +22,9 @@ mkdir ~/.zen/tmp/${MOATS}
 ############################
     ## RUNING FOR ALL UMAP FOUND IN STATION MAP CACHE : "_LAT_LON"
 
-    ## SEARCH UMAP (created by PLAYER.refresh.sh)
-    MEMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/ 2>/dev/null))
-    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/* | rev | cut -d '/' -f 1 | rev | sort | uniq 2>/dev/null) )
+    ## SEARCH UMAP (created by PLAYER.refresh.sh) /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
+    MEMAPS=($(ls -t ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/ 2>/dev/null))
+    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* | rev | cut -d '/' -f 1 | rev | sort | uniq 2>/dev/null) )
     combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
     unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
     echo "ACTIVATED UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
@@ -39,58 +39,86 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
         [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
+        ## SECTOR BANK COORD
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
+        ## REGION
+        REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
+        REGLON=$(echo ${LON} | cut -d '.' -f 1)
+
+        ##############################################################
+        ## UMAP WALLET CHECK
         ##############################################################
         G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
         [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
         COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
         echo "UMAP (${COINS} G1) WALLET : ${G1PUB}"
 
+        ## ORIGIN ##########################################################
+        ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+        ipfs key rm ${G1PUB} > /dev/null 2>&1
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
-        echo "${myIPFS}/ipns/${UMAPNS}"
-        ##############################################################
+        echo "ORIGIN : ${myIPFS}/ipns/${UMAPNS}"
+
+        ###################### SPATIO TEMPORAL KEYS
+        ## YESTERDATE ###############
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
+        ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
+        YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
+        echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
+
+        ## TODATE #########################################
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv  "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
+        ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
+        TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
+        echo "TODAY : ${myIPFS}/ipns/${TODATENS}"
 
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        ## IPFS GET ONLINE UMAPNS
+        ## IPFS GET YESTERDATENS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-        ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${UMAPNS}/
+        ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         ## FORMAT CONTROL WARNING
-        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB} || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
+        [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> INFO - INTIALIZE UMAP FORMAT - NEW UMAP KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN
 
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
-    echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/"
+    echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/"
 
  ## zday of the week for IPFSNODEID
 rm ~/.zen/tmp/${MOATS}/${UMAP}/z* ## TODO RESTRICT T O z*.html
-ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
+ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
 
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
-                ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
+                ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
                 # ZMOATS SHOULD BE MORE THAT 5 HOURS.
                 MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
                 ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-                echo "UMAP DATA is ${DIFF_SECONDS} seconds "
+                hours=$((DIFF_SECONDS / 3600))
+                minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
+                seconds=$((DIFF_SECONDS % 60))
+                echo "UMAP DATA is ${hours} hours ${minutes} minutes ${seconds} seconds "
 
                 # IF LESS THAN 5 HOURS
                 if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
                     echo "GETTING YESTERDAY UMAP.refresher"
                     YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresher | head -n 1)
                     ## GET UMAP.refresher from PREVIOUS _chain ...
-                    echo "TODAY : $(cat ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher | head -n 1)"
+                    TODAY=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher | head -n 1)
+                    echo "TODAY : ${TODAY}"
                     echo "YESTERDAY : ${YESTERDAY}"
+                    echo "------------------------------------------------->>>>>>>>>>>>>>>>"
                     continue
                 fi
 
@@ -139,7 +167,9 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
         ######################################################## # NODE  SELECTION in UMAP.refresher
 
+# %%%%%%%%%% ##################################################
 ## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${SLAT}_${SLON}
+# %%%%%%%%%% ##################################################
     SLAT="${LAT::-1}"
     SLON="${LON::-1}"
     SECTOR="_${SLAT}_${SLON}"
@@ -150,7 +180,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
     ipfs key rm ${SECTORG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${SECTORG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
     ipfs key rm ${SECTORG1PUB}
@@ -158,12 +188,9 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${SECTORNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}/index.html
 
-    SECTORMAPGEN="${EARTHCID}/map_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
-    SECTORSATGEN="${EARTHCID}/sat_render.html?southWestLat=${SLAT}&southWestLon=${SLON}&deg=0.1&ipns=${SECTORNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${SECTORSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${SLAT}_${SLON}.SECTOR.Sat.html
-
+# %%%%%%%%%% ##################################################
 ## REGION LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${RLAT}_${RLON}
+# %%%%%%%%%% ##################################################
     RLAT=$(echo ${LAT} | cut -d '.' -f 1)
     RLON=$(echo ${LON} | cut -d '.' -f 1)
     REGION="_${RLAT}_${RLON}"
@@ -174,29 +201,28 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
     COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
     echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}"
     ipfs key rm ${REGIONG1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-    REGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
+    TODATEREGIONNS=$(ipfs key import ${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ipfs key rm ${REGIONG1PUB}
     ##############################################################
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${REGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
 
-    REGIONMAPGEN="${EARTHCID}/map_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
-    REGIONSATGEN="${EARTHCID}/sat_render.html?southWestLat=${RLAT}&southWestLon=${RLON}&deg=1&ipns=${REGIONNS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Map.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${REGIONSATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}.REGION.Sat.html
-
- ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY
-        cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
-        RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
+# %%%%%%%%%% ##################################################
+## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
+# %%%%%%%%%% ##################################################
+        cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
+        RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
         for RSSFILE in ${RSSFILES[@]}; do
             cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
         done
 
+# %%%%%%%%%% ##################################################
 ## COLLECT TW LINKS FROM NODE & SWARM
-        cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
-        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
+# %%%%%%%%%% ##################################################
+        cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
+        TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         for TWRED in ${TWFILES[@]}; do
             ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
             mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW/${ZMAIL}
@@ -206,8 +232,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 ##################################
         ## OSM2IPFS
 ### UMAP = 0.01° Planet Slice
-        UMAPGEN="${EARTHCID}/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
-        USATGEN="${EARTHCID}/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${UMAPNS}"
+        UMAPGEN="${EARTHCID}/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${TODATENS}/_index.html"
+        USATGEN="${EARTHCID}/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipns=${TODATENS}/_index.html"
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
 
@@ -224,35 +250,38 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
 #### NOT WORKING !!!
 
 ## GEOLINKING CALCULATE SURROUNDING UMAPS  ###############################
-    if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
+    #~ if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
 
-        ${MY_PATH}/../tools/Umap_geolinks.sh "${LAT}" "${LON}" "${UMAP}" "${MOATS}" "${UMAPNS}"
+        #~ ${MY_PATH}/../tools/Umap_geolinks.sh "${LAT}" "${LON}" "${UMAP}" "${MOATS}" "${UMAPNS}"
 
-    fi
-    ### SET navigator.html ## MAKE EVOLVE template/umap.html
-    cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
-    cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
+    #~ fi
+    #~ ### SET navigator.html ## MAKE EVOLVE template/umap.html
+    #~ cp ${MY_PATH}/../templates/umap.html ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html
+    #~ cat ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Umap.html | sed "s~Umap~Usat~g" > ~/.zen/tmp/${MOATS}/${UMAP}/navigator_Usat.html
+#### IS IT USEFUL ?..??
 
 ####################################
-        ## MAKE GET POI's
-
-### JSON UMAP SCRAPPING
+# %%%%%%%%%% ##################################################
+        ## GET FROM WEB2.0 POI's AROUND  >>>>>>>>>>>>>>>>>>>>>>>>>
+# %%%%%%%%%% ##################################################
 ####################################
+        echo "################### WEB2.0 SCRAPING TIME >>>>>>>>>>>>>>>>"
         ## RECORD P4N SPOT DATA
-        curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
-
-        echo "P4N : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
-        [[ -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+        echo "* park4night : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
+        [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+            && curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
             && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json) ]] \
             && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json \
-            && echo "UPDATED" \
-            || echo "NO CHANGE"
+            && echo "UPDATED PARK4NIGHT" \
+            || rm ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
 
 ####################################
-        echo "GET GCHANGE ADS..."
+        echo "* gchange : ./tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON}"
         ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
         ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
+        echo "MAKING _index.p4n.html with ./templates/P4N/index.html"
         ## CREATE INDEX LOADING JSONs ON OPENSTREETMAP
         cat ${MY_PATH}/../templates/P4N/index.html \
         | sed -e "s~43.2218~${LAT}~g" \
@@ -262,16 +291,19 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.p4n.html
 
+# %%%%%%%%%% ##################################################
 ########################################################
-       ## PREPARE Ŋ1 WORLD MAP ##################################################################
+       echo "CREATING SPHERICAL LOCATIONS"
+# %%%%%%%%%% ##################################################
+       ## PREPARE SPHERE MAP ##################################################################
         echo "var examples = {};
         examples['locations'] = function() {
         var locations = {
         " > ~/.zen/tmp/world.js
         floop=1
 
-        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
-        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${LAT}*_${LON}*/TW/*/index.html 2>/dev/null))
+        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
+        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
         TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
 
         for TWRED in ${TWFILES[@]}; do
@@ -306,66 +338,61 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         " >> ~/.zen/tmp/world.js
 
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
-        echo "JSON TW WORLD READY /ipfs/${IAMAP}/world.js"
+        echo "JSON UMAP WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
         ### APPLY ON APP MODEL
         SECLAT="${LAT::-1}"
         SECLON="${LON::-1}"
         SECTOR="_${SECLAT}_${SECLON}"
-        SECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+        TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
 
-        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
+        PHONEBOOTH="${G1PUB::30}"
+        cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
         | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
                   -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                  -e "s~_ZONENS_~${UMAPNS}~g" \
-                  -e "s~_UPZONENS_~${SECTORNS}~g" \
+                  -e "s~_ZONENS_~${TODATENS}~g" \
+                  -e "s~_UPZONENS_~${TODATESECTORNS}~g" \
+                  -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
+                  -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
+                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${LAT}\&southWestLon=${LON}\&deg=0.01~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_index.html
 
-        ## Make it root App for ZONENS key
+        ## Make it root App
         #~ mv ~/.zen/tmp/${MOATS}/${UMAP}/_index.html \
                 #~ ~/.zen/tmp/${MOATS}/${UMAP}/index.html
         ##################################
 
 ###########################################################################################
 ########################################################
-    ## COMBINE ALL JSON
-        json_array=()
-        # Loop through each *.rss.json file and append its content to the array
-        for file in ~/.zen/tmp/${MOATS}/${UMAP}/RSS/*.rss.json; do
-            # Use jq to extract the JSON array from each file
-            data=$(jq '.' "$file")
-            json_array+=("$data")
-        done
-        # Convert the array to a single JSON object
-        merged_json=$(jq -n '{"data": [ $json_array[] ]}')
-        echo "$merged_json" > ~/.zen/tmp/${MOATS}/${UMAP}/RSS/all.json
+    ## CREATE .all.json for RSS in this UMAP
+        ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${MOATS}/${UMAP}/RSS
 
         ##############################################################
         ############################ PUBLISHING UMAP
         ##############################################################
         UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1)
 
-        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats 2>/dev/null)
+        ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+        ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
         [[ ${ZCHAIN} && ${ZMOATS} ]] \
-            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain.${ZMOATS} \
+            && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain.${ZMOATS} \
             && echo "UPDATING MOATS"
 
-        ## DOES CHAIN CHANGED or INIT ?
+        ## MICRO LEDGER CHAIN CHANGED or INIT ?
         [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
-            && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_chain \
-            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}/_moats \
+            && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain \
+            && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats \
             && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 
-        echo "PUBLISHING NEW UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
+        echo "PUBLISHING ${TODATE} UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
 
-            ipfs name publish --key=${G1PUB} /ipfs/${UMAPROOT}
+            ipfs name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
             end=`date +%s`
-            ipfs key rm ${G1PUB} ## REMOVE IPNS KEY
+            ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} ## REMOVE IPNS KEY
 
-            echo "(UMAP) ${UMAP} PUBLISH time was "`expr $end - $start` seconds.
+            echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 
     done
 
@@ -374,5 +401,6 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />" > ~/.z
         ${MY_PATH}/SECTOR.refresh.sh "${unique_combined[@]}"
 
  ### REGION = 1° Planet Slice
-       # ${MY_PATH}/REGION.refresh.sh "${LAT}" "${LON}" "${MOATS}" "${UMAP}" "${ACTINGNODE}"
+        ${MY_PATH}/REGION.refresh.sh  "${unique_combined[@]}"
+
 

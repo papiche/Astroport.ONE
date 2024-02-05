@@ -58,7 +58,8 @@ tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1vo
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 0
 
 cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
-echo $(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)" VOEUX : ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
+wishnumbers=$(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)
+echo "${wishnumbers} VOEUX : ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
 
 ## ${PLAYER}.g1wishes.txt contains all TW G1PUB : IPNS key name
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -110,10 +111,10 @@ do
         ##################################
         ## MAKE MY OWN EXTRACTION : [tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]
         ################################## MOA MAINTENANT
-        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.json"
-        tiddlywiki --load $INDEX \
+        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.rss.json"
+        tiddlywiki --load ${INDEX} \
                  --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME} \
-                 --render '.' _${PLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
+                 --render '.' _${PLAYER}'.tiddlers.rss.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
 
 
     ## RUN TW Ŋ1 search & copy treatment
@@ -148,29 +149,30 @@ do
 
             APLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
-            ## EXPORT LAST 30 DAYS G1WishName in _${APLAYER}.tiddlers.json
-            rm -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json
+            ## EXPORT LAST 30 DAYS G1WishName in _${APLAYER}.tiddlers.rss.json
+            rm -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json
             echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
             tiddlywiki --load ${FRIENDTW} \
                                 --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME} \
-                                --render '.' _${APLAYER}'.tiddlers.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
+                                --render '.' _${APLAYER}'.tiddlers.rss.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
 
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json ]] \
+            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json ]] \
             && echo "NO ${WISHNAME} - CONTINUE -" \
             && echo && ((floop++)) && continue
 
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json) == "[]" ]] \
+            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json) == "[]" ]] \
             && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) \
-            && rm ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.json \
+            && rm ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
             && continue
 
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
-            echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.json ${WISHNAME}"
+            echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.rss.json ${WISHNAME}"
 
             # Extract Origin G1Voeu Tiddler
             tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
             FWISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
 #            FWISHPROG=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].text')
+# TIDDLER COULD CONTAIN #!/bin/bash PROGRAM !!!
             [[ $FWISHNS == "null" ]] && echo "NO FWISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
             echo ">>> ${myIPFS}${FWISHNS}"
 
@@ -249,6 +251,9 @@ do
         echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/*"
         ls ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/
 
+    ## CREATE .all.json for WISHNAME
+        ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}
+
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
         ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
@@ -260,17 +265,41 @@ do
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
-        #~ echo "************************************************************"
-        #~ echo "Hop, 1 ZEN pour le Voeu $WISHNAME"
-        #~ echo $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c \'"ASTRO:${IPNS_VOEUNS} G1Voeu $WISHNAME"\' -m
-        #~ echo "************************************************************"
-        #~ echo "************************************************************"
-
-        #~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey pay -a 0.1 -p $VOEUKEY -c "ASTRO:$VOEUXNS G1Voeu $WISHNAME" -m
-        #~ [[ ! $? == 0 ]] \
-        #~ && echo "POOOOOOOOOOOOOOOOOOOORRRRRR GUY. YOU CANNOT PAY A G1 FOR YOUR WISH"
-
 done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
+
+################################################
+### SEND GRATITUDE TO SECTOR
+## GET "GPS" TIDDLER
+if [[ ${wishnumbers} -gt 0 ]]; then
+    tiddlywiki --load ${INDEX} \
+        --output ~/.zen/tmp/${MOATS} \
+        --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+    TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+    LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+    [[ ${LAT} == "null" ]] && LAT="0.00"
+    LAT=$(makecoord $LAT)
+    LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+    [[ ${LON} == "null" ]] && LON="0.00"
+    LON=$(makecoord $LON)
+    echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
+    rm ~/.zen/tmp/${MOATS}/GPS.json
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
+    SECTOR="_${SECLAT}_${SECLON}"
+    ##############################################################
+    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    ##############################################################
+    GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
+    G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
+    echo "***** PLAYER $PLAYER *************************************"
+    echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
+    to ${SECTOR} WALLET ${SECTORG1PUB}"
+    echo "************************************************************"
+    MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "ipfs://${MYWISHFLUX}"
+fi
+################################################
+################################################ GRATITUDE SENT TO SECTOR
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "TODO : REFRESH WORLD SAME WISH CACHE"

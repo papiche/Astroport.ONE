@@ -10,6 +10,22 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
+## IPFS DAEMON STATUS
+LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+[[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]] && LOWMODE="NO 5001" ## IPFS IS STOPPED
+[[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
+# echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
+sudo systemctl restart ipfs && sleep 10
+floop=0
+while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
+    sleep 10
+    ((floop++)) && [ $floop -gt 36 ] \
+        && echo "ERROR. IPFS daemon not restarting" \
+        && $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
+        && exit 1
+done
+# espeak "CODE git pull" > /dev/null 2>&1
+
 ## REMOVE TMP BUT KEEP SWARM
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
@@ -17,20 +33,12 @@ rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
 
-## IPFS DAEMON STATUS
-LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
-[[ $LOWMODE == "" ]] && LOWMODE=$(ipfs --timeout 10s swarm peers 2>&1 | grep Error) ## IPFS IS STOPPED
-[[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
-# echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
-sudo systemctl restart ipfs && sleep 10
-
-# espeak "CODE git pull" > /dev/null 2>&1
-
-## PROCESS TW BACKOFFICE TREATMENT
+## UPDATE G1BILLETS code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
 && rm -Rf ~/.zen/G1BILLET/tmp/*
 
+## UPDATE Astroport.ONE code
 cd ~/.zen/Astroport.ONE/
 git pull
 
@@ -81,7 +89,7 @@ echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 rm ~/.zen/game/players/localhost/latest
 
 ## MAIL LOG : support@qo-op.com ##
-$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log"
+$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
@@ -104,11 +112,15 @@ else
 fi
 
 echo "IPFS LOW MODE ?"
-## IPFS DISABLED : STOP IT
+## IF IPFS DAEMON DISABLED : WAIT 1H & STOP IT
 [[ $LOWMODE != "" ]] \
     && echo "ON. $LOWMODE" \
     && sleep 360 \
     && sudo systemctl stop ipfs \
-    || { echo "OFF. RESTART IPFS" && sudo systemctl restart ipfs; }
+    && exit 0
+
+echo "OFF. RESTART IPFS"
+sleep 60
+sudo systemctl restart ipfs
 
 exit 0

@@ -103,7 +103,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     cp ~/.zen/tmp/${MOATS}/START.png ~/.zen/game/world/${VoeuName}/${WISHG1PUB}/
 
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.ASTROLINK.png" "$LIBRA/ipns/$ASTRONAUTENS"
-    qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.G1ASTRO.png" "${G1PUB}:ZEN"
+    qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.G1ASTRO.png" "${G1PUB}"
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.G1WISH.png" "${WISHG1PUB}:ZEN"
     qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.IPNS.png" "/ipns/${VOEUNS}"
 

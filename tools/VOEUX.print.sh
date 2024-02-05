@@ -161,7 +161,7 @@ select zwish in "${vlist[@]}"; do
             ;;
 
             "Ğ1")
-                qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png" "${voeu}:ZEN"
+                qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png" "${voeu}"
                 convert $HOME/.zen/game/world/${VoeuName}/${voeu}/G1PUB.png -resize 600 ~/.zen/tmp/${MOATS}/START.png
                 break
             ;;
@@ -212,7 +212,7 @@ select zwish in "${vlist[@]}"; do
         convert -gravity southeast -pointsize 30 -fill black -draw "text 100,2 \"${GW}\"" ~/.zen/tmp/${MOATS}/g1voeu1.png ~/.zen/tmp/${MOATS}/g1voeu.png
 
         #~ echo "~/.zen/tmp/${MOATS}/g1voeu.png READY ?"
-        [[ $XDG_SESSION_TYPE == 'x11' ]] && xdg-open ~/.zen/tmp/${MOATS}/g1voeu.png
+        [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ~/.zen/tmp/${MOATS}/g1voeu.png
 
         LP=$(ls /dev/usb/lp* 2>/dev/null | head -n1)
         [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" && continue
