@@ -19,7 +19,7 @@ echo "Vous êtes de retour à votre point de départ."
 echo "La forêt qui vous entoure est immense."
 echo "Vous ne pouvez pas vraiment en imaginer la taille,"
 echo
-echo "Vous pouvez vous diriger au nord, à l'est, au sud et à l'ouest."
+echo "Vous pouvez vous diriger au nord, à l'est, au sud, à l'ouest, au nord ouest, au nord est, au sud ouest et au sud est."
 echo
 echo "Que voulez-vous faire ?"
 
@@ -35,9 +35,16 @@ while true; do
             exit ;;
         w ) ./green.sh
             exit ;;
+        nw ) ./purple.sh
+             exit ;;
+        ne ) ./yellow.sh
+            exit ;;
+        sw ) ./black.sh
+             exit ;;
+        
         u ) echo "Il n'y a rien que vous puissiez utiliser ici." ;;
-        h ) echo "Vous observez votre montre, il est 20:12" ;;
-        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
+        h ) echo "Vous observez votre montre, il est 10:00" ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, nw, ne, sw, se, u et h..";;
     esac
 done
 

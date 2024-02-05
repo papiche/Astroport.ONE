@@ -7,7 +7,7 @@
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 ################################################################################
-# Choisir la source de capture
+# Capture la photographie satellite de la France
 # https://fr.sat24.com/image?type=visual5HDComplete&region=fr
 
 MY_PATH="`dirname \"$0\"`"              # relative
