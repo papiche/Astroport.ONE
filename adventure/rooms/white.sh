@@ -52,11 +52,16 @@ while true; do
               xdg-open "https://www.youtube.com/embed/Yk-WRXKysXM"
             ;;
         u ) leverstate=`cat ../logic/leverlogic.ben`
+            leverstate2=`cat ../logic/leverlogic2.ben`
             if [ "$leverstate" = "on" ]; then
                 ./kroo.sh
                 exit
             else
+                if [ "$leverstate2" = "on" ]; then
+                .kroo3.sh
+                else
                 echo "Vous cherchez une ouverture... Pas la moindre. Impossible d'entrer sans commettre une effraction..."
+                fi
             fi
             ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
