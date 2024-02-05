@@ -37,7 +37,11 @@ echo "Que voulez-vous faire ?"
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "Vous vous aventurez dans la forêt plus au nord. Sans boussole, vous allez vous perdre rapidement... " ;;
+        n ) echo "Vous vous aventurez dans la forêt plus au nord. Sans boussole, vous allez vous perdre rapidement... " 
+        sleep 3
+        echo "Vous vous êtes perdu... Au loin vous voyez le Valhalla"
+        ./valhalla.sh;;
+         
         s ) ./mainroom.sh
             exit ;;
         e ) echo "Une corniche surplombe un ruisseau qui coule dans le fond de la ravine. Impossible de passer sans équipement" ;;
