@@ -35,8 +35,22 @@ while true; do
             exit ;;
         w ) ./green.sh
             exit ;;
-        u ) echo "Il n'y a rien que vous puissiez utiliser ici." ;;
-        h ) echo "Vous observez votre montre, il est 20:12" ;;
+        u ) leverstate=`cat ../logic/leverlogic.ben`
+	       if [ "$leverstate" = "on" ]; then
+		       sh $HOME/Astroport.ONE/games/masterguesser.sh
+	       else
+	       	       echo "Il n'y a rien que vous puissiez utiliser ici."
+	       fi
+	       ;;
+        h ) leverstate=`cat ../logic/leverlogic.ben`
+	       if [ "$leverstate" = "on" ]; then
+		       echo "Vous remarquez un petit terminal allumé..."
+		       sleep 2
+		       echo "Le jeu MasterGuesser y est ouvert !"
+	       else       
+		       echo "Vous observez votre montre, il est 20:12"
+	       fi
+	       ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
