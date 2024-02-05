@@ -58,7 +58,7 @@ while true; do
                 exit
             else
                 if [ "$leverstate2" = "on" ]; then
-                .kroo3.sh
+                ./kroo3.sh
                 else
                 echo "Vous cherchez une ouverture... Pas la moindre. Impossible d'entrer sans commettre une effraction..."
                 fi
