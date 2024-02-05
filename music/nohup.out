@@ -1,32 +1,0 @@
-MPlayer 1.4 (Debian), built with gcc-11 (C) 2000-2019 MPlayer Team
-do_connect: could not connect to socket
-connect: No such file or directory
-Failed to open LIRC support. You will not be able to use your remote control.
-
-Playing masterguesser.mp3.
-libavformat version 58.76.100 (external)
-Audio only file format detected.
-Clip info:
- Title: Retro Platforming
- Artist: FesliyanStudios.com ASCAP IPI 
- Album: FesliyanStudios.com ASCAP IPI 
- Year: 
- Comment: FesliyanStudios.com ASCAP IP
- Track: 1
- Genre: Instrumental
-Load subtitles in ./
-==========================================================================
-Opening audio decoder: [mpg123] MPEG 1.0/2.0/2.5 layers I, II, III
-AUDIO: 44100 Hz, 2 ch, s16le, 320.0 kbit/22.68% (ratio: 40000->176400)
-Selected audio codec: [mpg123] afm: mpg123 (MPEG 1.0/2.0/2.5 layers I, II, III)
-==========================================================================
-AO: [pulse] 44100Hz 2ch s16le (2 bytes per sample)
-Video: no video
-Starting playback...
-A:   0.0 (00.0) of 130.0 (02:10.0) ??,?% [JA:   0.1 (00.0) of 130.0 (02:10.0) ??,?% [JA:   0.2 (00.1) of 130.0 (02:10.0) ??,?% [JA:   0.2 (00.2) of 130.0 (02:10.0)  0.3% [JA:   0.3 (00.3) of 130.0 (02:10.0)  0.3% [JA:   0.4 (00.3) of 130.0 (02:10.0)  0.4% [JA:   0.5 (00.4) of 130.0 (02:10.0)  0.4% [JA:   0.5 (00.5) of 130.0 (02:10.0)  0.4% [JA:   0.6 (00.6) of 130.0 (02:10.0)  0.4% [JA:   0.7 (00.6) of 130.0 (02:10.0)  0.4% [JA:   0.8 (00.7) of 130.0 (02:10.0)  0.4% [JA:   0.8 (00.8) of 130.0 (02:10.0)  0.4% [JA:   0.9 (00.9) of 130.0 (02:10.0)  0.4% [JA:   1.0 (00.9) of 130.0 (02:10.0)  0.5% [JA:   1.1 (01.0) of 130.0 (02:10.0)  0.4% [JA:   1.1 (01.1) of 130.0 (02:10.0)  0.4% [JA:   1.2 (01.1) of 130.0 (02:10.0)  0.4% [JA:   1.3 (01.2) of 130.0 (02:10.0)  0.5% [JA:   1.4 (01.3) of 130.0 (02:10.0)  0.5% [JA:   1.4 (01.4) of 130.0 (02:10.0)  0.5% [JA:   1.5 (01.5) of 130.0 (02:10.0)  0.5% [JA:   1.6 (01.5) of 130.0 (02:10.0)  0.5% [JA:   1.6 (01.6) of 130.0 (02:10.0)  0.5% [JA:   1.7 (01.7) of 130.0 (02:10.0)  0.5% [JA:   1.8 (01.8) of 130.0 (02:10.0)  0.5% [JA:   1.9 (01.8) of 130.0 (02:10.0)  0.5% [JA:   2.0 (01.9) of 130.0 (02:10.0)  0.5% [JA:   2.0 (02.0) of 130.0 (02:10.0)  0.5% [JA:   2.1 (02.1) of 130.0 (02:10.0)  0.5% [JA:   2.2 (02.1) of 130.0 (02:10.0)  0.5% [JA:   2.3 (02.2) of 130.0 (02:10.0)  0.5% [JA:   2.3 (02.3) of 130.0 (02:10.0)  0.5% [JA:   2.4 (02.4) of 130.0 (02:10.0)  0.5% [JA:   2.5 (02.4) of 130.0 (02:10.0)  0.5% [JA:   2.6 (02.5) of 130.0 (02:10.0)  0.5% [JA:   2.6 (02.6) of 130.0 (02:10.0)  0.5% [JA:   2.7 (02.7) of 130.0 (02:10.0)  0.5% [JA:   2.8 (02.7) of 130.0 (02:10.0)  0.5% [J
-
-
-MPlayer interrupted by signal 2 in module: play_audio
-A:   2.9 (02.8) of 130.0 (02:10.0)  0.5% [J
-
-Exiting... (Quit)
