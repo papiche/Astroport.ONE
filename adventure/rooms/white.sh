@@ -20,17 +20,17 @@ echo "est posé là. Eclairé par les rayons du soleil."
 echo
 # Here we're going to check to see if the lever - the only logic we are using in this game - is on or off.
 leverstate=`cat ../logic/leverlogic.ben`
+leverstate2=`cat ../logic/leverlogic2.ben`
             if [ "$leverstate" = "on" ]; then
                 echo "Une poignée est apparue sur la porte de la façade..."
             else
-            leverstate2=`cat ../logic/leverlogic2.ben`
               if [ "$leverstate2" = "on" ]; then
                 echo "Vous voyez une vitre qui peut être cassée avec votre marteau."
-                else
+              else
                 echo "Vous en faites le tour..."
                 echo "Aucune entrée n'est visible."
-                fi
-
+              fi
+            fi
 
 echo
 echo "Pas d'autre chemin praticable que celui d'où vous venez."
