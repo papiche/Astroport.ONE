@@ -366,19 +366,19 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 check available "logo.png" in [./images](./images)
 
 ## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
-### ```/?uplanet=${PLAYER}&salt=${LAT}&pepper=${LON}&g1pub=${PASS}```
+### ```/?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `uplanet` | `email` | **Required** Your EMAIL token |
-| `salt` | `decimal` | **Required** LATITUDE with 2 decimals digits |
-| `pepper` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
+| `zlat` | `decimal` | **Required** LATITUDE with 2 decimals digits |
+| `zlon` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
 | `g1pub` | `string` | **Facultative** choose Umap AstroID PASS |
 
 Create à Umap key (LAT/LON), then a PLAYER TW with GPS as Umap IPNS reference
 This API is used by OSM2IPFS code.
 
-UPlanet Entrance : https://qo-op.com
+* [UPlanet Entrance](https://qo-op.com)
 
 ### ➤ QRCODE (API SandBox)
 ```http
