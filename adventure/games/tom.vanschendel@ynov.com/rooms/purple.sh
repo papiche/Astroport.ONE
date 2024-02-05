@@ -33,7 +33,8 @@ while true; do
         n ) ./brown.sh
             exit ;;
         s ) echo "Si vous continuez à marcher dans la forêt. Vous allez vous perdre. Demi tour." ;;
-        e ) echo "Le chemin à l'est n'est pas accessible, les arbres vous empêche de passer..." ;;
+        e ) ./orange.sh 
+            exit ;;
         w ) echo "Une rivière vous empêche de passer." ;;
         u ) levertwostate=`cat ../logic/leverlogictwo.ben`
             if [ "$levertwostate" = "on" ]; then
