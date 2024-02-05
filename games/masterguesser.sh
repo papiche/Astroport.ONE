@@ -5,6 +5,8 @@ nombre_secret=$(shuf -i 1-100 -n 1)
 
 echo "Bienvenue dans le jeu 'MasterGuesser' !"
 sleep 1
+nohup mplayer $HOME/Astroport.ONE/music/masterguesser.mp3 > /dev/null 2>&1 &
+sleep 1
 echo "Une seule règle, trouver le nombre aléatoire entre 1 et 100 !"
 sleep 1
 
@@ -15,6 +17,7 @@ devine_le_nombre() {
     if [ $guess -eq $nombre_secret ]; then
         echo "Félicitations ! Tu as deviné le nombre secret !"
 	echo "Fin de la session..."
+	kill $!
 	sleep 2
     elif [ $guess -lt $nombre_secret ]; then
         echo "Le nombre est plus grand."
