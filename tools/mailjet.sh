@@ -16,16 +16,13 @@ echo '
 # qo-op
 ############# '$MY_PATH/$ME'
 ########################################################################'
-### PLEASE CHANGE YOUR DOMAIN AND KEY ( OR HELP PAYING TRAFIC ;)
-## THIS IS A FREE LIMITED ACCOUNT. DO NOT EXAGERATE ;)
 [[ ! $1 ]] \
     && echo "MISSING DESTINATION EMAIL" \
     && exit 1
 
 mail="$1" # EMAIL DESTINATAIRE
 
-
-############# USING MAILJET API ###############
+############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
 [[ ! -s ~/.zen/MJ_APIKEY ]] \
     && echo "MISSING ~/.zen/MJ_APIKEY
     PLEASE PROVIDE MAILJET KEY : MJ_APIKEY_PUBLIC= & MJ_APIKEY_PRIVATE" \
