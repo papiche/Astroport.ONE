@@ -23,7 +23,7 @@ levertwostate=`cat ../logic/leverlogictwo.ben`
                 echo "Le levier est en position OFF."
             fi
 echo
-echo "Que faites vous?"
+echo "Que voulez-vous faire? Les commandes sont : n, e, s, w et u."
 
 # In this set of actons lies the logic switch used later in the game.
 # You have to set this switch to reach the endgame.
@@ -42,6 +42,7 @@ while true; do
             else
                 sed -i='' 's/off/on/' ../logic/leverlogictwo.ben
                 echo "Vous relevez le levier en position ON en forcant un peu."
+                echo "Vous entendez un bruit de mécanisme qui se déclenche à l'est."
             fi
         ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w et u..";;

@@ -22,7 +22,7 @@ leverstatetwo=`cat ../logic/leverlogictwo.ben`
                 echo "La porte semble vérouillée... Peut-être qu'il est possible de l'ouvrir avec un levier."
             fi
 echo
-echo "Que faites vous?"
+echo "Que voulez-vous faire? Les commandes sont : n, e, s et w."
 
 # In this set of actons lies the logic switch used later in the game.
 # You have to set this switch to reach the endgame.
