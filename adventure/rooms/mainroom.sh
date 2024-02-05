@@ -25,8 +25,8 @@ echo "Un levier est installé là."
 echo
 echo "À côté, se trouve un vitre renfermant un marteau."
 echo
-leverstate=`cat ../logic/leverlogic2.ben`
-            if [ "$leverstate" = "on" ]; then
+leverstate2=`cat ../logic/leverlogic2.ben`
+            if [ "$leverstate2" = "on" ]; then
                 echo "La vitre est ouverte, vous avez récupéré le marteau."
             else
                 echo "La vitre est fermée, et vous empêche de récupérer le marteau."
@@ -46,8 +46,8 @@ while true; do
             exit ;;
         w ) ./green.sh
             exit ;;
-        u ) leverstate=`cat ../logic/leverlogic2.ben`
-            if [ "$leverstate" = "on" ]; then
+        u ) leverstate2=`cat ../logic/leverlogic2.ben`
+            if [ "$leverstate2" = "on" ]; then
                 echo "La vitre est ouverte, vous avez récupéré le marteau."
             else
                 sed -i='' 's/off/on/' ../logic/leverlogic2.ben
