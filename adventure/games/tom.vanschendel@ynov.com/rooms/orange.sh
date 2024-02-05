@@ -15,8 +15,8 @@ echo "Vous avez suivi le chemin vers l'est."
 echo "Vous tombez nez-à-nez avec une grande porte en métal sur un conteneur."
 
 # Here we tell the player whether the lever is on or off.
-levertwostate=`cat ../logic/leverlogictwo.ben`
-            if [ "$leverstatewo" = "on" ]; then
+leverstatetwo=`cat ../logic/leverlogictwo.ben`
+            if [ "$leverstatetwo" = "on" ]; then
                 echo "La porte est ouverte..."
             else
                 echo "La porte semble vérouillée... Peut-être qu'il est possible de l'ouvrir avec un levier."
