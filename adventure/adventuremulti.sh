@@ -17,7 +17,8 @@ fi
 echo "Sélectionnez un jeu :"
 select GAME in $GAMES; do
     if [ -n "$GAME" ]; then
-        START_SCRIPT="$GAMES_DIR/$GAME/start.sh"
+        cd "$GAMES_DIR/$GAME/rooms"
+        START_SCRIPT="./start.sh"
         
         if [ ! -x "$START_SCRIPT" ]; then
             echo "Le fichier start.sh pour $GAME n'existe pas ou n'est pas exécutable."
