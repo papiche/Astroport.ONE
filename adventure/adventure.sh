@@ -39,7 +39,7 @@ if hash uuidgen 2>/dev/null; then
 else
     cd rooms
 fi
-./end.sh
+./start.sh
 ###################################################################
 if hash uuidgen 2>/dev/null; then
     cd "$homefolder"
