@@ -7,6 +7,7 @@ clear
 # First off, let us reset the game logic. Use this as an example.
 
 sed -i='' 's/on/off/' ../logic/leverlogic.ben
+sed -i='' 's/on/off/' ../logic/leverlogictwo.ben
 
 # Who doen't love ASCII text, right?
 # Next up, let's initialise the Title Art

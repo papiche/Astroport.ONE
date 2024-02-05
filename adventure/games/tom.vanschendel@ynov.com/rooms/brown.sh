@@ -39,7 +39,8 @@ while true; do
     case $nsewuh in
         n ) ./mainroom.sh
             exit ;;
-        s ) echo "Si vous continuez à marcher dans la forêt. Vous allez vous perdre. Demi tour." ;;
+        s ) ./purple.sh
+            exit ;;
         e ) echo "Le chemin qui part à l'Est est plein de boue... Impossble d'aller par là." ;;
         w ) echo "Une rivière vous empêche de passer." ;;
         u ) leverstate=`cat ../logic/leverlogic.ben`
