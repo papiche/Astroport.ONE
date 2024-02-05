@@ -15,7 +15,8 @@ select game in $games; do
         # Assurez-vous que start.sh est exécutable
         chmod +x "$game/start.sh"
         # Exécuter start.sh du jeu sélectionné
-        ./$game/rooms/start.sh
+        cd ./$game/rooms
+        ./start.sh
         break
     else
         echo "Choix invalide. Veuillez choisir un numéro de jeu valide."

@@ -50,6 +50,8 @@ echo "Au nord un chemin remonte, au sud un passage descend, à l'est, la bergeri
 echo
 echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u, d et h."
 
+echo $PWD
+
 # Now we wait for their response - and send them somewhere accordingly.
 while true; do
     read -p "> " nsewuh
@@ -58,7 +60,7 @@ while true; do
             echo "Appuyez sur Entrée pour continuer..."
             read -r
               # Exécutez riddle.sh après avoir ramassé l'écran
-            ./edouard.abgrall@ynov.com/rooms/riddle.sh  
+            ./riddle.sh  
             ;; 
         n ) ./white.sh
             exit ;;
