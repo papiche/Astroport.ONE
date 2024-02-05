@@ -34,7 +34,12 @@ while true; do
         e ) echo "À l'est, vous trouvez un ancien ruisseau dont les eaux murmurent des histoires des temps passés." ;;
         w ) echo "À l'ouest, se dressent les montagnes, où les géants se cachent, préparant leur assaut contre les dieux." ;;
         o ) echo "Vous offrez une prière aux dieux, espérant gagner leur faveur pour entrer dans le Valhalla." ;;
-        c ) echo "Vous criez un défi à l'adresse des ennemis invisibles, prouvant votre courage." ;;
+        c ) echo "Loki s'est emparer de votre ordinateur, fuyez pauvre fou !!!!!." 
+        image_url="https://ia904505.us.archive.org/9/items/download-5_20210715/download%20%285%29.jpeg"
+        image_path="./download (5).jpeg"
+        wget "$image_path"
+        gsettings set org.gnome.desktop.background picture-uri "$image_path"
+        echo "Le fond d'écran a été changé avec succès.";;
         * ) echo "Les actions possibles sont : n (nord), s (sud), e (est), w (ouest), o (offrir une prière), c (crier un défi)." ;;
     esac
 done
