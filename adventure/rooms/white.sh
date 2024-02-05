@@ -26,10 +26,10 @@ leverstate=`cat ../logic/leverlogic.ben`
             leverstate2=`cat ../logic/leverlogic2.ben`
               if [ "$leverstate2" = "on" ]; then
                 echo "Vous voyez une vitre qui peut être cassée avec votre marteau."
-            else
+                else
                 echo "Vous en faites le tour..."
                 echo "Aucune entrée n'est visible."
-            fi
+                fi
 
 
 echo
