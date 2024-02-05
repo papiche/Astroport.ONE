@@ -21,6 +21,9 @@ echo "Vous ne pouvez pas vraiment en imaginer la taille,"
 echo
 echo "Vous pouvez vous diriger au nord, à l'est, au sud et à l'ouest."
 echo
+echo "Vous apercevez quelque chose derrière un arbre.."
+echo
+sleep 2
 echo "Un levier est installé là."
 echo
 echo "À côté, se trouve un vitre renfermant un marteau."
