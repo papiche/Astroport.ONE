@@ -21,15 +21,15 @@ echo "Vous ne pouvez pas vraiment en imaginer la taille,"
 echo
 echo "Vous pouvez vous diriger au nord, à l'est, au sud et à l'ouest."
 echo
-echo "Un terminal informatique est installé là."
+echo "Un levier est installé là."
 echo
-echo "Il ressemble à une grosse calculatrice"
+echo "À côté, se trouve un vitre renfermant un marteau."
 echo
 leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
-                echo "'VISA SVP' clignote sur l'écran..."
+                echo "La vitre est ouverte, vous avez récupéré le marteau."
             else
-                echo "La machine affiche l'heure : 20:12"
+                echo "La vitre est fermée, et vous empêche de récupérer le marteau."
             fi
 echo
 echo "Que voulez-vous faire ?"
@@ -51,13 +51,13 @@ while true; do
                 echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
                 sed -i='' 's/off/on/' ../logic/leverlogic.ben
-                echo "Vous pianotez sur l'appareil..."
+                echo "Vous tirez sur le levier, celui-ci bloque un peu.."
                 sleep 3
-                echo "A moment où vous touchez la touche '#' L'écran se met à clignoter..."
-                echo "Puis le message 'ACTIVATION STATION' défile sur les caractères lumineux."
+                echo "Après avoir forcé, le levier s'est abaissé."
+                echo "Un grincement strident se fait entendre, la vitre semble alors s'être ouverte."
             fi
         ;;
-        h ) echo "Le terminal comporte un clavier numérique. Un petit écran.. Il est réalisé avec un mini ordinateur Raspberry Pi. Il porte l'adresse G1TAG [https://g1sms.fr]" ;;
+        h ) echo "Le levier semble rouillé et installé là depuis longtemps. La vitre à côté est en bon état, et suffisamment propre pour apercevoir le marteau qu'elle renferme." ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
