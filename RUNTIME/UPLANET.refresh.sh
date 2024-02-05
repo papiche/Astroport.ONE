@@ -344,15 +344,15 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
         SECLAT="${LAT::-1}"
         SECLON="${LON::-1}"
         SECTOR="_${SECLAT}_${SECLON}"
-        SECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+        TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
 
         PHONEBOOTH="${G1PUB::30}"
         cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
         | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
                   -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
                   -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                  -e "s~_ZONENS_~${UMAPNS}~g" \
-                  -e "s~_UPZONENS_~${SECTORNS}~g" \
+                  -e "s~_ZONENS_~${TODATENS}~g" \
+                  -e "s~_UPZONENS_~${TODATESECTORNS}~g" \
                   -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
                   -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${LAT}\&southWestLon=${LON}\&deg=0.01~g" \

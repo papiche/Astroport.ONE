@@ -102,6 +102,7 @@ while true; do
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do
 
+        ## ex: /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u)
         echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
 
