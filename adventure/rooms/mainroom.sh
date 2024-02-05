@@ -48,7 +48,7 @@ while true; do
             exit ;;
         u ) leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
-                echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
+                echo "La vitre est ouverte, vous avez récupéré le marteau."
             else
                 sed -i='' 's/off/on/' ../logic/leverlogic.ben
                 echo "Vous tirez sur le levier, celui-ci bloque un peu.."
