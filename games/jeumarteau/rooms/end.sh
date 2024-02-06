@@ -22,9 +22,26 @@ sleep 4
 echo "Vous venez de visiter la forêt où s'est posé Astroport ONE."
 sleep 3
 echo
-echo "MERCI"
+echo "Une oeuvre habitable. Un jardin sur sol vivant. Un progamme pair à pair interplanétaire"
+sleep 4
 echo
-sleep 3
+echo "Les terraformeurs"
+echo "En quête de la meilleure façon de vivre sur le vaisseau spatial Terre..."
+echo
+sleep 5
+echo "Vous aussi ouvrez votre Ambassade."
+echo "Activez le JEu. Invitez vos visiteurs à rêver d'un monde meilleur"
+echo "Reproduisez, améliorez, partagez les plans pour y parvenir."
+echo
+sleep 7
+echo "Il est l'heure de laisser derrière vous la civilisation thermo industrielle."
+echo "Gagnez en autonomie, en convivialité, en optimisme, en conscience."
+echo
+sleep 5
+echo
+echo "EMBARQUEZ VERS LE FUTUR"
+echo
+sleep 9
 echo
 file1="../art/bigfinish.ben"
 while IFS= read -r line
@@ -45,7 +62,7 @@ echo
 echo "Merci d'avoir joué le jeu"
 echo "Je suis heureux de vous avoir fait partager le rêve des astronautes terraformeurs."
 echo
-echo "Le futur ne se prédit pas, il se construit."
+echo "Le futur ne se prédit pas, il se construit. Il se vit."
 echo
 echo "                                                                - @Fred"
 echo
