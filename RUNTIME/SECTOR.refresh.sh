@@ -244,8 +244,8 @@ for SECTOR in ${SECTORS[@]}; do
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
         ### APPLY ON APP MODEL TODATE REGIONNS LINKING
-        REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
-        REGLON=$(echo ${LON} | cut -d '.' -f 1)
+        REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
+        REGLON=$(echo ${SLON} | cut -d '.' -f 1)
         REGION="_${REGLAT}_${REGLON}"
         TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
 
