@@ -49,11 +49,12 @@ while true; do
         u ) if [ "$leverstate" = "on" ]; then
                 echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
-                sed -i 's/off/on/' $MY_PATH/../logic/leverlogic.ben
+                sed -i -e '${/^$/d;}' -e 's/off/on/' $MY_PATH/../logic/leverlogic.ben
                 echo "Vous pianotez sur l'appareil..."
                 echo "A moment où vous touchez la touche '#' L'écran se met à clignoter..."
                 echo "Puis le message 'ACTIVATION STATION' défile sur les caractères lumineux."
             fi
+            leverstate=$(cat $MY_PATH/../logic/leverlogic.ben)
         ;;
         h ) echo "Le terminal comporte un clavier numérique. Un petit écran.. Il est réalisé avec un mini ordinateur Raspberry Pi. Il porte l'adresse G1TAG [https://g1sms.fr]" ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
