@@ -20,11 +20,20 @@ echo "est posé là. Eclairé par les rayons du soleil."
 echo
 # Here we're going to check to see if the lever - the only logic we are using in this game - is on or off.
 leverstate=`cat ../logic/leverlogic.ben`
+leverstate2=`cat ../logic/leverlogic2.ben`
             if [ "$leverstate" = "on" ]; then
                 echo "Une poignée est apparue sur la porte de la façade..."
             else
+<<<<<<< HEAD
+=======
+
+              if [ "$leverstate2" = "on" ]; then
+                echo "Vous voyez une vitre qui peut être cassée avec votre marteau."
+              else
+>>>>>>> origin
                 echo "Vous en faites le tour..."
                 echo "Aucune entrée n'est visible."
+              fi
             fi
 
 echo
@@ -40,21 +49,41 @@ while true; do
         n ) echo "Vous vous aventurez dans la forêt plus au nord. Sans boussole, vous allez vous perdre rapidement... " ;;
         s ) ./mainroom.sh
             exit ;;
+<<<<<<< HEAD
         e ) echo "Une corniche surplombe un ruisseau qui coule dans le fond de la ravine. Impossible de passer sans équipement" ;;
         w ) echo "Vous voilà face à un Jardin luxuriant. Une cloture électrique le délimite et en empêche l'accès." ;;
+=======
+        e ) echo " Les kaniars vous encercle en nombre et vous tabasse ... " ;;
+        w ) echo "Vous courrez sans pouvoir trouver une échappatoire. Les kaniars vous encercle en nombre et vous tabasse ..." ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w ";;
+>>>>>>> origin
         h )  echo "Vous voyez à l'interieur de la Station une video en cours de projection..."
                 sleep 2
               xdg-open "https://www.youtube.com/embed/Yk-WRXKysXM"
             ;;
         u ) leverstate=`cat ../logic/leverlogic.ben`
+<<<<<<< HEAD
+=======
+            leverstate2=`cat ../logic/leverlogic2.ben`
+>>>>>>> origin
             if [ "$leverstate" = "on" ]; then
                 ./kroo.sh
                 exit
             else
+<<<<<<< HEAD
                 echo "Vous cherchez une ouverture... Pas la moindre. Impossible d'entrer sans commettre une effraction..."
             fi
             ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
+=======
+                if [ "$leverstate2" = "on" ]; then
+                ./kroo3.sh
+                else
+                echo "Vous cherchez une ouverture... Pas la moindre. Impossible d'entrer sans commettre une effraction..."
+                fi
+            fi
+            ;;
+>>>>>>> origin
     esac
 done
 
