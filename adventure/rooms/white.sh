@@ -20,11 +20,17 @@ echo "Il vous encercle dans une ruelle sans issu"
 echo
 # Here we're going to check to see if the lever - the only logic we are using in this game - is on or off.
 leverstate=`cat ../logic/leverlogic.ben`
+leverstate2=`cat ../logic/leverlogic2.ben`
             if [ "$leverstate" = "on" ]; then
                 echo "Une poignée est apparue sur la porte de la façade..."
             else
-                echo "Vous êtes pris au piège"
+
+              if [ "$leverstate2" = "on" ]; then
+                echo "Vous voyez une vitre qui peut être cassée avec votre marteau."
+              else
+                echo "Vous en faites le tour..."
                 echo "Aucune entrée n'est visible."
+              fi
             fi
 echo
 echo "Pas d'autre chemin praticable que celui d'où vous venez."
@@ -46,6 +52,23 @@ while true; do
         e ) echo " Les kaniars vous encercle en nombre et vous tabasse ... " ;;
         w ) echo "Vous courrez sans pouvoir trouver une échappatoire. Les kaniars vous encercle en nombre et vous tabasse ..." ;;
         * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w ";;
+        h )  echo "Vous voyez à l'interieur de la Station une video en cours de projection..."
+                sleep 2
+              xdg-open "https://www.youtube.com/embed/Yk-WRXKysXM"
+            ;;
+        u ) leverstate=`cat ../logic/leverlogic.ben`
+            leverstate2=`cat ../logic/leverlogic2.ben`
+            if [ "$leverstate" = "on" ]; then
+                ./kroo.sh
+                exit
+            else
+                if [ "$leverstate2" = "on" ]; then
+                ./kroo3.sh
+                else
+                echo "Vous cherchez une ouverture... Pas la moindre. Impossible d'entrer sans commettre une effraction..."
+                fi
+            fi
+            ;;
     esac
 done
 

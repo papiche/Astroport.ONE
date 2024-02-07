@@ -7,8 +7,9 @@ clear
 # First off, let us reset the game logic. Use this as an example.
 
 sed -i='' 's/on/off/' ../logic/leverlogic.ben
+sed -i='' 's/on/off/' ../logic/leverlogic2.ben
 
-# Who doen't love ASCII text, right?
+# Who doesn't love ASCII text, right?
 # Next up, let's initialise the Title Art
 file1="../art/titleart.ben"
 while IFS= read -r line
@@ -26,7 +27,7 @@ do
 done <"$file2"
 read -p "Pressez sur [ENTER] pour démarrer..."
 
-#Okay, now that the introduction is out of the way, we can start the first room!
+# Okay, now that the introduction is out of the way, we can start the first room!
 clear
 file1="../art/titleart.ben"
 while IFS= read -r line
@@ -47,15 +48,23 @@ echo
 echo "Vous pouvez vous diriger selon les points cardinaux."
 echo "Au nord vous diriger vers un taxi, au sud vers un bus, à l'est, une trotinette, à l'ouest, vous marcher jusquà trouver de l'aide"
 echo
-echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u et h."
+
+echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u, d et h."
+
 # Now we wait for their response - and send them somewhere accordingly.
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
+        d ) echo "Vous récupérez un écran portatif interactif par terre."
+            echo "Appuyez sur Entrée pour continuer..."
+            read -r
+              # Exécutez riddle.sh après avoir ramassé l'écran
+            ./riddle.sh  
+            ;; 
         n ) ./white.sh
-            exit ;;       # These lines will take the player to a new room - a new script file.
+            exit ;;
         s ) ./brown.sh
-            exit ;;       # Be sure to include 'exit' otherwise the game won't quit properly!
+            exit ;;
         e ) ./red.sh
             exit ;;
         w ) ./green.sh
@@ -66,6 +75,4 @@ while true; do
 
     esac
 done
-
-esac
 exit

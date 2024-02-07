@@ -1,5 +1,6 @@
 #!/bin/bash
-
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 hasError=0
 
 for i in gcc python3-pip python3-setuptools libpq-dev python3-dev python3-wheel; do
@@ -13,6 +14,7 @@ done
 pip3 install --break-system-packages -r requirements.txt || hasError=1
 chmod u+x jaklis.py
 sudo ln -sf $(realpath jaklis.py) /usr/local/bin/jaklis || hasError=1
+sudo cp ${MY_PATH}/.env /usr/local/bin/ || hasError=1
 
 if [[ hasError -eq 0 ]]; then
     echo "Setup done. You can use 'jaklis' command, try it."

@@ -178,6 +178,11 @@ for PLAYER in ${PLAYERONE[@]}; do
 
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
 
+        ## TODATENS ################## UPDATE GPS Tiddler #############
+        TODATENS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
+        echo "TODAY UMAPNS : ${myIPFS}/ipns/${TODATENS}"
+        sed -i "s~${UMAPNS}~${TODATENS}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+
             ## STORE IN PLAYER CACHE
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
 
@@ -378,7 +383,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
         cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPNS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='${TODATENS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
 
     fi
 

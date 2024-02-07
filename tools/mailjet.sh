@@ -44,7 +44,7 @@ YUSER=$(echo ${mail} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
 LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
 CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
 YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-pseudo="/ipns/${CLYUSER}${YOMAIN}.${myDOMAIN}"
+pseudo="${CLYUSER}${YOMAIN}.${myDOMAIN}"
 #~ echo "PSEUDO=$pseudo"
 
 messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
@@ -79,7 +79,7 @@ json_payload='{
         {
             "From": {
                 "Email": "'${SENDER_EMAIL}'",
-                "Name": "UPlanet"
+                "Name": "UPlanet Keeper"
             },
             "To": [
                 {
@@ -89,7 +89,7 @@ json_payload='{
             ],
             "Bcc": [
                 {
-                    "Email": "support@g1sms.fr",
+                    "Email": "'${SENDER_EMAIL}'",
                     "Name": "SUPPORT"
                 }
             ],
