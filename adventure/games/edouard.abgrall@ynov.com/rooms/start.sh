@@ -7,7 +7,6 @@ clear
 # First off, let us reset the game logic. Use this as an example.
 
 sed -i='' 's/on/off/' ../logic/leverlogic.ben
-sed -i='' 's/on/off/' ../logic/leverlogic2.ben
 
 # Who doesn't love ASCII text, right?
 # Next up, let's initialise the Title Art
@@ -50,6 +49,8 @@ echo "Vous pouvez vous diriger selon les points cardinaux."
 echo "Au nord un chemin remonte, au sud un passage descend, à l'est, la bergerie, à l'ouest, des traces d'animaux"
 echo
 echo "Que voulez-vous faire? Les commandes sont : n, e, s, w, u, d et h."
+
+echo $PWD
 
 # Now we wait for their response - and send them somewhere accordingly.
 while true; do
