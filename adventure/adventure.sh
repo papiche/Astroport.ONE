@@ -18,29 +18,55 @@ ME="${0##*/}"
 ### CREER VOTRE PROPRE VERSION DU JEU
 ### CHOISIR SCENARIO
 
+## Most methods are breaking with games names containing SPACE !
+GAMES=$(find "$GAMES_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+GAMES=$(ls $MY_PATH/games/)
+GAMES=($(ls $MY_PATH/games/))
+
+## cd
+cd games
+GAMES=(".." *) #create table
+cd - ## go back
+
+select game in "${GAMES[@]}"; do
+
+    MY_GAME="$MY_PATH/games/$game"
+    echo "SELECTION: "${MY_GAME}
+
+    if [[ -x ${MY_GAME}/rooms/start.sh ]]; then
+            sleep 1
+            echo "Charging game..."
+            sleep 1
+            break
+    else
+            echo "ERROR - invalid game - choose another one - "
+    fi
+
+done
+
+
 ###################################################################
 if hash uuidgen 2>/dev/null; then
     homefolder=$(pwd)
     newplayer=$(uuidgen)
     ## Copy Player Game Files
     mkdir -p $HOME/.zen/adventure/$newplayer
-    cp -r $MY_PATH/rooms $HOME/.zen/adventure/$newplayer/rooms
-    cp -r $MY_PATH/art $HOME/.zen/adventure/$newplayer/art
-    cp -r $MY_PATH/script $HOME/.zen/adventure/$newplayer/script
-    cp -r $MY_PATH/logic $HOME/.zen/adventure/$newplayer/logic
+    cp -r ${MY_GAME}/rooms $HOME/.zen/adventure/$newplayer/rooms
+    cp -r ${MY_GAME}/art $HOME/.zen/adventure/$newplayer/art
+    cp -r ${MY_GAME}/script $HOME/.zen/adventure/$newplayer/script
+    cp -r ${MY_GAME}/logic $HOME/.zen/adventure/$newplayer/logic
 fi
 ###################################################################
 echo "Loading..."
 echo
-sleep 4
+sleep 2
 ###################################################################
 if hash uuidgen 2>/dev/null; then
     cd $HOME/.zen/adventure/$newplayer/rooms
-else
-    cd rooms
+    ./start.sh
 fi
-./start.sh
 ###################################################################
+# cleaning game files
 if hash uuidgen 2>/dev/null; then
     cd "$homefolder"
     rm -r $HOME/.zen/adventure/$newplayer
