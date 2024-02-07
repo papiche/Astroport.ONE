@@ -10,27 +10,27 @@ echo
 
 # Everybody clap your hands. I mean, here is the script.
 sleep 1
-echo "Une personne vous aide et vous propose de vous déposer directment à l'aéroport"
+echo "Vous atteignez une zone remplie de jeunes épineux"
+echo "Vous reconnaissez des prunus, des aubépines."
+echo "Quelques génévriers dont vous remarquez les baies noires."
+echo "Un peu plus loin ce sont les ronces."
 echo
-echo "Vous entrez dans à l'intérieur de l'aéroport, et allez acheter un billet pour l'île Maurice."
-echo " L'hotesse vous propose un billet à 79 € alors que vous n'avez que 50 €."
-
+echo "Plus vous progressez plus vous souffrez des épines. Existe-t-il un passage? Qui sait."
+echo
 echo "Que voulez vous faire?"
-echo "Plusieurs choix s'offre à vous."
-echo "(n) Faire le mandian"
-echo "(e) Respawn"
-echo "(w) Négocier"
-echo "(s) Passer en force"
+
 # And here's what you could have won...
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "Vous récolter les sous manquants, mais la douanes vous arrêtes et vous expulse" ;;
-        s ) echo "La douanes vous arrêtes et vous expulse" ;;
+        n ) echo "Un énorme roncier vous barre la route. Ca ne passe pas." ;;
+        s ) echo "Vers le sud, aucun passage en vue." ;;
         e ) ./mainroom.sh
             exit ;;
-        w ) echo "Elle vous propose un billet à 55€" ;;
-        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w ";;
+        w ) echo "Vous voyez le même paysage à perte de vue" ;;
+        u ) echo "Vous cueillez une baie de genèvrier. Vous la portez à la bouche. Croquez. La saveur est délicieuse. La force de la plante vous envahi." ;;
+        h ) echo "Ce type de terrain est caractéritique des zones déboisées. La nature sort ses épines pour protéger les arbres qui poussent en dessous." ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
 

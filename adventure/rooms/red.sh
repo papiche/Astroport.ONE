@@ -10,30 +10,30 @@ echo
 
 # Set up the script for this room. It's a simple one!
 sleep 1
-echo "Vous prenez une trotinette électrique."
-echo "Vous traversez toute la ville "
-echo "A la sortie de la ville votre trotinette commence à manquer de puissance."
+echo "Vous entrez dans l'ancienne bergerie."
+echo "Un canapé mauve est installé au milieu de l'espace"
+echo "Une bache transparente vous sépare du ciel."
 echo
-echo "La batterie se vide."
-echo "Pour joindre l'aéroport vous devez vous rendre dans l'autre ville Sainte Marie à 30 min"
+echo "Vous êtes dans une serre."
+echo "Une seule sortie. A l'Ouest, d'où vous venez."
 echo
 echo "Que voulez-vous faire?"
-echo "Plusieurs choix s'offre à vous."
-echo "(n) Payer un taxi"
-echo "(e) Faire du stop"
-echo "(w) Respawn"
-echo "(s) Recharger la trotinette"
 
 # And the choices go here.
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "Le  taximan vous taxe tous votre argent et vous dépose à l'aéroport" ;;
-        s ) echo "L'emplacement de recharge vous fais attendre 30 min." ;;
-        e ) echo "Un Réunionnais s'arrête et vous dépose à l'aéroport." ;;
+        n ) echo "Une fente dans le mur vous laisse observer une carcasse de voiture. Une vieille 2cv. Un grillage vous empêche de passer." ;;
+        s ) echo "L'emplacement d'un grand feu se trouve la. Il ne reste que de la cendre." ;;
+        e ) echo "Une autre pièce remplie de gravats et d'éboulis se trouve devant vous. Impossible d'y accéder." ;;
         w ) ./mainroom.sh
             exit ;;
-        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w ";;
+        u ) echo "Vous vous asseyez dans le canapé. Vous vous sentez immédiatement happé par un nuage."
+              sleep 2
+              xdg-open "https://www.copylaradio.com/blog/blog-1/post/le-pas-a-pas-qui-libere-du-grand-mechant-cloud-36#scrollTop=0"
+              ;;
+        h ) echo "Aucun détail particulier si ce n'est une tache sur le sofa." ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
 

@@ -11,13 +11,13 @@ sleep 1
 
 # Here's this room's script.
 
-echo "Sur la direction du sud, votre Bus vous amène à Saint Pierre."
-echo "Chance pour vous, le voyage vous à couter 2€ uniquement et il vous reste 48€."
-echo "En plus un deuxième Aéroport ce trouve à Saint Pierre"
+echo "Sur la direction du sud, vous traversez une zone plus sombre et humide."
+echo "Le sol est glissant à cause de l'argile qui colle sous vos bottes"
+echo "Vous finissez par croiser un chemin qui traverse la forêt d'Est en Ouest"
 echo
-echo "Vous arrêter un passant pour lui demander ou aller."
+echo "Un terminal informatique est installé là."
 echo
-echo "Il vous indique que ou se trouve l'aéroport. Vous devait vous diriger vers PierreFonds."
+echo "Il ressemble à une grosse calculatrice"
 
 
 # Here we tell the player whether the lever is on or off.
@@ -25,14 +25,10 @@ leverstate=`cat ../logic/leverlogic.ben`
             if [ "$leverstate" = "on" ]; then
                 echo "'VISA SVP' clignote sur l'écran..."
             else
-                echo "Vous avez faim"
+                echo "La machine affiche l'heure : 20:12"
             fi
 echo
-echo "Plusieurs choix s'offre à vous."
-echo "(n) Respawn"
-echo "(e) Faire du stop"
-echo "(w) Payer un taxi"
-echo "(s) Prendre un autre bus"
+echo "Il est tard pour explorer le chemin à pied, vous devriez retourner d'où vous venez."
 echo
 echo "Que faites vous?"
 
@@ -43,13 +39,24 @@ while true; do
     case $nsewuh in
         n ) ./mainroom.sh
             exit ;;
-        s ) echo "Vous dépenser 2€ et le bus vous dépose à 30 min de l'aéroport ..." ;;
-        e ) echo "Un Réunionnais s'arrête et vous dépose à l'aéroport" ;;
-        w ) echo "Le  taximan vous taxe tous votre argent et ne vous redépose à Saint Denis car vous ne l'avez pas indiquer la bonne aéroport" ;;
-        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w ";;
+        s ) echo "Si vous continuez à marcher dans la forêt. Vous allez vous perdre. Demi tour." ;;
+        e ) echo "Le chemin qui part à l'Est est plein de boue... Impossble d'aller par là." ;;
+        w ) echo "Une rivière vous empêche de passer." ;;
+        u ) leverstate=`cat ../logic/leverlogic.ben`
+            if [ "$leverstate" = "on" ]; then
+                echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
+            else
+                sed -i='' 's/off/on/' ../logic/leverlogic.ben
+                echo "Vous pianotez sur l'appareil..."
+                sleep 3
+                echo "A moment où vous touchez la touche '#' L'écran se met à clignoter..."
+                echo "Puis le message 'ACTIVATION STATION' défile sur les caractères lumineux."
+            fi
+        ;;
+        h ) echo "Le terminal comporte un clavier numérique. Un petit écran.. Il est réalisé avec un mini ordinateur Raspberry Pi. Il porte l'adresse G1TAG [https://g1sms.fr]" ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
 
 esac
 exit
-
