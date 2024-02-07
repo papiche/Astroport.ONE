@@ -44,7 +44,6 @@ select game in "${GAMES[@]}"; do
 
 done
 
-
 ###################################################################
 if hash uuidgen 2>/dev/null; then
     homefolder=$(pwd)
@@ -55,6 +54,9 @@ if hash uuidgen 2>/dev/null; then
     cp -r ${MY_GAME}/art $HOME/.zen/adventure/$newplayer/art
     cp -r ${MY_GAME}/script $HOME/.zen/adventure/$newplayer/script
     cp -r ${MY_GAME}/logic $HOME/.zen/adventure/$newplayer/logic
+else
+    echo "missing uuidgen. EXIT"
+    exit 1
 fi
 ###################################################################
 echo "Loading..."
