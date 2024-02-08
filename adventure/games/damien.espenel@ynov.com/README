@@ -1,0 +1,10 @@
+Created by Damien Espenel
+
+mail : damien.espenel@ynov.com
+
+dépendance : mplayer (installé par le script d'installation)
+
+jeux :
+- masterguesser - génère un nombre aléatoire entre 1 et 100, le joueur doit trouver ce nombre, aucune limite de tentative, s'arrête après que le joueur ait trouvé le nombre.
+
+
