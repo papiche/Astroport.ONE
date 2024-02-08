@@ -71,14 +71,12 @@ for SECTOR in ${SECTORS[@]}; do
 
         ###################### SPATIO TEMPORAL KEYS
         ## YESTERDATE ###############
-        YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}"
         ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
         YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
         echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
 
         ## TODATE #########################################
-        TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
         ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
         TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)

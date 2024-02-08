@@ -312,6 +312,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
+        ## TODATE #########################################
+        TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
+
 ###########
         ## GET OLD16
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MIZ.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
@@ -550,9 +553,9 @@ echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROF
 ### SEND AstroID and ZenCard to EMAIL
 (
 echo "<html><body><h1>UPlanet : ZenCard</h1>
-This is your ZenCard : your public key (your flag)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
+- Carte de visite, RIB et TW -" > ~/.zen/tmp/${MOATS}/ZenCard.txt
 echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
-<br>it contains you Ẑen and TW address
+<h3>Enregistrez l'adresse de votre <a href='${myIPFS}/ipns/${ASTROTW}'>TW</a> dans vos favoris.</h3>
 <br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.txt
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCard"
@@ -562,16 +565,15 @@ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCa
 
 echo "<html><body>
 <h1>UPlanet : AstroID ($PASS)</h1>
-This is your AstroID : your private key (your ring)" > ~/.zen/tmp/${MOATS}/AstroID.txt
+- Clef et coffre -" > ~/.zen/tmp/${MOATS}/AstroID.txt
 echo "
-<br>You own one of the 'Rings of the Lords' on <a href='https://qo-op.com'>Uplanet</a>  0.1° SECTOR : ${SECTOR}
-<br>it is forged from SECRET1=$SALT SECRET2=$PEPPER then secured by PIN : $PASS
+<br>Permet l'accès à <a href='https://qo-op.com'>Uplanet</a>
+<br>contient SECRET1=$SALT SECRET2=$PEPPER sécurisé avec PIN=$PASS
 <br>
-<br>Your ASTROPORT STATION is <a href='${myAPI}'>NODE#${IPFSNODEID}</a>
-" >> ~/.zen/tmp/${MOATS}/AstroID.txt
-echo "<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
+<h2>ASTROPORT STATION is <a href='${myAPI}'>NODE#${IPFSNODEID}</a> : </h2>
+<h3> * 0.1° <a href='${myIPFS}/ipns/${TODATESECTORNS}'>SECTEUR</a> : ${SECTOR} </h3>
+<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
 <br>
-<br>Print it and delete from TW to keep it secure.
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.txt
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.txt "AstroID"

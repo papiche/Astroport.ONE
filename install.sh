@@ -77,7 +77,7 @@ for i in cmatrix cowsay; do
     fi
 done
 
-if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
+if [[ $(which X 2>/dev/null) ]]; then
 echo "#############################################"
 echo "######### INSTALL DESKTOP TOOLS  ######"
 echo "#############################################"
@@ -104,7 +104,7 @@ echo "######### INSTALL NODEJS & TIDDLYWIKI ############"
 echo "#############################################"
 ##########################################################
 sudo npm install -g tiddlywiki
-[[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log && continue
+[[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log
 
 #~ echo "#############################################"
 #~ echo "######### PATIENCE #################"
