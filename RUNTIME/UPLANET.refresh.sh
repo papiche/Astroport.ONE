@@ -78,7 +78,7 @@ mkdir ~/.zen/tmp/${MOATS}
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         ## IPFS GET YESTERDATENS
         mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-        ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
+        ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -86,7 +86,8 @@ mkdir ~/.zen/tmp/${MOATS}
         [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
             && echo ">>> INFO - INTIALIZE UMAP FORMAT - NEW UMAP KEY -" \
             && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN
+            && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN \
+            && echo ${MOATS} > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats
 
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
         mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
@@ -98,7 +99,6 @@ rm -f ~/.zen/tmp/${MOATS}/${UMAP}/z*.html 2>/dev/null
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
-
  # ++++++++++++++++++++ - - - - ADAPT TO NODE TREATMENT TIME
                 ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
                 # ZMOATS SHOULD BE MORE THAT 5 HOURS.
@@ -109,19 +109,6 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
                 minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
                 seconds=$((DIFF_SECONDS % 60))
                 echo "UMAP DATA is ${hours} hours ${minutes} minutes ${seconds} seconds "
-
-                # IF LESS THAN 5 HOURS
-                if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
-                    echo "GETTING YESTERDAY UMAP.refresher"
-                    YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/${LAT}_${LON}/UMAP.refresher | head -n 1)
-                    ## GET UMAP.refresher from PREVIOUS _chain ...
-                    TODAY=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher | head -n 1)
-                    echo "TODAY : ${TODAY}"
-                    echo "YESTERDAY : ${YESTERDAY}"
-                    echo "------------------------------------------------->>>>>>>>>>>>>>>>"
-                    continue
-                fi
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ########################################################
         ## NODE  SELECTION in UMAP.refresher
@@ -142,8 +129,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
         [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
         ## IF NOT UPDATED FOR TOO LONG
-        [ ${DIFF_SECONDS} -gt 100800 ] \
-            && echo "More than 28H update" \
+        [ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) ] \
+            && echo "More than 26H update - BOOSTRAP 0 ACTION -" \
             && ACTINGNODE=${STRAPS[0]}
 
         echo "* ACTINGNODE=${ACTINGNODE}"

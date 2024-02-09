@@ -121,8 +121,8 @@ myHName() {
 }
 
 zIp() {
-    zip=$(cat ~/.zen/♥Box 2>/dev/null | head -n 1 )
-    [ -n "$zip" ] && echo "$zip" || false
+    zipit=$(cat ~/.zen/♥Box 2>/dev/null | head -n 1 )
+    [ -n "$zipit" ] && echo "$zipit" || false
 }
 
 UPlanetSharedSecret() {

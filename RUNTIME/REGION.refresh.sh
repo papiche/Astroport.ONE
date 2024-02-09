@@ -83,7 +83,7 @@ for REGION in ${REGIONS[@]}; do
     TODATEREGIONNS=$(ipfs key import ${TODATE}${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ##############################################################
     ## GET from IPNS
-            ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
+            ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS
@@ -125,8 +125,6 @@ for REGION in ${REGIONS[@]}; do
             cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
                 ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.JOURNAL.md
 
-            rm ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid 2>/dev/null ## TODO REMOVE
-
             ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
             echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
                         > ~/.zen/tmp/${MOATS}/${REGION}/Ask.IA._${REGLAT}_${REGLON}.redir.html
@@ -134,13 +132,12 @@ for REGION in ${REGIONS[@]}; do
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
+            echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
-    echo "SHOW TROPHY" > ~/.zen/tmp/${MOATS}/${REGION}/TODO
+            rm ~/.zen/tmp/${MOATS}/${REGION}/TODO
+            rm ~/.zen/tmp/${MOATS}/${REGION}/N_*
 
-rm ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID 2>/dev/null  ## TODO REMOVE
-
-            echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
+            echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_${TOTL}
 
             echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${RWEEKCID}'\" />" \
                         > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.redir.html

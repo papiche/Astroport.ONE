@@ -86,7 +86,7 @@ for SECTOR in ${SECTORS[@]}; do
             start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE YESTERDATE SECTORNS
-    ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
+    ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             end=`date +%s`
             echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
@@ -105,14 +105,7 @@ for SECTOR in ${SECTORS[@]}; do
     minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
     seconds=$((DIFF_SECONDS % 60))
     echo "SECTOR DATA is ${hours} hours ${minutes} minutes ${seconds} seconds OLD"
-    if [ ${DIFF_SECONDS} -lt $(( 5 * 60 * 60 )) ]; then
-                    echo "GETTING YESTERDAY SECTOR.refresher"
-                    YESTERDAY=$(ipfs cat /ipfs/${ZCHAIN}/CHAIN/SECTOR.refresher | head -n 1)
-                    ## GET UMAP.refresher from PREVIOUS _chain ...
-                    echo "TODAY : $(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher | head -n 1)"
-                    echo "YESTERDAY : ${YESTERDAY}"
-                    continue
-    fi
+
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## CONTROL ACTINGNODE SWAPPING
     UREFRESH="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher"
@@ -131,9 +124,9 @@ for SECTOR in ${SECTORS[@]}; do
     ## IN CASE OLD BOOSTRAP IS STILL IN CHARGE - CHOOSE 1ST STRAP -
     [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
-    ## IF NOT UPDATED FOR TOO LONG
-    [ ${DIFF_SECONDS} -gt $(( 24 * 60 * 60 )) ] \
-        && echo "More than 24H update" \
+    ## IF NOT UPDATED FOR TOO LONG : STRAPS[0] get key control
+    [ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) ] \
+        && echo "More than 26H update" \
         && ACTINGNODE=${STRAPS[0]}
 
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
