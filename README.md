@@ -2,10 +2,10 @@
 
 [Astroport DEV Journal](https://pad.p2p.legal/s/AstroportDEVJournal#)
 
-**Embark on a Cosmic Journey with ZenCard Payment System and Astroport.ONE**
+**Embark on a Cosmic Journey with AstroID & ZenCard System and Astroport.ONE**
 
 Are you weary of the constraints of traditional payment systems and concerned about the reliability
-of your distributed storage solutions? Look no further! Our revolutionary ZenCard Payment System
+of your distributed storage solutions? Look no further! Our revolutionary ZenCard QRCode based Payment System
 and Astroport.ONE v1.0 seamlessly blend cutting-edge blockchain technology with interplanetary storage,
 offering you a commission-free and secure solution.
 
@@ -18,19 +18,6 @@ the planet is sliced into 0.01° segments, ensuring locally registered Tiddlers 
 
 As a network engineer and system administrator committed to the Common Good, join us in constructing
 Astroport.ONE and shaping the future of secure and reliable distributed storage.
-
-**ZenCard Payment System: Empowering Transactions, Empowering Dreams**
-
-As blockchain makers, our ZenCard Payment System is not merely a crypto wallet; it's a game-changing payment card and terminal solution.
-Our controlled coin-emitting blockchain transfers 1 coin to your ZenCard per fiat money unit saved in the fiscal host.
-This unique approach makes blockchain accessible to everyone.
-
-Become a donor and a shareholder, receiving Coins equivalent to the Euros paid. Achieve a stable coin state of "1=1" through seamless transactions
-with a Host capable of sending and receiving Euros to users with zero fees, facilitated by PayPal integration.
-
-Activate your account on UPlanet, make donations to https://opencollective.com/made-in-zen, and receive encrypted wallets via email—printed
-in QRCode format for added security. Step into a future where financial transactions are commission-free,
-and data is securely stored across the cosmos.
 
 **Station Extra-Terrestre Astroport.ONE: Where Innovation Meets Tranquility**
 
