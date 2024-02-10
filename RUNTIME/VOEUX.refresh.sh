@@ -165,7 +165,27 @@ do
             && rm ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
             && continue
 
+#####################################################
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
+            ##############################
+            ## WRITE FRIEND SAME WISH TIDDLERS IN PLAYER TW       ########
+            ##############################
+            ## SIGN Tiddlers
+            cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
+                | sed "s~${PLAYER}~~g" \
+                | sed "s~${APLAYER}~${APLAYER} ${PLAYER}~g" \
+                    > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json
+
+            ## ADD TO TW
+            tiddlywiki --load ${INDEX} \
+                        --import ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json "application/json" \
+                        --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+            ## CHECK IT IS OK
+            [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] \
+                && cp ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+                && rm ~/.zen/tmp/${MOATS}/newindex.html
+
+            ##############################
             echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.rss.json ${WISHNAME}"
 
             # Extract Origin G1Voeu Tiddler
