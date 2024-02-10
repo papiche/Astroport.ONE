@@ -233,35 +233,6 @@ for SECTOR in ${SECTORS[@]}; do
 
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
-###########################################################################################
-        ### APPLY ON APP MODEL TODATE REGIONNS LINKING
-        REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
-        REGLON=$(echo ${SLON} | cut -d '.' -f 1)
-        REGION="_${REGLAT}_${REGLON}"
-        TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
-
-        PHONEBOOTH="${G1PUB::30}"
-        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
-                | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
-                  -e "s~_UPZONE_~REGION ${REGION}~g" \
-                  -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                  -e "s~_ZONENS_~${TODATENS}~g" \
-                  -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
-                  -e "s~_SECTORG1PUB_~${G1PUB}~g" \
-                  -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
-                  -e "s~_LAT_~${REGLAT}~g" \
-                  -e "s~_LON_~${REGLON}~g" \
-                  -e "s~_EARTHCID_~${EARTHCID}~g" \
-                  -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
-                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
-                  -e "s~http://127.0.0.1:8080~~g" \
-        > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
-
-## TODO get from ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid produced by REGION.refresh
-#      -e "s~_RWEEKCID_~/ipfs/QmY4rLRgSXjhhsW3WoKUJYpLe2A1dJCFXb7stNLcAp95w9~g" \
-
-        ##################################
-        cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
 
 ###########################################################################################
 ## ADD SECTOR ZENPUB.png & INFO.png
@@ -280,8 +251,41 @@ rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
 ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
+###########################################################################################
+        ### APPLY ON APP MODEL TODATE REGIONNS LINKING
+        REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
+        REGLON=$(echo ${SLON} | cut -d '.' -f 1)
+        REGION="_${REGLAT}_${REGLON}"
+        TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
+
+        PHONEBOOTH="${G1PUB::30}"
+        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
+                | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
+                  -e "s~_UPZONE_~REGION ${REGION}~g" \
+                  -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
+                  -e "s~_ZONENS_~${TODATENS}~g" \
+                  -e "s~_ZONEIPFS_~${ZCHAIN}~g" \
+                  -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
+                  -e "s~_SECTORG1PUB_~${G1PUB}~g" \
+                  -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
+                  -e "s~_LAT_~${REGLAT}~g" \
+                  -e "s~_LON_~${REGLON}~g" \
+                  -e "s~_EARTHCID_~${EARTHCID}~g" \
+                  -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
+                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
+                  -e "s~http://127.0.0.1:8080~~g" \
+        > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
+
+## TODO get from ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid produced by REGION.refresh
+#      -e "s~_RWEEKCID_~/ipfs/QmY4rLRgSXjhhsW3WoKUJYpLe2A1dJCFXb7stNLcAp95w9~g" \
+
+        ##################################
+        cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
+
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
+
+
 
     ## DOES CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
