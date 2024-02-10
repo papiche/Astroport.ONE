@@ -136,7 +136,17 @@ while read title; do
 
             for email in "${unique_combined[@]}"; do
 
-echo "<html><body>
+echo "<html>
+<head>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+    }
+    pre {
+        white-space: pre-wrap;
+    }
+</style></head>
+<body>
 <h1>(ᵔ◡◡ᵔ)</h1>
 
 Tiddler with same title is existing in ${unique_combined[*]} TW(s)
