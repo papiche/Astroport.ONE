@@ -16,62 +16,62 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ###################################################################
 ### CREER VOTRE PROPRE VERSION DU JEU
-### CHOISIR SCENARIO
-
-## Most methods are breaking with games names containing SPACE !
+### List games/E@MAIL/ directories
+## PUT A PROPOSAL ON THE METHOD
 GAMES=$(find "$GAMES_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
 GAMES=$(ls $MY_PATH/games/)
-GAMES=($(ls $MY_PATH/games/))
+GAMES=($(ls -d $MY_PATH/games/))
+# Above methods are breaking with games names containing SPACE !
 
-## cd
-cd games
-GAMES=(".." *) #create table
-cd - ## go back
+## cd METHOD resist to " " space
+cd games && GAMES=(".." *) && cd ..
+## but can still be fooled...
 
 select game in "${GAMES[@]}"; do
 
+    # MY_GAME is the absolute path to selected game files
     MY_GAME="$MY_PATH/games/$game"
     echo "SELECTION: "${MY_GAME}
 
+    # test game start protocol compatibility
     if [[ -x ${MY_GAME}/rooms/start.sh ]]; then
             sleep 1
             echo "Charging game..."
             sleep 1
             break
     else
-            echo "ERROR - invalid game - choose another one - "
+            # not compatible
+            echo "ERROR - not compatible game - SELECT ANOTHER - "
     fi
 
 done
 
+########################################
+# copy game files to user specific executable space
+# $HOME/.zen/adventure/$newplayer
+########################################
+homefolder=$(pwd)
+newplayer=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10)
+## Copy Player Game Files
+mkdir -p $HOME/.zen/adventure/$newplayer
+cp -r ${MY_GAME}/rooms $HOME/.zen/adventure/$newplayer/rooms
+cp -r ${MY_GAME}/art $HOME/.zen/adventure/$newplayer/art
+cp -r ${MY_GAME}/script $HOME/.zen/adventure/$newplayer/script
+cp -r ${MY_GAME}/logic $HOME/.zen/adventure/$newplayer/logic
+
+
 ###################################################################
-if hash uuidgen 2>/dev/null; then
-    homefolder=$(pwd)
-    newplayer=$(uuidgen)
-    ## Copy Player Game Files
-    mkdir -p $HOME/.zen/adventure/$newplayer
-    cp -r ${MY_GAME}/rooms $HOME/.zen/adventure/$newplayer/rooms
-    cp -r ${MY_GAME}/art $HOME/.zen/adventure/$newplayer/art
-    cp -r ${MY_GAME}/script $HOME/.zen/adventure/$newplayer/script
-    cp -r ${MY_GAME}/logic $HOME/.zen/adventure/$newplayer/logic
-else
-    echo "missing uuidgen. EXIT"
-    exit 1
-fi
-###################################################################
-echo "Loading..."
+echo "Loading... $newplayer/rooms/start.sh"
 echo
 sleep 2
 ###################################################################
-if hash uuidgen 2>/dev/null; then
-    cd $HOME/.zen/adventure/$newplayer/rooms
-    ./start.sh
-fi
+cd $HOME/.zen/adventure/$newplayer/rooms
+./start.sh
+
 ###################################################################
 # cleaning game files
-if hash uuidgen 2>/dev/null; then
-    cd "$homefolder"
-    rm -r $HOME/.zen/adventure/$newplayer
-fi
+cd "$homefolder"
+rm -r $HOME/.zen/adventure/$newplayer
+
 echo "To continue..."
 exit
