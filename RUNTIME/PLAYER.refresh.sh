@@ -185,6 +185,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
             ## STORE IN PLAYER CACHE
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
+            cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
             ########### ASTROPORT is not IPFSNODEID => EJECT TW
             ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)

@@ -51,7 +51,11 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
         cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/FRIENDS/ 2>/dev/null
     done
 
+    ## INFORM GPS LOCATION
     cp ~/.zen/GPS ~/.zen/tmp/${IPFSNODEID}/
+
+    [[ ! -s ~/.zen/tmp/${IPFSNODEID}/GPS ]] \
+        && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/
 
     ## REFRESH TIMESTAMPING
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats

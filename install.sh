@@ -184,8 +184,8 @@ do
     echo "$line" >> ~/.bashrc
 done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 
+## EXTEND PATH
 echo 'export PATH=$PATH:$HOME/.local/bin
-CHROME_EXECUTABLE=/usr/bin/chromium
 ' >> ~/.bashrc && source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
