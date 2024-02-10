@@ -184,8 +184,10 @@ do
     echo "$line" >> ~/.bashrc
 done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 
+echo 'export PATH=$PATH:$HOME/.local/bin
+CHROME_EXECUTABLE=/usr/bin/chromium
+' >> ~/.bashrc && source ~/.bashrc
 
-echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc && source ~/.bashrc
 echo "<<< UPDATED>>> PATH=$PATH"
 
 echo "##  ADDING lazydocker ================"
