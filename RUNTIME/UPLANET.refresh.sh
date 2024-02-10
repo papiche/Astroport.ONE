@@ -377,9 +377,9 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/
 
             ipfs name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
             end=`date +%s`
-            ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} ## REMOVE IPNS KEY
-
             echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
+
+            ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} ## REMOVE IPNS KEY
 
     done
 

@@ -170,11 +170,11 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
             UMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
-                        [[ $UMAPNS == "null" ]] && UMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
+                        [[ $UMAPNS == "null" || $UMAPNS == "" ]] && UMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
             LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-                        [[ $LAT == "null" ]] && LAT="0.00"
+                        [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
             LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-                        [[ $LON == "null" ]] && LON="0.00"
+                        [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
 
@@ -320,7 +320,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## CREATING 30 DAYS JSON RSS STREAM
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
-    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
+
+    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
+        && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
 
     ## TODO CREATING 30 DAYS XML RSS STREAM
     ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
@@ -333,7 +335,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
     DIFF_SECONDS=$(( SNOW - SBIRTH ))
     days=$((DIFF_SECONDS / 60 / 60 / 24))
-    echo "PLAYER TW was created $days ago"
+    echo "PLAYER TW was created $days days ago"
 
     ##################################
     #### PLAYER ACCOUNT CLEANING #########
