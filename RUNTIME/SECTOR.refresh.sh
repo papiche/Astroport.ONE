@@ -253,7 +253,7 @@ for SECTOR in ${SECTORS[@]}; do
                   -e "s~_LON_~${REGLON}~g" \
                   -e "s~_EARTHCID_~${EARTHCID}~g" \
                   -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
-                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=0.1~g" \
+                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
