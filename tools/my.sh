@@ -498,8 +498,8 @@ myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
 
-## DEV fred@g1sms.fr temporary UPlanet World Keeper.
-[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="EniaswqLCeWRJfz39VJRQwC6QDbAhkRHV9tn2fjhcrnc"
+## DEV support@qo-op.com Unamed UPlanet World Keeper.
+[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.
