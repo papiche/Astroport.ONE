@@ -48,9 +48,11 @@ fi
 
 mkdir -p $HOME/.zen/tmp/coucou/
 COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
-
+#######################################################
 ## GET EXTERNAL G1 DATA
 ${MY_PATH}/GetGCAttributesFromG1PUB.sh ${G1PUB}
+#######################################################
+#######################################################
 
 # echo "ACTUAL $COINSFILE CONTAINS"
 CURCOINS=$(cat $COINSFILE 2>/dev/null)

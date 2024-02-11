@@ -40,9 +40,9 @@ fi
 ## SCAN GCHANGE +
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]; then
     ${MY_PATH}/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json
-    GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json | jq -r '.found')
+    GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '.found')
 
-    if [[ $GFOUND == "false" ]]; then
+    if [[ ! $GFOUND || $GFOUND == "false" ]]; then
         echo "-- NO GCHANGE "
     else
         cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json ~/.zen/tmp/coucou/
@@ -57,9 +57,9 @@ fi
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json ]]; then
 
     ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null
-    GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json | jq -r '.found')
+    GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null | jq -r '.found')
 
-    if [[ $GCFOUND == "false" ]]; then
+    if [[ ! $GCFOUND || $GCFOUND == "false" ]]; then
         echo "-- NO CESIUM"
     else
         cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json ~/.zen/tmp/coucou/

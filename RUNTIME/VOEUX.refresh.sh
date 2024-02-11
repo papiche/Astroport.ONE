@@ -295,11 +295,12 @@ if [[ ${wishnumbers} -gt 0 ]]; then
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
     TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+    [[ $TWMAPNS == "null" || $TWMAPNS == "" ]] && TWMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-    [[ ${LAT} == "null" ]] && LAT="0.00"
+    [[ ${LAT} == "null" || ${LAT} == "" ]] && LAT="0.00"
     LAT=$(makecoord $LAT)
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-    [[ ${LON} == "null" ]] && LON="0.00"
+    [[ ${LON} == "null" || ${LON} == "" ]] && LON="0.00"
     LON=$(makecoord $LON)
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
