@@ -12,7 +12,11 @@ start=`date +%s`
 ## SECTOR REFRESH
 # SHARE & UPDATE IPNS TOGETHER
 ############################################
+echo "############################################"
+echo "############################################"
 echo "> RUNNING SECTOR.refresh"
+echo "############################################"
+echo "############################################"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

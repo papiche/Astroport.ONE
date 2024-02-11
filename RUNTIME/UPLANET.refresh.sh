@@ -11,7 +11,10 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## SEEK FOR UPLANET KEYS
 # GET & UPDATE IPNS
 ############################################
+echo "############################################"
 echo "## RUNNING UPLANET.refresh"
+echo "############################################"
+echo "############################################"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

@@ -12,7 +12,13 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # UMAP > SECTOR > REGION
 ## Get from 100 sectors tiddlers with more than 2 signatures
 ############################################
+echo "############################################"
+echo "############################################"
+echo "############################################"
 echo "# # # # RUNNING REGION.refresh"
+echo "############################################"
+echo "############################################"
+echo "############################################"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
