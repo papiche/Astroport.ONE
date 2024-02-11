@@ -181,10 +181,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## TODATENS ################
         TODATENS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
         echo "GPS UMAP LINK UPDATE
-        ${YESTERDATE} : ${myIPFS}/ipns/${UMAPNS}
+        ${YESTERDATE} : ${myIPFS}${UMAPNS}
         ${TODATE} : ${myIPFS}/ipns/${TODATENS}"
         ## UPDATE TW GPS Tiddler #############
-        sed -i "s~${UMAPNS}~${TODATENS}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+        sed -i "s~${UMAPNS}~/ipns/${TODATENS}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
             ## STORE IN PLAYER CACHE
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
