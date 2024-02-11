@@ -158,10 +158,10 @@ for SECTOR in ${SECTORS[@]}; do
     sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
-    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/RSS/*.rss.json 2>/dev/null))
     NL=${#RSSNODE[@]}
 
-    RSSWARM=($(ls ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/RSS/*.rss.json 2>/dev/null))
+    RSSWARM=($(ls ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/RSS/*.rss.json 2>/dev/null))
     NS=${#RSSWARM[@]}
 
     combinedrss=("${RSSNODE[@]}" "${RSSWARM[@]}")
