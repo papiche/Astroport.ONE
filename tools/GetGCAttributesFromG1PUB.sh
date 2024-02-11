@@ -72,7 +72,7 @@ fi
 
 ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
-    CPLUS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json | jq -r '._source.pubkey' 2>/dev/null)
+    CPLUS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '._source.pubkey')
     echo "CPLUS=$CPLUS"
     ## SCAN GPUB CESIUM +
 
