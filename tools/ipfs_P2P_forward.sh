@@ -34,20 +34,20 @@ fi
 ipfs p2p ls
 
 ## CONNECT WITH COMMAND
-## ipfs cat /ipns/$IPFSNODEID/.$IPFSNODEID/x_ssh-$zuid.sh | bash
-rm ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh >/dev/null 2>&1
-if [[ ! -f ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh ]]; then
+## ipfs cat /ipns/$IPFSNODEID/.$IPFSNODEID/x_ssh.sh | bash
+rm ~/.zen/tmp/$IPFSNODEID/x_ssh.sh >/dev/null 2>&1
+if [[ ! -f ~/.zen/tmp/$IPFSNODEID/x_ssh.sh ]]; then
     PORT=12345
     [ ${PORT} -eq 12345 ] && PORT=$((PORT+${RANDOM:0:3})) || PORT=$((PORT-${RANDOM:0:3}))
     echo "if [[ ! \$(ipfs p2p ls | grep x/ssh-$zuid) ]]; then
     ipfs --timeout=5s ping -n 1 /p2p/$IPFSNODEID
     ipfs p2p forward /x/ssh-$zuid /ip4/127.0.0.1/tcp/$PORT /p2p/$IPFSNODEID
     ssh $USER@127.0.0.1 -p $PORT
-fi" > ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh
+fi" > ~/.zen/tmp/$IPFSNODEID/x_ssh.sh
 fi
 
-cat ~/.zen/tmp/$IPFSNODEID/x_ssh-$zuid.sh
-echo "https://ipfs.copylaradio.com/ipns/$IPFSNODEID/x_ssh-$zuid.sh"
+cat ~/.zen/tmp/$IPFSNODEID/x_ssh.sh
+echo "https://ipfs.copylaradio.com/ipns/$IPFSNODEID/x_ssh.sh"
 
 ## THIS PORT FORWARDING HUB COULD BE MADE MORE CONTROLABLE USING FRIENDSHIP LEVEL & IPFS BALISES
 
