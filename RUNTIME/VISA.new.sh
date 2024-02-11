@@ -561,11 +561,11 @@ do
     echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 done <"$asciiart"
 
-echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
-<h3><a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h3>
+echo "<h1><a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>
+<a href='${myIPFSGW}${IASTRO}'>ZenCard<br><img src='${myIPFSGW}${IASTRO}'\></a>
 <br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "${PLAYER} ZenCard"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard ${PLAYER} "
 
 #~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
@@ -593,14 +593,14 @@ do
 done <"$asciiart"
 
 echo "
-<br><a href='https://qo-op.com'>Uplanet</a> Welcome
-<h3>ASTROPORT : <a href='${myAPI}'>NODE#${IPFSNODEID}</a></h2>
 <h3> * 0.1 <a href='${myIPFS}/ipns/${DEMAINSECTORNS}'>${SECTOR}</a> ${DEMAINDATE} </h3>
-<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
+<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img src='${myIPFSGW}${ASTROQR}'\></a>
 <br>SECRET1=$SALT SECRET2=$PEPPER ($PASS)<br>
+<h3>ASTROPORT : <a href='${myAPI}'>NODE#${IPFSNODEID}</a></h3>
+<a href='https://qo-op.com'>Uplanet</a>
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "${PLAYER} AstroID"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "AstroID ${PLAYER} "
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
