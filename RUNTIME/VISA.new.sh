@@ -314,6 +314,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
         ## TODATE #########################################
         TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
+        DEMAINSECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${DEMAINDATE}${UPLANETNAME}${SECTOR}" "${DEMAINDATE}${UPLANETNAME}${SECTOR}")
+
 
 ###########
         ## GET OLD16
@@ -552,7 +554,7 @@ echo "<html><head>
 </style></head>
 <body>
 <h1>UPlanet : ZenCard</h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
-asciiart="${MY_PATH}/images/astroport.art"
+asciiart="${MY_PATH}/../images/astroport.art"
 while IFS= read -r line
 do
     echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/ZenCard.html
@@ -560,7 +562,7 @@ do
 done <"$asciiart"
 
 echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
-<h3><a href='${myIPFS}/ipns/${ASTROTW}'>TW</a></h3>
+<h3><a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h3>
 <br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "${PLAYER} ZenCard"
@@ -583,7 +585,7 @@ echo "<html><head>
 </style></head>
 <body>
 <h1>UPlanet : AstroID ($PASS)</h1>" > ~/.zen/tmp/${MOATS}/AstroID.html
-asciiart="${MY_PATH}/images/logoastro.art"
+asciiart="${MY_PATH}/../images/logoastro.art"
 while IFS= read -r line
 do
     echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/AstroID.html
@@ -591,13 +593,11 @@ do
 done <"$asciiart"
 
 echo "
-<br><a href='https://qo-op.com'>Uplanet</a>
-<br>SECRET1=$SALT SECRET2=$PEPPER + PIN=$PASS
-<br>
-<h2>ASTROPORT STATION is <a href='${myAPI}'>NODE#${IPFSNODEID}</a> : </h2>
-<h3> * 0.1° <a href='${myIPFS}/ipns/${TODATESECTORNS}'>SECTEUR</a> : ${SECTOR} </h3>
-<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
-<br>
+<br><a href='https://qo-op.com'>Uplanet</a> Welcome
+<h3>ASTROPORT : <a href='${myAPI}'>NODE#${IPFSNODEID}</a></h2>
+<h3> * 0.1 <a href='${myIPFS}/ipns/${DEMAINSECTORNS}'>${SECTOR}</a> ${DEMAINDATE} </h3>
+<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
+<br>SECRET1=$SALT SECRET2=$PEPPER ($PASS)<br>
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "${PLAYER} AstroID"

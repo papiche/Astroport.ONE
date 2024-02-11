@@ -506,3 +506,4 @@ myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
 ########################################
 TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
+DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
