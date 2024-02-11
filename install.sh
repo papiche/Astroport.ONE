@@ -185,7 +185,7 @@ do
 done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 
 ## EXTEND PATH
-echo 'export PATH=$PATH:$HOME/.local/bin
+echo 'export PATH=$HOME/.local/bin:$PATH
 ' >> ~/.bashrc && source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
