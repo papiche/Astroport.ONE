@@ -4,8 +4,8 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/tools/my.sh"
+MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
+. "${MY_PATH}/tools/my.sh"
 start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
@@ -21,7 +21,7 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 10
     ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \
-        && $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
+        && ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
         && exit 1
 done
 # espeak "CODE git pull" > /dev/null 2>&1
@@ -46,7 +46,7 @@ git pull
 
 # espeak "20 HOURS 12 MINUTES. ASTROBOT RUNNING." > /dev/null 2>&1
 ## Updating yt-dlp
-$MY_PATH/youtube-dl.sh
+${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
 # Refresh ~/.zen/game/world/G1VOEU
@@ -85,11 +85,14 @@ seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
-# ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh ## COULD FORWARD LOCAL TCP PORT TO SWARM
-rm ~/.zen/game/players/localhost/latest
+## DRAGON SSH WOT
+echo "RESTART DRAGONS WOT"
+${MY_PATH}/tools/DRAGON_p2p_ssh.sh off
+${MY_PATH}/tools/DRAGON_p2p_ssh.sh
+## RESTART
 
 ## MAIL LOG : support@qo-op.com ##
-$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
+${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
