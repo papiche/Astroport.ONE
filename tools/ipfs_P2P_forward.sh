@@ -14,8 +14,10 @@ YOU=$(myIpfsApi) || er+=" ipfs daemon not running"
 [[ "$YOU" == "" || "$IPFSNODEID" == "" ]] && echo "ERROR : $er " && exit 1
 ########################################################################
 
-# Make Station publish SSH port on "/x/ssh-$(hostname)"
+# Make Station publish SSH port on "/x/ssh-$(IPFSNODEID)"
 zuid="$(hostname -f)"
+zuid=${IPFSNODEID}
+
 if [[ $zuid ]]
 then
     if [[ ! $(cat ~/.ssh/authorized_keys | grep "fred@ONELOVE") ]]
