@@ -156,7 +156,8 @@ for SECTOR in ${SECTORS[@]}; do
     ## NEW TW TEMPLATE
     [[ ! -s ${INDEX} ]] \
         && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
-        && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
+        && echo "REFRESHING SECTOR FROM empty TEMPLATE *****" \
+        && [[ ${IPFSNODEID} != ${STRAPS[0]} ]] && echo "1ST BOOSTRAP JOB" && continue
 
     ## SET SECTOR
     sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
