@@ -143,7 +143,6 @@ select fav in  "${choices[@]}"; do
         echo "ATTENTION ${PLAYER} DECONNEXION DE VOTRE TW !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
-        espeak "Droping TW in cyber space"
         ${MY_PATH}/tools/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}"
 
         break
