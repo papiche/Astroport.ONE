@@ -23,7 +23,7 @@ start=`date +%s`
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.20.0_linux.install.sh)" \
 && architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" || "$architecture" == "armv7l" ]] \
 && bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/kubo_v0.20.0_linux.install.sh) \
-|| echo "=== Installez IPFS KUBO puis relancez Install ==="
+|| echo "=== IPFS FOUND === OK"
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
 #################################################################### TEST

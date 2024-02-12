@@ -274,8 +274,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
                   -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
                   -e "s~_SECTORG1PUB_~${G1PUB}~g" \
                   -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
-                  -e "s~_LAT_~${REGLAT}~g" \
-                  -e "s~_LON_~${REGLON}~g" \
+                  -e "s~_LAT_~${SECLAT}~g" \
+                  -e "s~_LON_~${SECLON}~g" \
                   -e "s~_EARTHCID_~${EARTHCID}~g" \
                   -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
                   -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
