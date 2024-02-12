@@ -553,7 +553,7 @@ echo "<html><head>
     }
 </style></head>
 <body>
-<h1>UPlanet : ZenCard</h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
+<h1>UPlanet : ZenCard + <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
 asciiart="${MY_PATH}/../images/astroport.art"
 while IFS= read -r line
 do
@@ -561,8 +561,8 @@ do
     echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 done <"$asciiart"
 
-echo "<h1><a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>
-<a href='${myIPFSGW}${IASTRO}'>ZenCard<br><img src='${myIPFSGW}${IASTRO}'\></a>
+echo "<h1></h1>
+<a href='${myIPFSGW}${IASTRO}'>ZenCard ${G1PUB}<br><img src='${myIPFSGW}${IASTRO}'\><br></a>
 <br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
@@ -593,10 +593,10 @@ do
 done <"$asciiart"
 
 echo "
-<h3> > 0.1 SECTOR : <a href='${myIPFS}/ipns/${DEMAINSECTORNS}'>${SECTOR}</a> > ${DEMAINDATE} </h3>
+<h3> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h3>
 <br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img src='${myIPFSGW}${ASTROQR}'\></a>
 <br>SECRET1=$SALT SECRET2=$PEPPER ($PASS)<br>
-<h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>NODE#${IPFSNODEID}</a></h3>
+<h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
 <a href='https://qo-op.com'>Uplanet</a>
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
