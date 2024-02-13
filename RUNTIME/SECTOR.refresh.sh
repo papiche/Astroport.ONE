@@ -176,15 +176,22 @@ for SECTOR in ${SECTORS[@]}; do
 
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/RSS
     rm -f ~/.zen/tmp/${MOATS}/${SECTOR}/RSS/_all.json
-    ################################## TRANSFER SIGNED TIDDLER IN SECTOR TW
+
+    #################### RSS2UPlanetSECTORTW #########################
+    ############################ TRANSFER SIGNED TIDDLER IN SECTOR TW
     for RSS in ${RSSALL[@]}; do
+        ############################################################
         ## Extract New Tiddlers and maintain fusion in Sector TW.
-        ${MY_PATH}/../tools/RSS2UPlanetTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
+        ############################################################
+        ${MY_PATH}/RSS2UPlanetSECTORTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
+        ############################################################
         ## create sector RSS _all.json
         cat ${RSS} >> ~/.zen/tmp/${MOATS}/${SECTOR}/RSS/_all.json
+        ############################################################
     done
     TOTL=$((${NL}+${NS}))
-##############################################################
+    ##############################################################
+
     # Update COIN & ZEN value
     echo ${COINS} > ~/.zen/tmp/${MOATS}/${SECTOR}/COINS
     echo ${ZEN} > ~/.zen/tmp/${MOATS}/${SECTOR}/ZEN
