@@ -135,7 +135,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-            && ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} \
+            && ipfs key rm ${TODATE}${G1PUB} ${YESYERDATE}${G1PUB} ${G1PUB} \
             && continue
 
 ### NEXT REFRESHER SHUFFLE
@@ -302,7 +302,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
         echo "% START PUBLISHING ${SECTOR} ${myIPFS}/ipns/${TODATENS}"
         start=`date +%s`
         ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
-        ipfs key rm ${TODATE}${G1PUB}  ${YESYERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
+        ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
         end=`date +%s`
         echo "_____SECTOR${SECTOR} PUBLISH time was "`expr $end - $start` seconds.
 

@@ -152,7 +152,7 @@ for REGION in ${REGIONS[@]}; do
             ipfs name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
 
 
-    ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} ${TODATE}${REGIONG1PUB} > /dev/null 2>&1
+    ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} > /dev/null 2>&1
 
 done
 
