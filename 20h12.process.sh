@@ -87,7 +87,7 @@ echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 ## DRAGON SSH WOT
 echo "STOP DRAGONS WOT"
-${MY_PATH}/tools/DRAGON_p2p_ssh.sh off
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ## RESTART
 
 ## MAIL LOG : support@qo-op.com ##
@@ -125,6 +125,6 @@ echo "OFF. RESTART IPFS"
 sleep 60
 sudo systemctl restart ipfs
 sleep 30
-${MY_PATH}/tools/DRAGON_p2p_ssh.sh
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 exit 0
