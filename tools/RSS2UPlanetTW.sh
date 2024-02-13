@@ -23,7 +23,8 @@ INDEX=$4 ## SECTOR TW index file
     && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
     && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
 
-
+echo
+echo
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
 ## GET PLAYER INFORMATION

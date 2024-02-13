@@ -12,6 +12,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # UMAP > SECTOR > REGION
 ## Get from 100 sectors tiddlers with more than 2 signatures
 ############################################
+echo
+echo
 echo "############################################"
 echo "############################################"
 echo "############################################"

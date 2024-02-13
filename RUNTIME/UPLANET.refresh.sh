@@ -11,6 +11,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## SEEK FOR UPLANET KEYS
 # GET & UPDATE IPNS
 ############################################
+echo
+echo
 echo "############################################"
 echo "## RUNNING UPLANET.refresh"
 echo "############################################"

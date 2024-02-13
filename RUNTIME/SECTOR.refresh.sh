@@ -12,6 +12,8 @@ start=`date +%s`
 ## SECTOR REFRESH
 # SHARE & UPDATE IPNS TOGETHER
 ############################################
+echo
+echo
 echo "############################################"
 echo "############################################"
 echo "> RUNNING SECTOR.refresh"
