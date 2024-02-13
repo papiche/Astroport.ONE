@@ -26,8 +26,8 @@ mkdir ~/.zen/tmp/${MOATS}
     ## RUNING FOR ALL UMAP FOUND IN STATION MAP CACHE : "_LAT_LON"
 
     ## SEARCH UMAP (created by PLAYER.refresh.sh) /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
-    MEMAPS=($(ls -td ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/* | rev | cut -d '/' -f 1 | rev | sort | uniq 2>/dev/null))
-    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* | rev | cut -d '/' -f 1 | rev | sort | uniq 2>/dev/null) )
+    MEMAPS=($(ls -td ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
     combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
     unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
     echo "ACTIVATED UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
