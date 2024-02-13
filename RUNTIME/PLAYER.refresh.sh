@@ -52,7 +52,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
     # Get PLAYER wallet amount
-    COINS=$($MY_PATH/../tools/COINScheck.sh $G1PUB | tail -n 1)
+    $MY_PATH/../tools/COINScheck.sh $G1PUB > ~/.zen/tmp/g1reveal
+    cat ~/.zen/tmp/g1reveal ###DEBUG MODE
+    COINS=$(cat ~/.zen/tmp/g1reveal | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
