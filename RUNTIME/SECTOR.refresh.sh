@@ -254,7 +254,6 @@ composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZE
 
 ## zday marking
 rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
-ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
 ###########################################################################################
@@ -287,7 +286,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
 
         ##################################
         cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
-
+        rm ~/.zen/tmp/${MOATS}/${SECTOR}/index.html ## MAKE SECTOR VISIBLE ##
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
