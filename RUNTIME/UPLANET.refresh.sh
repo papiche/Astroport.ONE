@@ -136,7 +136,7 @@ for UMAP in ${unique_combined[@]}; do
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ## IF NOT UPDATED FOR TOO LONG
-    [ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) || ${DIFF_SECONDS} -eq 0 ] \
+    [[ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) || ${DIFF_SECONDS} -eq 0 ]] \
         && echo "More than 26H update - BOOSTRAP 0 ACTION -" \
         && ACTINGNODE=${STRAPS[0]}
 
