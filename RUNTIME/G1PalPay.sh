@@ -12,29 +12,29 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 
-        CESIUM=${myCESIUM}
-        GCHANGE=${myGCHANGE}
+CESIUM=${myCESIUM}
+GCHANGE=${myGCHANGE}
 
 echo "(✜‿‿✜) G1PalPay : Receiving & Relaying payments to emails found in comment"
 echo "$ME RUNNING"
 
 ########################################################################
-# PALPAY SERVICE
+# PALPAY SERVICE : MONITOR INCOMING TX & NEW TIDDLERS
 ########################################################################
 ########################################################################
-INDEX="$1"
+INDEX="$1"  ## TW file
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
 [[ ! -s ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
 [[ ! -s ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 
-PLAYER="$2"
+PLAYER="$2" ## PLAYER
 [[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 [[ ! ${PLAYER} ]] && echo "ERROR - Please provide PLAYER" && exit 1
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) ## TW /ipns/
 [[ ! ${ASTRONAUTENS} ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
 
-G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub) ## PLAYER WALLET
 [[ ! $G1PUB ]] && echo "ERROR - G1PUB ${PLAYER} VIDE"  && exit 1
 
 # Extract tag=tube from TW
@@ -49,21 +49,27 @@ mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
 mkdir -p $HOME/.zen/tmp/${MOATS}
 echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
 
-# CHECK LAST 10 INCOMING PAYMENTS
+# CHECK LAST 24 INCOMING PAYMENTS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
+${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 24 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
-&& echo "NO PAYMENT HISTORY" \
+&& echo "NO PAYMENT HISTORY.......................... EXIT" \
 && exit 1
 ##############################
 ##########################################################
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
 #################################################################
 
-## TREAT ANY COMMENT STARTING WITH N1
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep 'N1' > ~/.zen/tmp/${MOATS}/myN1.json
+## TREAT ANY COMMENT STARTING WITH N1:
+## EXTRACT N1ProgramNames
+ls ${MY_PATH}/../ASTROBOT/ | grep "N1" | cut -d "." -f 1 > ~/.zen/tmp/${MOATS}/N1PROG
 
+while read prog; do
+    cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep "$prog" >> ~/.zen/tmp/${MOATS}/myN1.json
+done < ~/.zen/tmp/${MOATS}/N1PROG
+
+# got N1 incoming TX
 while read NLINE; do
     ## COMMENT FORMAT = N1$CMD:$TH:$TRAIL
     TXIDATE=$(echo ${NLINE} | jq -r .date)
@@ -72,7 +78,10 @@ while read NLINE; do
     COMMENT=$(echo ${NLINE} | jq -r .comment)
     CMD=$(echo ${COMMENT} | cut -d ':' -f 1 | cut -c -12 ) # Maximum 12 characters CMD
 
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $TXIDATE ]]  && echo "$CMD $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" && continue
+    # Verify last recorded acting date (avoid running twice)
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $TXIDATE ]]  \
+        && echo "$CMD $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
+        && continue
 
     TH=$(echo ${COMMENT} | cut -d ':' -f 2)
     TRAIL=$(echo ${COMMENT} | cut -d ':' -f 3-)
@@ -114,7 +123,9 @@ while read LINE; do
     COMMENT=$(echo $JSON | jq -r .comment)
 
     echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS TXIDATE=$TXIDATE FORMAT ??)"
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" && continue
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
+        && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
+        && continue
 
     ## GET EMAILS FROM COMMENT
     TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
@@ -123,9 +134,11 @@ while read LINE; do
     echo "N=${#TXIMAILS[@]}"
     N=${#TXIMAILS[@]}
     SHARE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
+    ## SHARE is received AMOUT divided by numbers of EMAILS in comment
 
     echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
 
+    # let's loop over TXIMAILS
     for EMAIL in "${TXIMAILS[@]}"; do
 
         [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
@@ -144,8 +157,8 @@ while read LINE; do
 
         [[ ! ${ASTROG1} ]] \
         && echo "<html><body><h1>SORRY ${EMAIL} YOUR ACCOUNT IS MISSING</h1>" \
-        && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>(♥‿‿♥)... Join <a href='https://qo-op.com'>UPlanet</a> and receive it</body></html>" > ~/.zen/tmp/palpay.bro \
-        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "NEED FOR ACCOUNT" \
+        && echo " BRO.  $PLAYER  WISH TO SEND YOU SOME ẐEN <br><br>(♥‿‿♥)... Join <a href='https://qo-op.com'>UPlanet</a> to receive it</body></html>" > ~/.zen/tmp/palpay.bro \
+        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "MISSING ACCOUNT" \
         && continue
 
 
@@ -189,16 +202,21 @@ tiddlywiki --load ${INDEX} \
 # cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
 
 cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json \
-        | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## REMOVE PLAYER EMAIL IN INLINE JSON
+        | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' \
+         > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## Get tiddlers with not my email in it
 
-[[ ! -s ~/.zen/tmp/${MOATS}/@tags.json ]] && echo "NO EXTRA @tags.json TIDDLERS TODAY" && exit 0
+[[ ! -s ~/.zen/tmp/${MOATS}/@tags.json ]] \
+    && echo "NO EXTRA @tags.json TIDDLERS TODAY" \
+    && exit 0
 
 # LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
-echo "******************TIDDLERS with EMAIL in TAGS treatment"
+echo "******************TIDDLERS with new EMAIL in TAGS treatment"
 #~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
 
-## EXTRACT NOT MY EMAIL
+################################
+## detect NOT MY EMAIL in TODAY TIDDLERS
+################################
 while read LINE; do
 
     echo "---------------------------------- Sava PalPé mec"
@@ -220,7 +238,7 @@ while read LINE; do
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
-    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10, 1 zen each
+    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 Zen each
 
     ## Get first zmail
     ZMAIL="${emails}"
