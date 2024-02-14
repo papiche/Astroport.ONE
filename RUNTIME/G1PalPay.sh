@@ -15,7 +15,6 @@ ME="${0##*/}"
 CESIUM=${myCESIUM}
 GCHANGE=${myGCHANGE}
 
-echo "(✜‿‿✜) G1PalPay : Receiving & Relaying payments to emails found in comment"
 echo "$ME RUNNING"
 
 ########################################################################
@@ -47,11 +46,13 @@ MOATS="$3"
 mkdir -p $HOME/.zen/tmp/${IPFSNODEID}/G1PalPay/${PLAYER}/
 mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
 mkdir -p $HOME/.zen/tmp/${MOATS}
-echo "=========== ( ◕‿◕) (◕‿◕ ) =============="
+echo "=========== ( ◕‿◕) (◕‿◕ ) ============== ${PLAYER}
+${INDEX}"
+echo "(✜‿‿✜) G1PalPay : CHECK LAST 10 TX comment"
 
-# CHECK LAST 24 INCOMING PAYMENTS
+# CHECK LAST 10 INCOMING PAYMENTS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 24 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
+${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 10 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY.......................... EXIT" \
@@ -59,10 +60,11 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 ##############################
 ##########################################################
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
+# TODO check amout > 0
 #################################################################
-
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json  | jq -rc .[]
 ## TREAT ANY COMMENT STARTING WITH N1:
-## EXTRACT N1ProgramNames
+## EXTRACT /ASTROBOT/N1ProgramNames
 ls ${MY_PATH}/../ASTROBOT/ | grep "N1" | cut -d "." -f 1 > ~/.zen/tmp/${MOATS}/N1PROG
 
 while read prog; do
@@ -196,7 +198,7 @@ echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
 echo "# EXTRACT TODAY TIDDLERS"
 tiddlywiki --load ${INDEX} \
                  --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/ \
-                 --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-1]]'
+                 --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-2]]'
 
 ## FILTER MY OWN EMAIL
 # cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
