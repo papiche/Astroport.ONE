@@ -135,7 +135,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         continue
 
     else
-     ## FOUND TW
+        ## FOUND TW
         #############################################################
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -180,13 +180,13 @@ for PLAYER in ${PLAYERONE[@]}; do
 
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
 
-        ## TODATENS ################
-        TODATENS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
-        echo "GPS UMAP LINK UPDATE
-        ${YESTERDATE} : ${myIPFS}${UMAPNS}
-        ${TODATE} : ${myIPFS}/ipns/${TODATENS}"
-        ## UPDATE TW GPS Tiddler #############
-        sed -i "s~${UMAPNS}~/ipns/${TODATENS}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+            ## TODATENS ################
+            TODATENS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
+            echo "GPS UMAP LINK UPDATE
+            ${YESTERDATE} : ${myIPFS}${UMAPNS}
+            ${TODATE} : ${myIPFS}/ipns/${TODATENS}"
+            ## UPDATE TW GPS Tiddler #############
+            sed -i "s~${UMAPNS}~/ipns/${TODATENS}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
             ## STORE IN PLAYER CACHE
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
@@ -213,33 +213,35 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##############################################################
     echo "##################################################################"
 
-    [[ $(echo "$COINS > 2" | bc -l) -eq 1 ]]  \
+    [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]  \
         && echo "## Connect_PLAYER_To_Gchange.sh" \
         && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
         || echo "1 G1 + 10 ẑen needed to activate ★★★★★ system"
 
-    # G1PalPay - 1 G1 + 10 ZEN mini -> Check for G1 TX incoming comments #
-    [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]  \
-        && echo "## RUNNING G1PalPay Wallet Monitoring " \
-        && ${MY_PATH}/G1PalPay.sh ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" \
-        || echo "> ZenCard is not activated ($ZEN)"
+    # G1PalPay - 1 G1 mini -> Check for G1 TX incoming comments #
+    if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
+        ###########
+        # G1PalPay.sh #
+        ##############################################################
+        echo "## RUNNING G1PalPay Wallet Monitoring "
+        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
 
+        ###############
+        # VOEUX.create.sh #
+        ##############################################################
+        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
+
+        ###############
+        # VOEUX.refresh.sh #
+        ##############################################################
+        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+
+    else
+        echo "> ZenCard is not activated ($ZEN)"
+    fi
     ### CHECK FOR pending (TODO! In case PAY4SURE have abandonned pendings)
 
 
-    ###############
-    # VOEUX.create.sh #
-    ##############################################################
-    ## SPECIAL TAG "voeu" => Creation G1Voeu (G1Titre) makes AstroBot TW G1Processing
-    ##############################################################
-    ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
-
-    ###############
-    # VOEUX.refresh.sh #
-    ##############################################################
-    ## RUN ASTROBOT G1Voeux SUBPROCESS (SPECIFIC Ŋ1 COPY)
-    ##############################################################
-    ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     ###################
     # REFRESH PLAYER_feed #
@@ -254,32 +256,32 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
     echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
-            ###########################
-            # Tiddlers controling GW & API
-        #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
-        #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
+    ###########################
+    # Tiddlers controling GW & API
+    #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
+    #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
-        ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
-        FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
-        echo "★★★★★ FRIENDS  FEEDS : "${FRIENDSFEEDS}
-        ASTRONAUTES=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTES 2>/dev/null)
-        echo "★★★★★ FRIENDS TW : "${ASTRONAUTES}
+    ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
+    FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
+    echo "★★★★★ FRIENDS  FEEDS : "${FRIENDSFEEDS}
+    ASTRONAUTES=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTES 2>/dev/null)
+    echo "★★★★★ FRIENDS TW : "${ASTRONAUTES}
 
-        ## Change TW FRIENDFEED ie PLAYER RSS IPNS (must fix TW plugin to work)
-        #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
-        #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
+    ## Change TW FRIENDFEED ie PLAYER RSS IPNS (must fix TW plugin to work)
+    #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
+    #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
 
-        ## WRITE TIDDLERS IN TW
-        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                        --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
-                        --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
-                        --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
+    ## WRITE TIDDLERS IN TW
+    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
+                --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
+                --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
-        ## CHECK IT IS OK
-        [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
-                && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html
-            ###########################
+    ## CHECK IT IS OK
+    [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
+        && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html
+    ###########################
 
     ####################
 
@@ -305,8 +307,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##############################################################
 
     ##################################################
-    ##################################################
-    ################## UPDATING PLAYER MOA
+    ############################### LOCAL "MICRO LEDGER"
+    ################## UPDATING ${PLAYER}/ipfs/moa
     [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
                                     ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
@@ -328,7 +330,9 @@ for PLAYER in ${PLAYERONE[@]}; do
                         --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
 
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
-        && echo "NO ${PLAYER} RSS - BAD ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json -"
+        && echo "NO ${PLAYER} RSS - BAD "
+
+    echo "~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json"
 
     ## TODO CREATING 30 DAYS XML RSS STREAM
     ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
@@ -347,11 +351,12 @@ for PLAYER in ${PLAYERONE[@]}; do
     #### PLAYER ACCOUNT CLEANING #########
     ## IF ZEN < 11
     ## && EMPTY RSS + 30 DAYS BIRTHDATE
+    ## only for less 90 days TW ? && ${DIFF_SECONDS} -lt $(( 90 * 24 * 60 * 60 )) ????
     ## ==> UNPLUG
     [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
         && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
         && [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]] \
-        && [[ ${DIFF_SECONDS} -gt $(( 27 * 24 * 60 * 60 ))  ]] \
+        && [[ ${DIFF_SECONDS} -gt $(( 27 * 24 * 60 * 60 )) ]] \
         && echo "<html><body><h1>WARNING.</h1>  Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert \
         && echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3>ZEN=$ZEN </body></html>" >> ~/.zen/tmp/alert \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT" \
@@ -365,7 +370,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
     && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
 
-######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
+    ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
@@ -373,7 +378,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
-
+    #################################################
+    ################### COPY DATA TO UP LEVEL GRIDS
+    #################################################
     if [[ ${LAT} && ${LON} ]]; then
         ## SECTOR BANK COORD
         SECLAT="${LAT::-1}"
@@ -382,16 +389,17 @@ for PLAYER in ${PLAYERONE[@]}; do
         REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
         REGLON=$(echo ${LON} | cut -d '.' -f 1)
 
+    echo "/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}"
     ## IPFSNODEID 12345 CACHE UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
 
-        cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
+    cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
             ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
 
-        ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
-        cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='${TODATENS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
+    ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
+    cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TODATENS}'\" />" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
 
     fi
 
@@ -407,6 +415,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## CLEANING CACHE
     rm -Rf ~/.zen/tmp/${MOATS}
+    echo
 
 done
 echo "============================================ PLAYER.refresh DONE."
