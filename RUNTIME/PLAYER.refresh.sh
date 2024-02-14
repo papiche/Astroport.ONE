@@ -124,7 +124,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         [[ $try == 0 ]] \
             && echo "PLAYER ${PLAYER} UNPLUG" \
-            && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
+            && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
             && continue
 
         try=$((try-1))
@@ -200,7 +200,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
                 echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
                 echo "UNPLUG PLAYER"
-                ${MY_PATH}/../tools/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
+                ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
                 echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
                 continue
             fi
@@ -363,7 +363,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         && echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days" \
         && [[ ${DIFF_SECONDS} -gt $(( 30 * 24 * 60 * 60 ))  ]] \
         && echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN" \
-        && ${MY_PATH}/../tools/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
+        && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
         && continue
     #################################### UNPLUG ACCOUNT
 

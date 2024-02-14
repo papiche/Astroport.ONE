@@ -7,3 +7,7 @@ This directory contains "ASTROBOT" programs templates
 * example:
 ```/ASTROBOT/G1CopierYoutube.sh```
 ```/WWW/CopierYoutube/```
+
+_sandbox
+
+just piece of code... you can use and make official
