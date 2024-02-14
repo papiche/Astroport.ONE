@@ -1,17 +1,18 @@
 #!/bin/bash
 
 ## SHOW DHT STATS
+echo "#########################"
 echo "------------------------------------------------- ~/.zen/tmp/ipfs.stats.dht.wan"
 echo "GETTING DHT STATS"
 ipfs stats dht wan > ~/.zen/tmp/ipfs.stats.dht.wan
 # cat ~/.zen/tmp/ipfs.stats.dht.wan
+echo "#########################"
 
 ## BOOSTRAP
-echo "-------------------------------------------------"
-echo "SWARM NODES"
+echo "#########################"
+echo "BOOSTRAP NODES"
 for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$')
 do
-    echo
     ipfsnodeid=${bootnode##*/}
     ipfs swarm peers | grep $bootnode
     ipfs --timeout 15s ping -n 3 $bootnode
@@ -26,8 +27,10 @@ done
 
 ## SWARM
 echo
-echo "-------------------------------------------------"
+echo "#########################"
 echo "SWARM NODES"
+ls ~/.zen/tmp/swarm
+echo "-------------------------------------------------"
 for ipfsnodeid in $(ls ~/.zen/tmp/swarm);
 do
     ipfs --timeout 15s ping -n 3 /p2p/$ipfsnodeid
