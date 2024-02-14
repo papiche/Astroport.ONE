@@ -17,7 +17,7 @@ do
     ipfs swarm peers | grep $bootnode
     ipfs --timeout 15s ping -n 3 $bootnode
     [ $? = 0 ] && ipfs swarm connect $bootnode \
-                    || echo "BAD NODE $bootnode"
+                    || echo "FAILED ipfs ping $bootnode"
     echo "*****"
     echo "in DHT ? --------------"
     cat ~/.zen/tmp/ipfs.stats.dht.wan | grep $ipfsnodeid
@@ -35,7 +35,7 @@ for ipfsnodeid in $(ls ~/.zen/tmp/swarm);
 do
     ipfs --timeout 15s ping -n 3 /p2p/$ipfsnodeid
     [ $? = 0 ] && ipfs swarm connect /p2p/$ipfsnodeid \
-                    || echo "BAD NODE $ipfsnodeid"
+                    || echo "FAILED ipfs ping /p2p/$ipfsnodeid"
     echo "in DHT ? --------------"
     cat ~/.zen/tmp/ipfs.stats.dht.wan | grep $ipfsnodeid
     echo "-------------------------------------------------"

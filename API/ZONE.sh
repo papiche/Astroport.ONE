@@ -60,80 +60,93 @@ LON=$(makecoord $LON)
 
 echo "REQUEST $LAT / $LON / $DEG"
 
-## REGION & ABOVE LEVEL
-if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
-    LAT=$(echo ${LAT} | cut -d '.' -f 1)
-    LON=$(echo ${LON} | cut -d '.' -f 1)
-    ZONE="_${LAT}_${LON}"
-    echo "ZONE = ${ZONE}"
-    ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
-    ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${ZONE}" "${YESTERDATE}${UPLANETNAME}${ZONE}")
+if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
+
+    ## REGION & ABOVE LEVEL
+    if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
+        LAT=$(echo ${LAT} | cut -d '.' -f 1)
+        LON=$(echo ${LON} | cut -d '.' -f 1)
+        ZONE="_${LAT}_${LON}"
+        echo "ZONE = ${ZONE}"
+        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
+        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${ZONE}" "${YESTERDATE}${UPLANETNAME}${ZONE}")
+
+    fi
+
+    ## SECTOR LEVEL
+    if [[ $DEG == "0.01" ]]; then
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
+        SECTOR="_${SECLAT}_${SECLON}"
+        echo "SECTOR = ${SECTOR}"
+        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
+
+    fi
+
+    ## UMAP LEVEL
+    if [[ $DEG == "0.001" ]]; then
+
+        swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+        nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+        totnum=$(( swarmnum + nodenum ))
+        echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
+
+        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
+        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
+        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
+
+        echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' > ~/.zen/tmp/${MOATS}.http.grid
+        cp ~/.zen/tmp/${MOATS}.http.grid ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json
+        cat ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json >> ~/.zen/tmp/${MOATS}.http
+
+        cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+        rm -Rf ~/.zen/tmp/${MOATS}/
+        end=`date +%s`
+        echo "(UMAP)_${LAT}_${LON} ${YESTERDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
+        exit 0
+
+    fi
+
+
+    ## ALL OTHER DEG : SEARCH FOR UPLANET TW NUMBERS
+    echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http.grid
+
+    for i in $(seq 0 9);
+    do
+        ZLAT=$(echo "$LAT + $DEG * $i" | bc -l )
+        [[ -z  ${ZLAT} ]] && ZLAT=0
+        # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
+            for j in $(seq 0 9); do
+                ZLON=$(echo "$LON + $DEG * $j" | bc -l )
+                [[ -z  ${ZLON} ]] && ZLON=0
+                # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
+                echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
+                swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+                nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+                totnum=$(( swarmnum + nodenum ))
+
+                [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum
+
+                [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONEINDEX}'" }
+                ,' >> ~/.zen/tmp/${MOATS}.http.grid \
+                    && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONEINDEX}'" }'
+
+            done
+    done
+
+    sed -i '$ d' ~/.zen/tmp/${MOATS}.http.grid ## REMOVE LAST ','
+    echo ']}'  >> ~/.zen/tmp/${MOATS}.http.grid
+
+    ## ADD TO CACHE
+    cp ~/.zen/tmp/${MOATS}.http.grid ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json
 
 fi
-
-## SECTOR LEVEL
-if [[ $DEG == "0.01" ]]; then
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
-    SECTOR="_${SECLAT}_${SECLON}"
-    echo "SECTOR = ${SECTOR}"
-    ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-    ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
-
-fi
-
-## UMAP LEVEL
-if [[ $DEG == "0.001" ]]; then
-
-    swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
-    nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
-    totnum=$(( swarmnum + nodenum ))
-    echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
-
-    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
-    ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-    UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
-
-    echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' >> ~/.zen/tmp/${MOATS}.http
-    cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-    rm -Rf ~/.zen/tmp/${MOATS}/
-    end=`date +%s`
-    echo "(UMAP)_${LAT}_${LON} ${YESTERDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
-    exit 0
-
-fi
-
-## ALL OTHER DEG : SEARCH FOR UPLANET TW NUMBERS
-echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http
-
-for i in $(seq 0 9);
-do
-    ZLAT=$(echo "$LAT + $DEG * $i" | bc -l )
-    [[ -z  ${ZLAT} ]] && ZLAT=0
-    # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
-        for j in $(seq 0 9); do
-            ZLON=$(echo "$LON + $DEG * $j" | bc -l )
-            [[ -z  ${ZLON} ]] && ZLON=0
-            # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
-            echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
-            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-            totnum=$(( swarmnum + nodenum ))
-
-            [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum
-
-            [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONEINDEX}'" }
-            ,' >> ~/.zen/tmp/${MOATS}.http && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONEINDEX}'" }'
-
-        done
-done
-
-sed -i '$ d' ~/.zen/tmp/${MOATS}.http ## REMOVE LAST ','
-
-echo ']}'  >> ~/.zen/tmp/${MOATS}.http
 
 ### SEND RESPONSE ON PORT
+cat ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json >> ~/.zen/tmp/${MOATS}.http
 cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
 ## CLEANING
