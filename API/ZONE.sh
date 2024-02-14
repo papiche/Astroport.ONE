@@ -58,6 +58,10 @@ sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
 LAT=$(makecoord $LAT)
 LON=$(makecoord $LON)
 
+[[ $(date +"%H%M") -gt 2012 ]] \
+    && THEDATE=${TODATE} \
+    || THEDATE=${YESTERDATE}
+echo "${THEDATE}"
 echo "REQUEST $LAT / $LON / $DEG"
 
 if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
@@ -69,7 +73,7 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
         ZONE="_${LAT}_${LON}"
         echo "ZONE = ${ZONE}"
         ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
-        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${ZONE}" "${YESTERDATE}${UPLANETNAME}${ZONE}")
+        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${ZONE}" "${THEDATE}${UPLANETNAME}${ZONE}")
 
     fi
 
@@ -80,7 +84,7 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
         SECTOR="_${SECLAT}_${SECLON}"
         echo "SECTOR = ${SECTOR}"
         ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
+        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${SECTOR}" "${THEDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
 
     fi
 
@@ -93,7 +97,7 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
         echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
 
         G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${THEDATE}${UPLANETNAME}${LAT}" "${THEDATE}${UPLANETNAME}${LON}"
         ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
@@ -105,7 +109,7 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
 
         rm -Rf ~/.zen/tmp/${MOATS}/
         end=`date +%s`
-        echo "(UMAP)_${LAT}_${LON} ${YESTERDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
+        echo "(UMAP)_${LAT}_${LON} ${THEDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
         exit 0
 
     fi
