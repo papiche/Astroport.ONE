@@ -236,33 +236,29 @@ echo "Astroport.ONE - Web3 Information System over IPFS - "
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
-echo
-echo "(DES) ACTIVATE with
- ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON (OFF)"
-echo
-echo "### FOR JOINING BOOSTRAP LIST #############################"
-echo "### MAILJET CREDENTIALS
-contact support@qo-op.com for initial UPlanet ~/.zen/MJ_APIKEY"
+echo "##GROUND CONTROL #################################"
+echo "* WEB : http://127.0.0.1:1234/"
+echo "* CLI : ~/.zen/Astroport.ONE/command.sh"
 echo "#############################################"
-echo ">>> Welcome Space Kitty <<<"
-echo "Explore Web2.0 / WEb3 frontier"
-echo "Please. Continue keygen procedure..."
-echo
-echo "COMAND INTERFACE"
-echo "CLI : ~/.zen/Astroport.ONE/command.sh"
-echo "WEB : http://127.0.0.1:1234/"
+echo "RUN TEST : ~/.zen/Astroport.ONE/test.sh"
+echo "### SUPPORT #############################"
+echo "### support@qo-op.com"
+echo "#############################################"
 
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
     espeak "Welcome Space Kitty" 2>/dev/null
+echo ">>> Welcome Space Kitty <<<"
+echo "Explore Web2.0 / WEb3 frontier"
+echo "Join Dragons WOT by continuing keygen procedure..."
+echo "#############################################"
+# DESACTIVATING ASTROPORT DAEMONS
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF
+echo "############################## ♥BOX READY ###"
+echo ">>> ACTIVATE ASTROPORT DAEMONS <<<
+ ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
 
-
-    #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
-    #~ && xdg-open "http://astroport.localhost:1234" \
-    #~ || ~/.zen/Astroport.ONE/command.sh
-
-    xdg-open "http://127.0.0.1:1234/" 2>/dev/null
 
 else
 
