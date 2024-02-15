@@ -52,10 +52,11 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     done
 
     ## INFORM GPS LOCATION
-    cp ~/.zen/GPS ~/.zen/tmp/${IPFSNODEID}/
-
-    [[ ! -s ~/.zen/tmp/${IPFSNODEID}/GPS ]] \
-        && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/
+    [[ -s ~/.zen/game/players/.current/GPS.json ]] \
+        && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/ \
+        && LAT=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lat) \
+        && LON=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lon) \
+        && echo "LAT=${LAT}; LON=${LON}" > ~/.zen/GPS
 
     ## REFRESH TIMESTAMPING
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
