@@ -491,16 +491,26 @@ fi
 EARTHCID="/ipfs/QmYGS24WxVbsmmQfqWohXhXQZiwSmNswhTtSj9msVWKkNh"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
+###########################
+## VISIO ROOM APP
 ## https://github.com/steveseguin/vdo.ninja
 VDONINJA="/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD"
+###########################
+## CESIUM APP
+## https://cesium.app
+CESIUMIPFS="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k"
 
-myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
-myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
-
-## UPLANETNAME could be defined in ~/.zen/UPlanetSharedSecret
+##########################
+myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
+myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
+##########################
+## UPLANETNAME can be set ~/.zen/UPlanetSharedSecret
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
+
+## DETECT SWARM.KEY
+## ACTIVATE SECONDARY PRIVATE IPFS SWARM
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
 [[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
