@@ -281,6 +281,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
                   -e "s~_ZONEIPFS_~${ZCHAIN}~g" \
                   -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
                   -e "s~_SECTORG1PUB_~${G1PUB}~g" \
+                  -e "s~_IPFSNINJA_~${VDONINJA}~g" \
                   -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
                   -e "s~_LAT_~${LAT::-1}~g" \
                   -e "s~_LON_~${LON::-1}~g" \

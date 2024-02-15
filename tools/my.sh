@@ -487,8 +487,12 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 ###
 fi
 
+## https://git.p2p.legal/qo-op/OSM2IPFS
 EARTHCID="/ipfs/QmYGS24WxVbsmmQfqWohXhXQZiwSmNswhTtSj9msVWKkNh"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
+
+## https://github.com/steveseguin/vdo.ninja
+VDONINJA="/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD"
 
 myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
 myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY

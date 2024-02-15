@@ -347,6 +347,7 @@ for UMAP in ${unique_combined[@]}; do
               -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
               -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
               -e "s~_ZONENS_~${TODATENS}~g" \
+              -e "s~_IPFSNINJA_~${VDONINJA}~g" \
               -e "s~_UPZONENS_~${TODATESECTORNS}~g" \
               -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
               -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
