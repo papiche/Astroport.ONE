@@ -32,8 +32,8 @@ start=`date +%s`
 if [[ ! -d ~/.zen/game/players/ ]];
 then
 echo "#############################################"
-echo "###### ASTROPORT.ONE IPFS STATION ##############"
-echo "################  TW Ŋ1 PROTOCOL #############"
+echo "###### ASTROPORT.ONE STATION ##############"
+echo "############# TW HOSTING & Ŋ1 SERVICES #############"
 echo "##################################################"
 
 echo ; echo "UPDATING SYSTEM REPOSITORY"
@@ -106,29 +106,6 @@ echo "#############################################"
 sudo npm install -g tiddlywiki
 [[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log
 
-#~ echo "#############################################"
-#~ echo "######### PATIENCE #################"
-#~ echo "#############################################
-#~ ### PROPOSITION DE LOGICIELS COMPLEMETAIRES
-#~ #############################################
-#~ ## OpenCV = 'Vision par Ordinateur en Intelligence Amie'
-#~ # sudo apt-get install python3-opencv -y
-#~ ## CONVERT AUDIO TO MIDI
-#~ # pip install basic-pitch
-#~ ## CACHER LES VISAGES
-#~ # python3 -m pip install 'git+https://github.com/ORB-HD/deface'
-#~ ## ...
-#~ ## DES SUGGESTIONS ?
-#~ ## CONTACTER support@qo-op.com
-#~ #################################################"
-## MAILJET SSMTP RELAYING : ADD YOUR CREDENTIALS
-#~ sudo cp ~/.zen/Astroport.ONE/templates/.ssmtprc /etc/ssmtp/ssmtp.conf
-#~ sudo ln -s /usr/sbin/ssmtp /usr/bin/ssmtp
-#~ sudo chmod 640 /etc/ssmtp/ssmtp.conf
-#~ sudo chgrp mail /etc/ssmtp/ssmtp.conf
-
-#~ echo "$USER:support@g1sms.fr:mail.asycn.io:587" | (sudo su -c 'tee -a /etc/ssmtp/revaliases')
-
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
 if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
@@ -136,9 +113,9 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
 fi
 
-echo "###########################"
-echo "##  ADDING CRYPTO LAYER ================"
-
+echo "#####################################"
+echo "##  CRYPTO LIB & PYTHON TOOLS"
+export PATH=$HOME/.local/bin:$PATH
 for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         python -m pip install --break-system-packages -U $i
@@ -151,7 +128,7 @@ echo "#############################################"
 
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
 if [[ $USER != 'xbian' ]]; then
-    echo "INSTALL PRINTER FOR G1BILLET ASTROID ZENCARD ..."
+    echo "INSTALL PRINTER FOR G1BILLET + AstroID & Zencard ..."
     saisie="OK"
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
@@ -166,7 +143,7 @@ if [[ $USER != 'xbian' ]]; then
         echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
 
         ## G1BILLET
-        echo "INSTALLING G1BILLET SERVICE : http://g1billet.localhost:33101"
+        echo "INSTALL G1BILLET SERVICE : http://g1billet.localhost:33101"
         cd ~/.zen
         git clone https://git.p2p.legal/qo-op/G1BILLET.git
         cd G1BILLET && ./setup_systemd.sh
@@ -176,6 +153,8 @@ if [[ $USER != 'xbian' ]]; then
 
 fi
 
+#####################
+#### ~/.bashrc
 echo "########################### ♥BOX"
 sudo ln -f -s  /usr/bin/python3 /usr/bin/python
 
@@ -209,7 +188,6 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
-
 #~ if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 #~ echo "#############################################"
 #~ echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
@@ -224,23 +202,22 @@ echo "=== SETUP ASTROPORT"
 #~ ) &
 #~ fi
 
-
+end=`date +%s`
+echo Installation time was `expr $end - $start` seconds.
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-echo "xXX ERRORS XXx"
+echo "xXX LOG ERRORS XXx"
 cat /tmp/install.errors.log
 echo "xXX please report any errors encountered during install  XXx"
 echo "################XXXX#########################"
+echo "RUN TEST : ~/.zen/Astroport.ONE/test.sh"
 echo
 echo "#############################################"
 echo "Astroport.ONE - Web3 Information System over IPFS - "
-end=`date +%s`
-echo Execution time was `expr $end - $start` seconds.
 echo "#############################################"
 echo "##GROUND CONTROL #################################"
 echo "* WEB : http://127.0.0.1:1234/"
 echo "* CLI : ~/.zen/Astroport.ONE/command.sh"
 echo "#############################################"
-echo "RUN TEST : ~/.zen/Astroport.ONE/test.sh"
 echo "### SUPPORT #############################"
 echo "### support@qo-op.com"
 echo "#############################################"
