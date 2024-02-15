@@ -38,7 +38,8 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
 
     ## COPY 20h12.log
-    cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/
+    rm -f ~/.zen/tmp/${IPFSNODEID}/20h12.log ## TODO REMOVE
+    cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/20h12.txt
 
     ## COPY FRIENDS
     PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
