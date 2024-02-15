@@ -41,35 +41,64 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 ## RUNNING UPLANET LAT/LON TW DETECTION
 mkdir -p ~/.zen/tmp/${MOATS}/
-# ------------------------------------------------------------------- #
-# GET/?zone=0.001&ulat=0.02&ulon=0.01
-# ------------------------------------------------------------------- #
-DEG=${THAT}
-[[ -z $DEG ]] && DEG=1
-# DEG=$(echo "$DEG * 10" | bc -l )
-
-LAT=${THIS}
-[[ -z $LAT ]] && LAT=0.00
-LON=${WHAT}
-[[ -z $LON ]] && LON=0.00
-
 # PREPARE HTTP RESPONSE (application/json)
 echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}.http
 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}.http
 
-LAT=$(makecoord $LAT)
-LON=$(makecoord $LON)
-JSON="ZONE_$LAT_$LON_$DEG.json"
+# ------------------------------------------------------------------- #
+# GET/?zone=0.001&ulat=0.02&ulon=0.01
+# ------------------------------------------------------------------- #
+
+DEG="${THAT}"
+[[ -z ${DEG} ]] && DEG=1
+# DEG=$(echo "${DEG} * 10" | bc -l )
+
+LAT="${THIS}"
+[[ -z $LAT ]] && LAT=0.00
+
+LON="${WHAT}"
+[[ -z $LON ]] && LON=0.00
+
+LAT=$(makecoord ${LAT})
+LON=$(makecoord ${LON})
+JSON="ZONE_${LAT}_${LON}_${DEG}.json"
 
 [[ $(date +"%H%M") -gt 2012 ]] \
     && THEDATE=${TODATE} \
     || THEDATE=${YESTERDATE}
 echo "${THEDATE}"
 
-if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
+
+    ## SECTOR LEVEL
+    if [[ ${DEG} == "0.01" ]]; then
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
+        SECTOR="_${SECLAT}_${SECLON}"
+        echo "SECTOR = ${SECTOR}"
+        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${SECTOR}" "${THEDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
+        JSON="ZONE${SECTOR}_${DEG}.json"
+
+    fi
+
+    ## REGION & ABOVE LEVEL
+    if [[ ${DEG} == "0.1" ||  ${DEG} == "1" ]]; then
+        LAT=$(echo ${LAT} | cut -d '.' -f 1)
+        LON=$(echo ${LON} | cut -d '.' -f 1)
+        ZONE="_${LAT}_${LON}"
+        echo "ZONE = ${ZONE}"
+        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
+        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${ZONE}" "${THEDATE}${UPLANETNAME}${ZONE}")
+        JSON="ZONE${ZONE}_${DEG}.json"
+
+    fi
+
+echo " JSON = ${JSON}"
+
+if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
 
     ## UMAP LEVEL
-    if [[ $DEG == "0.001" ]]; then
+    if [[ ${DEG} == "0.001" ]]; then
 
         swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
         nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
@@ -81,7 +110,9 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
         ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
-        echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' > ~/.zen/tmp/${MOATS}.http.grid
+        echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' \
+            > ~/.zen/tmp/${MOATS}.http.grid
+
         cp ~/.zen/tmp/${MOATS}.http.grid ~/.zen/tmp/${JSON}
         cat ~/.zen/tmp/${JSON} >> ~/.zen/tmp/${MOATS}.http
 
@@ -94,41 +125,17 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
 
     fi
 
-    ## SECTOR LEVEL
-    if [[ $DEG == "0.01" ]]; then
-        SECLAT="${LAT::-1}"
-        SECLON="${LON::-1}"
-        SECTOR="_${SECLAT}_${SECLON}"
-        echo "SECTOR = ${SECTOR}"
-        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${SECTOR}" "${THEDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
-        JSON="ZONE${SECTOR}_$DEG.json"
-
-    fi
-
-    ## REGION & ABOVE LEVEL
-    if [[ $DEG == "0.1" ||  $DEG == "1" ]]; then
-        LAT=$(echo ${LAT} | cut -d '.' -f 1)
-        LON=$(echo ${LON} | cut -d '.' -f 1)
-        ZONE="_${LAT}_${LON}"
-        echo "ZONE = ${ZONE}"
-        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
-        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${ZONE}" "${THEDATE}${UPLANETNAME}${ZONE}")
-        JSON="ZONE${ZONE}_$DEG.json"
-
-    fi
-
-
-    ## ALL OTHER DEG : SEARCH FOR UPLANET TW NUMBERS
+    ##############################################
+    ## SEARCH FOR UPLANET TW NUMBERS IN THAT ZONE
     echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http.grid
 
     for i in $(seq 0 9);
     do
-        ZLAT=$(echo "$LAT + $DEG * $i" | bc -l )
+        ZLAT=$(echo "$LAT + ${DEG} * $i" | bc -l )
         [[ -z  ${ZLAT} ]] && ZLAT=0
         # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
             for j in $(seq 0 9); do
-                ZLON=$(echo "$LON + $DEG * $j" | bc -l )
+                ZLON=$(echo "$LON + ${DEG} * $j" | bc -l )
                 [[ -z  ${ZLON} ]] && ZLON=0
                 # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
                 echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
@@ -140,7 +147,7 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
 
                 [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONEINDEX}'" }
                 ,' >> ~/.zen/tmp/${MOATS}.http.grid \
-                    && echo "$DEG :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONEINDEX}'" }'
+                    && echo "${DEG} :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONEINDEX}'" }'
 
             done
     done
@@ -148,7 +155,7 @@ if [[ ! -s ~/.zen/tmp/ZONE_$LAT_$LON_$DEG.json ]]; then
     sed -i '$ d' ~/.zen/tmp/${MOATS}.http.grid ## REMOVE LAST ','
     echo ']}'  >> ~/.zen/tmp/${MOATS}.http.grid
 
-    ## ADD TO CACHE
+    echo "## ADD TO CACHE ~/.zen/tmp/${JSON}"
     cp ~/.zen/tmp/${MOATS}.http.grid ~/.zen/tmp/${JSON}
 
 fi
@@ -157,6 +164,7 @@ fi
 cat ~/.zen/tmp/${JSON} >> ~/.zen/tmp/${MOATS}.http
 (
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    rm ~/.zen/tmp/${MOATS}.http.grid 2>/dev/null
     rm ~/.zen/tmp/${MOATS}.http && echo "BLURP ${JSON}"
 ) &
 ## CLEANING
