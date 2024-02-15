@@ -26,7 +26,10 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
 done
 # espeak "CODE git pull" > /dev/null 2>&1
 
-## REMOVE TMP BUT KEEP SWARM
+# show ZONE.sh cache of the day
+ls ~/.zen/tmp/ZONE_*
+
+## REMOVE TMP BUT KEEP SWARM and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
 rm -Rf ~/.zen/tmp/*
