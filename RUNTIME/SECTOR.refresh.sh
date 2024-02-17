@@ -249,23 +249,23 @@ for SECTOR in ${SECTORS[@]}; do
         IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
         echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
 
-###########################################################################################
-## ADD SECTOR ZENPUB.png & INFO.png
-convert -font 'Liberation-Sans' \
-        -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
-        -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
-        $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
-# CREATE G1PUB AMZQR
-amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
-convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
-# ADD IT
-composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
+        ###########################################################################################
+        ## ADD SECTOR ZENPUB.png & INFO.png
+        convert -font 'Liberation-Sans' \
+                -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
+                -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
+                $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
+        # CREATE G1PUB AMZQR
+        amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
+        convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
+        # ADD IT
+        composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
 
-## zday marking
-rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
+        ## zday marking
+        rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
-###########################################################################################
+        ###########################################################################################
         ### APPLY ON APP MODEL TODATE REGIONNS LINKING
         REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
         REGLON=$(echo ${SLON} | cut -d '.' -f 1)
@@ -292,9 +292,6 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
                   -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
                   -e "s~http://127.0.0.1:8080~~g" \
         > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
-
-## TODO get from ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid produced by REGION.refresh
-#      -e "s~_RWEEKCID_~/ipfs/QmY4rLRgSXjhhsW3WoKUJYpLe2A1dJCFXb7stNLcAp95w9~g" \
 
         ##################################
         cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
@@ -324,11 +321,16 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
 ## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE
     echo "(☉_☉ ) ${REGION}.week.rss.json  (☉_☉ )"
 
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/SECTORS/ ## TODO REMOVE
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON}
     ## CREATING 7 DAYS JSON RSS STREAM
     tiddlywiki --load ${INDEX} \
-                        --output ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
+                        --output ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON} --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
+
+    ###################################
+    ## NODE CACHE SECTOR TODATENS
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TODATENS}'\" />" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON}/_index.html
 
     ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
     ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28
