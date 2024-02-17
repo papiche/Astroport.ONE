@@ -324,11 +324,11 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE
 ## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE
     echo "(☉_☉ ) ${REGION}.week.rss.json  (☉_☉ )"
 
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/SECTORS/
-    rm -f ~/.zen/tmp/${IPFSNODEID}/SECTORS/${SECTOR}.week.rss.json
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/
+    rm -Rf ~/.zen/tmp/${IPFSNODEID}/SECTORS/ ## TODO REMOVE
     ## CREATING 7 DAYS JSON RSS STREAM
     tiddlywiki --load ${INDEX} \
-                        --output ~/.zen/tmp/${IPFSNODEID}/SECTORS --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
+                        --output ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
 
     ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
     ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28

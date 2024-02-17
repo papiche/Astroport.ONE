@@ -126,12 +126,14 @@ for REGION in ${REGIONS[@]}; do
             mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
                     ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
 
-            ## PREPARING AiApi link
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/REGIONS
+            ## PREPARING JOURNAL
+            rm -Rf ~/.zen/tmp/${IPFSNODEID}/REGIONS ## TODO REMOVE
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS
+
             RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL)
 
             cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
-                ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.JOURNAL.md
+                ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}.JOURNAL.md
 
             ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
             echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
