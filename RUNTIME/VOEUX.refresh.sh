@@ -15,6 +15,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/*
 # _PLAYER.json
 
+# change SWARM memory
+### # ~/.zen/tmp/${IPFSNODEID}/WISH/${WISHNAME}/${PLAYER}/*
 
 PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! ${PLAYER} ]] && echo "Please provide PLAYER publish key" && exit 1
@@ -36,9 +38,6 @@ INDEX="$3"
 [[ ! -s $INDEX ]] && echo "TW ${PLAYER} manquant" && exit 1
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu
-
-## PROTOCOL EVOLUTION RUN & REMOVE
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}
 
 ###############################
 ####### NEED G1 / ZEN TO RUN
