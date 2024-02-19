@@ -38,13 +38,13 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=( "CREATE ZENCARD" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=( "PRINT ZENCARD" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
 
 
     select fav in "${players[@]}"; do
         case $fav in
-        "CREATE ZENCARD")
+        "PRINT ZENCARD")
             ## DIRECT VISA.print.sh
             echo "'Email ?'"
             read EMAIL
@@ -67,7 +67,7 @@ echo 'PRESS ENTER... '; read
         "CREATE PLAYER")
             ${MY_PATH}/RUNTIME/VISA.new.sh
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
-            echo "Astronaute $fav bienvenue dans le jeu de terraformation forêt jardin MadeInZion"
+            echo "Astronaute $fav bienvenue sur UPlanet. Set TW GPS position..."
             exit
             ;;
         "IMPORT PLAYER")
@@ -79,7 +79,7 @@ echo 'PRESS ENTER... '; read
             read EMAIL
             ${MY_PATH}/RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
-            echo "Astronaute $fav heureux de vous acceuillir"
+            echo "Astronaute $fav WELCOME"
             exit
             ;;
         "")
@@ -143,7 +143,7 @@ select fav in  "${choices[@]}"; do
         echo "ATTENTION ${PLAYER} DECONNEXION DE VOTRE TW !!"
         echo  "Enter to continue. Ctrl+C to stop"
         read
-        ${MY_PATH}/tools/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}"
+        ${MY_PATH}/RUNTIME/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}"
 
         break
         ;;

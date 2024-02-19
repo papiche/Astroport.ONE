@@ -11,6 +11,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+. "$MY_PATH/../tools/my.sh"
 
 RSS=$1 ## filepath to RSS
 SECTOR=$2 ## Sector identifier _0.0_0.0
@@ -23,7 +24,8 @@ INDEX=$4 ## SECTOR TW index file
     && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
     && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
 
-
+echo
+echo
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
 ## GET PLAYER INFORMATION
@@ -163,7 +165,7 @@ To Accept<br>
 To Refuse<br>
  ${NUNIQUE[*]} must fork by deleting or modifying New Tiddler title.
 <br>
-<h2><a href='$(myIpfsGw)/ipfs/QmcSkcJ2j7GAsC2XhVqGSNAKVRpXgxfjjvDbhD5YxrncZY/?room=${MOATS}'>Actual Tiddler</a>Engage discussion about it...</a></h2>
+<h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Actual Tiddler</a>Engage discussion about it...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
                 ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "TIDDLER COLLISION"

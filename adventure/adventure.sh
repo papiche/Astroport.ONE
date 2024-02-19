@@ -17,15 +17,22 @@ ME="${0##*/}"
 ###################################################################
 ### CREER VOTRE PROPRE VERSION DU JEU
 ### List games/E@MAIL/ directories
-## PUT A PROPOSAL ON THE METHOD
+## ADD PROPOSAL ON THE METHOD
+GAMES_DIR="games"
 GAMES=$(find "$GAMES_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
 GAMES=$(ls $MY_PATH/games/)
 GAMES=($(ls -d $MY_PATH/games/))
 # Above methods are breaking with games names containing SPACE !
 
-## cd METHOD resist to " " space
-cd games && GAMES=(".." *) && cd ..
-## but can still be fooled...
+# BASH is CREOLE
+# this cd *@* METHOD resist to " " space
+cd games \
+    && GAMES=(".." *@*) && cd .. \
+    || GAMES=".."
+## but can still be fooled by file...
+
+## personalisez le prompt
+PS3="CHOIX DU GAME : __ "
 
 select game in "${GAMES[@]}"; do
 

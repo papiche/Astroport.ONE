@@ -167,15 +167,14 @@ echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
 NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
-PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 2) ## STRONGER TW SECURITY "AlpH4nUm"
-DPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 2) ## STRONGER TW SECURITY "AlpH4nUm"
+PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 4) ## STRONGER TW SECURITY "AlpH4nUm"
 NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
 
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
-echo VISA.new.sh "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
+echo VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
                     ##### (☉_☉ ) #######
-${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
 ## TO REMOVE : MONITOR
 ${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG VISA.new $EMAIL" ## Send VISA.new log to EMAIL
@@ -187,7 +186,7 @@ echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
 
 ########################################
 ## Calculating TW IPNS ADDRESS
-TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${EMAIL}_${PPASS}_${DPASS}" "${NPASS}")
+TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${EMAIL}_${PPASS}" "${NPASS}")
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
@@ -219,7 +218,7 @@ echo "$HTTPCORS
     <h1>UPlanet Registration</h1>
     Your AstroID seeds are:<br>
     <br>
-    <h2>${EMAIL}_${PPASS}_${DPASS}</h2>
+    <h2>${EMAIL}_${PPASS}</h2>
     <h1>${NPASS}</h1>
 
     Generating account...

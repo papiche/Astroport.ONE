@@ -7,7 +7,7 @@
 # Activate SUPPORT MODE: open ssh over IPFS
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/my.sh"
+. "$MY_PATH/../tools/my.sh"
 ########################################################################
 YOU=$(myIpfsApi) || er+=" ipfs daemon not running"
 [[ "$YOU" == "" || "${IPFSNODEID}" == "" ]] && echo "ERROR : $er " && exit 1

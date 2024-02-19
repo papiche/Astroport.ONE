@@ -96,14 +96,15 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
+    ##### MONITORING #########
     echo "<html><h1>ZEN OPERATION</h1>
-    <h3><a href='/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
+    <h3><a href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
     <br> ${ZENCUR} - ${ZENAMOUNT} </h3>
-    <h3><a href='/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k/#/app/wot/tx/${G1PUB}/'>${G1PUB}</a>
+    <h3><a href='${CESIUMIPFS}/#/app/wot/tx/${G1PUB}/'>${G1PUB}</a>
     <br> ${ZENDES} + ${ZENAMOUNT} </h3>
     <h2>OK</h2></html>" > ${PENDINGDIR}/${MOATS}.result.html
 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN OPERATION"
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN :  ${ISSUERPUB} > ${G1PUB}"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
     rm ${PENDINGDIR}/${MOATS}.key
