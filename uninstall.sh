@@ -42,12 +42,12 @@ rm -f /tmp/mycron
 ########################################################################
 echo "REMOVE /etc/sudoers EXTRA PERMISSION"
 [[ "$USER" == "xbian" ]] && rm -f /etc/sudoers.d/astroport
-rm -f /etc/sudoers.d/fail2ban-client
-rm -f /etc/sudoers.d/mount
-rm -f /etc/sudoers.d/umount
-rm -f /etc/sudoers.d/apt-get
-rm -f /etc/sudoers.d/apt
-rm -f /etc/sudoers.d/systemctl
+sudo rm -f /etc/sudoers.d/fail2ban-client
+sudo rm -f /etc/sudoers.d/mount
+sudo rm -f /etc/sudoers.d/umount
+sudo rm -f /etc/sudoers.d/apt-get
+sudo rm -f /etc/sudoers.d/apt
+sudo rm -f /etc/sudoers.d/systemctl
 
 mv ~/.zen ~/.zen.todelete
 echo "ASTROPORT DESACTIVATED. FINISH MANUAL REMOVE
