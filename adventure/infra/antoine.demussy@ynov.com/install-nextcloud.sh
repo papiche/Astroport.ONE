@@ -25,6 +25,8 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Répertoire où Nextcloud sera cloné
+mkdir="/home/$USER/opt"
+mkdir="/home/$USER/opt/nextcloud"
 install_dir="/home/$USER/opt/nextcloud"
 
 # Cloner le dépôt Nextcloud depuis GitHub
