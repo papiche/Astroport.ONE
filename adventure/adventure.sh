@@ -26,7 +26,7 @@ GAMES=($(ls -d $MY_PATH/games/))
 
 # BASH is CREOLE
 # this cd *@* METHOD resist to " " space
-cd games \
+cd ${MY_PATH}/games \
     && GAMES=(".." *@*) && cd .. \
     || GAMES=".."
 ## but can still be fooled by file...
