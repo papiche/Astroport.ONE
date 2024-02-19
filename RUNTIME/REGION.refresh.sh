@@ -138,7 +138,7 @@ for REGION in ${REGIONS[@]}; do
 
             ###################################
             ## NODE PUBLISH REGION TODATENS LINK
-            echo "<meta http-equiv=\"refresh\" content=\"0; url='${TODATEREGIONNS}'\" />" \
+            echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" \
                 > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/_index.html
 
 

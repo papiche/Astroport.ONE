@@ -329,7 +329,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     ###################################
     ## NODE CACHE SECTOR TODATENS
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TODATENS}'\" />" \
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATENS}'\" />" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON}/_index.html
 
     ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
