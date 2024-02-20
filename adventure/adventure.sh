@@ -40,15 +40,24 @@ select game in "${GAMES[@]}"; do
     MY_GAME="$MY_PATH/games/$game"
     echo "SELECTION: "${MY_GAME}
 
-    # test game start protocol compatibility
-    if [[ -x ${MY_GAME}/rooms/start.sh ]]; then
-            sleep 1
-            echo "Charging game..."
-            sleep 1
-            break
+    diff --recursive --brief ${MY_GAME}/ ${MY_GAME}/../_votre\ jeu/
+
+    echo "confirm ?"
+    read ENTER
+
+    if [[ ! $ENTER ]]; then
+        # test game start protocol compatibility
+        if [[ -x ${MY_GAME}/rooms/start.sh ]]; then
+                sleep 1
+                echo "Charging game..."
+                sleep 1
+                break
+        else
+                # not compatible
+                echo "ERROR - not compatible game - SELECT ANOTHER - "
+        fi
     else
-            # not compatible
-            echo "ERROR - not compatible game - SELECT ANOTHER - "
+        echo "CHOOSE NEXT"
     fi
 
 done

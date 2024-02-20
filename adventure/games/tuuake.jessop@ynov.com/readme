@@ -1,0 +1,64 @@
+# SCRIPT01.CYBSEC
+
+Puissance 4
+
++ 13 : game engine
++ 0 : multigame compatibility
+- 1 : bugs
++1 : shellcheck
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+
+
+
+```
+
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ../_votre jeu/: adventure.sh
+Seulement dans ../_votre jeu/: art
+Seulement dans ./: Config.sh
+Seulement dans ./: fonction.sh
+Seulement dans ../_votre jeu/: logic
+Seulement dans ./: Menu.sh
+Seulement dans ./: Puissance4.sh
+
+```
+
+./adventure.sh: ./start.sh : /bin/bash^M : mauvais interpréteur: Aucun fichier ou dossier de ce type
+
+unix2dos / dos2unix
+
+```
+shellcheck
+echo "######################################################################"
+                                                                             ^-- SC1017: Literal carriage return. Run script through tr -d '\r' .
+```
+
+```
+dos2unix *.sh
+dos2unix: conversion du fichier Config.sh au format Unix…
+dos2unix: conversion du fichier fonction.sh au format Unix…
+dos2unix: conversion du fichier Puissance4.sh au format Unix…
+dos2unix: conversion du fichier start.sh au format Unix…
+```
+
+```
+shellcheck fonction.sh
+
+In fonction.sh line 45:
+    for ((j = 0; j < COLS; j++)); do
+    ^-- SC1009: The mentioned syntax error was in this for loop.
+        ^-- SC1073: Couldn't parse this arithmetic for condition. Fix to allow more checks.
+                                  ^-- SC1061: Couldn't find 'done' for this 'do'.
+
+
+In fonction.sh line 81:
+}
+^-- SC1062: Expected 'done' matching previously mentioned 'do'.
+ ^-- SC1072: Unexpected keyword/token. Fix any mentioned problems and try again.
+
+```

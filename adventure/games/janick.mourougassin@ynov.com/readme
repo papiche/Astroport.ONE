@@ -1,0 +1,68 @@
+# SCRIPT01.CYBSEC
+
+  --- Un JEu des îles de l'Ocean Indien (974) ---
+
+
++ 14 : game engine
++2 : multigame compatibility
++1 : shellcheck
+- 2 : bugs
+
+> final 15
+
+## "GameShell" LEVEL ?
+
+
+## DIFFs
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ./: advendure_link.sh
+Seulement dans ../_votre jeu/art: astrologo.ben
+Seulement dans ../_votre jeu/art: astroportland.ben
+Seulement dans ../_votre jeu/art: astrored.ben
+Seulement dans ../_votre jeu/art: bigfinish.ben
+Seulement dans ../_votre jeu/art: Gune.ben
+Seulement dans ../_votre jeu/art: logoastro.ben
+Seulement dans ../_votre jeu/art: supper.ben
+Les fichiers ./art/titleart.ben et ../_votre jeu/art/titleart.ben sont différents
+Seulement dans ./art: titleart.ben2
+Seulement dans ../_votre jeu/: logic
+Les fichiers ./rooms/brown.sh et ../_votre jeu/rooms/brown.sh sont différents
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/gameroom.sh et ../_votre jeu/rooms/gameroom.sh sont différents
+Les fichiers ./rooms/green.sh et ../_votre jeu/rooms/green.sh sont différents
+Les fichiers ./rooms/grue.sh et ../_votre jeu/rooms/grue.sh sont différents
+Seulement dans ./rooms: lanceur.sh
+Les fichiers ./rooms/meteofrance.sh et ../_votre jeu/rooms/meteofrance.sh sont différents
+Les fichiers ./rooms/red.sh et ../_votre jeu/rooms/red.sh sont différents
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Les fichiers ./rooms/white.sh et ../_votre jeu/rooms/white.sh sont différents
+Les fichiers ./script/opening.ben et ../_votre jeu/script/opening.ben sont différents
+
+```
+
+
+```
+shellcheck rooms/start.sh
+
+In rooms/start.sh line 33:
+    if ! (echo ${board[@]} | grep -q '[0-8]'); then
+               ^---------^ SC2068: Double quote array expansions to avoid re-splitting elements.
+
+```
+
+OK
+
+
+bugs
+```
+Vous zntrée dans le taxi en direction du nord..
+cat: ../logic/leverlogic.ben: Aucun fichier ou dossier de ce type
+
+Il vous indique que ou se trouve l'aéroport. Vous devait vous diriger vers PierreFonds.
+cat: ../logic/leverlogic.ben: Aucun fichier ou dossier de ce type
+
+```
+
+
