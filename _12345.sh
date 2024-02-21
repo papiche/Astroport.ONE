@@ -81,9 +81,12 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
 
+
+    #### UPLANET FLASHMEM UPDATES
+    ${MY_PATH}/UPlanetKEYS_refresh.sh &
+
     #####################################
-    ( ##### SUB-PROCESS RUN
-    exec 2>&1 >> ~/.zen/tmp/_12345.log
+    ( ##### SUB-PROCESS £
     start=`date +%s`
 
     # MONITOR pending
