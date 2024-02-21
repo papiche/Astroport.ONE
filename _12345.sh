@@ -81,6 +81,7 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
 
+    ${MY_PATH}/ping_bootstrap.sh
 
     #### UPLANET FLASHMEM UPDATES
     ${MY_PATH}/UPlanetKEYS_refresh.sh &
