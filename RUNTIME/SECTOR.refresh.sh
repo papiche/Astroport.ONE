@@ -137,8 +137,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
             && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-            && ipfs key rm ${TODATE}${G1PUB} ${YESYERDATE}${G1PUB} ${G1PUB} \
-            && continue
+            && ipfs key rm ${TODATE}${G1PUB} ${YESYERDATE}${G1PUB} ${G1PUB}; continue
 
 ### NEXT REFRESHER SHUFFLE
     rm ${UREFRESH}
