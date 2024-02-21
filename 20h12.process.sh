@@ -31,7 +31,8 @@ done
 ${MY_PATH}/ping_bootstrap.sh
 
 # show ZONE.sh cache of the day
-ls ~/.zen/tmp/ZONE_*
+echo "TODAY UPlanet landings"
+ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
 ## REMOVE TMP BUT KEEP SWARM and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
