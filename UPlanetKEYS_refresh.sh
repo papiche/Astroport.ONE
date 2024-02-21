@@ -8,17 +8,27 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+. "$MY_PATH/tools/my.sh"
 ## LOG into ~/.zen/tmp/_12345.log
 exec 2>&1 >> ~/.zen/tmp/_12345.log
 
 echo "(◕‿◕ ) ${ME} (◕‿◕ ) "
 
-WKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
-echo ${#WKEYS[@]}  "  UMAPS"
-SKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/SECTORS/_*_*/_*.?_*.?/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
-echo ${#SKEYS[@]}  "  SECTORS"
-RKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/REGIONS/_*_*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
-echo ${#RKEYS[@]} "  REGIONS"
+## LOCAL
+LWKEYS=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
+echo ${#LWKEYS[@]}  " local UMAPS"
+LSKEYS=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_*_*/_*.?_*.?/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
+echo ${#LSKEYS[@]}  " local SECTORS"
+LRKEYS=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_*_*/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
+echo ${#LRKEYS[@]} " local REGIONS"
+
+## SWARM
+WKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/_index.html  2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
+echo ${#WKEYS[@]}  " swarm  UMAPS"
+SKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/SECTORS/_*_*/_*.?_*.?/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
+echo ${#SKEYS[@]}  " swarm SECTORS"
+RKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/REGIONS/_*_*/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
+echo ${#RKEYS[@]} " swarm REGIONS"
 
 ## CHECK FOR ANY ALREADY MErunning
 MErunning=$(ps axf --sort=+utime | grep -w ${ME} | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
@@ -26,7 +36,7 @@ MErunning=$(ps axf --sort=+utime | grep -w ${ME} | grep -v -E 'color=auto|grep' 
 
 echo "(◕‿◕ ) ${ME} starting UPlanet Terraformation _______________________________"
 
-combined=("${WKEYS[@]}" "${SKEYS[@]}" "${RKEYS[@]}")
+combined=("${LWKEYS[@]}" "${LSKEYS[@]}" "${LRKEYS[@]}" "${WKEYS[@]}" "${SKEYS[@]}" "${RKEYS[@]}")
 UKEYS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
 echo ${#UKEYS[@]} "  JOBS..."
 
