@@ -40,7 +40,7 @@ for key in ${UKEYS[@]}; do
     rm -Rf ~/.zen/tmp/flashmem
     echo "ipfs --timeout 30s get -o ~/.zen/tmp/flashmem /ipns/$key"
     ipfs --timeout 30s get -o ~/.zen/tmp/flashmem /ipns/$key
-    [ $! -eq 0 ] && medo=$((medo +1))
+    [[ $? == 0 ]] && medo=$((medo +1))
     floop=$((floop +1))
     [ $floop -gt 100 ] && break
 done
