@@ -144,8 +144,7 @@ for UMAP in ${unique_combined[@]}; do
 
     [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
         && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-        && ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}" \
-        && continue
+        && ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}"; continue
         ########################################
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
 
