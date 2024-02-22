@@ -131,7 +131,7 @@ for REGION in ${REGIONS[@]}; do
             rm -Rf ~/.zen/tmp/${IPFSNODEID}/REGIONS ## TODO REMOVE
             mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}
 
-            RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL)
+            RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL 2>/dev/null)
 
             cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
                 ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/JOURNAL.md
@@ -141,14 +141,9 @@ for REGION in ${REGIONS[@]}; do
             echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" \
                 > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/_index.html
 
-
-
-
-
-            ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
-            echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
-                        > ~/.zen/tmp/${MOATS}/${REGION}/Ask.IA._${REGLAT}_${REGLON}.redir.html
-
+            #~ ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
+            #~ echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
+                        #~ > ~/.zen/tmp/${MOATS}/${REGION}/Ask.IA._${REGLAT}_${REGLON}.redir.html
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -159,7 +154,7 @@ for REGION in ${REGIONS[@]}; do
 
             echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_${TOTL}
 
-            echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${RWEEKCID}'\" />" \
+            [[ ${RWEEKCID} ]] && echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${RWEEKCID}'\" />" \
                         > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.redir.html
 
             IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
