@@ -207,24 +207,29 @@ To Refuse<br>
 
 done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 
+## CLEANING
+rm ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json
+rm ~/.zen/tmp/${MOATS}/${SECTOR}/INSIDE.json
+rm ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json
 
 ####################################################
 ################################################
 ## SECTOR SENDS GRATITUDE TO PUBLISHING PLAYER
 ###################################################
 
-if [[ ${gloups} -gt 0 && ${ASTROG1} ]]; then
-    # GENERATE SECTOR PIVATE KEY ################################
+if [[ ${gloops} -gt 0 && ${ASTROG1} ]]; then
+    # GENERATE SECTOR PRIVATE KEY ################################
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     G1SECTOR=$(cat ~/.zen/tmp/${MOATS}/sector.dunikey | grep 'pub:' | cut -d ' ' -f 2)
-    cp -f ~/.zen/tmp/coucou/${G1SECTOR}.COINS ~/.zen/tmp/${IPFSNODEID}/${SECTOR}.COINS
+
+    #~ cp -f ~/.zen/tmp/coucou/${G1SECTOR}.COINS ~/.zen/tmp/${IPFSNODEID}/${SECTOR}.COINS
 
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
-    echo "***** SECTOR $SECTOR *************************************"
+    echo "***** SECTOR $SECTOR REWARD *****************"
     echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
-    to ${PLAYER} WALLET ${ASTROG1}"
+    to ${PLAYER} WALLET ${ASTROG1} (${gloops} Tiddlers)"
     echo "************************************************************"
     ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"
     ################################################ GRATITUDE SENT
