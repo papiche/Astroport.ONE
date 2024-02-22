@@ -40,7 +40,7 @@ while true; do
             if [ "$levertwostate" = "on" ]; then
                 echo "Le levier est déjà en position ON, impossible de l'abbaisser maintenant..."
             else
-                sed -i='' 's/off/on/' ../logic/leverlogictwo.ben
+                sed -i 's/off/on/' ../logic/leverlogictwo.ben
                 echo "Vous relevez le levier en position ON en forcant un peu."
                 echo "Vous entendez un bruit de mécanisme qui se déclenche à l'est."
             fi
