@@ -27,7 +27,8 @@ if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop"  ]]; then
 fi
 
 ############################################
-## DISTRIBUTE DRAGON SSH WOT SEED : A_boostrap_ssh.txt
+## DISTRIBUTE DRAGON SSH WOT SEED
+# A_boostrap_ssh.txt
 ############################################
 while IFS= read -r line
 do
@@ -55,12 +56,12 @@ gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~
 ############################################
 echo "Lanching  /x/ssh-${IPFSNODEID}"
 
-[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
+[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
+    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
 
 ipfs p2p ls
 
 echo
-echo "#!/bin/bash"
 ############################################
 ## PREPARE x_ssh.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
@@ -68,11 +69,13 @@ echo "#!/bin/bash"
 PORT=22000
 PORT=$((PORT+${RANDOM:0:3}))
 
-echo "if [[ ! \$(ipfs p2p ls | grep x/ssh-${IPFSNODEID}) ]]; then
-ipfs --timeout=5s ping -n 1 /p2p/${IPFSNODEID}
-ipfs p2p forward /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/$PORT /p2p/${IPFSNODEID}
-ssh $USER@127.0.0.1 -p $PORT
-fi" > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+echo "#!/bin/bash
+if [[ ! \$(ipfs p2p ls | grep x/ssh-${IPFSNODEID}) ]]; then
+    ipfs --timeout=10s ping -n 3 /p2p/${IPFSNODEID}
+    ipfs p2p forward /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/$PORT /p2p/${IPFSNODEID}
+fi
+ssh ${USER}@127.0.0.1 -p $PORT
+" > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
