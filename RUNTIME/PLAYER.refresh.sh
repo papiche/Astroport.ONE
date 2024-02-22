@@ -59,9 +59,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
     #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ZEN (= 1 €OC) ?
-    echo "##################################################################"
-    echo "################### REFRESH ASTRONAUTE TW ###########################"
-    echo "##################################################################"
+    echo "##>>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
 
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
@@ -214,7 +212,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]  \
         && echo "## Connect_PLAYER_To_Gchange.sh" \
         && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        || echo "1 G1 + 10 ẑen needed to activate ★★★★★ system"
+        || echo "$COINS <= 1 G1 + 10 ẑen : stars exchange (★★★★★) level"
 
     # G1PalPay - 1 G1 mini -> Check for G1 TX incoming comments #
     if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then

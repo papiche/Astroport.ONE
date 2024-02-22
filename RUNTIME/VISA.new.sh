@@ -256,8 +256,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN ( DONE IN PLAYER_REFRESH )
         #~ sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        ## Fill ♥BOX - CopierYoutube Tiddler
-         sed -i "s~_URL_~${URL}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+        ## Fill LNK - Tiddler - escape \&
+        sed -i "s~_URL_~$(echo "${URL}" | sed 's/[&/]/\\&/g')~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT PLAYER DATA
         sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
