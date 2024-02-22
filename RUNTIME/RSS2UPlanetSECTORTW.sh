@@ -205,6 +205,11 @@ To Refuse<br>
 
     fi
 
+    ## CLEANING
+    rm ~/.zen/tmp/${MOATS}/INSIDE.json 2>/dev/null
+    rm ~/.zen/tmp/${MOATS}/TMP.json 2>/dev/null
+    rm ~/.zen/tmp/${MOATS}/NEW.json 2>/dev/null
+
 done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 
 ####################################################
