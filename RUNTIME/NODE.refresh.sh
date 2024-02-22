@@ -38,7 +38,8 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
 
     ## COPY 20h12.log
-    cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/
+    rm -f ~/.zen/tmp/${IPFSNODEID}/20h12.log ## TODO REMOVE
+    cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/20h12.txt
 
     ## COPY FRIENDS
     PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
@@ -51,7 +52,12 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
         cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/FRIENDS/ 2>/dev/null
     done
 
-    cp ~/.zen/GPS ~/.zen/tmp/${IPFSNODEID}/
+    ## INFORM GPS LOCATION
+    [[ -s ~/.zen/game/players/.current/GPS.json ]] \
+        && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/ \
+        && LAT=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lat) \
+        && LON=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lon) \
+        && echo "LAT=${LAT}; LON=${LON}" > ~/.zen/GPS
 
     ## REFRESH TIMESTAMPING
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
@@ -67,7 +73,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
 fi
 
-## CLEANING SWARM 30 DAYS OLD
-find  ~/.zen/tmp/swarm/ -mtime +30 -type d -exec rm -Rf '{}' \;
+## CLEANING SWARM 3 DAYS OLD
+find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
 
 exit 0

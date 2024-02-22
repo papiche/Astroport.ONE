@@ -81,9 +81,13 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
 
+    ${MY_PATH}/ping_bootstrap.sh
+
+    #### UPLANET FLASHMEM UPDATES
+    ${MY_PATH}/UPlanetKEYS_refresh.sh &
+
     #####################################
-    ( ##### SUB-PROCESS RUN
-    exec 2>&1 >> ~/.zen/tmp/_12345.log
+    ( ##### SUB-PROCESS £
     start=`date +%s`
 
     # MONITOR pending
@@ -102,6 +106,7 @@ while true; do
     for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
     do
 
+        ## ex: /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u)
         echo "############# RUN LOOP ######### $(date)"
         ipfsnodeid=${bootnode##*/}
 

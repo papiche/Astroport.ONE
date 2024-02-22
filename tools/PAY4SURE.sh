@@ -64,13 +64,13 @@ bash '${ME}' "'${PENDINGDIR}'/'${MOATS}'.key" "'${AMOUNT}'" "'${G1PUB}'" "'${COM
 ' > ${PENDINGDIR}/${MOATS}_replay.sh
 chmod +x ${PENDINGDIR}/${MOATS}_replay.sh
 
-rm -f ${PENDINGDIR}/${MOATS}.result
+rm -f ${PENDINGDIR}/${MOATS}.result.html
 
 ################################################
 # MAKE PAYMENT
-${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/${MOATS}.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result
-CHK1=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 1 )
-CHK2=$(cat ${PENDINGDIR}/${MOATS}.result | head -n 2 )
+${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/${MOATS}.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result.html
+CHK1=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 1 )
+CHK2=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 2 )
 
 echo ${CHK1}
 echo ${CHK2}
@@ -96,18 +96,20 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
+    ##### MONITORING #########
     echo "<html><h1>ZEN OPERATION</h1>
-    <h3>${ISSUERPUB}
+    <h3><a href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
     <br> ${ZENCUR} - ${ZENAMOUNT} </h3>
-    <h3>${G1PUB}
+    <h3><a href='${CESIUMIPFS}/#/app/wot/tx/${G1PUB}/'>${G1PUB}</a>
     <br> ${ZENDES} + ${ZENAMOUNT} </h3>
-    <h2>OK</h2></html>" > ${PENDINGDIR}/${MOATS}.result
+    <h2>OK</h2></html>" > ${PENDINGDIR}/${MOATS}.result.html
 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "${ZENAMOUNT} ZEN OPERATION"
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN :  ${ISSUERPUB} > ${G1PUB}"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
     rm ${PENDINGDIR}/${MOATS}.key
     rm ${PENDINGDIR}/${MOATS}_replay.sh
+    rm ${PENDINGDIR}/${MOATS}.result.html
     rm ${PENDINGFILE}
 
 else
@@ -118,16 +120,16 @@ else
     rm ${PENDINGFILE}
     echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
     <h1>-  MUST RETRY -</h1>
-    LAUNCHING SUB SHELL</html>" >> ${PENDINGDIR}/${MOATS}.result
+    LAUNCHING SUB SHELL</html>" >> ${PENDINGDIR}/${MOATS}.result.html
 
     ## COUNT NUMBER OF TRY
     try=$(cat ${PENDINGDIR}/${MOATS}.try 2>/dev/null) || try=0
 
     [ $try -gt 2 ] \
-    && echo "${MOATS} TOO MANY TRY ( $try )" >> ${PENDINGDIR}/${MOATS}.result \
-    && $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "PAYMENT CANCELED" \
+    && echo "${MOATS} TOO MANY TRY ( $try )" >> ${PENDINGDIR}/${MOATS}.result.html \
+    && $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "PAYMENT CANCELED" \
     && exit 1 \
-    || $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result "PAYMENT REPLAY"
+    || $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "PAYMENT REPLAY"
 
    (
     ((try++)) && echo $try > ${PENDINGDIR}/${MOATS}.try

@@ -8,13 +8,17 @@ MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-
-echo "ASTROPORT.ONE $USER@$HOSTNAME
+echo "ASTROPORT.ONE STOP
 @@@@@@@@@@@@@@@@@@
-STOP AT $MOATS
+$USER@$HOSTNAME
 @@@@@@@@@@@@@@@@@@"
 echo
+echo "astroport stop"
+sudo systemctl stop astroport
+echo "g1billet stop"
+sudo systemctl stop g1billet
+echo "ipfs stop"
+sudo systemctl stop ipfs
 
 echo "STOPPING PROCESS & CRON"
 ###################################################

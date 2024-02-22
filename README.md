@@ -2,10 +2,10 @@
 
 [Astroport DEV Journal](https://pad.p2p.legal/s/AstroportDEVJournal#)
 
-**Embark on a Cosmic Journey with ZenCard Payment System and Astroport.ONE**
+**Embark on a Cosmic Journey with AstroID & ZenCard System and Astroport.ONE**
 
 Are you weary of the constraints of traditional payment systems and concerned about the reliability
-of your distributed storage solutions? Look no further! Our revolutionary ZenCard Payment System
+of your distributed storage solutions? Look no further! Our revolutionary ZenCard QRCode based Payment System
 and Astroport.ONE v1.0 seamlessly blend cutting-edge blockchain technology with interplanetary storage,
 offering you a commission-free and secure solution.
 
@@ -18,19 +18,6 @@ the planet is sliced into 0.01° segments, ensuring locally registered Tiddlers 
 
 As a network engineer and system administrator committed to the Common Good, join us in constructing
 Astroport.ONE and shaping the future of secure and reliable distributed storage.
-
-**ZenCard Payment System: Empowering Transactions, Empowering Dreams**
-
-As blockchain makers, our ZenCard Payment System is not merely a crypto wallet; it's a game-changing payment card and terminal solution.
-Our controlled coin-emitting blockchain transfers 1 coin to your ZenCard per fiat money unit saved in the fiscal host.
-This unique approach makes blockchain accessible to everyone.
-
-Become a donor and a shareholder, receiving Coins equivalent to the Euros paid. Achieve a stable coin state of "1=1" through seamless transactions
-with a Host capable of sending and receiving Euros to users with zero fees, facilitated by PayPal integration.
-
-Activate your account on UPlanet, make donations to https://opencollective.com/made-in-zen, and receive encrypted wallets via email—printed
-in QRCode format for added security. Step into a future where financial transactions are commission-free,
-and data is securely stored across the cosmos.
 
 **Station Extra-Terrestre Astroport.ONE: Where Innovation Meets Tranquility**
 
@@ -73,43 +60,21 @@ At this point, if it exists "ASTROBOT/G1Tag.sh" program will publish the data re
 
 # INSTALLATION (Linux Mint / Ubuntu / DEBIAN)
 
-There is 2 methods one for server and one for Linux Mint desktop
-
-## SERVER : Using DOCKER (and MyOS)
-
-the easiest way to automaticaly deploy and host Astroport.ONE services
-
-```
-# install minimal requirements
-sudo apt install git docker make
-
-# clone Astroport.ONE repo
-git clone https://github.com/papiche/Astroport.ONE.git
-
-cd Astroport.ONE
-make
-make install
-
-```
-If your computer is running 24/24, you can join our "Boostrap list" & officially become a [TW UPlanet hoster](https://talk.tiddlywiki.org/t/uplanet-a-planet-full-of-tws/8193?u=papiche)
-
-> DOCKER MODE NOT READY TO USE !! FOLLOW AND ADAPT NEXT STEP
-
-## DESKTOP : Using install.sh script
-
 Tested on "Linux Mint" (Debian like distro compatible), the **hacker way for using & buidling new blockchain services** ...
 
-```
-# install on system wide
-# SOURCE GIT.P2P.LEGAL
-bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.sh)
+INSTALL COMMAND
 
-# SOURCE GITHUB
+```
 bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh)
 
 ```
 
-> PLEASE REPORT ANY ISSUES
+> TODO: MORE MODULAR INSTALL.
+> CREATE adventure explaining it
+
+## DRAGONS WOT
+
+Once you install Astroport.ONE...
 
 If all has gone well, you should find these processes running...
 
@@ -126,13 +91,22 @@ If all has gone well, you should find these processes running...
 
 ```
 
-# LAUNCH
+> Become Official REGIONAL Station
+> - follow "PGP/SSH/IPFSNODEID" linking procedure -
+> https://pad.p2p.legal/keygen
+
+
+# DESKTOP
 
 After installation, you should have 3 new shortcuts on your desktop
 
 * Astroport", which opens your station portal: http://astroport.localhost:1234
 * REC" allows you to save your files on IPFS and publish their Capusle in your TW.
 * G1BILLET" lets you create ZenCards and other useful QRCodes
+
+NB : If you use "Nemo" as file manager. You can "ipfs add" any file (with no space in file name) by right click it.
+
+> TODO : detect OS and FILE MANAGER to adapt desktop linking and right clic action
 
 ## How to manage your "Astroport"!
 
@@ -144,8 +118,9 @@ It is defined by email, salt, pepper, lat, lon and PASS
 ```
 Browse available functions
 
-A Station can host multiple "PLAYER and its TiddlyWiki".
+A Station can host multiple "PLAYERs and TiddlyWikis".
 
+---
 
 # "BASH API" : "♥BOX"
 ## http://astroport.localhost:1234
@@ -366,19 +341,19 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 check available "logo.png" in [./images](./images)
 
 ## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
-### ```/?uplanet=${PLAYER}&salt=${LAT}&pepper=${LON}&g1pub=${PASS}```
+### ```/?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `uplanet` | `email` | **Required** Your EMAIL token |
-| `salt` | `decimal` | **Required** LATITUDE with 2 decimals digits |
-| `pepper` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
+| `zlat` | `decimal` | **Required** LATITUDE with 2 decimals digits |
+| `zlon` | `decimal` | **Required** LONGITUDE with 2 decimals digits |
 | `g1pub` | `string` | **Facultative** choose Umap AstroID PASS |
 
 Create à Umap key (LAT/LON), then a PLAYER TW with GPS as Umap IPNS reference
 This API is used by OSM2IPFS code.
 
-UPlanet Entrance : https://qo-op.com
+* [UPlanet Entrance](https://qo-op.com)
 
 ### ➤ QRCODE (API SandBox)
 ```http

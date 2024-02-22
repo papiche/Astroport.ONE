@@ -35,7 +35,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 TWMODEL="/ipfs/bafybeie6sx76balvpeehvbh5du7oc5fhjuwydryympeh3qnm5s3b2jrvwe"
 # ipfs cat $TWMODEL > templates/twdefault.html
-MINIMAL="/ipfs/bafybeicpfrsx44lkib4352eulvohmgdpaww3sau3qtbj7fzj6qw7xsokhy"
+MINIMAL="/ipfs/bafybeifnlpnvpxxnblgwefoflmdnt2vhckmnu22orsi43zilh2v4sbegjy"
 # ipfs cat $MINIMAL > templates/twuplanet.html
 ################################################################################
 
@@ -312,6 +312,11 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## Change myIP
         #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
+        ## TODATE #########################################
+        TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
+        DEMAINSECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${DEMAINDATE}${UPLANETNAME}${SECTOR}" "${DEMAINDATE}${UPLANETNAME}${SECTOR}")
+
+
 ###########
         ## GET OLD16
         tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MIZ.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
@@ -515,72 +520,98 @@ LP=$(ls /dev/usb/lp* 2>/dev/null)
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/../tools/face.sh cool)"
-echo " 'Astronaute'  $PSEUDO"
+echo " 'Astronaut'  $PSEUDO"
 echo
 echo "* ZenCard : Public Key and Wallet
 ${NID}/ipns/${ASTRONAUTENS}#ZenCard"
 echo "   "
-echo "* AstroID : AstroID with PASS : $PASS"
+echo "* AstroID : with PASS : $PASS"
 echo "${NID}/ipns/${ASTRONAUTENS}#AstroID"
 echo
 echo "* UMap : registration at ${LAT}, ${LON}
 ${myIPFS}${URL}"
 echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-#~ echo "BIENVENUE"
-#~ echo "https://monnaie-libre.fr (ğ1) : $G1PUB"; # sleep 1
-#~ echo "
-#~ Vos Secrets :
-    #~ $SALT
-    #~ $PEPPER
-
-#~ * WALLET : https://cesium.app
-#~ * MARKET : https://gchange.fr
-
-#~ U Planet : ${myUPLANET}
-#~ Astroport.ONE ★ PKI ★ Ğ1/Ŋ1 ★ DAO ★ Libre ★"; # sleep 1
-#~ echo "$(${MY_PATH}/../tools/face.sh friendly) ★ GCHANGE LIBRE MARKET ★"
-#~ echo "Use $SALT and $PEPPER to register on https://cesium.app and https://gchange.fr to ★ friends"
 echo ""
 
-echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to command.sh # KEEP IT
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
+#####################################################################"
+#####################################################################"
+#####################################################################"
 
 ### SEND AstroID and ZenCard to EMAIL
 (
-echo "<html><body><h1>UPlanet : ZenCard</h1>
-This is your ZenCard : your public key (your flag)" > ~/.zen/tmp/${MOATS}/ZenCard.txt
-echo "<br><a href='${myIPFSGW}${IASTRO}'>ZenCard</a><br><img src='${myIPFSGW}${IASTRO}'\>
-<br>it contains you Ẑen and TW address
-<br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.txt
+echo "<html><head>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+    }
+    pre {
+        white-space: pre-wrap;
+    }
+</style></head>
+<body>
+<h1>UPlanet : ZenCard + <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
+asciiart="${MY_PATH}/../images/astroport.art"
+while IFS= read -r line
+do
+    echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+    echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+done <"$asciiart"
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.txt "ZenCard"
+echo "<h1></h1>
+<a href='${myIPFSGW}${IASTRO}'>ZenCard ${G1PUB}<br><img src='${myIPFSGW}${IASTRO}'\><br></a>
+<br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
 
 #~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
 
-echo "<html><body>
-<h1>UPlanet : AstroID ($PASS)</h1>
-This is your AstroID : your private key (your ring)" > ~/.zen/tmp/${MOATS}/AstroID.txt
-echo "
-<br>You own one of the 'Rings of the Lords' on <a href='https://qo-op.com'>Uplanet</a>  0.1° SECTOR : ${SECTOR}
-<br>it is forged from SECRET1=$SALT SECRET2=$PEPPER then secured by PIN : $PASS
-<br>
-<br>Your ASTROPORT STATION is <a href='${myAPI}'>NODE#${IPFSNODEID}</a>
-" >> ~/.zen/tmp/${MOATS}/AstroID.txt
-echo "<br><a href='${myIPFS}/ipns/${ASTROTW}#AstroID'>AstroID</a><br><img src='${myIPFSGW}${ASTROQR}'\>
-<br>
-<br>Print it and delete from TW to keep it secure.
-</body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.txt
+#####################################################################"
+#####################################################################"
+#####################################################################"
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.txt "AstroID"
+echo "<html><head>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+    }
+    pre {
+        white-space: pre-wrap;
+    }
+</style></head>
+<body>
+<h1>UPlanet : AstroID ($PASS)</h1>" > ~/.zen/tmp/${MOATS}/AstroID.html
+asciiart="${MY_PATH}/../images/logoastro.art"
+while IFS= read -r line
+do
+    echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/AstroID.html
+    echo "<br>" >> ~/.zen/tmp/${MOATS}/AstroID.html
+done <"$asciiart"
+
+echo "
+<h3> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h3>
+<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img src='${myIPFSGW}${ASTROQR}'\></a>
+<br>SECRET1=$SALT SECRET2=$PEPPER ($PASS)<br>
+<h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
+<a href='https://qo-op.com'>Uplanet</a>
+</body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
+
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "AstroID (${PLAYER}) "
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
+
+#####################################################################"
+#####################################################################"
+#####################################################################"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
 ) &
 
+echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to command.sh # KEEP IT
+echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+################################################ LAST LINE REPORT VALUES TO CALLING SCRIPT | tail -n 1
+echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 exit 0

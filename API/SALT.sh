@@ -168,17 +168,16 @@ mkdir -p ~/.zen/tmp/${MOATS}/
                     #~ echo "VISA.new : \"$SALT\" \"$PEPPER\" \"${EMAIL}\" \"$PSEUDO\" \"${WHAT}\"" > ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
                     ${MY_PATH}/../RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "${EMAIL}" "$PSEUDO" "${WHAT}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
-                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG ZenCard creation" ## Send VISA.new log to EMAIL
+                    #~ ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG ZenCard creation" ## Send VISA.new log to EMAIL
 
-                    echo "Le code de votre ASTROID est ${PASS}, scannez-le sur La♥Box ẐenStation (demo : https://astroport.copylaradio.com)" > ~/.zen/tmp/${MOATS}/intro.txt
-
-                    ## EXECUTE LAST LINE
+                    echo "ASTROID PIN=${PASS}, operate on all La♥Box Web3 ẐenStation (WWW : https://astroport.copylaradio.com)"
+                    ## :: TRICK :: EXECUTE LAST VISA.new.sh output LINE : export above VARs
                     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt | tail -n 1)
                     echo "export ASTROTW=/ipns/$ASTRONAUTENS ASTROG1=$G1PUB ASTROMAIL=$PLAYER ASTROFEED=$FEEDNS PASS=$PASS"
 
                     BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
-                    mpack -a -s "La♥Box : ASTROID :+: TW :+: " -d ~/.zen/tmp/${MOATS}/intro.txt \
-                        ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ${PLAYER}
+                    #~ mpack -a -s "La♥Box : ASTROID :+: TW :+: " -d ~/.zen/tmp/${MOATS}/intro.txt \
+                        #~ ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ${PLAYER}
 
                     end=`date +%s`
                     dur=`expr $end - $startvisa`

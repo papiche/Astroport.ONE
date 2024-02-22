@@ -87,31 +87,36 @@ fi
 ###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
-    #~ # Keep 2nd try of the day
-    #~ [[ ! -s ~/.zen/tmp/_ISTATION ]] \
-        #~ && mv ~/.zen/tmp/ISTATION ~/.zen/tmp/_ISTATION \
-        #~ || cp ~/.zen/tmp/_ISTATION ~/.zen/tmp/ISTATION
+    ## CHECK FOR ANY ALREADY RUNNING make_image_ipfs_index_carousel
+    carouselrunning=$(ps axf --sort=+utime | grep -w 'make_image_ipfs_index_carousel' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
 
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
-        ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
-        ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
-        echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
+        if [[ $carouselrunning ]]; then
+            ISTATION="/ipfs/QmVTHH8sTXEqRBsvcKo5jDo16rvp7Q7ERyHZP5vmWUxeS6" ## G1WorldCrafting.jpg
+        else
+            ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
+            ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
+            echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
+        fi
     else
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
-        ## SHOW G1PALPAY FRONT (IFRAME)
-        sed "s~_STATION_~${myIPFSW}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
-        [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
-        sed -i "s~http://127.0.0.1:8080~${myIPFSW}~g" ~/.zen/tmp/${MOATS}/index.htm
-        sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
-        sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
 
-        WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
-        echo $WSTATION > ~/.zen/tmp/WSTATION
-        end=`date +%s`
-        echo "NEW WSTATION ${myIPFSW}${WSTATION} Execution time was "`expr $end - $start` seconds.
-    ## SEND TO WSTATION PAGE
-    sed "s~_TWLINK_~${myIPFSW}${WSTATION}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
+    ## SHOW ZenStation FRONT
+    sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
+    [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
+    sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
+    sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
+    sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
+
+    WSTATION="/ipfs/$(ipfs add -q ~/.zen/tmp/${MOATS}/index.htm)"
+    echo $WSTATION > ~/.zen/tmp/WSTATION
+
+    end=`date +%s`
+    echo "NEW WSTATION ${myIPFS}${WSTATION} Execution time was "`expr $end - $start` seconds.
+
+    ##302 REDIRECT TO WSTATION IPFS
+    sed "s~_TWLINK_~${myIPFS}${WSTATION}/~g" ${MY_PATH}/../templates/index.302  > ~/.zen/tmp/${MOATS}/index.redirect
     sed -i "s~Set-Cookie*~Set-Cookie: $COOKIE~" ~/.zen/tmp/${MOATS}/index.redirect
     echo "url='"${myIPFSW}${WSTATION}"'" >> ~/.zen/tmp/${MOATS}/index.redirect
     (

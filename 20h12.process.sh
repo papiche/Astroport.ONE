@@ -4,8 +4,8 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/tools/my.sh"
+MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
+. "${MY_PATH}/tools/my.sh"
 start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
@@ -15,18 +15,26 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]] && LOWMODE="NO 5001" ## IPFS IS STOPPED
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
+
 sudo systemctl restart ipfs && sleep 10
+
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 10
     ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \
-        && $MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
+        && ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
         && exit 1
 done
-# espeak "CODE git pull" > /dev/null 2>&1
 
-## REMOVE TMP BUT KEEP SWARM
+## PING BOOSTRAP & SWARM NODES
+${MY_PATH}/ping_bootstrap.sh
+
+# show ZONE.sh cache of the day
+echo "TODAY UPlanet landings"
+ls ~/.zen/tmp/ZONE_* 2>/dev/null
+
+## REMOVE TMP BUT KEEP SWARM and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
 rm -Rf ~/.zen/tmp/*
@@ -39,36 +47,42 @@ mv ~/.zen/coucou ~/.zen/tmp/coucou
 && rm -Rf ~/.zen/G1BILLET/tmp/*
 
 ## UPDATE Astroport.ONE code
-cd ~/.zen/Astroport.ONE/
+cd ${MY_PATH}/
 git pull
 
 ## SOON /ipns/ Address !!!
 
 # espeak "20 HOURS 12 MINUTES. ASTROBOT RUNNING." > /dev/null 2>&1
 ## Updating yt-dlp
-$MY_PATH/youtube-dl.sh
+${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
-# Refresh ~/.zen/game/world/G1VOEU
-# NOW RUN FROM PLAYER.refresh.sh !! ~/.zen/Astroport.ONE/RUNTIME/VOEUX.refresh.sh
+## PING BOOSTRAP & SWARM NODES
+${MY_PATH}/ping_bootstrap.sh
 
+#####################################
 # espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
-~/.zen/Astroport.ONE/RUNTIME/PLAYER.refresh.sh
-
+#####################################
+${MY_PATH}/RUNTIME/PLAYER.refresh.sh
+#####################################
+#####################################
 # espeak "REFRESHING UPLANET" > /dev/null 2>&1
-~/.zen/Astroport.ONE/RUNTIME/UPLANET.refresh.sh
-
+#####################################
+${MY_PATH}/RUNTIME/UPLANET.refresh.sh
+#####################################
+#####################################
 # espeak "REFRESHING NODE" > /dev/null 2>&1
-~/.zen/Astroport.ONE/RUNTIME/NODE.refresh.sh
-
+#####################################
+${MY_PATH}/RUNTIME/NODE.refresh.sh
+#####################################
 
     ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOSTRAP LIST (OFFICIAL SWARM)
     espeak "bootstrap refresh" > /dev/null 2>&1
 
     ipfs bootstrap rm --all > /dev/null 2>&1
-    for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+    for bootnode in $(cat ${MY_PATH}/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
     do
         ipfsnodeid=${bootnode##*/}
         ipfs bootstrap add $bootnode
@@ -85,11 +99,13 @@ seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
-# ~/.zen/Astroport.ONE/tools/ipfs_P2P_forward.sh ## COULD FORWARD LOCAL TCP PORT TO SWARM
-rm ~/.zen/game/players/localhost/latest
+## DRAGON SSH WOT
+echo "STOP DRAGONS WOT"
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
+## RESTART
 
 ## MAIL LOG : support@qo-op.com ##
-$MY_PATH/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
+${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
@@ -99,9 +115,9 @@ espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/nu
 ## KILL ALL REMAINING nc
 killall nc 12345.sh > /dev/null 2>&1
 
-## OPEN API ENGINE
+## SYSTEMD OR NOT SYSTEMD
 if [[ ! -f /etc/systemd/system/astroport.service ]]; then
-    ~/.zen/Astroport.ONE/12345.sh > ~/.zen/tmp/12345.log &
+    ${MY_PATH}/12345.sh > ~/.zen/tmp/12345.log &
     PID=$!
     echo $PID > ~/.zen/.pid
 else
@@ -111,16 +127,23 @@ else
 
 fi
 
-echo "IPFS LOW MODE ?"
+echo "IPFS DAEMON LEVEL"
+######### IPFS DAMEON NOT RUNNING ALL DAY
 ## IF IPFS DAEMON DISABLED : WAIT 1H & STOP IT
 [[ $LOWMODE != "" ]] \
-    && echo "ON. $LOWMODE" \
-    && sleep 360 \
+    && echo "STOP IPFS $LOWMODE" \
+    && sleep 3600 \
     && sudo systemctl stop ipfs \
     && exit 0
 
-echo "OFF. RESTART IPFS"
+echo "HIGH. RESTART IPFS"
 sleep 60
 sudo systemctl restart ipfs
+
+#################################
+### DRAGON WOT : SSH P2P RING OPENING
+#################################
+sleep 30
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 exit 0

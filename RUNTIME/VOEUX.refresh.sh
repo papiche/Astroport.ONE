@@ -15,6 +15,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/*
 # _PLAYER.json
 
+# change SWARM memory
+### # ~/.zen/tmp/${IPFSNODEID}/WISH/${WISHNAME}/${PLAYER}/*
 
 PLAYER="$1" ## IPNS KEY NAME - G1PUB - PLAYER ...
 [[ ! ${PLAYER} ]] && echo "Please provide PLAYER publish key" && exit 1
@@ -36,9 +38,6 @@ INDEX="$3"
 [[ ! -s $INDEX ]] && echo "TW ${PLAYER} manquant" && exit 1
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu
-
-## PROTOCOL EVOLUTION RUN & REMOVE
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}
 
 ###############################
 ####### NEED G1 / ZEN TO RUN
@@ -165,7 +164,27 @@ do
             && rm ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
             && continue
 
+#####################################################
             echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
+            ##############################
+            ## WRITE FRIEND SAME WISH TIDDLERS IN PLAYER TW       ########
+            ##############################
+            ## SIGN Tiddlers
+            cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
+                | sed "s~${PLAYER}~~g" \
+                | sed "s~${APLAYER}~${APLAYER} ${PLAYER}~g" \
+                    > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json
+
+            ## ADD TO TW
+            tiddlywiki --load ${INDEX} \
+                        --import ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json "application/json" \
+                        --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+            ## CHECK IT IS OK
+            [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] \
+                && cp ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+                && rm ~/.zen/tmp/${MOATS}/newindex.html
+
+            ##############################
             echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.rss.json ${WISHNAME}"
 
             # Extract Origin G1Voeu Tiddler
@@ -275,11 +294,12 @@ if [[ ${wishnumbers} -gt 0 ]]; then
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
     TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+    [[ $TWMAPNS == "null" || $TWMAPNS == "" ]] && TWMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-    [[ ${LAT} == "null" ]] && LAT="0.00"
+    [[ ${LAT} == "null" || ${LAT} == "" ]] && LAT="0.00"
     LAT=$(makecoord $LAT)
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-    [[ ${LON} == "null" ]] && LON="0.00"
+    [[ ${LON} == "null" || ${LON} == "" ]] && LON="0.00"
     LON=$(makecoord $LON)
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
@@ -296,7 +316,7 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     to ${SECTOR} WALLET ${SECTORG1PUB}"
     echo "************************************************************"
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "ipfs://${MYWISHFLUX}"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "/ipfs/${MYWISHFLUX}"
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR

@@ -12,7 +12,15 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # UMAP > SECTOR > REGION
 ## Get from 100 sectors tiddlers with more than 2 signatures
 ############################################
+echo
+echo
+echo "############################################"
+echo "############################################"
+echo "############################################"
 echo "# # # # RUNNING REGION.refresh"
+echo "############################################"
+echo "############################################"
+echo "############################################"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -83,7 +91,7 @@ for REGION in ${REGIONS[@]}; do
     TODATEREGIONNS=$(ipfs key import ${TODATE}${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ##############################################################
     ## GET from IPNS
-            ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${REGIONNS}/
+            ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS
@@ -91,7 +99,7 @@ for REGION in ${REGIONS[@]}; do
             rm -f ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
 
             ## START WITH LOCAL SECTORS RSS WEEK
-            RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
+            RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSNODE[@]}; do
                     [[ $(cat ${RSS}) != "[]" ]] \
                         && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
@@ -100,7 +108,7 @@ for REGION in ${REGIONS[@]}; do
             NL=${#RSSNODE[@]}
 
             ## ADD SWARM SECTORS RSS WEEK
-            RSSWARM=($(ls ~/.zen/tmp/swarm/*/SECTORS/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
+            RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
                 for RSS in ${RSSWARM[@]}; do
                     [[ $(cat ${RSS}) != "[]" ]] \
                         && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
@@ -118,14 +126,24 @@ for REGION in ${REGIONS[@]}; do
             mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
                     ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
 
-            ## PREPARING AiApi link
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/REGIONS
+            ## PREPARING JOURNAL
+
+            rm -Rf ~/.zen/tmp/${IPFSNODEID}/REGIONS ## TODO REMOVE
+            mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}
+
             RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL)
 
             cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
-                ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.JOURNAL.md
+                ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/JOURNAL.md
 
-            rm ~/.zen/tmp/${IPFSNODEID}/REGIONS/_${REGLAT}_${REGLON}.week.cid 2>/dev/null ## TODO REMOVE
+            ###################################
+            ## NODE PUBLISH REGION TODATENS LINK
+            echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" \
+                > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/_index.html
+
+
+
+
 
             ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
             echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
@@ -134,13 +152,12 @@ for REGION in ${REGIONS[@]}; do
 
             TOTL=$((${NL}+${NS}))
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
+            echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
-    echo "SHOW TROPHY" > ~/.zen/tmp/${MOATS}/${REGION}/TODO
+            rm ~/.zen/tmp/${MOATS}/${REGION}/TODO
+            rm ~/.zen/tmp/${MOATS}/${REGION}/N_*
 
-rm ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID 2>/dev/null  ## TODO REMOVE
-
-            echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N
+            echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_${TOTL}
 
             echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${RWEEKCID}'\" />" \
                         > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.redir.html
@@ -149,7 +166,7 @@ rm ~/.zen/tmp/${MOATS}/${REGION}/RWEEKCID 2>/dev/null  ## TODO REMOVE
             ipfs name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
 
 
-    ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} ${TODATE}${REGIONG1PUB} > /dev/null 2>&1
+    ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} > /dev/null 2>&1
 
 done
 
