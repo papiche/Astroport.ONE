@@ -35,15 +35,15 @@ Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
 ./rooms/orange.sh:leverstatetwo=`cat ../logic/leverlogictwo.ben`
 ./rooms/purple.sh:levertwostate=`cat ../logic/leverlogictwo.ben`
 ./rooms/purple.sh:        u ) levertwostate=`cat ../logic/leverlogictwo.ben`
-./rooms/purple.sh:                sed -i='' 's/off/on/' ../logic/leverlogictwo.ben
-./rooms/start.sh:sed -i='' 's/on/off/' ../logic/leverlogictwo.ben
-./rooms/end.sh:sed -i='' 's/on/off/' ../logic/leverlogictwo.ben
+./rooms/purple.sh:                sed -i 's/off/on/' ../logic/leverlogictwo.ben
+./rooms/start.sh:sed -i 's/on/off/' ../logic/leverlogictwo.ben
+./rooms/end.sh:sed -i 's/on/off/' ../logic/leverlogictwo.ben
 ------------------------------------------------------------------------------
 
 
 ```
 # no sed bug correction
- sed -i='' 's/on/off/' ../logic/leverlogictwo.ben
+ sed -i 's/on/off/' ../logic/leverlogictwo.ben
  sed -i 's/on/off/' ../logic/leverlogictwo.ben
 
 ```

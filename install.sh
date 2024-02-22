@@ -68,7 +68,7 @@ done
 echo "#############################################"
 echo "######### FUN INSTALL ASCII ART TOOLS ######"
 echo "#############################################"
-for i in cmatrix cowsay; do
+for i in cmatrix cowsay fonts-hack-ttf; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
