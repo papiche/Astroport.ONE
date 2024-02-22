@@ -60,3 +60,4 @@ for key in ${UKEYS[@]}; do
 done
 
 echo "(◕‿◕ ) ${ME} :: $medo SUCCESS over $floop KEYS from ${#UKEYS[@]} JOBS"
+exit 0
