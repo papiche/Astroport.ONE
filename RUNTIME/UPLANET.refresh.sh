@@ -142,9 +142,11 @@ for UMAP in ${unique_combined[@]}; do
 
     echo "* ACTINGNODE=${ACTINGNODE}"
 
-    [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
-        && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-        && ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}"; continue
+    if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
+        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
+        ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}"
+        continue
+    fi
         ########################################
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
 
