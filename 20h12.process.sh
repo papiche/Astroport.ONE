@@ -100,7 +100,7 @@ echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 ## DRAGON SSH WOT
-echo "STOP DRAGONS WOT"
+echo "DRAGONS WOT OFF"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ## RESTART
 
@@ -144,6 +144,7 @@ sudo systemctl restart ipfs
 ### DRAGON WOT : SSH P2P RING OPENING
 #################################
 sleep 30
+echo "DRAGONS WOT ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 exit 0
