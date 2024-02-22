@@ -48,6 +48,7 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt
 [[ -s ~/.ssh/id_ed25519.pub ]] && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
 ## DRAGONz PGP/SSH style (https://pad.p2p.legal/keygen)
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
+[[ -z ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
 
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
