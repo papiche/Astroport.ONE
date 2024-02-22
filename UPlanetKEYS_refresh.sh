@@ -53,7 +53,7 @@ for key in ${UKEYS[@]}; do
     mkdir -p ~/.zen/tmp/flashmem/$key
     echo "ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key"
     ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key
-    [[ $? == 0 ]] && medo=$((medo +1))
+    [[ $? == 0 ]] && medo=$((medo +1)) || rm -Rf ~/.zen/tmp/flashmem/$key
 
     floop=$((floop +1))
     [ $floop -gt 33 ] && break
