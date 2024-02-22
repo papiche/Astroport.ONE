@@ -86,6 +86,9 @@ while true; do
     #### UPLANET FLASHMEM UPDATES
     ${MY_PATH}/UPlanetKEYS_refresh.sh &
 
+    PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
+    [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
+
     #####################################
     ( ##### SUB-PROCESS £
     start=`date +%s`
@@ -303,7 +306,7 @@ Content-Type: application/json; charset=UTF-8
     arr=(${URL//[=&]/ })
 
     #####################################################################
-    ### UPSYNC STATION REQUEST /?G1PUB=g1_to_ipfs(G1PUB)&...
+    ### UPSYNC STATION REQUEST :12345/?G1PUB=g1_to_ipfs(G1PUB)&...
     ### TODO : include CODE HASH & TOKEN ....
     #####################################################################
     if [[ ${arr[0]} != "" ]]; then
