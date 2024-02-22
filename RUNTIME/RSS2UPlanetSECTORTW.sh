@@ -48,9 +48,9 @@ while read title; do
         && echo "FILTERED TITLE ${title}" && continue
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
-    rm -f ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json
-    tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
-    ISHERE=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json | jq -r ".[].title")
+    rm -f ~/.zen/tmp/${MOATS}/TMP.json
+    tiddlywiki --load ${INDEX}  --output ~/.zen/tmp/${MOATS} --render '.' 'TMP.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${title}"
+    ISHERE=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r ".[].title")
 
     [[ ! "${ISHERE}" ]] && echo "No Tiddler found in ${INDEX}"
 
@@ -58,14 +58,14 @@ while read title; do
 
         ## NEW TIDDLER
         echo "Importing Title: $title"
-        cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json
+        cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
         #~ echo "DEBUG"
-        #~ cat ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json | jq
-        #~ echo "tiddlywiki  --load ${INDEX} --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json 'application/json' --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' '"${SECTOR}.html"' 'text/plain'"
+        #~ cat ~/.zen/tmp/${MOATS}/NEW.json | jq
+        #~ echo "tiddlywiki  --load ${INDEX} --import ~/.zen/tmp/${MOATS}/NEW.json 'application/json' --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' '"${SECTOR}.html"' 'text/plain'"
 
         tiddlywiki --load ${INDEX} \
-            --import ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json 'application/json' \
+            --import ~/.zen/tmp/${MOATS}/NEW.json 'application/json' \
             --output ~/.zen/tmp/${MOATS}/${SECTOR} --render '$:/core/save/all' "${SECTOR}.html" 'text/plain'
 
         [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ]] \
@@ -74,14 +74,14 @@ while read title; do
             && ((gloops++)) \
             && echo "SECTOR (${gloops}) : ${title}"
 
-         [[ ! -s ${INDEX} ]] && echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json" && exit 1
+         [[ ! -s ${INDEX} ]] && echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
 
     else
 
         ## SAME TIDDLER
         echo "TIDDLER WITH TITLE $title ALREADY EXISTS..."
 
-        cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json ~/.zen/tmp/${MOATS}/${SECTOR}/INSIDE.json
+        cp -f ~/.zen/tmp/${MOATS}/TMP.json ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
         if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
@@ -206,11 +206,6 @@ To Refuse<br>
     fi
 
 done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
-
-## CLEANING
-rm ~/.zen/tmp/${MOATS}/${SECTOR}/TMP.json
-rm ~/.zen/tmp/${MOATS}/${SECTOR}/INSIDE.json
-rm ~/.zen/tmp/${MOATS}/${SECTOR}/NEW.json
 
 ####################################################
 ################################################
