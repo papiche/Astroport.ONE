@@ -47,12 +47,16 @@ floop=0
 medo=0
 
 for key in ${UKEYS[@]}; do
-    rm -Rf ~/.zen/tmp/flashmem
-    echo "ipfs --timeout 30s get -o ~/.zen/tmp/flashmem /ipns/$key"
-    ipfs --timeout 30s get -o ~/.zen/tmp/flashmem /ipns/$key
+    [[ -d ~/.zen/tmp/flashmem/$key ]] \
+        && echo "$key already copied" && medo=$((medo +1)) && continue
+
+    mkdir -p ~/.zen/tmp/flashmem/$key
+    echo "ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key"
+    ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key
     [[ $? == 0 ]] && medo=$((medo +1))
+
     floop=$((floop +1))
-    [ $floop -gt 100 ] && break
+    [ $floop -gt 33 ] && break
 done
 
 echo "(◕‿◕ ) ${ME} :: $medo SUCCESS over $floop KEYS from ${#UKEYS[@]} JOBS"
