@@ -1,0 +1,32 @@
+# SCRIPT01.CYBSEC
+
+Bienvenue dans l'aventure d'un jeune pirate informatique !
+
++ 15 : game engine
++ 0 : multigame compatibility (+x)
++1 : shellcheck
++1 : net API
+
+> final 17
+
+## "GameShell" LEVEL ?
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Les fichiers ./adventure.sh et ../_votre jeu/adventure.sh sont différents
+Seulement dans ./rooms: vocal.sh
+Seulement dans ./rooms: young_hacker.sh
+
+
+```
+
+mv ./rooms/young_hacker.sh  ./rooms/start.sh
+
+
+<3<3<3
+
+
+https://github.com/xenova/whisper-web
+

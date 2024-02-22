@@ -87,10 +87,17 @@ fi
 ###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
+    ## CHECK FOR ANY ALREADY RUNNING make_image_ipfs_index_carousel
+    carouselrunning=$(ps axf --sort=+utime | grep -w 'make_image_ipfs_index_carousel' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
-        ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
-        ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
-        echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
+        if [[ $carouselrunning ]]; then
+            ISTATION="/ipfs/QmVTHH8sTXEqRBsvcKo5jDo16rvp7Q7ERyHZP5vmWUxeS6" ## G1WorldCrafting.jpg
+        else
+            ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
+            ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
+            echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
+        fi
     else
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
