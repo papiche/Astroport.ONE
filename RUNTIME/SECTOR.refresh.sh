@@ -262,7 +262,7 @@ for SECTOR in ${SECTORS[@]}; do
 
         ## zday marking
         rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}' />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
         ###########################################################################################
         ### APPLY ON APP MODEL TODATE REGIONNS LINKING
