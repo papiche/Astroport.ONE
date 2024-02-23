@@ -114,7 +114,7 @@ for SECTOR in ${SECTORS[@]}; do
     echo "SECTOR DATA is ${hours} hours ${minutes} minutes ${seconds} seconds OLD"
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    ## CONTROL ACTINGNODE SWAPPING
+    ## CONTROL ACTINGNODE : BOOSTRAP DISTRIBUTED (jeu du mouchoir, token ring aléatoire)
     UREFRESH="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher"
     ALLNODES=($(cat ${UREFRESH}  | grep -v '^[[:space:]]*$' 2>/dev/null)) # ${ALLNODES[@]} without empty line
     STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
@@ -144,7 +144,7 @@ for SECTOR in ${SECTORS[@]}; do
 ### NEXT REFRESHER SHUFFLE
     rm ${UREFRESH}
     for STRAP in ${STRAPS[@]}; do
-            echo ${STRAP} >> ${UREFRESH} ## RESET SECTOR.refresher file with actual STRAPS
+        echo ${STRAP} >> ${UREFRESH} ## RESET SECTOR.refresher file with actual STRAPS
     done
     # SHUFFLE UMAP.refresher
     cat ${UREFRESH} | sort | uniq | shuf  > ${UREFRESH}.shuf
