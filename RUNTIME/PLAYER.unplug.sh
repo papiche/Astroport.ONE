@@ -6,7 +6,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/my.sh"
+. "$MY_PATH/../tools/my.sh"
 ################################################################################
 ## UNPLUG A PLAYER FROM ASTROPORT STATION
 ############################################
