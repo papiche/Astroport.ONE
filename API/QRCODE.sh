@@ -104,7 +104,6 @@ if [[ ${QRCODE} == "station" ]]; then
 
     ## SHOW ZenStation FRONT
     sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
-    [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
@@ -700,7 +699,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
 
     ## WE SEND WALLET AMOUNT DISPLAY
     (
-    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1><h2><a href='$myUPLANET/g1gate/?pubkey=$G1PUB'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1><h2><a href='$myUPLANET/g1gate/?pubkey="$G1PUB"'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP ${DISPLAY} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 
