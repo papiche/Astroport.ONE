@@ -68,10 +68,10 @@ for REGION in ${REGIONS[@]}; do
     # with bigger planetary swam will be closest "IA Station", or it could be choosen according to ZEN value...
     STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
     ACTINGNODE=${STRAPS[0]} ## FIST NODE IN STRAPS
-    [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
-        && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-        && continue
-
+    if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
+        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
+        continue
+    fi
     ##############################################################
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1

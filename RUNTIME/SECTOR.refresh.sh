@@ -75,28 +75,29 @@ for SECTOR in ${SECTORS[@]}; do
 
     echo "ORIGIN : ${myIPFS}/ipns/${SECTORNS}/"
 
-        ###################### SPATIO TEMPORAL KEYS
-        ## YESTERDATE ###############
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}"
-        ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
-        YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
-        echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
+    ###################### SPATIO TEMPORAL KEYS
+    ## YESTERDATE ###############
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}"
+    ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
+    YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
+    echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
 
-        ## TODATE #########################################
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
-        ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
-        TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
-        echo "TODAY : ${myIPFS}/ipns/${TODATENS}"
+    ## TODATE #########################################
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
+    ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
+    TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
+    echo "TODAY : ${myIPFS}/ipns/${TODATENS}"
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            start=`date +%s`
+    start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE YESTERDATE SECTORNS
     ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            end=`date +%s`
-            echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
+    end=`date +%s`
+    echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
     ## CONTROL CHAIN TIME
     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
     ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
@@ -135,10 +136,11 @@ for SECTOR in ${SECTORS[@]}; do
         && echo "More than 26H update" \
         && ACTINGNODE=${STRAPS[0]}
 
-    [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
-            && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-            && ipfs key rm ${TODATE}${G1PUB} ${YESYERDATE}${G1PUB} ${G1PUB}; continue
-
+    if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
+        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
+        ipfs key rm ${TODATE}${G1PUB} ${YESYERDATE}${G1PUB} ${G1PUB}
+        continue
+    fi
 ### NEXT REFRESHER SHUFFLE
     rm ${UREFRESH}
     for STRAP in ${STRAPS[@]}; do
