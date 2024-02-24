@@ -210,98 +210,98 @@ for SECTOR in ${SECTORS[@]}; do
 ## MAKE SECTOR PLANET WITH ASTONAUTENS LINKS
 ###########################################################################################
 ###########################################################################################
-        ## PREPARE Ŋ1 WORLD MAP ##################################################################
-        echo "var examples = {};
-        examples['locations'] = function() {
-        var locations = {
-        " > ~/.zen/tmp/world.js
-        floop=1
+    ## PREPARE Ŋ1 WORLD MAP ##################################################################
+    echo "var examples = {};
+    examples['locations'] = function() {
+    var locations = {
+    " > ~/.zen/tmp/world.js
+    floop=1
 
-        SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
-        NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
-        TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
+    SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+    NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+    TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
 
-        for TWRED in ${TWFILES[@]}; do
-            ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
-            TWADD=$(cat ${TWRED}  | grep -o "/ipns/[^\"]*" | sed "s/'$//")
-            [[ -z ${TWADD} ]] && TWADD=$(cat ${TWRED}  | grep -o "/ipfs/[^\"]*" | sed "s/'$//")
+    for TWRED in ${TWFILES[@]}; do
+        ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
+        TWADD=$(cat ${TWRED}  | grep -o "/ipns/[^\"]*" | sed "s/'$//")
+        [[ -z ${TWADD} ]] && TWADD=$(cat ${TWRED}  | grep -o "/ipfs/[^\"]*" | sed "s/'$//")
 
-            ## ADD ASTRONAUTNS ON SECTOR WORLD MAP
-            echo "${floop}: {
-              alpha: Math.random() * 2 * Math.PI,
-              delta: Math.random() * 2 * Math.PI,
-              name: '"${ZMAIL}"',
-              link: '"${TWADD}"'
-            }
-            ," >> ~/.zen/tmp/world.js
+        ## ADD ASTRONAUTNS ON SECTOR WORLD MAP
+        echo "${floop}: {
+          alpha: Math.random() * 2 * Math.PI,
+          delta: Math.random() * 2 * Math.PI,
+          name: '"${ZMAIL}"',
+          link: '"${TWADD}"'
+        }
+        ," >> ~/.zen/tmp/world.js
 
-            ((floop++))
-        done
+        ((floop++))
+    done
 
-        # REMOVE la dernière virgule
-        sed -i '$ d' ~/.zen/tmp/world.js
-        ##################################
-        ## FINISH LOCATIONS
-        echo "
-        };
-           \$('#sphere').earth3d({
-            locationsElement: \$('#locations'),
-            dragElement: \$('#locations'),
-            locations: locations
-          });
-        };
-        " >> ~/.zen/tmp/world.js
+    # REMOVE la dernière virgule
+    sed -i '$ d' ~/.zen/tmp/world.js
+    ##################################
+    ## FINISH LOCATIONS
+    echo "
+    };
+       \$('#sphere').earth3d({
+        locationsElement: \$('#locations'),
+        dragElement: \$('#locations'),
+        locations: locations
+      });
+    };
+    " >> ~/.zen/tmp/world.js
 
-        IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
-        echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
+    IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
+    echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
 
-        ###########################################################################################
-        ## ADD SECTOR ZENPUB.png & INFO.png
-        convert -font 'Liberation-Sans' \
-                -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
-                -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
-                $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
-        # CREATE G1PUB AMZQR
-        amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
-        convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
-        # ADD IT
-        composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
+    ###########################################################################################
+    ## ADD SECTOR ZENPUB.png & INFO.png
+    convert -font 'Liberation-Sans' \
+            -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
+            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
+            $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
+    # CREATE G1PUB AMZQR
+    amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
+    convert ~/.zen/tmp/${MOATS}/${SECTOR}/ZENPUB.png -resize 250 ~/.zen/tmp/${MOATS}/ZENPUB.png
+    # ADD IT
+    composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/${MOATS}/ZENPUB.png ~/.zen/tmp/${MOATS}/${SECTOR}.png ~/.zen/tmp/${MOATS}/${SECTOR}/INFO.png
 
-        ## zday marking
-        rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
+    ## zday marking
+    rm ~/.zen/tmp/${MOATS}/${SECTOR}/z* 2>/dev/null
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />${TODATE} ${SECTOR}" > ~/.zen/tmp/${MOATS}/${SECTOR}/z$(date +%A-%d_%m_%Y).html
 
-        ###########################################################################################
-        ### APPLY ON APP MODEL TODATE REGIONNS LINKING
-        REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
-        REGLON=$(echo ${SLON} | cut -d '.' -f 1)
-        REGION="_${REGLAT}_${REGLON}"
-        TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
+    ###########################################################################################
+    ### APPLY ON APP MODEL TODATE REGIONNS LINKING
+    REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
+    REGLON=$(echo ${SLON} | cut -d '.' -f 1)
+    REGION="_${REGLAT}_${REGLON}"
+    TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
 
-        PHONEBOOTH="${G1PUB::30}"
-        cat ${MY_PATH}/../templates/UPlanetSector/index.html \
-                | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
-                  -e "s~_UPZONE_~REGION ${REGION}~g" \
-                  -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                  -e "s~_ZONENS_~${TODATENS}~g" \
-                  -e "s~_ZONEIPFS_~${ZCHAIN}~g" \
-                  -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
-                  -e "s~_SECTORG1PUB_~${G1PUB}~g" \
-                  -e "s~_IPFSNINJA_~${VDONINJA}~g" \
-                  -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+    PHONEBOOTH="${G1PUB::30}"
+    cat ${MY_PATH}/../templates/UPlanetSector/index.html \
+            | sed -e "s~_ZONE_~SECTOR ${SECTOR}~g" \
+              -e "s~_UPZONE_~REGION ${REGION}~g" \
+              -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
+              -e "s~_ZONENS_~${TODATENS}~g" \
+              -e "s~_ZCHAIN_~${ZCHAIN}~g" \
+              -e "s~_UPZONENS_~${TODATEREGIONNS}~g" \
+              -e "s~_SECTORG1PUB_~${G1PUB}~g" \
+              -e "s~_IPFSNINJA_~${VDONINJA}~g" \
+              -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
               -e "s~_HACKGIPFS_~${HACKGIPFS}~g" \
-                  -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
-                  -e "s~_LAT_~${LAT::-1}~g" \
-                  -e "s~_LON_~${LON::-1}~g" \
-                  -e "s~_EARTHCID_~${EARTHCID}~g" \
-                  -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
-                  -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
-                  -e "s~http://127.0.0.1:8080~~g" \
-        > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
+              -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
+              -e "s~_LAT_~${SLAT}~g" \
+              -e "s~_LON_~${SLON}~g" \
+              -e "s~_EARTHCID_~${EARTHCID}~g" \
+              -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
+              -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
+              -e "s~http://127.0.0.1:8080~~g" \
+    > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
-        ##################################
-        cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
-        rm ~/.zen/tmp/${MOATS}/${SECTOR}/index.html ## MAKE SECTOR VISIBLE ##
+    ##################################
+    cp -f ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html ~/.zen/tmp/${MOATS}/${SECTOR}/index.html
+    rm ~/.zen/tmp/${MOATS}/${SECTOR}/index.html ## MAKE SECTOR VISIBLE ##
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
