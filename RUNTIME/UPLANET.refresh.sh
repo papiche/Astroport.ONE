@@ -277,6 +277,16 @@ for UMAP in ${unique_combined[@]}; do
     ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
     ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
+    ## GET WALLETS
+    echo "* GET WALLETS https://g1-stats.axiom-team.fr/data/geoloc-members.json"
+    [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json
+    [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+        && curl -s "https://g1-stats.axiom-team.fr/data/geoloc-members.json" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
+        && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json) ]] \
+        && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json \
+        && echo "UPDATED WALLETS" \
+        || rm ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
+
     echo "MAKING _index.p4n.html with ./templates/P4N/index.html"
     ## CREATE INDEX LOADING JSONs ON OPENSTREETMAP
     cat ${MY_PATH}/../templates/P4N/index.html \

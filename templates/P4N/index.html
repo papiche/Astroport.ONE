@@ -46,32 +46,69 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Fetch JSON data
-axios.get('./p4n.json')
+// Fetch wallets data
+axios.get('./wallets.json')
   .then(response => {
     const places = response.data;
 
-    // Iterate through places and add markers to the map
+    // Initialize Leaflet map
+    const map = L.map('map').setView([0, 0], 2); // Set initial view and zoom level
+
+    // Add a tile layer to the map (you can choose your preferred tile layer)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Iterate through JSON
     places.forEach(place => {
-      const { lat, lng, title_short, description, images, services, activities } = place;
-      const marker = L.marker([lat, lng]).addTo(map);
-  // Create a popup content
-  const popupContent = `
-    <b>${title_short}</b><br>
-    ${description}<br>
-    <b>Services:</b> ${services.join(', ')}<br>
-    <b>Activities:</b> ${activities.join(', ')}<br>
-    <a href="#" onclick="goToLocation(${lat}, ${lng})">Zoom In</a>
-  `;
+      const { geoPoint, title, description, socials } = place;
+      const { lat, lon } = geoPoint;
 
-    // Bind popup to the marker
-    marker.bindPopup(popupContent);
+      // Create a marker on the map
+      const marker = L.marker([lat, lon]).addTo(map);
 
+      // Create a popup content
+      const popupContent = `
+        <b>${title}</b><br>
+        ${description}<br>
+        <a href="${socials[0].url}" target="_blank">Visit Website</a>
+      `;
+
+      // Bind popup to the marker
+      marker.bindPopup(popupContent);
     });
   })
   .catch(error => {
     console.error('Error fetching JSON data:', error);
   });
+
+// Fetch p4n data
+axios.get('./p4n.json')
+  .then(response => {
+    const p4nPlaces = response.data;
+
+    // Iterate through p4n data
+    p4nPlaces.forEach(place => {
+      const { lat, lng, title_short, description, services, activities } = place;
+      const marker = L.marker([lat, lng]).addTo(map);
+
+      // Create a popup content
+      const popupContent = `
+        <b>${title_short}</b><br>
+        ${description}<br>
+        <b>Services:</b> ${services.join(', ')}<br>
+        <b>Activities:</b> ${activities.join(', ')}<br>
+        <a href="#" onclick="goToLocation(${lat}, ${lng})">Zoom In</a>
+      `;
+
+      // Bind popup to the marker
+      marker.bindPopup(popupContent);
+    });
+  })
+  .catch(error => {
+    console.error('Error fetching p4n JSON data:', error);
+  });
+
 
     function goToLocation(lat, lng) {
       // Switch to ArcGIS World Imagery basemap
@@ -86,20 +123,22 @@ axios.get('./p4n.json')
   // Fetch JSON data for rolling text
     axios.get('gchange50.json')
       .then(response => {
+        const ids = response.data.hits.hits.map(hit => hit._id);
+        //
         const titles = response.data.hits.hits.map(hit => hit._source.title);
-        displayRollingText(titles);
+        displayRollingText(titles, ids);
       })
       .catch(error => {
         console.error('Error fetching rolling text JSON data:', error);
       });
 
-    function displayRollingText(titles) {
+    function displayRollingText(titles, ids) {
       const rollingTextContainer = document.getElementById('rollingText');
       let currentIndex = 0;
 
       function updateText() {
-        rollingTextContainer.textContent = titles[currentIndex];
-        currentIndex = (currentIndex + 1) % titles.length;
+         rollingTextContainer.innerHTML = `<a href="https://data.gchange.fr/market/record/${ids[currentIndex]}/_share">${titles[currentIndex]}</a>`;
+         currentIndex = (currentIndex + 1) % titles.length;
       }
 
       setInterval(updateText, 3000); // Change text every 3 seconds (adjust as needed)
