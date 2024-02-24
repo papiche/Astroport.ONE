@@ -37,30 +37,22 @@
   <script src="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/leaflet.js"></script>
   <script src="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/axios.min.js"></script>
   <script>
-// Initialize the map
-// const map = L.map('map').setView([0.00, 0.00], 11);
-const map = L.map('map').setView([43.2218, 1.3977], 11);
-
-// Add OpenStreetMap layer
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
+// Load data on the map
 // Fetch wallets data
 axios.get('./wallets.json')
   .then(response => {
-    const places = response.data;
+    const walletPlaces = response.data;
 
     // Initialize Leaflet map
-    const map = L.map('map').setView([0, 0], 2); // Set initial view and zoom level
+    const map = L.map('map').setView([43.2218, 1.3977], 11);
 
-    // Add a tile layer to the map (you can choose your preferred tile layer)
+    // Add OpenStreetMap layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Iterate through JSON
-    places.forEach(place => {
+    // Iterate through wallet data
+    walletPlaces.forEach(place => {
       const { geoPoint, title, description, socials } = place;
       const { lat, lon } = geoPoint;
 
@@ -79,7 +71,7 @@ axios.get('./wallets.json')
     });
   })
   .catch(error => {
-    console.error('Error fetching JSON data:', error);
+    console.error('Error fetching wallets JSON data:', error);
   });
 
 // Fetch p4n data
