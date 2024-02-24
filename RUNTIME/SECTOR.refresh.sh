@@ -29,8 +29,13 @@ for i in $*; do
     UMAPS=("$i" ${UMAPS[@]})
 done
 
-[[ ${#UMAPS[@]} == 0 ]] && UMAPS="_0.00_0.00"
-
+## NO $i PARAMETERS - GET ALL UMAPS
+if [[ ${#UMAPS[@]} == 0 ]]; then
+    MEMAPS=($(ls -td ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+    combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
+    UMAPS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+fi
 ######## INIT SECTORS ########################
 for UMAP in ${UMAPS[@]}; do
 
