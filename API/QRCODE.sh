@@ -102,9 +102,18 @@ if [[ ${QRCODE} == "station" ]]; then
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
 
-    ## FIND STATION GPS CLOSEST ACTIVE KEY
+    ## GET SATELLITE IMAGE
     source ~/.zen/GPS
-
+    echo "... ~/.zen/GPS ... $LAT $LON ..."
+    ville=$(my_IPCity)
+    echo "my_IPCity = $ville"
+    api_key="ac5e65a2fd10d3788d40cdae0d4516ba" # Remplacez YOUR_API_KEY par votre clé API OpenWeatherMap
+    url="http://api.openweathermap.org/data/2.5/weather?q=$ville&appid=$api_key&units=metric"
+    meteo=$(curl -s $url)
+    # Extraire les informations pertinentes de la réponse JSON
+    temperature=$(echo $meteo | jq -r '.main.temp')
+    description=$(echo $meteo | jq -r '.weather[0].description')
+    echo "La météo à $ville : $description, Température: $temperature °C"
 
     ## SHOW ZenStation FRONT
     sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
