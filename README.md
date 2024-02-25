@@ -332,7 +332,8 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 
 ## ➤ AMZQR : Create a QRCode with "amzqr"
 ```http
-GET /?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}```
+GET /?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}
+```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
@@ -343,7 +344,8 @@ check available "logo.png" in [./images](./images)
 
 ## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
 ```http
-GET /?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
+GET /?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}
+```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
