@@ -59,5 +59,5 @@ for key in ${UKEYS[@]}; do
     [ $floop -gt 33 ] && break
 done
 
-echo "(◕‿◕ ) ${ME} :: $medo SUCCESS over $floop KEYS from ${#UKEYS[@]} JOBS"
+echo "(◕‿◕ ) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#UKEYS[@]} JOBS"
 exit 0
