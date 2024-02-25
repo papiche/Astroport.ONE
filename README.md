@@ -331,7 +331,8 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 > CAN BE EXTENDED
 
 ## ➤ AMZQR : Create a QRCode with "amzqr"
-### ```/?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}```
+```http
+GET /?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
@@ -341,7 +342,8 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 check available "logo.png" in [./images](./images)
 
 ## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
-### ```/?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
+```http
+GET /?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
@@ -473,12 +475,13 @@ http://localhost:12345 renvoi un json
 | created | date de creation du document |
 | hostname | nom de la station |
 | myIP | adresse IP de la station |
-| ipfsnodeid | date de creation du document |
+| ipfsnodeid | Clef publique, balise de la station |
 | astroport | Lien vers l'API de la station |
 | g1station | Lien vers la carte PLAYER de la Station |
 | g1swarm | Lien vers la carte des cartes des Stations de l'essaim |
 
-Afin de propager la carte chaque Stations lors de son raffraichissement de cache demande aux Boostrap de la récupérer
+Afin de propager la carte chaque station lors de son raffraichissement de cache
+ envoi aux Boostrap une requête pour upload (```/ipns/${IPFSNODEID}```)
 ```
 STATION MAP UPSYNC : http://$nodeip:12345/?${GNODEID}=${IPFSNODEID}
 ```
