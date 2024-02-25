@@ -456,7 +456,7 @@ my_IPCity() {
     local ville=$(echo "$geolocalisation" | jq -r '.city')
     local pays=$(echo "$geolocalisation" | jq -r '.country')
 
-    echo "$ville, $pays"
+    echo "$ville,$pays"
 }
 
 IPFSNODEID="$(myIpfsPeerId)"
