@@ -56,12 +56,15 @@ for key in ${UKEYS[@]}; do
     [[ -d ~/.zen/tmp/flashmem/$key ]] \
         && echo "$key already copied" && medo=$((medo +1)) && continue
 
+    floop=$((floop +1))
     mkdir -p ~/.zen/tmp/flashmem/$key
+
     echo "ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key"
     ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key
-    [[ $? == 0 ]] && medo=$((medo +1)) || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
+    [[ $? == 0 ]] \
+        && medo=$((medo +1)) && floop=$((floop -1)) \
+        || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
 
-    floop=$((floop +1))
     [ $floop -gt 33 ] && break
 
 done
