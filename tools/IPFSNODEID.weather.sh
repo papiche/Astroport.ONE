@@ -27,7 +27,7 @@ source ~/.zen/GPS
 echo "... ~/.zen/GPS ... $LAT $LON ..."
 
 ## caching IPCity
-[[ ~/.zen/IPCity ]] \
+[[ ! -s ~/.zen/IPCity ]] \
     && my_IPCity > ~/.zen/IPCity
 ville=$(cat ~/.zen/IPCity)
 
