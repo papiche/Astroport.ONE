@@ -84,7 +84,7 @@ while true; do
     ${MY_PATH}/ping_bootstrap.sh
 
     #### UPLANET FLASHMEM UPDATES
-    ${MY_PATH}/UPlanetKEYS_refresh.sh &
+    ${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
 
     PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
     [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue

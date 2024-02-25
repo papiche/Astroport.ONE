@@ -8,7 +8,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "$MY_PATH/tools/my.sh"
+. "$MY_PATH/../tools/my.sh"
 ## LOG into ~/.zen/tmp/_12345.log
 exec 2>&1 >> ~/.zen/tmp/_12345.log
 
