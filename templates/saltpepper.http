@@ -79,7 +79,7 @@ header {
         <button onclick="homeAstroportStation('http://127.0.1.1:1234/?qrcode=station', '', 21654)">Ẑen Station</button>
         </div>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
-    <h1><span>Astroport</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
+    <h1><span>Internet</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
     <div id="yellow">
         <h2>AstroID SECRETS</h2>
         <input name='salt' value='0'>
@@ -89,8 +89,8 @@ header {
         <h2>
         <div id="typed-strings">
             <p><span>/ <strong><em><a href="https://opencollective.com/monnaie-libre/projects/coeurbox" target="funding">La♥BOX</a></em></strong> /</span>^3223</p>
-            <p>&#8984; Interplanetary <em>Cloud Storage</em> &#9925;</span> ^3222</p>
-            <p>We Make <strong><em><u>👉<a href="https://opencollective.com/monnaie-libre">Le Claude</a>👈</u></em></strong>^3112</p>
+            <p>&#8984; (Inter) Planetary <em>Eternal Storage</em> &#9925;</span> ^3222</p>
+            <p>We make <strong><em><u>👉<a href="https://opencollective.com/monnaie-libre">Le Claude</a>👈</u></em></strong>^3112</p>
             <p>🔥.^999.^888.^777.^666.5^555.4^444.3^333.2^222.1^111 🚀^4321</p>
         </div>
         <span id="typed"></span>
