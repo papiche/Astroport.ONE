@@ -27,9 +27,6 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
-## PING BOOSTRAP & SWARM NODES
-${MY_PATH}/ping_bootstrap.sh
-
 # show ZONE.sh cache of the day
 echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/ZONE_* 2>/dev/null
@@ -58,7 +55,7 @@ ${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
 ## PING BOOSTRAP & SWARM NODES
-${MY_PATH}/ping_bootstrap.sh
+${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
 #####################################
 # espeak "Players refresh" > /dev/null 2>&1
