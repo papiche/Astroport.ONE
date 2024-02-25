@@ -95,7 +95,7 @@ header {
         </div>
         <span id="typed"></span>
         </h2>
-        <span><a target="youtube" href="https://youtube.com">📺 (&#128077;)</a> : </span><input name=g1pub value='enter video source to feed in TW'></br>
+        <span><a target="youtube" href="https://youtube.com">📺</a> : </span><input name=g1pub value='enter video source to feed in TW'><a target="youtube" href="https://youtube.com">(&#128077;)</a></br>
         <span>Email : </span><input name=email value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 
@@ -104,7 +104,7 @@ header {
 </h2>
 </br>
             <p>
-            <b><a target="pad" href="https://ipfs.copylaradio.com/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD/?room=cocoding">COCODING ROOM</a></b>
+            <b><a target="pad" href="https://ipfs.copylaradio.com/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD/?room=UPLANET">UPLANET VISIO ROOM</a></b>
             </p>
 </header>
 
