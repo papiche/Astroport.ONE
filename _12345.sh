@@ -180,7 +180,7 @@ while true; do
                     ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
                 else
                     echo "____________ KNOW ${znod}"
-                    # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LASTEST
+                    # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LATEST
                 fi
 
                 ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats 2>/dev/null)
@@ -188,7 +188,7 @@ while true; do
                 ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
                 DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
                 if [ ${DIFF_SECONDS} -gt $(( 3 * 24 * 60 * 60 )) ]; then
-                    echo "STATION IS STUCK... FOR TOO LONG... REMOVING  FROM SWARM"
+                    echo "STATION IS STUCK... FOR TOO LONG... REMOVING ${znod} FROM SWARM"
                     rm -Rf ~/.zen/tmp/swarm/${znod}/
                 else
                     echo "${DIFF_SECONDS} seconds old"
@@ -220,15 +220,15 @@ while true; do
     ######################################
     ############# RE PUBLISH SELF BALISE
 
-    # Clean Empty Directory (inode dependancy BUG ??)
+    # Clean Empty Directory
     du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
     while read branch; do [[ $branch =~ "4096" ]] && echo "empty $branch" && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
 
-    # Scan local cache
+    # Scan IPFSNODEID cache
     ls ~/.zen/tmp/${IPFSNODEID}/
     BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
 
-    ## IPFS GET LAST PUBLISHED MAP VERSION
+    ## IPFS GET LAST ONLINE IPFSNODEID MAP
     rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
     mkdir -p ~/.zen/tmp/_${IPFSNODEID}
     ipfs get -o ~/.zen/tmp/_${IPFSNODEID}/ /ipns/${IPFSNODEID}/
