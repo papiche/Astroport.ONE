@@ -12,6 +12,7 @@ ME="${0##*/}"
 ## LOG into ~/.zen/tmp/_12345.log
 exec 2>&1 >> ~/.zen/tmp/_12345.log
 
+echo "=========================="
 echo "(◕‿◕ ) ${ME} (◕‿◕ ) "
 
 ## LOCAL
@@ -36,28 +37,36 @@ MErunning=$(ps axf --sort=+utime | grep -w ${ME} | grep -v -E 'color=auto|grep' 
 
 echo "(◕‿◕ ) ${ME} starting UPlanet Terraformation _______________________________"
 
+## COMBINE & SHUFFLE KEYS
 combined=("${LWKEYS[@]}" "${LSKEYS[@]}" "${LRKEYS[@]}" "${WKEYS[@]}" "${SKEYS[@]}" "${RKEYS[@]}")
 UKEYS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
 echo ${#UKEYS[@]} "  JOBS..."
 
-## STORAGE FOR IPFS GET on UPLANET KEYS
+## STORAGE FOR IPFS GET UplanetKeyS
 mkdir -p ~/.zen/tmp/flashmem
+
+## Remove flashmem/UplanetKey older than 3 hours
+find ~/.zen/tmp/flashmem -mmin +180 -exec rm -r {} +
 
 floop=0
 medo=0
 
 for key in ${UKEYS[@]}; do
+
     [[ -d ~/.zen/tmp/flashmem/$key ]] \
         && echo "$key already copied" && medo=$((medo +1)) && continue
 
     mkdir -p ~/.zen/tmp/flashmem/$key
     echo "ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key"
     ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key
-    [[ $? == 0 ]] && medo=$((medo +1)) || rm -Rf ~/.zen/tmp/flashmem/$key
+    [[ $? == 0 ]] && medo=$((medo +1)) || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
 
     floop=$((floop +1))
     [ $floop -gt 33 ] && break
-done
 
+done
+echo "=========================="
 echo "(◕‿◕ ) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#UKEYS[@]} JOBS"
+echo "=========================="
+
 exit 0

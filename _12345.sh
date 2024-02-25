@@ -286,6 +286,7 @@ Content-Type: application/json; charset=UTF-8
 
     if [[ $T2WAIT == 0 || $T2WAIT != $(cat ~/.zen/tmp/random.sleep 2>/dev/null) ]]; then
         (
+            echo "# AUTO RELAUNCH IN $T2WAIT SECONDS"
             echo $T2WAIT > ~/.zen/tmp/random.sleep
             sleep $T2WAIT && rm ~/.zen/tmp/random.sleep
             curl -s "http://127.0.0.1:12345"
@@ -311,16 +312,16 @@ Content-Type: application/json; charset=UTF-8
     #####################################################################
     if [[ ${arr[0]} != "" ]]; then
 
-        ## CHECK URL CONSISTENCY ( G1PUB=IPNSPUB is right ? )
+        ## CHECK URL CONSISTENCY ( do we get G1PUB=IPNSPUB right ? )
         GPUB=${arr[0]}
         ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${arr[0]} 2>/dev/null)
 
         if [[ "${ASTROTOIPFS}" == "${arr[1]}" && ${ASTROTOIPFS} != "" && ${arr[1]} != "" ]]; then
             ## WE SPEAK THE SAME PROTOCOL
-            echo "MAJOR TOM TO GROUD CONTROL"
             echo "WE HAVE A STATION ${GPUB} CONTACT"
             (
             mkdir -p ~/.zen/tmp/swarm/${ASTROTOIPFS}
+            echo "<<< MAJOR TOM TO GROUND CONTROL >>>"
             echo "UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
             ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
             ) &
