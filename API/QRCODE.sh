@@ -102,8 +102,13 @@ if [[ ${QRCODE} == "station" ]]; then
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
 
+    ## FIND STATION GPS CLOSEST ACTIVE KEY
+    source ~/.zen/GPS
+
+
     ## SHOW ZenStation FRONT
     sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
+    sed -i "s~2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH~${WORLDG1PUB}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm

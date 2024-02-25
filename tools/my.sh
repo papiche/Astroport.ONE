@@ -428,6 +428,37 @@ function makecoord() {
     echo "${input}"
 }
 
+# Fonction pour récupérer la météo depuis l'API OpenWeatherMap
+recuperer_meteo() {
+    echo "En train de récupérer les données météo..."
+    # Récupérer la météo à l'aide de l'API OpenWeatherMap
+    ville="Paris" # Vous pouvez modifier la ville ici
+    api_key="310103dee4a9d1b716ee27d79f162c7e" # Remplacez YOUR_API_KEY par votre clé API OpenWeatherMap
+    url="http://api.openweathermap.org/data/2.5/weather?q=$ville&appid=$api_key&units=metric"
+    meteo=$(curl -s $url)
+    # Extraire les informations pertinentes de la réponse JSON
+    temperature=$(echo $meteo | jq -r '.main.temp')
+    description=$(echo $meteo | jq -r '.weather[0].description')
+    echo "La météo à $ville : $description, Température: $temperature °C"
+}
+
+# my_IPCity # Fonction pour récupérer la géolocalisation à partir de l'adresse IP
+my_IPCity() {
+    local ip=$1
+
+    if [ -z "$ip" ]; then
+        ip=$(curl 'https://api.ipify.org?format=json' --silent | jq -r '.ip')
+    fi
+
+    local url="http://ip-api.com/json/$ip"
+    local geolocalisation=$(curl -s "$url")
+
+    local ville=$(echo "$geolocalisation" | jq -r '.city')
+    local pays=$(echo "$geolocalisation" | jq -r '.country')
+
+    echo "$ville, $pays"
+}
+
 IPFSNODEID="$(myIpfsPeerId)"
 [[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"
