@@ -70,8 +70,8 @@ for SECTOR in ${SECTORS[@]}; do
     G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     [[ ! ${G1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
-    echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${G1PUB}"
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    echo "SECTOR : ${SECTOR} (${COINS} G1 <=> ${ZEN} Z) : ${G1PUB}"
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
@@ -98,10 +98,20 @@ for SECTOR in ${SECTORS[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE YESTERDATE SECTORNS
     ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
+    if [[ $? != 0 ]]; then
+        echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
+        # Try retieve memory from UPlanet Zen Memory
+        [[ ${ZEN} -gt 0 ]] \
+            && echo "Refreshing from ZEN MEMORY" \
+            && ${MY_PATH}/../RUNTIME/ZEN.memory.sh "${SECTOR}" "${MOATS}"
+    fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     end=`date +%s`
     echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    ### ZEN
+
 
     ## CONTROL CHAIN TIME
     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
@@ -305,21 +315,29 @@ for SECTOR in ${SECTORS[@]}; do
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
-
-
     ## DOES CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
         && echo "${MOATS}:${IPFSNODEID}:${IPFSPOP}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain \
         && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats \
         && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
-
-        echo "% START PUBLISHING ${SECTOR} ${myIPFS}/ipns/${TODATENS}"
-        start=`date +%s`
-        ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
-        ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
-        end=`date +%s`
-        echo "_____SECTOR${SECTOR} PUBLISH time was "`expr $end - $start` seconds.
+    ## ZEN CHAINING
+    # Send 1 Zen to UPlanet WORLDG1PUB Wallet containing REGION TW HASH
+    INTERCOM="UPLANET:${SECTOR}:${TODATE}:/ipfs/${IPFSPOP}"
+    echo "> ${INTERCOM}"
+    if [[ ${ZEN} -gt 0 ]]; then
+        echo "---8<--- SECTOR ZEN CHAINING ---8<------8<----"
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "0.1" "${WORLDG1PUB}" "${INTERCOM}"
+        rm ~/.zen/tmp/${MOATS}/sector.dunikey
+    fi
+    ##############################################################
+    ## PUBLISHING ${SECTOR}
+    ###############################
+    echo "% PUBLISHING ${SECTOR} ${myIPFS}/ipns/${TODATENS}"
+    start=`date +%s`
+    ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
+    ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
 
 ######################################################
 
@@ -340,6 +358,8 @@ for SECTOR in ${SECTORS[@]}; do
 
     ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
     ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28
+    end=`date +%s`
+    echo "_____SECTOR${SECTOR} TREATMENT time was "`expr $end - $start` seconds.
 
 done
 
