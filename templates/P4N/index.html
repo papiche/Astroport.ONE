@@ -37,19 +37,19 @@
   <script src="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/leaflet.js"></script>
   <script src="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/axios.min.js"></script>
   <script>
-// Load data on the map
+
+// Initialize Leaflet map
+const map = L.map('map').setView([43.2218, 1.3977], 11);
+// Add OpenStreetMap layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
 // Fetch wallets data
 axios.get('./wallets.json')
   .then(response => {
-    const walletPlaces = response.data;
-
-    // Initialize Leaflet map
-    const map = L.map('map').setView([43.2218, 1.3977], 11);
-
-    // Add OpenStreetMap layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    const walletData = response.data;
+    const walletPlaces = walletData.wallets;
 
     // Iterate through wallet data
     walletPlaces.forEach(place => {

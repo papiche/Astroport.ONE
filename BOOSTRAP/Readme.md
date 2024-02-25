@@ -123,7 +123,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEtg3SlRxtzsQnsBSeU83W0tvUyBTUvOU5lhjlbZVPCZ
 * “keygen” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/tools/keygen
 * “natools” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/tools/natools.py
 * “jaklis” https://git.p2p.legal/axiom-team/jaklis
-* “ipfs” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/kubo_v0.20.0_linux.install.sh
+* “ipfs” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/install.kubo_v0.20.0_linux.sh
 
 ## ASTROPORT CREW GILET https://astroport.myspreadshop.fr/create?product=a68ad31e-d554-4c75-821d-97b00d6ad13f&view=2
 
