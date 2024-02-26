@@ -11,8 +11,8 @@ ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
 
-## REDIRECT OUTPUT TO "pay4sure.log"
-exec 2>&1 >> ~/.zen/tmp/pay4sure.log
+## REDIRECT OUTPUT TO "/tmp/20h12.log"
+exec 2>&1 >> /tmp/20h12.log
 
 KEYFILE="$1"
 AMOUNT="$2"
@@ -40,7 +40,7 @@ COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
 [[ $AMOUNT == "ALL" ]] && AMOUNT=$COINS ## ALL MEAN EMPTY ORIGIN WALLET
 [[ -z $AMOUNT ]] && echo "ERROR : ${ISSUERPUB}=$COINS MISSING AMOUNT" && exit 1
 [[ $AMOUNT =~ ^[0-9]+([.][0-9]+)?$ ]] && echo "Valid AMOUNT=${AMOUNT}" || { echo "ERROR NOT a valid AMOUNT : ${AMOUNT}" && exit 1; }
-[[ $(echo "$COINS <= $AMOUNT" | bc -l) -eq 1 ]] && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
+[[ $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]] && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS" && exit 1
 [[ -z $G1PUB ]] && echo "ERROR : ${ISSUERPUB}=$COINS ($AMOUNT) MISSING DESTINATION" && exit 1
 
 echo "PAYMENT PROCESSOR ID ${MOATS}"
