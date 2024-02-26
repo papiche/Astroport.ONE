@@ -308,7 +308,7 @@ for UMAP in ${unique_combined[@]}; do
     jq --argjson target_lat "$target_lat" \
         --argjson target_lon "$target_lon" \
         --argjson precision "$precision" \
-        '.wallets | map(select((.geoPoint.lat | tonumber) >= ($target_lat - $precision) and (.geoPoint.lat | tonumber) <= ($target_lat + $precision) and (.geoPoint.lon | tonumber) >= ($target_lon - $precision) and (.geoPoint.lon | tonumber) <= ($target_lon + $precision)))' wallall.json \
+        '.wallets | map(select((.geoPoint.lat | tonumber) >= ($target_lat - $precision) and (.geoPoint.lat | tonumber) <= ($target_lat + $precision) and (.geoPoint.lon | tonumber) >= ($target_lon - $precision) and (.geoPoint.lon | tonumber) <= ($target_lon + $precision)))' ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json \
         > ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json
 
     echo "MAKING _index.p4n.html with ./templates/P4N/index.html"

@@ -54,6 +54,10 @@ git pull
 ${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
+## DRAGON SSH WOT
+echo "DRAGONS WOT OFF"
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
+
 ## PING BOOSTRAP & SWARM NODES
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
@@ -96,15 +100,13 @@ seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
-## DRAGON SSH WOT
-echo "DRAGONS WOT OFF"
-${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
-## RESTART
 
 ## MAIL LOG : support@qo-op.com ##
 ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
+
+## RESTART
 
 # espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
