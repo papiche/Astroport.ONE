@@ -104,6 +104,7 @@ if [[ ${QRCODE} == "station" ]]; then
 
     ## LOG IPFSNODEID : IPCity + Wheater + more...
     ${MY_PATH}/../tools/IPFSNODEID.weather.sh > ~/.zen/tmp/${IPFSNODEID}/weather.txt
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ISTATION}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_index.html
 
     ## SHOW ZenStation FRONT
     sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
