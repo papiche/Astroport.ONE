@@ -422,7 +422,7 @@ for UMAP in ${unique_combined[@]}; do
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.priv "0.1" "${SECTORG1PUB}" "${INTERCOM}"
-        rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
+        rm ~/.zen/tmp/${MOATS}/${UMAP}.priv
     fi
 
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
