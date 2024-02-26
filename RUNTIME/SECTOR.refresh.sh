@@ -102,8 +102,8 @@ for SECTOR in ${SECTORS[@]}; do
         echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory
         [[ ${ZEN} -gt 0 ]] \
-            && echo "Refreshing from ZEN MEMORY" \
-            && ${MY_PATH}/../RUNTIME/ZEN.memory.sh "${SECTOR}" "${MOATS}"
+            && echo "INTERCOM Refreshing from ZEN MEMORY" \
+            && ${MY_PATH}/../RUNTIME/ZEN.SECTOR.memory.sh "${SECTOR}" "${MOATS}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     end=`date +%s`
@@ -287,6 +287,7 @@ for SECTOR in ${SECTORS[@]}; do
     REGLON=$(echo ${SLON} | cut -d '.' -f 1)
     REGION="_${REGLAT}_${REGLON}"
     TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
+    REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
 
     PHONEBOOTH="${G1PUB::30}"
     cat ${MY_PATH}/../templates/UPlanetSector/index.html \
@@ -322,14 +323,14 @@ for SECTOR in ${SECTORS[@]}; do
         && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
     ## ZEN CHAINING
-    # Send 1 Zen to UPlanet WORLDG1PUB Wallet containing REGION TW HASH
+    # Send 1 Zen to UPlanet REGIONG1PUB Wallet containing REGION TW HASH
     INTERCOM="UPLANET:${SECTOR}:${TODATE}:/ipfs/${IPFSPOP}"
-    echo "> ${INTERCOM}"
-    if [[ ${ZEN} -gt 0 ]]; then
-        echo "---8<--- SECTOR ZEN CHAINING ---8<------8<----"
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
-        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "0.1" "${WORLDG1PUB}" "${INTERCOM}"
-        rm ~/.zen/tmp/${MOATS}/sector.dunikey
+    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
+    if [[ ${ZEN} -gt 11 ]]; then
+        echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
+        rm ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey
     fi
     ##############################################################
     ## PUBLISHING ${SECTOR}
