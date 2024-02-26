@@ -14,7 +14,6 @@ done <"$file1"
 echo
 
 # Shakesphere wrote this, honest.
-sleep 1
 echo "Vous êtes de retour à votre point de départ."
 echo "La forêt qui vous entoure est immense."
 echo "Vous ne pouvez pas vraiment en imaginer la taille,"

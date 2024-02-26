@@ -1,38 +1,50 @@
 #!/bin/bash
 clear
+
+# This room gets a little artsy with sleep commands, to help with the
+# narrative of the story. This is why there are two versions - foyer and foyer2.
+
 # Initialise the Title Art
-file1="titleart.ben"
+file1="../art/titleart.ben"
 while IFS= read -r line
 do
     echo "$line"
 done <"$file1"
 echo
 
-# So here's a little story all about how this script got flip-turned upside down...
-sleep 1
-echo "You're in a corridor, but it's quite a small one. You got here"
-echo "the first time by hugging a statue of a kitten. Standard."
+# It's script time again...
+echo "Vous parcourez l'espace du regard"
+echo "Au nord, face à vous se trouve un foyer où brule un feu."
 echo
-echo "You see a glow coming from the rooms to your east and west, and"
-echo "there's a big, old looking door to the south of you."
+echo "A l'ouest sont suspendus tuyaux, ustensiles et bocaux. Une cuisine?"
+echo "A l'est il y a un genre de 'photomaton' "
 echo
-echo "What would you like to do?"
+echo "Derrière vous, la porte par où vous êtes entré est encore ouverte."
+echo
+echo "Que voulez vous faire?"
+echo
+echo "Il y a toujours l'ordinateur au millieu de la pièce avec l'inscription : 'Appuyez sur U pour lancer le jeu'"
 
-# Imma let you finish, but here's the room choices.
+# And once again the room logic.
 
 while true; do
     read -p "> " nsewuh
     case $nsewuh in
-        n ) echo "You faceplant the wall. Idiot." ;;
+        n ) echo "Vous vous asseyez sur le grand tapis devant le feu. Vous vous relaxez un instant."
+            ./magic8.sh
+            ;;
         s ) ./bigroom.sh
-            exit ;;
-        e ) ./gameroom.sh 
+             exit ;;
+        e ) ./gameroom.sh
             exit ;;
         w ) ./grue.sh
             exit ;;
-		u ) echo "There's nothing you can use right here." ;;
-		h ) echo "After hugging that cat you aren't sure you should try to hug yourself again." ;;
-        * ) echo "I'm sorry, I don't understand you. Commands are: n, e, s, w, u and h.";;
+        u ) echo "Vous tapotez sur le barmoètre. Une photo satellite?"
+            ./meteofrance.sh
+            exit
+        ;;
+        h ) echo "La pièce est spacieuse. La chaleur du feu agréable, à gauche on dirait une cuisine explosée, à droite une chaise moletonnée fait face à un écran." ;;
+        * ) echo "Je suis désolé, je ne vous comprends pas. Les commandes sont : n, e, s, w, u et h..";;
     esac
 done
 

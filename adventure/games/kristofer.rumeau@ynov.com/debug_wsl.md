@@ -67,6 +67,9 @@ Il faut installer ''' sudo apt install xdg-utils ''' ainsi que ''' sudo apt inst
 
 Le levier ne fonctionne  pas, « ACTIVATION STATION » mais rien ne se passe. 
 
+c'est parce que le script ne se souvient que du premiere appel du levier donc il faut le lui rappeller juste après l'action avec :
+
+            leverstate=$(cat $MY_PATH/../logic/leverlogic.ben)
 
 
 

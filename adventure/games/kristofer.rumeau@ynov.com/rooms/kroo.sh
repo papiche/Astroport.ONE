@@ -13,23 +13,22 @@ done <"$file1"
 echo
 
 # It's script time again...
-sleep 1
 echo "Vous pénétrez à l'intérieur de l'Astroport."
 echo
-sleep 3
 echo "Une voix synthétique vous accueille."
 espeak "Welcome. Please Identify." > /dev/null 2>&1
 echo
 echo "Vous parcourez l'espace du regard"
 echo "Au nord, face à vous se trouve un foyer où brule un feu."
 echo
-sleep 3
 echo "A l'ouest sont suspendus tuyaux, ustensiles et bocaux. Une cuisine?"
 echo "A l'est il y a un genre de 'photomaton' "
-sleep 2
+echo
 echo "Derrière vous, la porte par où vous êtes entré est encore ouverte."
 echo
 echo "Que voulez vous faire?"
+echo
+echo "Il y a également un ordinateur au millieu de la pièce avec l'inscription : 'Appuyez sur U pour lancer le jeu'"
 
 # And once again the room logic.
 
