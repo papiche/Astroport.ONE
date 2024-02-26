@@ -610,6 +610,12 @@ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "Astr
 rm -Rf ~/.zen/tmp/${MOATS}
 ) &
 
+## CHECK .current
+[[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
+&& rm ~/.zen/game/players/.current 2>/dev/null \
+&& ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+
+
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to command.sh # KEEP IT
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 ################################################ LAST LINE REPORT VALUES TO CALLING SCRIPT | tail -n 1
