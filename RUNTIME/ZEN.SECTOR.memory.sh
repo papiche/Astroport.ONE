@@ -33,8 +33,8 @@ REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
 REGLON=$(echo ${LON} | cut -d '.' -f 1)
 
 REGION="_${REGLAT}_${REGLON}"
-
-REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${REGION}.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${REGION}.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"
+REGIONG1PUB=$(cat ~/.zen/tmp/${MOATS}/${REGION}.priv | grep "pub:" | cut -d ' ' -f 2)
 [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
 COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
 echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
@@ -54,8 +54,6 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
     if [[ $ipfs_pop ]]; then
         echo "from $todate memory slot"
         ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${SECTOR} /ipfs/$ipfs_pop
-        end=`date +%s`
-        echo "(${SECTOR}) ${todate} get time : "`expr $end - $start` seconds.
     else
         echo "WARNING cannot remember... scan for more TX ??!"
     fi
@@ -65,6 +63,8 @@ else
     exit 1
 fi
 
+end=`date +%s`
+echo "(${SECTOR}.memory) ${todate} get time : "`expr $end - $start` seconds.
 
 #~ ## EXTRACT WORLDG1PUB HISTORY
 #~ ${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 300 -p ${WORLDG1PUB} -j \

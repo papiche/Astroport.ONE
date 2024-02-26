@@ -34,6 +34,9 @@ combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
 unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
 echo "ACTIVATED UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
 
+######################################################
+### LEVEL 1 ###########################################
+######################################################
 for UMAP in ${unique_combined[@]}; do
 
     start=`date +%s`
@@ -57,7 +60,9 @@ for UMAP in ${unique_combined[@]}; do
     G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
     [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
-    echo "UMAP (${COINS} G1) WALLET : ${G1PUB}"
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+
+    echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${G1PUB}"
 
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
@@ -84,6 +89,13 @@ for UMAP in ${unique_combined[@]}; do
     echo "## IPFS GET YESTERDATENS"
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
     ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
+    if [[ $? != 0 ]]; then
+        echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
+        # Try retieve memory from UPlanet Zen Memory
+        [[ ${ZEN} -gt 0 ]] \
+            && echo "INTERCOM Refreshing from ZEN MEMORY" \
+            && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}"
+    fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -402,6 +414,17 @@ for UMAP in ${unique_combined[@]}; do
         && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain.${ZMOATS} \
         && echo "UPDATING MOATS"
 
+######################################################
+    ## ZEN CHAINING
+    # Send 1 Zen to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
+    INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
+    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
+    if [[ ${ZEN} -gt 11 ]]; then
+        echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
+        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.priv "0.1" "${SECTORG1PUB}" "${INTERCOM}"
+        rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
+    fi
+
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
         && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain \
@@ -418,11 +441,19 @@ for UMAP in ${unique_combined[@]}; do
 
 done
 
-
+######################################################
+### LEVEL 2 ###########################################
+######################################################
 ### SECTOR = 0.1° Planet Slice
 ${MY_PATH}/SECTOR.refresh.sh "${unique_combined[@]}"
 
+######################################################
+### LEVEL 3 ###########################################
+######################################################
  ### REGION = 1° Planet Slice
 ${MY_PATH}/REGION.refresh.sh  "${unique_combined[@]}"
+######################################################
 
-
+######################################################
+exit 0
+######################################################
