@@ -33,7 +33,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeie6sx76balvpeehvbh5du7oc5fhjuwydryympeh3qnm5s3b2jrvwe"
+TWMODEL="/ipfs/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3q"
 # ipfs cat $TWMODEL > templates/twdefault.html
 MINIMAL="/ipfs/bafybeifnlpnvpxxnblgwefoflmdnt2vhckmnu22orsi43zilh2v4sbegjy"
 # ipfs cat $MINIMAL > templates/twuplanet.html
@@ -328,7 +328,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
         #~ echo "# CRYPTO ENCODING  _SECRET_ "
         ${MY_PATH}/../tools/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
-        ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
+        ENCODING=$(cat ~/.zen/tmp/${MOATS}/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3qsecret.dunikey.$G1PUB.enc | base16)
         sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
 ###########
