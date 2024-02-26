@@ -33,6 +33,9 @@
       overflow: hidden;
       z-index: 2; /* Ensure the rolling text is above the map */
     }
+    .leaflet-popup-content {
+        font-size: 16px; /* Adjust the font size as needed */
+    }
   </style>
 </head>
 <body>
@@ -126,7 +129,7 @@ axios.get('./wallets.json')
 
     // Iterate through wallet data
     walletPlaces.forEach(place => {
-      const { geoPoint, title, description, socials, pubkey } = place;
+      const { geoPoint, title, description, socials, pubkey, isMember } = place;
       const { lat, lon } = geoPoint;
 
       // Add a marker with a FontAwesome icon
@@ -143,12 +146,20 @@ axios.get('./wallets.json')
 
       // Check if socials is defined
       if (socials && socials.length > 0) {
-        popupContent += `<a href="${socials[0].url}" target="_blank">WWW</a><br>`;
+        popupContent += `<br><a href="${socials[0].url}" target="_blank">WWW</a><br>`;
       }
 
-      popupContent += `<br>* <a href="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k/#/app/wot/tx/${pubkey}/" target="_blank">Cesium</a>`;
-      popupContent += `<br>* <a href="/ipfs/QmadaNua8Cj8fwRNeEfzkMAjQ8XJuBJpD41w5pb2DBC8uc/#/app/user/${pubkey}/" target="_blank">Gchange</a>`;
-      popupContent += `<br>* <a href="/ipns/${convertPublicKey(pubkey)}" target="_blank">+ TW +</a>`;
+      if (isMember) {
+        // Member ID
+        popupContent += `<br>* <a href="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k/#/app/wot/tx/${pubkey}/" target="_blank"><span style="color: red; font-size: 18px;">Forgeron</span></a>`;
+      } else {
+        // Merchant ID
+        popupContent += `<br>* <a href="/ipfs/QmadaNua8Cj8fwRNeEfzkMAjQ8XJuBJpD41w5pb2DBC8uc/#/app/user/${pubkey}/" target="_blank">Gchange</a>`;
+        popupContent += `<br>* <a href="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k/#/app/wot/tx/${pubkey}/" target="_blank">Cesium</a>`;
+        popupContent += `<br>* <a href="/ipns/${convertPublicKey(pubkey)}" target="_blank">+ TW +</a>`;
+      }
+
+        popupContent += `<br><br>* <a href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${map.getCenter().lat}%2C${map.getCenter().lng}%3B${lat}%2C${lon}" target="_blank">Route</a>`;
 
       // Bind popup to the marker
       marker.bindPopup(popupContent);
@@ -176,8 +187,9 @@ axios.get('./p4n.json')
         ${description}<br>
         <b>Services:</b> ${services.join(', ')}<br>
         <b>Activities:</b> ${activities.join(', ')}<br>
-        <a href="#" onclick="goToLocation(${lat}, ${lng})">Zoom In</a>
-      `;
+        * <a href="#" onclick="goToLocation(${lat}, ${lng})">Zoom</a><br>
+        * <a href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${map.getCenter().lat}%2C${map.getCenter().lng}%3B${lat}%2C${lng}" target="_blank">Route</a>
+        `;
 
       // Bind popup to the marker
       marker.bindPopup(popupContent);
