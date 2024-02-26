@@ -208,7 +208,8 @@ for UMAP in ${unique_combined[@]}; do
     # %%%%%%%%%% ##################################################
     ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
     # %%%%%%%%%% ##################################################
-    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
+    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json \
+        ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
     RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
     for RSSFILE in ${RSSFILES[@]}; do
         cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
@@ -217,7 +218,8 @@ for UMAP in ${unique_combined[@]}; do
     # %%%%%%%%%% ##################################################
     ## COLLECT TW LINKS FROM NODE & SWARM
     # %%%%%%%%%% ##################################################
-    cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
+    cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* \
+        ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
     TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
     for TWRED in ${TWFILES[@]}; do
         ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
@@ -277,21 +279,31 @@ for UMAP in ${unique_combined[@]}; do
     ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
     ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
-    ## GET WALLETS
+    ## GET ALL WALLETS
     echo "* GET WALLETS https://g1-stats.axiom-team.fr/data/geoloc-members.json"
-    [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json
+    [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json
     [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
         && curl -s "https://g1-stats.axiom-team.fr/data/geoloc-members.json" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
-        && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json) ]] \
-        && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json \
-        && echo "UPDATED WALLETS" \
+        && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json) ]] \
+        && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json \
+        && echo "UPDATED WALLALL" \
         || rm ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
+
+    ## FILTER LOCAL WALLETS
+    target_lat=${LAT}
+    target_lon=${LON}
+    precision=0.1
+    jq --argjson target_lat "$target_lat" \
+        --argjson target_lon "$target_lon" \
+        --argjson precision "$precision" \
+        '.wallets | map(select((.geoPoint.lat | tonumber) >= ($target_lat - $precision) and (.geoPoint.lat | tonumber) <= ($target_lat + $precision) and (.geoPoint.lon | tonumber) >= ($target_lon - $precision) and (.geoPoint.lon | tonumber) <= ($target_lon + $precision)))' wallall.json \
+        > ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json
 
     echo "MAKING _index.p4n.html with ./templates/P4N/index.html"
     ## CREATE INDEX LOADING JSONs ON OPENSTREETMAP
     cat ${MY_PATH}/../templates/P4N/index.html \
-    | sed -e "s~43.2218~${LAT}~g" \
-              -e "s~1.3977~${LON}~g" \
+    | sed -e "s~43.61000~${LAT}~g" \
+              -e "s~1.43000~${LON}~g" \
               -e "s~_SERVICE_~Commons~g" \
               -e "s~_UMAP_~${UMAP}~g" \
               -e "s~http://127.0.0.1:8080~~g" \

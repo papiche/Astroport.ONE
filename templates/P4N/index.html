@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+
   <title>UPlanet _UMAP_ _SERVICE_ Data</title>
-  <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/leaflet.css" />
+  <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmZX8YdRWqqJFirdDg1z66Suy7JQrWWufTjPeX51mGoQix/leaflet.css" />
+  <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmZX8YdRWqqJFirdDg1z66Suy7JQrWWufTjPeX51mGoQix/leaflet.awesome-markers.css" />
+  <link rel="stylesheet" href="http://127.0.0.1:8080/ipfs/QmZX8YdRWqqJFirdDg1z66Suy7JQrWWufTjPeX51mGoQix/all.min.css" />
   <style>
     body {
       margin: 0;
@@ -25,7 +29,7 @@
       color: #fff;
       padding: 10px;
       text-align: center;
-      font-size: 18px;
+      font-size: 20px;
       overflow: hidden;
       z-index: 2; /* Ensure the rolling text is above the map */
     }
@@ -34,12 +38,81 @@
 <body>
   <div id="map"></div>
     <div id="rollingText" class="rolling-text-container"></div>
-  <script src="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/leaflet.js"></script>
-  <script src="http://127.0.0.1:8080/ipfs/QmUBL1cAkKbwnkxCcjvN6B9ydgoNgYGt1sYBqij8Wy2AjS/axios.min.js"></script>
+  <script src="http://127.0.0.1:8080/ipfs/QmZX8YdRWqqJFirdDg1z66Suy7JQrWWufTjPeX51mGoQix/leaflet.js"></script>
+  <script src="http://127.0.0.1:8080/ipfs/QmZX8YdRWqqJFirdDg1z66Suy7JQrWWufTjPeX51mGoQix/leaflet.awesome-markers.min.js"></script>
+  <script src="http://127.0.0.1:8080/ipfs/QmZX8YdRWqqJFirdDg1z66Suy7JQrWWufTjPeX51mGoQix/axios.min.js"></script>
+    <!-- Include the tweetnacl library for Ed25519 operations -->
+    <script src="./nacl.min.js"></script>
+
+    <script>
+        // Custom Base58 encoding and decoding functions
+        function base58Encode(bytes) {
+            const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            const base = BigInt(ALPHABET.length);
+            let encoded = '';
+
+            let value = BigInt('0');
+            for (let i = 0; i < bytes.length; i++) {
+                value = value * BigInt(256) + BigInt(bytes[i]);
+            }
+
+            while (value > BigInt(0)) {
+                const remainder = value % base;
+                value = value / base;
+                encoded = ALPHABET[Number(remainder)] + encoded;
+            }
+
+            return encoded;
+        }
+
+        function base58Decode(encoded) {
+            const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            const base = BigInt(ALPHABET.length);
+
+            let value = BigInt('0');
+            for (let i = 0; i < encoded.length; i++) {
+                const char = encoded[i];
+                const charValue = BigInt(ALPHABET.indexOf(char));
+                value = value * base + charValue;
+            }
+
+            const valueBytes = [];
+            while (value > BigInt(0)) {
+                const byteValue = Number(value % BigInt(256));
+                value = value / BigInt(256);
+                valueBytes.unshift(byteValue);
+            }
+
+            return new Uint8Array(valueBytes);
+        }
+
+        function convertPublicKey(pubkey) {
+            const g1PublicKey = pubkey;
+
+            // Decode the Base58 encoded G1 public key using custom function
+            const decodedShared = base58Decode(g1PublicKey);
+
+            // Create a new Uint8Array to hold the IPNS public key bytes
+            const ipnsPublicKeyBytes = new Uint8Array(decodedShared.length + 6);
+
+            // Prefix bytes for IPNS public key
+            const prefixBytes = new Uint8Array([0, 36, 8, 1, 18, 32]);
+
+            // Copy the prefix bytes and G1 public key bytes into the new array
+            ipnsPublicKeyBytes.set(prefixBytes, 0);
+            ipnsPublicKeyBytes.set(decodedShared, prefixBytes.length);
+
+            // Encode the IPNS public key using custom Base58 encoding
+            const ipnsPublicKey = '1' + base58Encode(ipnsPublicKeyBytes); // Prepend '1'
+
+            return ipnsPublicKey;
+        }
+    </script>
+
   <script>
 
 // Initialize Leaflet map
-const map = L.map('map').setView([43.2218, 1.3977], 11);
+const map = L.map('map').setView([43.61000, 1.43000], 11);
 // Add OpenStreetMap layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
@@ -48,23 +121,33 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Fetch wallets data
 axios.get('./wallets.json')
   .then(response => {
-    const walletData = response.data;
-    const walletPlaces = walletData.wallets;
+    const walletPlaces = response.data;
 
     // Iterate through wallet data
     walletPlaces.forEach(place => {
-      const { geoPoint, title, description, socials } = place;
+      const { geoPoint, title, description, socials, pubkey } = place;
       const { lat, lon } = geoPoint;
 
+      // Add a marker with a FontAwesome icon
+      var customIcon = L.AwesomeMarkers.icon({
+        icon: 'coffee',  // Specify the FontAwesome icon name
+        markerColor: 'red'  // Customize marker color
+      });
+
       // Create a marker on the map
-      const marker = L.marker([lat, lon]).addTo(map);
+      const marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
 
       // Create a popup content
-      const popupContent = `
-        <b>${title}</b><br>
-        ${description}<br>
-        <a href="${socials[0].url}" target="_blank">Visit Website</a>
-      `;
+      let popupContent = `<b>${title}</b><br>${description}<br>`;
+
+      // Check if socials is defined
+      if (socials && socials.length > 0) {
+        popupContent += `<a href="${socials[0].url}" target="_blank">Visit Website</a>`;
+      }
+
+      popupContent += `<br>* <a href="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k/#/app/wot/tx/${pubkey}/" target="_blank">Cesium</a>`;
+      popupContent += `<br>* <a href="/ipfs/QmadaNua8Cj8fwRNeEfzkMAjQ8XJuBJpD41w5pb2DBC8uc/#/app/user/${pubkey}/" target="_blank">GChange</a>`;
+      popupContent += `<br>* <a href="/ipns/${convertPublicKey(pubkey)}" target="_blank">+ TW +</a>`;
 
       // Bind popup to the marker
       marker.bindPopup(popupContent);
@@ -82,6 +165,8 @@ axios.get('./p4n.json')
     // Iterate through p4n data
     p4nPlaces.forEach(place => {
       const { lat, lng, title_short, description, services, activities } = place;
+
+      // Create a marker on the map
       const marker = L.marker([lat, lng]).addTo(map);
 
       // Create a popup content
