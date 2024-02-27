@@ -683,7 +683,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
         && ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1) \
         || ZEN="-10"
 
-    DISPLAY="$VISITORCOINS G1"
+    DISPLAY="<h1>$VISITORCOINS G1</h1>"
 
     ## WALLET VIERGE
     ###########################################
@@ -692,14 +692,14 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
         DISPLAY="$DISPLAY
         <h2>!! LOW ZEN WALLET ZEN=${ZEN}<h2>"
 
-        DISPLAY="$DISPLAY<h1>LOW ZEN WARNING</h1>
+        DISPLAY="$DISPLAY<h3>LOW ZEN WARNING</h3>
         PLEASE CHARGE... ${ZEN} ZEN"
 
     fi
 
     ## WE SEND WALLET AMOUNT DISPLAY
     (
-    echo "$HTTPCORS  <h2>${QRCODE}:${ZCHK}:</h2><h1>${DISPLAY}</h1><h2><a href='$myUPLANET/g1gate/?pubkey="$QRCODE"'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "$HTTPCORS ${QRCODE}:${ZCHK}:${DISPLAY}<h2><a href='$myUPLANET/g1gate/?pubkey="$QRCODE"'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP ${DISPLAY} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 

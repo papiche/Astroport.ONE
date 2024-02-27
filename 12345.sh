@@ -93,6 +93,9 @@ while true; do
     [ -z "$isLAN" ] \
         && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
+    [ -n "$(zIp)" ]\
+        && sed -i -e "s~http://${myIP}:${PORT}~$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+
     ## UPLANET HOME LINK REPLACEMENT
     sed -i -e "s~https://qo-op.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 

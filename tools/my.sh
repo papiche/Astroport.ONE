@@ -470,16 +470,17 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 myDOMAIN="copylaradio.com"
 
-myASTROPORT="http://$(hostname).local:1234" #astroport.localhost
-myAPI="http://${myIP}:5001"
+myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
+myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
+myAPI="http://127.0.0.1:5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
-myG1BILLET="http://${myIP}:33101"
+myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
 myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
-myIPFS="http://${myIP}:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFS="http://127.0.0.1:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"
