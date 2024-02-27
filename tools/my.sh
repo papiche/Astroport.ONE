@@ -470,8 +470,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 myDOMAIN="copylaradio.com"
 
-myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
-myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
+myASTROPORT="http://$(hostname).local:1234" #astroport.localhost
 myAPI="http://${myIP}:5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
