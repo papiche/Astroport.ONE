@@ -104,7 +104,7 @@ if [[ ${QRCODE} == "station" ]]; then
 
     ## LOG IPFSNODEID : IPCity + Wheater + more...
     ${MY_PATH}/../tools/IPFSNODEID.weather.sh > ~/.zen/tmp/${IPFSNODEID}/weather.txt
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ISTATION}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_index.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${ISTATION}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_index.html
 
     ## SHOW ZenStation FRONT
     sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
@@ -495,7 +495,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                                 && ipfs name publish -k ${player}_${VoeuName} /ipfs/${MILGRAM} &
                             ) &
 
-                echo "<br>PLEASE RETRY IN 30 SECONDS GETTING MESSAGE FROM IPFS<br>" >> ~/.zen/tmp/${MOATS}/disco
+                echo "<br>PLEASE RETRY IN 30 SECONDS GETTING MESSAGE FROM IPFS<bipfsr>" >> ~/.zen/tmp/${MOATS}/disco
                 (
                     cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
                     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
