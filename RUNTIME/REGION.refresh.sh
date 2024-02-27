@@ -148,7 +148,6 @@ for REGION in ${REGIONS[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
-    rm ~/.zen/tmp/${MOATS}/${REGION}/TODO
     rm ~/.zen/tmp/${MOATS}/${REGION}/N_*
 
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_${TOTL}
