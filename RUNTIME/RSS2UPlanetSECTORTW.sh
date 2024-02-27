@@ -89,7 +89,7 @@ while read title; do
         ## SAME TIDDLER
         echo "TIDDLER WITH TITLE $title and more than 1 signature ALREADY EXISTS..."
 
-        cp -f ~/.zen/tmp/${MOATS}/TMP.json ~/.zen/tmp/${MOATS}/INSIDE.json
+        cat ~/.zen/tmp/${MOATS}/TMP.json | jq .[] > ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
         if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
@@ -114,7 +114,7 @@ while read title; do
         NSIGN=${#NEMAILS[@]}
         echo "New Tiddler $NSIGN signatures : ${NEMAILS[*]}"
 
-        ITAGS=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].tags)
+        ITAGS=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .tags)
         IEMAILS=($(echo "$ITAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         ISIGN=${#IEMAILS[@]}
         echo "Inside Tiddler $ISIGN signatures : ${IEMAILS[*]}"
@@ -195,9 +195,9 @@ To Refuse<br>
         DATENEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
         TEXTNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .text)
         TAGSNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
-        DATEINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].modified)
-        TEXTINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].text)
-        TAGSINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].tags)
+        DATEINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .modified)
+        TEXTINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .text)
+        TAGSINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .tags)
 
         TIDLEREMAILSNEW=($(echo "$TAGSNEW" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b")) ## MUST BE SAME IN BOTH
         TIDLEREMAILSINSIDE=($(echo "$TAGSINSIDE" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b")) ## MUST BE SAME IN BOTH

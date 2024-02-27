@@ -67,18 +67,18 @@ for SECTOR in ${SECTORS[@]}; do
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
 
     ##############################################################
-    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+    G1PUB=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}.priv | grep 'pub:' | cut -d ' ' -f 2)
     [[ ! ${G1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
+
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
-    echo "SECTOR : ${SECTOR} (${COINS} G1 <=> ${ZEN} Z) : ${G1PUB}"
 
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
-    rm ~/.zen/tmp/${MOATS}/${SECTOR}.priv
 
-    echo "ORIGIN : ${myIPFS}/ipns/${SECTORNS}/"
+    echo "___ ORIGIN ___ ${myIPFS}/ipns/${SECTORNS}/"
+    echo "SECTOR : ${SECTOR} (${COINS} G1 <=> ${ZEN} ZEN) : ${G1PUB}"
 
     ###################### SPATIO TEMPORAL KEYS
     ## YESTERDATE ###############
@@ -118,7 +118,7 @@ for SECTOR in ${SECTORS[@]}; do
     ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
     [[ ${ZCHAIN} && ${ZMOATS} ]] \
         && cp ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain.${ZMOATS} \
-        && echo "UPDATING MOATS"
+        && echo "UPDATING MOATS ${MOATS}"
 
     MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
     ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
@@ -151,9 +151,12 @@ for SECTOR in ${SECTORS[@]}; do
         && echo "More than 26H update" \
         && ACTINGNODE=${STRAPS[0]}
 
+    echo "* ACTINGNODE=${ACTINGNODE}"
+
     if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
-        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
-        ipfs key rm ${TODATE}${G1PUB} ${YESYERDATE}${G1PUB} ${G1PUB}
+        echo ">> ACTINGNODE NOT ME - CONTINUE -"
+        ipfs key rm "${TODATE}${G1PUB}" "${YESYERDATE}${G1PUB}" "${G1PUB}"
+        echo "------8<-------------8<------------------8<-----------------8<-----------------8<"
         continue
     fi
 ### NEXT REFRESHER SHUFFLE
@@ -330,7 +333,6 @@ for SECTOR in ${SECTORS[@]}; do
         echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
-        rm ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey
     fi
     ##############################################################
     ## PUBLISHING ${SECTOR}
@@ -341,6 +343,7 @@ for SECTOR in ${SECTORS[@]}; do
     ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
 
 ######################################################
+    rm ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey
 
 ###################################################
 ## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE

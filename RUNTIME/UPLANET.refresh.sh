@@ -11,10 +11,18 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## SEEK FOR UPLANET KEYS
 # GET & UPDATE IPNS
 ############################################
-echo
-echo
 echo "############################################"
-echo "## RUNNING UPLANET.refresh"
+echo "
+ _________________________
+< RUNNING UPLANET.refresh >
+ -------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+"
 echo "############################################"
 echo "############################################"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
@@ -155,8 +163,9 @@ for UMAP in ${unique_combined[@]}; do
     echo "* ACTINGNODE=${ACTINGNODE}"
 
     if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
-        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
+        echo ">> ACTINGNODE NOT ME - CONTINUE -"
         ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}"
+        echo "------8<-------------8<------------------8<-----------------8<-----------------8<"
         continue
     fi
         ########################################
@@ -422,7 +431,6 @@ for UMAP in ${unique_combined[@]}; do
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.priv "0.1" "${SECTORG1PUB}" "${INTERCOM}"
-        rm ~/.zen/tmp/${MOATS}/${UMAP}.priv
     fi
 
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
@@ -438,6 +446,7 @@ for UMAP in ${unique_combined[@]}; do
     echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 
     ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}" ## REMOVE IPNS KEY
+    rm ~/.zen/tmp/${MOATS}/${UMAP}.priv
 
 done
 
