@@ -45,7 +45,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
         ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astronautens)
         [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
-        [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS=""
+        [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
     else
         ASTRONAUTENS="/ipfs/${EXTERNAL}"
         ASTROPORT="/ipns/$(echo $INDEX | rev | cut -d / -f 4 | rev)"

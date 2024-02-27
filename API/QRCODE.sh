@@ -613,7 +613,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
         ##############################################
         echo "## IPNS G1Voeu APP REDIRECT"
         tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${MOATS}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
-        cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
+        cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r 'map(select(.wish != null)) | .[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
         cat ~/.zen/tmp/${MOATS}.g1wishes.txt
         while read WISH
         do

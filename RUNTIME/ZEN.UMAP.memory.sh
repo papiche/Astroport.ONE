@@ -54,6 +54,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     todate=$(echo "$intercom" | grep -oP 'UPLANET:'"${UMAP}"':\K[^:]*')
     echo "SYNC ~/.zen/tmp/${MOATS}/${UMAP} <=> /ipfs/$ipfs_pop"
 
+    ## TODO: SECURITY PATCH : check payment emitter is UMAPG1PUB
     if [[ $ipfs_pop ]]; then
         echo "from $todate memory slot"
         ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${UMAP} /ipfs/$ipfs_pop
