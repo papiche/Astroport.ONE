@@ -109,7 +109,7 @@ while read title; do
         ## NEED SIGNATURES & TIDDLER SIMILARITY TO COME UP
 
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
-        NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .[].tags)
+        NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
         NEMAILS=($(echo "$NTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         NSIGN=${#NEMAILS[@]}
         echo "New Tiddler $NSIGN signatures : ${NEMAILS[*]}"
@@ -192,9 +192,9 @@ To Refuse<br>
         fi
 
         ## CHECK DIFFERENCE
-        DATENEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .[].modified)
-        TEXTNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .[].text)
-        TAGSNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .[].tags)
+        DATENEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
+        TEXTNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .text)
+        TAGSNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
         DATEINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].modified)
         TEXTINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].text)
         TAGSINSIDE=$(cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -r .[].tags)
