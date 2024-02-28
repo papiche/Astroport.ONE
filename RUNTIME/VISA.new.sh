@@ -558,9 +558,9 @@ do
     echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 done <"$asciiart"
 
-echo "<h1></h1>
-<a href='${myIPFSGW}${IASTRO}'>ZenCard ${G1PUB}<br><img src='${myIPFSGW}${IASTRO}'\><br></a>
-<br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+echo "<h2>PRINT & SHARE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
+<img src='${myIPFSGW}${IASTRO}'\><br>
+</body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
 
@@ -590,9 +590,9 @@ do
 done <"$asciiart"
 
 echo "
-<h3> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h3>
-<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img src='${myIPFSGW}${ASTROQR}'\></a>
-<br>SECRET1=$SALT SECRET2=$PEPPER ($PASS)<br>
+<h2> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h2>
+<br>PRINT & KEEP SAFE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img width=120px src='${myIPFSGW}${ASTROQR}'\></a>
+<br>SECRET1=$SALT<br>SECRET2=$PEPPER<br>($PASS)<br>
 <h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
 <a href='https://qo-op.com'>Uplanet</a>
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
