@@ -447,7 +447,8 @@ for UMAP in ${unique_combined[@]}; do
     echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 
     ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}" ## REMOVE IPNS KEY
-    rm ~/.zen/tmp/${MOATS}/${UMAP}.priv
+    rm ~/.zen/tmp/${MOATS}/*.priv
+    rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done
 
