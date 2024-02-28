@@ -430,7 +430,8 @@ for UMAP in ${unique_combined[@]}; do
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
-        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.priv "0.1" "${SECTORG1PUB}" "${INTERCOM}"
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
     fi
 
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
