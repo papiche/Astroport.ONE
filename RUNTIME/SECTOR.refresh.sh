@@ -67,8 +67,8 @@ for SECTOR in ${SECTORS[@]}; do
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
 
     ##############################################################
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
-    G1PUB=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}.priv | grep 'pub:' | cut -d ' ' -f 2)
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+    G1PUB=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     [[ ! ${G1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
 
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
@@ -331,7 +331,6 @@ for SECTOR in ${SECTORS[@]}; do
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
     fi
     ##############################################################

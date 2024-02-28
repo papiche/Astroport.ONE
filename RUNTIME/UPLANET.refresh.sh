@@ -48,6 +48,7 @@ echo "ACTIVATED UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
 for UMAP in ${unique_combined[@]}; do
 
     start=`date +%s`
+    echo
     echo "____________REFRESHING ${UMAP}__________"
     LAT=$(echo ${UMAP} | cut -d '_' -f 2)
     LON=$(echo ${UMAP} | cut -d '_' -f 3)
@@ -65,8 +66,10 @@ for UMAP in ${unique_combined[@]}; do
     ##############################################################
     ## UMAP WALLET CHECK
     ##############################################################
-    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    G1PUB=$(cat ~/.zen/tmp/${MOATS}/${UMAP}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+    [[ ! ${G1PUB} ]] && echo "ERROR generating UMAP WALLET" && exit 1
+
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
@@ -430,7 +433,6 @@ for UMAP in ${unique_combined[@]}; do
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
     fi
 
