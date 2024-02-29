@@ -31,9 +31,9 @@ echo ${#SKEYS[@]}  " swarm SECTORS"
 RKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/REGIONS/_*_*/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
 echo ${#RKEYS[@]} " swarm REGIONS"
 
-## CHECK FOR ANY ALREADY MErunning
-MErunning=$(ps axf --sort=+utime | grep -w ${ME} | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-[[ $MErunning ]] && echo "${ME} MErunning for too long..." && kill -9 $MErunning
+#~ ## CHECK IF ALREADY MErunning
+countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|grep' | wc -l)
+[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
 
 echo "(◕‿◕ ) ${ME} starting UPlanet Terraformation _______________________________"
 
