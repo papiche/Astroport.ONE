@@ -86,12 +86,15 @@ while true; do
     myHtml >> ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## REPLACE RESPONSE PORT
-    sed -i -e "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" \
+    sed -i -e "s~http://127.0.0.1:12345~http://127.0.0.1:${PORT}~g" \
         ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
     [ -z "$isLAN" ] \
-        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+        && sed -i -e "s~http://127.0.0.1:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+
+    [ -n "$(zIp)" ]\
+        && sed -i -e "s~http://127.0.0.1:${PORT}~$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## UPLANET HOME LINK REPLACEMENT
     sed -i -e "s~https://qo-op.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http

@@ -428,6 +428,37 @@ function makecoord() {
     echo "${input}"
 }
 
+# Fonction pour récupérer la météo depuis l'API OpenWeatherMap
+recuperer_meteo() {
+    echo "En train de récupérer les données météo..."
+    # Récupérer la météo à l'aide de l'API OpenWeatherMap
+    ville="Paris" # Vous pouvez modifier la ville ici
+    api_key="310103dee4a9d1b716ee27d79f162c7e" # Remplacez YOUR_API_KEY par votre clé API OpenWeatherMap
+    url="http://api.openweathermap.org/data/2.5/weather?q=$ville&appid=$api_key&units=metric"
+    meteo=$(curl -s $url)
+    # Extraire les informations pertinentes de la réponse JSON
+    temperature=$(echo $meteo | jq -r '.main.temp')
+    description=$(echo $meteo | jq -r '.weather[0].description')
+    echo "La météo à $ville : $description, Température: $temperature °C"
+}
+
+# my_IPCity # Fonction pour récupérer la géolocalisation à partir de l'adresse IP
+my_IPCity() {
+    local ip=$1
+
+    if [ -z "$ip" ]; then
+        ip=$(curl 'https://api.ipify.org?format=json' --silent | jq -r '.ip')
+    fi
+
+    local url="http://ip-api.com/json/$ip"
+    local geolocalisation=$(curl -s "$url")
+
+    local ville=$(echo "$geolocalisation" | jq -r '.city')
+    local pays=$(echo "$geolocalisation" | jq -r '.country')
+
+    echo "$ville,$pays"
+}
+
 IPFSNODEID="$(myIpfsPeerId)"
 [[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"
@@ -440,16 +471,16 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 myDOMAIN="copylaradio.com"
 
 myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
-myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
-myAPI="http://${myIP}:5001"
+myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
+myAPI="http://127.0.0.1:5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
-myG1BILLET="http://${myIP}:33101"
+myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
 myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
-myIPFS="http://${myIP}:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFS="http://127.0.0.1:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"
@@ -488,7 +519,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 fi
 
 ## https://git.p2p.legal/qo-op/OSM2IPFS
-EARTHCID="/ipfs/QmYGS24WxVbsmmQfqWohXhXQZiwSmNswhTtSj9msVWKkNh"
+EARTHCID="/ipfs/QmXWDm78ne22ou9kmRPFqVa3e15BNHsXBZe4Y9KmgBPmJL"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 ###########################

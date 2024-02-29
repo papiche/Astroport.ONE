@@ -18,9 +18,9 @@ RSS=$1 ## filepath to RSS week file to extract Tiddlers
 #~ echo "======= RSS 2 WEEKnewsfile =======
 #~ Analysing ${RSS}
 #~ =================================================================="
-cat ${RSS} | jq -r '.[] | if .ipfs then "\n# [\(."title")](\(."ipfs"))\n\n\(.tags)\n \(.duree)"
+cat ${RSS} | jq -r '.[] | select(.title | startswith("$:/") | not) | if .ipfs then "\n# [\(."title")](\(."ipfs"))\n\n\(.tags)\n \(.duree)"
                                         elif .ipfs_one then "\n# \(."title")\n\n\(.tags)\n\(.desc)\n\(.g1pub)"
                                         elif ._external_url then "\n# [\(."title")](\(._external_url))\n\n\(.tags)\n\(.mime) \(.type)"
-                                        else "\n# \(."title")\n\n\(.tags)\n\(.text)" end'
+                                        else "\n# \(."title")\n\n\(.tags)\n\(.text)" end | select(.tags | contains(["$:/isEmbedded", "$:/isIpfs"]) | not)'
 
 exit 0

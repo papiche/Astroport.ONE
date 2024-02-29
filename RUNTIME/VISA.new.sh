@@ -33,7 +33,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeie6sx76balvpeehvbh5du7oc5fhjuwydryympeh3qnm5s3b2jrvwe"
+TWMODEL="/ipfs/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3q"
 # ipfs cat $TWMODEL > templates/twdefault.html
 MINIMAL="/ipfs/bafybeifnlpnvpxxnblgwefoflmdnt2vhckmnu22orsi43zilh2v4sbegjy"
 # ipfs cat $MINIMAL > templates/twuplanet.html
@@ -328,7 +328,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
         #~ echo "# CRYPTO ENCODING  _SECRET_ "
         ${MY_PATH}/../tools/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
-        ENCODING=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc | base16)
+        ENCODING=$(cat ~/.zen/tmp/${MOATS}/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3qsecret.dunikey.$G1PUB.enc | base16)
         sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
         # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
 ###########
@@ -558,9 +558,9 @@ do
     echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 done <"$asciiart"
 
-echo "<h1></h1>
-<a href='${myIPFSGW}${IASTRO}'>ZenCard ${G1PUB}<br><img src='${myIPFSGW}${IASTRO}'\><br></a>
-<br></body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+echo "<h2>PRINT & SHARE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
+<img src='${myIPFSGW}${IASTRO}'\><br>
+</body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
 
@@ -590,9 +590,9 @@ do
 done <"$asciiart"
 
 echo "
-<h3> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h3>
-<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img src='${myIPFSGW}${ASTROQR}'\></a>
-<br>SECRET1=$SALT SECRET2=$PEPPER ($PASS)<br>
+<h2> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h2>
+<br>PRINT & KEEP SAFE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img width=120px src='${myIPFSGW}${ASTROQR}'\></a>
+<br>SECRET1=$SALT<br>SECRET2=$PEPPER<br>($PASS)<br>
 <h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
 <a href='https://qo-op.com'>Uplanet</a>
 </body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
@@ -609,6 +609,12 @@ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "Astr
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
 ) &
+
+## CHECK .current
+[[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
+&& rm ~/.zen/game/players/.current 2>/dev/null \
+&& ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+
 
 echo $PSEUDO > ~/.zen/tmp/PSEUDO ## Return data to command.sh # KEEP IT
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
