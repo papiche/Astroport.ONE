@@ -46,7 +46,7 @@ echo ${#UKEYS[@]} "  JOBS..."
 mkdir -p ~/.zen/tmp/flashmem
 
 ## Remove flashmem/UplanetKey older than 3 hours
-find ~/.zen/tmp/flashmem -mmin +180 -exec rm -r {} +
+find ~/.zen/tmp/flashmem -mmin +180 -exec rm -rf {} +
 
 floop=0
 medo=0
