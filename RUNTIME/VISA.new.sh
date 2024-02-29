@@ -33,9 +33,9 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3q"
+TWMODEL="/ipfs/bafybeictdd2ue6jediatiudq3shtlmamrahyje46jmcrgfu5jktr3hgtam"
 # ipfs cat $TWMODEL > templates/twdefault.html
-MINIMAL="/ipfs/bafybeifnlpnvpxxnblgwefoflmdnt2vhckmnu22orsi43zilh2v4sbegjy"
+MINIMAL="/ipfs/bafybeiat4wjnl2y4vh273vqodk4d7bwgwpaidfrju2umqwq7tks5ixkduy"
 # ipfs cat $MINIMAL > templates/twuplanet.html
 ################################################################################
 
@@ -80,6 +80,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         rm -f ~/.zen/tmp/${MOATS}/Astroport.json
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
         ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+        HPass=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].HPASS)
         echo "ASTROPORT=${ASTROPORT}"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
         AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
