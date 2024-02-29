@@ -6,7 +6,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/my.sh"
+. "$MY_PATH/../tools/my.sh"
 ################################################################################
 ## UNPLUG A PLAYER FROM ASTROPORT STATION
 ############################################
@@ -61,7 +61,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
     [[ ! -z ${SECTORG1PUB} ]] \
         && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
-        && ${MY_PATH}/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "UNPLUG:${ALL}"
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "UNPLUG:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
@@ -72,7 +72,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
 ## SEND PLAYER LAST KNOW TW
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
-${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Hello ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='${myIPFSGW}/ipfs/${TW}'>TW ARCHIVE</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "BYE BYE MESSAGE"
+${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='${myIPFSGW}/ipfs/${TW}'>TW ARCHIVE</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "BYE BYE MESSAGE"
 
 echo "PLAYER IPNS KEYS UNPLUGED"
 echo "#######################"

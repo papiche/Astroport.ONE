@@ -176,8 +176,12 @@ for PLAYER in ${PLAYERONE[@]}; do
 
             echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
 
-            ## TODATENS ################
-            TODATENS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
+            ## UMAP TODATENS ################
+            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
+            ipfs key rm "_todate" 2>/dev/null
+            TODATENS=$(ipfs key import "_todate" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
+            ipfs key rm "_todate" 2>/dev/null
+
             echo "GPS UMAP LINK UPDATE
             ${YESTERDATE} : ${myIPFS}${UMAPNS}
             ${TODATE} : ${myIPFS}/ipns/${TODATENS}"

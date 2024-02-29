@@ -11,10 +11,18 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## SEEK FOR UPLANET KEYS
 # GET & UPDATE IPNS
 ############################################
-echo
-echo
 echo "############################################"
-echo "## RUNNING UPLANET.refresh"
+echo "
+ _________________________
+< RUNNING UPLANET.refresh >
+ -------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+"
 echo "############################################"
 echo "############################################"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
@@ -34,9 +42,13 @@ combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
 unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
 echo "ACTIVATED UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
 
+######################################################
+### LEVEL 1 ###########################################
+######################################################
 for UMAP in ${unique_combined[@]}; do
 
     start=`date +%s`
+    echo
     echo "____________REFRESHING ${UMAP}__________"
     LAT=$(echo ${UMAP} | cut -d '_' -f 2)
     LON=$(echo ${UMAP} | cut -d '_' -f 3)
@@ -54,10 +66,14 @@ for UMAP in ${unique_combined[@]}; do
     ##############################################################
     ## UMAP WALLET CHECK
     ##############################################################
-    G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    [[ ! ${G1PUB} ]] && echo "ERROR generating WALLET" && exit 1
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    G1PUB=$(cat ~/.zen/tmp/${MOATS}/${UMAP}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+    [[ ! ${G1PUB} ]] && echo "ERROR generating UMAP WALLET" && exit 1
+
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
-    echo "UMAP (${COINS} G1) WALLET : ${G1PUB}"
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+
+    echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${G1PUB}"
 
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
@@ -84,6 +100,13 @@ for UMAP in ${unique_combined[@]}; do
     echo "## IPFS GET YESTERDATENS"
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
     ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
+    if [[ $? != 0 ]]; then
+        echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
+        # Try retieve memory from UPlanet Zen Memory
+        [[ ${ZEN} -gt 0 ]] \
+            && echo "INTERCOM Refreshing from ZEN MEMORY" \
+            && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}"
+    fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -143,8 +166,9 @@ for UMAP in ${unique_combined[@]}; do
     echo "* ACTINGNODE=${ACTINGNODE}"
 
     if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
-        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
+        echo ">> ACTINGNODE NOT ME - CONTINUE -"
         ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}"
+        echo "------8<-------------8<------------------8<-----------------8<-----------------8<"
         continue
     fi
         ########################################
@@ -208,7 +232,8 @@ for UMAP in ${unique_combined[@]}; do
     # %%%%%%%%%% ##################################################
     ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
     # %%%%%%%%%% ##################################################
-    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
+    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json \
+        ~/.zen/tmp/${MOATS}/${UMAP}/RSS/ 2>/dev/null
     RSSFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/RSS/*.rss.json 2>/dev/null))
     for RSSFILE in ${RSSFILES[@]}; do
         cp ${RSSFILE} ~/.zen/tmp/${MOATS}/${UMAP}/RSS/
@@ -217,7 +242,8 @@ for UMAP in ${unique_combined[@]}; do
     # %%%%%%%%%% ##################################################
     ## COLLECT TW LINKS FROM NODE & SWARM
     # %%%%%%%%%% ##################################################
-    cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
+    cp -r ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* \
+        ~/.zen/tmp/${MOATS}/${UMAP}/TW/ 2>/dev/null
     TWFILES=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/*/index.html 2>/dev/null))
     for TWRED in ${TWFILES[@]}; do
         ZMAIL=$(echo ${TWRED} | rev | cut -d '/' -f 2 | rev)
@@ -266,7 +292,7 @@ for UMAP in ${unique_combined[@]}; do
     echo "* park4night : https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr"
     [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json
     [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
-        && curl -s "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
+        && curl -s -L "https://www.park4night.com/api/places/around?lat=${LAT}&lng=${LON}&radius=200&filter=%7B%7D&lang=fr" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
         && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json) ]] \
         && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/p4n.json \
         && echo "UPDATED PARK4NIGHT" \
@@ -277,11 +303,31 @@ for UMAP in ${unique_combined[@]}; do
     ## GET 100KM GCHANGE ADS ( https://data.gchange.fr )
     ${MY_PATH}/../tools/gchange_get_50km_around_LAT_LON_ads.sh ${LAT} ${LON} > ~/.zen/tmp/${MOATS}/${UMAP}/gchange50.json
 
+    ## GET ALL WALLETS
+    echo "* GET WALLETS https://g1-stats.axiom-team.fr/data/geoloc-members.json"
+    [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json ]] && touch ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json
+    [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ]] \
+        && curl -s "https://g1-stats.axiom-team.fr/data/geoloc-members.json" -o ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json \
+        && [[ $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json) -gt $(stat -c %s ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json) ]] \
+        && mv ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json \
+        && echo "UPDATED WALLALL" \
+        || rm ~/.zen/tmp/${MOATS}/${UMAP}/fetch.json
+
+    ## FILTER LOCAL WALLETS
+    target_lat=${LAT}
+    target_lon=${LON}
+    precision=0.1
+    jq --argjson target_lat "$target_lat" \
+        --argjson target_lon "$target_lon" \
+        --argjson precision "$precision" \
+        '.wallets | map(select((.geoPoint.lat | tonumber) >= ($target_lat - $precision) and (.geoPoint.lat | tonumber) <= ($target_lat + $precision) and (.geoPoint.lon | tonumber) >= ($target_lon - $precision) and (.geoPoint.lon | tonumber) <= ($target_lon + $precision)))' ~/.zen/tmp/${MOATS}/${UMAP}/wallall.json \
+        > ~/.zen/tmp/${MOATS}/${UMAP}/wallets.json
+
     echo "MAKING _index.p4n.html with ./templates/P4N/index.html"
     ## CREATE INDEX LOADING JSONs ON OPENSTREETMAP
     cat ${MY_PATH}/../templates/P4N/index.html \
-    | sed -e "s~43.2218~${LAT}~g" \
-              -e "s~1.3977~${LON}~g" \
+    | sed -e "s~43.61000~${LAT}~g" \
+              -e "s~1.43000~${LON}~g" \
               -e "s~_SERVICE_~Commons~g" \
               -e "s~_UMAP_~${UMAP}~g" \
               -e "s~http://127.0.0.1:8080~~g" \
@@ -345,12 +391,14 @@ for UMAP in ${unique_combined[@]}; do
     PHONEBOOTH="${G1PUB::30}"
     cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
     | sed -e "s~_ZONE_~UMAP ${UMAP}~g" \
-              -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
               -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
               -e "s~_ZONENS_~${TODATENS}~g" \
               -e "s~_IPFSNINJA_~${VDONINJA}~g" \
               -e "s~_HACKGIPFS_~${HACKGIPFS}~g" \
+              -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \
               -e "s~_UPZONENS_~${TODATESECTORNS}~g" \
+              -e "s~_UPUPZONE_~REGION ${REGION}~g" \
+              -e "s~_UPUPZONENS_~${TODATEREGIONNS}~g" \
               -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
               -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
               -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${LAT}\&southWestLon=${LON}\&deg=0.01~g" \
@@ -378,6 +426,16 @@ for UMAP in ${unique_combined[@]}; do
         && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain.${ZMOATS} \
         && echo "UPDATING MOATS"
 
+######################################################
+    ## ZEN CHAINING
+    # Send 1 Zen to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
+    INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
+    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
+    if [[ ${ZEN} -gt 11 ]]; then
+        echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
+        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
+    fi
+
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
         && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain \
@@ -391,14 +449,24 @@ for UMAP in ${unique_combined[@]}; do
     echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 
     ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}" ## REMOVE IPNS KEY
+    rm ~/.zen/tmp/${MOATS}/*.priv
+    rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done
 
-
+######################################################
+### LEVEL 2 ###########################################
+######################################################
 ### SECTOR = 0.1° Planet Slice
 ${MY_PATH}/SECTOR.refresh.sh "${unique_combined[@]}"
 
+######################################################
+### LEVEL 3 ###########################################
+######################################################
  ### REGION = 1° Planet Slice
 ${MY_PATH}/REGION.refresh.sh  "${unique_combined[@]}"
+######################################################
 
-
+######################################################
+exit 0
+######################################################

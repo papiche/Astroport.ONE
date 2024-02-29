@@ -68,10 +68,10 @@ for REGION in ${REGIONS[@]}; do
     # with bigger planetary swam will be closest "IA Station", or it could be choosen according to ZEN value...
     STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
     ACTINGNODE=${STRAPS[0]} ## FIST NODE IN STRAPS
-    [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]] \
-        && echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -" \
-        && continue
-
+    if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
+        echo ">> ACTINGNODE=${ACTINGNODE} is not ME - CONTINUE -"
+        continue
+    fi
     ##############################################################
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
@@ -109,6 +109,10 @@ for REGION in ${REGIONS[@]}; do
     done
     NL=${#RSSNODE[@]}
 
+    echo "
+    ---
+    " >> ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
+
     ## ADD SWARM SECTORS RSS WEEK
     RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
     for RSS in ${RSSWARM[@]}; do
@@ -144,15 +148,15 @@ for REGION in ${REGIONS[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
-    rm ~/.zen/tmp/${MOATS}/${REGION}/TODO
     rm ~/.zen/tmp/${MOATS}/${REGION}/N_*
 
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_${TOTL}
 
     RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL 2>/dev/null)
     if [[ ${RWEEKCID} ]]; then
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${RWEEKCID}'\" />" \
-            > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.redir.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/QmYNH85cJCwSVw4c7SyHtc2jtgh7dL5RegozX7e8Re28a9/md.htm?src=/ipfs/${RWEEKCID}'\" />" \
+            > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.view.html
+
         cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
             ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/JOURNAL.md
     fi
