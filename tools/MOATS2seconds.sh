@@ -28,7 +28,7 @@ MINUTE=${Zmoats:10:2}
 MINUTE=${MINUTE#0}
 SECMINUTE=$((MINUTE * 60))
 
-SECOND=$((${Zmoats:12:2}+0))
+SECOND=${Zmoats:12:2}
 
 
 # Calculate the time difference in seconds

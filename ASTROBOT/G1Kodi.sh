@@ -168,8 +168,26 @@ while read TITRE; do
             TEXT="<h1>{{!!titre}} ({{!!year}})</h1><h2>{{!!sub}}</h2>
             {{!!desc}}<br>
             <a target='youtube' href='https://youtu.be/"${YID}"'>Bande Annonce</a>
-            <h3>Envoyez un don. Recevez le lien vers ce film dans votre messagerie Cesium+</h3>
-            <img width='300' src='/ipfs/"${PV}"'>"
+            <br>
+            <h3>Voir ce Film:</h3>
+            <h4>Installez Cesium+</h4>
+            <table><tr>
+            <td>
+            <img width='240' src='/ipfs/QmXExw6Sh4o4rSjBQjU9PGU7BCGwb1jybrKEeaZGUNRCRE'>
+            </td><td>
+            <img width='240' src='/ipfs/QmP3qwEnVX9zSsyKAwuH6nhDPfrRoMbAfszrtdkLGgo7LQ'>
+            </td>
+            </tr>
+            <tr>
+            <td>
+            <h4>Flashez, envoyez un don...</h4>
+            <br>ce soir,<br>recevez le lien dans votre messagerie.
+            </td><td>
+            <img width='300' src='/ipfs/"${PV}"'>
+            </td>
+            </tr>
+            </table>
+            "
 
             ## MAKING TIDDLER
               echo "## Creation json tiddler ~/.zen/game/players/${PLAYER}/G1Kodi/${TITLE}.dragdrop.json"

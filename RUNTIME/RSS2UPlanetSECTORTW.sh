@@ -39,6 +39,8 @@ ${RSS}
 cat "${RSS}" | jq 'sort_by(.created) | reverse | .[]' | jq -r '.title' > ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 ##
 gloops=0
+signatures=0
+
 while read title; do
 
     [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK" && break
@@ -54,7 +56,12 @@ while read title; do
 
     [[ ! "${ISHERE}" ]] && echo "No Tiddler found in ${INDEX}"
 
-    if [[ "${ISHERE}" != "${title}" ]]; then
+    TMPTAGS=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r .[].tags)
+    TMPEMAILS=($(echo "$TMPTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    TMPSIGN=${#TMPEMAILS[@]}
+    echo "INSIDE TIDDLER HAVE ${TMPSIGN} SIGNATURE(S)"
+
+    if [[ "${ISHERE}" != "${title}" || ${TMPSIGN} == 0 ]]; then
 
         ## NEW TIDDLER
         echo "Importing Title: $title"
@@ -72,16 +79,17 @@ while read title; do
             && rm ${INDEX} \
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
             && ((gloops++)) \
-            && echo "SECTOR (${gloops}) : ${title}"
+            && echo "SECTOR (${gloops}) : ${title}" \
+            && signatures=$((signatures + TMPSIGN))
 
          [[ ! -s ${INDEX} ]] && echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
 
     else
 
         ## SAME TIDDLER
-        echo "TIDDLER WITH TITLE $title ALREADY EXISTS..."
+        echo "TIDDLER WITH TITLE $title and more than 1 signature ALREADY EXISTS..."
 
-        cp -f ~/.zen/tmp/${MOATS}/TMP.json ~/.zen/tmp/${MOATS}/INSIDE.json
+        cat ~/.zen/tmp/${MOATS}/TMP.json | jq .[] > ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
         if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
@@ -90,9 +98,15 @@ while read title; do
             continue
         fi
         floop=1
-
+        echo
+        echo "=========== INSIDE.json"
+        cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -c
+        echo
+        echo "=========== NEW.json"
+        cat ~/.zen/tmp/${MOATS}/NEW.json | jq -c
+        echo
         ## TODO EXTEND CONTROL TO text & ipfs & _canonical_url
-## NEED SIGNATURES & TIDDLER SIMILARITY TO COME UP
+        ## NEED SIGNATURES & TIDDLER SIMILARITY TO COME UP
 
         ## CHECK FOR EMAIL SIGNATURES DIFFERENCE
         NTAGS=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
@@ -128,7 +142,7 @@ while read title; do
             # Print the results
             echo "Common email addresses : ${COMMON[*]}"
             echo "Email addresses unique in NEW Tiddler : ${NUNIQUE[*]}"
-            echo "Email addresses unique in ACTUAL Tiddler : ${IUNIQUE[*]}"
+            echo "Email addresses unique in INSIDE Tiddler : ${IUNIQUE[*]}"
 
             combined=("${IEMAILS[@]}" "${NEMAILS[@]}")
             unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
@@ -168,7 +182,7 @@ To Refuse<br>
 <h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Actual Tiddler</a>Engage discussion about it...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
-                ${MY_PATH}/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "TIDDLER COLLISION"
+                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "TIDDLER COLLISION"
 
             done
 
@@ -201,6 +215,8 @@ To Refuse<br>
                 && rm ${INDEX} \
                 && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX}
 
+            signatures=$((signatures + ISIGN))
+
         fi
 
     fi
@@ -213,11 +229,11 @@ To Refuse<br>
 done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 
 ####################################################
-################################################
+################################################ ${signatures} -gt ${gloops}
 ## SECTOR SENDS GRATITUDE TO PUBLISHING PLAYER
 ###################################################
 
-if [[ ${gloops} -gt 0 && ${ASTROG1} ]]; then
+if [[ ${gloops} -gt 0 && ${signatures} -gt ${gloops} && ${ASTROG1} ]]; then
     # GENERATE SECTOR PRIVATE KEY ################################
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     G1SECTOR=$(cat ~/.zen/tmp/${MOATS}/sector.dunikey | grep 'pub:' | cut -d ' ' -f 2)
