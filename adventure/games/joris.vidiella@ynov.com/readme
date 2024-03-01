@@ -1,0 +1,30 @@
+# SCRIPT01.CYBSEC
+
+
+wiggle.sh
+
++ 11 : game engine
++2 : multigame compatibility
++1 : shellcheck
+- 1 : git sync
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Les fichiers ./logic/leverlogic.ben et ../_votre jeu/logic/leverlogic.ben sont différents
+Seulement dans ./logic: leverlogic.ben=
+Les fichiers ./rooms/brown.sh et ../_votre jeu/rooms/brown.sh sont différents
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/gameroom.sh et ../_votre jeu/rooms/gameroom.sh sont différents
+Les fichiers ./rooms/kroo.sh et ../_votre jeu/rooms/kroo.sh sont différents
+Seulement dans ./rooms: wiggle.sh
+```
+
+
+simple & fun

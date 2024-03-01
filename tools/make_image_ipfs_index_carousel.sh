@@ -223,6 +223,6 @@ htmlipfs=$(ipfs add -q $html_file)
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
 
 echo "/ipfs/$htmlipfs" > ~/.zen/tmp/ISTATION
-cat ~/.zen/tmp/ISTATION
+cat ~/.zen/tmp/ISTATION ### KEEPIT ON LAST LINE
 
 exit 0

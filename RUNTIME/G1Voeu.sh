@@ -46,7 +46,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     [[ ${PEPPER} ]] && echo "Using PLAYER PEPPER AS WISH SALT" && SECRET1=${PEPPER} ##
     [[ ! ${SECRET1} ]] && SECRET1=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
 
-    echo "${SECRET1}"
+    #~ echo "${SECRET1}"
 
     echo "## TITRE DU G1VOEU ? CapitalGluedWords please"
     [[ ! ${TITRE} ]] && read TITRE
@@ -151,7 +151,7 @@ convert -gravity northwest -pointsize 50 -fill black -draw "text 30,300 \"${Voeu
     <a target='_blank' href='"/ipns/${VOEUNS}"'>TW G1Voeu "${PLAYER}"</a><br><br>
     <\$button class='tc-tiddlylink'>
     <\$list filter='[tag[G1"${VoeuName}"]]'>
-   <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
+    <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>
     </\$list>
     Afficher tous vos G1"${VoeuName}"
     </\$button>"

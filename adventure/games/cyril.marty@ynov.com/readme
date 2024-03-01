@@ -1,0 +1,45 @@
+# SCRIPT01.CYBSEC
+
+
+
++ 19 : game engine
+-2 : multigame compatibility
+-1 : shellcheck
+
+> final 16
+
+## "GameShell" LEVEL ?
+
+
+## DIFFs
+``
+diff --recursive --brief  ./ ../_votre\ jeu/
+```
+Seulement dans ../_votre jeu/: adventure.sh
+Seulement dans ./: CODE
+Seulement dans ./: Cyril.marty@ynov.com - Raccourci.lnk
+Seulement dans ./rooms: code
+
+```
+diff rooms/start.sh ../_votre\ jeu/rooms/start.sh
+```
+start.sh sont identiques
+
+
+##  shellcheck
+```
+shellcheck rooms/code/*
+
+In choix.sh line 2:
+#!/bin/bash
+^-- SC1128: The shebang must be on the first line. Delete blanks and move comments.
+```
+
+## modifs apportées
+
+* supprimer fichiers inutiles
+* rendre exécutable le script avec ```git push```
+chmod +x *.sh
+* renommer menu.sh -> start.sh
+
+

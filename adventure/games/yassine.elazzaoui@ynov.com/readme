@@ -1,0 +1,51 @@
+# SCRIPT01.CYBSEC
+
+boutonrouge
+
++ 14 : game engine
++ 0 : multigame compatibility
+- 1 : bugs
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ../_votre jeu/: adventure.sh
+Seulement dans ./art: pfc.ben
+Seulement dans ./rooms: boutonrouge.sh
+Seulement dans ../_votre jeu/rooms: meteofrance.sh
+Seulement dans ./rooms: papier.sh
+
+```
+
+```
+search boutonrouge.sh
+
+------------------------------------------------------------------------------
+  Searching for boutonrouge.sh recursively. Please Wait...
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+```
+
+
+shellcheck rooms/papier.sh
+
+In rooms/papier.sh line 19:
+function determiner_gagnant {
+                            ^-- SC1009: The mentioned syntax error was in this brace group.
+
+
+In rooms/papier.sh line 20:
+    if [ "$1" == "$2" ]; then
+    ^-- SC1046: Couldn't find 'fi' for this 'if'.
+    ^-- SC1073: Couldn't parse this if expression. Fix to allow more checks.
+
+
+In rooms/papier.sh line 28:
+            exit ;;
+                 ^-- SC1047: Expected 'fi' matching previously mentioned 'if'.
+                   ^-- SC1072: Unexpected . Fix any mentioned problems and try again.

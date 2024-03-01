@@ -29,9 +29,10 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 #~ fi
 
 #~ ########################################################################
-
-#~ espeak "restarting I P F S daemon"
-#~ [[ "$isLAN" ]] && sudo systemctl restart ipfs
+# REMOVE GtkDialog errors for zenity
+shopt -s expand_aliases
+alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
+alias espeak='espeak 1>&2>/dev/null'
 
 ## CHECK IF IPFS DAEMON IS STARTS WELL
 floop=0
@@ -48,10 +49,7 @@ done
 
 
 start=`date +%s`
-# REMOVE GtkDialog errors for zenity
-shopt -s expand_aliases
-alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
-alias espeak='espeak 1>&2>/dev/null'
+
 ########################################################################
 [[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && exit 1
 [[ $(which zenity) == "" ]] && echo "ERREUR! Installez zenity" && echo "sudo apt install zenity" && exit 1
@@ -73,7 +71,7 @@ if [[ ${PLAYER} == "" ]]; then
     players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 
     if [[ ${#players[@]} -ge 1 ]]; then
-        espeak "SELECT YOUR PLAYER"
+        espeak "SELECT YOUR PLAYER" 2>/dev/null
         OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
         [[ ${OUTPUT} == "" ]] && espeak "No player selected. EXIT" && exit 1
     else

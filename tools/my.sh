@@ -121,8 +121,8 @@ myHName() {
 }
 
 zIp() {
-    zip=$(cat ~/.zen/♥Box 2>/dev/null | head -n 1 )
-    [ -n "$zip" ] && echo "$zip" || false
+    zipit=$(cat ~/.zen/♥Box 2>/dev/null | head -n 1 )
+    [ -n "$zipit" ] && echo "$zipit" || false
 }
 
 UPlanetSharedSecret() {
@@ -428,6 +428,37 @@ function makecoord() {
     echo "${input}"
 }
 
+# Fonction pour récupérer la météo depuis l'API OpenWeatherMap
+recuperer_meteo() {
+    echo "En train de récupérer les données météo..."
+    # Récupérer la météo à l'aide de l'API OpenWeatherMap
+    ville="Paris" # Vous pouvez modifier la ville ici
+    api_key="310103dee4a9d1b716ee27d79f162c7e" # Remplacez YOUR_API_KEY par votre clé API OpenWeatherMap
+    url="http://api.openweathermap.org/data/2.5/weather?q=$ville&appid=$api_key&units=metric"
+    meteo=$(curl -s $url)
+    # Extraire les informations pertinentes de la réponse JSON
+    temperature=$(echo $meteo | jq -r '.main.temp')
+    description=$(echo $meteo | jq -r '.weather[0].description')
+    echo "La météo à $ville : $description, Température: $temperature °C"
+}
+
+# my_IPCity # Fonction pour récupérer la géolocalisation à partir de l'adresse IP
+my_IPCity() {
+    local ip=$1
+
+    if [ -z "$ip" ]; then
+        ip=$(curl 'https://api.ipify.org?format=json' --silent | jq -r '.ip')
+    fi
+
+    local url="http://ip-api.com/json/$ip"
+    local geolocalisation=$(curl -s "$url")
+
+    local ville=$(echo "$geolocalisation" | jq -r '.city')
+    local pays=$(echo "$geolocalisation" | jq -r '.country')
+
+    echo "$ville,$pays"
+}
+
 IPFSNODEID="$(myIpfsPeerId)"
 [[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"
@@ -440,16 +471,16 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 myDOMAIN="copylaradio.com"
 
 myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
-myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
-myAPI="http://${myIP}:5001"
+myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
+myAPI="http://127.0.0.1:5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
-myG1BILLET="http://${myIP}:33101"
+myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
 myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
-myIPFS="http://${myIP}:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFS="http://127.0.0.1:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"
@@ -487,22 +518,38 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 ###
 fi
 
-EARTHCID="/ipfs/QmYGS24WxVbsmmQfqWohXhXQZiwSmNswhTtSj9msVWKkNh"
+## https://git.p2p.legal/qo-op/OSM2IPFS
+EARTHCID="/ipfs/QmXWDm78ne22ou9kmRPFqVa3e15BNHsXBZe4Y9KmgBPmJL"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
-myUPLANET="${myIPFS}${EARTHCID}" ## EMAIL LAT LON KEY
-myLIBRA="https://ipfs.asycn.io" ## READ IPFS GATEWAY
+###########################
+## VISIO ROOM APP
+## https://github.com/steveseguin/vdo.ninja
+VDONINJA="/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD"
+###########################
+## CESIUM APP
+## https://cesium.app
+CESIUMIPFS="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k"
+HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 
-## UPLANETNAME could be defined in ~/.zen/UPlanetSharedSecret
+##########################
+myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
+myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
+##########################
+## UPLANETNAME can be set ~/.zen/UPlanetSharedSecret
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
 
-## DEV fred@g1sms.fr temporary UPlanet World Keeper.
-[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="EniaswqLCeWRJfz39VJRQwC6QDbAhkRHV9tn2fjhcrnc"
+## DETECT SWARM.KEY
+## ACTIVATE SECONDARY PRIVATE IPFS SWARM
+
+## DEV support@qo-op.com Unamed UPlanet World Keeper.
+[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.
 ########################################
 TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
+DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')

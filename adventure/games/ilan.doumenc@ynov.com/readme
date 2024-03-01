@@ -1,0 +1,48 @@
+# SCRIPT01.CYBSEC
+
+Morpius
+
++ 14 : game engine
++2 : multigame compatibility
++1 : shellcheck
+
+> final 17
+
+## "GameShell" LEVEL ?
+
+
+## DIFFs
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ../_votre jeu/: adventure.sh
+Les fichiers ./logic/leverlogic.ben et ../_votre jeu/logic/leverlogic.ben sont différents
+Seulement dans ./logic: leverlogic.ben=
+Les fichiers ./logic/stationlogic.ben et ../_votre jeu/logic/stationlogic.ben sont différents
+Seulement dans ./logic: stationlogic.ben=
+Seulement dans ./: readme
+Les fichiers ./rooms/red.sh et ../_votre jeu/rooms/red.sh sont différents
+Seulement dans ./rooms: riddle.sh
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Seulement dans ./rooms: yellow.sh
+```
+
+
+```
+shellcheck rooms/start.sh
+
+In rooms/start.sh line 33:
+    if ! (echo ${board[@]} | grep -q '[0-8]'); then
+               ^---------^ SC2068: Double quote array expansions to avoid re-splitting elements.
+
+```
+
+OK
+
+
+fix
+```
+chmod +x rooms/start.sh
+```
+
+

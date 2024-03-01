@@ -1,0 +1,47 @@
+# SCRIPT01.CYBSEC
+
+kroo3.sh
+
+
++ 11 : game engine
++2 : multigame compatibility
++1 : shellcheck
+- 1 : git sync
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+## DIFFs
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Les fichiers ./adventure.sh et ../_votre jeu/adventure.sh sont différents
+Seulement dans ./: game_map.png
+Seulement dans ./: hacker.jpg
+Seulement dans ./logic: leverlogic2.ben
+Seulement dans ./logic: leverlogic2.ben=
+Seulement dans ./logic: leverlogic.ben=
+Seulement dans ./logic: stationlogic2.ben
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/gameroom.sh et ../_votre jeu/rooms/gameroom.sh sont différents
+Seulement dans ./rooms: kroo3.sh
+Les fichiers ./rooms/mainroom.sh et ../_votre jeu/rooms/mainroom.sh sont différents
+Seulement dans ./rooms: meteofrance2.sh
+Les fichiers ./rooms/meteofrance.sh et ../_votre jeu/rooms/meteofrance.sh sont différents
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Les fichiers ./rooms/white.sh et ../_votre jeu/rooms/white.sh sont différents
+Seulement dans ./: templates
+```
+
+```
+search kroo3
+------------------------------------------------------------------------------
+  Searching for kroo3 recursively. Please Wait...
+------------------------------------------------------------------------------
+./rooms/white.sh:                ./kroo3.sh
+```
+
+
+
+Hacker infiltration style
