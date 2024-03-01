@@ -16,6 +16,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ###################################################################
 ### CREER VOTRE PROPRE VERSION DU JEU
+
 ### List games/E@MAIL/ directories
 ## ADD PROPOSAL ON THE METHOD
 GAMES_DIR="games"
