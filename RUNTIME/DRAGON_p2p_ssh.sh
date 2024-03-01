@@ -69,13 +69,15 @@ echo
 PORT=22000
 PORT=$((PORT+${RANDOM:0:3}))
 
-echo "#!/bin/bash
-if [[ ! \$(ipfs p2p ls | grep x/ssh-${IPFSNODEID}) ]]; then
-    ipfs --timeout=10s ping -n 3 /p2p/${IPFSNODEID}
-    ipfs p2p forward /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/$PORT /p2p/${IPFSNODEID}
+echo '#!/bin/bash
+if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
+    ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+    [[ $? == 0 ]] \
+        && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+        && ssh '${USER}'@127.0.0.1 -p '${PORT}'
+        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
-ssh ${USER}@127.0.0.1 -p $PORT
-" > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
