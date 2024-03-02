@@ -1,0 +1,36 @@
+# SCRIPT01.CYBSEC
+
+valhalla
+
++ 11 : game engine
++ 2 : multigame compatibility
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Les fichiers ./logic/leverlogic.ben et ../_votre jeu/logic/leverlogic.ben sont différents
+Seulement dans ./: note
+Les fichiers ./rooms/brown.sh et ../_votre jeu/rooms/brown.sh sont différents
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/gameroom.sh et ../_votre jeu/rooms/gameroom.sh sont différents
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Seulement dans ./rooms: valhalla.sh
+Les fichiers ./rooms/white.sh et ../_votre jeu/rooms/white.sh sont différents
+
+
+```
+
+```
+------------------------------------------------------------------------------
+  Searching for valhalla.sh recursively. Please Wait...
+------------------------------------------------------------------------------
+./rooms/white.sh:        ./valhalla.sh;;
+------------------------------------------------------------------------------
+
+```
+
