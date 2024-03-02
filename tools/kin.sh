@@ -1,22 +1,6 @@
 #!/bin/bash
 
-echo "KIN CALCULATION HAS DEFAULT - EDIT - CORRECT and run by hand"
-exit 0
-
-# Create KIN directory if not exists
-mkdir -p ~/.zen/tmp/KIN
-
-# Loop through numbers 1 to 260
-for i in {1..260}; do
-    # Construct the URL
-    url="http://www.starroot.com/dreamspell/prayers/kin${i}.rm.mp3"
-
-    # Download the file to the KIN directory
-    [[ ! -s ~/.zen/tmp/KIN/kin${i}.mp3 ]] \
-        && echo "$i"
-        && curl -o ~/.zen/tmp/KIN/kin${i}.mp3 "$url"
-done
-
+echo "THIS KIN CALCULATION HAS DEFAULT - EDIT - CORRECT and run by hand"
 
 # Function to describe tonality based on the provided tonality
 describe_tonality() {
@@ -179,6 +163,8 @@ calculate_maya_kin() {
     if [ $kin -gt 260 ]; then
         kin=$((kin - 260))
     fi
+
+    aplay /ipfs/Qmbt31Txi8hq9FUMhrEHbjtpgv8A8o3SqysJUrEA4nuZBe/kin$kin.mp3 &
 
     # Print the calculated kin
     echo $kin
