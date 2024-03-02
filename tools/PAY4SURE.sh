@@ -112,7 +112,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     </h3>
     </html>" > ${PENDINGDIR}/${MOATS}.result.html
 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN ${ISSUERPUB}//${COMMENT} TO ${G1PUB}"
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
     rm ${PENDINGDIR}/${MOATS}.key
