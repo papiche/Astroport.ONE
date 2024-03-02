@@ -85,6 +85,13 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
 
+        ## CHECK IF IPFS NODE IS RESPONDING
+        ipfs --timeout=30s swarm peers
+        [[ $? != 0 ]] \
+            && echo "---- SWARM COMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
+            && sudo systemctl restart ipfs \
+            && sleep 30
+
         ${MY_PATH}/ping_bootstrap.sh
 
         #### UPLANET FLASHMEM UPDATES

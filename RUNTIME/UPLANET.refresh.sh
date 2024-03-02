@@ -430,7 +430,7 @@ for UMAP in ${unique_combined[@]}; do
     ## ZEN CHAINING
     # Send 1 Zen to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
     INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
-    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
+    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN > 11 ?)"
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"

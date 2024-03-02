@@ -423,7 +423,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     dur=`expr $end - $start`
     echo "${PLAYER} refreshing took $dur seconds (${MOATS})"
 
-
 done
 echo "============================================ PLAYER.refresh DONE."
 

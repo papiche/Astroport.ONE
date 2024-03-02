@@ -98,13 +98,14 @@ while read title; do
             continue
         fi
         floop=1
-        echo
-        echo "=========== INSIDE.json"
-        cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -c
-        echo
-        echo "=========== NEW.json"
-        cat ~/.zen/tmp/${MOATS}/NEW.json | jq -c
-        echo
+        ## LOG TIDDLERS
+        #~ echo
+        #~ echo "=========== INSIDE.json"
+        #~ cat ~/.zen/tmp/${MOATS}/INSIDE.json | jq -c
+        #~ echo
+        #~ echo "=========== NEW.json"
+        #~ cat ~/.zen/tmp/${MOATS}/NEW.json | jq -c
+        #~ echo
         ## TODO EXTEND CONTROL TO text & ipfs & _canonical_url
         ## NEED SIGNATURES & TIDDLER SIMILARITY TO COME UP
 
@@ -186,12 +187,20 @@ To Refuse<br>
 
             done
 
-        ##  TITLE FORK TO BE SOLVED. NEED "SAME EMAILS SIGNATURES"
-        continue
+            ##  TITLE FORK TO BE SOLVED. NEED "SAME EMAILS SIGNATURES"
+            continue
+
+        else
+
+           echo "SIGNATURES ARE THE SAME : ${NEMAILS[*]}"
 
         fi
 
-        ## CHECK DIFFERENCE
+        echo "______________________"
+        echo "CHECKING DIFFERENCES"
+        diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json
+
+        ## TODO CHECK MORE DIFFERENCE
         DATENEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
         TEXTNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .text)
         TAGSNEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .tags)
@@ -205,7 +214,7 @@ To Refuse<br>
 
         if [ ${DATENEW} -gt ${DATEINSIDE} ]; then
 
-            echo "Newer Tiddler version... Updating TW"
+            echo "Newer Tiddler version... Updating SECTOR TW"
 
             tiddlywiki  --load ${INDEX} \
                 --import ~/.zen/tmp/${MOATS}/NEW.json "application/json" \
