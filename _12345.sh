@@ -88,7 +88,7 @@ while true; do
         ## CHECK IF IPFS NODE IS RESPONDING
         ipfs --timeout=30s swarm peers
         [[ $? != 0 ]] \
-            && echo "---- SWARM COMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
+            && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
             && sudo systemctl restart ipfs \
             && sleep 30
 
