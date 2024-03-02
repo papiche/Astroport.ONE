@@ -16,6 +16,7 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
+### STOP ASTROPORT DURING 20H12 UPDATE ###
 sudo systemctl stop astroport
 ## CHECK IF IPFS NODE IS RESPONDING
 ipfs --timeout=30s swarm peers
