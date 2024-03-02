@@ -89,10 +89,10 @@ while read title; do
         ## SAME TIDDLER
         echo "TIDDLER WITH TITLE $title and more than 1 signature ALREADY EXISTS..."
 
-        cat ~/.zen/tmp/${MOATS}/TMP.json | jq .[] > ~/.zen/tmp/${MOATS}/INSIDE.json
+        cat ~/.zen/tmp/${MOATS}/TMP.json | jq -rc .[] > ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
-        if [[ ! $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) ]]; then
+        if [[ $(diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json) == "" ]]; then
             echo "... Tiddlers are similar ..."
             ((floop++))
             continue

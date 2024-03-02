@@ -31,6 +31,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/${PLAYER:-undefined} ]] && echo "BAD ${PLAYERONE}" && continue
     [[ ! $(echo "${PLAYER}" | grep '@') ]] && continue
 
+    start=`date +%s`
     # CLEAN LOST ACCOUNT
     [[ ! -s ~/.zen/game/players/${PLAYER}/secret.dunikey ]] \
         && rm -Rf ~/.zen/game/players/${PLAYER} \
@@ -417,6 +418,11 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## CLEANING CACHE
     rm -Rf ~/.zen/tmp/${MOATS}
     echo
+
+    end=`date +%s`
+    dur=`expr $end - $start`
+    echo "${PLAYER} refreshing took $dur seconds (${MOATS})"
+
 
 done
 echo "============================================ PLAYER.refresh DONE."
