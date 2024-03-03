@@ -164,8 +164,6 @@ calculate_maya_kin() {
         kin=$((kin - 260))
     fi
 
-    aplay /ipfs/Qmbt31Txi8hq9FUMhrEHbjtpgv8A8o3SqysJUrEA4nuZBe/kin$kin.mp3 &
-
     # Print the calculated kin
     echo $kin
 }
@@ -223,5 +221,10 @@ maya_kin=$(calculate_maya_kin $year $month $day)
 
 # Display Maya Kin details
 display_maya_kin_details $maya_kin
-
+#############################################"
+echo
+echo "seeking for kin$maya_kin sound"
+ipfs get -o /tmp/kin$maya_kin.mp3 /ipfs/Qmbt31Txi8hq9FUMhrEHbjtpgv8A8o3SqysJUrEA4nuZBe/kin$maya_kin.mp3 \
+&& echo "playing kin$maya_kin.mp3" \
+&& mplayer /tmp/kin$maya_kin.mp3
 
