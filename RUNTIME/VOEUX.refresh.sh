@@ -308,6 +308,7 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     SECLON="${LON::-1}"
     SECTOR="_${SECLAT}_${SECLON}"
     ##############################################################
+    UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
@@ -317,7 +318,7 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     to ${SECTOR} WALLET ${SECTORG1PUB}"
     echo "************************************************************"
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "UPLANET:TWISH:$TODATE:/ipfs/${MYWISHFLUX}"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$TODATE:/ipfs/${MYWISHFLUX}"
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR

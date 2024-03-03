@@ -108,7 +108,7 @@ while true; do
         for player in ${PLAYERONE[@]}; do
             g1pub=$(cat ~/.zen/game/players/${player}/.g1pub 2>/dev/null)
             # Check Station PLAYER payments
-            PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX"))
+            PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX" 2>/dev/null))
             for pending in "${PENDINGS[@]}"; do
                  echo ${pending}
                  # TODO TREAT PENDINGS

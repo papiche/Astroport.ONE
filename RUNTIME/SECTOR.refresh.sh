@@ -74,6 +74,7 @@ for SECTOR in ${SECTORS[@]}; do
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
 
