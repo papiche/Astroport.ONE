@@ -83,7 +83,7 @@ cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 echo "
 
-                      /|               /\
+                      /|               /\\
                  /^^^/ |^\Z           /  |
                 |         \Z         /   |
                 / @        \Z       /   / \_______
