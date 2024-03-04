@@ -181,7 +181,7 @@ display_maya_kin_details() {
     # Determine the glyph, tonality, and color based on the Maya Kin
     local glyph_index=$(( (kin - 1) % 20 ))
     local tonality_index=$(( (kin - 1) % 13 ))
-    local color_index=$(( (tonality_index % 4) + 1 )) # Assuming 4 colors in each tonality
+    local color_index=$(( (kin - 1) / 13 % 5 ))
 
     local glyph=${glyphs[$glyph_index]}
     local tonality=${tonalities[$tonality_index]}
@@ -203,7 +203,7 @@ display_maya_kin_details() {
     echo "Couleur: $color"
     describe_color "$color"
     echo "------------------------------"
-    echo "Le Maya Kin est $color, $color_description , gouverné par la tonalité $tonality et représenté par le glyphe $glyph."
+    echo "Le Maya Kin $kin est $color, gouverné par la tonalité $tonality et représenté par le glyphe $glyph."
 }
 
 # Input date of birth
@@ -219,12 +219,16 @@ day=$(echo $dob | cut -d'-' -f3)
 # Calculate the Maya Kin based on the provided date
 maya_kin=$(calculate_maya_kin $year $month $day)
 
-# Display Maya Kin details
-display_maya_kin_details $maya_kin
 #############################################"
 echo
-echo "seeking for kin$maya_kin sound"
-ipfs get -o /tmp/kin$maya_kin.mp3 /ipfs/Qmbt31Txi8hq9FUMhrEHbjtpgv8A8o3SqysJUrEA4nuZBe/kin$maya_kin.mp3 \
-&& echo "playing kin$maya_kin.mp3" \
-&& mplayer /tmp/kin$maya_kin.mp3
+(
+ipfs get -o /tmp/kin$maya_kin.mp3 /ipfs/Qmbt31Txi8hq9FUMhrEHbjtpgv8A8o3SqysJUrEA4nuZBe/kin$maya_kin.mp3 2>&1>/dev/null
+echo "playing kin$maya_kin.mp3"
+mplayer /tmp/kin$maya_kin.mp3 2>&1>/dev/null
+) &
+#############################################"
 
+# Display Maya Kin details
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+display_maya_kin_details $maya_kin
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
