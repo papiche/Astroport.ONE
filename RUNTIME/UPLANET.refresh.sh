@@ -400,6 +400,8 @@ for UMAP in ${unique_combined[@]}; do
               -e "s~_UPUPZONE_~REGION ${REGION}~g" \
               -e "s~_UPUPZONENS_~${TODATEREGIONNS}~g" \
               -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
+              -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+              -e "s~_G1PUB_~${G1PUB}~g" \
               -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
               -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${LAT}\&southWestLon=${LON}\&deg=0.01~g" \
               -e "s~http://127.0.0.1:8080~~g" \
