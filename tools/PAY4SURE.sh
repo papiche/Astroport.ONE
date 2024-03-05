@@ -37,6 +37,7 @@ COMMENT=${COMMENT}"
 [[ -z ${ISSUERPUB} ]] && echo "CANNOT EXTRACT ISSUERPUB FROM DUNIKEY - EXIT -" && exit 1
 
 COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
+sleep 3 ## Wait for ()&
 [[ -z $COINS ]] && echo "ERROR : ${ISSUERPUB}=$COINS EMPTY WALLET - EXIT -" && exit 1
 
 ###### TEST INPUT VALUES
@@ -81,7 +82,7 @@ CHK2=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 2 )
 echo ${CHK1}
 echo ${CHK2}
 
-if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 'conforme' ) ]]; then
+if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep 'conforme') ]]; then
     echo "TRANSACTION SENT"
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 

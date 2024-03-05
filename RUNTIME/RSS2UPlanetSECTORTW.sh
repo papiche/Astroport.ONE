@@ -43,10 +43,10 @@ signatures=0
 
 while read title; do
 
-    [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK" && break
+    [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK LOOP" && break
 
-    # FILTER Astroport and les than 4 characters title Tiddlers (ex: GPS, ...). extend to allow personnal Tiddlers
-    [[ ${title} == "GettingStarted" || "${title::3}" == '$:/' || ${title::4} == ${title} || ${title} == "AstroID" || ${title} == "Voeu1.png"  || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
+    # FILTER "UPPERCASE" + Astroport Tid, less than 4 characters title Tiddlers (ex: GPS, ...).
+    [[ ${title} == "GettingStarted" || "${title^^}" == "${title}" || "${title::3}" == '$:/' || ${title::4} == ${title} || ${title} == "AstroID" || ${title} == "Voeu1.png"  || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
         && echo "FILTERED TITLE ${title}" && continue
 
     ## CHECK FOR TIDDLER WITH SAME TITTLE IN SECTOR TW
@@ -59,7 +59,7 @@ while read title; do
     TMPTAGS=$(cat ~/.zen/tmp/${MOATS}/TMP.json | jq -r .[].tags)
     TMPEMAILS=($(echo "$TMPTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     TMPSIGN=${#TMPEMAILS[@]}
-    echo "INSIDE TIDDLER HAVE ${TMPSIGN} SIGNATURE(S)"
+    #~ echo "INSIDE TIDDLER HAVE ${TMPSIGN} SIGNATURE(S)"
 
     if [[ "${ISHERE}" != "${title}" || ${TMPSIGN} == 0 ]]; then
 
@@ -79,7 +79,7 @@ while read title; do
             && rm ${INDEX} \
             && mv ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}.html ${INDEX} \
             && ((gloops++)) \
-            && echo "SECTOR (${gloops}) : ${title}" \
+            && echo "GLOOPS (${gloops}) : ${title}" \
             && signatures=$((signatures + TMPSIGN))
 
          [[ ! -s ${INDEX} ]] && echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
@@ -87,8 +87,9 @@ while read title; do
     else
 
         ## SAME TIDDLER
-        echo "TIDDLER WITH TITLE $title and more than 1 signature ALREADY EXISTS..."
+        echo "TIDDLER : $title (${TMPSIGN} signature(s)) ... ALREADY EXISTS..."
 
+        ## Remove [] and put inline to compare
         cat ~/.zen/tmp/${MOATS}/TMP.json | jq -rc .[] > ~/.zen/tmp/${MOATS}/INSIDE.json
         cat "${RSS}" | jq -rc ".[] | select(.title == \"$title\")" > ~/.zen/tmp/${MOATS}/NEW.json
 
@@ -119,6 +120,12 @@ while read title; do
         IEMAILS=($(echo "$ITAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
         ISIGN=${#IEMAILS[@]}
         echo "Inside Tiddler $ISIGN signatures : ${IEMAILS[*]}"
+
+        ## New should have more signatures than Inside
+        [[ ${NSIGN} -le ${ISIGN} ]] && echo "Most signed already in..." && continue
+        ## UPLANET GRID COLLISION PARAM ###
+        # [[ ${NSIGN} -le 3 ]] && update TW OR continue
+        # https://www.copylaradio.com/blog/blog-1/post/decentralized-information-ecosystem-51
 
         if [[ "${NEMAILS[*]}" != "${IEMAILS[*]}" ]]; then
 
@@ -151,6 +158,9 @@ while read title; do
             NEWTID=$(ipfs add -q ~/.zen/tmp/${MOATS}/NEW.json | tail -n 1)
             INSIDETID=$(ipfs add -q ~/.zen/tmp/${MOATS}/INSIDE.json | tail -n 1)
 
+            ###############################
+            ## TODO : check STAR level and activate auto merge
+
             for email in "${unique_combined[@]}"; do
 
 echo "<html>
@@ -164,26 +174,26 @@ echo "<html>
     }
 </style></head>
 <body>
-<h1>(ᵔ◡◡ᵔ)</h1>
+<h1>$(date)</h1>
 
-Tiddler with same title is existing in ${unique_combined[*]} TW(s)
+<h2>$title</h2>
+Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 <br>
 <ul>
-<li>$title</li>
 <li><a href='$(myIpfsGw)/ipfs/${INSIDETID}'>Actual Tiddler</a></li>
 <li><a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> being introduced by : ${NUNIQUE[*]}</li>
 </ul>
 <br>
-To Accept<br>
- ${COMMON[*]} have to copy <a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> in their TW
+MERGE : <br>
+ ${COMMON[*]} import <a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> in your TW
 <br><br>
-To Refuse<br>
- ${NUNIQUE[*]} must fork by deleting or modifying New Tiddler title.
+or FORK : <br>
+ ${NUNIQUE[*]} by deleting or modifying New Tiddler title.
 <br>
-<h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Actual Tiddler</a>Engage discussion about it...</a></h2>
+<h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Arrange a Video Meeting...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
-                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "TIDDLER COLLISION"
+                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "COLLISION ${title} : ${unique_combined[*]}"
 
             done
 
