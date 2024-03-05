@@ -314,8 +314,8 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
     echo "***** PLAYER $PLAYER *************************************"
-    echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
-    to ${SECTOR} WALLET ${SECTORG1PUB}"
+    echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
+    to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
     echo "************************************************************"
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
     ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$TODATE:/ipfs/${MYWISHFLUX}"
