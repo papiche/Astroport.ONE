@@ -35,7 +35,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 TWMODEL="/ipfs/bafybeigoh5cfetzzaskfuml35ztvzcb2g4737aft5w4uyjbgdmweuwtvuu"
 # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeigyoyo3pajiudvyrds2smkzut2wtdczbvdwqjibswrzrcvdyvarai"
+TWUPLANET="/ipfs/bafybeiclx3tlrubipan2xetea2avntgyig7nrcsj6afzs3u6xpnihmtyli"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
