@@ -488,7 +488,7 @@ myASTROTUBE="https://$(myAstroTube)"
 ## WAN STATION
 [ -z "$isLAN" ] \
  && myASTROPORT="https://astroport.$(myDomainName)" \
- && myAPI="https://ipfs.$(myHostName)" \
+ && myAPI="https://ipfs.$(myHostName)/5001" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
  && myG1BILLET="https://libra.${myDOMAIN}" \
