@@ -17,13 +17,13 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
 ### STOP ASTROPORT DURING 20H12 UPDATE ###
-sudo systemctl stop astroport
+#~ sudo systemctl stop astroport
 ## CHECK IF IPFS NODE IS RESPONDING
-ipfs --timeout=30s swarm peers
-[[ $? != 0 ]] \
+ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
+[[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
     && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
     && sudo systemctl restart ipfs \
-    && sleep 30
+    && sleep 60
 
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
@@ -127,7 +127,7 @@ if [[ ! -f /etc/systemd/system/astroport.service ]]; then
     PID=$!
     echo $PID > ~/.zen/.pid
 else
-    sudo systemctl start astroport
+    sudo systemctl restart astroport
     [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
     echo "Astroport processes systemd restart"
 
