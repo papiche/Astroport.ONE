@@ -35,7 +35,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 TWMODEL="/ipfs/bafybeigoh5cfetzzaskfuml35ztvzcb2g4737aft5w4uyjbgdmweuwtvuu"
 # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeiclx3tlrubipan2xetea2avntgyig7nrcsj6afzs3u6xpnihmtyli"
+TWUPLANET="/ipfs/bafybeid7vpifbhprn7nbt3lgnccq6frygq3frnto6ce5n4lualpy3xpupm"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -301,6 +301,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
             OLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
             OLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
             OUMAP=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+
             # REPLACE WITH NEW LAT LON UMAP
             sed -i "s~${OLAT}~${LAT}~g" ~/.zen/tmp/${MOATS}/GPS.json
             sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
