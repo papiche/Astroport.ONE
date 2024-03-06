@@ -38,13 +38,13 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
     PS3='Astronaute connectez votre PLAYER  ___ '
-    players=( "PRINT ZENCARD" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=( "CREATE PLAYER" "IMPORT PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
     ## MULTIPLAYER
 
 
     select fav in "${players[@]}"; do
         case $fav in
-        "PRINT ZENCARD")
+        "PRINT QRCARD")
             ## DIRECT VISA.print.sh
             echo "'Email ?'"
             read EMAIL
@@ -65,9 +65,22 @@ echo 'PRESS ENTER... '; read
             exit
             ;;
         "CREATE PLAYER")
-            ${MY_PATH}/RUNTIME/VISA.new.sh
+            echo "'Email ?'"
+            read EMAIL
+            [[ ${EMAIL} == "" ]] && break
+            echo "'Latitude (precision 0.01°) ?'"
+            read LAT
+            [[ ${LAT} == "" ]] && LAT="0.00"
+            echo "'Longitude ?'"
+            read LON
+            [[ ${LON} == "" ]] && LON="0.00"
+
+            PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 4) ## STRONGER TW SECURITY "AlpH4nUm"
+            NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
+
+            ${MY_PATH}/RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
             fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
-            echo "Astronaute $fav bienvenue sur UPlanet. Set TW GPS position..."
+            echo "Astronaute $fav bienvenue sur UPlanet..."
             exit
             ;;
         "IMPORT PLAYER")
