@@ -178,6 +178,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             cat ${MY_PATH}/../templates/data/CESIUM.json \
                 | sed -e "s~_G1PUB_~${G1PUB}~g" \
                 -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
                     > ~/.zen/tmp/${MOATS}/CESIUM.json
 
             ######################################
