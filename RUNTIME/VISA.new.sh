@@ -33,9 +33,9 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeifdmi3xomthusbkfwfg5v5lwn4n7zisdyucflyyvgoqmpliwuhdlu"
+TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeiglzeh463mprlxegv3ahgsf25gp7yvophvlvdvjvai6p33t3mbdki"
+TWUPLANET="/ipfs/bafybeigtsgmkn2jyu7jkfmyh6pq6lxckel65ltqc6bmhmzo6dqbublo5i4"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -356,6 +356,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     cat ${MY_PATH}/../templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
     # Create"${PLAYER}_feed" Key ! DERIVATED !  "$SALT" "$PEPPER $G1PUB"
+    ipfs key rm "${PLAYER}_feed" 2>/dev/null
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $G1PUB"
     FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
 
