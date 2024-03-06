@@ -47,7 +47,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     mkdir -p ~/.zen/tmp/${MOATS}
     echo "##################################################################"
     echo "##################################################################"
-    echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW STATION"
+    echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW ${MOATS}"
     echo "##################################################################"
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
@@ -135,86 +135,93 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## FOUND TW
         #############################################################
         ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
+        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
 
-            [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+        [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
 
-            player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
+        player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
-            [[ ${player} != ${PLAYER} ]] \
-                && echo "> BAD PLAYER=$player in TW" \
-                && continue \
-                || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
+        [[ ${player} != ${PLAYER} ]] \
+            && echo "> BAD PLAYER=$player in TW" \
+            && continue \
+            || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
-            ## GET "Astroport" TIDDLER
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
-            BIRTHDATE=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].birthdate)
-            ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## Raccorded G1Station IPNS address
-            CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
-            [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] \
-                &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
+        ## GET "Astroport" TIDDLER
+        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
+        BIRTHDATE=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].birthdate)
+        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## Raccorded G1Station IPNS address
+        CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
+        [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] \
+            &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
 
-            echo "CURCHAIN=${CURCHAIN}"
-            IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
-            echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
-            ########### ASTROPORT is not IPFSNODEID => EJECT TW
-            ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
-            ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            ## TODO UNPLUG PLAYER
-            ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
-                echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
-                echo "UNPLUG PLAYER"
-                ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
-                echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
-                continue
-            fi
+        echo "CURCHAIN=${CURCHAIN}"
+        IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
+        echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
+        ########### ASTROPORT is not IPFSNODEID => EJECT TW
+        ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
+        ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ## TODO UNPLUG PLAYER
+        ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
+            echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
+            echo "UNPLUG PLAYER"
+            ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
+            echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
+            continue
+        fi
 
-            # (RE)MAKE "CESIUM" TIDDLER
-            cat ${MY_PATH}/../templates/data/CESIUM.json \
-                | sed -e "s~_G1PUB_~${G1PUB}~g" \
-                -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
-                -e "s~_PLAYER_~${PLAYER}~g" \
-                    > ~/.zen/tmp/${MOATS}/CESIUM.json
+        # (RE)MAKE "CESIUM" TIDDLER
+        cat ${MY_PATH}/../templates/data/CESIUM.json \
+            | sed -e "s~_G1PUB_~${G1PUB}~g" \
+            -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+            -e "s~_PLAYER_~${PLAYER}~g" \
+                > ~/.zen/tmp/${MOATS}/CESIUM.json
 
-            ######################################
-            #### UPLANET GEO COORD EXTRACTION
-            ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
-            LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-                        [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
-            LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-                        [[ $LON == "null" || $LON == "" ]] && LON="0.00"
+        ######################################
+        #### UPLANET GEO COORD EXTRACTION
+        ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
+        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+        LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+                    [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
+        LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+                    [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
-            SECTOR="_${LAT::-1}_${LON::-1}"
+        SECTOR="_${LAT::-1}_${LON::-1}"
+        ## UMAP TODATENS ################
 
-            ## UMAP TODATENS ################
-            ipfs key rm "temp" 2>/dev/null
-            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
-            UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
-            cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"umap": "/ipns/${UMAPNS}"}' \
-                > ~/.zen/tmp/${MOATS}/GPStw.json \
-                && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
+        ipfs key rm "temp" 2>/dev/null
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
+        UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
+        cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"umap": "/ipns/_UMAPNS_"}' \
+            > ~/.zen/tmp/${MOATS}/GPStw.json \
+            && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
+        sed -i "s~_UMAPNS_~${UMAPNS}~g" ~/.zen/tmp/${MOATS}/GPS.json
 
-            ipfs key rm "temp" 2>/dev/null
-            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
-            TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
-            cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "/ipns/${TODATESECTORNS}/TW"}' \
-                > ~/.zen/tmp/${MOATS}/GPStw.json \
-                && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
+        cat ~/.zen/tmp/${MOATS}/GPS.json
+        echo "UMAP _${LAT}_${LON} UMAPNS=/ipns/${UMAPNS}"
 
-            echo "LAT=${LAT}; LON=${LON}; UMAPNS=/ipns/${UMAPNS}; SECTORTW=/ipns/${TODATESECTORNS}/TW"
-            ipfs key rm "temp" 2>/dev/null
+        ipfs key rm "temp" 2>/dev/null
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
+        TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
+        cat ~/.zen/tmp/${MOATS}/GPS.json | jq '. + {"sectortw": "_SECTORTW_"}' \
+            > ~/.zen/tmp/${MOATS}/GPSsec.json \
+            && mv ~/.zen/tmp/${MOATS}/GPSsec.json ~/.zen/tmp/${MOATS}/GPS.json
+        sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
 
-            ## STORE IN PLAYER CACHE
-            echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
-            cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
+        cat ~/.zen/tmp/${MOATS}/GPS.json
+        echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
+
+        ipfs key rm "temp" 2>/dev/null
+
+        ## STORE IN PLAYER CACHE
+        echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
+        cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
 
     fi

@@ -168,18 +168,17 @@ YOMAIN=$(echo ${PLAYER} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 # echo "MY PLAYER API GW : $(myPlayerApiGw)"
 
 NID="${myIPFS}"
-WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
-WID="https://ipfs.$(myHostName)/api"
-WID="https://ipfs.$(myHostName)/api"
+#~ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
+#~ WID="https://ipfs.$(myHostName)/api"
+#~ WID="https://ipfs.$(myHostName)/api"
 WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
 
-# WID="http://ipfs.$(myHostName):5001"
 USALT=$(echo "$SALT" | jq -Rr @uri)
 UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
 DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
-                        && WID="http://ipfs.localhost:5001"
+             && WID="http://ipfs.localhost:5001"
 
 ####
     ## MOVE secret.dunikey IN PLAYER DIRECTORY
