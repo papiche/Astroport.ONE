@@ -161,6 +161,24 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "CURCHAIN=${CURCHAIN}"
             IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
             echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
+            ########### ASTROPORT is not IPFSNODEID => EJECT TW
+            ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
+            ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            ## TODO UNPLUG PLAYER
+            ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
+                echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
+                echo "UNPLUG PLAYER"
+                ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
+                echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
+                continue
+            fi
+
+            # (RE)MAKE "CESIUM" TIDDLER
+            cat ${MY_PATH}/../templates/data/CESIUM.json \
+                | sed -e "s~_G1PUB_~${G1PUB}~g" \
+                -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+                    > ~/.zen/tmp/${MOATS}/CESIUM.json
 
             ######################################
             #### UPLANET GEO COORD EXTRACTION
@@ -197,18 +215,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
             cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
-            ########### ASTROPORT is not IPFSNODEID => EJECT TW
-            ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
-            ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            ## TODO UNPLUG PLAYER
-            ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
-                echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
-                echo "UNPLUG PLAYER"
-                ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
-                echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
-                continue
-            fi
+
     fi
 
     #############################################################
@@ -279,6 +286,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## WRITE TIDDLERS IN TW
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
+                --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
