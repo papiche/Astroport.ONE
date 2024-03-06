@@ -33,9 +33,9 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeigoh5cfetzzaskfuml35ztvzcb2g4737aft5w4uyjbgdmweuwtvuu"
+TWMODEL="/ipfs/bafybeifdmi3xomthusbkfwfg5v5lwn4n7zisdyucflyyvgoqmpliwuhdlu"
 # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeid7vpifbhprn7nbt3lgnccq6frygq3frnto6ce5n4lualpy3xpupm"
+TWUPLANET="/ipfs/bafybeiglzeh463mprlxegv3ahgsf25gp7yvophvlvdvjvai6p33t3mbdki"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -274,6 +274,9 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
+        ## POPULATE CESIUM TID
+        sed -i "s~_CESIUMIPFS_~${CESIUMIPFS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         ## AstroID Tiddler UPGRADE
         cat ${MY_PATH}/../templates/data/AstroID.json \
