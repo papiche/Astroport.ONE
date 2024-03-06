@@ -47,10 +47,11 @@ CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
 #######################################################
 ## CREATE MySwarm KEYS ?
-if [[ ${CHAN} == "" || ${CHAN} == "null" ]]; then
+if [[ ${CHAN} == "" || ${CHAN} == "null" || ! -s ~/.zen/game/myswarm_secret.june ]]; then
 echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
     SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
     SECRET2=${IPFSNODEID}
+    ipfs key rm "MySwarm_${IPFSNODEID}"
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
     ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipfskey "$SECRET1" "$SECRET2"
     ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/myswarm_secret.dunikey "$SECRET1" "$SECRET2"
