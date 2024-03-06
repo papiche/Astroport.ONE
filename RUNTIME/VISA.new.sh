@@ -84,7 +84,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         echo "ASTROPORT=${ASTROPORT}"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
         AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri)
-        HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
+        [[ -z $HPass ]] && HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS)
         echo "AstroID=$AstroID ($HPass)"
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'ZenCard.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
         ZenCard=$(cat ~/.zen/tmp/${MOATS}/ZenCard.json | jq -r .[]._canonical_uri)
@@ -182,20 +182,22 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
                         && WID="http://ipfs.localhost:5001"
 
 ####
-
+    ## MOVE secret.dunikey IN PLAYER DIRECTORY
     mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/${PLAYER}/
 
     # Create Player "IPNS Key" (key import)
-    ipfs key rm ${PLAYER}
+
+    ipfs key rm ${PLAYER} 2>/dev/null
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/secret.player "$SALT" "$PEPPER"
     TWNS=$(ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
     ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 
-    mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "old scarf code"
+    ## DEPRECATED
+    #~ mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "old scarf code"
 
-    qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"
-    cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
-    echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
+    #~ qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"
+    #~ cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
+    #~ echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
 
     qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$myLIBRA/ipns/${ASTRONAUTENS}"
 
@@ -216,9 +218,8 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     ## Add logo to QRCode
     cp ${MY_PATH}/../images/astrologo_nb.png ~/.zen/tmp/${MOATS}/fond.png
 
-    ## ASTROID ~~~~~  || &&&&&
+    ## ASTROID ~~~~~
     ASTROIDQR="$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '~' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
-    [[ ${PSEUDO} == "UPlanet" ]] && ASTROIDQR="$(cat ~/.zen/tmp/${MOATS}/gpg.${PSEUDO}.asc  | tr '-' '&' | tr '\n' '-'  | tr '+' '_' | jq -Rr @uri )"
     ## MAKE amzqr ASTROID PGP QRCODE
     amzqr  "${ASTROIDQR}" \
                 -d ~/.zen/tmp/${MOATS} \
@@ -327,29 +328,51 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 ###########
         ## GET OLD16
-        tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MIZ.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        tiddlywiki \
+            --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'MIZ.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
         OLD16=$(cat ~/.zen/tmp/${MOATS}/MIZ.json | jq -r ".[].secret")
         [[ ${OLD16} == "" || ${OLD16} == "null" ]] && OLD16="_SECRET_"
 
-        ## USING  SWARMKEY (derivated from IPFSNODE "/proc/cpuinfo" key made by _12345.sh)  ## HARDWARE SPECIFIC KEY ##
-        # TODO : NODE COULD FORGET PASS THEN DECODE  ${PLAYER}/secret.dunikey FROM TW # PROD #
+        # TODO : NODE COULD FORGET PASS THEN DECODE ${PLAYER}/secret.dunikey FROM TW # PROD #
         MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
-        #~ echo "# CRYPTO ENCODING  _SECRET_ "
-        ${MY_PATH}/../tools/natools.py encrypt -p ${MACHINEPUB} -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.$G1PUB.enc
-        ENCODING=$(cat ~/.zen/tmp/${MOATS}/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3qsecret.dunikey.$G1PUB.enc | base16)
-        sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
-###########
-        #~ echo "# CRYPTO DECODING TESTING..."
-        tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-        cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r ".[].secret" | base16 -d > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
-        ${MY_PATH}/../tools/natools.py decrypt -f pubsec -k $HOME/.zen/game/myswarm_secret.dunikey -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 -o $HOME/.zen/tmp/${MOATS}/crypto.2
-        #~ echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
-###########
-        ## CRYPTO PROCESS VALIDATED
-        [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] && echo "NATOOLS LOADED STATION TW KEY " \
-                                                        || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
 
+        if [[ "${MACHINEPUB}" == "" ]]; then
+            #~ echo "# CRYPTO ENCODING PLAYER KEY WITH MACHINEPUB
+            ${MY_PATH}/../tools/natools.py encrypt \
+                -p ${MACHINEPUB} \
+                -i $HOME/.zen/game/players/${PLAYER}/secret.dunikey \
+                -o $HOME/.zen/tmp/${MOATS}/secret.dunikey.${G1PUB}.enc
+            ENCODING=$(cat ~/.zen/tmp/${MOATS}/bafybeiewwxkmiojbskcqhbj2gbkde3czkeqftn6fgvwoa7ez5n5whido3qsecret.dunikey.$G1PUB.enc | base16)
+            sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+            # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
+    ###########
+            #~ echo "# CRYPTO DECODING TESTING..."
+            tiddlywiki \
+                --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+
+            cat ~/.zen/tmp/${MOATS}/MadeInZion.json \
+                | jq -r ".[].secret" | base16 -d \
+                > ~/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2
+
+            ${MY_PATH}/../tools/natools.py decrypt \
+                -f pubsec \
+                -k $HOME/.zen/game/myswarm_secret.dunikey \
+                -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 \
+                -o $HOME/.zen/tmp/${MOATS}/crypto.2
+            #~ echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
+    ###########
+            ## CRYPTO PROCESS VALIDATED
+            [[ -s ~/.zen/tmp/${MOATS}/crypto.2 ]] \
+                && echo "NATOOLS LOADED STATION TW KEY " \
+                || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
+
+        else
+            echo " - WARNING - NATOOLS BYPASS - WARNING -"
+        fi
 ########### SECTOR = 0.1° UPLANET SLICE
     OSECTOR=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].sector)
     [[ ${OSECTOR} != "null" ]] && sed -i "s~${OSECTOR}~${SECTOR}~g" ~/.zen/tmp/${MOATS}/MadeInZion.json
