@@ -168,26 +168,30 @@ for PLAYER in ${PLAYERONE[@]}; do
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
-            UMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
-                        [[ $UMAPNS == "null" || $UMAPNS == "" ]] && UMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
             LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
                         [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
             LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
                         [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
-            echo "LAT=${LAT}; LON=${LON}; UMAPNS=${UMAPNS}"
+            SECTOR="_${LAT::-1}_${LON::-1}"
 
             ## UMAP TODATENS ################
+            ipfs key rm "temp" 2>/dev/null
             ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
-            ipfs key rm "_todate" 2>/dev/null
-            TODATENS=$(ipfs key import "_todate" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
-            ipfs key rm "_todate" 2>/dev/null
+            UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
+            cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"umap": "/ipns/${UMAPNS}"}' \
+                > ~/.zen/tmp/${MOATS}/GPStw.json \
+                && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
 
-            echo "GPS UMAP LINK UPDATE
-            ${YESTERDATE} : ${myIPFS}${UMAPNS}
-            ${TODATE} : ${myIPFS}/ipns/${TODATENS}"
-            ## UPDATE TW GPS Tiddler #############
-            sed -i "s~${UMAPNS}~/ipns/${TODATENS}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+            ipfs key rm "temp" 2>/dev/null
+            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
+            TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
+            cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "/ipns/${TODATESECTORNS}/TW"}' \
+                > ~/.zen/tmp/${MOATS}/GPStw.json \
+                && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
+
+            echo "LAT=${LAT}; LON=${LON}; UMAPNS=/ipns/${UMAPNS}; SECTORTW=/ipns/${TODATESECTORNS}/TW"
+            ipfs key rm "temp" 2>/dev/null
 
             ## STORE IN PLAYER CACHE
             echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
@@ -274,6 +278,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## WRITE TIDDLERS IN TW
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"

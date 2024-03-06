@@ -35,7 +35,7 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeicnukve2nepa2oh4segpk5uz3n654sxog22exzlo7arobssubh2w4"
+TWUPLANET="/ipfs/bafybeibxs66rgiemqji2vgkvie4jwwawzvhrsos675e7vevh2mtipiyo6u"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -295,32 +295,35 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
         ## PREPARE UMAP LAT LON replacement
         [[ ! ${LAT} ]] && LAT="0.00"
         [[ ! ${LON} ]] && LON="0.00"
-        UMAP=${URL}
-        [[ ! $(echo ${UMAP} | grep "/ipns/") ]] && UMAP="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu" ## DEFAULT = 0.00
-
-        if [[ ${LAT} && ${LON} ]]; then
-            # GET ACTUAL GPS VALUES
-            tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'
-            OLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-            OLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-            OUMAP=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
-
-            # REPLACE WITH NEW LAT LON UMAP
-            sed -i "s~${OLAT}~${LAT}~g" ~/.zen/tmp/${MOATS}/GPS.json
-            sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
-            sed -i "s~${OUMAP}~${UMAP}~g" ~/.zen/tmp/${MOATS}/GPS.json
-        fi
 
         SECTOR="_${LAT::-1}_${LON::-1}" ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
         echo "UPlanet 0.1° SECTOR : ${SECTOR}"
         sed -i "s~_SECTOR_~${SECTOR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        ## Change myIP
-        #~ sed -i "s~127.0.0.1~$myIP~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html # 8080 & 5001 BEING THE RECORDING GATEWAY (WAN or ipfs.localhost)
 
-        ## TODATE #########################################
+        UMAPNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
+        UMAP="/ipns/${UMAPNS}"
+
+        # GET ACTUAL GPS VALUES
+        tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'
+
+        OLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+        OLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+        OUMAP=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+
+        # REPLACE WITH NEW LAT LON UMAP
+        sed -i "s~${OLAT}~${LAT}~g" ~/.zen/tmp/${MOATS}/GPS.json
+        sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
+        sed -i "s~${OUMAP}~${UMAP}~g" ~/.zen/tmp/${MOATS}/GPS.json
+        ## Add _SECTORTW_
+        cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "_SECTORTW_"}' \
+            > ~/.zen/tmp/${MOATS}/GPStw.json \
+            && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
+
+        ## INSERT TODATESECTORNS #########################################
         TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
-        DEMAINSECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${DEMAINDATE}${UPLANETNAME}${SECTOR}" "${DEMAINDATE}${UPLANETNAME}${SECTOR}")
-
+        sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
 
 ###########
         ## GET OLD16
