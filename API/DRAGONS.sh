@@ -55,8 +55,8 @@ rm ~/.zen/tmp/DRAGONS.json
 if [[ ! -s ~/.zen/tmp/DRAGONS.json ]]; then
 
     echo " ## cat ***/GPS.json"
-    cat ~/.zen/tmp/${IPFSNODEID}/GPS.json 2>/dev/null | jq -c '.[] + {ipfsnodeid: "'$IPFSNODEID'"}'  > ~/.zen/tmp/${MOATS}/gps.grid
-    cat ~/.zen/tmp/swarm/12D*/GPS.json 2>/dev/null | jq -c '.[] + {ipfsnodeid: "'$IPFSNODEID'"}' | sort -u >> ~/.zen/tmp/${MOATS}/gps.grid
+    cat ~/.zen/tmp/${IPFSNODEID}/GPS.json 2>/dev/null | jq -c '. + {ipfsnodeid: "'$IPFSNODEID'"}'  > ~/.zen/tmp/${MOATS}/gps.grid
+    cat ~/.zen/tmp/swarm/12D*/GPS.json 2>/dev/null | jq -c '. + {ipfsnodeid: "'$IPFSNODEID'"}' | sort -u >> ~/.zen/tmp/${MOATS}/gps.grid
 
     cat ~/.zen/tmp/${MOATS}/gps.grid | jq -s '.' | sed -e 's/\[/[/' -e 's/\]/]/' -e 's/},{/},\n{/g' > ~/.zen/tmp/DRAGONS.json
 fi

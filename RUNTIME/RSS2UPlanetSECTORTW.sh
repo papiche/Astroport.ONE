@@ -18,14 +18,16 @@ SECTOR=$2 ## Sector identifier _0.0_0.0
 MOATS=$3 ## temp cache access
 INDEX=$4 ## SECTOR TW index file
 
+echo
+
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
+[[ "$(cat ${RSS})" == "[]" ]] && echo "EMPTY RSS " && exit 0
+
 [[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
 [[ ! -s ${INDEX} ]] \
     && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
     && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
 
-echo
-echo
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
 ## GET PLAYER INFORMATION
