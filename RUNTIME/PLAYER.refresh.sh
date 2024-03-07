@@ -331,8 +331,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##################################################
     ############################### LOCAL "MICRO LEDGER"
     ################## UPDATING ${PLAYER}/ipfs/moa
-    [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-                                    ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
+    [[ $DIFF ]] \
+        && cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+              ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
     TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=${PLAYER} /ipfs/${TW}
@@ -390,7 +391,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #################################### UNPLUG ACCOUNT
 
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-    && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
+        && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
