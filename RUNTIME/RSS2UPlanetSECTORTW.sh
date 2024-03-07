@@ -45,7 +45,7 @@ signatures=0
 
 while read title; do
 
-    [[ ${floop} -gt 2 ]] && echo "0lder Tiddlers are similaR... BREAK LOOP" && break
+    [[ ${floop} -gt 1 ]] && echo "0lder Tiddlers are similaR... BREAK LOOP" && break
 
     # FILTER "UPPERCASE" + Astroport Tid, less than 4 characters title Tiddlers (ex: GPS, ...).
     [[ ${title} == "GettingStarted" || "${title^^}" == "${title}" || "${title::3}" == '$:/' || ${title::4} == ${title} || ${title} == "AstroID" || ${title} == "Voeu1.png"  || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
@@ -84,7 +84,7 @@ while read title; do
             && echo "GLOOPS (${gloops}) : ${title}" \
             && signatures=$((signatures + TMPSIGN))
 
-         [[ ! -s ${INDEX} ]] && echo "ERROR. TW did not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
+         [[ ! -s ${INDEX} ]] && echo "ERROR. TW could not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
 
     else
 

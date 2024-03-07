@@ -203,7 +203,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
         sed -i "s~_UMAPNS_~${UMAPNS}~g" ~/.zen/tmp/${MOATS}/GPS.json
 
-        cat ~/.zen/tmp/${MOATS}/GPS.json
+        #~ cat ~/.zen/tmp/${MOATS}/GPS.json
         echo "UMAP _${LAT}_${LON} UMAPNS=/ipns/${UMAPNS}"
 
         ipfs key rm "temp" 2>/dev/null
@@ -214,7 +214,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             && mv ~/.zen/tmp/${MOATS}/GPSsec.json ~/.zen/tmp/${MOATS}/GPS.json
         sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
 
-        cat ~/.zen/tmp/${MOATS}/GPS.json
+        #~ cat ~/.zen/tmp/${MOATS}/GPS.json
         echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
 
         ipfs key rm "temp" 2>/dev/null
