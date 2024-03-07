@@ -60,8 +60,9 @@ SECTORS=($(echo "${MYSECTORS[@]}" | tr ' ' '\n' | sort -u))
 echo "ACTIVATED SECTORS : ${SECTORS[@]}"
 
 for SECTOR in ${SECTORS[@]}; do
-
+    echo "############################################"
     echo "_____SECTOR ${SECTOR}"
+    echo "############################################"
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
     SLAT=$(echo ${SECTOR} | cut -d '_' -f 2)
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
