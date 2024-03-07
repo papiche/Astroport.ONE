@@ -43,7 +43,7 @@ COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
 echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
 ## RETRIEVE FROM SECTOR UKEY
-${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 300 -p ${SECTORG1PUB} -j \
+${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 300 -p ${SECTORG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json
 
 ## SCAN FOR UPLANET:${UMAP} in TX

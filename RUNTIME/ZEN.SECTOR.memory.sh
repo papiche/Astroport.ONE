@@ -40,7 +40,7 @@ COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
 echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
 ## RETRIEVE FROM REGION UKEY
-${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 300 -p ${REGIONG1PUB} -j \
+${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 300 -p ${REGIONG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${REGION}.g1history.json
 
 ## SCAN FOR UPLANET:${SECTOR} in TX
