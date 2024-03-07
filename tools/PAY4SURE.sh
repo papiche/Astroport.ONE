@@ -96,7 +96,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep '
     DES=$(cat ${DESTFILE})
     [[ ${DES} != "" && ${DES} != "null" ]] \
         && echo "$DES + $AMOUNT" | bc  > ${DESTFILE} \
-        || echo "${AMOUNT}" > ${DESTFILE}
+        || { echo "${AMOUNT}" > ${DESTFILE} && DES=${AMOUNT}; }
 
     ## INFORM ABOUT PAYMENT
     ZENAMOUNT=$(echo "$AMOUNT * 10" | bc | cut -d '.' -f 1)
