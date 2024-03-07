@@ -318,7 +318,7 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
     echo "************************************************************"
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$TODATE:/ipfs/${MYWISHFLUX}"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:${PLAYER}:/ipfs/${MYWISHFLUX}"
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
