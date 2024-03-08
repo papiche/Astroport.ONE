@@ -57,7 +57,7 @@ if [[ ! -d $img_dir ]]; then
 
         if [[ -s  ${INDEX} ]]; then
             # EXTRACT [tag[moa]] : ~/.zen/game/players/${PLAYER}/moa.jpg
-            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.moa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
+            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.moa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${PLAYER}"
             cat ~/.zen/tmp/${PLAYER}.moa.json | jq -r '.[].text' | base64 -d > ~/.zen/game/players/${PLAYER}/moa.jpg
             echo "DESSIN DE MOA : ~/.zen/game/players/${PLAYER}/moa.jpg"
              [[ $(file -b ~/.zen/game/players/${PLAYER}/moa.jpg | cut -d ' ' -f 1) == "JPEG" ]] \
