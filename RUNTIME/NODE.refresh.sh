@@ -55,8 +55,8 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     ## INFORM GPS LOCATION
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \
         && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/ \
-        && LAT=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lat) \
-        && LON=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lon) \
+        && LAT=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .lat) \
+        && LON=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .lon) \
         && echo "LAT=${LAT}; LON=${LON}" > ~/.zen/GPS
 
     ## REFRESH TIMESTAMPING
