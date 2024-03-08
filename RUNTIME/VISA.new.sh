@@ -514,7 +514,8 @@ echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
 ####### NO CURRENT ? PLAYER = .current
-[[ ! -l ~/.zen/game/players/.current ]] \
+[[ ! -e ~/.zen/game/players/.current ]] \
+    && rm ~/.zen/game/players/.current 2>/dev/null \
     && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 . "${MY_PATH}/../tools/my.sh"
