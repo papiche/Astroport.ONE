@@ -377,24 +377,27 @@ for PLAYER in ${PLAYERONE[@]}; do
     days=$((DIFF_SECONDS / 60 / 60 / 24))
     echo "PLAYER TW was created $days days ago"
 
-    ##################################
-    #### PLAYER ACCOUNT CLEANING #########
-    ## IF ZEN < 11
-    ## && EMPTY RSS + 30 DAYS BIRTHDATE
-    ## only for less 90 days TW ? && ${DIFF_SECONDS} -lt $(( 90 * 24 * 60 * 60 )) ????
-    ## ==> UNPLUG
-    [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
-        && echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --" \
-        && [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]] \
-        && [[ ${DIFF_SECONDS} -gt $(( 27 * 24 * 60 * 60 )) ]] \
-        && echo "<html><body><h1>WARNING.</h1>  Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert \
-        && echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3>ZEN=$ZEN </body></html>" >> ~/.zen/tmp/alert \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT" \
-        && echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days" \
-        && [[ ${DIFF_SECONDS} -gt $(( 30 * 24 * 60 * 60 ))  ]] \
-        && echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN" \
-        && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
-        && continue
+    ########################################
+    #### PLAYER ACCOUNT IS ACTIVE ? #########
+    if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]]; then
+        echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --"
+
+        if [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]]; then
+            if [[ ${DIFF_SECONDS} -eq $(( 27 * 24 * 60 * 60 )) ]]; then
+                echo "<html><body><h1>WARNING.</h1> Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert
+                echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ZEN ($ZEN) </body></html>" >> ~/.zen/tmp/alert
+
+                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
+                echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
+            fi
+            if [[ ${DIFF_SECONDS} -gt $(( 29 * 24 * 60 * 60 )) ]]; then
+                echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
+                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER}
+                continue
+            fi
+        fi
+    fi
+
     #################################### UNPLUG ACCOUNT
 
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \

@@ -96,18 +96,21 @@ for UMAP in ${unique_combined[@]}; do
     echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "## IPFS GET YESTERDATENS"
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-    ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
+    ipfs --timeout 300s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory
         [[ ${ZEN} -gt 0 ]] \
             && echo "INTERCOM Refreshing from ZEN MEMORY" \
-            && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}"
+            && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}" "${G1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    end=`date +%s`
+    echo "_____UMAP${UMAP} GET time was "`expr $end - $start` seconds.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     ## FORMAT CONTROL WARNING

@@ -17,6 +17,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 SECTOR="$1"
 [[ $SECTOR == "" ]] && echo "MISSING SECTOR ADRESS" && exit 1
 MOATS="$2"
+G1PUB="$3"
 
 ## CHECK FOR BAD PARAM
 [[ ! -d ~/.zen/tmp/${MOATS-empty}/${SECTOR-empty}/ ]] \
@@ -40,23 +41,26 @@ COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
 echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
 ## RETRIEVE FROM REGION UKEY
-${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 300 -p ${REGIONG1PUB} -j \
+${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 100 -p ${REGIONG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${REGION}.g1history.json
 
 ## SCAN FOR UPLANET:${SECTOR} in TX
 if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
 
-    intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json)
-    ipfs_pop=$(echo "$intercom" | grep -oP 'UPLANET:'"${SECTOR}"':/ipfs/\K[^"]+')
-    todate=$(echo "$intercom" | grep -oP 'UPLANET:'"${SECTOR}"':\K[^:]*')
-    echo "SYNC ~/.zen/tmp/${MOATS}/${SECTOR} <=> /ipfs/$ipfs_pop"
+    intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
+    ipfs_pop=$(echo "$intercom" | rev | cut -d ':' -f 1 | rev)
+    todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
+    echo "SYNC ~/.zen/tmp/${MOATS}/${SECTOR} <=> $ipfs_pop"
 
-    ## TODO: SECURITY PATCH : check payment emitter is SECTORG1PUB
     if [[ $ipfs_pop ]]; then
-        echo "from $todate memory slot"
-        ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${SECTOR} /ipfs/$ipfs_pop
+        echo "FOUND $todate MEMORY SLOT"
+        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .g1pub' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
+        [[ "$g1pub" != "$G1PUB" ]] && echo "ALERT :: $g1pub Memory HIJACK" && YESTERDATE="$G1PUB" ## SECURITY BREACH
+        [[ "$todate" == "$YESTERDATE" ]] \
+            && ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop \
+            || echo "$ipfs_pop ERROR ... not from $YESTERDATE ... "
     else
-        echo "WARNING cannot remember... scan for more TX ??!"
+        echo "WARNING cannot revover any memory !!"
     fi
 
 else

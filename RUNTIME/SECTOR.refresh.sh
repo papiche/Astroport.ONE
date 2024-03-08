@@ -99,13 +99,13 @@ for SECTOR in ${SECTORS[@]}; do
     start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE YESTERDATE SECTORNS
-    ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
+    ipfs --timeout 300s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory
         [[ ${ZEN} -gt 0 ]] \
             && echo "INTERCOM Refreshing from ZEN MEMORY" \
-            && ${MY_PATH}/../RUNTIME/ZEN.SECTOR.memory.sh "${SECTOR}" "${MOATS}"
+            && ${MY_PATH}/../RUNTIME/ZEN.SECTOR.memory.sh "${SECTOR}" "${MOATS}" "${G1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     end=`date +%s`
