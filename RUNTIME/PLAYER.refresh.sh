@@ -214,6 +214,12 @@ for PLAYER in ${PLAYERONE[@]}; do
             && mv ~/.zen/tmp/${MOATS}/GPSsec.json ~/.zen/tmp/${MOATS}/GPS.json
         sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
 
+        # (RE)MAKE "SECTORTW_NEWS" TIDDLER
+        cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
+            | sed -e "s~_SECTOR_~${SECTOR}~g" \
+            -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
+                > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
+
         #~ cat ~/.zen/tmp/${MOATS}/GPS.json
         echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
 
@@ -291,10 +297,11 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
     #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
 
-    ## WRITE TIDDLERS IN TW
+    ## WRITE TIDDLERS IN TW SECTORTW_NEWS.json
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
+                --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
