@@ -168,14 +168,18 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] \
         &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
 
+    SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
+    SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+    DIFF_SECONDS=$(( SNOW - SBIRTH ))
+    days=$((DIFF_SECONDS / 60 / 60 / 24))
+
+    echo "ASTROPORT ZenStation : ${ASTROPORT}"
+    echo "TW was created $days days ago"
     echo "CURCHAIN=${CURCHAIN}"
+
     IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
-    echo "TW ASTROPORT ZenStation : ${ASTROPORT}"
+
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
-    ## MOVED PLAYER (KEY IS KEPT ON LAST CONNECTED ASTROPORT)
-    ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ## TODO UNPLUG PLAYER
-    ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
         echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
         echo "UNPLUG PLAYER"
@@ -275,11 +279,32 @@ for PLAYER in ${PLAYERONE[@]}; do
     else
         echo "> ZenCard not activated ($ZEN)"
     fi
-    ### CHECK FOR pending (TODO! In case PAY4SURE have abandonned pendings)
 
+    #####################################################################
+    ## GET $:/moa Tiddlers #######################################
+    ###################################################### [tag[$:/moa]]
+    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        --output ~/.zen/tmp/${MOATS} \
+        --render '.' 'FRIENDS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[$:/moa]]'  ## $:/moa EMAIL Tiddlers
+    #####################################################################
+    fplayers=($(cat ~/.zen/tmp/FRIENDS.json | jq -rc .[].title))
+    echo "FOUND : ${fplayers[@]}"
+    for fp in ${fplayers[@]}; do
+
+        [[ "${fp}" == "${PLAYER}" ]] && echo "moa" && continue
+        FPLAYER=$(cat ~/.zen/tmp/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .president')
+        [[ $FPLAYER == 'null' ]] && echo "null" && continue
+        echo "$FPLAYER coucou"
+        FTW=$(cat ~/.zen/tmp/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
+        echo "TW: $FTW"
+        FG1PUB=$(cat ~/.zen/tmp/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
+        echo "G1: $FG1PUB"
+
+
+    done
 
     ###################
-    # REFRESH PLAYER_feed #
+    # REFRESH PLAYER_feed # (could be deprecated)
     ##################################
     echo "# TW : GW API + LightBeam Feed + Friends"
     TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
@@ -320,44 +345,35 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## CHECK IT IS OK
     [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
         && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-        && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html
+        && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
+        || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
     ###########################
 
     ####################
-
-    ## ANY CHANGES ?
+    ## TW NEWINDEX .... #####
     ##############################################################
-    DIFF=$(diff ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html)
-    if [[ $DIFF ]]; then
-        echo "DIFFERENCE DETECTED !! "
-        echo "Backup & Upgrade TW local copy..."
-        cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+    echo "LOCAL BACKUP + MICROLEDGER TW"
+    cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        [[ -s ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain ]] \
-        && ZCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain) \
-        && echo "# CHAIN : ${CURCHAIN} -> ${ZCHAIN}" \
-        && [[ ${CURCHAIN} != "" && ${ZCHAIN} != "" ]]  \
-        && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-    else
-        ## COUNT NO CHANGE
-        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/_nochange 2>/dev/null) || try=0
-        ((try++)) && echo $try > ~/.zen/game/players/${PLAYER}/ipfs/_nochange
-        echo "NO CHANGE $try TIMES"
-    fi
-    ##############################################################
+    [[ -s ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain ]] \
+    && ZCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain) \
+    && echo "# CHAIN : ${CURCHAIN} -> ${ZCHAIN}" \
+    && [[ ${CURCHAIN} != "" && ${ZCHAIN} != "" ]]  \
+    && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     ##################################################
-    ############################### LOCAL "MICRO LEDGER"
-    ################## UPDATING ${PLAYER}/ipfs/moa
-    [[ $DIFF ]] \
-        && cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-              ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
+    ######## UPDATING ${PLAYER}/ipfs/moa/.chain
+    cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+       ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
+    ##########################################
+    ## IPFS ADD & PUBLISH
+    ##########################################
     TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
     ipfs name publish --key=${PLAYER} /ipfs/${TW}
 
-    [[ $DIFF ]] && echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
-
+    ## LOCAL PLAYER CACHING
+    echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
     echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
     echo "================================================"
@@ -368,7 +384,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
     ## CREATING 30 DAYS JSON RSS STREAM
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                        --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
+        --output ~/.zen/game/players/${PLAYER}/ipfs \
+        --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
 
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
         && echo "NO ${PLAYER} RSS - BAD "
@@ -380,13 +397,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
     ### $:/plugins/sycom/atom-feed/atom.xml
     #~ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-                        #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
-
-    SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
-    SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
-    DIFF_SECONDS=$(( SNOW - SBIRTH ))
-    days=$((DIFF_SECONDS / 60 / 60 / 24))
-    echo "PLAYER TW was created $days days ago"
+        #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
 
     ########################################
     #### PLAYER ACCOUNT IS ACTIVE ? #########
