@@ -268,7 +268,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     ### CHECK FOR pending (TODO! In case PAY4SURE have abandonned pendings)
 
 
-
     ###################
     # REFRESH PLAYER_feed #
     ##################################
@@ -297,6 +296,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
     #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
 
+    ## PATCH : RESTORE PLAYER GPS.json (can be erase by WISH treatment)
+    cp -f ~/.zen/game/players/${PLAYER}/GPS.json ~/.zen/tmp/${MOATS}/
     ## WRITE TIDDLERS IN TW SECTORTW_NEWS.json
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \

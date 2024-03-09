@@ -2,7 +2,7 @@
   {
     "text": "_SECTORTW_",
     "tags": "load-external _PLAYER_ $:/tags/load-external-content",
-    "title": "_SECTOR_NEWS",
+    "title": "_SECTOR_.NEWS",
     "content-filter": "[days[-1]!is[system]!tag[G1Voeu]]",
     "notes": "refreshing at startup, with <<tag $:/tags/load-external-content>>",
     "deserializer": "text/html"
