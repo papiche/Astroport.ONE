@@ -188,13 +188,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         continue
     fi
 
-    # (RE)MAKE "CESIUM" TIDDLER
-    cat ${MY_PATH}/../templates/data/CESIUM.json \
-        | sed -e "s~_G1PUB_~${G1PUB}~g" \
-        -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
-        -e "s~_PLAYER_~${PLAYER}~g" \
-            > ~/.zen/tmp/${MOATS}/CESIUM.json
-
     ######################################
     #### UPLANET GEO COORD EXTRACTION
     ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
@@ -280,6 +273,13 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "> ZenCard not activated ($ZEN)"
     fi
 
+    # (RE)MAKE "CESIUM" TIDDLER
+    cat ${MY_PATH}/../templates/data/CESIUM.json \
+        | sed -e "s~_G1PUB_~${G1PUB}~g" \
+        -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+        -e "s~_PLAYER_~${PLAYER}~g" \
+            > ~/.zen/tmp/${MOATS}/CESIUM.json
+
     #####################################################################
     ## GET $:/moa Tiddlers #######################################
     ###################################################### [tag[$:/moa]]
@@ -287,21 +287,35 @@ for PLAYER in ${PLAYERONE[@]}; do
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'FRIENDS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[$:/moa]]'  ## $:/moa EMAIL Tiddlers
     #####################################################################
-    fplayers=($(cat ~/.zen/tmp/FRIENDS.json | jq -rc .[].title))
+    fplayers=($(cat ~/.zen/tmp/${MOATS}/FRIENDS.json | jq -rc .[].title))
     echo "FOUND : ${fplayers[@]}"
+    INPUTPLAYERS=()
     for fp in ${fplayers[@]}; do
 
         [[ "${fp}" == "${PLAYER}" ]] && echo "moa" && continue
-        FPLAYER=$(cat ~/.zen/tmp/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .president')
+        FPLAYER=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .president')
         [[ $FPLAYER == 'null' ]] && echo "null" && continue
         echo "$FPLAYER coucou"
-        FTW=$(cat ~/.zen/tmp/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
+        FTW=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
         echo "TW: $FTW"
-        FG1PUB=$(cat ~/.zen/tmp/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
+        FG1PUB=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
         echo "G1: $FG1PUB"
 
+        if [[ ${FTW} != "/ipns/" && ${FTW} != "null" && ${FTW} != "" ]]; then
+            cat ${MY_PATH}/../templates/data/_UPPERFPLAYER_.json \
+                | sed -e "s~_UPPERFPLAYER_~${FPLAYER^^}~g" \
+                -e "s~_FPLAYER_~${FPLAYER}~g" \
+                -e "s~_FRIENDTW_~${FTW}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
+                    > ~/.zen/tmp/${MOATS}/${FPLAYER}.json
+
+            INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")  # Append to the array
+        fi
 
     done
+
+        echo "${INPUTPLAYERS[@]}"
+
 
     ###################
     # REFRESH PLAYER_feed # (could be deprecated)
@@ -338,6 +352,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
+                "${INPUTPLAYERS[@]}" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
