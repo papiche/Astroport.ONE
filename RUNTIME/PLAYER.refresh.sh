@@ -301,15 +301,31 @@ for PLAYER in ${PLAYERONE[@]}; do
         FG1PUB=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
         echo "G1: $FG1PUB"
 
+        IHASH=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .text'  | sha256sum | cut -d ' ' -f 1)
+        echo $IHASH
+
         if [[ ${FTW} != "/ipns/" && ${FTW} != "null" && ${FTW} != "" ]]; then
+
+            ## CHECK ALREADY IN IHASH
+            rm -f ~/.zen/tmp/${MOATS}/finside.json
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'finside.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER^^}'  ## $:/moa EMAIL Tiddlers
+
+            FIHASH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq .[] | jq -r 'select(.title=="'${FPLAYER^^}'") | .ihash')
+            echo $FIHASH
+            ## UPDATE IF IHASH CHANGED
+            if [[ ! $FIHASH || $FIHASH != $IHASH ]]; then
             cat ${MY_PATH}/../templates/data/_UPPERFPLAYER_.json \
                 | sed -e "s~_UPPERFPLAYER_~${FPLAYER^^}~g" \
                 -e "s~_FPLAYER_~${FPLAYER}~g" \
+                -e "s~_IHASH_~${IHASH}~g" \
                 -e "s~_FRIENDTW_~${FTW}~g" \
                 -e "s~_PLAYER_~${PLAYER}~g" \
                     > ~/.zen/tmp/${MOATS}/${FPLAYER}.json
 
             INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")  # Append to the array
+            fi
         fi
 
     done
