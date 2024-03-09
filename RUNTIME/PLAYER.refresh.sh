@@ -227,6 +227,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     # (RE)MAKE "SECTORTW_NEWS" TIDDLER
     cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
         | sed -e "s~_SECTOR_~${SECTOR}~g" \
+        -e "s~_MOATS_~${MOATS}~g" \
         -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
@@ -282,27 +283,31 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #####################################################################
     ## GET $:/moa Tiddlers #######################################
+    echo "GET $:/moa Tiddlers"
     ###################################################### [tag[$:/moa]]
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'FRIENDS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[$:/moa]]'  ## $:/moa EMAIL Tiddlers
     #####################################################################
     fplayers=($(cat ~/.zen/tmp/${MOATS}/FRIENDS.json | jq -rc .[].title))
-    echo "FOUND : ${fplayers[@]}"
+    echo "${fplayers[@]}"
     INPUTPLAYERS=()
     for fp in ${fplayers[@]}; do
 
         [[ "${fp}" == "${PLAYER}" ]] && echo "moa" && continue
+
         FPLAYER=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .president')
         [[ $FPLAYER == 'null' ]] && echo "null" && continue
         echo "$FPLAYER coucou"
+
         FTW=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
         echo "TW: $FTW"
+
         FG1PUB=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
         echo "G1: $FG1PUB"
 
         IHASH=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .text'  | sha256sum | cut -d ' ' -f 1)
-        echo $IHASH
+        echo "IHASH: $IHASH"
 
         if [[ ${FTW} != "/ipns/" && ${FTW} != "null" && ${FTW} != "" ]]; then
 
@@ -312,24 +317,27 @@ for PLAYER in ${PLAYERONE[@]}; do
             --output ~/.zen/tmp/${MOATS} \
             --render '.' 'finside.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER^^}'  ## $:/moa EMAIL Tiddlers
 
-            FIHASH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq .[] | jq -r 'select(.title=="'${FPLAYER^^}'") | .ihash')
-            echo $FIHASH
+            INSIDEH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq .[] | jq -r 'select(.title=="'${FPLAYER^^}'") | .ihash')
+            echo $INSIDEH
             ## UPDATE IF IHASH CHANGED
-            if [[ ! $FIHASH || $FIHASH != $IHASH ]]; then
-            cat ${MY_PATH}/../templates/data/_UPPERFPLAYER_.json \
-                | sed -e "s~_UPPERFPLAYER_~${FPLAYER^^}~g" \
-                -e "s~_FPLAYER_~${FPLAYER}~g" \
-                -e "s~_IHASH_~${IHASH}~g" \
-                -e "s~_FRIENDTW_~${FTW}~g" \
-                -e "s~_PLAYER_~${PLAYER}~g" \
-                    > ~/.zen/tmp/${MOATS}/${FPLAYER}.json
-
-            INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")  # Append to the array
+            if [[ ! $INSIDEH || $INSIDEH != $IHASH ]]; then
+                cat ${MY_PATH}/../templates/data/_UPPERFPLAYER_.json \
+                    | sed -e "s~_UPPERFPLAYER_~${FPLAYER^^}~g" \
+                    -e "s~_FPLAYER_~${FPLAYER}~g" \
+                    -e "s~_MOATS_~${MOATS}~g" \
+                    -e "s~_IHASH_~${IHASH}~g" \
+                    -e "s~_FRIENDTW_~${FTW}~g" \
+                    -e "s~_PLAYER_~${PLAYER}~g" \
+                        > ~/.zen/tmp/${MOATS}/${FPLAYER}.json
+                echo "(     ---- /G       |\      |Z   /   /         /"
+                cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json | jq
+                INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")  # Append to the array
             fi
         fi
 
     done
 
+        ## FRIENDS TW FLUX TO IMPORT
         echo "${INPUTPLAYERS[@]}"
 
 

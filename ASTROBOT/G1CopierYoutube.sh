@@ -71,7 +71,7 @@ for YURL in $(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.js
     fi
     # ONE WEEK NEW SCAN
     if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} ]]; then
-        /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
+        /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" 2>/dev/null >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
         sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
     fi
 
