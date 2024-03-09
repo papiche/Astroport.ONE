@@ -69,11 +69,11 @@ for YURL in $(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.js
         lastrun=$(echo "$CMD" | rev | cut -d ':' -f 1 | rev) && echo "$CMD"
         duree=$(expr ${MOATS} - $lastrun)
     fi
-        # ONE WEEK NEW SCAN
-        if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} ]]; then
-            /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
-            sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
-        fi
+    # ONE WEEK NEW SCAN
+    if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} ]]; then
+        /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
+        sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
+    fi
 
 done # FINISH YURL loop
 
@@ -93,6 +93,9 @@ while read LINE;
         boucle=$((boucle+1))
         echo "_____ $LINE _____ $boucle"
         YID="$(echo "$LINE" | rev | cut -d '=' -f 1 | rev )"
+
+        #~ [[ $boucle -gt 50 ]] && break ## TODO SCAN FOR ABROAD SAME COPY DONE
+        ### MAKE BETTER THAN RANDOM !! CONNECT TO THE WARM...
 
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
