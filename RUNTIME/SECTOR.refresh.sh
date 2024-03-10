@@ -186,12 +186,12 @@ for SECTOR in ${SECTORS[@]}; do
     sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
 
     ## GET ALL TWs in that SECTOR
-    mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TWZ
+    mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
 
     cp -rf ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
-        ~/.zen/tmp/${MOATS}/${SECTOR}/TWZ
+        ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
     cp -rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
-        ~/.zen/tmp/${MOATS}/${SECTOR}/TWZ
+        ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
     RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/RSS/*.rss.json 2>/dev/null))
