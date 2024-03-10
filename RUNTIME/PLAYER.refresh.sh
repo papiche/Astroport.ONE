@@ -99,26 +99,28 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         NOWCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain)
         LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
+        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.try 2>/dev/null) || try=3
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<br>"
         echo "<a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>"
-        echo ">> %%% WARNING %%%"
+        echo ">> %%% WARNING TRY LEFT : $try %%%"
         echo "------------------------------------------------"
         echo " * <a href='${myIPFS}/ipfs/${LASTCHAIN}'>LAST</a>"
-        echo " *<a href='${myIPFS}/ipfs/${NOWCHAIN}'>NOW</a>"
+        echo " * <a href='${myIPFS}/ipfs/${NOWCHAIN}'>NOW</a>"
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
         ## SEND AN EMAIL ALERT TO PLAYER
         echo "<html><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>" > ~/.zen/tmp/result
         echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
-        echo "" >> ~/.zen/tmp/result
-        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>ANCIENT</a>" >> ~/.zen/tmp/result
-        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>NEW</a>" >> ~/.zen/tmp/result
-        echo "" >> ~/.zen/tmp/result
-        echo "<br> %%% WARNING %%%" >> ~/.zen/tmp/result
+        echo "<br>" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>TW[-1]</a>" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>TW[0]</a>" >> ~/.zen/tmp/result
+        echo "<br>" >> ~/.zen/tmp/result
+        echo "<br> %%% WARNING %%% $try TRY LEFT %%%" >> ~/.zen/tmp/result
         echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
-        echo "<br>PLEASE REPAIR BY SAVING ONLINE</body></html>" >> ~/.zen/tmp/result
-        echo "OR RUNNING CLI COMMAND : ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
+        echo "<br>REPAIR BY SAVING ONLINE<br>" >> ~/.zen/tmp/result
+        echo "COMMAND :<br>ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
+        echo "</body></html>" >> ~/.zen/tmp/result
 
-        try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.try 2>/dev/null) || try=3
 
         [[ $try == 0 ]] \
             && echo "PLAYER ${PLAYER} UNPLUG" \
@@ -127,8 +129,8 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         try=$((try-1))
         echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
-        echo " %%% WARNING %%%  ${PLAYER} STATION UNPLUG IN $try DAY(S)." >> ~/.zen/tmp/result
-        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "UNPLUG WARNING"
+
+        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "TW[+1] REFRESH WARNING"
 
         continue
 
@@ -248,12 +250,12 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]  \
         && echo "## Connect_PLAYER_To_Gchange.sh" \
         && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        || echo "$COINS <= 1 G1 + 10 ẑen : stars exchange (★★★★★) level"
+        || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
 
     ##############################################################
-    # G1PalPay - 1 G1 mini -> Check for G1 TX incoming comments #
+    # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
     ##############################################################
-    if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
+    if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
         ##############################################################
         # G1PalPay.sh #
         ##############################################################
@@ -271,10 +273,12 @@ for PLAYER in ${PLAYERONE[@]}; do
         ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     else
-        echo "> ZenCard not activated ($ZEN)"
+        echo "> ZenCard not activated ($ZEN ZEN)"
     fi
 
+    #####################################################################
     # (RE)MAKE "CESIUM" TIDDLER
+    echo "Create CESIUM Tiddler"
     cat ${MY_PATH}/../templates/data/CESIUM.json \
         | sed -e "s~_G1PUB_~${G1PUB}~g" \
         -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
@@ -282,7 +286,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             > ~/.zen/tmp/${MOATS}/CESIUM.json
 
     #####################################################################
-    ## GET $:/moa Tiddlers #######################################
+    #####################################################################
+    ## GET $:/moa Tiddlers ####################################### START
     echo "GET $:/moa Tiddlers"
     ###################################################### [tag[$:/moa]]
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -294,55 +299,80 @@ for PLAYER in ${PLAYERONE[@]}; do
     INPUTPLAYERS=()
     for fp in ${fplayers[@]}; do
 
-        [[ "${fp}" == "${PLAYER}" ]] && echo "moa" && continue
+        [[ ! "${fp}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] && echo "BAD ${fp} FORMAT" && continue
+        [[ "${fp}" == "${PLAYER}" ]] && echo "IT'S ME - CONTINUE" && continue
 
-        FPLAYER=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .president')
-        [[ $FPLAYER == 'null' ]] && echo "null" && continue
-        echo "$FPLAYER coucou"
+        FPLAYER=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .player')
+        [[ $FPLAYER == 'null' || $FPLAYER == '' ]] && echo "FPLAYER null - CONTINUE" && continue
 
         FTW=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
-        echo "TW: $FTW"
+        [[ ${FTW} == "/ipns/" && ${FTW} == "null" && ${FTW} == "" ]] && echo "WEIRD FTW ${FTW} - CONTINUE" && continue
 
         FG1PUB=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
-        echo "G1: $FG1PUB"
+        [[ $FG1PUB == 'null' || $FG1PUB == '' ]] && echo "FG1PUB null - CONTINUE" && continue
 
-        IHASH=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .text'  | sha256sum | cut -d ' ' -f 1)
+        IHASH=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .text' | sha256sum | cut -d ' ' -f 1)
+
+        echo ":: coucou :: $FPLAYER :: (ᵔ◡◡ᵔ) ::"
+        echo "TW: $FTW"
+        echo "G1: $FG1PUB"
         echo "IHASH: $IHASH"
 
-        if [[ ${FTW} != "/ipns/" && ${FTW} != "null" && ${FTW} != "" ]]; then
+        ## GET ORIGINH FROM LAST KNOWN TW STATE
+        mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}
+        if [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html ]]; then
+            rm -f ~/.zen/tmp/${MOATS}/forigin.json
+            tiddlywiki --load ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' "${FPLAYER}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER}' ## GET ORIGIN
 
-            ## CHECK ALREADY IN IHASH
-            rm -f ~/.zen/tmp/${MOATS}/finside.json
-            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-            --output ~/.zen/tmp/${MOATS} \
-            --render '.' 'finside.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER^^}'  ## $:/moa EMAIL Tiddlers
+            ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
+            echo "ORIGINH: $ORIGINH"
+        fi
 
-            INSIDEH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq .[] | jq -r 'select(.title=="'${FPLAYER^^}'") | .ihash')
-            echo $INSIDEH
-            ## UPDATE IF IHASH CHANGED
-            if [[ ! $INSIDEH || $INSIDEH != $IHASH ]]; then
-                cat ${MY_PATH}/../templates/data/_UPPERFPLAYER_.json \
-                    | sed -e "s~_UPPERFPLAYER_~${FPLAYER^^}~g" \
-                    -e "s~_FPLAYER_~${FPLAYER}~g" \
-                    -e "s~_MOATS_~${MOATS}~g" \
-                    -e "s~_IHASH_~${IHASH}~g" \
-                    -e "s~_FRIENDTW_~${FTW}~g" \
-                    -e "s~_PLAYER_~${PLAYER}~g" \
-                        > ~/.zen/tmp/${MOATS}/${FPLAYER}.json
-                echo "(     ---- /G       |\      |Z   /   /         /"
-                cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json | jq
-                INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")  # Append to the array
-            fi
+        ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&)
+            ipfs --timeout 180s cat ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
+        ) &
+
+        ## CHECK ALREADY IN ${FPLAYER^^} IHASH
+        rm -f ~/.zen/tmp/${MOATS}/finside.json
+        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        --output ~/.zen/tmp/${MOATS} \
+        --render '.' 'finside.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER^^}'  ## ${FPLAYER^^} autoload Tiddlers
+
+        INSIDEH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq -rc '.[].ihash')
+        echo "INSIDEH: $INSIDEH"
+
+        ## UPDATE IF IHASH CHANGED -> New drawing => Friend get informed
+        if [[ -z $INSIDEH || $INSIDEH != $IHASH || $ORIGINH != $INSIDEH ]]; then
+            cat ${MY_PATH}/../templates/data/_UPPERFPLAYER_.json \
+                | sed -e "s~_UPPERFPLAYER_~${FPLAYER^^}~g" \
+                -e "s~_FPLAYER_~${FPLAYER}~g" \
+                -e "s~_MOATS_~${MOATS}~g" \
+                -e "s~_IHASH_~${IHASH}~g" \
+                -e "s~_FRIENDTW_~${FTW}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
+                    > ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json
+
+            echo "Insert New ${FPLAYER^^}.json"
+            cat ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json | jq
+
+            INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER^^}.json 'application/json' ")  # Append to the array
+            [[ $ORIGINH != $INSIDEH ]] \
+                && echo "ORIGINH Update" \
+                && INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")
         fi
 
     done
 
-        ## FRIENDS TW FLUX TO IMPORT
-        echo "${INPUTPLAYERS[@]}"
-
+    ## FRIENDS TW FLUX TO IMPORT
+    echo "${INPUTPLAYERS[@]}"
+    #####################################################################
+    ## GET $:/moa Tiddlers ####################################### END
+    #####################################################################
 
     ###################
-    # REFRESH PLAYER_feed # (could be deprecated)
+    # REFRESH PLAYER_feed KEY
     ##################################
     echo "# TW : GW API + LightBeam Feed + Friends"
     TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
@@ -369,7 +399,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
     #~ ## ADD              --import "$HOME/.zen/tmp/${MOATS}/friends.json" "application/json" \ ## MANUAL TW RSS REGISTRATION
 
-    ## PATCH : RESTORE PLAYER GPS.json (can be erase by WISH treatment)
+    ## PATCH : RESTORE PLAYER GPS.json (protect cache erased by WISH treatment)
     cp -f ~/.zen/game/players/${PLAYER}/GPS.json ~/.zen/tmp/${MOATS}/
     ## WRITE TIDDLERS IN TW SECTORTW_NEWS.json
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
