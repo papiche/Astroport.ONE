@@ -243,38 +243,38 @@ for PLAYER in ${PLAYERONE[@]}; do
     cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
     #############################################################
-    # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW
+    # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
     ##############################################################
     echo "##################################################################"
 
-    #~ [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]  \
-        #~ && echo "## Connect_PLAYER_To_Gchange.sh" \
-        #~ && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        #~ || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
+    [[ $(echo "$COINS >= 500" | bc -l) -eq 1 ]]  \
+        && echo "## Connect_PLAYER_To_Gchange.sh" \
+        && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
+        || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
 
-    #~ ##############################################################
-    #~ # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
-    #~ ##############################################################
-    #~ if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
-        #~ ##############################################################
-        #~ # G1PalPay.sh #
-        #~ ##############################################################
-        #~ echo "## RUNNING G1PalPay Wallet Monitoring "
-        #~ ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
+    ##############################################################
+    # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
+    ##############################################################
+    if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
+        ##############################################################
+        # G1PalPay.sh #
+        ##############################################################
+        echo "## RUNNING G1PalPay Wallet Monitoring "
+        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
 
-        #~ ##############################################################
-        #~ # VOEUX.create.sh #
-        #~ ##############################################################
-        #~ ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
+        ##############################################################
+        # VOEUX.create.sh #
+        ##############################################################
+        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
 
-        #~ ##############################################################
-        #~ # VOEUX.refresh.sh #
-        #~ ##############################################################
-        #~ ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+        ##############################################################
+        # VOEUX.refresh.sh #
+        ##############################################################
+        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-    #~ else
-        #~ echo "> ZenCard not activated ($ZEN ZEN)"
-    #~ fi
+    else
+        echo "> ZenCard not activated ($ZEN ZEN)"
+    fi
 
     #####################################################################
     # (RE)MAKE "CESIUM" TIDDLER
