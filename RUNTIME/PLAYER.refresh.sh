@@ -202,7 +202,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     SECTOR="_${LAT::-1}_${LON::-1}"
     ## UMAP TODATENS ################
 
-    ipfs key rm "temp" 1>&2>/dev/null
+    ipfs key rm "temp" >/dev/null 2>&1
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
     UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
 
@@ -215,7 +215,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "UMAP _${LAT}_${LON} UMAPNS=/ipns/${UMAPNS}"
 
     ## SECTOR TODATENS ################
-    ipfs key rm "temp" 1>&2>/dev/null
+    ipfs key rm "temp" >/dev/null 2>&1
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
     TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
 
@@ -234,7 +234,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ cat ~/.zen/tmp/${MOATS}/GPS.json
     echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
 
-    ipfs key rm "temp" 1>&2>/dev/null
+    ipfs key rm "temp" >/dev/null 2>&1
 
     ## STORE IN PLAYER CACHE
     echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
