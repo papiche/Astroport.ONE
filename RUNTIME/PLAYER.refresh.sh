@@ -247,34 +247,34 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##############################################################
     echo "##################################################################"
 
-    [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]  \
-        && echo "## Connect_PLAYER_To_Gchange.sh" \
-        && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
+    #~ [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]  \
+        #~ && echo "## Connect_PLAYER_To_Gchange.sh" \
+        #~ && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
+        #~ || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
 
-    ##############################################################
-    # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
-    ##############################################################
-    if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
-        ##############################################################
-        # G1PalPay.sh #
-        ##############################################################
-        echo "## RUNNING G1PalPay Wallet Monitoring "
-        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
+    #~ ##############################################################
+    #~ # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
+    #~ ##############################################################
+    #~ if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
+        #~ ##############################################################
+        #~ # G1PalPay.sh #
+        #~ ##############################################################
+        #~ echo "## RUNNING G1PalPay Wallet Monitoring "
+        #~ ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
 
-        ##############################################################
-        # VOEUX.create.sh #
-        ##############################################################
-        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
+        #~ ##############################################################
+        #~ # VOEUX.create.sh #
+        #~ ##############################################################
+        #~ ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
 
-        ##############################################################
-        # VOEUX.refresh.sh #
-        ##############################################################
-        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+        #~ ##############################################################
+        #~ # VOEUX.refresh.sh #
+        #~ ##############################################################
+        #~ ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-    else
-        echo "> ZenCard not activated ($ZEN ZEN)"
-    fi
+    #~ else
+        #~ echo "> ZenCard not activated ($ZEN ZEN)"
+    #~ fi
 
     #####################################################################
     # (RE)MAKE "CESIUM" TIDDLER
@@ -357,16 +357,32 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "Insert New ${FPLAYER^^}.json"
             cat ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json | jq
 
-            INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER^^}.json 'application/json' ")  # Append to the array
-            [[ $ORIGINH != $INSIDEH ]] \
-                && echo "ORIGINH Update" \
-                && INPUTPLAYERS+=(" --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' ")
+            tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER^^}.json 'application/json' \
+                --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} \
+                --render "$:/core/save/all" "newindex.html" "text/plain"
+            [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
+                && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
+                || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
+
+            if [[ $ORIGINH != $INSIDEH ]]; then
+                echo "ORIGINH Update"
+                rm -f ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html
+                tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                    --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER}.json 'application/json' \
+                    --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} \
+                    --render "$:/core/save/all" "newindex.html" "text/plain"
+                [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
+                    && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                    && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
+                    || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
+            fi
         fi
 
     done
 
     ## FRIENDS TW FLUX TO IMPORT
-    echo "${INPUTPLAYERS[@]}"
     #####################################################################
     ## GET $:/moa Tiddlers ####################################### END
     #####################################################################
@@ -406,7 +422,6 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
-                "${INPUTPLAYERS[@]}" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
