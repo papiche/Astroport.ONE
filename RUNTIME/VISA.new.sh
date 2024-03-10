@@ -33,8 +33,8 @@ LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
-TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
-# ipfs cat $TWMODEL > templates/twdefault.html
+#~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
+#~ # ipfs cat $TWMODEL > templates/twdefault.html
 TWUPLANET="/ipfs/bafybeib4cl7ud7nih4bkr4cnrdiajhutreamgmrly46x45ldqfkrr2xpne"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
@@ -72,7 +72,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         # COPY TW TEMPLATE
         [[ ${LON} && ${LAT} ]] \
             && cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html \
-            || cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+            || cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
     #############################################
@@ -99,7 +99,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         else
 
             echo ">> NO ACTIVE TW - CREATING FRESH NEW ONE"
-            cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+            cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
 
         fi
 
@@ -233,7 +233,7 @@ DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
     ### INITALISATION WIKI dans leurs répertoires de publication IPFS
         mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
 
-        [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] && cp ${MY_PATH}/../templates/twdefault.html ~/.zen/tmp/${MOATS}/TW/index.html
+        [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] && cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
         sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html > ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         # INSERT ASTROPORT ADDRESS
