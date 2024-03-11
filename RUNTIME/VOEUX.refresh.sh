@@ -304,8 +304,8 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     LON=$(makecoord $LON)
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
-    SECLAT="${LAT%.*}.1"
-    SECLON="${LON%.*}.1"
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
     SECTOR="_${SECLAT}_${SECLON}"
     ##############################################################
     UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")

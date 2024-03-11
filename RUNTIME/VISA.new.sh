@@ -294,7 +294,7 @@ sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa
 [[ ! ${LAT} ]] && LAT="0.00"
 [[ ! ${LON} ]] && LON="0.00"
 
-SECTOR="_${LAT%.*}.1_${LON%.*}.1" ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
+SECTOR="_${LAT::-1}_${LON::-1}" ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
 echo "UPlanet 0.1° SECTOR : ${SECTOR}"
 sed -i "s~_SECTOR_~${SECTOR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
@@ -603,7 +603,7 @@ do
 done <"$asciiart"
 
 echo "
-<h2> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT%.*}.1&southWestLon=${LON%.*}.1&deg=0.1'>${SECTOR}</a> <--> </h2>
+<h2> <--> 0.1 SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h2>
 <br>PRINT & KEEP SAFE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img width=120px src='${myIPFSGW}${ASTROQR}'\></a>
 <br>SECRET1=$SALT<br>SECRET2=$PEPPER<br>($PASS)<br>
 <h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>

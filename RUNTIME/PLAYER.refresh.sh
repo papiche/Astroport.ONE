@@ -201,7 +201,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
                 [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
-    SECTOR="_${LAT%.*}.1_${LON%.*}.1"
+    SECTOR="_${LAT::-1}_${LON::-1}"
     ## UMAP TODATENS ################
 
     ipfs key rm "temp" >/dev/null 2>&1
@@ -522,8 +522,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     #################################################
     if [[ ${LAT} && ${LON} ]]; then
         ## SECTOR BANK COORD
-        SECLAT="${LAT%.*}.1"
-        SECLON="${LON%.*}.1"
+        SECLAT="${LAT::-1}"
+        SECLON="${LON::-1}"
         ## REGION
         REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
         REGLON=$(echo ${LON} | cut -d '.' -f 1)

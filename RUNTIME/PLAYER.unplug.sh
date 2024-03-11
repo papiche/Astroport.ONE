@@ -44,8 +44,8 @@ mkdir -p ~/.zen/tmp/${MOATS}
     ##############################################################
     # UMAPG1PUB=$(${MY_PATH}/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
     ##############################################################
-    SECLAT="${LAT%.*}.1"
-    SECLON="${LON%.*}.1"
+    SECLAT="${LAT::-1}"
+    SECLON="${LON::-1}"
     SECTOR="_${SECLAT}_${SECLON}"
     ##############################################################
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
