@@ -16,7 +16,14 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
-sudo systemctl restart ipfs && sleep 10
+### STOP ASTROPORT DURING 20H12 UPDATE ###
+#~ sudo systemctl stop astroport
+## CHECK IF IPFS NODE IS RESPONDING
+ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
+[[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
+    && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
+    && sudo systemctl restart ipfs \
+    && sleep 60
 
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
@@ -27,11 +34,9 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
-## PING BOOSTRAP & SWARM NODES
-${MY_PATH}/ping_bootstrap.sh
-
 # show ZONE.sh cache of the day
-ls ~/.zen/tmp/ZONE_*
+echo "TODAY UPlanet landings"
+ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
 ## REMOVE TMP BUT KEEP SWARM and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
@@ -56,8 +61,12 @@ git pull
 ${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
+## DRAGON SSH WOT
+echo "DRAGONS WOT OFF"
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
+
 ## PING BOOSTRAP & SWARM NODES
-${MY_PATH}/ping_bootstrap.sh
+${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
 #####################################
 # espeak "Players refresh" > /dev/null 2>&1
@@ -98,15 +107,13 @@ seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
-## DRAGON SSH WOT
-echo "STOP DRAGONS WOT"
-${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
-## RESTART
 
 ## MAIL LOG : support@qo-op.com ##
 ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
+
+## RESTART
 
 # espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
@@ -143,6 +150,7 @@ sudo systemctl restart ipfs
 ### DRAGON WOT : SSH P2P RING OPENING
 #################################
 sleep 30
+echo "DRAGONS WOT ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 exit 0

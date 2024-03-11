@@ -37,62 +37,78 @@ YOU=$(myIpfsApi);
 echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
-    PS3='Astronaute connectez votre PLAYER  ___ '
-    players=( "PRINT ZENCARD" "CREATE PLAYER" "IMPORT PLAYER" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
-    ## MULTIPLAYER
+PS3='DRAGON connectez votre PLAYER  ___ '
+players=( "CREATE PLAYER" "IMPORT PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+## MULTIPLAYER
 
+select fav in "${players[@]}"; do
+    case $fav in
+    "PRINT QRCARD")
+        ## DIRECT VISA.print.sh
+        echo "'Email ?'"
+        read EMAIL
+        [[ ${EMAIL} == "" ]] && EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+        echo "'Secret 1 ?'"
+        read SALT
+        [[ ${SALT} == "" ]] && SALT=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
+        echo "'Secret 2?'"
+        read PEPPER
+        [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
+        echo "'PIN ?'"
+        read PASS
+        echo "${MY_PATH}/tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
+        ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
 
-    select fav in "${players[@]}"; do
-        case $fav in
-        "PRINT ZENCARD")
-            ## DIRECT VISA.print.sh
-            echo "'Email ?'"
-            read EMAIL
-            [[ ${EMAIL} == "" ]] && EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-            echo "'Secret 1 ?'"
-            read SALT
-            [[ ${SALT} == "" ]] && SALT=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
-            echo "'Secret 2?'"
-            read PEPPER
-            [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
-            echo "'PIN ?'"
-            read PASS
-            echo "${MY_PATH}/tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
-            ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
+         [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
 
-             [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
+        exit
+        ;;
+    "CREATE PLAYER")
+        echo "'Email ?'"
+        read EMAIL
+        [[ ${EMAIL} == "" ]] && break
+        echo "'Latitude (precision 0.01°) ?'"
+        read LAT
+        [[ ${LAT} == "" ]] && LAT="0.00"
+        echo "'Longitude ?'"
+        read LON
+        [[ ${LON} == "" ]] && LON="0.00"
 
-            exit
-            ;;
-        "CREATE PLAYER")
-            ${MY_PATH}/RUNTIME/VISA.new.sh
-            fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
-            echo "Astronaute $fav bienvenue sur UPlanet. Set TW GPS position..."
-            exit
-            ;;
-        "IMPORT PLAYER")
-            echo "'Secret 1'"
-            read SALT
-            echo "'Secret 2'"
-            read PEPPER
-            echo "'Adresse Email'"
-            read EMAIL
-            ${MY_PATH}/RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
-            fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
-            echo "Astronaute $fav WELCOME"
-            exit
-            ;;
-        "")
-            echo "Choix obligatoire. exit"
-            exit
-            ;;
-        *) echo "Salut $fav"
-            break
-            ;;
-        esac
-    done
-    PLAYER=$fav
+        PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 4) ## STRONGER TW SECURITY "AlpH4nUm"
+        NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
 
+        ${MY_PATH}/RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
+        fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
+        echo "Astronaute $fav bienvenue sur UPlanet..."
+        exit
+        ;;
+    "IMPORT PLAYER")
+        echo "'Secret 1'"
+        read SALT
+        echo "'Secret 2'"
+        read PEPPER
+        echo "'Adresse Email'"
+        read EMAIL
+        ${MY_PATH}/RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
+        fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
+        echo "Astronaute $fav WELCOME"
+        exit
+        ;;
+    "")
+        echo "Choix obligatoire. exit"
+        exit
+        ;;
+    *) echo "Salut $fav"
+        break
+        ;;
+    esac
+done
+PLAYER=$fav
+
+####### NO CURRENT ? PLAYER = .current
+[[ ! -e ~/.zen/game/players/.current ]] \
+    && rm ~/.zen/game/players/.current 2>/dev/null \
+    && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 pass=$(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)
 ########################################## DEVEL

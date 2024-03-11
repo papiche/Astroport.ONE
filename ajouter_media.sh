@@ -32,7 +32,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
-alias espeak='espeak 1>&2>/dev/null'
+alias espeak='espeak >/dev/null 2>&1'
 
 ## CHECK IF IPFS DAEMON IS STARTS WELL
 floop=0
@@ -71,7 +71,7 @@ if [[ ${PLAYER} == "" ]]; then
     players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 
     if [[ ${#players[@]} -ge 1 ]]; then
-        espeak "SELECT YOUR PLAYER" 2>/dev/null
+        espeak "SELECT YOUR PLAYER"
         OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
         [[ ${OUTPUT} == "" ]] && espeak "No player selected. EXIT" && exit 1
     else

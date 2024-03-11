@@ -31,7 +31,7 @@ while true; do
     if [ "$leverstate" = "on" ]; then
         echo "le boitier s'est éteint après vous avoir montré son message"
     else
-        sed -i='' 's/off/on/' ../logic/leverlogic.ben
+        sed -i 's/off/on/' ../logic/leverlogic.ben
         echo "vous appuyez sur le bouton rouge"
         sleep 3
         echo "vous entendez au loin un grincement au fond de la forêt."

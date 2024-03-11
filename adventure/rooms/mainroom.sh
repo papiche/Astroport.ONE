@@ -53,7 +53,7 @@ while true; do
             if [ "$leverstate2" = "on" ]; then
                 echo "La vitre est ouverte, vous avez récupéré le marteau."
             else
-                sed -i='' 's/off/on/' ../logic/leverlogic2.ben
+                sed -i 's/off/on/' ../logic/leverlogic2.ben
                 echo "Vous tirez sur le levier, celui-ci bloque un peu.."
                 sleep 3
                 echo "Après avoir forcé, le levier s'est abaissé."

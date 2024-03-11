@@ -111,9 +111,9 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
         UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
 
         echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' \
-            > ~/.zen/tmp/${MOATS}.http.grid
+            > ~/.zen/tmp/${MOATS}/http.grid
 
-        cp ~/.zen/tmp/${MOATS}.http.grid ~/.zen/tmp/${JSON}
+        cp ~/.zen/tmp/${MOATS}/http.grid ~/.zen/tmp/${JSON}
         cat ~/.zen/tmp/${JSON} >> ~/.zen/tmp/${MOATS}.http
 
         cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
@@ -127,44 +127,51 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
 
     ##############################################
     ## SEARCH FOR UPLANET TW NUMBERS IN THAT ZONE
-    echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}.http.grid
+    echo '{ "gridNumbers": [' >> ~/.zen/tmp/${MOATS}/http.grid
 
     for i in $(seq 0 9);
     do
-        ZLAT=$(echo "$LAT + ${DEG} * $i" | bc -l )
+
+        ZLAT=$(echo "$LAT + ${DEG} * $i" | bc -l)
         [[ -z  ${ZLAT} ]] && ZLAT=0
-        # [[ ! $(echo $ZLAT | grep "\." ) ]] && ZLAT="${ZLAT}."
-            for j in $(seq 0 9); do
-                ZLON=$(echo "$LON + ${DEG} * $j" | bc -l )
-                [[ -z  ${ZLON} ]] && ZLON=0
-                # [[ ! $(echo $ZLON | grep "\." ) ]] && ZLON="${ZLON}."
-                echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
-                swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-                nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-                totnum=$(( swarmnum + nodenum ))
 
-                [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum
+        for j in $(seq 0 9); do
 
-                [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONEINDEX}'" }
-                ,' >> ~/.zen/tmp/${MOATS}.http.grid \
-                    && echo "${DEG} :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONEINDEX}'" }'
+            ZLON=$(echo "$LON + ${DEG} * $j" | bc -l)
+            [[ -z  ${ZLON} ]] && ZLON=0
 
-            done
+            echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
+            swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            totnum=$(( swarmnum + nodenum ))
+
+            [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum
+
+            [[ $displaynum != "0" ]] && echo '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${displaynum}'", "ipns": "'${ZONEINDEX}'" }
+            ,' >> ~/.zen/tmp/${MOATS}/http.grid \
+                && echo "${DEG} :" '{"lat": '${ZLAT}', "lon": '${ZLON}', "number": "'${totnum}'", "ipns": "'${ZONEINDEX}'" }'
+
+        done
+
     done
 
-    sed -i '$ d' ~/.zen/tmp/${MOATS}.http.grid ## REMOVE LAST ','
-    echo ']}'  >> ~/.zen/tmp/${MOATS}.http.grid
+    [[ ! $(cat ~/.zen/tmp/${MOATS}/http.grid | tail -n 1 | grep 'gridNumbers' ) ]] \
+        && sed -i '$ d' ~/.zen/tmp/${MOATS}/http.grid ## REMOVE LAST ','
+
+    echo ']}'  >> ~/.zen/tmp/${MOATS}/http.grid
 
     echo "## ADD TO CACHE ~/.zen/tmp/${JSON}"
-    cp ~/.zen/tmp/${MOATS}.http.grid ~/.zen/tmp/${JSON}
+    cp ~/.zen/tmp/${MOATS}/http.grid ~/.zen/tmp/${JSON}
 
 fi
+
+cat ~/.zen/tmp/${JSON} | jq -c
 
 ### SEND RESPONSE ON PORT
 cat ~/.zen/tmp/${JSON} >> ~/.zen/tmp/${MOATS}.http
 (
     cat ~/.zen/tmp/${MOATS}.http | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-    rm ~/.zen/tmp/${MOATS}.http.grid 2>/dev/null
+    rm ~/.zen/tmp/${MOATS}/http.grid 2>/dev/null
     rm ~/.zen/tmp/${MOATS}.http && echo "BLURP ${JSON}"
 ) &
 ## CLEANING

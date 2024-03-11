@@ -10,6 +10,9 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 ME="${0##*/}"
 
+## LOG OUTPUT
+exec 2>&1 >> ~/.zen/tmp/mailjet.log
+
 echo '
 ########################################################################
 # \\///

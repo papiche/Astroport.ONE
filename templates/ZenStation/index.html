@@ -43,15 +43,19 @@ header {
       background: white;
       color: black;
   }
-#yellow {
-      background: black;
-      color: white;
-      position: absolute;
-      bottom: 2%;
-      left: 2%;
-      width: 60%;
-      visibility: hidden;
-    }
+#console {
+    visibility: visible;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    width: 70%;
+    height: 55%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 5px;
+    box-sizing: border-box;
+    z-index: 1000; /* Ensure the console appears above other elements */
+}
 #ainfo {
       position: absolute;
       top: 2%;
@@ -106,7 +110,13 @@ a {
     width: 400px;
     height: 400px;
 }
+#toggleConsoleButton {
+    cursor: pointer;
+}
 
+#fullscreenButton {
+    cursor: pointer;
+}
     </style>
 
   </head>
@@ -121,7 +131,7 @@ a {
             <input type='hidden' name='montant' value='0' >
             <input type='text' name='type' value='UPlanet' >
                 <input type='hidden' name='dice' value='6' >&nbsp;&nbsp;&nbsp;&nbsp;
-            <button type='submit'>create ZenCard</button>
+            <button type='submit'>new AstroID</button>
         </form>
     </div>
 </div>
@@ -133,7 +143,7 @@ a {
                 <h1><div id="countdown">___</div></h1>
                 <input type="hidden" id="PASS" value="PASS"/>
                 <p><input type="text" id="g1pub" value="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"/></p>
-                <p> destinataire</p>
+                <p> destination</p>
 
                 <div id="appname">
                   <input type="radio" id="r0" name="appname" value="login" checked="checked"> LOGIN
@@ -277,17 +287,41 @@ a {
       });
 
     </script>
-    <h1><button id="ainfo" onclick="javascript:var x = document.getElementById('yellow'); if (x.style.visibility === 'hidden') {x.style.visibility = 'visible';} else {x.style.visibility = 'hidden';}">0/1</button></h1>
-    <div id="yellow" ><a href="_STATION_" target="aframe">MENU</a>
+    <h1><button id="ainfo" onclick="javascript:var x = document.getElementById('console'); if (x.style.visibility === 'hidden') {x.style.visibility = 'visible';} else {x.style.visibility = 'hidden';}">0/1</button></h1>
+    <div id="console" >
+        <a href="_STATION_" target="aframe">CONSOLE</a>
+    &nbsp;&nbsp;&nbsp;<button id="fullscreenButton" onclick="toggleConsoleFullScreen()"> ^^ </button>&nbsp;&nbsp;&nbsp;<button onclick="hideConsole()"> X </button>
         <iframe name="aframe" id="aframe" src="_STATION_" width="100%" height="320px"></iframe>
     </div>
 
+    <script>
+        function toggleConsole() {
+            const console = document.getElementById('console');
+            console.style.visibility = (console.style.visibility === 'visible' ? 'hidden' : 'visible');
+        }
+
+        function hideConsole() {
+            document.getElementById('console').style.visibility = 'hidden';
+        }
+
+        function toggleConsoleFullScreen() {
+            const console = document.getElementById('console');
+
+            if (console.style.width === '100%' && console.style.height === '100%') {
+                console.style.width = '570px';
+                console.style.height = '480px';
+            } else {
+                console.style.width = '100%';
+                console.style.height = '100%';
+            }
+        }
+    </script>
     <script>
 
     let cookies = document.cookie;
     console.log(cookies);
 
-    const el = document.getElementById('yellow');
+    const el = document.getElementById('console');
 
     setTimeout(() => {
       el.style.visibility = 'visible';

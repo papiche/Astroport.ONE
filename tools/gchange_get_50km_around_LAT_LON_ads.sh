@@ -9,7 +9,25 @@ curl -sk -XPOST 'https://data.gchange.fr/market/record/_search?pretty&_source=ti
      "size": 100,
      "query": {
         "bool": {
-                must: {
+                 filter: [
+                    { term: { type: "offer" } }
+                    ,{
+                        range: {
+                            "stock": {
+                                gte: 1
+                            }
+                        }
+                    }
+                    ,{
+
+                        range: {
+                            price: {
+                                gt: 0
+                            }
+                        }
+                    }
+                ]
+                , must: {
                     match_all: {}
                 },
             "filter": [{

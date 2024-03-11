@@ -87,17 +87,28 @@ fi
 ###############################################################################
 if [[ ${QRCODE} == "station" ]]; then
 
+    ## CHECK FOR ANY ALREADY RUNNING make_image_ipfs_index_carousel
+    carouselrunning=$(ps axf --sort=+utime | grep -w 'make_image_ipfs_index_carousel' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
-        ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
-        ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
-        echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
+        if [[ $carouselrunning ]]; then
+            ISTATION="/ipfs/QmVTHH8sTXEqRBsvcKo5jDo16rvp7Q7ERyHZP5vmWUxeS6" ## G1WorldCrafting.jpg
+        else
+            ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
+            ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
+            echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
+        fi
     else
         ISTATION=$(cat ~/.zen/tmp/ISTATION)
     fi
 
+    ## LOG IPFSNODEID : IPCity + Wheater + more...
+    ${MY_PATH}/../tools/IPFSNODEID.weather.sh > ~/.zen/tmp/${IPFSNODEID}/weather.txt
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${ISTATION}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_index.html
+
     ## SHOW ZenStation FRONT
     sed "s~_STATION_~${myIPFS}${ISTATION}/~g" $MY_PATH/../templates/ZenStation/index.html > ~/.zen/tmp/${MOATS}/index.htm
-    [[ ! $isLAN ]] && sed -i "s~MENU~HOSTING~g" ~/.zen/tmp/${MOATS}/index.htm
+    sed -i "s~2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH~${WORLDG1PUB}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://127.0.0.1:33101~${myG1BILLET}~g" ~/.zen/tmp/${MOATS}/index.htm
     sed -i "s~http://astroport.localhost:1234~${myASTROPORT}~g" ~/.zen/tmp/${MOATS}/index.htm
@@ -484,7 +495,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                                 && ipfs name publish -k ${player}_${VoeuName} /ipfs/${MILGRAM} &
                             ) &
 
-                echo "<br>PLEASE RETRY IN 30 SECONDS GETTING MESSAGE FROM IPFS<br>" >> ~/.zen/tmp/${MOATS}/disco
+                echo "<br>PLEASE RETRY IN 30 SECONDS GETTING MESSAGE FROM IPFS<bipfsr>" >> ~/.zen/tmp/${MOATS}/disco
                 (
                     cat ~/.zen/tmp/${MOATS}/disco | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
                     echo "BLURP $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
@@ -602,7 +613,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
         ##############################################
         echo "## IPNS G1Voeu APP REDIRECT"
         tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${MOATS}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
-        cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
+        cat ~/.zen/tmp/${MOATS}.g1voeu.json | jq -r 'map(select(.wish != null)) | .[].wish' > ~/.zen/tmp/${MOATS}.g1wishes.txt
         cat ~/.zen/tmp/${MOATS}.g1wishes.txt
         while read WISH
         do
@@ -639,6 +650,7 @@ fi
 ################################################################################
 ## QRCODE = IPNS or G1PUB ? Can be ASTRONAUTENS or G1PUB format
 ZCHK="$(echo $THAT | cut -d ':' -f 2-)" # ChK or ZEN
+[[ $ZCHK == $THAT ]] && ZCHK=""
 QRCODE="${QRCODE%%:*}" ## TRIM :ChK
 ################################################################################
 ################################################################################
@@ -648,7 +660,7 @@ echo "IPNS2G1=${IPNS2G1} ZCHK=${ZCHK}"
 [[ ${ZCHK} == "" && ${#IPNS2G1} -ge 40 && ${QRCODE::4} == "12D3" ]] \
         && echo "${PORT} QRCODE IS IPNS ADDRESS : ${myIPFS}/ipns/${QRCODE}" \
         && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${myIPFS}/ipns/${QRCODE}'\" />Loading from IPFS"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
-        && echo "PRULS /ipns/${QRCODE} $PORT" && rm -Rf ~/.zen/tmp/${MOATS} \
+        && echo "GLUPS /ipns/${QRCODE} $PORT" && rm -Rf ~/.zen/tmp/${MOATS} \
         && exit 0
 
 ## TEST G1 TYPE  ( try g1_to_ipfs )
@@ -656,7 +668,7 @@ ASTROTOIPNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
         [[ ! ${ASTROTOIPNS} ]] \
         && echo "${PORT} INVALID QRCODE : ${QRCODE}" \
         && (echo "$HTTPCORS ERROR - INVALID QRCODE : ${QRCODE}"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
-        && echo "PRULS INVALID ${QRCODE} $PORT" && rm -Rf ~/.zen/tmp/${MOATS} \
+        && echo "GLUPS INVALID ${QRCODE} $PORT" && rm -Rf ~/.zen/tmp/${MOATS} \
         && exit 1
 ################################################################################
 echo "############################################################################"
@@ -671,29 +683,23 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
         && ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1) \
         || ZEN="-10"
 
-    DISPLAY="$VISITORCOINS G1"
+    DISPLAY="<h1>$VISITORCOINS G1</h1>"
 
     ## WALLET VIERGE
     ###########################################
     if [[ $VISITORCOINS == "null" || ${ZEN} -lt 10 ]]; then
 
-        echo "!! LOW ZEN WALLET ZEN=${ZEN}"
+        DISPLAY="$DISPLAY
+        <h2>!! LOW ZEN WALLET ZEN=${ZEN}<h2>"
 
-        echo "${HTTPCORS}" > ~/.zen/tmp/${MOATS}/index.redirect
-        echo "<h1>LOW ZEN WARNING</h1>
-        PLEASE CHARGE... only ${ZEN} ZEN
-        "  >> ~/.zen/tmp/${MOATS}/index.redirect
-        (
-        cat ~/.zen/tmp/${MOATS}/index.redirect | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
-        echo "BLURP null ZEN $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
-        ) &
-        exit 0
+        DISPLAY="$DISPLAY<h3>LOW ZEN WARNING</h3>
+        PLEASE CHARGE... ${ZEN} ZEN"
 
     fi
 
     ## WE SEND WALLET AMOUNT DISPLAY
     (
-    echo "$HTTPCORS  <h2>${ZCHK}:${QRCODE}</h2><h1>${DISPLAY}</h1><h2><a href='$myUPLANET/g1gate/?pubkey=$G1PUB'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
+    echo "$HTTPCORS ${QRCODE}:${ZCHK}:${DISPLAY}<h2><a href='$myUPLANET/g1gate/?pubkey="$QRCODE"'>SCAN WALLET</a><h2>"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
     echo "BLURP ${DISPLAY} $PORT" && rm -Rf ~/.zen/tmp/${MOATS}
     ) &
 

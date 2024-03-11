@@ -11,10 +11,12 @@ echo "ASTROPORT.ONE START
 @@@@@@@@@@@@@@@@@@
 $USER@$HOSTNAME
 @@@@@@@@@@@@@@@@@@"
+RUNLEVEL=$1
+[[ ! $RUNLEVEL ]] && RUNLEVEL="ON"
 
-echo "cron_VRFY.sh ON"
+echo "cron_VRFY.sh $RUNLEVEL"
 ###################################################
-${MY_PATH}/tools/cron_VRFY.sh ON
+${MY_PATH}/tools/cron_VRFY.sh $RUNLEVEL
 echo "ipfs start"
 sudo systemctl start ipfs
 sleep 5
@@ -23,6 +25,8 @@ sudo systemctl start astroport
 echo "g1billet start"
 sudo systemctl start g1billet
 
+########################################## NO systemctl mode ########
+### OLD METHOD USING SELF PID
 #~ echo "(RE)STARTING 12345.sh"
 #~ ###################################################
 #~ [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) \
