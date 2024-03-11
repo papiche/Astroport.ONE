@@ -57,8 +57,8 @@ for UMAP in ${unique_combined[@]}; do
     [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
     ## SECTOR BANK COORD
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
+    SECLAT="${LAT%.*}.1"
+    SECLON="${LON%.*}.1"
     ## REGION
     REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
     REGLON=$(echo ${LON} | cut -d '.' -f 1)
@@ -193,8 +193,8 @@ for UMAP in ${unique_combined[@]}; do
     # %%%%%%%%%% ##################################################
     ## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${SLAT}_${SLON}
     # %%%%%%%%%% ##################################################
-    SLAT="${LAT::-1}"
-    SLON="${LON::-1}"
+    SLAT="${LAT%.*}.1"
+    SLON="${LON%.*}.1"
     SECTOR="_${SLAT}_${SLON}"
     echo "SECTOR ${SECTOR}"
     ############################################################## "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
@@ -386,8 +386,8 @@ for UMAP in ${unique_combined[@]}; do
     echo "JSON UMAP WORLD READY /ipfs/${IAMAP}/world.js"
 ###########################################################################################
     ### APPLY ON APP MODEL
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
+    SECLAT="${LAT%.*}.1"
+    SECLON="${LON%.*}.1"
     SECTOR="_${SECLAT}_${SECLON}"
     TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
 

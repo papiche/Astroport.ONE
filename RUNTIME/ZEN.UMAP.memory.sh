@@ -32,8 +32,8 @@ LAT=$(echo ${UMAP} | cut -d '_' -f 2)
 LON=$(echo ${UMAP} | cut -d '_' -f 3)
 
 ## SECTOR COORD
-SECLAT="${LAT::-1}"
-SECLON="${LON::-1}"
+SECLAT="${LAT%.*}.1"
+SECLON="${LON%.*}.1"
 
 SECTOR="_${SECLAT}_${SECLON}"
 

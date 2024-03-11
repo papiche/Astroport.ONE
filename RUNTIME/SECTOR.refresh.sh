@@ -45,8 +45,8 @@ for UMAP in ${UMAPS[@]}; do
     [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
     [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
+    SECLAT="${LAT%.*}.1"
+    SECLON="${LON%.*}.1"
 
     MYSECTORS=("_${SECLAT}_${SECLON}" ${MYSECTORS[@]})
 

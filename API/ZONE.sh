@@ -71,8 +71,8 @@ echo "${THEDATE}"
 
     ## SECTOR LEVEL
     if [[ ${DEG} == "0.01" ]]; then
-        SECLAT="${LAT::-1}"
-        SECLON="${LON::-1}"
+        SECLAT="${LAT%.*}.1"
+        SECLON="${LON%.*}.1"
         SECTOR="_${SECLAT}_${SECLON}"
         echo "SECTOR = ${SECTOR}"
         ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")

@@ -30,7 +30,9 @@ mkdir -p ~/.zen/tmp/${MOATS}
         --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
     TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+                [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+                [[ $LON == "null" || $LON == "" ]] && LON="0.00"
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
 
@@ -42,8 +44,8 @@ mkdir -p ~/.zen/tmp/${MOATS}
     ##############################################################
     # UMAPG1PUB=$(${MY_PATH}/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
     ##############################################################
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
+    SECLAT="${LAT%.*}.1"
+    SECLON="${LON%.*}.1"
     SECTOR="_${SECLAT}_${SECLON}"
     ##############################################################
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
