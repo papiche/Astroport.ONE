@@ -12,6 +12,8 @@ TS=$(date -u +%s%N | cut -b1-13)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 #~ mkdir -p ~/.zen/tmp/${MOATS}
 
+CURRENT=$(cat ~/.zen/game/players/.current/.player)
+
 echo '
     _    ____ _____ ____   ___  ____   ___  ____ _____    ___  _   _ _____
    / \  / ___|_   _|  _ \ / _ \|  _ \ / _ \|  _ \_   _|  / _ \| \ | | ____|
@@ -19,14 +21,12 @@ echo '
  / ___ \ ___) || | |  _ <| |_| |  __/| |_| |  _ < | |   | |_| | |\  | |___
 /_/   \_\____/ |_| |_| \_\\___/|_|    \___/|_| \_\|_|    \___/|_| \_|_____|
 
-Ambassade numérique pair à pair sur IPFS.
+Astroport is a Web3 engine running UPlanet hosting TW5s on IPFS, and more...
 
 @@@@@@@@@@@@@@@@@@
 ASTROPORT
-VISA : MadeInZion
+DRAGON = ${CURRENT}
 @@@@@@@@@@@@@@@@@@'
-CURRENT=$(cat ~/.zen/game/players/.current/.player)
-echo "CURRENT = ${CURRENT}"
 echo
 
 ## VERIFY SOFTWARE DEPENDENCIES
@@ -37,7 +37,7 @@ YOU=$(myIpfsApi);
 echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
-PS3='DRAGON connectez votre PLAYER  ___ '
+PS3=' ____ Select  ___ ? '
 players=( "CREATE PLAYER" "IMPORT PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 ## MULTIPLAYER
 
@@ -67,17 +67,21 @@ select fav in "${players[@]}"; do
         echo "'Email ?'"
         read EMAIL
         [[ ${EMAIL} == "" ]] && break
-        echo "'Latitude (precision 0.01°) ?'"
+        echo "'Secret 1'"
+        read PPASS
+        [[ ${PPASS} == "" ]] \
+            && PPASS=$(${MY_PATH}/tools/diceware.sh $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) | xargs)
+        echo "'Secret 2'"
+        read NPASS
+        [[ ${NPASS} == "" ]] \
+            && NPASS=$(${MY_PATH}/tools/diceware.sh $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) | xargs)
+        echo "'Latitude ?'"
         read LAT
         [[ ${LAT} == "" ]] && LAT="0.00"
         echo "'Longitude ?'"
         read LON
         [[ ${LON} == "" ]] && LON="0.00"
-
-        PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 4) ## STRONGER TW SECURITY "AlpH4nUm"
-        NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
-
-        ${MY_PATH}/RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
+        ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
         fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
         echo "Astronaute $fav bienvenue sur UPlanet..."
         exit
@@ -112,7 +116,7 @@ PLAYER=$fav
 
 pass=$(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)
 ########################################## DEVEL
-echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read PASS
+echo "Saisissez votre PASS -- FREE MODE -- $pass" && read PASS
 
 ## DECODE CURRENT PLAYER CRYPTO
 # echo "********* DECODAGE SecuredSocketLayer *********"
@@ -121,11 +125,11 @@ echo "Saisissez votre PASS -- UPGRADE CRYPTO FREELY -- $pass" && read PASS
 [[ $PASS != $pass ]] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
 ## CURRENT CHANGE ?
-[[  ${CURRENT} !=  ${PLAYER} ]] \
-&& echo "BECOME ADMIN ? hit ENTER for NO, write something for YES" && read ADM \
-&& [[ ${ADM} != "" ]] \
-&& rm -f ~/.zen/game/players/.current \
-&& ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+#~ [[  ${CURRENT} !=  ${PLAYER} ]] \
+#~ && echo "BECOME ADMIN ? hit ENTER for NO, write something for YES" && read ADM \
+#~ && [[ ${ADM} != "" ]] \
+#~ && rm -f ~/.zen/game/players/.current \
+#~ && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 echo "________LOGIN OK____________";
 echo

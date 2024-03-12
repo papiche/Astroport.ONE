@@ -420,8 +420,12 @@ myAstroTube() {
 function makecoord() {
     local input="$1"
 
+    input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')  # Ensure has exactly two decimal places
+
     if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
         input="${input}0"
+    elif [[ ${input} =~ ^-?[0-9]+\.$ ]]; then
+        input="${input}00"
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
         input="${input}.00"
     fi

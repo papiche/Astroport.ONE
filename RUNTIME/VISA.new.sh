@@ -563,7 +563,7 @@ echo "<html><head>
     }
 </style></head>
 <body>
-<h1>UPlanet : ZenCard + <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
+<h1>UPlanet : <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
 asciiart="${MY_PATH}/../images/astroport.art"
 while IFS= read -r line
 do
@@ -571,8 +571,8 @@ do
     echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 done <"$asciiart"
 
-echo "<h2>PRINT & SHARE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
-<img src='${myIPFSGW}${IASTRO}'\><br>
+echo "<br><img src='${myIPFSGW}${IASTRO}'\>
+<h2>PRINT & SHARE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
 </body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
