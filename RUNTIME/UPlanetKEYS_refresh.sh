@@ -14,6 +14,11 @@ exec 2>&1 >> ~/.zen/tmp/_12345.log
 
 echo "=========================="
 echo "(◕‿◕ ) ${ME} (◕‿◕ ) "
+#~ ## CHECK IF ALREADY MErunning
+countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|grep' | wc -l)
+[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
+
+echo "(◕‿◕ ) ${ME} starting UPlanet Key Scan _______________________________"
 
 ## LOCAL
 LWKEYS=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
@@ -30,12 +35,6 @@ SKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/SECTORS/_*_*/_*.?_*.?/_index.html 2>/
 echo ${#SKEYS[@]}  " swarm SECTORS"
 RKEYS=($(cat ~/.zen/tmp/swarm/12D*/UPLANET/REGIONS/_*_*/_index.html 2>/dev/null | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf ))
 echo ${#RKEYS[@]} " swarm REGIONS"
-
-#~ ## CHECK IF ALREADY MErunning
-countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|grep' | wc -l)
-[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
-
-echo "(◕‿◕ ) ${ME} starting UPlanet Terraformation _______________________________"
 
 ## COMBINE & SHUFFLE KEYS
 combined=("${LWKEYS[@]}" "${LSKEYS[@]}" "${LRKEYS[@]}" "${WKEYS[@]}" "${SKEYS[@]}" "${RKEYS[@]}")
