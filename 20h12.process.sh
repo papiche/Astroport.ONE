@@ -16,7 +16,6 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
-### STOP ASTROPORT DURING 20H12 UPDATE ###
 #~ sudo systemctl stop astroport
 ## CHECK IF IPFS NODE IS RESPONDING
 ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
@@ -44,6 +43,9 @@ mv ~/.zen/tmp/coucou ~/.zen/coucou
 rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
+
+### DELAY 12345 ASTROPORT DURING 20H12 UPDATE ###
+echo 9000 > ~/.zen/tmp/random.sleep
 
 ## UPDATE G1BILLETS code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
