@@ -282,6 +282,7 @@ sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/
 cat ${MY_PATH}/../templates/data/AstroID.json \
     | sed -e "s~/ipfs/bafybeifbebc3ewnzrzbm44arddedbralegnxklhua5d5ymzaqtf2kaub7i~${ASTROQR}~g" \
             -e "s~_PLAYER_~${PLAYER}~g" \
+            -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
             -e "s~_HPASS_~${HPASS}~g" \
