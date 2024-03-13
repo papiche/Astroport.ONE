@@ -240,7 +240,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     cat ${MY_PATH}/../templates/data/ALLO.json \
         | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
-        -e "s~_PHONEBOOTH_~${PLAYER}~g" \
+        -e "s~_PHONEBOOTH_~${PLAYER/@/\.}~g" \
             > ~/.zen/tmp/${MOATS}/ALLO.json
 
     ipfs key rm "temp" >/dev/null 2>&1
