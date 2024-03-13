@@ -467,7 +467,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## IPFS ADD & PUBLISH
     ##########################################
     TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-    ipfs --timeout 180s name publish --key=${PLAYER} /ipfs/${TW}
+    ipfs --timeout 720s name publish --key=${PLAYER} /ipfs/${TW}
 
     ## LOCAL PLAYER CACHING
     echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
