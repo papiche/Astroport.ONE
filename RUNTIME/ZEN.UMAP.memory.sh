@@ -59,7 +59,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     if [[ $ipfs_pop ]]; then
         echo "FOUND $todate MEMORY SLOT"
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .g1pub' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
-        [[ "$g1pub" != "$G1PUB" ]] && echo "ALERT :: $g1pub Memory HIJACK" && YESTERDATE="$G1PUB" ## SECURITY BREACH
+        [[ "$g1pub" != "$G1PUB" ]] && echo "INFO :: $g1pub Memory updater"
         [[ "$todate" == "$YESTERDATE" ]] \
             && ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
             || echo "$ipfs_pop ERROR ... not from $YESTERDATE ... "
