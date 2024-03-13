@@ -2,7 +2,7 @@
   {
     "created": "_MOATS_",
     "modified": "_MOATS_",
-    "title": "_SECTOR_.news",
+    "title": "_SECTOR_.NEWS",
     "text": "\\procedure loadMyWiki()\n\\import [[$:/plugins/sq/ExternalContent/loadWikiActions]]\n<$transclude\n    $variable=\"loadWikiActions\"\n    wikiURL={{!!wikiURL}}\n    contentFilter={{!!filter}}\n    deserializer=\"text/html\"\n    />\n\\end\n\n<details open=\"yes\">\n <summary>NEWS :</summary>\n  <div>\n\n<$edit size=60 field=\"wikiURL\"/> ⬅︎  TW <br>\n<$edit size=50 field=\"filter\"/> ⬅︎ Filtration\n\n<<hspace>><$button actions=<<loadMyWiki>> > _SECTOR_ (⌐■_■) </$button>\n\n  </div>\n </details>\n\n",
     "tags": "load-external _PLAYER_ _SECTOR_ $:/tags/load-external-content",
     "filter": "[days[-7]!is[system]!tag[G1Voeu]]",
