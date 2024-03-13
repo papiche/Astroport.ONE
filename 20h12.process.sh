@@ -17,7 +17,7 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
 #~ sudo systemctl stop astroport
-## CHECK IF IPFS NODE IS RESPONDING
+## CHECK IF IPFS NODE IS RESPONDING (ipfs name resolve ?)
 ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
 [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
     && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \

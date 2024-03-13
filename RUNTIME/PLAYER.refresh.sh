@@ -356,7 +356,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                     > ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json
 
             echo "Insert New ${FPLAYER^^}.json"
-            cat ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json | jq
+            #~ cat ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json | jq
 
             tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --import ${HOME}/.zen/tmp/${MOATS}/${FPLAYER^^}.json 'application/json' \
