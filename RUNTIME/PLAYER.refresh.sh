@@ -236,6 +236,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ cat ~/.zen/tmp/${MOATS}/GPS.json
     echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
 
+    # MAKE "ALLO" TIDDLER
+    cat ${MY_PATH}/../templates/data/ALLO.json \
+        | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
+        -e "s~_MOATS_~${MOATS}~g" \
+        -e "s~_PHONEBOOTH_~${PLAYER}~g" \
+            > ~/.zen/tmp/${MOATS}/ALLO.json
+
     ipfs key rm "temp" >/dev/null 2>&1
 
     ## STORE IN PLAYER CACHE
@@ -421,6 +428,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## WRITE TIDDLERS IN TW SECTORTW_NEWS.json
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
+                --import ~/.zen/tmp/${MOATS}/ALLO.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
