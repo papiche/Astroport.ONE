@@ -64,6 +64,10 @@ for key in ${UKEYS[@]}; do
         && medo=$((medo +1)) && floop=$((floop -1)) \
         || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
 
+    ## TODO search for TW /ipfs/ and refresh
+    #~ TWS=($(cat ~/.zen/tmp/flashmem/$key/TW/*/index.html))
+
+
     [ $floop -gt 33 ] && break
 
 done

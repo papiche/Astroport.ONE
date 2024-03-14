@@ -483,7 +483,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## CREATING 30 DAYS JSON RSS STREAM
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/game/players/${PLAYER}/ipfs \
-        --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
+        --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]!tag[load-external]]'
 
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
         && echo "NO ${PLAYER} RSS - BAD "
@@ -558,9 +558,14 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${TW}'\" />${TODATE}:${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/index.html
         ## IPNS UMAP _index.html ##
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />_${LAT}_${LON}" \
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />${TODATE}:_${LAT}_${LON}" \
                 > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html
 
+        ## IF PLAYER INACTIVE PAY 1 ZEN TO UMAPG1PUB
+        [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]] \
+            && UMAPG1PUB=$(${MY_PATH}/../tools/keygen "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}") \
+            && YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}") \
+            && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
 
     fi
 

@@ -317,12 +317,9 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
     to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
     echo "************************************************************"
-    YUSER=$(echo ${PLAYER} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
-    LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
-    CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
-    YOMAIN=$(echo ${PLAYER} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
+    YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$CLYUSER$YOMAIN:/ipfs/${MYWISHFLUX}"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$YOUSER:/ipfs/${MYWISHFLUX}"
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR

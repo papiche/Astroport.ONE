@@ -1,1 +1,19 @@
-[{"created":"20220626175330872","text":"! ''MadeInZion is a worldwide community of people maintaining peace and restoring harmony''\n\n!! UPlanet community can share, fork, merge and sign Tiddlers giving birth to a Dynamic Trustfull Common Information System\n\n> DO NOT DELETE THIS \"TIDDLER\" {{{ [{$:/info/url/protocol}match[http:]then[ipfs]else[online]] }}}","creator":"_PSEUDO_","title":"MadeInZion","modified":"20240306133009618","tags":"_PLAYER_","player":"_PLAYER_","astroport":"_ASTROPORT_","number":"_NUMBER_","secret":"_SECRET_","wishkey":"_WISHKEY_","modifier":"_PSEUDO_","sector":"_SECTOR_","root":"_ROOT_","dao":"_DAO_"}]
+[
+  {
+    "created": "20220626175330872",
+    "text": "! ''MadeInZion is a worldwide community of people maintaining peace and restoring harmony''\n\n!! UPlanet community can share, fork, merge and sign Tiddlers giving birth to a Dynamic Trustfull Common Information System\n\n> DO NOT DELETE THIS \"TIDDLER\" {{{ [{$:/info/url/protocol}match[http:]then[ipfs]else[online]] }}}",
+    "creator": "_PSEUDO_",
+    "title": "MadeInZion",
+    "modified": "20240306133009618",
+    "tags": "_PLAYER_",
+    "player": "_PLAYER_",
+    "astroport": "_ASTROPORT_",
+    "number": "_NUMBER_",
+    "secret": "_SECRET_",
+    "wishkey": "_WISHKEY_",
+    "modifier": "_PSEUDO_",
+    "sector": "_SECTOR_",
+    "root": "_ROOT_",
+    "dao": "_DAO_"
+  }
+]
