@@ -123,7 +123,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         [[ $try == 0 ]] \
             && echo "PLAYER ${PLAYER} UNPLUG" \
-            && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} \
+            && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL" \
             && continue
 
         try=$((try-1))
@@ -138,7 +138,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #############################################################
     ## FOUND TW
     #############################################################
-    ## CHECK WHO IS ACTUAL OFFICIAL GATEWAY
+    ## CHECK IF OFFICIAL MadeInZion TW
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
@@ -146,16 +146,23 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
 
     player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
+    #############################################################
+    ## REAL PLAYER REMOVE AstroID
+    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        --output ~/.zen/tmp/${MOATS} \
+        --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID' ## AstroID Tiddler
 
-    ## EXTRACT "$:/config/NewTiddler/Tags"
+    ###############################################################################
+    ## EXTRACT "$:/config/NewTiddler/Tags" ## Astroport :: Lasertag :: TW plugin ##
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'TWsign.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/config/NewTiddler/Tags' ## $:/config/NewTiddler/Tags Tiddler
     signature=$(cat ~/.zen/tmp/${MOATS}/TWsign.json | jq -r .[].text)
     echo "${player} SIGNATURE = $signature"
 
-    [[ ${player} != ${PLAYER} ]] \
-        && echo "> BAD PLAYER=$player in TW" \
+    ############################################################ BAD TW SIGNATURE
+    [[ ${player} != ${PLAYER} || ${PLAYER} != ${signature} ]] \
+        && echo "> (☓‿‿☓) BAD PLAYER=$player in TW (☓‿‿☓)" \
         && continue \
         || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
@@ -176,18 +183,21 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     echo "ASTROPORT ZenStation : ${ASTROPORT}"
     echo "TW was created $days days ago"
+    ## REMOVE TW OLDER THAN 7 DAYS WITH AstroID
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 ]] \
+        && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
+        && echo "(#__#) AstroID SECURITY ERROR (#__#)" && continue
+
     echo "CURCHAIN=${CURCHAIN}"
-
     IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
-
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
     if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
-        echo "> I AM ${IPFSNODEID}  :  PLAYER MOVED TO ${IPNSTAIL} : EJECTION "
-        echo "UNPLUG PLAYER"
-        ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
-        echo ">>>> ASTRONAUT ${PLAYER} TW CAPSULE EJECTION TERMINATED"
+        echo "> PLAYER MOVED TO ${IPNSTAIL} : UNPLUG "
+        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
+        echo ">>>> CIAO ${PLAYER}"
         continue
     fi
+
 
     ######################################
     #### UPLANET GEO COORD EXTRACTION
@@ -201,8 +211,8 @@ for PLAYER in ${PLAYERONE[@]}; do
                 [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
     SECTOR="_${LAT::-1}_${LON::-1}"
-    ## UMAP TODATENS ################
-
+    ## CALCULATE UMAP TODATENS ################
+    ######################################
     ipfs key rm "temp" >/dev/null 2>&1
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
     UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
@@ -211,11 +221,12 @@ for PLAYER in ${PLAYERONE[@]}; do
         > ~/.zen/tmp/${MOATS}/GPStw.json \
         && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
     sed -i "s~_UMAPNS_~${UMAPNS}~g" ~/.zen/tmp/${MOATS}/GPS.json
+        ###################################### INJECT JSON
 
     #~ cat ~/.zen/tmp/${MOATS}/GPS.json
     echo "UMAP _${LAT}_${LON} UMAPNS=/ipns/${UMAPNS}"
 
-    ## SECTOR TODATENS ################
+    ## CALCULATE SECTOR TODATENS ################
     ipfs key rm "temp" >/dev/null 2>&1
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
     TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
@@ -224,7 +235,9 @@ for PLAYER in ${PLAYERONE[@]}; do
         > ~/.zen/tmp/${MOATS}/GPSsec.json \
         && mv ~/.zen/tmp/${MOATS}/GPSsec.json ~/.zen/tmp/${MOATS}/GPS.json
     sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
+        ###################################### INJECT JSON
 
+    ######################################
     # (RE)MAKE "SECTORTW_NEWS" TIDDLER
     cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
         | sed -e "s~_SECTOR_~${SECTOR}~g" \
@@ -232,10 +245,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
-    #~ cat ~/.zen/tmp/${MOATS}/GPS.json
     echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
 
 
+    ################# PERSONAL VDO.NINJA ADDRESS)
     PHONEBOOTH=${PLAYER/@/_}
     PHONEBOOTH=${PHONEBOOTH/\./_}
 
@@ -248,43 +261,9 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ipfs key rm "temp" >/dev/null 2>&1
 
-    ## STORE IN PLAYER CACHE
+    ## UPDATE PLAYER CACHE
     echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
     cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
-
-    #############################################################
-    # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
-    ##############################################################
-    echo "##################################################################"
-
-    [[ $(echo "$COINS >= 500" | bc -l) -eq 1 ]]  \
-        && echo "## Connect_PLAYER_To_Gchange.sh" \
-        && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
-
-    ##############################################################
-    # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
-    ##############################################################
-    if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
-        ##############################################################
-        # G1PalPay.sh #
-        ##############################################################
-        echo "## RUNNING G1PalPay Wallet Monitoring "
-        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
-
-        ##############################################################
-        # VOEUX.create.sh #
-        ##############################################################
-        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
-
-        ##############################################################
-        # VOEUX.refresh.sh #
-        ##############################################################
-        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
-
-    else
-        echo "> ZenCard not activated ($ZEN ZEN)"
-    fi
 
     #####################################################################
     # (RE)MAKE "CESIUM" TIDDLER
@@ -399,14 +378,45 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## GET $:/moa Tiddlers ####################################### END
     #####################################################################
 
+    #############################################################
+    # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
+    ##############################################################
+    #~ echo "##################################################################"
+
+    #~ [[ $(echo "$COINS >= 500" | bc -l) -eq 1 ]]  \
+        #~ && echo "## Connect_PLAYER_To_Gchange.sh" \
+        #~ && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
+        #~ || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
+
+    ##############################################################
+    # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
+    ##############################################################
+    if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
+        ##############################################################
+        # G1PalPay.sh #
+        ##############################################################
+        echo "## RUNNING G1PalPay Wallet Monitoring "
+        ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
+
+        ##############################################################
+        # VOEUX.create.sh #
+        ##############################################################
+        ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
+
+        ##############################################################
+        # VOEUX.refresh.sh #
+        ##############################################################
+        ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+
+    else
+        echo "> ZenCard not activated ($ZEN ZEN)"
+    fi
+
     ###################
     # REFRESH PLAYER_feed KEY
     ##################################
-    echo "# TW : GW API + LightBeam Feed + Friends"
-    TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
-
-    FEEDNS=$(ipfs key list -l  | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
-    [[ ! ${FEEDNS} ]] && echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR" && continue
+    #~ echo "# TW : GW API + LightBeam Feed + Friends"
+    #~ TUBE=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 3)
 
     # WRITE lightbeam params
     #~ echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
@@ -420,10 +430,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ echo '[{"title":"$:/ipfs/saver/gateway/http/localhost","tags":"$:/ipfs/core $:/ipfs/saver/gateway","text":"'$myIPFS'"}]' > ~/.zen/tmp/${MOATS}/8080.json
 
     ## COPY DATA PRODUCED BY GCHANGE STAR EXTRACTION
-    FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
-    echo "★★★★★ FRIENDS  FEEDS : "${FRIENDSFEEDS}
-    ASTRONAUTES=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTES 2>/dev/null)
-    echo "★★★★★ FRIENDS TW : "${ASTRONAUTES}
+    #~ FRIENDSFEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/FRIENDSFEEDS 2>/dev/null)
+    #~ echo "★★★★★ FRIENDS  FEEDS : "${FRIENDSFEEDS}
+    #~ ASTRONAUTES=$(cat ~/.zen/tmp/${IPFSNODEID}/RSS/${PLAYER}/ASTRONAUTES 2>/dev/null)
+    #~ echo "★★★★★ FRIENDS TW : "${ASTRONAUTES}
 
     ## Change TW FRIENDFEED ie PLAYER RSS IPNS (must fix TW plugin to work)
     #~ echo '[{"title":"$:/plugins/astroport/lightbeams/state/subscriptions","text":"'${FRIENDSFEEDS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/friends.json
@@ -500,7 +510,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #### PLAYER ACCOUNT IS ACTIVE ? #########
     if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]]; then
         echo "RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --"
-
+        ## DEAD PLAYER ??
         if [[ $(echo "$COINS < 2.1" | bc -l) -eq 1 ]]; then
             if [[ ${DIFF_SECONDS} -eq $(( 27 * 24 * 60 * 60 )) ]]; then
                 echo "<html><body><h1>WARNING.</h1> Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert
@@ -511,17 +521,24 @@ for PLAYER in ${PLAYERONE[@]}; do
             fi
             if [[ ${DIFF_SECONDS} -gt $(( 29 * 24 * 60 * 60 )) ]]; then
                 echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
-                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER}
+                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
                 continue
             fi
         fi
+    else
+    ### PUBLISH RSS &
+        FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
+        [[ ! ${FEEDNS} ]] \
+            && IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
+            && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} & \
+            || echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR"
+
     fi
 
     #################################### UNPLUG ACCOUNT
 
-    ### PUBLISH RSS &
-    IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-        && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} &
+
+
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"

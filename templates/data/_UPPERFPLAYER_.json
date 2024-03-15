@@ -3,7 +3,7 @@
     "created": "_MOATS_",
     "modified": "_MOATS_",
     "title": "_UPPERFPLAYER_",
-    "text": "\\procedure loadMyWiki()\n\\import [[$:/plugins/sq/ExternalContent/loadWikiActions]]\n<$transclude\n    $variable=\"loadWikiActions\"\n    wikiURL={{!!wikiURL}}\n    contentFilter={{!!filter}}\n    deserializer=\"text/html\"\n    />\n\\end\n\n<details open=\"yes\">\n <summary>_UPPERFPLAYER_ TW:</summary>\n  <div>\n\n<$edit size=60 field=\"wikiURL\"/> ⬅︎  TW <br>\n<$edit size=50 field=\"filter\"/> ⬅︎ Filtration\n\n<<hspace>><$button actions=<<loadMyWiki>> > _UPPERFPLAYER_ TW </$button>\n\n  </div>\n </details>\n\n [[EXTERNAL|EXTERNAL]] \n\n [[_UPPERFPLAYER_|_UPPERFPLAYER_]] \n\n<a target=\"_blank\" href={{{ [[/..]addsuffix{!!wikiURL}] }}} >VISIT TW</a> \n",
+    "text": "\\procedure loadMyWiki()\n\\import [[$:/plugins/sq/ExternalContent/loadWikiActions]]\n<$transclude\n    $variable=\"loadWikiActions\"\n    wikiURL={{!!wikiURL}}\n    contentFilter={{!!filter}}\n    deserializer=\"text/html\"\n    />\n\\end\n\n<details close=\"yes\">\n <summary> [[_UPPERFPLAYER_|_UPPERFPLAYER_]] </summary>\n  <div>\n\n<$edit size=56 field=\"wikiURL\"/> ⬅︎  TW <br>\n<$edit size=42 field=\"filter\"/> ⬅︎ Filtration\n\n<<hspace>>\n\n</div>\n </details>\n\n<$button actions=<<loadMyWiki>> > _UPPERFPLAYER_ (⌐■_■) </$button>\n\n [[EXTERNAL|EXTERNAL]] (<a target=\"_blank\" href={{{ [[/..]addsuffix{!!wikiURL}] }}} >TW</a>) \n",
     "tags": "load-external _PLAYER_ $:/tags/SideBar",
     "ihash": "_IHASH_",
     "filter": "[days[-1]!is[system]!tag[G1Voeu]]",
