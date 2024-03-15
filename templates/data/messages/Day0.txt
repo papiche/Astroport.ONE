@@ -1,0 +1,25 @@
+Bro,
+
+Bienvenue sur UPlanet!
+Tu as reçu 21 ZEN pour essayer nos services.
+
+Ton nom d'utilisateur est _PLAYER_
+
+Pour confirmer ton inscription, tu dois imprimer puis effacer ton AstroID
+_TW_#AstroID
+
+Il te reste 7 jours pour le faire...
+
+Pendant ce temps, nous te proposons de lire un message par jour pour découvir UPlanet...
+... et peut-être rejoindre la toile de confiance des Dragons ...
+
+Ton "AstroID" est chiffré par code PIN
+qui permet de dévoiler ses SECRET1="_SALT_" et SECRET2="_PEPPER_"
+Il s'agit d'un "coffre fort numérique papier".
+
+La carte d'accès au "réseau administratif" sur UPlanet.
+
+Il est associé à une "ZenCard".
+A la fois RIB, carte de visite, application de stockage.
+
+Adresse vers votre TW.
