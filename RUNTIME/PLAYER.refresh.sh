@@ -298,7 +298,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             > ~/.zen/tmp/${MOATS}/CESIUM.json
 
     #####################################################################
-    #####################################################################
+    ########## $:/moa picture ## lightbeams replacement ###############
     ## GET $:/moa Tiddlers ####################################### START
     echo "GET $:/moa Tiddlers"
     ###################################################### [tag[$:/moa]]
@@ -410,9 +410,11 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ! ${FEEDNS} ]] && echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR" && continue
 
     # WRITE lightbeam params
-    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
-    echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
+    #~ echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-name","text":"'${PLAYER}_feed'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-name.json
+    #~ echo '[{"title":"$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key","text":"'${FEEDNS}'","tags":""}]' > ~/.zen/tmp/${MOATS}/lightbeam-key.json
 
+                #~ --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
+                #~ --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
     ###########################
     # UPDATE GW & API
     #~ echo '[{"title":"$:/ipfs/saver/api/http/localhost/5001","tags":"$:/ipfs/core $:/ipfs/saver/api","text":"'$(myPlayerApiGw)'"}]' > ~/.zen/tmp/${MOATS}/5001.json
@@ -436,8 +438,6 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --import ~/.zen/tmp/${MOATS}/ALLO.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
-                --import ~/.zen/tmp/${MOATS}/lightbeam-name.json "application/json" \
-                --import ~/.zen/tmp/${MOATS}/lightbeam-key.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
     ## CHECK IT IS OK
