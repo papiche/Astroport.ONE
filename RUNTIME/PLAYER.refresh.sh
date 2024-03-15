@@ -520,8 +520,9 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #################################### UNPLUG ACCOUNT
 
+    ### PUBLISH RSS &
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-        && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
+        && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} &
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
@@ -553,10 +554,13 @@ for PLAYER in ${PLAYERONE[@]}; do
             ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/RSS/
 
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
-        #~ cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/
-        ## IPFS PLAYER TW ##
+        ## IPFS PLAYER TW #
+        # /ipfs/${TW}
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${TW}'\" />${TODATE}:${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/index.html
+        # /ipns/${ASTRONAUTENS}
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />${PLAYER}" \
+                > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/_index.html
         ## IPNS UMAP _index.html ##
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${UMAPNS}'\" />${TODATE}:_${LAT}_${LON}" \
                 > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/_index.html

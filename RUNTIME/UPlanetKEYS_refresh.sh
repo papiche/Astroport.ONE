@@ -64,9 +64,15 @@ for key in ${UKEYS[@]}; do
         && medo=$((medo +1)) && floop=$((floop -1)) \
         || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
 
-    ## TODO search for TW /ipfs/ and refresh
-    #~ TWS=($(cat ~/.zen/tmp/flashmem/$key/TW/*/index.html))
-
+    ## Search for TW /ipfs/ and refresh
+    #~ TWS=($(cat ~/.zen/tmp/flashmem/$key/TW/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
+    #~ for tw in ${TWS[@]}; do
+        #~ mkdir -p ~/.zen/tmp/flashmem/tw/$tw
+        #~ ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/tw/$tw /ipns/$tw
+        #~ [[ $? == 0 ]] \
+            #~ && medo=$((medo +1)) && floop=$((floop -1)) \
+            #~ || rm -Rf ~/.zen/tmp/flashmem/tw/$tw
+    #~ done
 
     [ $floop -gt 33 ] && break
 
