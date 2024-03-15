@@ -348,7 +348,7 @@ for SECTOR in ${SECTORS[@]}; do
     ###############################
     echo "% PUBLISHING ${SECTOR} ${myIPFS}/ipns/${TODATENS}"
     start=`date +%s`
-    ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
+    ipfs --timeout 180s name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
     ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
 
 ######################################################

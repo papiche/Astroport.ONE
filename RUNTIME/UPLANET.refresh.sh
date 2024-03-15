@@ -449,7 +449,7 @@ for UMAP in ${unique_combined[@]}; do
 
     echo "PUBLISHING ${TODATE} UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
 
-    ipfs name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
+    ipfs --timeout 180s name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
     end=`date +%s`
     echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 

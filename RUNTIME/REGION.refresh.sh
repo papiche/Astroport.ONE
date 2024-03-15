@@ -169,7 +169,7 @@ for REGION in ${REGIONS[@]}; do
     fi
 
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
-    ipfs name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
+    ipfs --timeout 180s name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
 
 
     ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} > /dev/null 2>&1

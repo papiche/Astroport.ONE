@@ -521,7 +521,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #################################### UNPLUG ACCOUNT
 
     IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-        && ipfs name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
+        && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS}
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
