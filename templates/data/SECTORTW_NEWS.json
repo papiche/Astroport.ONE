@@ -6,7 +6,7 @@
     "text": "\\procedure loadMyWiki()\n\\import [[$:/plugins/sq/ExternalContent/loadWikiActions]]\n<$transclude\n    $variable=\"loadWikiActions\"\n    wikiURL={{!!wikiURL}}\n    contentFilter={{!!filter}}\n    deserializer=\"text/html\"\n    />\n\\end\n\n<details close=\"yes\">\n <summary>[[_SECTOR_.NEWS|_SECTOR_.NEWS]]</summary>\n  <div>\n\n<$edit size=60 field=\"wikiURL\"/> ⬅︎  TW <br>\n<$edit size=50 field=\"filter\"/> ⬅︎ Filtration\n\n<<hspace>>\n\n  </div>\n </details>\n\n<$button actions=<<loadMyWiki>> > _SECTOR_ (⌐■_■) </$button> (<a target=\"_blank\" href={{{ [[.]addsuffix{!!wikiURL}] }}} >TW</a>) \n",
     "tags": "load-external _SECTOR_ $:/tags/SideBar",
     "filter": "[days[-7]!is[system]!tag[G1Voeu]]",
-    "caption": " ❂ ",
+    "caption": "_SECTOR_",
     "wikiURL": "_SECTORTW_"
   }
 ]

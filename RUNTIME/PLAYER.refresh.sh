@@ -340,7 +340,6 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_FPLAYER_~${FPLAYER}~g" \
                 -e "s~_MOATS_~${MOATS}~g" \
                 -e "s~_IHASH_~${IHASH}~g" \
-                -e "s~EXTERNAL~${FPLAYER}~g" \
                 -e "s~_FRIENDTW_~${FTW}~g" \
                 -e "s~_PLAYER_~${PLAYER}~g" \
                     > ~/.zen/tmp/${MOATS}/${FPLAYER^^}.json
