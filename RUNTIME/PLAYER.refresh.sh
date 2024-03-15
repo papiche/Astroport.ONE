@@ -61,7 +61,6 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ZEN (= 10 €/OC) ?
     echo "## >>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
-
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
 
