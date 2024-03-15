@@ -64,7 +64,7 @@ echo "ACTIVATED REGIONS : ${REGIONS[@]}"
 
 for REGION in ${REGIONS[@]}; do
 
-    echo "_____REGION ${REGION}"
+    echo "_____REGION ${REGION}  $(date)"
     mkdir -p ~/.zen/tmp/${MOATS}/${REGION}
     REGLAT=$(echo ${REGION} | cut -d '_' -f 2)
     REGLON=$(echo ${REGION} | cut -d '_' -f 3)

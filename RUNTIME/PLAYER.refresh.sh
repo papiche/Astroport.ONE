@@ -48,7 +48,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "############################################ ~/.zen/tmp/${MOATS}"
     echo "##################################################################"
     echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW "
-    echo "##################################################################"
+    echo "################################################ $(date)"
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
