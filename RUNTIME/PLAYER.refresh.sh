@@ -184,7 +184,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "ASTROPORT ZenStation : ${ASTROPORT}"
     echo "TW was created $days days ago"
     ## REMOVE TW OLDER THAN 7 DAYS WITH AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 ]] \
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 && ( $COINS == "null" || $ZEN -le 10 ) ]] \
         && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && echo "(#__#) AstroID SECURITY ERROR (#__#)" && continue
 

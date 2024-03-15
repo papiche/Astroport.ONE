@@ -47,7 +47,7 @@ sleep 3 ## Wait for ()&
     && echo "Valid AMOUNT=${AMOUNT}" \
     || { echo "ERROR NOT a valid AMOUNT : ${AMOUNT} - EXIT -" && exit 1; }
 [[ $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]] \
-    && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS - EXIT -" && exit 1
+    && echo "ERROR : SOURCE WALLET ${ISSUERPUB} IS MISSING COINS !!! $AMOUNT > $COINS - EXIT -" && exit 1
 
 [[ -z $G1PUB ]] && echo "ERROR : ${ISSUERPUB}=$COINS ($AMOUNT) MISSING DESTINATION - EXIT -" && exit 1
 echo

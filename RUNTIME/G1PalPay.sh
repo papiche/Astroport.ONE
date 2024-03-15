@@ -132,18 +132,18 @@ while read LINE; do
     ## GET EMAILS FROM COMMENT
     TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
+    echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
+    [[ $(echo "$TXIAMOUNT < 0" | bc) ]] \
+        && echo "TX-OUT" \
+        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
+        && continue
+
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#TXIMAILS[@]}"
     N=${#TXIMAILS[@]}
     SHAREE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
     SHARE=$(makecoord ${SHAREE})
     ## SHARE is received AMOUT divided by numbers of EMAILS in comment
-
-    echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
-    [[ $(echo "$TXIAMOUNT < 0" | bc) ]] \
-        && echo "TX-OUT" \
-        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
-        && continue
 
     # let's loop over TXIMAILS
     for EMAIL in "${TXIMAILS[@]}"; do

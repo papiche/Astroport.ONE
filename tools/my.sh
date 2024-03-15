@@ -424,7 +424,7 @@ function makecoord() {
 
     if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
         input="${input}0"
-    elif [[ ${input} =~ ^.[0-9]$ ]]; then
+    elif [[ ${input} =~ ^\.[0-9]+$ ]]; then
         input="0${input}"
     elif [[ ${input} =~ ^-?[0-9]+\.$ ]]; then
         input="${input}00"
