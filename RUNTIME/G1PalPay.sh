@@ -135,15 +135,23 @@ while read LINE; do
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#TXIMAILS[@]}"
     N=${#TXIMAILS[@]}
-    SHARE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
+    SHAREE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
+    SHARE=$(makecoord ${SHAREE})
     ## SHARE is received AMOUT divided by numbers of EMAILS in comment
 
     echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
+    [[ $(echo "$TXIAMOUNT < 0" | bc) ]] \
+        && echo "TX-OUT" \
+        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
+        && continue
 
     # let's loop over TXIMAILS
     for EMAIL in "${TXIMAILS[@]}"; do
 
-        [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
+        [[ ${EMAIL} == $PLAYER ]] \
+            && echo "ME MYSELF" \
+            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
+            && continue
 
         echo "EMAIL : ${EMAIL}"
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED="" # RESET VAR
@@ -183,7 +191,9 @@ while read LINE; do
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST TXIDATE
+        [[ $STAMP == 0 ]] \
+            && echo "STAMP DONE" \
+            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST TXIDATE
 
     done
 
