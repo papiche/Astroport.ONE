@@ -44,7 +44,10 @@ rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
 
-### DELAY 12345 ASTROPORT DURING 20H12 UPDATE ###
+### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+MOATS_plus_5_hours=$(date -u -d "$MOATS + 5 hours" +"%Y%m%d%H%M%S%4N")
+echo ${MOATS_plus_5_hours} > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
 echo 9000 > ~/.zen/tmp/random.sleep
 
 ## UPDATE G1BILLETS code

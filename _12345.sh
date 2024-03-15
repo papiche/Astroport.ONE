@@ -66,8 +66,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 ############################################################
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
-###################
-# NEVER ENDING LOOP
+
 
 #### UPLANET FLASHMEM UPDATES
 ${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
@@ -75,6 +74,8 @@ ${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
 ###################################################################
 ## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
 ###################################################################
+###################
+# NEVER ENDING LOOP
 while true; do
 
     start=`date +%s`
