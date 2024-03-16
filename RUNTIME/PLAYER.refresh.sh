@@ -138,7 +138,14 @@ for PLAYER in ${PLAYERONE[@]}; do
     #############################################################
     ## FOUND TW
     #############################################################
-    ## CHECK IF OFFICIAL MadeInZion TW
+    ## CHECK "GPS" Tiddler
+    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        --output ~/.zen/tmp/${MOATS} \
+        --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+    [[ ! -s ~/.zen/tmp/${MOATS}/GPS.json ]] && echo "${PLAYER} GPS : BAD TW (☓‿‿☓) " && continue
+
+    #############################################################
+    ## CHECK MadeInZion
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
@@ -147,26 +154,26 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
     #############################################################
-    ## REAL PLAYER REMOVE AstroID
+    ## CHECK "AstroID" Tiddler
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID' ## AstroID Tiddler
 
-    ###############################################################################
-    ## EXTRACT "$:/config/NewTiddler/Tags" ## Astroport :: Lasertag :: TW plugin ##
+    ########################################## used by Astroport :: Lasertag :: TW plugin ##
+    ## CHECK "$:/config/NewTiddler/Tags"
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'TWsign.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/config/NewTiddler/Tags' ## $:/config/NewTiddler/Tags Tiddler
     signature=$(cat ~/.zen/tmp/${MOATS}/TWsign.json | jq -r .[].text)
     echo "${player} SIGNATURE = $signature"
-
     ############################################################ BAD TW SIGNATURE
     [[ ${player} != ${PLAYER} || ${PLAYER} != ${signature} ]] \
         && echo "> (☓‿‿☓) BAD PLAYER=$player in TW (☓‿‿☓)" \
         && continue \
         || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
-    ## GET "Astroport" TIDDLER
+    #############################################################
+    ## CHECK "Astroport" TIDDLER
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
@@ -181,14 +188,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     DIFF_SECONDS=$(( SNOW - SBIRTH ))
     days=$((DIFF_SECONDS / 60 / 60 / 24))
 
-    echo "ASTROPORT ZenStation : ${ASTROPORT}"
-    echo "TW was created $days days ago"
+################################################## +7 DAYS AstroID !!
     ## REMOVE TW OLDER THAN 7 DAYS WITH AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 && ( $COINS == "null" || $ZEN -le 10 ) ]] \
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 ]] \
         && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
-        && echo "(#__#) AstroID SECURITY ERROR (#__#)" && continue
+        && echo "(#__#) AstroID +7 DAYS = SECURITY ERROR (#__#)" && continue
 
-    echo "CURCHAIN=${CURCHAIN}"
+################################################## ANOTHER ASTROPORT !!
     IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
     if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
@@ -198,13 +204,14 @@ for PLAYER in ${PLAYERONE[@]}; do
         continue
     fi
 
+    ################ VERIFICATIONS DONE ######################
+    echo "ASTROPORT ZenStation : ${ASTROPORT}"
+    echo "CURCHAIN=${CURCHAIN}"
+    echo "================================== TW $days days old"
 
     ######################################
     #### UPLANET GEO COORD EXTRACTION
     ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
-    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-        --output ~/.zen/tmp/${MOATS} \
-        --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
                 [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
@@ -311,24 +318,23 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## GET ORIGINH FROM LAST KNOWN TW STATE
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}
         if [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html ]]; then
-            rm -f ~/.zen/tmp/${MOATS}/forigin.json
             tiddlywiki --load ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html \
                 --output ~/.zen/tmp/${MOATS} \
-                --render '.' "${FPLAYER}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER}' ## GET ORIGIN
+                --render '.' "${FPLAYER}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${FPLAYER}" ## GET ORIGIN
 
             ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
             echo "ORIGINH: $ORIGINH"
         fi
 
-        ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&)
-            ipfs --timeout 180s cat ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
+        ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&) will be used TOMORROW
+            ipfs --timeout 480s cat ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
         ) &
 
         ## CHECK ALREADY IN ${FPLAYER^^} IHASH
         rm -f ~/.zen/tmp/${MOATS}/finside.json
         tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
-        --render '.' 'finside.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '${FPLAYER^^}'  ## ${FPLAYER^^} autoload Tiddlers
+        --render '.' 'finside.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${FPLAYER^^}"  ## ${FPLAYER^^} autoload Tiddlers
 
         INSIDEH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq -rc '.[].ihash')
         echo "INSIDEH: $INSIDEH"

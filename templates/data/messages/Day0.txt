@@ -1,5 +1,30 @@
 # Bro
 
+Prendre conscience que la direction du vecteur force "monnaie" entraîne tous les autres phénomènes à être dirigés dans une certaine direction.
+Ce n'est pas hors sujet !
+
+C'est une mise en perspective relativiste pas évidente à percevoir tant nous nous sommes adaptés à cette force. Qui si on l'observe comporte des phénomènes de défaillance cyclique... Lié à tout système en déséquilibre. C'est physique. Et la "monnaie libre" corrige ce facteur asymétrique en répartissant cette force à tous.
+C'est simple.
+
+Pour aller encore plus loin dans le besoin de symétrie. Il y a maintenant "Internet" qui si au début répartissait la force à ceux qui en faisaient partie est devenu un terrain d'élevage et de chasse au consommateurs. Heureusement le Web est un territoire Libre par nature. Un espace où l'information est un fluide récupéré par nos geôliers numériques...
+
+J'aurai pu m'installer au pupitre de commande. Accepter de coder des logiciels et des services privateurs pour m'enrichir de cette "monnaie dette" qui m'encourageait à le faire, en fermant les yeux. Mais je les ai gardés ouvert. Merci à celles et ceux qui m'ont permis de le faire.
+
+Maintenant c'est les yeux dans les yeux que je voudrai vous parler.
+Comme il est temps d'abandonner cette monnaie. Il est temps de quitter cet Internet.
+
+Pour cela, Astroport et son application UPlanet.
+Un système basé sur le concept de partage, celui de l'information bien sûr mais aussi sur la confiance envers ce qui prend soin de nos données.
+Le Web3 n'a aucun centre. Aucune méga structure qui lui donne une forme autre que celle que vous donnerez en l'utilisant.
+On y entre en récupérant une "paire de clefs".
+
+Sur UPlanet ce sont "AstroID" et "ZenCard" qui réunies remplacent "mot de passe et ordinateur", "carte d’identité et CB", "verrou et porte", remplacé désormais par un méandre de données interconnectées et toujours soumisent aux lois et règles qui régulent leur monde.
+
+UPlanet ZERO, n'en porte aucune autre que celle de jouer au jeu d'aggrader la planète.
+Les clefs et données qui s'y trouvent se consituent en "bien commun".
+UPlantet_OWL
+les règles y apparaissent d'elles-même.
+
 ## Bienvenue sur UPlanet!
 
 Chaque (_PLAYER_) y dépose une adresse email (vraie ou non peu importe).
@@ -41,7 +66,7 @@ Vous avez reçu 3.1 G1, soit 21 ZEN pour découvrir nos services.
 * publier rapporte entre 1 et 21 Zen / jour
 * être partagé rapporte 1 Zen à chaque partage(ur) !
 * ne rien publier fait perdre 1 Zen / jour.
-* après 30 jours d'inactivité avec moins de 10 Zen... Vous êtes débranché !
+* après 30 jours d'inactivité ou moins de 10 Zen... Vous êtes débranché !
 
 ---
 
