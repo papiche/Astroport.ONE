@@ -193,8 +193,9 @@ for SECTOR in ${SECTORS[@]}; do
     ## SET SECTOR
     sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
 
-    ## GET ALL TWs in that SECTOR
-    mkdir ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
+    ## REFRESH ALL TWs in that SECTOR
+    rm -Rf ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
 
     cp -rf ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
         ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
@@ -290,7 +291,7 @@ for SECTOR in ${SECTORS[@]}; do
     ## ADD SECTOR ZENPUB.png & INFO.png
     convert -font 'Liberation-Sans' \
             -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
-            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
+            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}:${YESTERDATE}"'"' \
             $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
     # CREATE G1PUB AMZQR
     amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/

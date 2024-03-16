@@ -248,16 +248,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
         ###################################### INJECT JSON
 
-    ######################################
-    # (RE)MAKE "SECTORTW_NEWS" TIDDLER
-    cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
-        | sed -e "s~_SECTOR_~${SECTOR}~g" \
-        -e "s~_MOATS_~${MOATS}~g" \
-        -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
-            > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
-
-    echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
-
     ################# PERSONAL VDO.NINJA ADDRESS)
     PHONEBOOTH=${PLAYER/@/_}
     PHONEBOOTH=${PHONEBOOTH/\./_}
@@ -296,7 +286,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #####################################################################
     fplayers=($(cat ~/.zen/tmp/${MOATS}/FRIENDS.json | jq -rc .[].title))
     echo "${fplayers[@]}"
-    INPUTPLAYERS=()
+    UPLAYERSTIDS=()
     for fp in ${fplayers[@]}; do
 
         [[ ! "${fp}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] && echo "BAD ${fp} FORMAT" && continue
@@ -317,6 +307,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "TW: $FTW"
         echo "G1: $FG1PUB"
         echo "IHASH: $IHASH"
+        UPLAYERSTIDS=("${UPLAYERSTIDS[@]}" "[[${FPLAYER^^}|${FPLAYER^^}]]")
 
         ## GET ORIGINH FROM LAST KNOWN TW STATE
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}
@@ -377,13 +368,25 @@ for PLAYER in ${PLAYERONE[@]}; do
                     && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
                     || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
             fi
+
         fi
 
     done
     ## GET $:/moa Tiddlers ####################################### END
-
+    echo "${UPLAYERSTIDS[@]}"
 
     #####################################################################
+
+    ######################################
+    # (RE)MAKE "SECTORTW_NEWS" TIDDLER
+    cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
+        | sed -e "s~_SECTOR_~${SECTOR}~g" \
+        -e "s~_MOATS_~${MOATS}~g" \
+        -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS[@]}~g" \
+        -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
+            > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
+
+    echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
 
     #############################################################
     # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE

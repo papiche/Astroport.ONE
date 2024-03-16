@@ -574,7 +574,7 @@ do
 done <"$asciiart"
 
 echo "<br><img src='${myIPFSGW}${IASTRO}'\>
-<h2>PRINT & SHARE <a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
+<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
 </body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
