@@ -12,7 +12,12 @@ TS=$(date -u +%s%N | cut -b1-13)
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 #~ mkdir -p ~/.zen/tmp/${MOATS}
 
-CURRENT=$(cat ~/.zen/game/players/.current/.player)
+### CHECK and CORRECT .current
+CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+[[ ! ${CURRENT} ]] \
+    && lastplayer=$(ls -t ~/.zen/game/players 2>/dev/null | grep "@" | head -n 1) \
+    && [[ ${lastplayer} ]] && rm ~/.zen/game/players/.current \
+    && ln -s ~/.zen/game/players/${lastplayer} ~/.zen/game/players/.current && CURRENT=${lastplayer}
 
 echo '
     _    ____ _____ ____   ___  ____   ___  ____ _____    ___  _   _ _____
@@ -24,8 +29,7 @@ echo '
 Astroport is a Web3 engine running UPlanet hosting TW5s on IPFS, and more...
 
 @@@@@@@@@@@@@@@@@@
-ASTROPORT
-DRAGON = ${CURRENT}
+ADMIN = '${CURRENT}'
 @@@@@@@@@@@@@@@@@@'
 echo
 

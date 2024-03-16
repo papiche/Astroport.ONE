@@ -78,7 +78,7 @@ for SECTOR in ${SECTORS[@]}; do
     ############ 101 ZEN REFILL ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
-        && [[ ${ZEN} -lt 101 && ${CURRENT} != "" ]] \
+        && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${SECTOR}:${MIUSER}" \
         && echo "UPLANET:101:${SECTOR}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ "
