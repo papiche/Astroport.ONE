@@ -39,7 +39,7 @@ echo ${#RKEYS[@]} " swarm REGIONS"
 ## COMBINE & SHUFFLE KEYS
 combined=("${LWKEYS[@]}" "${LSKEYS[@]}" "${LRKEYS[@]}" "${WKEYS[@]}" "${SKEYS[@]}" "${RKEYS[@]}")
 UKEYS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
-echo ${#UKEYS[@]} "  JOBS..."
+echo "SYNC ${#UKEYS[@]} GEOKEYS..."
 
 ## STORAGE FOR IPFS GET UplanetKeyS
 mkdir -p ~/.zen/tmp/flashmem
@@ -49,7 +49,6 @@ find ~/.zen/tmp/flashmem -mmin +180 -exec rm -rf {} +
 
 floop=0
 medo=0
-
 for key in ${UKEYS[@]}; do
 
     [[ -d ~/.zen/tmp/flashmem/$key ]] \
@@ -64,21 +63,37 @@ for key in ${UKEYS[@]}; do
         && medo=$((medo +1)) && floop=$((floop -1)) \
         || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
 
-    ## Search for TW /ipfs/ and refresh
-    #~ TWS=($(cat ~/.zen/tmp/flashmem/$key/TW/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
-    #~ for tw in ${TWS[@]}; do
-        #~ mkdir -p ~/.zen/tmp/flashmem/tw/$tw
-        #~ ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/tw/$tw /ipns/$tw
-        #~ [[ $? == 0 ]] \
-            #~ && medo=$((medo +1)) && floop=$((floop -1)) \
-            #~ || rm -Rf ~/.zen/tmp/flashmem/tw/$tw
-    #~ done
-
     [ $floop -gt 33 ] && break
 
 done
 echo "=========================="
-echo "(◕‿◕ ) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#UKEYS[@]} JOBS"
+echo "(◕‿◕ ) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#UKEYS[@]} GEOKEYS"
+echo "=========================="
+
+## Search for TW /ipfs/ and refresh
+TWS=($(cat ~/.zen/tmp/flashmem/*/TW/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
+echo "SYNC ${#TWS[@]} TWs..."
+floop=0
+medo=0
+for tw in ${TWS[@]}; do
+
+    [[ -d ~/.zen/tmp/flashmem/tw/$tw ]] \
+        && echo "$key already copied" && medo=$((medo +1)) && continue
+
+    floop=$((floop +1))
+    mkdir -p ~/.zen/tmp/flashmem/tw/$tw
+
+    ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/tw/$tw /ipns/$tw
+    [[ $? == 0 ]] \
+        && medo=$((medo +1)) && floop=$((floop -1)) \
+        || rm -Rf ~/.zen/tmp/flashmem/tw/$tw
+
+    [ $floop -gt 33 ] && break
+
+done
+
+echo "=========================="
+echo "(✜‿‿✜) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#TWS[@]} TWS"
 echo "=========================="
 
 exit 0
