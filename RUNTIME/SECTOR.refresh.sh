@@ -75,6 +75,14 @@ for SECTOR in ${SECTORS[@]}; do
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
+    ############ 101 ZEN REFILL ?!
+    CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
+    [[ ${COINS} == "" || ${COINS} == "null" ]] \
+        && [[ ${ZEN} -lt 101 && ${CURRENT} != "" ]] \
+        && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${SECTOR}:${MIUSER}" \
+        && echo "UPLANET:101:${SECTOR}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ "
+
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)

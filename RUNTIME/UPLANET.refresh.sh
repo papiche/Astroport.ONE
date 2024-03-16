@@ -75,6 +75,14 @@ for UMAP in ${unique_combined[@]}; do
 
     echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${G1PUB}"
 
+    ############ 101 ZEN REFILL ?!
+    CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
+    [[ ${COINS} == "" || ${COINS} == "null" ]] \
+        && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
+        && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${UMAP}:${MIUSER}" \
+        && echo "UPLANET:101:${UMAP}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ _${LAT}_${LON} ~~ (♥‿‿♥) ~~~ "
+
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
@@ -102,7 +110,7 @@ for UMAP in ${unique_combined[@]}; do
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
     ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
-        echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
+        echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory
         [[ ${ZEN} -gt 0 ]] \
             && echo "INTERCOM Refreshing from ZEN MEMORY" \
