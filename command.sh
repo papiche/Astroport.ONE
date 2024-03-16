@@ -14,9 +14,9 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 ### CHECK and CORRECT .current
 CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-[[ ! ${CURRENT} ]] \
+[[ ${CURRENT} == "" ]] \
     && lastplayer=$(ls -t ~/.zen/game/players 2>/dev/null | grep "@" | head -n 1) \
-    && [[ ${lastplayer} ]] && rm ~/.zen/game/players/.current \
+    && [[ ${lastplayer} ]] \
     && ln -s ~/.zen/game/players/${lastplayer} ~/.zen/game/players/.current && CURRENT=${lastplayer}
 
 echo '
