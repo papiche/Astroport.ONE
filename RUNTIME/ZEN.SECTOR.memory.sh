@@ -50,12 +50,11 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
     intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
     ipfs_pop=$(echo "$intercom" | rev | cut -d ':' -f 1 | rev)
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
-    echo "SYNC ~/.zen/tmp/${MOATS}/${SECTOR} <=> $ipfs_pop"
+    echo "SYNC ${SECTOR} <= $todate => $ipfs_pop"
 
     if [[ $ipfs_pop ]]; then
-        echo "FOUND $todate MEMORY SLOT"
-        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .g1pub' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
-        [[ "$g1pub" != "$G1PUB" ]] && echo "INFO :: $g1pub Memory updater"
+        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
+        echo "INFO :: $g1pub Memory updater"
         [[ "$todate" == "$YESTERDATE" ]] \
             && ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop \
             || echo "$ipfs_pop ERROR ... not from $YESTERDATE ... "
@@ -70,31 +69,5 @@ fi
 
 end=`date +%s`
 echo "(${SECTOR}.memory) ${todate} get time : "`expr $end - $start` seconds.
-
-#~ ## EXTRACT WORLDG1PUB HISTORY
-#~ ${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 300 -p ${WORLDG1PUB} -j \
-    #~ > ~/.zen/tmp/${MOATS}/${WORLDG1PUB}.g1history.json
-
-#~ ## SCAN FOR UPLANET:${SECTOR} in TX
-#~ if [[ -s ~/.zen/tmp/${MOATS}/${WORLDG1PUB}.g1history.json ]]; then
-
-    #~ intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${WORLDG1PUB}.g1history.json)
-    #~ ipfs_pop=$(echo "$intercom" | grep -oP 'UPLANET:'"${SECTOR}"':/ipfs/\K[^"]+')
-    #~ todate=$(echo "$intercom" | grep -oP 'UPLANET:'"${SECTOR}"':\K[^:]*')
-    #~ echo "SYNC ~/.zen/tmp/${MOATS}/${SECTOR} <=> /ipfs/$ipfs_pop"
-
-    #~ if [[ $ipfs_pop ]]; then
-        #~ echo "from $todate memory slot"
-        #~ ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${SECTOR} /ipfs/$ipfs_pop
-        #~ end=`date +%s`
-        #~ echo "(${SECTOR}) ${todate} get time : "`expr $end - $start` seconds.
-    #~ else
-        #~ echo "WARNING cannot remember... scan for more TX ??!"
-    #~ fi
-
-#~ else
-    #~ echo "FATAL ERROR cannot access to WORLDG1PUB history"
-    #~ exit 1
-#~ fi
 
 exit 0

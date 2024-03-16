@@ -69,7 +69,7 @@ echo 0 > ~/.zen/tmp/random.sleep
 
 
 #### UPLANET FLASHMEM UPDATES
-${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
+${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
 ###################################################################
 ## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
@@ -100,7 +100,7 @@ while true; do
         ${MY_PATH}/ping_bootstrap.sh
 
         #### UPLANET FLASHMEM UPDATES
-        ${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
+        ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
         #####################################
         ( ##### SUB-PROCESS £
