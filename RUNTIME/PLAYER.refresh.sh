@@ -18,8 +18,9 @@ PLAYERONE="$1"
 [[ ! ${PLAYERONE} ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
 
 echo "FOUND : ${PLAYERONE[@]}"
+CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
 
-echo "RENEWING LOCAL UPLANET REPOSITORY
+echo "RENEWING LOCAL UPLANET REPOSITORY (ADMIN=${CURRENT})
  ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET
@@ -576,7 +577,6 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #####################################################################
     ## DAY=7 : SEND 3.1 G1 to PLAYER + 3.1 G1 to UMAP
-    CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${days} -eq 7 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
         && echo "7 DAY. PLAYER STEP ONE SUCCEED." \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \

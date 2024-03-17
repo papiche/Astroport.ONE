@@ -57,7 +57,7 @@ title="$3"
 
 SUBJECT="[UPlanet] ${title} ${pseudo}"
 
-MESSAGESIGN="---<br>this message is sent to you by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your ♥BOX Astroport.ONE Station"
+MESSAGESIGN="---<br>this message is sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your Astroport ♥BOX Zen Station"
 
 echo "
 ########################################################################
@@ -98,7 +98,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'
