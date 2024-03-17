@@ -514,7 +514,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
         [[ ${FEEDNS} ]] \
             && IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-            && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} & \
+            && "Publishing ${PLAYER}_feed: /ipfs/${IRSS}" \
+            && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
             || echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR"
 
     fi

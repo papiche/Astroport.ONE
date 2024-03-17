@@ -71,7 +71,7 @@ echo "(◕‿◕ ) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#UKEYS[@]} 
 echo "=========================="
 
 ## Search for TW /ipfs/ and refresh
-TWS=($(cat ~/.zen/tmp/flashmem/*/TW/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
+TWS=($(cat ~/.zen/tmp/flashmem/*/TWz/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
 echo "SYNC ${#TWS[@]} TWs..."
 floop=0
 medo=0
