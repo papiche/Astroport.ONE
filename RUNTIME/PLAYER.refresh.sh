@@ -254,11 +254,12 @@ for PLAYER in ${PLAYERONE[@]}; do
     PHONEBOOTH=${PHONEBOOTH/-/_}
 
     # MAKE "ALLO" TIDDLER
-    cat ${MY_PATH}/../templates/data/ALLO.json \
+    cat ${MY_PATH}/../templates/data/VISIO.json \
         | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
+        -e "s~_PLAYER_~${PLAYER}~g" \
         -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
-            > ~/.zen/tmp/${MOATS}/ALLO.json
+            > ~/.zen/tmp/${MOATS}/VISIO.json
 
     ipfs key rm "temp" >/dev/null 2>&1
 
@@ -429,7 +430,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## WRITE TIDDLERS IN TW SECTORTW_NEWS.json
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
-                --import ~/.zen/tmp/${MOATS}/ALLO.json "application/json" \
+                --import ~/.zen/tmp/${MOATS}/VISIO.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
