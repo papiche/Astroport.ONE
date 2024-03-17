@@ -49,6 +49,7 @@ for UMAP in ${unique_combined[@]}; do
 
     start=`date +%s`
     echo
+    echo "-------------------------------------------------------------------"
     echo "____________REFRESHING ${UMAP}__________ $(date)"
     LAT=$(echo ${UMAP} | cut -d '_' -f 2)
     LON=$(echo ${UMAP} | cut -d '_' -f 3)

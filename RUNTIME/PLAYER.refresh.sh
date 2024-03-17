@@ -160,7 +160,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID' ## AstroID Tiddler
-    [[ $(cat ~/.zen/tmp/${MOATS}/AstroID.json) == "[]" ]] && rm ~/.zen/tmp/${MOATS}/AstroID.json
+    [[ $(cat ~/.zen/tmp/${MOATS}/AstroID.json 2>/dev/null) == "[]" ]] && rm ~/.zen/tmp/${MOATS}/AstroID.json
     ########################################## used by Astroport :: Lasertag :: TW plugin ##
     ## CHECK "$:/config/NewTiddler/Tags"
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -251,6 +251,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ################# PERSONAL VDO.NINJA ADDRESS)
     PHONEBOOTH=${PLAYER/@/_}
     PHONEBOOTH=${PHONEBOOTH/\./_}
+    PHONEBOOTH=${PHONEBOOTH/-/_}
 
     # MAKE "ALLO" TIDDLER
     cat ${MY_PATH}/../templates/data/ALLO.json \
