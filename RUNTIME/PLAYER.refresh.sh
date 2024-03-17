@@ -160,7 +160,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID' ## AstroID Tiddler
-
+    [[ $(cat ~/.zen/tmp/${MOATS}/AstroID.json) == "[]" ]] && rm ~/.zen/tmp/${MOATS}/AstroID.json
     ########################################## used by Astroport :: Lasertag :: TW plugin ##
     ## CHECK "$:/config/NewTiddler/Tags"
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \

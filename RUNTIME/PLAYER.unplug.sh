@@ -69,7 +69,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
     for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
         echo "removing wish ${vk}"
-        ipfs key rm ${vk}
+        [[ ${vk} != "" ]] && ipfs key rm ${vk}
     done
 
 ## SEND PLAYER LAST KNOW TW
