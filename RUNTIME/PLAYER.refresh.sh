@@ -376,16 +376,21 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     done
     ## GET $:/moa Tiddlers ####################################### END
-    echo "${UPLAYERSTIDS[@]}"
 
     #####################################################################
-
+    echo "${UPLAYERSTIDS[@]}"
+    UPLAYERSTIDS_STR=""
+    for item in "${UPLAYERSTIDS[@]}"; do
+        UPLAYERSTIDS_STR+=" $item"
+    done
+    # Trim leading space
+    UPLAYERSTIDS_STR="${UPLAYERSTIDS_STR# }"
     ######################################
     # (RE)MAKE "SECTORTW_NEWS" TIDDLER
     cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
         | sed -e "s~_SECTOR_~${SECTOR}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
-        -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS[@]}~g" \
+        -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS_STR}~g" \
         -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
