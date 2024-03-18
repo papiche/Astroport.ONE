@@ -392,6 +392,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
         | sed -e "s~_SECTOR_~${SECTOR}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
+        -e "s~_UPLANET_~${myUPLANET}~g" \
         -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS_STR}~g" \
         -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
