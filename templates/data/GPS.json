@@ -1,12 +1,13 @@
 [
   {
-    "created": "20231007123717877",
-    "text": "<$leafmap\ntileControl\ntile='sat'\nzoom='12'\nplaces='{\"point\":\"44.2301, 1.6518\"}'\n/>\n\n! <a target='_blank' href='/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu/_index.html'>Visit UMap_44.2301_1.6518</a>\n\n!! UPlanet moves your data with you\n<<<\n''DO NOT CHANGE MANUALY''\n\n* \"PLUG/UNPLUG\" using ''AstroID''\n<<<\n",
-    "tags": "_PLAYER_",
     "title": "GPS",
-    "modified": "20231207180819081",
-    "lat": "44.2301",
-    "lon": "1.6518",
-    "umap": "/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
+    "created": "_MOATS_",
+    "modified": "_MOATS_",
+    "text": "<$leafmap\ntileControl\ntile='sat'\nzoom='12'\nplaces='{\"point\":\"_LAT_, _LON_\"}'\n/>\n\n! <a target='_blank' href='/ipns/_UMAPNS_/_index.html'>Visit UMap__LAT___LON_</a>\n\n!! UPlanet moves your data with you\n<<<\n''DO NOT CHANGE MANUALY''\n<<<\n",
+    "tags": "_PLAYER_",
+    "lat": "_LAT_",
+    "lon": "_LON_",
+    "umap": "/ipns/_UMAPNS_",
+    "sectortw": "_SECTORTW_"
   }
 ]

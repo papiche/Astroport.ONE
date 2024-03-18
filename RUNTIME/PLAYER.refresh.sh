@@ -145,7 +145,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
-    [[ ! -s ~/.zen/tmp/${MOATS}/GPS.json ]] && echo "${PLAYER} GPS : BAD TW (☓‿‿☓) " && continue
+    [[ ! -s ~/.zen/tmp/${MOATS}/GPS.json || $(cat ~/.zen/tmp/${MOATS}/GPS.json) == "[]" ]] \
+        && echo "${PLAYER} GPS : BAD TW (☓‿‿☓) " && continue
 
     #############################################################
     ## CHECK MadeInZion
@@ -153,7 +154,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
 
-    [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+    [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json || $(cat ~/.zen/tmp/${MOATS}/MadeInZion.json) == "[]" ]] \
+        && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
 
     player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
     #############################################################
@@ -181,6 +183,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
+    [[ ! -s ~/.zen/tmp/${MOATS}/Astroport.json || $(cat ~/.zen/tmp/${MOATS}/Astroport.json) == "[]" ]] \
+        && echo "${PLAYER} Astroport : BAD TW (☓‿‿☓) " && continue
+
     BIRTHDATE=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].birthdate)
     ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## ZenStation IPNS address
     CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
@@ -217,38 +222,36 @@ for PLAYER in ${PLAYERONE[@]}; do
     #### UPLANET GEO COORD EXTRACTION
     ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-                [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
+        [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-                [[ $LON == "null" || $LON == "" ]] && LON="0.00"
+        [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
     UMAPG1PUB=$(${MY_PATH}/../tools/keygen "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 
-    SECTOR="_${LAT::-1}_${LON::-1}"
     ## CALCULATE UMAP TODATENS ################
     ######################################
     ipfs key rm "temp" >/dev/null 2>&1
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
     UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
 
-    cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"umap": "/ipns/_UMAPNS_"}' \
-        > ~/.zen/tmp/${MOATS}/GPStw.json \
-        && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
-    sed -i "s~_UMAPNS_~${UMAPNS}~g" ~/.zen/tmp/${MOATS}/GPS.json
-        ###################################### INJECT JSON
-
-    #~ cat ~/.zen/tmp/${MOATS}/GPS.json
     echo "UMAP _${LAT}_${LON} UMAPNS=/ipns/${UMAPNS}"
 
+    SECTOR="_${LAT::-1}_${LON::-1}"
     ## CALCULATE SECTOR TODATENS ################
     ipfs key rm "temp" >/dev/null 2>&1
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
     TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
-
-    cat ~/.zen/tmp/${MOATS}/GPS.json | jq '. + {"sectortw": "_SECTORTW_"}' \
-        > ~/.zen/tmp/${MOATS}/GPSsec.json \
-        && mv ~/.zen/tmp/${MOATS}/GPSsec.json ~/.zen/tmp/${MOATS}/GPS.json
-    sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
-        ###################################### INJECT JSON
+    ipfs key rm "temp" >/dev/null 2>&1
+    #############################################
+    # MAKE TODATE "GPS" TIDDLER
+    cat ${MY_PATH}/../templates/data/GPS.json \
+        | sed -e "s~_MOATS_~${MOATS}~g" \
+        -e "s~_PLAYER_~${PLAYER}~g" \
+        -e "s~_LAT_~${LAT}~g" \
+        -e "s~_LON_~${LON}~g" \
+        -e "s~_UMAPNS_~${UMAPNS}~g" \
+        -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
+            > ~/.zen/tmp/${MOATS}/GPS.json
 
     ################# PERSONAL VDO.NINJA ADDRESS)
     PHONEBOOTH=${PLAYER/@/_}
@@ -262,8 +265,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         -e "s~_PLAYER_~${PLAYER}~g" \
         -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
             > ~/.zen/tmp/${MOATS}/VISIO.json
-
-    ipfs key rm "temp" >/dev/null 2>&1
 
     ## UPDATE PLAYER CACHE
     echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
