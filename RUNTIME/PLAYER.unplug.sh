@@ -59,7 +59,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
     ALL="ALL"
     [[ $ONE == "ONE" ]] && ALL=1
-    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB"
+    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB: ${WORLDG1PUB}"
 
     [[ ! -z ${SECTORG1PUB} ]] \
         && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \

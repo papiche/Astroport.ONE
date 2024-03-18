@@ -172,6 +172,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ############################################################ BAD TW SIGNATURE
     [[ ${player} != ${PLAYER} || ${PLAYER} != ${signature} ]] \
         && echo "> (☓‿‿☓) BAD PLAYER=$player in TW (☓‿‿☓)" \
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && continue \
         || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
