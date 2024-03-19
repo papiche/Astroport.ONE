@@ -102,8 +102,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         NOWCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain)
         LASTCHAIN=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.* | tail -n 1)
         try=$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.try 2>/dev/null) || try=3
-        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx<br>"
-        echo "<a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>"
+        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        echo "$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED"
         echo ">> %%% WARNING TRY LEFT : $try %%%"
         echo "------------------------------------------------"
         echo " * <a href='${myIPFS}/ipfs/${LASTCHAIN}'>LAST</a>"
@@ -111,16 +111,23 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
         ## SEND AN EMAIL ALERT TO PLAYER
-        echo "<html><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW REFRESH FAILED</a>" > ~/.zen/tmp/result
+        echo "<html><head>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+    }
+    pre {
+        white-space: pre-wrap;
+    }
+</style></head><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW LOADING TIMEOUT</a>" > ~/.zen/tmp/result
         echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
         echo "<br>" >> ~/.zen/tmp/result
-        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>TW[-1]</a>" >> ~/.zen/tmp/result
-        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>TW[0]</a>" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>TW[-1]</a>: /ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>TW[0]</a>: /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
         echo "<br>" >> ~/.zen/tmp/result
         echo "<br> %%% WARNING %%% $try TRY LEFT %%%" >> ~/.zen/tmp/result
         echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
-        echo "<br>REPAIR BY SAVING ONLINE<br>" >> ~/.zen/tmp/result
-        echo "COMMAND :<br>ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
+        echo "<br>ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
         echo "</body></html>" >> ~/.zen/tmp/result
 
 
@@ -132,7 +139,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         try=$((try-1))
         echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
 
-        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "TW[+1] REFRESH WARNING"
+        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "TW LOADING TIMEOUT"
 
         continue
 
