@@ -304,12 +304,17 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     LON=$(makecoord $LON)
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
-    SECTOR="_${SECLAT}_${SECLON}"
+    SLAT="${LAT::-1}"
+    SLON="${LON::-1}"
+    SECTOR="_${SLAT}_${SLON}"
+    RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
+    RLON="$(echo ${LON} | cut -d '.' -f 1)"
+    REGION="_${RLAT}_${RLON}"
     ##############################################################
-    UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    UMAPG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB | tail -n 1)
+    SECTORG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB | tail -n 1)
+    [[ ${UMAPG1PUB} == "" ]] && UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    [[ ${SECTORG1PUB} == "" ]] && SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
