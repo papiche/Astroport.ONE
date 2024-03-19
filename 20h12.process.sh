@@ -37,12 +37,14 @@ done
 echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
-## REMOVE TMP BUT KEEP SWARM and coucou
+## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
+mv ~/.zen/tmp/flashmem ~/.zen/flashmem
 rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
+mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
 ### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")

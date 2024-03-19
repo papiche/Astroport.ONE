@@ -226,6 +226,21 @@ for PLAYER in ${PLAYERONE[@]}; do
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
         [[ $LON == "null" || $LON == "" ]] && LON="0.00"
 
+    SLAT="${LAT::-1}"
+    SLON="${LON::-1}"
+    RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
+    RLON="$(echo ${LON} | cut -d '.' -f 1)"
+    MYNS=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS | tail -n 1)
+    # EXTRACT "${G1PUB}:${DEMAINDATE}:${NEXTNS}"
+    if [[ ${MYNS} != "" ]]; then
+        echo "UMAP NEXTNS"
+        cat ~/.zen/tmp/flashmem/${MYNS}/_next.umap
+        echo "SECTOR NEXTNS"
+        cat ~/.zen/tmp/flashmem/${MYNS}/_next.sector
+        echo "REGION NEXTNS"
+        cat ~/.zen/tmp/flashmem/${MYNS}/_next.region
+    fi
+
     UMAPG1PUB=$(${MY_PATH}/../tools/keygen "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 
     ## CALCULATE UMAP TODATENS ################

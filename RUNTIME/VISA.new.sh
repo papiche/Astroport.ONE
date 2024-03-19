@@ -283,9 +283,6 @@ SECTOR="_${LAT::-1}_${LON::-1}" ### SECTOR = 0.1° Planet Slice in MadeInZion Ti
 echo "UPlanet 0.1° SECTOR : ${SECTOR}"
 sed -i "s~_SECTOR_~${SECTOR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-UMAPNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}")
-UMAP="/ipns/${UMAPNS}"
-
 # GET ACTUAL GPS VALUES
 tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
     --output ~/.zen/tmp/${MOATS} \
@@ -293,20 +290,14 @@ tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
 
 OLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
 OLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-OUMAP=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
 
 # REPLACE WITH NEW LAT LON UMAP
 sed -i "s~${OLAT}~${LAT}~g" ~/.zen/tmp/${MOATS}/GPS.json
 sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
-sed -i "s~${OUMAP}~${UMAP}~g" ~/.zen/tmp/${MOATS}/GPS.json
 ## Add _SECTORTW_
 cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "_SECTORTW_"}' \
     > ~/.zen/tmp/${MOATS}/GPStw.json \
     && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
-
-## INSERT TODATESECTORNS #########################################
-TODATESECTORNS=$(${MY_PATH}/../tools/keygen -t ipfs  "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}")
-sed -i "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" ~/.zen/tmp/${MOATS}/GPS.json
 
 ###########
 ## GET OLD16
@@ -549,8 +540,8 @@ echo "<html><head>
 <body>
 <h1>UPlanet : <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
 
-echo "<br><img src='${myIPFSGW}${IASTRO}'\>
-<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+echo "<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
+<img src='${myIPFSGW}${IASTRO}'\>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 asciiart="${MY_PATH}/../images/astroport.art"
 while IFS= read -r line
@@ -580,14 +571,13 @@ echo "<html><head>
     }
 </style></head>
 <body>
-<h1>UPlanet : AstroID ($PASS)</h1>" > ~/.zen/tmp/${MOATS}/AstroID.html
+<h1><a href='${myUPLANET}'>UPlanet</a> : AstroID</h1>" > ~/.zen/tmp/${MOATS}/AstroID.html
 
-echo "
-<h2> <--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h2>
-<h3>SECRET1=\"$SALT\" SECRET2=\"$PEPPER\"</h3>
-<br><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img width=240px src='${myIPFSGW}${ASTROQR}'\></a>
+echo "<a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img width=300px src='${myIPFSGW}${ASTROQR}'\></a>
+<h3>SECRET1=\"$SALT\" SECRET2=\"$PEPPER\" ($PASS)</h3>
 <h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
-<a href='https://qo-op.com'>Uplanet</a>" >> ~/.zen/tmp/${MOATS}/AstroID.html
+<h2> <--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h2>
+" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
 asciiart="${MY_PATH}/../images/logoastro.art"
 while IFS= read -r line

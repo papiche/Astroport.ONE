@@ -78,20 +78,20 @@ for UMAP in ${unique_combined[@]}; do
 
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1
     UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
     echo "ORIGIN : ${myIPFS}/ipns/${UMAPNS}"
 
     ###################### SPATIO TEMPORAL KEYS
     ## TODATE #########################################
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv  "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
     ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
     TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
     echo "TODAY : ${myIPFS}/ipns/${TODATENS}"
 
     ## YESTERDATE ###############
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
     ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
     YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
     echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
@@ -99,8 +99,8 @@ for UMAP in ${unique_combined[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    echo "## IPFS GET YESTERDATENS"
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
+    echo "## IPFS GET YESTERDATENS"
     ipfs --timeout 300s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"
@@ -151,15 +151,15 @@ for UMAP in ${unique_combined[@]}; do
     [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
     #  ++++++++++++++++++++ - - - - FIND LAST TREATMENT TIME
-            ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null) || ZMOATS=${MOATS}
-            # ZMOATS SHOULD BE MORE THAT 5 HOURS.
-            MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
-            ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
-            DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-            hours=$((DIFF_SECONDS / 3600))
-            minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
-            seconds=$((DIFF_SECONDS % 60))
-            echo "UMAP DATA is ${hours} hours ${minutes} minutes ${seconds} seconds "
+    ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null) || ZMOATS=${MOATS}
+    # ZMOATS SHOULD BE MORE THAT 5 HOURS.
+    MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
+    ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
+    DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
+    hours=$((DIFF_SECONDS / 3600))
+    minutes=$(( (DIFF_SECONDS % 3600) / 60 ))
+    seconds=$((DIFF_SECONDS % 60))
+    echo "UMAP DATA is ${hours} hours ${minutes} minutes ${seconds} seconds "
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ## IF NOT UPDATED FOR TOO LONG
@@ -175,12 +175,12 @@ for UMAP in ${unique_combined[@]}; do
         echo "------8<-------------8<------------------8<-----------------8<-----------------8<"
         continue
     fi
-        ########################################
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PASSING THERE MAKE IPFSNODEID UMAP REFRESHER
-
+    ################################################################################
+    # ~~~~~~~~~~~~~ GOING FURTHER ~~~ MEANS IPFSNODEID IS UMAP REFRESHER ~~~~~~~~~~~
+    ################################################################################
     ## NEXT REFRESHER
     # TODO: INTRODUCE NODE BALANCE AND CHOOSE THE MOST CONFIDENT ONE
-    rm  ${UREFRESH}
+    rm ${UREFRESH}
     for STRAP in ${STRAPS[@]}; do
             echo ${STRAP} >> ${UREFRESH} ## FILL UMAP.refresher file with all STRAPS
     done
@@ -240,6 +240,41 @@ for UMAP in ${unique_combined[@]}; do
     ##############################################################
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
+
+    ####################################################################################
+    ######################## NEXTNS : UMAP, SECTOR, REGION
+    ####################################################################################
+    ## UMAP NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.umap
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${LAT}" "${DEMAINDATE}${UPLANETNAME}${LON}"
+    ipfs key rm "next" > /dev/null 2>&1
+    NEXTNS=$(ipfs key import "next" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/next.priv)
+    echo "UMAP NEXTNS : ${myIPFS}/ipns/${NEXTNS}"
+    ipfs key rm "next" > /dev/null 2>&1
+    rm ~/.zen/tmp/${MOATS}/next.priv
+    echo "${G1PUB}:${DEMAINDATE}:${NEXTNS}" > ~/.zen/tmp/${MOATS}/${UMAP}/_next.umap
+
+    ## SECTOR NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.sector
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${SECTOR}" "${DEMAINDATE}${UPLANETNAME}${SECTOR}"
+    ipfs key rm "next" > /dev/null 2>&1
+    NEXTNS=$(ipfs key import "next" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/next.priv)
+    echo "SECTOR NEXTNS : ${myIPFS}/ipns/${NEXTNS}"
+    ipfs key rm "next" > /dev/null 2>&1
+    rm ~/.zen/tmp/${MOATS}/next.priv
+    echo "${SECTORG1PUB}:${DEMAINDATE}:${NEXTNS}" > ~/.zen/tmp/${MOATS}/${UMAP}/_next.sector
+
+    ## REGION NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.region
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${REGION}" "${DEMAINDATE}${UPLANETNAME}${REGION}"
+    ipfs key rm "next" > /dev/null 2>&1
+    NEXTNS=$(ipfs key import "next" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/next.priv)
+    echo "REGION NEXTNS : ${myIPFS}/ipns/${NEXTNS}"
+    ipfs key rm "next" > /dev/null 2>&1
+    rm ~/.zen/tmp/${MOATS}/next.priv
+    echo "${REGIONG1PUB}:${DEMAINDATE}:${NEXTNS}" > ~/.zen/tmp/${MOATS}/${UMAP}/_next.region
+    ####################################################################################
+    ### WRITE TO SWARM CACHE
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+    echo "${TODATENS}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS
+    ####################################################################################
 
     # %%%%%%%%%% ##################################################
     ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
