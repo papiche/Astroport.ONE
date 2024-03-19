@@ -83,7 +83,7 @@ for tw in ${TWS[@]}; do
     floop=$((floop +1))
     mkdir -p ~/.zen/tmp/flashmem/tw/$tw
 
-    ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/tw/$tw /ipns/$tw
+    ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/tw/$tw/index.html /ipns/$tw
     [[ $? == 0 ]] \
         && medo=$((medo +1)) && floop=$((floop -1)) \
         || rm -Rf ~/.zen/tmp/flashmem/tw/$tw
