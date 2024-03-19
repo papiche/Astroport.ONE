@@ -101,7 +101,7 @@ for UMAP in ${unique_combined[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "## IPFS GET YESTERDATENS"
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-    ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
+    ipfs --timeout 300s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory
@@ -458,7 +458,7 @@ for UMAP in ${unique_combined[@]}; do
 
     echo "PUBLISHING ${TODATE} UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
 
-    ipfs --timeout 180s name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
+    ipfs --timeout 300s name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
     end=`date +%s`
     echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 

@@ -115,7 +115,6 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 ## GET @ in JSON INLINE
 while read LINE; do
 
-    echo "MATCHING IN COMMENT"
     echo "${LINE}"
     JSON=${LINE}
     TXIDATE=$(echo $JSON | jq -r .date)
@@ -124,7 +123,6 @@ while read LINE; do
     TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS TXIDATE=$TXIDATE FORMAT ??)"
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
         && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
         && continue

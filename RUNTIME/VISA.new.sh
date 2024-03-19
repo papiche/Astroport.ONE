@@ -19,17 +19,20 @@ SALT="$1"
 PEPPER="$2"
 PLAYER="$3"
 PSEUDO="$4"
+[[ $PSEUDO == "" ]] && PSEUDO="Anonymous"
 
 ## Fill UP TW with VIDEO URL or UMAP NS
 URL="$5"
+[[ $URL == "" ]] && URL="_URL_"
 
-## UPLANET SECTOR
+## UPLANET UMAP
 LAT="$6"
+[[ $LAT == "" ]] && LAT="0.00"
 LON="$7"
+[[ $LON == "" ]] && LON="0.00"
 
 ################################################################################
 YOU=$(myIpfsApi);
-LIBRA=$(head -n 2 ${MY_PATH}/../A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
 ################################################################################
 ## LIST TW MODELS
 ################################################################################
@@ -58,22 +61,22 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
     && [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
     && echo "TW FOUND ENTER 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
-    && read ENTER \
-    && [[ $ENTER != "" ]] && rm ~/.zen/tmp/${MOATS}/TW/index.html
+    && read ENTER
 
-    # EXTEND SEARCH IN WEB2.0
-    #~ [[ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    #~ && echo "Trying curl on $LIBRA" \
-    #~ && curl -m 30 -so ~/.zen/tmp/${MOATS}/TW/index.html "$LIBRA/ipns/${ASTRONAUTENS}"
+    if [[ $ENTER != "" ]]; then
+
+        # BACKUP tiddlers
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp \
+        --render '.' 'backup.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[!is[system]]'
+        rm ~/.zen/tmp/${MOATS}/TW/index.html
+        echo ">> Tiddlers Backup : ~/.zen/tmp/backup.json"
+    fi
 
     #############################################
     ## AUCUN RESULTAT
     if [ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]; then
 
-        # COPY TW TEMPLATE
-        [[ ${LON} && ${LAT} ]] \
-            && cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html \
-            || cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
+        cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     else
     #############################################
@@ -144,13 +147,6 @@ PLAYER=${PLAYER,,}
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
 ############################################################
-######### TODO Ajouter d'autres clefs IPNS, GPG ?
-# MOANS=$(ipfs key gen moa_${PLAYER})
-# MOAKEYFILE=$(${MY_PATH}/give_me_keystore_filename.py "moa_${PLAYER}")
-# echo "Coffre personnel multimedia journalisé dans votre 'Astroport' (amis de niveau 3)"
-# echo "Votre clef moa_${PLAYER} <=> $MOANS ($MOAKEYFILE)"; sleep 2
-############################################################
-
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey "$SALT" "$PEPPER"
 
 G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
@@ -168,27 +164,11 @@ echo "PEPPER=\"$PEPPER\"" >> ~/.zen/game/players/${PLAYER}/secret.june
 ## MOVE ${MOATS} secret.dunikey IN PLAYER DIRECTORY
 mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/${PLAYER}/
 
-        # PLAYER=geg-la_debrouille@super.chez-moi.com
-YUSER=$(echo ${PLAYER} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
-LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
-CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
-YOMAIN=$(echo ${PLAYER} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-# echo "NEXT STYLE GW : https://ipfs.$CLYUSER$YOMAIN.$(myHostName)"
-# echo "MY PLAYER API GW : $(myPlayerApiGw)"
-
 NID="${myIPFS}"
-#~ WID="https://ipfs.$CLYUSER$YOMAIN.$(myHostName)/api" ## Next Generation API # TODO PLAYER IPFS Docker entrance
-#~ WID="https://ipfs.$(myHostName)/api"
-#~ WID="https://ipfs.$(myHostName)/api"
 WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
-
-USALT=$(echo "$SALT" | jq -Rr @uri)
-UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
-DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 [[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
              && WID="http://ipfs.localhost:5001"
-
 
 # Create ${PLAYER} "IPNS Key"
 ipfs key rm ${PLAYER} >/dev/null 2>&1
@@ -200,13 +180,16 @@ mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datast
 qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"  ## Check by VISA.print.sh
 cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
 echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/ipfs/G1SSB/_g1.pubkey # G1SSB NOTATION (astrXbian compatible)
-
 qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png "$myLIBRA/ipns/${ASTRONAUTENS}"
 
 ############################################################################
 ## SEC PASS PROTECTED QRCODE : base58 secret.june / openssl(pass)
 #~ secFromDunikey=$(cat ~/.zen/game/players/${PLAYER}/secret.dunikey | grep "sec" | cut -d ' ' -f2)
 #~ echo "$secFromDunikey" > ~/.zen/tmp/${MOATS}/${PSEUDO}.sec
+
+USALT=$(echo "$SALT" | jq -Rr @uri)
+UPEPPER=$(echo "$PEPPER" | jq -Rr @uri)
+DISCO="/?salt=${USALT}&pepper=${UPEPPER}"
 
 ## PGP ENCODING SALT/PEPPER API ACCESS
 echo "${DISCO}" > ~/.zen/tmp/${MOATS}/topgp
@@ -543,8 +526,7 @@ echo "   "
 echo "* AstroID : with PASS : $PASS"
 echo "${NID}/ipns/${ASTRONAUTENS}#AstroID"
 echo
-echo "* UMap : registration at ${LAT}, ${LON}
-${myIPFS}${URL}"
+echo "* UMap : registration at ${LAT}, ${LON}"
 echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo ""

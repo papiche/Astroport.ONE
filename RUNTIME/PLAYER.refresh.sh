@@ -525,8 +525,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
         [[ ${FEEDNS} ]] \
             && IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-            && echo "Publishing ${PLAYER}_feed: /ipfs/${IRSS}" \
-            && ipfs --timeout 180s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
+            && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
+            && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
             || echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR"
 
     fi
@@ -570,10 +570,10 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## IPFS PLAYER TW #
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}
-    # /ipfs/${TW}
+    # /ipfs/${TW} = /TW/${PLAYER}/index.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${TW}'\" />${TODATE}:${PLAYER}" \
             > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/index.html
-    # /ipns/${ASTRONAUTENS}
+    # /ipns/${ASTRONAUTENS} = /TW/${PLAYER}/_index.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${ASTRONAUTENS}'\" />${PLAYER}" \
             > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${REGLAT}_${REGLON}/_${SECLAT}_${SECLON}/_${LAT}_${LON}/TW/${PLAYER}/_index.html
     ## IPNS UMAP _index.html ##

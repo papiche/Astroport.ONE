@@ -42,7 +42,7 @@ echo 'PRESS ENTER... '; read
 
 ## CREATE AND OR CONNECT USER
 PS3=' ____ Select  ___ ? '
-players=( "CREATE PLAYER" "IMPORT PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+players=( "CREATE PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 ## MULTIPLAYER
 
 select fav in "${players[@]}"; do
@@ -85,21 +85,10 @@ select fav in "${players[@]}"; do
         echo "'Longitude ?'"
         read LON
         [[ ${LON} == "" ]] && LON="0.00"
+        echo "${MY_PATH}/RUNTIME/VISA.new.sh" "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
         ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
         fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
         echo "Astronaute $fav bienvenue sur UPlanet..."
-        exit
-        ;;
-    "IMPORT PLAYER")
-        echo "'Secret 1'"
-        read SALT
-        echo "'Secret 2'"
-        read PEPPER
-        echo "'Adresse Email'"
-        read EMAIL
-        ${MY_PATH}/RUNTIME/VISA.new.sh "$SALT" "$PEPPER" "$EMAIL"
-        fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
-        echo "Astronaute $fav WELCOME"
         exit
         ;;
     "")
