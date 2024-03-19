@@ -39,7 +39,7 @@ YOU=$(myIpfsApi);
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
 TWUPLANET="/ipfs/bafybeigpwapdih24vnakummoyj6vodxiem4i6ezp5hxa35yt3paxpqz53y" ## WITH LIGHTBEAMS SAVER
-TWUPLANET="/ipfs/bafybeibtor7236vxtdivaf5473ad5yxnzhffdmszlz7o3cubvto2ptoiie" ## WITH IPFS SAVER
+TWUPLANET="/ipfs/bafybeicquhlstbogaxgx2bwqjra5zlmfg33ciengwwy62w5myucaxksuli" ## WITH IPFS SAVER
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -157,7 +157,7 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 mkdir -p ~/.zen/game/players/${PLAYER}/.ipfs # Prepare PLAYER datastructure
 echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
 
-## secret.june = SALT PEPPRER CREDENTIALS
+## secret.june = SALT PEPPER CREDENTIALS
 echo "SALT=\"$SALT\"" > ~/.zen/game/players/${PLAYER}/secret.june
 echo "PEPPER=\"$PEPPER\"" >> ~/.zen/game/players/${PLAYER}/secret.june
 ####
@@ -172,10 +172,12 @@ WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
 
 # Create ${PLAYER} "IPNS Key"
 ipfs key rm ${PLAYER} >/dev/null 2>&1
+ipfs key rm ${G1PUB} >/dev/null 2>&1
 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/secret.player "$SALT" "$PEPPER"
 TWNS=$(ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
-ASTRONAUTENS=$(ipfs key import $G1PUB -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
+ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 
+## TODO MAKE CLEANER
 mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/G1SSB # Prepare astrXbian sub-datastructure "old scarf code"
 qrencode -s 12 -o ~/.zen/game/players/${PLAYER}/QR.png "$G1PUB"  ## Check by VISA.print.sh
 cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ipfs/QR.png
@@ -236,7 +238,7 @@ sed -i "s~${ASTROPORT}~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/${PLAYER}/ipfs
 sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_CHAIN_~${TWUPLANET}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_TWMODEL_~${TWUPLANET}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-sed -i "s~_TW_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 ## AND HACK QRCODE.sh FOR _PGP KEY_ TO VERIFY LAST HASH OF PROVIDED PASS
 HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
@@ -255,12 +257,10 @@ sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.htm
 sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 #~ sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
 # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
 sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 ## AstroID Tiddler UPGRADE
 cat ${MY_PATH}/../templates/data/AstroID.json \
@@ -308,7 +308,8 @@ tiddlywiki \
 OLD16=$(cat ~/.zen/tmp/${MOATS}/MIZ.json | jq -r ".[].secret")
 [[ ${OLD16} == "" || ${OLD16} == "null" ]] && OLD16="_SECRET_"
 echo "${OLD16}"
-# TODO : NODE COULD FORGET PASS THEN DECODE ${PLAYER}/secret.dunikey FROM TW # PROD #
+
+# TODO : MAKE NODE FORGET PASS THEN DECODE ${PLAYER}/secret.june FROM TW # PROD #
 MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
 
 if [[ "${MACHINEPUB}" != "" ]]; then
@@ -346,7 +347,7 @@ if [[ "${MACHINEPUB}" != "" ]]; then
         || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
 
 else
-    echo " - WARNING - NATOOLS BYPASS - WARNING -"
+    echo " - WARNING - MISSING ~/.zen/game/myswarm_secret.dunikey - WARNING -"
 fi
 ########### SECTOR = 0.1° UPLANET SLICE
 OSECTOR=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].sector)
