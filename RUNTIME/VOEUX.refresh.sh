@@ -285,6 +285,12 @@ do
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
+        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+        echo "SEARCH WORLD SAME WISH CACHE"
+        [[ "$WISHNAME" != "" ]] && cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
+        ## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
+        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
 done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
 ################################################
@@ -328,13 +334,5 @@ if [[ ${wishnumbers} -gt 0 ]]; then
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
-
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "TODO : REFRESH WORLD SAME WISH CACHE"
-cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
-## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-
-############################################
 
 exit 0

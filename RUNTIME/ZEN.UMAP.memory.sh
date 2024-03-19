@@ -58,10 +58,10 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     ## TODO: SECURITY PATCH : check payment emitter is UMAPG1PUB
     if [[ $ipfs_pop ]]; then
         echo "FOUND $todate MEMORY SLOT"
-        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .g1pub' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
+        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
         [[ "$g1pub" != "$G1PUB" ]] && echo "INFO :: $g1pub Memory updater"
         [[ "$todate" == "$YESTERDATE" ]] \
-            && ipfs --timeout 90s get -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
+            && ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
             || echo "$ipfs_pop ERROR ... not from $YESTERDATE ... "
     else
         echo "WARNING cannot revover any memory !!"
