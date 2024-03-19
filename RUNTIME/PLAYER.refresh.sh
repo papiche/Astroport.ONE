@@ -221,11 +221,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     ######################################
     #### UPLANET GEO COORD EXTRACTION
     ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
-    LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-        [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
-    LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-        [[ $LON == "null" || $LON == "" ]] && LON="0.00"
+    ZLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+        [[ $ZLAT == "null" || $ZLAT == "" ]] && ZLAT="0.00"
+    ZLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+        [[ $ZLON == "null" || $ZLON == "" ]] && ZLON="0.00"
 
+    LAT=$(makecoord ${ZLAT})
+    LON=$(makecoord ${ZLON})
     SLAT="${LAT::-1}"
     SLON="${LON::-1}"
     RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
