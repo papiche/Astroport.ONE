@@ -318,7 +318,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         [[ $FPLAYER == 'null' || $FPLAYER == '' ]] && echo "FPLAYER null - CONTINUE" && continue
 
         FTW=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
-        [[ ${FTW} == "/ipns/" && ${FTW} == "null" && ${FTW} == "" ]] && echo "WEIRD FTW ${FTW} - CONTINUE" && continue
+        [[ ${FTW} == "/ipns/" || ${FTW} == "null" || ${FTW} == "" ]] && echo "WEIRD FTW ${FTW} - CONTINUE" && continue
 
         FG1PUB=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .g1pub')
         [[ $FG1PUB == 'null' || $FG1PUB == '' ]] && echo "FG1PUB null - CONTINUE" && continue
