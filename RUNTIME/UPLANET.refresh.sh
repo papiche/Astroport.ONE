@@ -242,7 +242,11 @@ for UMAP in ${unique_combined[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
 
     ####################################################################################
-    ######################## NEXTNS : UMAP, SECTOR, REGION
+    ######################## NEXTNS : UMAP, SECTOR, REGION  ## BOOSTRAP TO SWARM ##
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+    ####################################################################################
+    #################################################################################
+    ## DEMAIN DATA
     ####################################################################################
     ## UMAP NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.umap
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${LAT}" "${DEMAINDATE}${UPLANETNAME}${LON}"
@@ -251,8 +255,12 @@ for UMAP in ${unique_combined[@]}; do
     echo "UMAP NEXTNS : ${myIPFS}/ipns/${NEXTNS}"
     ipfs key rm "next" > /dev/null 2>&1
     rm ~/.zen/tmp/${MOATS}/next.priv
-    echo "${G1PUB}:${DEMAINDATE}:${NEXTNS}" > ~/.zen/tmp/${MOATS}/${UMAP}/_next.umap
-
+    ## BOOSTRAP SWARM PUBLICATION _next.umapns
+    echo "${G1PUB}:${DEMAINDATE}:${NEXTNS}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.umapns
+    ## IN UMAP KEY PUBLICATION
+    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.umapns \
+        ~/.zen/tmp/${MOATS}/${UMAP}/
     ## SECTOR NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.sector
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${SECTOR}" "${DEMAINDATE}${UPLANETNAME}${SECTOR}"
     ipfs key rm "next" > /dev/null 2>&1
@@ -260,8 +268,12 @@ for UMAP in ${unique_combined[@]}; do
     echo "SECTOR NEXTNS : ${myIPFS}/ipns/${NEXTNS}"
     ipfs key rm "next" > /dev/null 2>&1
     rm ~/.zen/tmp/${MOATS}/next.priv
-    echo "${SECTORG1PUB}:${DEMAINDATE}:${NEXTNS}" > ~/.zen/tmp/${MOATS}/${UMAP}/_next.sector
-
+    ## BOOSTRAP SWARM PUBLICATION _next.sectorns
+    echo "${SECTORG1PUB}:${DEMAINDATE}:${NEXTNS}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.sectorns
+    ## IN UMAP KEY PUBLICATION
+    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.sectorns \
+        ~/.zen/tmp/${MOATS}/${UMAP}/
     ## REGION NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.region
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${REGION}" "${DEMAINDATE}${UPLANETNAME}${REGION}"
     ipfs key rm "next" > /dev/null 2>&1
@@ -269,14 +281,27 @@ for UMAP in ${unique_combined[@]}; do
     echo "REGION NEXTNS : ${myIPFS}/ipns/${NEXTNS}"
     ipfs key rm "next" > /dev/null 2>&1
     rm ~/.zen/tmp/${MOATS}/next.priv
-    echo "${REGIONG1PUB}:${DEMAINDATE}:${NEXTNS}" > ~/.zen/tmp/${MOATS}/${UMAP}/_next.region
+    ## BOOSTRAP SWARM PUBLICATION _next.regionns
+    echo "${REGIONG1PUB}:${DEMAINDATE}:${NEXTNS}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.regionns
+    ## IN UMAP KEY PUBLICATION
+    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.regionns \
+        ~/.zen/tmp/${MOATS}/${UMAP}/
     ####################################################################################
-    ### WRITE TO SWARM CACHE
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
-    echo "${TODATENS}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS
-    echo "${G1PUB}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
-    echo "${SECTORG1PUB}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
-    echo "${REGIONG1PUB}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
+    ## TODATE DATA
+    ####################################################################################
+    echo "${TODATENS}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS
+    echo "${SECTORNS}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORNS
+    echo "${TODATEREGIONNS}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS
+    echo "${G1PUB}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
+    echo "${SECTORG1PUB}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
+    echo "${REGIONG1PUB}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
 
     ####################################################################################
 

@@ -240,16 +240,23 @@ for PLAYER in ${PLAYERONE[@]}; do
     RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
     RLON="$(echo ${LON} | cut -d '.' -f 1)"
     ## SEARCH for TODATENS in SWARM then LOCAL
-    MYNS=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS | tail -n 1)
+    ## ZEN STATION
+    MYNS=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS)
+    UMAPG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB)
+    ## BOOSTRAP SCENARIO
     [[ $MYNS == "" ]] \
-        && MYNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS)
-    # EXTRACT "${G1PUB}:${DEMAINDATE}:${NEXTNS}"
+        && MYNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS) \
+        && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB)
+    # Search in flashmem
     if [[ ${MYNS} != "" ]]; then
         echo "UMAP NEXTNS"
-        cat ~/.zen/tmp/flashmem/${MYNS}/_next.umap
+        UMAPNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.umapns | cut -d ':' -f 3)
+        cat ~/.zen/tmp/flashmem/${MYNS}/_next.umapns
         echo "SECTOR NEXTNS"
+        SECTORNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.sectorns | cut -d ':' -f 3)
         cat ~/.zen/tmp/flashmem/${MYNS}/_next.sector
         echo "REGION NEXTNS"
+        REGIONNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.regionns | cut -d ':' -f 3)
         cat ~/.zen/tmp/flashmem/${MYNS}/_next.region
     fi
 
