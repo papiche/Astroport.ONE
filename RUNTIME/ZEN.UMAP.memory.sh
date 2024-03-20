@@ -60,9 +60,8 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
         echo "FOUND $todate MEMORY SLOT"
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
         [[ "$g1pub" != "$G1PUB" ]] && echo "INFO :: $g1pub Memory updater"
-        [[ "$todate" == "$YESTERDATE" ]] \
-            && ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
-            || echo "$ipfs_pop ERROR ... not from $YESTERDATE ... "
+        ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
+            || echo "$ipfs_pop ERROR ... "
     else
         echo "WARNING cannot revover any memory !!"
     fi

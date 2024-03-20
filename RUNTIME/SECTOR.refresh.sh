@@ -112,9 +112,8 @@ for SECTOR in ${SECTORS[@]}; do
     echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    ### ZEN
-
-
+    ### SHOW ${SECTOR}
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}
     ## CONTROL CHAIN TIME
     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
     ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
@@ -201,7 +200,7 @@ for SECTOR in ${SECTORS[@]}; do
     cp -rf ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
         ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
     cp -rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
-        ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
+        ~/.zen/tmp/${MOATS}/${SECTOR}/TWz 2>/dev/null
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
     RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/RSS/*.rss.json 2>/dev/null))
@@ -236,7 +235,6 @@ for SECTOR in ${SECTORS[@]}; do
     echo ${ZEN} > ~/.zen/tmp/${MOATS}/${SECTOR}/ZEN
 
     echo "Number of RSS : "${TOTL}
-    rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS* ## TODO REMOVE
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N
 
 ###########################################################################################

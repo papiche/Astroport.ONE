@@ -55,9 +55,8 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
     if [[ $ipfs_pop ]]; then
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
-        [[ "$todate" == "$YESTERDATE" ]] \
-            && ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop \
-            || echo "$ipfs_pop ERROR ... not from $YESTERDATE ... "
+        ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop \
+            || echo "$ipfs_pop ERROR ... "
     else
         echo "WARNING cannot revover any memory !!"
     fi

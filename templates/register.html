@@ -105,7 +105,28 @@ input[name="uplanet"] {
     </style>
     <!-- Astro API JS LIB -->
     <script src="http://127.0.0.1:8080/ipfs/Qmae5v9zydax9u6C9ceDijURu5PYdd5avmv4NkenCw7RFv/astro.js"></script>
+<script>
+// Function to detect the browser language
+function detectBrowserLanguage() {
+  // Check if the browser supports navigator.language
+  if (navigator.language) {
+    return navigator.language;
+  }
+  // For browsers that don't support navigator.language, fallback to navigator.browserLanguage
+  else if (navigator.browserLanguage) {
+    return navigator.browserLanguage;
+  }
+  // If neither is supported, return a default language
+  else {
+    return 'en'; // default to English if no language information is available
+  }
+}
 
+// Call the function and display the detected language
+var browserLanguage = detectBrowserLanguage();
+console.log("Browser Language:", browserLanguage);
+// You can use browserLanguage variable wherever you want to utilize the detected language
+</script>
 <script>
     function toggleConsole() {
         const console = document.getElementById('console');
