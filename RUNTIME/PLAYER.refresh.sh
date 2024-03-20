@@ -239,7 +239,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     SLON="${LON::-1}"
     RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
     RLON="$(echo ${LON} | cut -d '.' -f 1)"
+    ## SEARCH for TODATENS in SWARM then LOCAL
     MYNS=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS | tail -n 1)
+    [[ $MYNS == "" ]] \
+        && MYNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS)
     # EXTRACT "${G1PUB}:${DEMAINDATE}:${NEXTNS}"
     if [[ ${MYNS} != "" ]]; then
         echo "UMAP NEXTNS"
