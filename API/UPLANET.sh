@@ -184,7 +184,6 @@ end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
 ) &
 
-
 ########################################
 ## Calculating TW IPNS ADDRESS
 TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${PPASS}" "${NPASS}")
@@ -221,7 +220,7 @@ echo "$HTTPCORS
     <br>
     <h2>${PPASS}</h2>
     <h2>${NPASS}</h2>
-
+    <h2>${PASS}</h2>
     Generating account...
     <br>Please check your mail box to get your ZenCard and PIN code.
     <br>
