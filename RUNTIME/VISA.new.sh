@@ -542,7 +542,7 @@ echo "<html><head>
 <h1>UPlanet : <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
 
 echo "<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
-<img src='${myIPFSGW}${IASTRO}'\>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+<img src='${myIPFSGW}${IASTRO}'\><br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
 asciiart="${MY_PATH}/../images/astroport.art"
 while IFS= read -r line
