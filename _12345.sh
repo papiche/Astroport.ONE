@@ -84,6 +84,10 @@ while true; do
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
+    ### STOP SWARM SYNC 1H BEFORE 20H12
+    [[ $(date +"%H%M") -gt 1912 ]] \
+        && echo "$(date +"%H%M") : 20H12 is coming... " && continue
+
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
 
