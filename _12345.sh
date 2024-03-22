@@ -12,6 +12,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
 ## SEND LOG TO ~/.zen/tmp/_12345.log
+rm ~/.zen/tmp/_12345.log
 exec 2>&1 >> ~/.zen/tmp/_12345.log
 
 PORT=12345
@@ -84,12 +85,12 @@ while true; do
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
-    ### STOP SWARM SYNC 1H BEFORE 20H12
-    [[ $(date +"%H%M") -gt 1912 ]] \
-        && echo "$(date +"%H%M") : 20H12 is coming... " && continue
-
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
+
+        ### STOP SWARM SYNC 1H BEFORE 20H12
+        [[ $(date +"%H%M") -gt 1912 ]] \
+            && echo "$(date +"%H%M") : 20H12 is coming... " && continue
 
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
