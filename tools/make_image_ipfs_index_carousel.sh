@@ -57,7 +57,7 @@ if [[ ! -d $img_dir ]]; then
 
         if [[ -s  ${INDEX} ]]; then
             # EXTRACT [tag[moa]] : ~/.zen/game/players/${PLAYER}/moa.jpg
-            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.moa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
+            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.moa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${PLAYER}"
             cat ~/.zen/tmp/${PLAYER}.moa.json | jq -r '.[].text' | base64 -d > ~/.zen/game/players/${PLAYER}/moa.jpg
             echo "DESSIN DE MOA : ~/.zen/game/players/${PLAYER}/moa.jpg"
              [[ $(file -b ~/.zen/game/players/${PLAYER}/moa.jpg | cut -d ' ' -f 1) == "JPEG" ]] \
@@ -85,7 +85,7 @@ if [[ ! -d $img_dir ]]; then
                 echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1G1$WISHNAME&tw=$ASTRONAUTENS', 'tab', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
             done < ~/.zen/tmp/${PLAYER}.g1wishes.txt
         fi
-        echo "<button onclick=\"window.open('"$myIPFS"/ipns/"$ASTRONAUTENS"');\">TW</button>" >> ~/.zen/tmp/carousel/${pub}.button
+        echo "<button onclick=\"window.open('"$myIPFS"/ipns/"$ASTRONAUTENS"');\">_*_ TW _*_*_</button>" >> ~/.zen/tmp/carousel/${pub}.button
 ##################
 
 

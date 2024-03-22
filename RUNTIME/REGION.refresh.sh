@@ -31,9 +31,15 @@ for i in $*; do
     UMAPS=("$i" ${UMAPS[@]})
 done
 
-[[ ${#UMAPS[@]} == 0 ]] && UMAPS="_0.00_0.00"
+## NO $i PARAMETERS - GET ALL UMAPS
+if [[ ${#UMAPS[@]} == 0 ]]; then
+    MEMAPS=($(ls -td ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+    SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+    combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
+    UMAPS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+fi
 
-######## INIT REGIONS ########################
+######## DETERMINE REGIONS FOR ALL UMAPS ################
 for UMAP in ${UMAPS[@]}; do
 
     LAT=$(echo ${UMAP} | cut -d '_' -f 2)
@@ -57,8 +63,8 @@ REGIONS=($(echo "${MYREGIONS[@]}" | tr ' ' '\n' | sort -u))
 echo "ACTIVATED REGIONS : ${REGIONS[@]}"
 
 for REGION in ${REGIONS[@]}; do
-
-    echo "_____REGION ${REGION}"
+    echo "-------------------------------------------------------------------"
+    echo "_____REGION ${REGION}  $(date)"
     mkdir -p ~/.zen/tmp/${MOATS}/${REGION}
     REGLAT=$(echo ${REGION} | cut -d '_' -f 2)
     REGLON=$(echo ${REGION} | cut -d '_' -f 3)
@@ -94,7 +100,8 @@ for REGION in ${REGIONS[@]}; do
     ## GET from IPNS
     ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+    ## SHOULD NEED 12 SIGNATURES
+    ## FULL REFRESH DEMO... ZEN CHAINING COMING LATER
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS
     rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
@@ -137,7 +144,7 @@ for REGION in ${REGIONS[@]}; do
 
     ###################################
     ## NODE PUBLISH REGION TODATENS LINK
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" \
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />/_${REGLAT}_${REGLON}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/_index.html
 
     #~ ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
@@ -148,7 +155,7 @@ for REGION in ${REGIONS[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     echo "Numbers of REGION WEEK RSS : ${NL} + ${NS} : "${TOTL}
 
-    rm ~/.zen/tmp/${MOATS}/${REGION}/N_*
+    rm ~/.zen/tmp/${MOATS}/${REGION}/N_* 2>/dev/null
 
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${REGION}/N_${TOTL}
 
@@ -162,7 +169,7 @@ for REGION in ${REGIONS[@]}; do
     fi
 
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
-    ipfs name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
+    ipfs --timeout 180s name publish -k ${TODATE}${REGIONG1PUB} /ipfs/${IPFSPOP}
 
 
     ipfs key rm ${REGIONG1PUB} ${YESTERDATE}${REGIONG1PUB} > /dev/null 2>&1

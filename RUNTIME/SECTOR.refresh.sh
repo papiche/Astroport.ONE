@@ -60,8 +60,9 @@ SECTORS=($(echo "${MYSECTORS[@]}" | tr ' ' '\n' | sort -u))
 echo "ACTIVATED SECTORS : ${SECTORS[@]}"
 
 for SECTOR in ${SECTORS[@]}; do
-
+    echo "############################################"
     echo "_____SECTOR ${SECTOR}"
+    echo "################################  $(date)"
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/
     SLAT=$(echo ${SECTOR} | cut -d '_' -f 2)
     SLON=$(echo ${SECTOR} | cut -d '_' -f 3)
@@ -74,6 +75,7 @@ for SECTOR in ${SECTORS[@]}; do
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
     SECTORNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${SECTOR}.priv)
 
@@ -97,22 +99,21 @@ for SECTOR in ${SECTORS[@]}; do
     start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #~ ## IPFS GET ONLINE YESTERDATE SECTORNS
-    ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
+    ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory
         [[ ${ZEN} -gt 0 ]] \
             && echo "INTERCOM Refreshing from ZEN MEMORY" \
-            && ${MY_PATH}/../RUNTIME/ZEN.SECTOR.memory.sh "${SECTOR}" "${MOATS}"
+            && ${MY_PATH}/../RUNTIME/ZEN.SECTOR.memory.sh "${SECTOR}" "${MOATS}" "${G1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     end=`date +%s`
     echo "_____SECTOR${SECTOR} GET time was "`expr $end - $start` seconds.
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    ### ZEN
-
-
+    ### SHOW ${SECTOR}
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/${SECTOR}
     ## CONTROL CHAIN TIME
     ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
     ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats 2>/dev/null)
@@ -169,6 +170,15 @@ for SECTOR in ${SECTORS[@]}; do
     mv ${UREFRESH}.shuf ${UREFRESH}
     echo "SETTING NEXT REFRESHER : $(cat ${UREFRESH} | head -n 1)"
 
+
+    ############ 101 ZEN REFILL ?!
+    CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
+    [[ ${COINS} == "" || ${COINS} == "null" ]] \
+        && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
+        && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${SECTOR}:${MIUSER}" \
+        && echo "UPLANET:101:${SECTOR}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ "
+
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS
     mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TW
@@ -182,6 +192,15 @@ for SECTOR in ${SECTORS[@]}; do
 
     ## SET SECTOR
     sed -i "s~_SECTOR_~${SECTOR}~g" ${INDEX}
+
+    ## REFRESH ALL TWs in that SECTOR
+    rm -Rf ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
+    mkdir -p ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
+
+    cp -rf ~/.zen/tmp/swarm/12D*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
+        ~/.zen/tmp/${MOATS}/${SECTOR}/TWz
+    cp -rf ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/* \
+        ~/.zen/tmp/${MOATS}/${SECTOR}/TWz 2>/dev/null
 
     ## GET ALL RSS json's AND Feed SECTOR TW with it
     RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/RSS/*.rss.json 2>/dev/null))
@@ -216,7 +235,6 @@ for SECTOR in ${SECTORS[@]}; do
     echo ${ZEN} > ~/.zen/tmp/${MOATS}/${SECTOR}/ZEN
 
     echo "Number of RSS : "${TOTL}
-    rm ~/.zen/tmp/${MOATS}/${SECTOR}/N_RSS* ## TODO REMOVE
     echo ${TOTL} > ~/.zen/tmp/${MOATS}/${SECTOR}/N
 
 ###########################################################################################
@@ -230,8 +248,8 @@ for SECTOR in ${SECTORS[@]}; do
     " > ~/.zen/tmp/world.js
     floop=1
 
-    SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
-    NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}*_${SLON}*/TW/*/index.html 2>/dev/null))
+    SWARMTW=($(ls ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/*/index.html 2>/dev/null))
+    NODETW=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/TW/*/index.html 2>/dev/null))
     TWFILES=("${SWARMTW[@]}" "${NODETW[@]}")
 
     for TWRED in ${TWFILES[@]}; do
@@ -272,7 +290,7 @@ for SECTOR in ${SECTORS[@]}; do
     ## ADD SECTOR ZENPUB.png & INFO.png
     convert -font 'Liberation-Sans' \
             -pointsize 80 -fill purple -draw 'text 50,120 "'"${ZEN} Zen"'"' \
-            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}"'"' \
+            -pointsize 30 -fill purple -draw 'text 40, 180 "'"${SECTOR}:${YESTERDATE}"'"' \
             $MY_PATH/../images/G1WorldMap.png "${HOME}/.zen/tmp/${MOATS}/${SECTOR}.png"
     # CREATE G1PUB AMZQR
     amzqr ${G1PUB} -l H -p "$MY_PATH/../images/zenticket.png" -c -n ZENPUB.png -d ~/.zen/tmp/${MOATS}/${SECTOR}/
@@ -338,7 +356,7 @@ for SECTOR in ${SECTORS[@]}; do
     ###############################
     echo "% PUBLISHING ${SECTOR} ${myIPFS}/ipns/${TODATENS}"
     start=`date +%s`
-    ipfs name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
+    ipfs --timeout 240s name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
     ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
 
 ######################################################
@@ -356,7 +374,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     ###################################
     ## NODE CACHE SECTOR TODATENS
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATENS}'\" />" \
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATENS}'\" />_${SLAT}_${SLON}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON}/_index.html
 
     ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)

@@ -73,7 +73,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
 fi
 
-## CLEANING SWARM 3 DAYS OLD
+echo "## CLEANING SWARM 3 DAYS OLD"
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
 
 exit 0

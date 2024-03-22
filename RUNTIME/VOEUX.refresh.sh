@@ -275,7 +275,7 @@ do
         ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}
 
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
-        ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
+        ipfs --timeout 180s name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
         echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH" ## TODO LOOP BOOSTRAP & ONLINE FRIENDS
         curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
@@ -284,6 +284,12 @@ do
         echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${IPNS_VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
+
+        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+        echo "SEARCH WORLD SAME WISH CACHE"
+        [[ "$WISHNAME" != "" ]] && cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
+        ## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
+        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
@@ -304,30 +310,29 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     LON=$(makecoord $LON)
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
-    SECTOR="_${SECLAT}_${SECLON}"
+    SLAT="${LAT::-1}"
+    SLON="${LON::-1}"
+    SECTOR="_${SLAT}_${SLON}"
+    RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
+    RLON="$(echo ${LON} | cut -d '.' -f 1)"
+    REGION="_${RLAT}_${RLON}"
     ##############################################################
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    UMAPG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB | tail -n 1)
+    SECTORG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB | tail -n 1)
+    [[ ${UMAPG1PUB} == "" ]] && UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    [[ ${SECTORG1PUB} == "" ]] && SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
     echo "***** PLAYER $PLAYER *************************************"
-    echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
-    to ${SECTOR} WALLET ${SECTORG1PUB}"
+    echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
+    to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
     echo "************************************************************"
+    YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "UPLANET:TWISH:$TODATE:/ipfs/${MYWISHFLUX}"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$YOUSER:/ipfs/${MYWISHFLUX}"
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
-
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "TODO : REFRESH WORLD SAME WISH CACHE"
-cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
-## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-
-############################################
 
 exit 0

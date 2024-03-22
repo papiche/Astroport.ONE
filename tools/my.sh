@@ -420,8 +420,14 @@ myAstroTube() {
 function makecoord() {
     local input="$1"
 
+    input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')  # Ensure has exactly two decimal places
+
     if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
         input="${input}0"
+    elif [[ ${input} =~ ^\.[0-9]+$ ]]; then
+        input="0${input}"
+    elif [[ ${input} =~ ^-?[0-9]+\.$ ]]; then
+        input="${input}00"
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
         input="${input}.00"
     fi
@@ -488,7 +494,7 @@ myASTROTUBE="https://$(myAstroTube)"
 ## WAN STATION
 [ -z "$isLAN" ] \
  && myASTROPORT="https://astroport.$(myDomainName)" \
- && myAPI="https://ipfs.$(myHostName)" \
+ && myAPI="https://ipfs.$(myHostName)/5001" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
  && myG1BILLET="https://libra.${myDOMAIN}" \
@@ -519,7 +525,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 fi
 
 ## https://git.p2p.legal/qo-op/OSM2IPFS
-EARTHCID="/ipfs/QmXWDm78ne22ou9kmRPFqVa3e15BNHsXBZe4Y9KmgBPmJL"
+EARTHCID="/ipfs/QmQizK777pFChbR12aKf3GExRUQyoPTHeWQxYpqfUGj7ff"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 ###########################
@@ -545,7 +551,11 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 ## ACTIVATE SECONDARY PRIVATE IPFS SWARM
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
-[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
+[[ ${UPLANETNAME} == "" ]] \
+    && WORLDG1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
+
+[[ ${WORLDG1PUB} == "" ]] \
+    && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.

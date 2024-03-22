@@ -26,15 +26,15 @@ ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${G1PUB} 2>/dev/null)
 && echo "INVALID G1PUB : ${G1PUB}" \
 && exit 1
 
-echo "TW ? $myIPFS/ipns/${ASTROTOIPFS}"
+echo "COINCHECK ${G1PUB} -> TW : $myIPFS/ipns/${ASTROTOIPFS}"
 
 #######################################################
 ## CLEANING DAY+1 COINS CACHE FILES
 # find ~/.zen/game/players/ -mtime +1 -type f -name "COINS" -exec rm -f '{}' \;
+echo "Cleaning ${G1PUB}.COINS"
 find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB} \;
-[ $? == 0 ] && echo "Cleaning ${G1PUB}.COINS"
+echo "Cleaning ${G1PUB}.g1history.json"
 find  ~/.zen/tmp/coucou/ -mtime +1 -type f -name "${G1PUB}.g1history.json" -exec rm '{}' \;
-[ $? == 0 ] && echo "Cleaning ${G1PUB}.g1history.json"
 #######################################################
 
 ## IDENTIFY IF "ASTROPORT" PLAYER
@@ -56,7 +56,7 @@ ${MY_PATH}/GetGCAttributesFromG1PUB.sh ${G1PUB}
 
 # echo "ACTUAL $COINSFILE CONTAINS"
 CURCOINS=$(cat $COINSFILE 2>/dev/null)
-echo "$CURCOINS (G1)"
+echo "SOLDE : $CURCOINS G1"
 
 ## NO or NULL RESULT in CACHE : REFRESHING
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
@@ -75,6 +75,6 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     echo $CURCOINS
     ) &
 fi
-
+#### tail -n 1 FUNCTION RESULT
 echo $CURCOINS
 exit 0

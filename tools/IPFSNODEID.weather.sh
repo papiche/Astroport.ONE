@@ -47,6 +47,7 @@ wind_speed=$(echo "$meteo" | jq -r '.wind.speed')
 
 # Create a sentence with "emoticons" and ASCII art decorations
 echo "# $ville
+$(date)
 
 ## $selected_emoticon  $condition
 $description

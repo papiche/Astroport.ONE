@@ -16,7 +16,13 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
-sudo systemctl restart ipfs && sleep 10
+#~ sudo systemctl stop astroport
+## CHECK IF IPFS NODE IS RESPONDING (ipfs name resolve ?)
+ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
+[[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
+    && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
+    && sudo systemctl restart ipfs \
+    && sleep 60
 
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
@@ -31,12 +37,21 @@ done
 echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
-## REMOVE TMP BUT KEEP SWARM and coucou
+## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
+mv ~/.zen/tmp/flashmem ~/.zen/flashmem
 rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
+mv ~/.zen/flashmem ~/.zen/tmp/flashmem
+
+### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+MOATS_plus_5_hours=$(date -d "now + 5 hours" +"%Y%m%d%H%M%S%4N")
+mkdir ~/.zen/tmp/${IPFSNODEID}
+echo ${MOATS_plus_5_hours} > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+echo 9000 > ~/.zen/tmp/random.sleep
 
 ## UPDATE G1BILLETS code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \

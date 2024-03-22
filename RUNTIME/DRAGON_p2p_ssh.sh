@@ -49,7 +49,7 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt
 [[ -s ~/.ssh/id_ed25519.pub ]] && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
 ## DRAGONz PGP/SSH style (https://pad.p2p.legal/keygen)
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
-[[ -z ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
 
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
@@ -69,18 +69,48 @@ echo
 PORT=22000
 PORT=$((PORT+${RANDOM:0:3}))
 
-echo "#!/bin/bash
-if [[ ! \$(ipfs p2p ls | grep x/ssh-${IPFSNODEID}) ]]; then
-    ipfs --timeout=10s ping -n 3 /p2p/${IPFSNODEID}
-    ipfs p2p forward /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/$PORT /p2p/${IPFSNODEID}
+echo '#!/bin/bash
+if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
+    ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+    [[ $? == 0 ]] \
+        && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+        && ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
-ssh ${USER}@127.0.0.1 -p $PORT
-" > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
+echo "
+
+                      /|               /\\
+                 /^^^/ |^\Z           /  |
+                |         \Z         /   |
+                / @        \Z       /   / \_______
+   (  \      _ /            \Z     /   /         /
+ (     ---- /G       |\      |Z   /   /         /
+  (  / ---- \    /---'/\     |Z  /   /         /
+             \/--'   /--/   /Z  /             /
+              |     /--/   |Z  /            / \_______
+             /     /--/    |Z  \           /         /
+          --/     /--/     \Z   |         /         /
+           /     /--/       \Z  /                  /
+                |--|         \Z/                  /
+                |---|        /              /----'
+                 \---|                     /^^^^^^^^^^^^\Z
+                  \-/                                    \Z
+                   /     /        |                       \Z
+               \---'    |\________|      |_______          |Z
+             \--'     /\/ \|_|_|_||      |_|_|_|_|\_       |Z
+              '------'            /     /  /      |_       /Z
+                              \---'    |  / ``````        /Z
+                            \--'     /\/  \ _____________/Z
+                             '------'      \
+
+"
+
 ############################################
-echo
+echo "CONNECT WITH THIS COMMAND"
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ############################################
 

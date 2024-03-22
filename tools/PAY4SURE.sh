@@ -37,6 +37,7 @@ COMMENT=${COMMENT}"
 [[ -z ${ISSUERPUB} ]] && echo "CANNOT EXTRACT ISSUERPUB FROM DUNIKEY - EXIT -" && exit 1
 
 COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
+sleep 3 ## Wait for ()&
 [[ -z $COINS ]] && echo "ERROR : ${ISSUERPUB}=$COINS EMPTY WALLET - EXIT -" && exit 1
 
 ###### TEST INPUT VALUES
@@ -46,7 +47,7 @@ COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
     && echo "Valid AMOUNT=${AMOUNT}" \
     || { echo "ERROR NOT a valid AMOUNT : ${AMOUNT} - EXIT -" && exit 1; }
 [[ $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]] \
-    && echo "ERROR : SOURCE WALLET IS MISSING COINS !!! $AMOUNT > $COINS - EXIT -" && exit 1
+    && echo "ERROR : SOURCE WALLET ${ISSUERPUB} IS MISSING COINS !!! $AMOUNT > $COINS - EXIT -" && exit 1
 
 [[ -z $G1PUB ]] && echo "ERROR : ${ISSUERPUB}=$COINS ($AMOUNT) MISSING DESTINATION - EXIT -" && exit 1
 echo
@@ -81,7 +82,7 @@ CHK2=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 2 )
 echo ${CHK1}
 echo ${CHK2}
 
-if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 'conforme' ) ]]; then
+if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep 'conforme') ]]; then
     echo "TRANSACTION SENT"
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
@@ -95,7 +96,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     DES=$(cat ${DESTFILE})
     [[ ${DES} != "" && ${DES} != "null" ]] \
         && echo "$DES + $AMOUNT" | bc  > ${DESTFILE} \
-        || echo "${AMOUNT}" > ${DESTFILE}
+        || { echo "${AMOUNT}" > ${DESTFILE} && DES=${AMOUNT}; }
 
     ## INFORM ABOUT PAYMENT
     ZENAMOUNT=$(echo "$AMOUNT * 10" | bc | cut -d '.' -f 1)
@@ -112,7 +113,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès')  || $(echo "${CHK1}" | grep 
     </h3>
     </html>" > ${PENDINGDIR}/${MOATS}.result.html
 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN ${ISSUERPUB}//${COMMENT} TO ${G1PUB}"
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
     rm ${PENDINGDIR}/${MOATS}.key

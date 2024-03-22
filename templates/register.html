@@ -155,8 +155,8 @@ input[name="uplanet"] {
     <br><br>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
 
-    <h1><a href="/"  title="BACK OFFICE" >U</a><span>Planet</span>
-    <br><span><a id="satLink" href="#" title="OSM Sat">&nbsp;*&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;*&nbsp;</a></span></h1>
+    <h1><a href="/"  title="/UPlanet" >U</a><span>Planet</span>
+    <br><span><a id="satLink" href="#" title="OSM Sat">&nbsp;<<<*&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;*>>>&nbsp;</a></span></h1>
 
         <span>Enter Email</span></br>
         <input name=uplanet value=''></br>
@@ -286,6 +286,34 @@ setTimeout(() => {
     }
     // promptUser();
 </script>
+  <script>
+    // Function to detect the browser language
+    function detectBrowserLanguage() {
+      // Check if the browser supports navigator.language
+      if (navigator.language) {
+        return navigator.language;
+      }
+      // For browsers that don't support navigator.language, fallback to navigator.browserLanguage
+      else if (navigator.browserLanguage) {
+        return navigator.browserLanguage;
+      }
+      // If neither is supported, return a default language
+      else {
+        return 'en'; // default to English if no language information is available
+      }
+    }
 
+    // Function to change iframe source based on browser language
+    function changeIframeSrc() {
+      var browserLanguage = detectBrowserLanguage();
+      var iframe = document.getElementById('aframe');
+      // Construct the new URL based on the detected language
+      var newSrc = 'https://pad.p2p.legal/Astroport_1234_' + browserLanguage;
+      iframe.src = newSrc;
+    }
+
+    // Call the function to change iframe source
+    changeIframeSrc();
+  </script>
 
 </html>

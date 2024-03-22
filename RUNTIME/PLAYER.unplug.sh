@@ -30,7 +30,9 @@ mkdir -p ~/.zen/tmp/${MOATS}
         --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
     TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+                [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+                [[ $LON == "null" || $LON == "" ]] && LON="0.00"
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
 
@@ -57,22 +59,23 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
     ALL="ALL"
     [[ $ONE == "ONE" ]] && ALL=1
-    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB"
+    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB: ${WORLDG1PUB}"
 
     [[ ! -z ${SECTORG1PUB} ]] \
         && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "UNPLUG:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
+    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
     ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
     for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
         echo "removing wish ${vk}"
-        ipfs key rm ${vk}
+        [[ ${vk} != "" ]] && ipfs key rm ${vk}
     done
 
 ## SEND PLAYER LAST KNOW TW
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
-${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='${myIPFSGW}/ipfs/${TW}'>TW ARCHIVE</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "BYE BYE MESSAGE"
+${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='/ipfs/${TW}'>TW (${TW})</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "BYE BYE MESSAGE"
 
 echo "PLAYER IPNS KEYS UNPLUGED"
 echo "#######################"

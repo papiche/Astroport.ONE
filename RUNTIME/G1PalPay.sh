@@ -115,7 +115,6 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 ## GET @ in JSON INLINE
 while read LINE; do
 
-    echo "MATCHING IN COMMENT"
     echo "${LINE}"
     JSON=${LINE}
     TXIDATE=$(echo $JSON | jq -r .date)
@@ -124,7 +123,6 @@ while read LINE; do
     TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    echo ">>> TODO CHECK TX HAPPENS LAST 24H (WHAT IS TXIDATE=$TXIDATE FORMAT ??)"
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
         && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
         && continue
@@ -132,18 +130,26 @@ while read LINE; do
     ## GET EMAILS FROM COMMENT
     TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
+    echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
+    [[ $(echo "$TXIAMOUNT < 0" | bc) ]] \
+        && echo "TX-OUT" \
+        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
+        && continue
+
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#TXIMAILS[@]}"
     N=${#TXIMAILS[@]}
-    SHARE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
+    SHAREE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
+    SHARE=$(makecoord ${SHAREE})
     ## SHARE is received AMOUT divided by numbers of EMAILS in comment
-
-    echo "$TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS % $SHARE %"
 
     # let's loop over TXIMAILS
     for EMAIL in "${TXIMAILS[@]}"; do
 
-        [[ ${EMAIL} == $PLAYER ]] && echo "ME MYSELF" && continue
+        [[ ${EMAIL} == $PLAYER ]] \
+            && echo "ME MYSELF" \
+            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
+            && continue
 
         echo "EMAIL : ${EMAIL}"
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED="" # RESET VAR
@@ -183,7 +189,9 @@ while read LINE; do
         fi
 
         ## DONE STAMP IT
-        [[ $STAMP == 0 ]] && echo "STAMP DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST TXIDATE
+        [[ $STAMP == 0 ]] \
+            && echo "STAMP DONE" \
+            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate ## MEMORIZE LAST TXIDATE
 
     done
 

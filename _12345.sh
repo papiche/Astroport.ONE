@@ -47,10 +47,11 @@ CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
 #######################################################
 ## CREATE MySwarm KEYS ?
-if [[ ${CHAN} == "" || ${CHAN} == "null" ]]; then
+if [[ ${CHAN} == "" || ${CHAN} == "null" || ! -s ~/.zen/game/myswarm_secret.june ]]; then
 echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
     SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
     SECRET2=${IPFSNODEID}
+    ipfs key rm "MySwarm_${IPFSNODEID}"
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
     ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipfskey "$SECRET1" "$SECRET2"
     ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/myswarm_secret.dunikey "$SECRET1" "$SECRET2"
@@ -65,15 +66,16 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 ############################################################
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
-###################
-# NEVER ENDING LOOP
+
 
 #### UPLANET FLASHMEM UPDATES
-${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
+${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
 ###################################################################
 ## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
 ###################################################################
+###################
+# NEVER ENDING LOOP
 while true; do
 
     start=`date +%s`
@@ -82,16 +84,27 @@ while true; do
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
+    ### STOP SWARM SYNC 1H BEFORE 20H12
+    [[ $(date +"%H%M") -gt 1912 ]] \
+        && echo "$(date +"%H%M") : 20H12 is coming... " && continue
+
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
     if [[ ${duree} -gt 3600000 ]]; then
+
+        PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
+        [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
+
+        ## CHECK IF IPFS NODE IS RESPONDING
+        ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
+        [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
+            && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
+            && sudo systemctl restart ipfs \
+            && sleep 60
 
         ${MY_PATH}/ping_bootstrap.sh
 
         #### UPLANET FLASHMEM UPDATES
-        ${MY_PATH}/RUNTIME/UPlanetKEYS_refresh.sh &
-
-        PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
-        [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
+        ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
         #####################################
         ( ##### SUB-PROCESS £
@@ -101,7 +114,7 @@ while true; do
         for player in ${PLAYERONE[@]}; do
             g1pub=$(cat ~/.zen/game/players/${player}/.g1pub 2>/dev/null)
             # Check Station PLAYER payments
-            PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX"))
+            PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX" 2>/dev/null))
             for pending in "${PENDINGS[@]}"; do
                  echo ${pending}
                  # TODO TREAT PENDINGS

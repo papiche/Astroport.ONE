@@ -115,7 +115,7 @@ composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.p
 && brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
 && sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
-echo "DEBUG"
+echo "DEBUG ~/.zen/tmp/${MOATS}"
 ls ~/.zen/tmp/${MOATS}
 echo "DEBUG"
 

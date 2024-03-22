@@ -1,0 +1,13 @@
+[
+  {
+    "title": "GPS",
+    "created": "_MOATS_",
+    "modified": "_MOATS_",
+    "text": "<$leafmap\ntileControl\ntile='sat'\nzoom='12'\nplaces='{\"point\":\"_LAT_, _LON_\"}'\n/>\n\n! <a target='_blank' href='/ipns/_UMAPNS_/_index.html'>Visit UMap__LAT___LON_</a>\n\n!! UPlanet moves your data with you\n<<<\n''DO NOT CHANGE MANUALY''\n<<<\n",
+    "tags": "_PLAYER_",
+    "lat": "_LAT_",
+    "lon": "_LON_",
+    "umap": "/ipns/_UMAPNS_",
+    "sectortw": "_SECTORTW_"
+  }
+]

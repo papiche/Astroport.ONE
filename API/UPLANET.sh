@@ -159,22 +159,23 @@ mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
 ipfs key rm ${G1PUB} > /dev/null 2>&1
 rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
 
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv  "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv  "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
 UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
 
 [[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
-NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
-PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 4) ## STRONGER TW SECURITY "AlpH4nUm"
-NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
-
+#~ NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
+#~ NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
+#~ PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 2)
+PPASS=$(${MY_PATH}/../tools/diceware.sh $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) | xargs)
+NPASS=$(${MY_PATH}/../tools/diceware.sh $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) | xargs)
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
-echo VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
+echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
                     ##### (☉_☉ ) #######
-${MY_PATH}/../RUNTIME/VISA.new.sh "${EMAIL}_${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
 ## TO REMOVE : MONITOR
 ${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG VISA.new $EMAIL" ## Send VISA.new log to EMAIL
@@ -183,10 +184,9 @@ end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
 ) &
 
-
 ########################################
 ## Calculating TW IPNS ADDRESS
-TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${EMAIL}_${PPASS}" "${NPASS}")
+TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${PPASS}" "${NPASS}")
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
@@ -216,11 +216,11 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    Your AstroID seeds are:<br>
+    ${EMAIL} AstroID seeds are:<br>
     <br>
-    <h2>${EMAIL}_${PPASS}</h2>
-    <h1>${NPASS}</h1>
-
+    <h2>${PPASS}</h2>
+    <h2>${NPASS}</h2>
+    <h2>${PASS}</h2>
     Generating account...
     <br>Please check your mail box to get your ZenCard and PIN code.
     <br>
