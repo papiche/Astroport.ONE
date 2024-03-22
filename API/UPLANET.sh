@@ -216,16 +216,15 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    ${EMAIL} AstroID seeds are:<br>
+    ${EMAIL} (⌐■_■) AstroID DID<br>
     <br>
     <h2>${PPASS}</h2>
     <h2>${NPASS}</h2>
-    <h2>${PASS}</h2>
-    Generating account...
-    <br>Please check your mail box to get your ZenCard and PIN code.
-    <br>
+
+    <br>By email receive, print then delete your AstroID. Only on paper !
+    <br>Par email. Recevez, imprimez puis supprimer votre AstroID. Seulement sur papier !
     ---
-    <br><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW PORTATION</a>
+    <h2><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW</a></h2>
     <br>in
     <h1><center><div id='countdown'></div></center></h1>
     <script>
@@ -244,10 +243,11 @@ echo "$HTTPCORS
     }
     </script>
     ---
-    <br>
-    ( ⚆_⚆) <br>CONSOLE<br>
+    <br>( ⚆_⚆) CESIUM MOBILE APP<br>
+    <img src='${myIPFSGW}/ipfs/Qma4dDL7G4c7AQGkwYDg34ew8amppXsHuhyXDMKcTKauuD'\>
+    <br>CONSOLE<br>
     $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
-    <br>(☉_☉ )<br>
+    <br>(☉_☉ ) use above credentials... utilisez les identiants ci-dessus<br>
     <br><br>${EMAIL} REGISTERED on UPlanet UMAP : $LAT/$LON : ${MOATS} : $(date)
      </body>
      </html>" > ~/.zen/tmp/${MOATS}/http.rep
