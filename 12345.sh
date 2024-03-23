@@ -49,6 +49,10 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 #############################
 while true; do
 
+    ########################################################
+    ## /ipfs/QmQ9MdCEY1aMmpxBqZKcHTLafRxRFeK1Ku1DES1LCPaimA
+    ## TODO: STOP API ACCESS AFTER 20H12
+
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}

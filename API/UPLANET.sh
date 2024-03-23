@@ -214,16 +214,10 @@ echo "$HTTPCORS
     </style>
     </head><body>
     <h1>UPlanet Registration</h1>
-    ${EMAIL} (⌐■_■) AstroID DID<br>
-    <br>
-    <h2>${PPASS}</h2>
-    <h2>${NPASS}</h2>
-
-    <br>By email receive, print then delete your AstroID. Only on paper !
-    <br>Par email. Recevez, imprimez puis supprimer votre AstroID. Seulement sur papier !
-    ---
-    <h2><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW</a></h2>
-    <br>in
+    ${EMAIL} (⌐■_■)<br>
+    <br>Check your mailbox ! Relevez votre boite mail !
+    <hr>
+    <h2><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW5</a></h2>
     <h1><center><div id='countdown'></div></center></h1>
     <script>
     var timeLeft = 90;

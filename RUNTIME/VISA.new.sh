@@ -582,8 +582,8 @@ did:/ipns/${ASTRONAUTENS}
 <hr>
 <hr><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
 <img width=300px src='${myIPFSGW}${ASTROQR}'\></a><br>
-<h2>SECRET1=\"$SALT\" SECRET2=\"$PEPPER\"</h2>
-<h2> PIN = $PASS </h2>
+<h2>SECRET1=\"$SALT\"<br>SECRET2=\"$PEPPER\"</h2>
+<h2> CODE : $PASS </h2>
 <hr>
 <a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
 <img src='${myIPFSGW}${IASTRO}'\><br><hr>
