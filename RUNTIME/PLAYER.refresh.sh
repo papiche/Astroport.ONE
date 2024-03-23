@@ -254,10 +254,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         cat ~/.zen/tmp/flashmem/${MYNS}/_next.umapns
         echo "SECTOR NEXTNS"
         SECTORNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.sectorns | cut -d ':' -f 3)
-        cat ~/.zen/tmp/flashmem/${MYNS}/_next.sector
+        cat ~/.zen/tmp/flashmem/${MYNS}/_next.sectorns
         echo "REGION NEXTNS"
         REGIONNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.regionns | cut -d ':' -f 3)
-        cat ~/.zen/tmp/flashmem/${MYNS}/_next.region
+        cat ~/.zen/tmp/flashmem/${MYNS}/_next.regionns
     fi
 
     UMAPG1PUB=$(${MY_PATH}/../tools/keygen "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")

@@ -62,7 +62,7 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
 # TODO check amout > 0
 #################################################################
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json  | jq -rc .[]
+# LOG / cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json  | jq -rc .[]
 ## TREAT ANY COMMENT STARTING WITH N1:
 ## EXTRACT /ASTROBOT/N1ProgramNames
 ls ${MY_PATH}/../ASTROBOT/ | grep "N1" | cut -d "." -f 1 > ~/.zen/tmp/${MOATS}/N1PROG
