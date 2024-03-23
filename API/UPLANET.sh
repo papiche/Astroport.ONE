@@ -166,11 +166,9 @@ UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ip
 echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
 
 ## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
-#~ NPASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-9) ## NOUVEAU PASS 8 CHIFFRES
-#~ NPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 10) ## STRONGER TW SECURITY "AlpH4nUm"
-#~ PPASS=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 2)
-PPASS=$(${MY_PATH}/../tools/diceware.sh $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) | xargs)
-NPASS=$(${MY_PATH}/../tools/diceware.sh $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) | xargs)
+#~ choose salt pepper with variable words count
+PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(./tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(./tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
 echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
