@@ -530,33 +530,33 @@ echo ""
 #####################################################################"
 #####################################################################"
 
-### SEND AstroID and ZenCard to EMAIL
-(
-echo "<html><head>
-<style>
-    body {
-        font-family: 'Courier New', monospace;
-    }
-    pre {
-        white-space: pre-wrap;
-    }
-</style></head>
-<body>
-<h1>UPlanet : <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
+#~ ### SEND AstroID and ZenCard to EMAIL
+#~ (
+#~ echo "<html><head>
+#~ <style>
+    #~ body {
+        #~ font-family: 'Courier New', monospace;
+    #~ }
+    #~ pre {
+        #~ white-space: pre-wrap;
+    #~ }
+#~ </style></head>
+#~ <body>
+#~ <h1>UPlanet : <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
 
-echo "<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
-<img src='${myIPFSGW}${IASTRO}'\><br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+#~ echo "<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
+#~ <img src='${myIPFSGW}${IASTRO}'\><br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
-asciiart="${MY_PATH}/../images/astroport.art"
-while IFS= read -r line
-do
-    echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/ZenCard.html
-    echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
-done <"$asciiart"
+#~ asciiart="${MY_PATH}/../images/astroport.art"
+#~ while IFS= read -r line
+#~ do
+    #~ echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+    #~ echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+#~ done <"$asciiart"
 
-echo "</body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
+#~ echo "</body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
+#~ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
 
 #~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
@@ -575,12 +575,23 @@ echo "<html><head>
     }
 </style></head>
 <body>
-<h1><a href='${myUPLANET}'>UPlanet</a> : AstroID</h1>" > ~/.zen/tmp/${MOATS}/AstroID.html
+<center>
+<h3><a href='${myUPLANET}'>UPlanet</a></h3>
+<h1>\"<a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW5</a>\"</h1>
+did:/ipns/${ASTRONAUTENS}
+<hr>
+<hr><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
+<img width=300px src='${myIPFSGW}${ASTROQR}'\></a><br>
+<h2>SECRET1=\"$SALT\" SECRET2=\"$PEPPER\"</h2>
+<h2> PIN = $PASS </h2>
+<hr>
+<a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
+<img src='${myIPFSGW}${IASTRO}'\><br><hr>
+${G1PUB}" > ~/.zen/tmp/${MOATS}/AstroID.html
 
-echo "<a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br><img width=300px src='${myIPFSGW}${ASTROQR}'\></a>
-<h3>SECRET1=\"$SALT\" SECRET2=\"$PEPPER\" ($PASS)</h3>
-<h3>ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
-<h2> <--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a> <--> </h2>
+echo "
+<h3> /-> ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
+<h3> /--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a></h3>
 " >> ~/.zen/tmp/${MOATS}/AstroID.html
 
 asciiart="${MY_PATH}/../images/logoastro.art"
@@ -590,9 +601,9 @@ do
     echo "<br>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 done <"$asciiart"
 
-echo "</body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
+echo "<br>${MOATS}<br>- print a copy -</center></body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "AstroID (${PLAYER}) "
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "UPlanet Web3 DID (${PLAYER})"
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
