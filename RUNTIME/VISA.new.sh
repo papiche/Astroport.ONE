@@ -219,6 +219,9 @@ convert ~/.zen/game/players/${PLAYER}/result_qrcode.png -resize 480 ~/.zen/game/
 
 ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/AstroID.png | tail -n 1)"
 
+## DO NOT PIN ASTROID QRCODE
+ipfs pin rm ${ASTROQR}
+
 ############################################################################ TW
 ### INITALISATION WIKI dans leurs répertoires de publication IPFS
 mkdir -p ~/.zen/game/players/${PLAYER}/ipfs/moa/
