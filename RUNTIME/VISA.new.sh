@@ -603,7 +603,7 @@ done <"$asciiart"
 
 echo "<br>${MOATS}<br>- print a copy -</center></body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "UPlanet Web3 DID (${PLAYER})"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "TW5 & AstroID"
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}

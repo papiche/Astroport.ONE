@@ -6,6 +6,10 @@
 # PAD COCODING : https://pad.p2p.legal/s/G1PalPay
 # This script monitors G1 Blockchain
 ########################################################################
+# TODO : CHECK RX coming from UPlanet Wallet
+## meaning an initial 3.1G1 from a ZenStation admin wallet
+## if not relay payment to ZenStation admin
+########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
