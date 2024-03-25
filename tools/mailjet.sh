@@ -72,6 +72,7 @@ rm -f ~/.zen/tmp/email.txt
 
 EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
+ipfs pin rm ${EMAILZ}
 
 export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 
@@ -113,6 +114,7 @@ curl -s \
     https://api.mailjet.com/v3.1/send \
     -H 'Content-Type: application/json' \
     -d "$json_payload"
+
 
 # This call sends an email to one recipient.
 #~ TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')
