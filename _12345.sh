@@ -85,11 +85,14 @@ while true; do
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
-    ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H )
+    ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
     if [[ ${duree} -gt 3600000 ]]; then
 
         ### STOP SWARM SYNC 1H BEFORE 20H12
-        [[ $(date +"%H%M") -gt 1912 ]] \
+        current_time=$(date +%s)
+        file_modification_time=$(stat -c %Y "/tmp/20h12.log")
+        time_difference=$((current_time - file_modification_time))
+        [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
             && echo "$(date +"%H%M") : 20H12 is coming... " && continue
 
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
