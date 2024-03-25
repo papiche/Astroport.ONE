@@ -75,8 +75,10 @@ echo "${THEDATE}"
         SECLON="${LON::-1}"
         SECTOR="_${SECLAT}_${SECLON}"
         echo "SECTOR = ${SECTOR}"
-        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${SECTOR}" "${THEDATE}${UPLANETNAME}${SECTOR}")"/_index.html"
+        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORNS | tail -n 1)
+        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORG1PUB | tail -n 1)
         JSON="ZONE${SECTOR}_${DEG}.json"
 
     fi
@@ -87,8 +89,10 @@ echo "${THEDATE}"
         LON=$(echo ${LON} | cut -d '.' -f 1)
         ZONE="_${LAT}_${LON}"
         echo "ZONE = ${ZONE}"
-        ZONEG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${ZONE}" "${UPLANETNAME}${ZONE}")
-        ZONEINDEX="/ipns/"$(${MY_PATH}/../tools/keygen -t ipfs "${THEDATE}${UPLANETNAME}${ZONE}" "${THEDATE}${UPLANETNAME}${ZONE}")
+        ZONEINDEX=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
+        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONG1PUB | tail -n 1)
         JSON="ZONE${ZONE}_${DEG}.json"
 
     fi
@@ -105,10 +109,10 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
         totnum=$(( swarmnum + nodenum ))
         echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
 
-        G1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv  "${THEDATE}${UPLANETNAME}${LAT}" "${THEDATE}${UPLANETNAME}${LON}"
-        ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT
-        UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
+        UMAPNS=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TODATENS)
+        [[ ! $UMAPNS ]] && UMAPNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TODATENS)
+        G1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/G1PUB)
+        [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/G1PUB)
 
         echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' \
             > ~/.zen/tmp/${MOATS}/http.grid
