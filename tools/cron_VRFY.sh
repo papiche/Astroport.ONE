@@ -35,7 +35,7 @@ if [[ ! $crontest ]]; then
     ## HEADER
     [[ $1 == "OFF" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
-    [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
+    [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "USER=$USER;PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
     # ADD  20h12.process.sh line
     echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
@@ -52,7 +52,7 @@ else
     ## HEADER
     [[ $1 == "ON" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
-    [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
+    [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "USER=$USER;PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     ## REMOVE 20h12.process.sh line
     cat /tmp/mycron | grep -Ev '20h12.process.sh' >> /tmp/newcron
     crontab /tmp/newcron
@@ -64,7 +64,7 @@ else
         echo "KEEPING 20H12 CRON ACTIVATED"
         ## LOW DISK RESSOURCES IPFS MODE
         [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
-        [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
+        [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] && echo "USER=$USER;PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
         cat /tmp/mycron >> /tmp/newcron
         # ADD  20h12.process.sh line
         [[ ! $(cat /tmp/mycron | grep '20h12.process.sh') ]] && echo "12  20  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
