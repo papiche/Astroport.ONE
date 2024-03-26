@@ -64,9 +64,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         --render '.' 'backup.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[!is[system]]'
 
         [[ -s ~/.zen/tmp/${MOATS}/backup.json ]] \
-            && rm ~/.zen/tmp/${MOATS}/TW/index.html \
             && echo ">> Tiddlers Backup : ~/.zen/tmp/${MOATS}/backup.json" \
             || echo "ERROR EXTRACTING TIDDLERS"
+
+        rm ~/.zen/tmp/${MOATS}/TW/index.html
     fi
 
     #############################################
@@ -77,7 +78,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     if [[ -s ~/.zen/tmp/${MOATS}/backup.json ]]; then
 
         tiddlywiki  --load ~/.zen/tmp/${MOATS}/TW/index.html \
-                --import ~/.zen/tmp/backup.json "application/json" \
+                --import ~/.zen/tmp/${MOATS}/backup.json "application/json" \
                 --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
         [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
