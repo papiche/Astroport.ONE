@@ -63,22 +63,16 @@ LAT=$(makecoord ${LAT})
 LON=$(makecoord ${LON})
 JSON="ZONE_${LAT}_${LON}_${DEG}.json"
 
-[[ $(date +"%H%M") -gt 2012 ]] \
-    && THEDATE=${TODATE} \
-    || THEDATE=${YESTERDATE}
-echo "${THEDATE}"
-
-
     ## SECTOR LEVEL
     if [[ ${DEG} == "0.01" ]]; then
         SECLAT="${LAT::-1}"
         SECLON="${LON::-1}"
         SECTOR="_${SECLAT}_${SECLON}"
         echo "SECTOR = ${SECTOR}"
-        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORNS | tail -n 1)
-        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/SECTORG1PUB | tail -n 1)
+        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORNS | tail -n 1)
+        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORG1PUB | tail -n 1)
         JSON="ZONE${SECTOR}_${DEG}.json"
 
     fi
@@ -89,8 +83,8 @@ echo "${THEDATE}"
         LON=$(echo ${LON} | cut -d '.' -f 1)
         ZONE="_${LAT}_${LON}"
         echo "ZONE = ${ZONE}"
-        ZONEINDEX=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
+        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
         ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONG1PUB | tail -n 1)
         [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONG1PUB | tail -n 1)
         JSON="ZONE${ZONE}_${DEG}.json"
@@ -124,7 +118,7 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
 
         rm -Rf ~/.zen/tmp/${MOATS}/
         end=`date +%s`
-        echo "(UMAP)_${LAT}_${LON} ${THEDATE} $UMAPNS Operation time was "`expr $end - $start` seconds.
+        echo "(UMAP)_${LAT}_${LON} $UMAPNS Operation time was "`expr $end - $start` seconds.
         exit 0
 
     fi

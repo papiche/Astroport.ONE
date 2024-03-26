@@ -131,7 +131,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "</body></html>" >> ~/.zen/tmp/result
 
 
-        [[ $try == 0 ]] \
+        [[ $try == 0 && "${CURRENT}" != "${PLAYER}" ]] \
             && echo "PLAYER ${PLAYER} UNPLUG" \
             && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL" \
             && continue
@@ -206,7 +206,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
 ################################################## +7 DAYS AstroID !!
     ## REMOVE TW OLDER THAN 7 DAYS WITH AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 ]] \
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 && "${CURRENT}" != "${PLAYER}" ]] \
         && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && echo "(#__#) AstroID +7 DAYS = SECURITY ERROR (#__#)" && continue
 
@@ -533,7 +533,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ########################################################
     #### PLAYER ACCOUNT HAVE NEW TIDDLER or NOT #########
-    if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" ]]; then
+    if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "${CURRENT}" != "${PLAYER}" ]]; then
         echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --"
         ## DEAD PLAYER ??
         if [[ ${DIFF_SECONDS} -eq $(( 27 * 24 * 60 * 60 )) ]]; then
