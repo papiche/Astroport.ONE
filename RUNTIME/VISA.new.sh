@@ -531,7 +531,7 @@ echo ""
 #####################################################################"
 
 #~ ### SEND AstroID and ZenCard to EMAIL
-#~ (
+#~
 #~ echo "<html><head>
 #~ <style>
     #~ body {
@@ -608,13 +608,11 @@ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "TW5 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
 
-#####################################################################"
-#####################################################################"
-#####################################################################"
-
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
-) &
+
+
+#####################################################################"
 
 ## CHECK .current
 [[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
