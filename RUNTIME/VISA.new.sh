@@ -55,59 +55,65 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     echo "SCANNING /ipns/${ASTRONAUTENS} for 180s"
     ## GETTING LAST TW via IPFS or HTTP GW
-    [[ $YOU ]] \
-    && ipfs --timeout 180s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
+    ipfs --timeout 180s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
-    [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
-    && [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]] \
-    && echo "TW FOUND ENTER 'yes' TO RESET TW. HIT ENTER TO KEEP IT." \
-    && read ENTER
-
-    if [[ $ENTER != "" ]]; then
-
+    if [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]]; then
+        echo "TW FOUND... BACKUP TIDDLERS"
         # BACKUP tiddlers
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp \
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} \
         --render '.' 'backup.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[!is[system]]'
-        rm ~/.zen/tmp/${MOATS}/TW/index.html
-        echo ">> Tiddlers Backup : ~/.zen/tmp/backup.json"
+
+        [[ -s ~/.zen/tmp/${MOATS}/backup.json ]] \
+            && rm ~/.zen/tmp/${MOATS}/TW/index.html \
+            && echo ">> Tiddlers Backup : ~/.zen/tmp/${MOATS}/backup.json" \
+            || echo "ERROR EXTRACTING TIDDLERS"
     fi
 
     #############################################
-    ## AUCUN RESULTAT
-    if [ ! -s ~/.zen/tmp/${MOATS}/TW/index.html ]; then
+    ## CREATE NEW TW FROM TEMPLATE
+    cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
 
-        cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
+    #### REFILL WITH BACKUP
+    if [[ -s ~/.zen/tmp/${MOATS}/backup.json ]]; then
 
-    else
+        tiddlywiki  --load ~/.zen/tmp/${MOATS}/TW/index.html \
+                --import ~/.zen/tmp/backup.json "application/json" \
+                --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
+
+        [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
+            && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/tmp/${MOATS}/TW/index.html
+
+        echo "BACKUP RESTORED"
+    fi
     #############################################
     # EXISTING TW : DATA TESTING & CACHE
-        rm -f ~/.zen/tmp/${MOATS}/Astroport.json
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-        HPass=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].HPASS)
-        echo "ASTROPORT=${ASTROPORT}"
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
-        AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri) ## Can be deleted
-        [[ -z $HPass ]] && HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS) ## Double HPASS
-        echo "AstroID=$AstroID ($HPass)"
-        tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'ZenCard.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
-        ZenCard=$(cat ~/.zen/tmp/${MOATS}/ZenCard.json | jq -r .[]._canonical_uri)
-        echo "ZenCard=$ZenCard"
+    rm -f ~/.zen/tmp/${MOATS}/Astroport.json
+    tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+    HPass=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].HPASS)
+    echo "ASTROPORT=${ASTROPORT}"
+    tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID'
+    AstroID=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[]._canonical_uri) ## Can be deleted
+    [[ -z $HPass ]] && HPass=$(cat ~/.zen/tmp/${MOATS}/AstroID.json | jq -r .[].HPASS) ## Double HPASS
+    echo "AstroID=$AstroID ($HPass)"
+    tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'ZenCard.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
+    ZenCard=$(cat ~/.zen/tmp/${MOATS}/ZenCard.json | jq -r .[]._canonical_uri)
+    echo "ZenCard=$ZenCard"
 
-        if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
+    if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
 
-            IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
-            echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
-            echo "---> CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW with $IPFSNODEID"
+        IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
+        echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
+        echo "---> CONNECTING PLAYER $(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].pseudo) TW NOW with $IPFSNODEID"
 
-        else
+    else
 
-            echo ">> NO ACTIVE TW - CREATING FRESH NEW ONE"
-            cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
-
-        fi
+        echo ">> NO ACTIVE TW - CREATING FRESH NEW ONE"
+        cp ${MY_PATH}/../templates/twuplanet.html ~/.zen/tmp/${MOATS}/TW/index.html
 
     fi
+
+
 
     ipfs key rm ${MOATS} 2>/dev/null ## CLEANING MOATS KEY
 
