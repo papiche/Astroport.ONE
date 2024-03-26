@@ -545,20 +545,20 @@ echo "<html><head>
 <body>
 <center>
 <h3><a href='${myUPLANET}'>UPlanet</a></h3>
-<h1>\"<a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW5</a>\"</h1>
+<h1>\"<a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}'>TW5</a>\"</h1>
 did:/ipns/${ASTRONAUTENS}
 <hr>
-<hr><a href='${myIPFS}/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
-<img width=300px src='${myIPFSGW}${ASTROQR}'\></a><br>
+<hr><a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
+<img width=300px src='$(myIpfsGw)${ASTROQR}'\></a><br>
 <h2>SECRET1=\"$SALT\"<br>SECRET2=\"$PEPPER\"</h2>
 <h2> CODE : $PASS </h2>
 <hr>
-<a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
-<img src='${myIPFSGW}${IASTRO}'\><br><hr>
+<a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
+<img src='$(myIpfsGw)${IASTRO}'\><br><hr>
 ${G1PUB}" > ~/.zen/tmp/${MOATS}/AstroID.html
 
 echo "
-<h3> /-> ASTROPORT : <a href='${myIPFS}/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
+<h3> /-> ASTROPORT : <a href='$(myIpfsGw)/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
 <h3> /--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a></h3>
 " >> ~/.zen/tmp/${MOATS}/AstroID.html
 
