@@ -245,7 +245,7 @@ sed -i "s~_ASTRONAUTENS_~/ipns/${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/
 
 ## AND HACK QRCODE.sh FOR _PGP KEY_ TO VERIFY LAST HASH OF PROVIDED PASS
 HPASS=$(echo $PASS | sha512sum | cut -d ' ' -f 1)
-[[ ${HPass} != "" ]] && SRCPASS=${HPass} || SRCPASS="_HPASS_"
+[[ ${HPass} != "" && ${HPass} != "null" ]] && SRCPASS=${HPass} || SRCPASS="_HPASS_"
 sed -i "s~${SRCPASS}~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN ( DONE IN PLAYER_REFRESH )
@@ -497,12 +497,8 @@ echo "$PASS" > ~/.zen/game/players/${PLAYER}/.pass
 # TODO : Allow Astronaut PASS change ;)
 #####################################################
 
-## DISCONNECT AND CONNECT CURRENT PLAYER
-#~ rm -f ~/.zen/game/players/.current
-#~ ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
-
 ## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
-${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" 1>/dev/null
+${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
 
 ### IF PRINTER -> PRINT VISA
 LP=$(ls /dev/usb/lp* 2>/dev/null)
@@ -527,42 +523,7 @@ echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo ""
 
 #####################################################################"
-#####################################################################"
-#####################################################################"
-
-#~ ### SEND AstroID and ZenCard to EMAIL
-#~
-#~ echo "<html><head>
-#~ <style>
-    #~ body {
-        #~ font-family: 'Courier New', monospace;
-    #~ }
-    #~ pre {
-        #~ white-space: pre-wrap;
-    #~ }
-#~ </style></head>
-#~ <body>
-#~ <h1>UPlanet : <a href='${myIPFS}/ipns/${ASTRONAUTENS}'>TW</a></h1>" > ~/.zen/tmp/${MOATS}/ZenCard.html
-
-#~ echo "<h2><a href='${myIPFS}/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a></h2>
-#~ <img src='${myIPFSGW}${IASTRO}'\><br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
-
-#~ asciiart="${MY_PATH}/../images/astroport.art"
-#~ while IFS= read -r line
-#~ do
-    #~ echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/ZenCard.html
-    #~ echo "<br>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
-#~ done <"$asciiart"
-
-#~ echo "</body></html>" >> ~/.zen/tmp/${MOATS}/ZenCard.html
-
-#~ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/ZenCard.html "ZenCard (${PLAYER}) "
-
-#~ mpack -a -s "✅ UPlanet : ZenCard" -d ~/.zen/tmp/${MOATS}/intro.txt \
-    #~ ~/.zen/tmp/${MOATS}/pseudo.png ${PLAYER}
-
-#####################################################################"
-#####################################################################"
+####################################################### EMAIL
 #####################################################################"
 
 echo "<html><head>
