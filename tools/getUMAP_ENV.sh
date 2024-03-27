@@ -14,8 +14,8 @@ LON="$2"
 ZLAT=$(makecoord ${LAT})
 ZLON=$(makecoord ${LON})
 ## CHECK
-[[ "$ZLAT" != "$LAT" ]] && echo "ERROR - $LAT bad format -" && exit 1
-[[ "$ZLON" != "$LON" ]] && echo "ERROR - $LON bad format -" && exit 1
+[[ "$ZLAT" != "$LAT" ]] && echo "# ERROR - $LAT bad format -" && exit 1
+[[ "$ZLON" != "$LON" ]] && echo "# ERROR - $LON bad format -" && exit 1
 
 ## COMPUTE UMAP, USECTOR, UREGION
 SLAT="${LAT::-1}"
@@ -27,7 +27,7 @@ RLON="$(echo ${LON} | cut -d '.' -f 1)"
 echo "UMAP : _${LAT}_${LON}"
 UMAPG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB 2>/dev/null | tail -n 1)
 [[ ! $UMAPG1PUB ]] && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB 2>/dev/null | tail -n 1)
-[[ ! $UMAPG1PUB ]] && echo "NO UMAP FOUND" && exit 0
+# [[ ! $UMAPG1PUB ]] && echo "NO UMAP FOUND" && exit 0
 echo "UMAPG1PUB=$UMAPG1PUB"
 UMAPIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS 2>/dev/null | tail -n 1)
 [[ $UMAPIPNS == "/ipns/"  ]] && UMAPIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS 2>/dev/null | tail -n 1)
@@ -49,6 +49,7 @@ REGIONIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}
 [[ $REGIONIPNS == "/ipns/" ]] && REGIONIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS 2>/dev/null | tail -n 1)
 echo "REGIONIPNS=$REGIONIPNS"
 
-
+echo "## LAST LINE EXPORT"
+echo "export UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS"
 
 exit 0
