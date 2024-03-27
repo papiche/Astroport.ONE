@@ -235,64 +235,28 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     LAT=$(makecoord ${ZLAT})
     LON=$(makecoord ${ZLON})
-    SLAT="${LAT::-1}"
-    SLON="${LON::-1}"
-    RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
-    RLON="$(echo ${LON} | cut -d '.' -f 1)"
-    ## SEARCH for TODATENS in SWARM then LOCAL
-    ## ZEN STATION
-    MYNS=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS)
-    UMAPG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB)
-    ## BOOSTRAP CASE
-    [[ $MYNS == "" ]] \
-        && MYNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS) \
-        && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB)
-    # Search in flashmem
-    if [[ ${MYNS} != "" ]]; then
-        echo "UMAP NEXTNS"
-        UMAPNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.umapns | cut -d ':' -f 3)
-        cat ~/.zen/tmp/flashmem/${MYNS}/_next.umapns
-        echo "SECTOR NEXTNS"
-        SECTORNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.sectorns | cut -d ':' -f 3)
-        cat ~/.zen/tmp/flashmem/${MYNS}/_next.sectorns
-        echo "REGION NEXTNS"
-        REGIONNS=$(cat ~/.zen/tmp/flashmem/${MYNS}/_next.regionns | cut -d ':' -f 3)
-        cat ~/.zen/tmp/flashmem/${MYNS}/_next.regionns
-    fi
 
-    UMAPG1PUB=$(${MY_PATH}/../tools/keygen "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    ### GET UMAP ENV
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+    echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 
-    ## CALCULATE UMAP TODATENS ################
-    ######################################
-    ipfs key rm "temp" >/dev/null 2>&1
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/todate.ipfskey "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
-    UMAPNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/todate.ipfskey)
-
-    echo "UMAP _${LAT}_${LON} UMAPNS=/ipns/${UMAPNS}"
-
-    SECTOR="_${LAT::-1}_${LON::-1}"
-    ## CALCULATE SECTOR TODATENS ################
-    ipfs key rm "temp" >/dev/null 2>&1
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/sectodate.ipfskey "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
-    TODATESECTORNS=$(ipfs key import "temp" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/sectodate.ipfskey)
-    ipfs key rm "temp" >/dev/null 2>&1
+    UMAPNS=$(echo $UMAPIPNS | cut -d '/' -f 3)
     #############################################
-    # MAKE TODATE "GPS" TIDDLER
+    # MAKE "GPS" TIDDLER
     cat ${MY_PATH}/../templates/data/GPS.json \
         | sed -e "s~_MOATS_~${MOATS}~g" \
         -e "s~_PLAYER_~${PLAYER}~g" \
         -e "s~_LAT_~${LAT}~g" \
         -e "s~_LON_~${LON}~g" \
         -e "s~_UMAPNS_~${UMAPNS}~g" \
-        -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
+        -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/GPS.json
 
-    ################# PERSONAL VDO.NINJA ADDRESS)
+    ################# PERSONAL VDO.NINJA PHONEBOOTH
     PHONEBOOTH=${PLAYER/@/_}
     PHONEBOOTH=${PHONEBOOTH/\./_}
     PHONEBOOTH=${PHONEBOOTH/-/_}
-
-    # MAKE "ALLO" TIDDLER
+    # MAKE "VISIO" TIDDLER
     cat ${MY_PATH}/../templates/data/VISIO.json \
         | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
@@ -305,7 +269,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
     #####################################################################
-    # (RE)MAKE "CESIUM" TIDDLER
+    # MAKE "CESIUM" TIDDLER
     echo "Create CESIUM Tiddler"
     cat ${MY_PATH}/../templates/data/CESIUM.json \
         | sed -e "s~_G1PUB_~${G1PUB}~g" \
@@ -428,10 +392,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         -e "s~_MOATS_~${MOATS}~g" \
         -e "s~_UPLANET_~https://qo-op.com~g" \
         -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS_STR}~g" \
-        -e "s~_SECTORTW_~/ipns/${TODATESECTORNS}/TW~g" \
+        -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
-    echo "SECTOR $SECTOR SECTORTW=/ipns/${TODATESECTORNS}/TW"
+    echo "SECTOR $SECTOR SECTORTW=${SECTORIPNS}/TW"
 
     #############################################################
     # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
@@ -551,7 +515,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         fi
 
         ## PAY 1 ZEN TO UMAPG1PUB
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
+        [[ "${UMAPG1PUB}" != "" ]] \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
 
     else
 

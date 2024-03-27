@@ -36,23 +36,16 @@ mkdir -p ~/.zen/tmp/${MOATS}
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
 
-    ## COULD TRANSERT TO my_swarm G1PUB (IPFSNODEID/MACHINE RELATED KEY)
-    #~ SWARMG1PUB=$(cat ~/.zen/game/myswarm_secret.dunikey | grep "pub:" | cut -d ' ' -f 2)
     ########## SEND COINS TO SECTORG1PUB - ẐEN VIRTUAL BANK - EVERY 800 METERS - ;)
     LAT=$(makecoord $LAT)
     LON=$(makecoord $LON)
     ##############################################################
-    # UMAPG1PUB=$(${MY_PATH}/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    ##############################################################
-    SLAT="${LAT::-1}"
-    SLON="${LON::-1}"
-    SECTOR="_${SLAT}_${SLON}"
-    ##############################################################
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
-    ##############################################################
+    ## POPULATE UMAP IPNS & G1PUB
+    $($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
 
-        COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
-        echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
+    ## GET COINS
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+    echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
     ## UNPLUG => SEND 10 Zen to SECTORG1PUB
     ## ALL => SEND ALL to $WORLDG1PUB
@@ -67,7 +60,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
 ## REMOVING PLAYER from ASTROPORT
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
-    ipfs key rm ${PLAYER}; ipfs key rm ${PLAYER}_feed; ipfs key rm ${G1PUB};
+    ipfs key rm "${PLAYER}" "${PLAYER}_feed" "${G1PUB}"
     for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
         echo "removing wish ${vk}"
         [[ ${vk} != "" ]] && ipfs key rm ${vk}

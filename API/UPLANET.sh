@@ -54,71 +54,26 @@ PLAYER=${THAT}
 
 [[ ${AND} != "zlat" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
-
-LAT=${THIS}
-
-[[ ${LAT} == "0" ]] && LAT="0.00"
-input_number=${LAT}
-if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
-    (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
-else
-    # If input_number has one decimal digit, add a trailing zero
-    if [[ ${input_number} =~ ^-?[0-9]+\.[0-9]$ ]]; then
-        input_number="${input_number}0"
-    elif [[ ${input_number} =~ ^-?[0-9]+$ ]]; then
-        # If input_number is an integer, add ".00"
-        input_number="${input_number}.00"
-    fi
-
-    # Convert input_number to LAT with two decimal digits
-    LAT="${input_number}"
-fi
-
-LON=${WHAT}
-
 [[ ${APPNAME} != "zlon" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
-[[ ${LON} == "0" ]] && LON="0.00"
-input_number=${LON}
-if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
-    (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
-else
-    # If input_number has one decimal digit, add a trailing zero
-    if [[ ${input_number} =~ ^-?[0-9]+\.[0-9]$ ]]; then
-        input_number="${input_number}0"
-    elif [[ ${input_number} =~ ^-?[0-9]+$ ]]; then
-        # If input_number is an integer, add ".00"
-        input_number="${input_number}.00"
-    fi
+ZLAT=${THIS}
+ZLON=${WHAT}
+LAT=$(makecoord ${ZLAT})
+LON=$(makecoord ${ZLON})
 
-    # Convert input_number to LAT with two decimal digits
-    LON="${input_number}"
-fi
-
-# NOT RECEIVING PASS. WAS USED TO SECURE PLAYER UMAP KEY... (24s sectors strategy apply now)
-#~ PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-7)
-#~ ## RECEIVED PASS ## CAN BE USED TO SELECT TW TEMPLATE
+#~ ## RECEIVED VAL ## CAN BE USED TO SELECT TW TEMPLATE
 #~ VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
-#~ [[ ${OBJ} == "g1pub" && ${VAL} != "" ]] && PASS=${VAL}
-#~ echo "PASS for Umap $LAT $LON is $PASS"
 ############################################
 #### TODO USE THIS PARAMETER TO SELECT TW TEMPLATE
 
 ### CHECK PLAYER EMAIL
 EMAIL="${PLAYER,,}" # lowercase
 
-[[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR UPLANET LANDING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
-
-################################ START WORKING WITH KEYS
-### SESSION "$LAT" "$LON" KEY
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
-    UMAPNS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv)
-    ipfs key rm ${MOATS} && echo "$LAT" "$LON" "IPNS key identified"
-###
-
-    REDIR="${myIPFS}/ipns/${UMAPNS}"
-    echo "Umap : $REDIR"
+[[ ! ${EMAIL} ]] \
+    && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR UPLANET LANDING" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+    &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. \
+    &&  exit 0
 
 ## CHECK WHAT IS EMAIL
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
@@ -126,17 +81,29 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     echo "VALID ${EMAIL} EMAIL OK"
 
     ## CHECK if PLAYER exists in SWARM
-        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
+    $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+    echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
-        [[ ${ASTROTW} ]] \
-            && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
-            && exit 0
+    ## YES = OPEN TW
+    [[ ${ASTROTW} ]] \
+        && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && exit 0
 
 else
 
     echo "BAD EMAIL $EMAIL $LAT $LON"
-    echo "$HTTPCORS <html>BAD EMAIL $EMAIL $LAT $LON <a href=${REDIR}> - OPEN UMAP LINK - </a></html>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+
+    ### GET ENV FOR "$LAT" "$LON"
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+    REDIR="${myIPFS}${UMAPIPNS}"
+    echo "Umap : $REDIR"
+
+    if [[ ${UMAPIPNS} != "/ipns/" ]]; then
+        echo "$HTTPCORS <html>BAD EMAIL $EMAIL $LAT $LON <a href=${REDIR}> - OPEN UMAP LINK - </a></html>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+    else
+        echo "$HTTPCORS <html>BAD EMAIL $EMAIL ($LAT $LON)</html>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
+    fi
+
     exit 0
 
 fi
@@ -146,37 +113,19 @@ fi
 ## LAT="$LAT" LON="$LON"
 ######################################################
 echo "UMAP = $LAT:$LON"
-echo "# CALCULATING UMAP G1PUB WALLET"
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/_cesium.key   "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-G1PUB=$(cat ~/.zen/tmp/${MOATS}/_cesium.key | grep 'pub:' | cut -d ' ' -f 2)
-[[ ! ${G1PUB} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - KEYGEN  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-echo "UMAP G1PUB : ${G1PUB}"
-
-echo "# CALCULATING UMAP IPNS ADDRESS"
-mkdir -p ~/.zen/tmp/${MOATS}/${G1PUB}
-mkdir -p ~/.zen/tmp/${MOATS}/${LAT}_${LON}
-
-ipfs key rm ${G1PUB} > /dev/null 2>&1
-rm ~/.zen/tmp/${MOATS}/_ipns.priv 2>/dev/null
-
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/_ipns.priv  "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
-UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/_ipns.priv )
-
-[[ ! ${UMAPNS} ]] && (echo "$HTTPCORS ERROR - (╥☁╥ ) - UMAPNS  COMPUTATION DISFUNCTON"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-echo "UMAPNS : ${myIPFS}/ipns/${UMAPNS}"
+echo "# GET UMAP ENV"
+${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}"
 
 ## ALL TEST PASSED -> CREATE ZENCARD + ASTROID
 #~ choose salt pepper with variable words count
-PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(./tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
-NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(./tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
-echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}"
-                    ##### (☉_☉ ) #######
-${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "/ipns/${UMAPNS}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
-
-## TO REMOVE : MONITOR
-${MY_PATH}/../tools/mailjet.sh "support@qo-op.com" ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt "LOG VISA.new $EMAIL" ## Send VISA.new log to EMAIL
+echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
+    ##### (☉_☉ ) #######
+${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
 end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
@@ -188,61 +137,61 @@ TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${PPASS}" "${NPASS}")
 
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
-    <html>
-    <head>
-    <title>[Astroport] $LAT $LON + ${EMAIL} </title>
-    <meta http-equiv=\"refresh\" content=\"100; url='${myIPFS}/ipns/${TWADD}#AstroID'\" />
-    <style>
-        #countdown { display: flex; justify-content: center; align-items: center; color: #0e2c4c; font-size: 20px; width: 60px; height: 60px; background-color: #e7d9fc; border-radius: 50%;}
-    </style>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
-            padding: 20px;
-        }
-        h1 {
-            color: #0077cc;
-        }
-        h2 {
-            color: #333;
-        }
-        img {
-            cursor: pointer;
-        }
-    </style>
-    </head><body>
-    <h1>UPlanet Registration</h1>
-    ${EMAIL} (⌐■_■)<br>
-    <br>Check your mailbox ! Relevez votre boite mail !
-    <hr>
-    <h2><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW5</a></h2>
-    <h1><center><div id='countdown'></div></center></h1>
-    <script>
-    var timeLeft = 90;
-    var elem = document.getElementById('countdown');
-    var timerId = setInterval(countdown, 1000);
-
-    function countdown() {
-        if (timeLeft == -1) {
-            clearTimeout(timerId);
-            doSomething();
-        } else {
-            elem.innerHTML = timeLeft + ' s';
-            timeLeft--;
-        }
+<html>
+<head>
+<title>[Astroport] $LAT $LON + ${EMAIL} </title>
+<meta http-equiv=\"refresh\" content=\"100; url='${myIPFS}/ipns/${TWADD}#AstroID'\" />
+<style>
+    #countdown { display: flex; justify-content: center; align-items: center; color: #0e2c4c; font-size: 20px; width: 60px; height: 60px; background-color: #e7d9fc; border-radius: 50%;}
+</style>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f0f0f0;
+        padding: 20px;
     }
-    </script>
-    ---
-    <br>( ⚆_⚆) CESIUM MOBILE APP<br>
-    <img src='${myIPFSGW}/ipfs/Qma4dDL7G4c7AQGkwYDg34ew8amppXsHuhyXDMKcTKauuD'\>
-    <br>CONSOLE<br>
-    $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
-    <br>(☉_☉ ) use above credentials... utilisez les identiants ci-dessus<br>
-    <br><br>${EMAIL} REGISTERED on UPlanet UMAP : $LAT/$LON : ${MOATS} : $(date)
-     </body>
-     </html>" > ~/.zen/tmp/${MOATS}/http.rep
+    h1 {
+        color: #0077cc;
+    }
+    h2 {
+        color: #333;
+    }
+    img {
+        cursor: pointer;
+    }
+</style>
+</head><body>
+<h1>UPlanet Registration</h1>
+${EMAIL} (⌐■_■)<br>
+<br>Check your mailbox ! Relevez votre boite mail !
+<hr>
+<h2><a target=\"_new\" href=\"${myIPFS}/ipns/${TWADD}\">TW5</a></h2>
+<h1><center><div id='countdown'></div></center></h1>
+<script>
+var timeLeft = 90;
+var elem = document.getElementById('countdown');
+var timerId = setInterval(countdown, 1000);
+
+function countdown() {
+    if (timeLeft == -1) {
+        clearTimeout(timerId);
+        doSomething();
+    } else {
+        elem.innerHTML = timeLeft + ' s';
+        timeLeft--;
+    }
+}
+</script>
+---
+<br>( ⚆_⚆) CESIUM MOBILE APP<br>
+<img src='${myIPFSGW}/ipfs/Qma4dDL7G4c7AQGkwYDg34ew8amppXsHuhyXDMKcTKauuD'\>
+<br>CONSOLE<br>
+$(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
+<br>(☉_☉ ) use above credentials... utilisez les identiants ci-dessus<br>
+<br><br>${EMAIL} REGISTERED on UPlanet UMAP($LAT/$LON) : ${MOATS} : $(date)
+</body>
+</html>" > ~/.zen/tmp/${MOATS}/http.rep
 
 (
 cat ~/.zen/tmp/${MOATS}/http.rep | nc -l -p ${PORT} -q 1 > /dev/null 2>&1
