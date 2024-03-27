@@ -81,8 +81,10 @@ while true; do
     && echo '(ᵔ◡◡ᵔ) MAP LAUNCHING http://'${myIP}':12345 (ᵔ◡◡ᵔ)' \
     && exec $MY_PATH/_12345.sh &
 
-    # RESET VARIABLES
-    CMD="" THAT="" AND="" THIS=""  APPNAME="" WHAT="" OBJ="" VAL=""
+    ###############    ###############    ###############    ###############
+    # THIS SCRIPT STORES $i PARAMETER IN
+    # THOSE VARIABLES
+    CMD="" THAT="" AND="" THIS="" APPNAME="" WHAT="" OBJ="" VAL=""
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
@@ -106,10 +108,15 @@ while true; do
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
+    ###############    ###############    ###############    ############### WAIT FOR
+    ###############    ###############    ###############    ############### 1234 KNOC
     REQ=$(cat $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
+    ###############    ###############    ###############    ############### KNOC !!
+    ###############    ###############    ###############    ###############
 
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
+    AGENT=$(echo "$REQ" | grep '^User-Agent:') ### TODO : BAN LESS THAN 3 SEC REQUEST
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
 
     ## COOKIE RETRIEVAL ##
