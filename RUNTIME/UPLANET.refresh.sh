@@ -101,7 +101,7 @@ for UMAP in ${unique_combined[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
     echo "## IPFS GET YESTERDATENS"
-    ipfs --timeout 300s get -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
+    ipfs --timeout 300s get --progress=false -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"
         # Try retieve memory from UPlanet Zen Memory

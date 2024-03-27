@@ -34,7 +34,7 @@ echo "COINCHECK ${G1PUB} -> TW : $myIPFS/ipns/${ASTROTOIPFS}"
 echo "Cleaning ${G1PUB}.COINS"
 find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB} \;
 echo "Cleaning ${G1PUB}.g1history.json"
-find  ~/.zen/tmp/coucou/ -mtime +1 -type f -name "${G1PUB}.g1history.json" -exec rm '{}' \;
+find ~/.zen/tmp/coucou/ -mtime +1 -type f -name "${G1PUB}.g1history.json" -exec rm '{}' \;
 #######################################################
 
 ## IDENTIFY IF "ASTROPORT" PLAYER

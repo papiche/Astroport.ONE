@@ -98,7 +98,7 @@ for REGION in ${REGIONS[@]}; do
     TODATEREGIONNS=$(ipfs key import ${TODATE}${REGIONG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/REGION.priv)
     ##############################################################
     ## GET from IPNS
-    ipfs --timeout 240s get -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
+    ipfs --timeout 240s get --progress=false -o ~/.zen/tmp/${MOATS}/${REGION}/ /ipns/${YESTERDATEREGIONNS}/
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ## SHOULD NEED 12 SIGNATURES
     ## FULL REFRESH DEMO... ZEN CHAINING COMING LATER

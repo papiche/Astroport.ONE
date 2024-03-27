@@ -1,4 +1,4 @@
-#!/bin/bah
+#!/bin/bash
 ##################################################
 ## Get TODATE G1PUB & IPNS values for LAT / LON
 ##################################################
@@ -14,30 +14,41 @@ LON="$2"
 ZLAT=$(makecoord ${LAT})
 ZLON=$(makecoord ${LON})
 ## CHECK
-[[ "$ZLAT" != "$LAT" ]] && echo "ERROR - LAT bad format -" && exit 1
-[[ "$ZLON" != "$LON" ]] && echo "ERROR - LON bad format -" && exit 1
+[[ "$ZLAT" != "$LAT" ]] && echo "ERROR - $LAT bad format -" && exit 1
+[[ "$ZLON" != "$LON" ]] && echo "ERROR - $LON bad format -" && exit 1
 
-## CONTINUE
-echo "UMAP : _${LAT}_${LON}"
+## COMPUTE UMAP, USECTOR, UREGION
 SLAT="${LAT::-1}"
 SLON="${LON::-1}"
-echo "SECTOR : _${SLAT}_${SLON}"
 RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
-RLON="$(echo ${LAT} | cut -d '.' -f 1)"
+RLON="$(echo ${LON} | cut -d '.' -f 1)"
+
+## GET ENV
+echo "UMAP : _${LAT}_${LON}"
+UMAPG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB 2>/dev/null | tail -n 1)
+[[ ! $UMAPG1PUB ]] && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB 2>/dev/null | tail -n 1)
+[[ ! $UMAPG1PUB ]] && echo "NO UMAP FOUND" && exit 0
+echo "UMAPG1PUB=$UMAPG1PUB"
+UMAPIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS 2>/dev/null | tail -n 1)
+[[ $UMAPIPNS == "/ipns/"  ]] && UMAPIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS 2>/dev/null | tail -n 1)
+echo "UMAPIPNS=$UMAPIPNS"
+
+echo "SECTOR : _${SLAT}_${SLON}"
+SECTORG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB 2>/dev/null | tail -n 1)
+[[ ! $SECTORG1PUB ]] && SECTORG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB 2>/dev/null | tail -n 1)
+echo "SECTORG1PUB=$SECTORG1PUB"
+SECTORIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORNS 2>/dev/null | tail -n 1)
+[[ $SECTORIPNS == "/ipns/" ]] && SECTORIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORNS 2>/dev/null | tail -n 1)
+echo "SECTORIPNS=$SECTORIPNS"
+
 echo "REGION : _${RLAT}_${RLON}"
+REGIONG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB 2>/dev/null | tail -n 1)
+[[ ! $REGIONG1PUB ]] && REGIONG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB 2>/dev/null | tail -n 1)
+echo "REGIONG1PUB=$REGIONG1PUB"
+REGIONIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS 2>/dev/null | tail -n 1)
+[[ $REGIONIPNS == "/ipns/" ]] && REGIONIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS 2>/dev/null | tail -n 1)
+echo "REGIONIPNS=$REGIONIPNS"
 
-## COMPUTE
-UMAPIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS | tail -n 1)
-[[ ! $UMAPIPNS ]] && UMAPIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS | tail -n 1)
-UMAPG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB | tail -n 1)
-[[ ! $UMAPG1PUB ]] && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB | tail -n 1)
 
-SECTORIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORNS | tail -n 1)
-[[ ! $SECTORIPNS ]] && SECTORIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORNS | tail -n 1)
-SECTORG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB | tail -n 1)
-[[ ! $SECTORG1PUB ]] && SECTORG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB | tail -n 1)
 
-REGIONIPNS="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}REGIONNS | tail -n 1)
-[[ ! $REGIONIPNS ]] && REGIONIPNS="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS | tail -n 1)
-REGIONG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB | tail -n 1)
-[[ ! $REGIONG1PUB ]] && REGIONG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}REGIONG1PUB | tail -n 1)
+exit 0

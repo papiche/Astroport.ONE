@@ -94,7 +94,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ################### GET LATEST TW
     echo "GETTING TW..."
     ####################################################################################################
-    ipfs --timeout 480s get -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
+    ipfs --timeout 480s get --progress=false -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
     ####################################################################################################
     ## PLAYER TW IS ONLINE ?
     if [ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ]; then
@@ -243,7 +243,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## ZEN STATION
     MYNS=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS)
     UMAPG1PUB=$(cat ~/.zen/tmp/swarm/12D*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB)
-    ## BOOSTRAP SCENARIO
+    ## BOOSTRAP CASE
     [[ $MYNS == "" ]] \
         && MYNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS) \
         && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB)
