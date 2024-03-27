@@ -45,10 +45,10 @@ for UMAP in ${UMAPS[@]}; do
     [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
     [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
+    SLAT="${LAT::-1}"
+    SLON="${LON::-1}"
 
-    MYSECTORS=("_${SECLAT}_${SECLON}" ${MYSECTORS[@]})
+    MYSECTORS=("_${SLAT}_${SLON}" ${MYSECTORS[@]})
 
 done
 
@@ -304,9 +304,9 @@ for SECTOR in ${SECTORS[@]}; do
 
     ###########################################################################################
     ### APPLY ON APP MODEL TODATE REGIONNS LINKING
-    REGLAT=$(echo ${SLAT} | cut -d '.' -f 1)
-    REGLON=$(echo ${SLON} | cut -d '.' -f 1)
-    REGION="_${REGLAT}_${REGLON}"
+    RLAT=$(echo ${SLAT} | cut -d '.' -f 1)
+    RLON=$(echo ${SLON} | cut -d '.' -f 1)
+    REGION="_${RLAT}_${RLON}"
     TODATEREGIONNS=$(${MY_PATH}/../tools/keygen -t ipfs "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}")
 
@@ -327,7 +327,7 @@ for SECTOR in ${SECTORS[@]}; do
               -e "s~_LON_~${SLON}~g" \
               -e "s~_EARTHCID_~${EARTHCID}~g" \
               -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
-              -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${REGLAT}\&southWestLon=${REGLON}\&deg=1~g" \
+              -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${RLAT}\&southWestLon=${RLON}\&deg=1~g" \
               -e "s~http://127.0.0.1:8080~~g" \
     > ~/.zen/tmp/${MOATS}/${SECTOR}/_index.html
 
@@ -367,15 +367,15 @@ for SECTOR in ${SECTORS[@]}; do
     echo "(☉_☉ ) ${REGION}.week.rss.json  (☉_☉ )"
 
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/SECTORS/ ## TODO REMOVE
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON}
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}
     ## CREATING 7 DAYS JSON RSS STREAM
     tiddlywiki --load ${INDEX} \
-                        --output ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON} --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
+                        --output ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON} --render '.' "${SECTOR}.week.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-7]!is[system]!tag[G1Voeu]]'
 
     ###################################
     ## NODE CACHE SECTOR TODATENS
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATENS}'\" />_${SLAT}_${SLON}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}_${REGLON}/_${SLAT}_${SLON}/_index.html
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_index.html
 
     ## TODO FILTER INFORMATION WITH MULTIPLE SIGNATURES (DONE in REGION.refresh.sh)
     ## TODO EXPORT AS RSS ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/28

@@ -65,29 +65,29 @@ JSON="ZONE_${LAT}_${LON}_${DEG}.json"
 
     ## SECTOR LEVEL
     if [[ ${DEG} == "0.01" ]]; then
-        SECLAT="${LAT::-1}"
-        SECLON="${LON::-1}"
-        SECTOR="_${SECLAT}_${SECLON}"
+        SLAT="${LAT::-1}"
+        SLON="${LON::-1}"
+        SECTOR="_${SLAT}_${SLON}"
         echo "SECTOR = ${SECTOR}"
-        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORNS | tail -n 1)
-        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SECLAT}*_${SECLON}*/SECTORG1PUB | tail -n 1)
+        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
+        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
         JSON="ZONE${SECTOR}_${DEG}.json"
 
     fi
 
     ## REGION & ABOVE LEVEL
     if [[ ${DEG} == "0.1" ||  ${DEG} == "1" ]]; then
-        LAT=$(echo ${LAT} | cut -d '.' -f 1)
-        LON=$(echo ${LON} | cut -d '.' -f 1)
-        ZONE="_${LAT}_${LON}"
-        echo "ZONE = ${ZONE}"
-        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONNS | tail -n 1)
-        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/REGIONG1PUB | tail -n 1)
-        JSON="ZONE${ZONE}_${DEG}.json"
+        RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
+        RLON="$(echo ${LON} | cut -d '.' -f 1)"
+        REGION="_${RLAT}_${RLON}"
+        echo "REGION = ${REGION}"
+        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
+        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
+        JSON="ZONE${REGION}_${DEG}.json"
 
     fi
 

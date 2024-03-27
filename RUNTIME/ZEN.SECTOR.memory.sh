@@ -30,10 +30,10 @@ start=`date +%s`
 ## CORRESPONDING REGION UKEY
 LAT=$(echo ${SECTOR} | cut -d '_' -f 2)
 LON=$(echo ${SECTOR} | cut -d '_' -f 3)
-REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
-REGLON=$(echo ${LON} | cut -d '.' -f 1)
+RLAT=$(echo ${LAT} | cut -d '.' -f 1)
+RLON=$(echo ${LON} | cut -d '.' -f 1)
 
-REGION="_${REGLAT}_${REGLON}"
+REGION="_${RLAT}_${RLON}"
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${REGION}.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"
 REGIONG1PUB=$(cat ~/.zen/tmp/${MOATS}/${REGION}.priv | grep "pub:" | cut -d ' ' -f 2)
 [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1

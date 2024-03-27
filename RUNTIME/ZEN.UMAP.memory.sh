@@ -32,10 +32,10 @@ LAT=$(echo ${UMAP} | cut -d '_' -f 2)
 LON=$(echo ${UMAP} | cut -d '_' -f 3)
 
 ## SECTOR COORD
-SECLAT="${LAT::-1}"
-SECLON="${LON::-1}"
+SLAT="${LAT::-1}"
+SLON="${LON::-1}"
 
-SECTOR="_${SECLAT}_${SECLON}"
+SECTOR="_${SLAT}_${SLON}"
 
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
 SECTORG1PUB=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}.priv | grep "pub:" | cut -d ' ' -f 2)

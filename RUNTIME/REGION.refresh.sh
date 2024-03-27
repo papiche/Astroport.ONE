@@ -48,10 +48,10 @@ for UMAP in ${UMAPS[@]}; do
     [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
     [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
 
-    REGLAT=$(echo ${LAT} | cut -d '.' -f 1)
-    REGLON=$(echo ${LON} | cut -d '.' -f 1)
+    RLAT=$(echo ${LAT} | cut -d '.' -f 1)
+    RLON=$(echo ${LON} | cut -d '.' -f 1)
 
-    MYREGIONS=("_${REGLAT}_${REGLON}" ${MYREGIONS[@]})
+    MYREGIONS=("_${RLAT}_${RLON}" ${MYREGIONS[@]})
 
 done
 
@@ -66,8 +66,8 @@ for REGION in ${REGIONS[@]}; do
     echo "-------------------------------------------------------------------"
     echo "_____REGION ${REGION}  $(date)"
     mkdir -p ~/.zen/tmp/${MOATS}/${REGION}
-    REGLAT=$(echo ${REGION} | cut -d '_' -f 2)
-    REGLON=$(echo ${REGION} | cut -d '_' -f 3)
+    RLAT=$(echo ${REGION} | cut -d '_' -f 2)
+    RLON=$(echo ${REGION} | cut -d '_' -f 3)
 
     ################################## TODO : make sharing key protocol evolve
     ## FOR NOW ONLY 1ST BOOSTRAP PUBLISH REGION KEYS
@@ -104,11 +104,11 @@ for REGION in ${REGIONS[@]}; do
     ## FULL REFRESH DEMO... ZEN CHAINING COMING LATER
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     mkdir -p ~/.zen/tmp/${MOATS}/${REGION}/RSS
-    rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+    rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${RLAT}_${RLON}.week.rss.json
     rm -f ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
 
     ## START WITH LOCAL SECTORS RSS WEEK
-    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
+    RSSNODE=($(ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}*_${RLON}*/_${RLAT}*_${RLON}*/_${RLAT}*_${RLON}*.week.rss.json 2>/dev/null))
     for RSS in ${RSSNODE[@]}; do
         [[ $(cat ${RSS}) != "[]" ]] \
             && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
@@ -121,7 +121,7 @@ for REGION in ${REGIONS[@]}; do
     " >> ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL
 
     ## ADD SWARM SECTORS RSS WEEK
-    RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*/_${REGLAT}*_${REGLON}*.week.rss.json 2>/dev/null))
+    RSSWARM=($(ls ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${RLAT}*_${RLON}*/_${RLAT}*_${RLON}*/_${RLAT}*_${RLON}*.week.rss.json 2>/dev/null))
     for RSS in ${RSSWARM[@]}; do
         [[ $(cat ${RSS}) != "[]" ]] \
             && cp ${RSS} ~/.zen/tmp/${MOATS}/${REGION}/RSS/ \
@@ -135,21 +135,21 @@ for REGION in ${REGIONS[@]}; do
     ## REMOVE SECTORS PARTS
     rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/*.week.rss.json
 
-    ## MAKE FINAL _${REGLAT}_${REGLON}.week.rss.json
+    ## MAKE FINAL _${RLAT}_${RLON}.week.rss.json
     mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
-            ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${REGLAT}_${REGLON}.week.rss.json
+            ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${RLAT}_${RLON}.week.rss.json
 
     ## PREPARING JOURNAL
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}
 
     ###################################
     ## NODE PUBLISH REGION TODATENS LINK
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />/_${REGLAT}_${REGLON}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/_index.html
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />/_${RLAT}_${RLON}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/_index.html
 
     #~ ## DEMO : PREPARE Ask.IA link - PROD will be launched during RUNTIME.
     #~ echo "<meta http-equiv=\"refresh\" content=\"0; url='https://api.copylaradio.com/tellme/?cid=/ipfs/${RWEEKCID}'\" />" \
-                #~ > ~/.zen/tmp/${MOATS}/${REGION}/Ask.IA._${REGLAT}_${REGLON}.redir.html
+                #~ > ~/.zen/tmp/${MOATS}/${REGION}/Ask.IA._${RLAT}_${RLON}.redir.html
 
     TOTL=$((${NL}+${NS}))
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -162,10 +162,10 @@ for REGION in ${REGIONS[@]}; do
     RWEEKCID=$(ipfs add -q ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL 2>/dev/null)
     if [[ ${RWEEKCID} ]]; then
         echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/QmYNH85cJCwSVw4c7SyHtc2jtgh7dL5RegozX7e8Re28a9/md.htm?src=/ipfs/${RWEEKCID}'\" />" \
-            > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${REGLAT}_${REGLON}.view.html
+            > ~/.zen/tmp/${MOATS}/${REGION}/Journal._${RLAT}_${RLON}.view.html
 
         cp ~/.zen/tmp/${MOATS}/${REGION}/JOURNAL \
-            ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${REGLAT}_${REGLON}/JOURNAL.md
+            ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/JOURNAL.md
     fi
 
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${REGION}/* | tail -n 1)
