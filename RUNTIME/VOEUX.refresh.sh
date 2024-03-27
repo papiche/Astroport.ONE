@@ -281,7 +281,7 @@ do
         curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
-        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${IPNS_VOEUNS}"
+        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${IPNS_VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
