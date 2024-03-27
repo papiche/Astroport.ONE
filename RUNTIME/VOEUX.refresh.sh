@@ -313,6 +313,7 @@ if [[ ${wishnumbers} -gt 0 ]]; then
 
     ## GET UMAP ENV
     $(${MY_PATH}/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
+    echo "export UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)

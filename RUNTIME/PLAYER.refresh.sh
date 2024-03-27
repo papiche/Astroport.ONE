@@ -22,8 +22,6 @@ CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
 
 echo "RENEWING LOCAL UPLANET REPOSITORY (ADMIN=${CURRENT})
  ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/UPLANET
-mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET
 echo "CLEANING IPFSNODEID TW CACHE ~/.zen/tmp/${IPFSNODEID}/TW/"
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/
 
