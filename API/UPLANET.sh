@@ -55,10 +55,10 @@ PLAYER=${THAT}
 [[ ${AND} != "zlat" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
-SALT=${THIS}
+LAT=${THIS}
 
-[[ ${SALT} == "0" ]] && SALT="0.00"
-input_number=${SALT}
+[[ ${LAT} == "0" ]] && LAT="0.00"
+input_number=${LAT}
 if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LAT $LAT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
@@ -74,13 +74,13 @@ else
     LAT="${input_number}"
 fi
 
-PEPPER=${WHAT}
+LON=${WHAT}
 
 [[ ${APPNAME} != "zlon" ]] \
     &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
-[[ ${PEPPER} == "0" ]] && PEPPER="0.00"
-input_number=${PEPPER}
+[[ ${LON} == "0" ]] && LON="0.00"
+input_number=${LON}
 if [[ ! $input_number =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
     (echo "$HTTPCORS ERROR - BAD LON $LON" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 else
@@ -143,7 +143,7 @@ fi
 
 # UPLANET #############################################
 ## OCCUPY COMMON CRYPTO KEY CYBERSPACE
-## SALT="$LAT" PEPPER="$LON"
+## LAT="$LAT" LON="$LON"
 ######################################################
 echo "UMAP = $LAT:$LON"
 echo "# CALCULATING UMAP G1PUB WALLET"
