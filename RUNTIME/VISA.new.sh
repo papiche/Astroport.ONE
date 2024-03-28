@@ -529,9 +529,28 @@ echo
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo ""
 
-#####################################################################"
+####tools##########################################getUMAP_ENV.sh
+$(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 ####################################################### EMAIL
-#####################################################################"
+##UPlanetZine::QmeegmN4shouhnzvnDYpbSEJtdRsyy39SpL9XqYVHgtN44
+cat ${MY_PATH}/../templates/UPlanetZine/index.html \
+    | sed -e "s~_ASTROQR_~${ASTROQR}~g" \
+            -e "s~_IASTRO_~${IASTRO}~g" \
+            -e "s~_MOATS_~${MOATS}~g" \
+            -e "s~_G1PUB_~${G1PUB}~g" \
+            -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+            -e "s~_PASS_~${PASS}~g" \
+            -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+            -e "s~_EARTHCID_~${EARTHCID}~g" \
+            -e "s~_SECTOR_~${SECTOR}~g" \
+            -e "s~_SLAT_~${SLAT}~g" \
+            -e "s~_SLON_~${SLON}~g" \
+        > ~/.zen/tmp/${MOATS}/UPlanetZine.html
+
+
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/UPlanetZine.html "UPlanet DID it or NOT"
+
+#####################################################################"_EARTHCID_
 
 echo "<html><head>
 <style>

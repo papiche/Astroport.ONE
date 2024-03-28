@@ -1,0 +1,204 @@
+/* These are just the article styles, so change these to whatever fits your theme! */
+
+/* Probably keep this one bit as is though, it's going to make arranging things in print easier for you! */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: sans-serif;
+}
+
+h1 {
+  color: #1c4587;
+  text-align: center;
+  font-style: italic;
+  font-size: 180%;
+}
+
+h2 {
+  background: #ead1dc;
+  color: #741b47;
+  font-family: monospace;
+  text-align: center;
+  font-size: 140%;
+  font-weight: normal;
+  margin: 0.2rem 0 0 0;
+  padding: 0.2rem 0 0.2rem;
+}
+
+th {
+  text-align: left;
+  background: #c9daf8;
+  color: #073763;
+}
+
+p {
+  padding: 0.2rem;
+  padding-top: 0.5rem;
+  font-size: 105%;
+}
+
+ul {
+  padding-left: 2rem;
+  list-style: none;
+}
+
+.zine-li:before {
+  content: '\21D2';
+  margin-left: -20px;
+  margin-right: 10px;
+}
+
+.zine-link {
+  font-family: monospace;
+  background: #c9daf8;
+  color: #073763;
+}
+
+.captioned-img {
+  object-fit: contain;
+  max-height: 100%;
+  max-width: 100%;
+  padding: 0 2rem 0 2rem;
+}
+
+figcaption {
+  font-family: monospace;
+  font-size: 80%;
+  font-style: italic;
+  background: #c9daf8;
+  color: #073763;
+  margin: 0 1rem 0 1rem;
+}
+
+.full-img {
+  object-fit: contain;
+  max-height: 100%;
+  max-width: 100%;
+  padding: 1rem;
+}
+
+.mini-img {
+  max-width: 10rem;
+}
+
+.glitchButton {
+  float: left;
+  padding: 1rem 0.5rem 0 0.5rem;
+}
+
+.cc-licence {
+  float: right;
+  margin: 1rem 0.5rem 0 0.5rem;
+}
+
+/* Any styles that you **only** want to appear on a device should go in here! */
+
+@media screen {
+  body {
+    max-width: 30rem;
+    background: #ead1dc;
+    margin: auto;
+  }
+
+  .zine {
+    background: white;
+    padding: 10px;
+    border-left: 4px solid #741b47;
+    border-bottom: 4px solid #741b47;
+    
+  }
+  
+  .zine-page {
+    margin-top: 10px;
+  }
+}
+
+/* Any styles that you want to apply **just** when the zine is printed go in here! */
+
+@media print {
+
+  
+  body {
+    font-size: 69%;
+  }
+  
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+ 
+  .mini-img {
+    max-width: 4.4rem;
+  }
+  
+  /* The styles below here are specifically for creating the page layout.
+   * -> DON'T CHANGE THESE <- unless you know what you're doing!
+   */
+  
+  @page {
+    size: landscape;
+    margin: 0;
+    bleed: 0;
+  }
+  
+  .zine {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    gap: 1.5px;
+    background: lightgrey;
+    grid-template-areas:
+      "page-5 page-4 page-3 page-2"
+      "page-6 page-7 page-8 page-1";
+    grid-template-columns: repeat(4, 25%);
+    grid-template-rows: repeat(2, 50%);
+  }
+
+  .zine-page {
+    background: white;
+    padding: .2rem;
+    overflow: hidden;
+  }
+
+  .page-5, .page-4, .page-3, .page-2 {
+    transform: rotate(180deg) translateX(-0.1px);
+  }
+
+  .page-1 {
+    grid-area: page-1;
+
+  }
+
+  .page-2 {
+    grid-area: page-2;
+
+  }
+
+  .page-3 {
+    grid-area: page-3;
+  }
+
+  .page-4 {
+    grid-area: page-4;
+  }
+
+  .page-5 {
+    grid-area: page-5;
+  }
+
+  .page-6 {
+    grid-area: page-6;
+  }
+
+  .page-7 {
+    grid-area: page-7;
+  }
+
+  .page-8 {
+    grid-area: page-8;
+  }
+}
