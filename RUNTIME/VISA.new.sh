@@ -549,7 +549,7 @@ cat ${MY_PATH}/../templates/UPlanetZine/index.html \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/UPlanetZine.html "UPlanet DID it or NOT"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/UPlanetZine.fr.html "UPlanet Le Faire (ou pas)"
 
 #####################################################################"_EARTHCID_
 
