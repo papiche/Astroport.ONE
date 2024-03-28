@@ -151,7 +151,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
     [[ ! -s ~/.zen/tmp/${MOATS}/GPS.json || $(cat ~/.zen/tmp/${MOATS}/GPS.json) == "[]" ]] \
-        && echo "${PLAYER} GPS : BAD TW (☓‿‿☓) " && continue
+        && msg="${PLAYER} GPS : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)"
 
     #############################################################
     ## CHECK MadeInZion
@@ -160,7 +160,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
 
     [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json || $(cat ~/.zen/tmp/${MOATS}/MadeInZion.json) == "[]" ]] \
-        && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+        && msg="${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)"
 
     player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
     #############################################################
@@ -176,12 +176,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         --render '.' 'TWsign.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/config/NewTiddler/Tags' ## $:/config/NewTiddler/Tags Tiddler
     signature=$(cat ~/.zen/tmp/${MOATS}/TWsign.json | jq -r .[].text)
     echo "${player} SIGNATURE = $signature"
-    ############################################################ BAD TW SIGNATURE
-    [[ ${player} != ${PLAYER} || ${PLAYER} != ${signature} ]] \
-        && echo "> (☓‿‿☓) BAD PLAYER=$player in TW (☓‿‿☓)" \
-        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
-        && continue \
-        || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
     #############################################################
     ## CHECK "Astroport" TIDDLER
@@ -189,7 +183,14 @@ for PLAYER in ${PLAYERONE[@]}; do
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'  ## Astroport Tiddler
     [[ ! -s ~/.zen/tmp/${MOATS}/Astroport.json || $(cat ~/.zen/tmp/${MOATS}/Astroport.json) == "[]" ]] \
-        && echo "${PLAYER} Astroport : BAD TW (☓‿‿☓) " && continue
+        && msg="${PLAYER} Astroport : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)"
+
+    ############################################################ BAD TW SIGNATURE
+    [[ ( ${player} != ${PLAYER} || ${PLAYER} != ${signature} ||  "${err}" == "(☓‿‿☓)" ) && ${PLAYER} != ${CURRENT} ]] \
+        && echo "> (☓‿‿☓) BAD PLAYER=$player in TW (☓‿‿☓) $msg" \
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
+        && continue \
+        || echo "${PLAYER} OFFICIAL TW - (⌐■_■) -"
 
     BIRTHDATE=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].birthdate)
     ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## ZenStation IPNS address
@@ -322,7 +323,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         fi
 
         ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&) will be used TOMORROW
-            ipfs --timeout 480s cat ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
+            ipfs --timeout 480s cat --progress=false ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
         ) &
 
         ## CHECK ALREADY IN ${FPLAYER^^} IHASH
@@ -357,7 +358,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
                 || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
 
-            if [[ $ORIGINH != $INSIDEH ]]; then
+            if [[ $ORIGINH != $INSIDEH && $ORIGINH != "" ]]; then
                 echo "ORIGINH Update"
                 rm -f ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html
                 tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
