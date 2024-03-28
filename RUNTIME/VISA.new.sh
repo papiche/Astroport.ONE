@@ -532,14 +532,15 @@ echo ""
 ####tools##########################################getUMAP_ENV.sh
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 ####################################################### EMAIL
-##UPlanetZine::QmeegmN4shouhnzvnDYpbSEJtdRsyy39SpL9XqYVHgtN44
+##UPlanetZine::QmRGrZLDrGmA7f87fU9bb4CMHSb6ztL8iB9DG2tvxy9B73 - chained release -
 cat ${MY_PATH}/../templates/UPlanetZine/index.html \
-    | sed -e "s~_ASTROQR_~${ASTROQR}~g" \
-            -e "s~_IASTRO_~${IASTRO}~g" \
+    | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
+            -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
+            -e "s~/ipfs/QmeegmN4shouhnzvnDYpbSEJtdRsyy39SpL9XqYVHgtN44~/ipfs/QmRGrZLDrGmA7f87fU9bb4CMHSb6ztL8iB9DG2tvxy9B73~g" \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
-            -e "s~_PASS_~${PASS}~g" \
+            -e "s~0448~${PASS}~g" \
             -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
             -e "s~_EARTHCID_~${EARTHCID}~g" \
             -e "s~_SECTOR_~${SECTOR}~g" \
