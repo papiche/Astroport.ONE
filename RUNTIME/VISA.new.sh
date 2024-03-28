@@ -532,11 +532,11 @@ echo ""
 ####tools##########################################getUMAP_ENV.sh
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 ####################################################### EMAIL
-##UPlanetZine::QmRGrZLDrGmA7f87fU9bb4CMHSb6ztL8iB9DG2tvxy9B73 - chained release -
+##UPlanetZine::QmZ8KS7a7dybt68SthW71s3joa4J1YpZvHP8J1yyX1Ldi2 - chained release -
 cat ${MY_PATH}/../templates/UPlanetZine/index.html \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
             -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
-            -e "s~/ipfs/QmeegmN4shouhnzvnDYpbSEJtdRsyy39SpL9XqYVHgtN44~/ipfs/QmRGrZLDrGmA7f87fU9bb4CMHSb6ztL8iB9DG2tvxy9B73~g" \
+            -e "s~/ipfs/QmeegmN4shouhnzvnDYpbSEJtdRsyy39SpL9XqYVHgtN44~/ipfs/QmZ8KS7a7dybt68SthW71s3joa4J1YpZvHP8J1yyX1Ldi2~g" \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
