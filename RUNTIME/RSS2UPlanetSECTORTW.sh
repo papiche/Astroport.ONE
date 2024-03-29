@@ -195,15 +195,15 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 
             ## SEND ZEN G1PalPay Signal
 
-    ##############################################################
-    G1AMOUNT=$(echo "$NSIGN / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
-    G1AMOUNT=$NSIGN ## SEND FLUID COIN
-    echo "***** SECTOR $SECTOR REWARD *****************"
-    echo "SPREAD $NSIGN G1 TO ${unique_combined[@]} SIGNATURES
-    to ${PLAYER} WALLET ${ASTROG1}"
-    echo "************************************************************"
-    ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${$G1AMOUNT}" "${ASTROG1}" "${unique_combined[@]}"
-    ################################################ GRATITUDE SENT
+    #~ ##############################################################
+    #~ G1AMOUNT=$(echo "$NSIGN / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
+    #~ G1AMOUNT=$NSIGN ## SEND FLUID COIN
+    #~ echo "***** SECTOR $SECTOR REWARD *****************"
+    #~ echo "SPREAD $NSIGN G1 TO ${unique_combined[@]} SIGNATURES
+    #~ to ${PLAYER} WALLET ${ASTROG1}"
+    #~ echo "************************************************************"
+    #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${$G1AMOUNT}" "${ASTROG1}" "${unique_combined[@]}"
+    #~ ################################################ GRATITUDE SENT
 
             ## AND OVER WRITE TIDDLER...
 

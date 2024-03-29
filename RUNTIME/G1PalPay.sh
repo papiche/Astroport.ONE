@@ -207,15 +207,15 @@ echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
 ## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
 #  This can could happen in case Tiddler is copied OR PLAYER manualy adds an email tag to Tiddler to share with someone...
 #################################################################
-echo "# EXTRACT TODAY TIDDLERS"
+echo "# EXTRACT 2 DAYS TIDDLERS"
 tiddlywiki --load ${INDEX} \
-                 --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/ \
-                 --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-2]]'
+     --output ~/.zen/tmp/${MOATS} \
+     --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-2]]'
 
 ## FILTER MY OWN EMAIL
-# cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
+# cat ~/.zen/tmp/${MOATS}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
 
-cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddlers.json \
+cat ~/.zen/tmp/${MOATS}/today.${PLAYER}.tiddlers.json \
         | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' \
          > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## Get tiddlers with not my email in it
 
@@ -226,7 +226,6 @@ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/today.${PLAYER}.tiddl
 # LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
 echo "******************TIDDLERS with new EMAIL in TAGS treatment"
-#~ cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${G1PUB}/${PLAYER}.tiddlers.json | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' > ~/.zen/tmp/${MOATS}/@tags.json
 
 ################################
 ## detect NOT MY EMAIL in TODAY TIDDLERS
