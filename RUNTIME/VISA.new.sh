@@ -21,9 +21,8 @@ PLAYER="$3"
 PSEUDO="$4"
 [[ $PSEUDO == "" ]] && PSEUDO="Anonymous"
 
-## Fill UP TW with VIDEO URL or UMAP NS
-URL="$5"
-[[ $URL == "" ]] && URL="_URL_"
+LANG="$5"
+[[ $LANG == "" ]] && LANG="_LANG_"
 
 ## UPLANET UMAP
 LAT="$6"
@@ -258,9 +257,6 @@ sed -i "s~${SRCPASS}~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.ht
 ## RESET WISHES TO DEPLOY DERIVATED KEYS ON HOST AGAIN ( DONE IN PLAYER_REFRESH )
 #~ sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-## Fill LNK - Tiddler - escape \&
-sed -i "s~_URL_~$(echo "${URL}" | sed 's/[&/]/\\&/g')~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
 # INSERT PLAYER DATA
 sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -310,7 +306,7 @@ cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "_SECTORTW_"}' \
     && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
 
 ###########
-## GET OLD16
+## GET OLD16 FROM MadeInZion
 tiddlywiki \
     --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
     --output ~/.zen/tmp/${MOATS} \
@@ -332,7 +328,7 @@ if [[ "${MACHINEPUB}" != "" ]]; then
     sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
     echo "ENCODING: ${ENCODING}"
 
-    # IN CASE ORIGINAL STATION NEEDS ACCESS # COULD BE REMOVED ?
+    # GIVE ZEN STATION TW ACCESS #
 ###########
     #~ echo "# CRYPTO DECODING TESTING..."
     tiddlywiki \
@@ -532,11 +528,13 @@ echo ""
 ####tools##########################################getUMAP_ENV.sh
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 ####################################################### EMAIL
+[[ -s ${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html ]] \\
+    && ZINE="${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html" \
+    || ZINE="${MY_PATH}/../templates/UPlanetZine/index.html"
 ##UPlanetZine::QmZ8KS7a7dybt68SthW71s3joa4J1YpZvHP8J1yyX1Ldi2 - chained release -
-cat ${MY_PATH}/../templates/UPlanetZine/index.html \
+cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
             -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
-            -e "s~/ipfs/QmeegmN4shouhnzvnDYpbSEJtdRsyy39SpL9XqYVHgtN44~/ipfs/QmZ8KS7a7dybt68SthW71s3joa4J1YpZvHP8J1yyX1Ldi2~g" \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
@@ -549,49 +547,49 @@ cat ${MY_PATH}/../templates/UPlanetZine/index.html \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/UPlanetZine.fr.html "UPlanet Le Faire (ou pas)"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/UPlanetZine.fr.html "UPlanet Zine"
 
 #####################################################################"_EARTHCID_
 
-echo "<html><head>
-<style>
-    body {
-        font-family: 'Courier New', monospace;
-    }
-    pre {
-        white-space: pre-wrap;
-    }
-</style></head>
-<body>
-<center>
-<h3><a href='${myUPLANET}'>UPlanet</a></h3>
-<h1>\"<a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}'>TW5</a>\"</h1>
-did:/ipns/${ASTRONAUTENS}
-<hr>
-<hr><a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
-<img width=300px src='$(myIpfsGw)${ASTROQR}'\></a><br>
-<h2>SECRET1=\"$SALT\"<br>SECRET2=\"$PEPPER\"</h2>
-<h2> CODE : $PASS </h2>
-<hr>
-<a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
-<img src='$(myIpfsGw)${IASTRO}'\><br><hr>
-${G1PUB}" > ~/.zen/tmp/${MOATS}/AstroID.html
+#~ echo "<html><head>
+#~ <style>
+    #~ body {
+        #~ font-family: 'Courier New', monospace;
+    #~ }
+    #~ pre {
+        #~ white-space: pre-wrap;
+    #~ }
+#~ </style></head>
+#~ <body>
+#~ <center>
+#~ <h3><a href='${myUPLANET}'>UPlanet</a></h3>
+#~ <h1>\"<a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}'>TW5</a>\"</h1>
+#~ did:/ipns/${ASTRONAUTENS}
+#~ <hr>
+#~ <hr><a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
+#~ <img width=300px src='$(myIpfsGw)${ASTROQR}'\></a><br>
+#~ <h2>SECRET1=\"$SALT\"<br>SECRET2=\"$PEPPER\"</h2>
+#~ <h2> CODE : $PASS </h2>
+#~ <hr>
+#~ <a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
+#~ <img src='$(myIpfsGw)${IASTRO}'\><br><hr>
+#~ ${G1PUB}" > ~/.zen/tmp/${MOATS}/AstroID.html
 
-echo "
-<h3> /-> ASTROPORT : <a href='$(myIpfsGw)/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
-<h3> /--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a></h3>
-" >> ~/.zen/tmp/${MOATS}/AstroID.html
+#~ echo "
+#~ <h3> /-> ASTROPORT : <a href='$(myIpfsGw)/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
+#~ <h3> /--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a></h3>
+#~ " >> ~/.zen/tmp/${MOATS}/AstroID.html
 
-asciiart="${MY_PATH}/../images/logoastro.art"
-while IFS= read -r line
-do
-    echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/AstroID.html
-    echo "<br>" >> ~/.zen/tmp/${MOATS}/AstroID.html
-done <"$asciiart"
+#~ asciiart="${MY_PATH}/../images/logoastro.art"
+#~ while IFS= read -r line
+#~ do
+    #~ echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/AstroID.html
+    #~ echo "<br>" >> ~/.zen/tmp/${MOATS}/AstroID.html
+#~ done <"$asciiart"
 
-echo "<br>${MOATS}<br>- print a copy -</center></body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
+#~ echo "<br>${MOATS}<br>- print a copy -</center></body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "TW5 & AstroID"
+#~ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "TW5 & AstroID"
 
 #~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
     #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
