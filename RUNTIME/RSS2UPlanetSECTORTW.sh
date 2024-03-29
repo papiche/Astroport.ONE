@@ -7,6 +7,7 @@
 # DETECTING CONFLICT WITH SAME TITLE
 # ASKING TO EXISTING SIGNATURES TO UPDATE THEIR TW OR FORK TITLE
 # CALLED BY "SECTOR.refresh.sh"
+# SEND 10 ZEN TO EACH SIGNATURE
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -183,24 +184,29 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 <br>
 <ul>
 <li><a href='$(myIpfsGw)/ipfs/${INSIDETID}'>Actual Tiddler</a></li>
-<li><a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> being introduced by : ${NUNIQUE[*]}</li>
+<li><a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> being overwrite by ${NUNIQUE[*]}</li>
 </ul>
-<br>
-MERGE : <br>
- ${COMMON[*]} import <a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> in your TW
-<br><br>
-or FORK : <br>
- ${NUNIQUE[*]} by deleting or modifying New Tiddler title.
-<br>
-<h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Arrange a Video Meeting...</a></h2>
+<h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Record VISIO for this event...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
-                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "COLLISION ${title} : ${unique_combined[*]}"
+                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "OVERWRITE : ${title}"
 
             done
 
-            ##  TITLE FORK TO BE SOLVED. NEED "SAME EMAILS SIGNATURES"
-            continue
+            ## SEND ZEN G1PalPay Signal
+
+    ##############################################################
+    G1AMOUNT=$(echo "$NSIGN / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
+    G1AMOUNT=$NSIGN ## SEND FLUID COIN
+    echo "***** SECTOR $SECTOR REWARD *****************"
+    echo "SPREAD $NSIGN G1 TO ${unique_combined[@]} SIGNATURES
+    to ${PLAYER} WALLET ${ASTROG1}"
+    echo "************************************************************"
+    ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${$G1AMOUNT}" "${ASTROG1}" "${unique_combined[@]}"
+    ################################################ GRATITUDE SENT
+
+            ## AND OVER WRITE TIDDLER...
+
 
         else
 
@@ -254,22 +260,22 @@ done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
 ## SECTOR SENDS GRATITUDE TO PUBLISHING PLAYER
 ###################################################
 
-if [[ ${gloops} -gt 0 && ${signatures} -gt ${gloops} && ${ASTROG1} ]]; then
-    # GENERATE SECTOR PRIVATE KEY ################################
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
-    G1SECTOR=$(cat ~/.zen/tmp/${MOATS}/sector.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+#~ if [[ ${gloops} -gt 0 && ${signatures} -gt ${gloops} && ${ASTROG1} ]]; then
+    #~ # GENERATE SECTOR PRIVATE KEY ################################
+    #~ ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/sector.dunikey "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
+    #~ G1SECTOR=$(cat ~/.zen/tmp/${MOATS}/sector.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
     #~ cp -f ~/.zen/tmp/coucou/${G1SECTOR}.COINS ~/.zen/tmp/${IPFSNODEID}/${SECTOR}.COINS
 
-    ##############################################################
-    GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
-    G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
-    echo "***** SECTOR $SECTOR REWARD *****************"
-    echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
-    to ${PLAYER} WALLET ${ASTROG1} (${gloops} Tiddlers)"
-    echo "************************************************************"
-    ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"
-    ################################################ GRATITUDE SENT
-fi
+    #~ ##############################################################
+    #~ GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
+    #~ G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
+    #~ echo "***** SECTOR $SECTOR REWARD *****************"
+    #~ echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
+    #~ to ${PLAYER} WALLET ${ASTROG1} (${gloops} Tiddlers)"
+    #~ echo "************************************************************"
+    #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"
+    #~ ################################################ GRATITUDE SENT
+#~ fi
 
 exit 0
