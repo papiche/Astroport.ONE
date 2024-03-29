@@ -547,7 +547,7 @@ cat ${ZINE} \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/UPlanetZine.fr.html "UPlanet Zine"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~.zen/tmp/${MOATS}/UPlanetZine.html "$PLAYER UPlanet Zine"
 
 #####################################################################"_EARTHCID_
 
