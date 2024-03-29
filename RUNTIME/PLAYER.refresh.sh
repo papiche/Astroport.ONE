@@ -204,9 +204,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     DIFF_SECONDS=$(( SNOW - SBIRTH ))
     days=$((DIFF_SECONDS / 60 / 60 / 24))
 
-################################################## +7 DAYS AstroID !!
+################################################## +2 DAYS AstroID !!
     ## REMOVE TW OLDER THAN 7 DAYS WITH AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 7 && "${CURRENT}" != "${PLAYER}" ]] \
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
         && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && echo "(#__#) AstroID +7 DAYS = SECURITY ERROR (#__#)" && continue
 
