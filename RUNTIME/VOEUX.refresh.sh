@@ -50,9 +50,9 @@ echo "%% ${COINS} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
-echo "Exporting ${PLAYER} TW [tag[G1Voeu]]"
+echo "Exporting ${PLAYER} TW [days:created[-360]tag[G1Voeu]]"
 rm -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json
-tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-360]tag[G1Voeu]]'
 
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] \
     && echo "AUCUN G1VOEU - EXIT -" && exit 0
@@ -92,14 +92,16 @@ do
 
     ## RUNNING WISH REFRESH : PLAYER CACHE
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
-
+    cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json \
+        | jq .[] | jq -r 'select(.wish=="'${WISH}'")' \
+        > ~/.zen/tmp/${MOATS}/${WISH}.json
 ##########################################################################
 ##########################################################################
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
     if [[ -s $MY_PATH/../ASTROBOT/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh PROGRAM FOUND !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS" "${HOME}/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json"
+        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS" "~/.zen/tmp/${MOATS}/${WISH}.json"
         echo "________________________________   Finished ******"
     else
         echo "......................... NO G1${WISHNAME} PROGRAM... "
