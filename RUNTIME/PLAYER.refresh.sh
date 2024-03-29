@@ -381,7 +381,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "${UPLAYERSTIDS[@]}"
     UPLAYERSTIDS_STR=""
     for item in "${UPLAYERSTIDS[@]}"; do
-        UPLAYERSTIDS_STR+=" $item"
+        UPLAYERSTIDS_STR+="\n* $item"
     done
     # Trim leading space
     UPLAYERSTIDS_STR="${UPLAYERSTIDS_STR# }"
