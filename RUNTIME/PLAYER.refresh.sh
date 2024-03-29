@@ -377,7 +377,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     done
     ## GET $:/moa Tiddlers ####################################### END
 
-    #####################################################################
+    ################## PREPARE LIST TO INSERT IN SECTORTW_NEWS TID
     echo "${UPLAYERSTIDS[@]}"
     UPLAYERSTIDS_STR=""
     for item in "${UPLAYERSTIDS[@]}"; do
@@ -399,7 +399,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #############################################################
     # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
-    ##############################################################
+    ######################################### BETTER USE json FILE IN /ipns/$IPFSNODEID/COINS
     #~ echo "##################################################################"
 
     #~ [[ $(echo "$COINS >= 500" | bc -l) -eq 1 ]]  \
