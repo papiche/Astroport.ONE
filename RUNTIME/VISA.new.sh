@@ -531,7 +531,7 @@ $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 [[ -s ${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html ]] \\
     && ZINE="${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html" \
     || ZINE="${MY_PATH}/../templates/UPlanetZine/index.html"
-##UPlanetZine::QmZ8KS7a7dybt68SthW71s3joa4J1YpZvHP8J1yyX1Ldi2 - chained release -
+##UPlanetZine::/ipfs/QmUjgQYK74UgRoyLFfmR2LMX7rd6vNxmtWeUtRxjemELuZ - chained release -
 cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
             -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
