@@ -145,6 +145,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #############################################################
     ## FOUND TW
+    err=""
     #############################################################
     ## CHECK "GPS" Tiddler
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -160,9 +161,9 @@ for PLAYER in ${PLAYERONE[@]}; do
         --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion' ## MadeInZion Tiddler
 
     [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json || $(cat ~/.zen/tmp/${MOATS}/MadeInZion.json) == "[]" ]] \
-        && msg="${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)"
+        && msg="${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)" && player="" \
+        || player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
-    player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
     #############################################################
     ## CHECK "AstroID" Tiddler
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -186,7 +187,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         && msg="${PLAYER} Astroport : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)"
 
     ############################################################ BAD TW SIGNATURE
-    [[ ( ${player} != ${PLAYER} || ${PLAYER} != ${signature} ||  "${err}" == "(☓‿‿☓)" ) && ${PLAYER} != ${CURRENT} ]] \
+    [[ ( ${player} != ${PLAYER} || ${PLAYER} != ${signature} || "${err}" == "(☓‿‿☓)" ) && ${PLAYER} != ${CURRENT} ]] \
         && echo "> (☓‿‿☓) BAD PLAYER=$player in TW (☓‿‿☓) $msg" \
         && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && continue \
@@ -525,7 +526,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             && IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
             && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
             && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
-            || echo ">>>>> ERROR ${PLAYER}_feed IPNS KEY NOT FOUND - ERROR"
+            || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
 
     fi
 

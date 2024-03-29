@@ -63,7 +63,7 @@ LAT=$(makecoord ${ZLAT})
 LON=$(makecoord ${ZLON})
 
 #~ ## RECEIVED VAL ## CAN BE USED TO SELECT TW TEMPLATE
-#~ VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
+VAL="$(echo ${VAL} | detox --inline)" ## DETOX VAL
 ############################################
 #### TODO USE THIS PARAMETER TO SELECT TW TEMPLATE
 
@@ -123,9 +123,9 @@ NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_
 
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
-echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
+echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "${VAL}" "${LAT}" "${LON}"
     ##### (☉_☉ ) #######
-${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "${VAL}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
 end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.

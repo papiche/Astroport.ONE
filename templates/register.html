@@ -196,6 +196,37 @@ input[name="uplanet"] {
 </center>
 </main>
 </body>
+  <script>
+    // Function to detect the browser language
+    function detectBrowserLanguage() {
+      // Check if the browser supports navigator.language
+      if (navigator.language) {
+        return navigator.language;
+      }
+      // For browsers that don't support navigator.language, fallback to navigator.browserLanguage
+      else if (navigator.browserLanguage) {
+        return navigator.browserLanguage;
+      }
+      // If neither is supported, return a default language
+      else {
+        return 'en'; // default to English if no language information is available
+      }
+    }
+
+    // Function to change iframe source based on browser language
+    function changeIframeSrc() {
+      var browserLanguage = detectBrowserLanguage();
+      var iframe = document.getElementById('aframe');
+      // Construct the new URL based on the detected language
+      var newSrc = 'https://pad.p2p.legal/Astroport_1234_' + browserLanguage;
+      iframe.src = newSrc;
+      const passElement = document.querySelector('input[name="g1pub"]');
+      passElement.value = browserLanguage;
+    }
+
+    // Call the function to change iframe source
+    changeIframeSrc();
+  </script>
 <script>
 
   // Extract latitude and longitude from URL parameters
@@ -209,13 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const latElement = document.querySelector('input[name="zlat"]');
   const lonElement = document.querySelector('input[name="zlon"]');
   const uplanetElement = document.querySelector('input[name="uplanet"]');
-  const passElement = document.querySelector('input[name="g1pub"]');
-
- //~ // Generate a random 6-digit number and set it as the default value for "PASS"
-  if (passElement) {
-    const randomPass = Math.floor(100000 + Math.random() * 900000); // Generates a random 6-digit number
-    passElement.value = randomPass.toString();
-  }
 
     if (latElement && lonElement) {
         latElement.value = zlat || '0.00'; // Default to '0.00' if lat is missing
@@ -286,34 +310,5 @@ setTimeout(() => {
     }
     // promptUser();
 </script>
-  <script>
-    // Function to detect the browser language
-    function detectBrowserLanguage() {
-      // Check if the browser supports navigator.language
-      if (navigator.language) {
-        return navigator.language;
-      }
-      // For browsers that don't support navigator.language, fallback to navigator.browserLanguage
-      else if (navigator.browserLanguage) {
-        return navigator.browserLanguage;
-      }
-      // If neither is supported, return a default language
-      else {
-        return 'en'; // default to English if no language information is available
-      }
-    }
-
-    // Function to change iframe source based on browser language
-    function changeIframeSrc() {
-      var browserLanguage = detectBrowserLanguage();
-      var iframe = document.getElementById('aframe');
-      // Construct the new URL based on the detected language
-      var newSrc = 'https://pad.p2p.legal/Astroport_1234_' + browserLanguage;
-      iframe.src = newSrc;
-    }
-
-    // Call the function to change iframe source
-    changeIframeSrc();
-  </script>
 
 </html>
