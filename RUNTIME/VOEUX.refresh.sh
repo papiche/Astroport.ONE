@@ -99,7 +99,7 @@ do
     if [[ -s $MY_PATH/../ASTROBOT/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh PROGRAM FOUND !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
+        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS" "${HOME}/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json"
         echo "________________________________   Finished ******"
     else
         echo "......................... NO G1${WISHNAME} PROGRAM... "
