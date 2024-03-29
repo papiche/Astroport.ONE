@@ -528,7 +528,7 @@ echo ""
 ####tools##########################################getUMAP_ENV.sh
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 ####################################################### EMAIL
-[[ -s ${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html ]] \\
+[[ -s ${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html ]] \
     && ZINE="${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html" \
     || ZINE="${MY_PATH}/../templates/UPlanetZine/index.html"
 ##UPlanetZine::/ipfs/QmUjgQYK74UgRoyLFfmR2LMX7rd6vNxmtWeUtRxjemELuZ - chained release -
