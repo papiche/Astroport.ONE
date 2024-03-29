@@ -82,9 +82,9 @@ header {
     <h1><span>Internet</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
     <div id="yellow">
         <h2>AstroID SECRETS</h2>
-        <input name='salt' value='0'>
-<h3><a title="YOUR ASTRO PORT" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
-        <input name='pepper' value='0'>
+
+<h3> >>> (◕‿‿◕) <<< </h3>
+
 </div>
         <h2>
         <div id="typed-strings">
@@ -95,9 +95,9 @@ header {
         </div>
         <span id="typed"></span>
         </h2>
-        <span><a target="youtube" href="https://youtube.com">📺</a> : </span><input name=g1pub value='enter video source to feed in TW'><a target="youtube" href="https://youtube.com">(&#128077;)</a></br>
-        <span>Email : </span><input name=email value=''></br></br>
-        <input type='submit' value='[(♥‿‿♥)]'>
+        <span><a target="youtube" href="https://youtube.com">📺</a> : </span><input type='hidden' name=g1pub value='enter video source to feed in TW'><a target="youtube" href="https://youtube.com">(&#128077;)</a></br>
+        <span></span><input type='hidden' name=email value='@'></br></br>
+        <input type='hidden' value='[(♥‿‿♥)]'>
 
 </form>
 
