@@ -215,7 +215,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
     if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
         echo "> PLAYER MOVED TO ${IPNSTAIL} : UNPLUG "
-        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE"
+        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "AstroID MUST BE DELETED"
         echo ">>>> CIAO ${PLAYER}"
         continue
     fi

@@ -20,6 +20,10 @@ PLAYER="$2"
 
 ONE="$3"
 
+## EXPLAIN WHY !
+SHOUT="$4"
+
+
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
@@ -68,7 +72,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
 ## SEND PLAYER LAST KNOW TW
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
-${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='/ipfs/${TW}'>TW (${TW})</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "BYE BYE MESSAGE"
+${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='/ipfs/${TW}'>TW (${TW})</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "BYE BYE MESSAGE $SHOUT"
 
 echo "PLAYER IPNS KEYS UNPLUGED"
 echo "#######################"
