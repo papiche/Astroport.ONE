@@ -65,15 +65,15 @@ if [[ $PORT == "0" ]]; then
     [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ${myIPFS}/ipfs/${IPFSMG}
 
     LP=$(ls /dev/usb/lp* 2>/dev/null | head -n1)
-    [[ ! $LP ]] && echo "NO PRINTER FOUND - Brother QL700 validated" && exit 1
-
-    echo "IMPRESSION QRCODE"
-    brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${MOATS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null
-    sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
-
+    if [[ $LP ]]; then
+        echo "IMPRESSION QRCODE"
+        brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${MOATS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null
+        sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
+    fi
 fi
 
 rm -Rf ~/.zen/tmp/${MOATS}/
 end=`date +%s`
 echo "(AMZQR) Operation time was "`expr $end - $start` seconds.
+echo "/ipfs/${IPFSMG}"
 exit 0

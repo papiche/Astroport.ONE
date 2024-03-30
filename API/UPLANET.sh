@@ -135,6 +135,9 @@ echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
 ## Calculating TW IPNS ADDRESS
 TWADD=$(${MY_PATH}/../tools/keygen -t ipfs "${PPASS}" "${NPASS}")
 
+IMGTW=$(${MY_PATH}/../API/AMZQR.sh '0' "${myIPFS}/ipns/${TWADD}" 'et' 'TV' | tail -n 1)
+
+
 ## HTTP nc ON PORT RESPONSE
 echo "$HTTPCORS
 <html>
@@ -184,8 +187,8 @@ function countdown() {
 }
 </script>
 ---
-<br>( ⚆_⚆) CESIUM MOBILE APP<br>
-<img src='${myIPFSGW}/ipfs/Qma4dDL7G4c7AQGkwYDg34ew8amppXsHuhyXDMKcTKauuD'\>
+<br>( ⚆_⚆) TW5 MOBILE APP<br>
+<img src='${myIPFSGW}${IMGTW}'\>
 <br>CONSOLE<br>
 $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
 <br>(☉_☉ ) use above credentials... utilisez les identiants ci-dessus<br>
