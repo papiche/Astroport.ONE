@@ -551,6 +551,7 @@ cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
             -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
             -e "s~_MOATS_~${MOATS}~g" \
+            -e "s~_PLAYER_~${PLAYER}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
             -e "s~_ASTRODID_~${ipns2did:1}~g" \
