@@ -104,7 +104,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep '
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
     ##### MONITORING #########
-    echo "<html><h1>${ZENAMOUNT} ZEN OPERATION</h1>
+    echo "<html><h1>${ZENAMOUNT} ♥ OPERATION</h1>
     ${COMMENT}
     <h3><a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
     (<a href='$myUPLANET/g1gate/?pubkey=${ISSUERPUB}'>SCAN</a>)
@@ -113,7 +113,7 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep '
     </h3>
     </html>" > ${PENDINGDIR}/${MOATS}.result.html
 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ♥ : ${COMMENT}"
 
     ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
     rm ${PENDINGDIR}/${MOATS}.key

@@ -58,9 +58,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck ###DEBUG MODE
     COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
+    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ♥ /"
 
-    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ZEN (= 10 €/OC) ?
+    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ♥ (= 10 €/OC) ?
     echo "## >>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
@@ -502,7 +502,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ## DEAD PLAYER ??
         if [[ ${DIFF_SECONDS} -eq $(( 27 * 24 * 60 * 60 )) ]]; then
             echo "<html><body><h1>WARNING.</h1> Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert
-            echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ZEN ($ZEN) </body></html>" >> ~/.zen/tmp/alert
+            echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ♥ ($ZEN) </body></html>" >> ~/.zen/tmp/alert
 
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
@@ -514,7 +514,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             continue
         fi
 
-        ## PAY 1 ZEN TO UMAPG1PUB
+        ## PAY 1 ♥ TO UMAPG1PUB
         [[ "${UMAPG1PUB}" != "" ]] \
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
 

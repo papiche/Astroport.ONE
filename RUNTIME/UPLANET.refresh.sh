@@ -74,7 +74,7 @@ for UMAP in ${unique_combined[@]}; do
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
-    echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${G1PUB}"
+    echo "UMAP (${COINS} G1) ${ZEN} ♥ : ${G1PUB}"
 
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
@@ -104,9 +104,9 @@ for UMAP in ${unique_combined[@]}; do
     ipfs --timeout 300s get --progress=false -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"
-        # Try retieve memory from UPlanet Zen Memory
+        # Try retieve memory from UPlanet ♥ Memory
         [[ ${ZEN} -gt 0 ]] \
-            && echo "INTERCOM Refreshing from ZEN MEMORY" \
+            && echo "INTERCOM Refreshing from ♥ MEMORY" \
             && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}" "${G1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -191,7 +191,7 @@ for UMAP in ${unique_combined[@]}; do
     echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
     ######################################################## # NODE  SELECTION in UMAP.refresher
 
-    ############ 101 ZEN REFILL ?!
+    ############ 101 ♥ REFILL ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
@@ -505,12 +505,12 @@ for UMAP in ${unique_combined[@]}; do
         && echo "UPDATING MOATS"
 
 ######################################################
-    ## ZEN CHAINING
-    # Send 1 Zen to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
+    ## ♥ CHAINING
+    # Send 1 ♥ to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
     INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
-    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN > 11 ?)"
+    echo "> INTERCOM ${INTERCOM} (${ZEN} ♥ > 11 ?)"
     if [[ ${ZEN} -gt 11 ]]; then
-        echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
+        echo "---ZZZ-- UMAP 2 SECTOR ♥ CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
     fi
 

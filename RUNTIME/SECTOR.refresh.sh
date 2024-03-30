@@ -102,9 +102,9 @@ for SECTOR in ${SECTORS[@]}; do
     ipfs --timeout 180s get --progress=false -o ~/.zen/tmp/${MOATS}/${SECTOR}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm memory empty (╥☁╥ )"
-        # Try retieve memory from UPlanet Zen Memory
+        # Try retieve memory from UPlanet ♥ Memory
         [[ ${ZEN} -gt 0 ]] \
-            && echo "INTERCOM Refreshing from ZEN MEMORY" \
+            && echo "INTERCOM Refreshing from ♥ MEMORY" \
             && ${MY_PATH}/../RUNTIME/ZEN.SECTOR.memory.sh "${SECTOR}" "${MOATS}" "${G1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -171,7 +171,7 @@ for SECTOR in ${SECTORS[@]}; do
     echo "SETTING NEXT REFRESHER : $(cat ${UREFRESH} | head -n 1)"
 
 
-    ############ 101 ZEN REFILL ?!
+    ############ 101 ♥ REFILL ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
@@ -230,7 +230,7 @@ for SECTOR in ${SECTORS[@]}; do
     TOTL=$((${NL}+${NS}))
     ##############################################################
 
-    # Update COIN & ZEN value
+    # Update COIN & ♥ value
     echo ${COINS} > ~/.zen/tmp/${MOATS}/${SECTOR}/COINS
     echo ${ZEN} > ~/.zen/tmp/${MOATS}/${SECTOR}/ZEN
 
@@ -343,12 +343,12 @@ for SECTOR in ${SECTORS[@]}; do
         && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_moats \
         && IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1) && echo "ROOT was ${ZCHAIN}"
 ######################################################
-    ## ZEN CHAINING
-    # Send 1 Zen to UPlanet REGIONG1PUB Wallet containing REGION TW HASH
+    ## ♥ CHAINING
+    # Send 1 ♥ to UPlanet REGIONG1PUB Wallet containing REGION TW HASH
     INTERCOM="UPLANET:${SECTOR}:${TODATE}:/ipfs/${IPFSPOP}"
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
     if [[ ${ZEN} -gt 11 ]]; then
-        echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
+        echo "---ZZZ-- SECTOR 2 REGION ♥ CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
     fi
     ##############################################################

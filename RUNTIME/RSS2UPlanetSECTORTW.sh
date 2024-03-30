@@ -7,7 +7,7 @@
 # DETECTING CONFLICT WITH SAME TITLE
 # ASKING TO EXISTING SIGNATURES TO UPDATE THEIR TW OR FORK TITLE
 # CALLED BY "SECTOR.refresh.sh"
-# SEND 10 ZEN TO EACH SIGNATURE
+# SEND 10 ♥ TO EACH SIGNATURE
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -193,7 +193,7 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 
             done
 
-            ## SEND ZEN G1PalPay Signal
+            ## SEND ♥ G1PalPay Signal
 
     #~ ##############################################################
     #~ G1AMOUNT=$(echo "$NSIGN / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
@@ -271,7 +271,7 @@ done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
     #~ GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     #~ G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
     #~ echo "***** SECTOR $SECTOR REWARD *****************"
-    #~ echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
+    #~ echo "GRATITUDE ${GRATITUDE} ♥ = ${G1AMOUNT} G1
     #~ to ${PLAYER} WALLET ${ASTROG1} (${gloops} Tiddlers)"
     #~ echo "************************************************************"
     #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"

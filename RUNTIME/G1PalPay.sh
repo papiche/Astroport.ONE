@@ -251,12 +251,12 @@ while read LINE; do
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
-    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 Zen each
+    zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 ♥ each
 
     ## Get first zmail
     ZMAIL="${emails}"
 
-    MSG="SEND + $zen ZEN TO BROs : ${emails[@]}"
+    MSG="SEND + $zen ♥ TO BROs : ${emails[@]}"
     echo $MSG
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
@@ -267,7 +267,7 @@ while read LINE; do
 
     if [[ ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
-        ## SEND zen ZEN (G1 dice JUNE) TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
+        ## SEND zen ♥ (G1 dice JUNE) TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
         #~ ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
         #~ ${MY_PATH}/../tools/PAY4SURE.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
                                                                                                                                                                         ## Filling comment with email list will make players resend to all ## MAY BE A BAD IDEA ###

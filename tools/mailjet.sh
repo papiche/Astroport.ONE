@@ -57,7 +57,7 @@ title="$3"
 
 SUBJECT="[UPlanet] ${title} ${pseudo}"
 
-MESSAGESIGN="---<br>this message is sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your Astroport ♥BOX Zen Station"
+MESSAGESIGN="---<br>this message is sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your Astroport ♥BOX ♥ Station"
 
 echo "
 ########################################################################
