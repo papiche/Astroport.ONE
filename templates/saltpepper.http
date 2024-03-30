@@ -62,7 +62,8 @@ header {
             <div  id="login"><button onclick="promptUser('login')">LOGIN</button><button onclick="promptUser('logout')">LOGOUT</button></div>
 -->
     <h6>
-        <p id="station"> ♥<span>BOX </span></p>
+        <p id="station"> ♥<span>BOX </span><h3><a title="BACK TO ASTROPORT" href="http://127.0.0.1:1234"> <<< (◕‿‿◕) <<< </a></h3>
+</p>
    </h6>
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
@@ -82,9 +83,9 @@ header {
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
     <h1><span>Astroport</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
     <div id="yellow">
-        <h2>AstroID SECRETS</h2>
+        <h2>SALT</h2>
         <input name='salt' value='0'>
-<h3><a title="YOUR ASTRO PORT" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+        <h2>PEPPER</h2>
         <input name='pepper' value='0'>
 </div>
         <h2>
