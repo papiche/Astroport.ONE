@@ -361,6 +361,7 @@ for SECTOR in ${SECTORS[@]}; do
 
 ######################################################
     rm ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey
+    [[ ${ZCHAIN} != "" ]] && ipfs pin rm ${ZCHAIN}
 
 ###################################################
 ## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE
