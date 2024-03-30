@@ -86,7 +86,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     ## YES = OPEN TW
     [[ ${ASTROTW} ]] \
-        && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+        && (echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${myIPFS}${ASTROTW}'\" />"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
         && exit 0
 
 else
