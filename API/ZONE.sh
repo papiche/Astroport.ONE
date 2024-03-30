@@ -67,23 +67,38 @@ echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPN
 
     ## SECTOR LEVEL
     if [[ ${DEG} == "0.01" ]]; then
-        LAT=${SLAT}
-        LON=${SLON}
+
+        SLAT="${LAT::-1}"
+        SLON="${LON::-1}"
         SECTOR="_${SLAT}_${SLON}"
         echo "SECTOR = ${SECTOR}"
         ZONEINDEX=$SECTORIPNS
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
         ZONEG1PUB=$SECTORG1PUB
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
+        LAT=${SLAT}
+        LON=${SLON}
         JSON="ZONE${SECTOR}_${DEG}.json"
+
     fi
 
     ## REGION & ABOVE LEVEL
     if [[ ${DEG} == "0.1" ||  ${DEG} == "1" ]]; then
-        LAT=${RLAT}
-        LON=${RLON}
+
+        RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
+        RLON="$(echo ${LON} | cut -d '.' -f 1)"
         REGION="_${RLAT}_${RLON}"
         echo "REGION = ${REGION}"
         ZONEINDEX=$REGIONIPNS
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
         ZONEG1PUB=$REGIONG1PUB
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
+        LAT=${RLAT}
+        LON=${RLON}
         JSON="ZONE${REGION}_${DEG}.json"
 
     fi
