@@ -527,6 +527,21 @@ echo ""
 
 ####tools##########################################getUMAP_ENV.sh
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+
+
+ipns2did=""
+
+# Loop through the ASTRONAUTENS two characters at a time
+for ((i = 0; i < ${#ASTRONAUTENS}; i += 2)); do
+    ipns2did+=" ${ASTRONAUTENS:i:2}"
+    # Check if 12 doublets have been added
+    if (( (i / 2 + 1) % 12 == 0 )); then
+        ipns2did+="<br>"  # Add a newline character
+    fi
+done
+
+# Print the result with leading space removed
+echo -e "${ipns2did:1}"
 ####################################################### EMAIL
 [[ -s ${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html ]] \
     && ZINE="${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html" \
@@ -538,6 +553,7 @@ cat ${ZINE} \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+            -e "s~_ASTRODID_~${ipns2did:1}~g" \
             -e "s~0448~${PASS}~g" \
             -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
             -e "s~_EARTHCID_~${EARTHCID}~g" \
