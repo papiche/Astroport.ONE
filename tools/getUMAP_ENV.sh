@@ -14,8 +14,8 @@ LON="$2"
 ZLAT=$(makecoord ${LAT})
 ZLON=$(makecoord ${LON})
 ## CHECK
-[[ "$ZLAT" != "$LAT" ]] && echo "# ERROR - $LAT bad format -" && exit 1
-[[ "$ZLON" != "$LON" ]] && echo "# ERROR - $LON bad format -" && exit 1
+[[ "$ZLAT" != "$LAT" || "$LAT" == "" ]] && echo "# ERROR - $LAT bad format -" && exit 1
+[[ "$ZLON" != "$LON" || "$LON" == "" ]] && echo "# ERROR - $LON bad format -" && exit 1
 
 ## COMPUTE UMAP, USECTOR, UREGION
 SLAT="${LAT::-1}"

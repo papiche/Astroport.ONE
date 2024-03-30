@@ -62,31 +62,28 @@ LON="${WHAT}"
 LAT=$(makecoord ${LAT})
 LON=$(makecoord ${LON})
 JSON="ZONE_${LAT}_${LON}_${DEG}.json"
+$(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 
     ## SECTOR LEVEL
     if [[ ${DEG} == "0.01" ]]; then
-        SLAT="${LAT::-1}"
-        SLON="${LON::-1}"
+        LAT=${SLAT}
+        LON=${SLON}
         SECTOR="_${SLAT}_${SLON}"
         echo "SECTOR = ${SECTOR}"
-        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
-        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
+        ZONEINDEX=$SECTORIPNS
+        ZONEG1PUB=$SECTORG1PUB
         JSON="ZONE${SECTOR}_${DEG}.json"
-
     fi
 
     ## REGION & ABOVE LEVEL
     if [[ ${DEG} == "0.1" ||  ${DEG} == "1" ]]; then
-        RLAT="$(echo ${LAT} | cut -d '.' -f 1)"
-        RLON="$(echo ${LON} | cut -d '.' -f 1)"
+        LAT=${RLAT}
+        LON=${RLON}
         REGION="_${RLAT}_${RLON}"
         echo "REGION = ${REGION}"
-        ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
-        ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
+        ZONEINDEX=$REGIONIPNS
+        ZONEG1PUB=$REGIONG1PUB
         JSON="ZONE${REGION}_${DEG}.json"
 
     fi

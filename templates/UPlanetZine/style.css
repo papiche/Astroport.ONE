@@ -109,9 +109,9 @@ figcaption {
     padding: 10px;
     border-left: 4px solid #741b47;
     border-bottom: 4px solid #741b47;
-    
+
   }
-  
+
   .zine-page {
     margin-top: 10px;
   }
@@ -121,30 +121,30 @@ figcaption {
 
 @media print {
 
-  
+
   body {
-    font-size: 69%;
+    font-size: 66%;
   }
-  
+
   a {
     color: inherit;
     text-decoration: none;
   }
- 
+
   .mini-img {
     max-width: 4.4rem;
   }
-  
+
   /* The styles below here are specifically for creating the page layout.
    * -> DON'T CHANGE THESE <- unless you know what you're doing!
    */
-  
+
   @page {
     size: landscape;
     margin: 0;
     bleed: 0;
   }
-  
+
   .zine {
     width: 100vw;
     height: 100vh;
