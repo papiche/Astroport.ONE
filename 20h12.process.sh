@@ -93,6 +93,16 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 ${MY_PATH}/RUNTIME/NODE.refresh.sh
 #####################################
 
+## REMOVE TMP BUT KEEP swarm, flashmem and coucou
+mv ~/.zen/tmp/swarm ~/.zen/swarm
+mv ~/.zen/tmp/coucou ~/.zen/coucou
+mv ~/.zen/tmp/flashmem ~/.zen/flashmem
+rm -Rf ~/.zen/tmp/*
+mv ~/.zen/swarm ~/.zen/tmp/swarm
+mv ~/.zen/coucou ~/.zen/tmp/coucou
+mv ~/.zen/flashmem ~/.zen/tmp/flashmem
+
+
     ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOSTRAP LIST (OFFICIAL SWARM)
     espeak "bootstrap refresh" > /dev/null 2>&1
