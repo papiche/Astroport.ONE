@@ -480,6 +480,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo " NEW TW ${PLAYER} : =  ${myIPFS}/ipfs/${TW}"
     echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
     echo "================================================"
+    ipfs pin rm ${CURCHAIN}
 
     ###################
     # REFRESH PLAYER_feed KEY
