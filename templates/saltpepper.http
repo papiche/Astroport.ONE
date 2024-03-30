@@ -96,7 +96,7 @@ header {
         </div>
         <span id="typed"></span>
         </h2>
-        <span>📺 TW5 : </span><input type='hidden' name=g1pub value=''><a target="UPlanet" href="https://qo-op.com">(&#128077;)</a></br>
+        <span>📺 TW5 : </span><input type='hidden' name=g1pub value='UPlanet'><a target="UPlanet" href="https://qo-op.com">(&#128077;)</a></br>
         <span>Email : </span><input name=email value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 

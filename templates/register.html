@@ -300,7 +300,7 @@ setTimeout(() => {
         if (timeLeft == -1) {
             document.getElementById('countdown').style.visibility = 'visible';
             clearTimeout(timerId);
-            elem.innerHTML = "<a href=http://127.0.0.1:12345 target='aframe'>RETRY</a>"
+            elem.innerHTML = "<a href='http://127.0.0.1:1234'>RETRY</a>"
             document.getElementById('aframe').src = 'http://127.0.0.1:12345';
             document.getElementById('console').style.visibility = 'visible';
         } else {
