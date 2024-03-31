@@ -48,85 +48,102 @@ MOATS="$3"
 echo "${PLAYER} ${INDEX} ${ASTRONAUTENS} ${G1PUB} "
 mkdir -p $HOME/.zen/tmp/${MOATS}
 echo "~/.zen/tmp/${MOATS}/swarm.key"
-JSONWISH="$4"
-## SHOW WISH CONTAINS SELF CRYPTED SWARMKEY (+ SIGNERS)
-cat ${JSONWISH} | jq -r
 
 PLAYERPUB=$(cat $HOME/.zen/game/${PLAYER}/secret.dunikey | grep pub | cut -d ' ' -f 2)
 [[ "${PLAYERPUB}" == "" ]] && echo "FATAL ERROR PLAYER KEY MISSING" && exit 1
-WISHNAME=$(cat ${JSONWISH} | jq .title) # ForkUPlanetZERO !
-UPNAME=$(cat ${JSONWISH} | jq -r ".UPname") ## What name is given ?
-[[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .UPname MISSING" && exit 1
-HASH=$(cat ${JSONWISH} | jq -r ".hash") ## What text hash it has ?
-[[ "${HASH}" == "null" ||  "${HASH}" == "" ]] && echo "FATAL ERROR UPNAME .hash MISSING" && exit 1
-SECRET=$(cat ${JSONWISH} | jq -r ".secret") ## What is secret ?
-[[ "${SECRET}" == "null" ||  "${SECRET}" == "" ]] && echo "FATAL ERROR UPNAME .secret MISSING" && exit 1
-CONTRACT=$(cat ${JSONWISH} | jq -r ".text") ## What contract is applying ?
-[[ "${CONTRACT}" == "null" ||  "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
-echo "- CONTRACT -------------------------------------"
-echo $CONTRACT
-echo "--------------------------------------"
-AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
 
-[[ $AHAH != $HASH ]] && echo "CONTACT CHANGED - INFORMATION"
+###################################################################
+## tag[ForkUPlanetZERO] TW EXTRACTION
+###################################################################
+tiddlywiki  --load ${INDEX} \
+    --output ~/.zen/tmp/${MOATS} \
+    --render '.' 'G1ForkUPlanetZERO.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[ForkUPlanetZERO]]'
+
+echo "PREPARE INLINE JSON : cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json | jq -rc .[]"
+    cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json \
+            | jq -rc .[] > ~/.zen/tmp/${MOATS}/inlineuplanets.json
+
+while read JSONUPLANET; do
+
+    echo "JSONUPLANET=${JSONUPLANET}"
+
+    UPNAME=$(cat ${JSONUPLANET} | jq .title) # What name is given ?
+    [[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .UPname MISSING" && exit 1
+    HASH=$(cat ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
+    [[ "${HASH}" == "null" ||  "${HASH}" == "" ]] && echo "FATAL ERROR UPNAME .hash MISSING" && exit 1
+    SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
+    [[ "${SECRET}" == "null" ||  "${SECRET}" == "" ]] && echo "FATAL ERROR UPNAME .secret MISSING" && exit 1
+
+    # jq '.[] | .UPname = "${UPNAME}" | .hash = "${HASH}" | .secret = "${SECRET}"' ${JSONUPLANET}
+
+    CONTRACT=$(cat ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
+    [[ "${CONTRACT}" == "null" ||  "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
+    echo "- CONTRACT -------------------------------------"
+    echo $CONTRACT
+    echo "--------------------------------------"
+    AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
+
+    [[ $AHAH != $HASH ]] && echo " - WARNING - CONTRACT CHANGED - WARNING -"
 
 
-## CHECK EXISTING ${WISHNAME}.${UPNAME}.swarm.key
-[[ ! -s $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key ]] \
-    && MSG=$MSG" ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
+    ## CHECK EXISTING ${WISHNAME}.${UPNAME}.swarm.key
+    [[ ! -s $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key ]] \
+        && MSG=$MSG" ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
 
-## CREATE 64 bit swarm.key ( maximum individual Fork 1,844674407×10¹⁹ )
-echo -e '/key/swarm/psk/1.0.0/\n/base16/' > $HOME/.zen/tmp/${MOATS}/swarm.key
-head -c 64 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
-echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
+    ## CREATE 64 bit swarm.key ( maximum individual Fork 1,844674407×10¹⁹ )
+    echo -e '/key/swarm/psk/1.0.0/\n/base16/' > $HOME/.zen/tmp/${MOATS}/swarm.key
+    head -c 64 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
+    echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 
-## EXTRACT CURRENT SECRET FROM JSONWISH
-########################################
-OLD16=$(cat ${JSONWISH} | jq -r ".secret")
+    ## EXTRACT CURRENT SECRET FROM JSONUPLANET
+    ########################################
+    OLD16=$(cat ${JSONUPLANET} | jq -r ".secret")
 
-if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
+    if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
 
-    echo "NO SECRET FOUND" \
-    && echo "NEW SECRET SWARM.KEY GENERATION" \
-    && cat $HOME/.zen/tmp/${MOATS}/swarm.key \
-    && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-    && echo "------- KEY LOADED -----> ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key"
+        echo "NO SECRET FOUND" \
+        && echo "NEW SECRET SWARM.KEY GENERATION" \
+        && cat $HOME/.zen/tmp/${MOATS}/swarm.key \
+        && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+        && echo "------- KEY LOADED -----> ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key"
 
-    ## CREATE SUB WORLD... MONITOR TEXT
+        ## CREATE SUB WORLD... MONITOR TEXT
 
-else
-    ## DEBASE16
-    echo "${OLD16}" | base16 -d \
-            > ~/.zen/tmp/${MOATS}/swarmkey.crypted
+    else
+        ## DEBASE16
+        echo "${OLD16}" | base16 -d \
+                > ~/.zen/tmp/${MOATS}/swarmkey.crypted
 
-    ## TRY TO DECODE with PLAYER secret.dunikey
-    ${MY_PATH}/../tools/natools.py decrypt \
-            -f pubsec \
-            -k $HOME/.zen/game/${PLAYER}/secret.dunikey \
-            -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
-            -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
+        ## TRY TO DECODE with PLAYER secret.dunikey
+        ${MY_PATH}/../tools/natools.py decrypt \
+                -f pubsec \
+                -k $HOME/.zen/game/${PLAYER}/secret.dunikey \
+                -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
+                -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
 
-    [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \\
-        && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
+        [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \\
+            && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
 
-    ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
-    [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
-            && cp ~/.zen/tmp/${MOATS}/swarmkey.decrypted \
-                $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-            || echo "ERROR RELOADING SWARMKEY"
-fi
+        ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
+        [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
+                && cp ~/.zen/tmp/${MOATS}/swarmkey.decrypted \
+                    $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+                || echo "ERROR RELOADING SWARMKEY"
+    fi
 
-if [[ "$HAHA" != "" ]] ; then
-    #~ REPLACE SECRET
-    ${MY_PATH}/../tools/natools.py encrypt \
-        -p ${PLAYERPUB} \
-        -i $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-        -o $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
-    ENCODING=$(cat $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
-    sed -i "s~${OLD16}~${ENCODING}~g" ${JSONWISH}
-    echo "${OLD16} : ${ENCODING}"
+    if [[ "$HAHA" != "" ]] ; then
+        #~ REPLACE SECRET
+        ${MY_PATH}/../tools/natools.py encrypt \
+            -p ${PLAYERPUB} \
+            -i $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+            -o $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
+        ENCODING=$(cat $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
+        sed -i "s~${OLD16}~${ENCODING}~g" ${JSONUPLANET}
+        echo "${OLD16} : ${ENCODING}"
 
-fi
+    fi
+
+done < ~/.zen/tmp/${MOATS}/inlineuplanets.json
 
 
 

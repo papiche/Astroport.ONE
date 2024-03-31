@@ -24,10 +24,10 @@ echo
 [[ ! -s ${RSS} ]] && echo "BAD RSS INPUT" && exit 1
 [[ "$(cat ${RSS})" == "[]" ]] && echo "EMPTY RSS " && exit 0
 
-[[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "BAD UPLANET CONTEXT" && exit 1
+[[ ! -d ~/.zen/tmp/${MOATS}/${SECTOR}/ ]] && echo "- ERROR - BAD UPLANET CONTEXT - look inside code - " && exit 1
 [[ ! -s ${INDEX} ]] \
     && sed "s~_SECTOR_~${SECTOR}~g" ${MY_PATH}/../templates/twsector.html > ${INDEX} \
-    && echo "REFRESHING SECTOR FROM empty TEMPLATE *****"
+    && echo "- WARNING - REFRESHING SECTOR FROM empty TEMPLATE *****"
 
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
@@ -46,7 +46,7 @@ signatures=0
 
 while read title; do
 
-    [[ ${floop} -gt 1 ]] && echo "0lder Tiddlers are similaR... BREAK LOOP" && break
+    [[ ${floop} -gt 1 ]] && echo "Other Tiddlers are similaR... BREAK LOOP" && break
 
     # FILTER "UPPERCASE" + Astroport Tid, less than 4 characters title Tiddlers (ex: GPS, ...).
     [[ ${title} == "GettingStarted" || "${title^^}" == "${title}" || "${title::3}" == '$:/' || ${title::4} == ${title} || ${title} == "AstroID" || ${title} == "Voeu1.png"  || ${title} == "Astroport" || ${title} == "MadeInZion" || ${title} == "G1Visa" || ${title} == "ZenCard" || ${title::5} == "Draft" ]] \
@@ -85,7 +85,7 @@ while read title; do
             && echo "GLOOPS (${gloops}) : ${title}" \
             && signatures=$((signatures + TMPSIGN))
 
-         [[ ! -s ${INDEX} ]] && echo "ERROR. TW could not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
+        [[ ! -s ${INDEX} ]] && echo "ERROR. TW could not ingest ~/.zen/tmp/${MOATS}/NEW.json" && exit 1
 
     else
 
@@ -215,8 +215,8 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
         fi
 
         echo "______________________"
-        echo "CHECKING DIFFERENCES"
-        diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json
+        #~ echo "CHECKING DIFFERENCES"
+        #~ diff ~/.zen/tmp/${MOATS}/NEW.json ~/.zen/tmp/${MOATS}/INSIDE.json
 
         ## TODO CHECK MORE DIFFERENCE
         DATENEW=$(cat ~/.zen/tmp/${MOATS}/NEW.json | jq -r .modified)
@@ -240,7 +240,8 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 
             [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.html ]] \
                 && rm ${INDEX} \
-                && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX}
+                && mv ~/.zen/tmp/${MOATS}/${SECTOR}.html ${INDEX} \
+                || ((gloops--))
 
             signatures=$((signatures + ISIGN))
 
