@@ -563,3 +563,6 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
+
+## WRITE THE DIFFERENT REWARDS
+G1LEVEL1="3.1"

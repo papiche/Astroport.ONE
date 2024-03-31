@@ -26,23 +26,14 @@ echo '
 mail="$1" # EMAIL DESTINATAIRE
 ############################################## SEARCH in players
 $($MY_PATH/../tools/search_for_this_email_in_players.sh ${mail})
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS INDEX=$INDEX source=$source"
+echo "ASTROPORT=$ASTROPORT
+ASTROTW=$ASTRONAUTENS
+ASTROG1=$ASTROG1
+ASTROMAIL=$EMAIL
+ASTROFEED=$FEEDNS
+TW=$TW
+source=$source"
 
-############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
-[[ ! -s ~/.zen/MJ_APIKEY ]] \
-    && echo "MISSING ~/.zen/MJ_APIKEY
-    PLEASE PROVIDE MAILJET KEY : MJ_APIKEY_PUBLIC= & MJ_APIKEY_PRIVATE" \
-    && exit 1
-
-## LOAD SENDER API KEYS
-###################################
-######### ~/.zen/MJ_APIKEY contains
-# export MJ_APIKEY_PUBLIC='publickey'
-# export MJ_APIKEY_PRIVATE='privatekey'
-# export SENDER_EMAIL='me@source.tld'
-###################################
-source ~/.zen/MJ_APIKEY
-export RECIPIENT_EMAIL=${mail}
 
 #~ echo "DEST=$mail"
 # mail=geg-la_debrouille@super.chez-moi.com
@@ -77,9 +68,57 @@ EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
 ipfs pin rm ${EMAILZ}
 
+################### TW INDEX TO LOAD IFRAME WITH ?
+INDEX="$4"
+if [[ -s ${INDEX} ]]; then
+    echo "INSERT ZINE INTO TW"
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    mkdir -p ~/.zen/tmp/${MOATS}
+
+    cat ${MY_PATH}/../templates/data/IFRAME.json \
+    | sed -e "s~_MOATS_~${MOATS}~g" \
+    -e "s~_TITLE_~${SUBJECT}~g" \
+    -e "s~_CID_~${EMAILZ}~g" \
+    -e "s~_PLAYER_~${mail}~g" \
+        > ~/.zen/tmp/iframe.json
+
+    ### IMPORT INTO TW
+    tiddlywiki --load ${INDEX} \
+                --import ~/.zen/tmp/iframe.json "application/json" \
+                --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+
+    if [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]]; then
+
+        [[ $(diff ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} ) ]] \
+            && mv ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+            && echo "===> Mise à jour ${INDEX}"
+
+    else
+        echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${MOATS}/newindex.html"
+        echo "XXXXXXXXXXXXXXXXXXXXXXX"
+    fi
+
+fi
+
 export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 
 [[ $title == "" ]] && title="MESSAGE"
+
+############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
+[[ ! -s ~/.zen/MJ_APIKEY ]] \
+    && echo "MISSING ~/.zen/MJ_APIKEY
+    PLEASE PROVIDE MAILJET KEY : MJ_APIKEY_PUBLIC= & MJ_APIKEY_PRIVATE" \
+    && exit 1
+
+## LOAD SENDER API KEYS
+###################################
+######### ~/.zen/MJ_APIKEY contains
+# export MJ_APIKEY_PUBLIC='publickey'
+# export MJ_APIKEY_PRIVATE='privatekey'
+# export SENDER_EMAIL='me@source.tld'
+###################################
+source ~/.zen/MJ_APIKEY
+export RECIPIENT_EMAIL=${mail}
 
 json_payload='{
     "Messages": [

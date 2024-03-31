@@ -453,6 +453,16 @@ for PLAYER in ${PLAYERONE[@]}; do
         || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
     ###########################
 
+
+    #### SEND TODAY UPlanetDAY${days} ZINE
+    ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.${lang}.html"
+    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.html"
+    [[ -s ${ZINE2} ]] \
+        && echo "SENDING ZINE2 DAY ${days} + mailjet TW import " \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
+        || echo "NO ZINE FOR ${days} DAY"
+
+
     ####################
     ## TW NEWINDEX .... #####
     ##############################################################
@@ -485,14 +495,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
     echo "================================================"
     ipfs pin rm ${CURCHAIN}
-
-    #### SEND DAY2 ZINE
-    ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.${lang}.html"
-    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.html"
-    [[ -s ${ZINE2} ]] \
-        && echo "SENDING ZINE2 DAY ${days}" \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #${days}" \
-        || echo "NO ZINE FOR ${days} DAY"
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
@@ -545,7 +547,7 @@ if [[ ${days} -ge 14 ]]; then
         ### PLAYER ALIVE PUBLISH RSS &
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
         [[ ${FEEDNS} ]] \
-            && IRSS=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
+            && IRSS=$(ipfs add --pin=false -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
             && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
             && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
             || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
@@ -556,15 +558,14 @@ if [[ ${days} -ge 14 ]]; then
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
 fi
+
+
     ## TODO CREATING 30 DAYS XML RSS STREAM ???
     ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
     # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
     ### $:/plugins/sycom/atom-feed/atom.xml
     #~ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
-
-
-
 
 
     #################################################
@@ -577,7 +578,7 @@ fi
     RLAT=$(echo ${LAT} | cut -d '.' -f 1)
     RLON=$(echo ${LON} | cut -d '.' -f 1)
 
-    echo "/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
+    echo "(⌐■_■) /UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
     ## IPFSNODEID 12345 CACHE UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/RSS/
 
@@ -603,11 +604,11 @@ fi
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
     #####################################################################
-    ## DAY=7 : SEND 3.1 G1 to PLAYER + 3.1 G1 to UMAP
+    ## DAY=7 : SEND ${G1LEVEL1} G1 to PLAYER
     [[ ${days} -eq 7 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
         && echo "7 DAY. PLAYER STEP ONE SUCCEED." \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "3.1" "${G1PUB}" "UPLANET:WELCOME:${MIUSER}:${YOUSER}" \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "${G1LEVEL1}" "${G1PUB}" "UPLANET:WELCOME:${MIUSER}:${YOUSER}" \
         && echo "UPLANET:WELCOME:${MIUSER}:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 
     ## MAINTAIN R/RW TW STATE
