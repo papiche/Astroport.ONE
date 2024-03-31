@@ -287,7 +287,10 @@ sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa
 
 SECTOR="_${LAT::-1}_${LON::-1}" ### SECTOR = 0.1° Planet Slice in MadeInZion Tiddler
 echo "UPlanet 0.1° SECTOR : ${SECTOR}"
-sed -i "s~_SECTOR_~${SECTOR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
+sed -i "s~_SECTOR_~${SECTOR}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ## MadeInZion
+sed -i "s~_DAO_~${LANG}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ## MadeInZion
+sed -i "s~_NUMBER_~${#PLAYERONE[@]}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ## MadeInZion
 
 # GET ACTUAL GPS VALUES
 tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \

@@ -17,7 +17,7 @@ PLAYERONE="$1"
 # [[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ! ${PLAYERONE} ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
 
-echo "FOUND : ${PLAYERONE[@]}"
+echo "FOUND ${#PLAYERONE[@]} : ${PLAYERONE[@]}"
 CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
 
 echo "RENEWING LOCAL UPLANET REPOSITORY (ADMIN=${CURRENT})
@@ -197,7 +197,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport) ## ZenStation IPNS address
     CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
     [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] \
-        &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
+        && CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
 
     SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
     SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
@@ -210,6 +210,9 @@ for PLAYER in ${PLAYERONE[@]}; do
         && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && echo "(#__#) AstroID +7 DAYS = SECURITY ERROR (#__#)" && continue
 
+    [[ $days -eq 2 ]] \
+        && echo "DAY 2" \
+        &&
 ################################################## ANOTHER ASTROPORT !!
     IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
     ########### ASTROPORT is not IPFSNODEID => EJECT TW

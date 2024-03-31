@@ -189,7 +189,7 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 <h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Record VISIO for this event...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
-                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "OVERWRITE : ${title}"
+                ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "Upgrade Tiddler : ${title}"
 
             done
 

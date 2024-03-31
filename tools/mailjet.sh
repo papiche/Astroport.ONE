@@ -55,7 +55,7 @@ messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
 ## add a tittle in message
 title="$3"
 
-SUBJECT="[UPlanet] ${title} ${pseudo}"
+SUBJECT="[UPlanet] ${title}"
 
 MESSAGESIGN="---<br>this message is sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your Astroport ♥BOX ♥ Station"
 
@@ -99,7 +99,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />'${pseudo}', may the good vibes be with you!<br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'
