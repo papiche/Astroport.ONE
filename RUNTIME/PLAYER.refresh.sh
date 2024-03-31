@@ -227,13 +227,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
         && echo "(#__#) AstroID +2 DAYS = SECURITY ERROR (#__#)" && continue
 
-    #### SEND DAY2 ZINE
-    ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.${lang}.html"
-    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.html"
-    [[ $days -eq 2 ]] \
-        && echo "ZINE2 DAY 2" \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #2"
-
     ######################################
     #### UPLANET GEO COORD EXTRACTION
     ## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
@@ -490,6 +483,14 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
     echo "================================================"
     ipfs pin rm ${CURCHAIN}
+
+
+    #### SEND DAY2 ZINE
+    ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.${lang}.html"
+    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.html"
+    [[ $days -eq 2 ]] \
+        && echo "ZINE2 DAY 2" \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #2"
 
     ###################
     # REFRESH PLAYER_feed KEY
