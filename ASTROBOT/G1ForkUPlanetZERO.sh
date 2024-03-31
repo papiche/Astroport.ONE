@@ -60,8 +60,8 @@ tiddlywiki  --load ${INDEX} \
     --render '.' 'G1ForkUPlanetZERO.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[ForkUPlanetZERO]]'
 
 echo "PREPARE INLINE JSON : cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json | jq -rc .[]"
-    cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json \
-            | jq -rc .[] > ~/.zen/tmp/${MOATS}/inlineuplanets.json
+cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json \
+        | jq -rc .[] > ~/.zen/tmp/${MOATS}/inlineuplanets.json
 
 while read JSONUPLANET; do
 
@@ -74,8 +74,6 @@ while read JSONUPLANET; do
     SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
     [[ "${SECRET}" == "null" ||  "${SECRET}" == "" ]] && echo "FATAL ERROR UPNAME .secret MISSING" && exit 1
 
-    # jq '.[] | .UPname = "${UPNAME}" | .hash = "${HASH}" | .secret = "${SECRET}"' ${JSONUPLANET}
-
     CONTRACT=$(cat ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
     [[ "${CONTRACT}" == "null" ||  "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
     echo "- CONTRACT -------------------------------------"
@@ -84,7 +82,6 @@ while read JSONUPLANET; do
     AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
 
     [[ $AHAH != $HASH ]] && echo " - WARNING - CONTRACT CHANGED - WARNING -"
-
 
     ## CHECK EXISTING ${WISHNAME}.${UPNAME}.swarm.key
     [[ ! -s $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key ]] \
@@ -131,17 +128,35 @@ while read JSONUPLANET; do
                 || echo "ERROR RELOADING SWARMKEY"
     fi
 
-    if [[ "$HAHA" != "" ]] ; then
-        #~ REPLACE SECRET
-        ${MY_PATH}/../tools/natools.py encrypt \
-            -p ${PLAYERPUB} \
-            -i $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-            -o $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
-        ENCODING=$(cat $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
-        sed -i "s~${OLD16}~${ENCODING}~g" ${JSONUPLANET}
-        echo "${OLD16} : ${ENCODING}"
+    #~ RECREATE SECRET
+    ${MY_PATH}/../tools/natools.py encrypt \
+        -p ${PLAYERPUB} \
+        -i $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+        -o $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
+    ENCODING=$(cat $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
 
+    echo "${SECRET}"
+    echo "${ENCODING}"
+    ## UPDATE JSONUPLANET
+    jq '.[] | .UPname = "${UPNAME}" | .hash = "${HASH}" | .secret = "${ENCODING}"' ${JSONUPLANET} > ~/.zen/tmp/${MOATS}/${JSONUPLANET}.up
+
+    ### PUT BACK IN TW
+    tiddlywiki --load ${INDEX} \
+                --import ~/.zen/tmp/${MOATS}/${JSONUPLANET}.up "application/json" \
+                --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+
+    if [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]]; then
+
+        [[ $(diff ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} ) ]] \
+            && mv ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+            && echo "===> Mise à jour ${INDEX}"
+
+    else
+        echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${MOATS}/newindex.html"
+        echo "XXXXXXXXXXXXXXXXXXXXXXX"
     fi
+
+
 
 done < ~/.zen/tmp/${MOATS}/inlineuplanets.json
 
