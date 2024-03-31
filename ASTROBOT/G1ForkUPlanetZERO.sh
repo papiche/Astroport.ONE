@@ -135,8 +135,12 @@ while read JSONUPLANET; do
         -o $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
     ENCODING=$(cat $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
 
+
     echo "${SECRET}"
     echo "${ENCODING}"
+    ## PREPARE ENCODING FOR FRIENDS
+    friends=($(ls ~/.zen/game/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
+
     ## UPDATE JSONUPLANET
     jq '.[] | .UPname = "${UPNAME}" | .hash = "${HASH}" | .secret = "${ENCODING}"' ${JSONUPLANET} > ~/.zen/tmp/${MOATS}/${JSONUPLANET}.up
 

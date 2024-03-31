@@ -24,6 +24,9 @@ echo '
     && exit 1
 
 mail="$1" # EMAIL DESTINATAIRE
+############################################## SEARCH in players
+$($MY_PATH/../tools/search_for_this_email_in_players.sh ${mail})
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS INDEX=$INDEX source=$source"
 
 ############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
 [[ ! -s ~/.zen/MJ_APIKEY ]] \

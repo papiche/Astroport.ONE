@@ -254,32 +254,34 @@ for PLAYER in ${PLAYERONE[@]}; do
         -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/GPS.json
 
-    ################# PERSONAL VDO.NINJA PHONEBOOTH
-    PHONEBOOTH=${PLAYER/@/_}
-    PHONEBOOTH=${PHONEBOOTH/\./_}
-    PHONEBOOTH=${PHONEBOOTH/-/_}
-    # MAKE "VISIO" TIDDLER
-    cat ${MY_PATH}/../templates/data/VISIO.json \
-        | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
-        -e "s~_MOATS_~${MOATS}~g" \
-        -e "s~_PLAYER_~${PLAYER}~g" \
-        -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
-            > ~/.zen/tmp/${MOATS}/VISIO.json
-
     ## UPDATE PLAYER CACHE
     echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
     cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
+    ################# PERSONAL VDO.NINJA PHONEBOOTH
+    if [[ "${days}" == "3" ]]; then
+        YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+        # MAKE "VISIO" TIDDLER
+        cat ${MY_PATH}/../templates/data/VISIO.json \
+            | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
+            -e "s~_MOATS_~${MOATS}~g" \
+            -e "s~_PLAYER_~${PLAYER}~g" \
+            -e "s~_PHONEBOOTH_~${YOUSER}~g" \
+                > ~/.zen/tmp/${MOATS}/VISIO.json
+    fi
+
+
     #####################################################################
     # MAKE "CESIUM" TIDDLER
-    echo "Create CESIUM Tiddler"
-    cat ${MY_PATH}/../templates/data/CESIUM.json \
-        | sed -e "s~_G1PUB_~${G1PUB}~g" \
-        -e "s~_MOATS_~${MOATS}~g" \
-        -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
-        -e "s~_PLAYER_~${PLAYER}~g" \
-            > ~/.zen/tmp/${MOATS}/CESIUM.json
-
+    if [[ "${days}" == "4" ]]; then
+        echo "Create CESIUM Tiddler"
+        cat ${MY_PATH}/../templates/data/CESIUM.json \
+            | sed -e "s~_G1PUB_~${G1PUB}~g" \
+            -e "s~_MOATS_~${MOATS}~g" \
+            -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+            -e "s~_PLAYER_~${PLAYER}~g" \
+                > ~/.zen/tmp/${MOATS}/CESIUM.json
+    fi
     #####################################################################
     ########## $:/moa picture ## lightbeams replacement ###############
     ## GET $:/moa Tiddlers ####################################### START
@@ -484,19 +486,28 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "================================================"
     ipfs pin rm ${CURCHAIN}
 
-
     #### SEND DAY2 ZINE
-    ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.${lang}.html"
-    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.html"
-    [[ $days -eq 2 ]] \
-        && echo "ZINE2 DAY 2" \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #2"
+    ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.${lang}.html"
+    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.html"
+    [[ -s ${ZINE2} ]] \
+        && echo "SENDING ZINE2 DAY ${days}" \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #${days}" \
+        || echo "NO ZINE FOR ${days} DAY"
 
+    ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
+    [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
+                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+
+if [[ ${days} -ge 14 ]]; then
     ###################
     # REFRESH PLAYER_feed KEY
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
 
+    #########################################################################################
     ## CREATING 30 DAYS JSON RSS STREAM
+    # [days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]
+    #########################################################################################
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/game/players/${PLAYER}/ipfs \
         --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]'
@@ -511,14 +522,14 @@ for PLAYER in ${PLAYERONE[@]}; do
     if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "${CURRENT}" != "${PLAYER}" ]]; then
         echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --"
         ## DEAD PLAYER ??
-        if [[ ${DIFF_SECONDS} -eq $(( 27 * 24 * 60 * 60 )) ]]; then
+        if [[ ${days} -eq 27 ]]; then
             echo "<html><body><h1>WARNING.</h1> Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert
             echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ♥ ($ZEN) </body></html>" >> ~/.zen/tmp/alert
 
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
         fi
-        if [[ ${DIFF_SECONDS} -gt $(( 29 * 24 * 60 * 60 )) ]]; then
+        if [[ ${days} -gt 29 ]]; then
             #################################### UNPLUG ACCOUNT
             echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
             ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
@@ -541,7 +552,10 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     fi
 
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
+                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
+fi
     ## TODO CREATING 30 DAYS XML RSS STREAM ???
     ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
     # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
@@ -550,13 +564,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
 
 
-    ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
-    [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
-                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
-                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
+
 
     #################################################
     ################### COPY DATA TO UP LEVEL GRIDS
