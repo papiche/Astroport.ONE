@@ -341,12 +341,13 @@ Content-Type: application/json; charset=UTF-8
             ## WE SPEAK THE SAME PROTOCOL
             echo "WE HAVE A STATION ${GPUB} CONTACT"
             (
+            timeon=`date +%s`
             mkdir -p ~/.zen/tmp/swarm/${ASTROTOIPFS}
-            echo "<<< MAJOR TOM TO GROUND CONTROL >>>"
-            echo "UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
-            ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
+            echo "<<< MAJOR TOM TO GROUND CONTROL >>> UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
+            ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
+            timeoff=`date +%s`
+            echo ">>> GROUND CONTROL FINISH in $(( timeoff - timeon )) sec <<<"
             ) &
-
         fi
     fi
 

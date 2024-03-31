@@ -466,7 +466,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ -s ${ZINE2} ]] \
         && echo "SENDING ZINE2 DAY ${days} + mailjet TW import " \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
-        || echo "NO ZINE FOR ${days} DAY"
+        || echo "NO ZINE FOR DAY ${days}"
 
 
     ####################

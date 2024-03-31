@@ -242,7 +242,8 @@ for UMAP in ${unique_combined[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${TODATEREGIONNS}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/${RLAT}_${RLON}/index.html
 
     ####################################################################################
-    ######################## NEXTNS : UMAP, SECTOR, REGION  ## BOOSTRAP TO SWARM ##
+    #######################################################################################
+    echo "# NEXTNS : UMAP, SECTOR, REGION  ## BOOSTRAP TO SWARM ##"
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
     ####################################################################################
     #################################################################################
@@ -289,6 +290,7 @@ for UMAP in ${unique_combined[@]}; do
         ~/.zen/tmp/${MOATS}/${UMAP}/
     ####################################################################################
     ## TODATE DATA
+    echo "WRITE $TODATE DATA /UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
     ####################################################################################
     echo "${TODATENS}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS
