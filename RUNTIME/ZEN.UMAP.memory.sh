@@ -55,11 +55,11 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
     echo "SYNC ~/.zen/tmp/${MOATS}/${UMAP} <=> $ipfs_pop"
 
-    ## TODO: SECURITY PATCH : check payment emitter is UMAPG1PUB
+    ## TODO: SECURITY PATCH : check payment emitter is from BOOSTRAP
     if [[ $ipfs_pop ]]; then
         echo "FOUND $todate MEMORY SLOT"
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
-        [[ "$g1pub" != "$G1PUB" ]] && echo "INFO :: $g1pub Memory updater"
+        echo "INFO :: $g1pub Memory updater"
         ipfs --timeout 180s get -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
             || echo "$ipfs_pop ERROR ... "
     else

@@ -52,6 +52,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
     echo "SYNC ${SECTOR} <= $todate => $ipfs_pop"
 
+    ## TODO: SECURITY PATCH : check payment emitter is from BOOSTRAP
     if [[ $ipfs_pop ]]; then
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
