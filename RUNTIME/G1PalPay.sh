@@ -207,14 +207,14 @@ echo "=========== %%%%% (°▃▃°) %%%%%%% =============="
 ## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
 #  This can could happen in case Tiddler is copied OR PLAYER manualy adds an email tag to Tiddler to share with someone...
 #################################################################
-echo "# EXTRACT 2 DAYS TIDDLERS"
+echo "# EXTRACT [days:modified[-1]] DAYS TIDDLERS"
 tiddlywiki --load ${INDEX} \
      --output ~/.zen/tmp/${MOATS} \
-     --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-2]]'
+     --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:modified[-1]]'
 
-## FILTER MY OWN EMAIL
 # cat ~/.zen/tmp/${MOATS}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
 
+## FILTER MY OWN EMAIL
 cat ~/.zen/tmp/${MOATS}/today.${PLAYER}.tiddlers.json \
         | sed "s~${PLAYER}~ ~g" | jq -rc '.[] | select(.tags | contains("@"))' \
          > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## Get tiddlers with not my email in it
@@ -270,16 +270,17 @@ while read LINE; do
         ## SEND zen ♥ (G1 dice JUNE) TO ALL ## MAKE ONE EACH AFTER ALL EMAIL CONSUMED ##
         #~ ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
         #~ ${MY_PATH}/../tools/PAY4SURE.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey pay -a ${zen} -p ${ASTROG1} -c "${emails[@]} $TTITLE" -m > /dev/null 2>&1
-                                                                                                                                                                        ## Filling comment with email list will make players resend to all ## MAY BE A BAD IDEA ###
-        echo ${LINE} > ~/.zen/tmp/${MOATS}/line
-        LINEH=$(ipfs add -q ~/.zen/tmp/${MOATS}/line)
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${zen}" "${ASTROG1}" "${emails[@]} /ipfs/$LINEH"
+
+        ##############################
+        ### GET PAID & GET PINNED !!
+        ##############################
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${zen}" "${ASTROG1}" "${emails[@]} /ipfs/${TOPIN}"
 
         echo "<html><body><h1>BRO ${PLAYER}</h1> : $MSG" > ~/.zen/tmp/${MOATS}/g1message
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
         [[ ! -z $TOPIN ]] \
             && ipfs pin add $TOPIN \
-            &&  echo "<h2>PINNING $TOPIN</h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
+            && echo "<h2>PINNING $TOPIN</h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
             ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "PIN TIDDLER"
@@ -292,10 +293,10 @@ while read LINE; do
         <br>
         <a href='${myIPFSGW}'/ipns/${ASTROTW}>${PLAYER}</a> HAS SHARED A TIDDLER WITH YOU.
         <br><b>${TTITLE}</b><br>(✜‿‿✜)
-        ... Join <a href='https://qo-op.com'>UPlanet</a> open a TW !
+        ... Join <a href='https://qo-op.com'>UPlanet</a> get TW5 !
         </body></html>" > ~/.zen/tmp/palpay.bro
 
-       ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "TIDDLER TW SHARING"
+       ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "HELLO BRO"
 
     fi
 

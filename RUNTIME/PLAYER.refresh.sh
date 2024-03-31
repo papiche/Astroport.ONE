@@ -306,7 +306,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         [[ "${fp}" == "${PLAYER}" ]] && echo "IT'S ME - CONTINUE" && continue
 
         FPLAYER=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .player')
-        [[ $FPLAYER == 'null' || $FPLAYER == '' ]] && echo "FPLAYER null - CONTINUE" && continue
+        [[ $FPLAYER == 'null' || $FPLAYER == '' ]] \
+            && echo "FPLAYER null - NOGOOD${fp} -" \
+            && continue
+            # AUTO CORRECT : sed -i "s~${fp}~NOGOOD${fp}~g" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
 
         FTW=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .tw')
         [[ ${FTW} == "/ipns/" || ${FTW} == "null" || ${FTW} == "" ]] && echo "WEIRD FTW ${FTW} - CONTINUE" && continue
