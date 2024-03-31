@@ -268,6 +268,9 @@ for PLAYER in ${PLAYERONE[@]}; do
             -e "s~_PLAYER_~${PLAYER}~g" \
             -e "s~_PHONEBOOTH_~${YOUSER}~g" \
                 > ~/.zen/tmp/${MOATS}/VISIO.json
+
+    else
+        echo "[]" > ~/.zen/tmp/${MOATS}/VISIO.json
     fi
 
 
@@ -281,6 +284,9 @@ for PLAYER in ${PLAYERONE[@]}; do
             -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
             -e "s~_PLAYER_~${PLAYER}~g" \
                 > ~/.zen/tmp/${MOATS}/CESIUM.json
+
+    else
+        echo "[]" > ~/.zen/tmp/${MOATS}/CESIUM.json
     fi
     #####################################################################
     ########## $:/moa picture ## lightbeams replacement ###############
