@@ -94,10 +94,12 @@ ${MY_PATH}/RUNTIME/NODE.refresh.sh
 #####################################
 
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
+mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
 mv ~/.zen/tmp/flashmem ~/.zen/flashmem
 rm -Rf ~/.zen/tmp/*
+mv ~/.zen/${IPFSNODEID} ~/.zen/tmp/${IPFSNODEID}
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
 mv ~/.zen/flashmem ~/.zen/tmp/flashmem

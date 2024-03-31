@@ -86,10 +86,15 @@ else
 
 fi
 
+####### NO CURRENT ? PLAYER = .current
+[[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
+    && rm -f ~/.zen/game/players/.current \
+    && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+
+echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player)
+
 [[ ${OUTPUT} != ""  ]] \
-&& rm -f ~/.zen/game/players/.current \
-&& ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
-&& espeak "CONNECTED" \
+&& espeak "${OUTPUT} CONNECTED" \
 && . "${MY_PATH}/tools/my.sh"
 
 ## NO PLAYER AT ALL
@@ -101,7 +106,7 @@ fi
 
 espeak "Hello $PSEUDO"
 
-G1PUB=$(myPlayerG1Pub)
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
 PLAYERNS=$(myPlayerNs) || { echo "noplayerns" && exit 1; }

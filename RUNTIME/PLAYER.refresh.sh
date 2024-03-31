@@ -164,6 +164,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         && msg="${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && err="(☓‿‿☓)" && player="" \
         || player=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
 
+    lang=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json 2>/dev/null | jq -r .[].dao)
+    [[ ${lang} == "null" ]] && lang="fr"
     #############################################################
     ## CHECK "AstroID" Tiddler
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
@@ -204,15 +206,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     DIFF_SECONDS=$(( SNOW - SBIRTH ))
     days=$((DIFF_SECONDS / 60 / 60 / 24))
 
-################################################## +2 DAYS AstroID !!
-    ## REMOVE TW OLDER THAN 7 DAYS WITH AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
-        && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
-        && echo "(#__#) AstroID +7 DAYS = SECURITY ERROR (#__#)" && continue
-
-    [[ $days -eq 2 ]] \
-        && echo "DAY 2" \
-        &&
 ################################################## ANOTHER ASTROPORT !!
     IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
@@ -227,6 +220,19 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "ASTROPORT ZenStation : ${ASTROPORT}"
     echo "CURCHAIN=${CURCHAIN}"
     echo "================================== TW $days days old"
+
+############################################## +2 DAYS & AstroID = UNPLUG !!
+    ## REMOVE TW OLDER THAN 2 DAYS WITH AstroID
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
+        && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
+        && echo "(#__#) AstroID +2 DAYS = SECURITY ERROR (#__#)" && continue
+
+    #### SEND DAY2 ZINE
+    ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.${lang}.html"
+    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY2/index.html"
+    [[ $days -eq 2 ]] \
+        && echo "ZINE2 DAY 2" \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #2"
 
     ######################################
     #### UPLANET GEO COORD EXTRACTION

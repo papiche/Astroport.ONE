@@ -103,8 +103,8 @@ done
 PLAYER=$fav
 
 ####### NO CURRENT ? PLAYER = .current
-[[ ! -e ~/.zen/game/players/.current ]] \
-    && rm ~/.zen/game/players/.current 2>/dev/null \
+[[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
+    && rm -f ~/.zen/game/players/.current \
     && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
 pass=$(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)
