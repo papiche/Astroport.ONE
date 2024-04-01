@@ -525,7 +525,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 fi
 
 ## https://git.p2p.legal/qo-op/OSM2IPFS
-EARTHCID="/ipfs/QmQizK777pFChbR12aKf3GExRUQyoPTHeWQxYpqfUGj7ff"
+EARTHCID="/ipfs/QmW4RCWDEKZK5cksX47VVpBJfuCXjtuwn4mat5vRkLK3yw"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 ###########################
