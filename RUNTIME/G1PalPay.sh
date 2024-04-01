@@ -204,10 +204,10 @@ echo "====(•‿‿•)======= %%%%% (°▃▃°) %%%%%%% ======(•‿‿•)=
 ## SEARCH FOR TODAY MODIFIED TIDDLERS WITH MULTIPLE EMAILS IN TAG
 #  This can could happen in case Tiddler is copied OR PLAYER manualy adds an email tag to Tiddler to share with someone...
 #################################################################
-echo "# EXTRACT [days:modified[-1]] DAYS TIDDLERS"
+echo "# EXTRACT [days[-1]] DAYS TIDDLERS"
 tiddlywiki --load ${INDEX} \
      --output ~/.zen/tmp/${MOATS} \
-     --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:modified[-1]]'
+     --render '.' "today.${PLAYER}.tiddlers.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days[-1]]'
 
 # cat ~/.zen/tmp/${MOATS}/today.${PLAYER}.tiddlers.json | jq -rc  # LOG
 

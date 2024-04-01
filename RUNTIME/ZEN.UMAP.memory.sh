@@ -61,6 +61,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
         ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
+            && ipfs pin rm $ipfs_pop \
             || echo "$ipfs_pop ERROR ... "
     else
         echo "WARNING cannot revover any memory !!"

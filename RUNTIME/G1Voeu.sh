@@ -151,7 +151,7 @@ TEXT="<a target='_blank' href='#:[tag[G1"${VoeuName}"]]' ><img src='"/ipfs/${IVO
 <\$list filter='[tag[G1"${VoeuName}"]]'>\n
 <\$action-navigate \$to=<<currentTiddler>> \$scroll=no/>\n
 </\$list>\n
-SHOW G1"${VoeuName}"\n
+ALL G1"${VoeuName}"\n
 </\$button>"
 
 # NEW IVEU TIDDLER

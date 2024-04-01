@@ -58,9 +58,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck ###DEBUG MODE
     COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ♥ /"
+    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
-    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ♥ (= 10 €/OC) ?
+    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ZEN (= 10 €/OC) ?
     echo "## >>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
@@ -327,18 +327,6 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         ## GET ORIGINH FROM LAST KNOWN TW STATE
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}
-        if [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html ]]; then
-            tiddlywiki --load ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html \
-                --output ~/.zen/tmp/${MOATS} \
-                --render '.' "${FPLAYER}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${FPLAYER}" ## GET ORIGIN
-
-            ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
-            echo "ORIGINH: $ORIGINH"
-        fi
-
-        ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&) will be used TOMORROW
-            ipfs --timeout 480s cat --progress=false ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
-        ) &
 
         ## CHECK ALREADY IN ${FPLAYER^^} IHASH
         rm -f ~/.zen/tmp/${MOATS}/finside.json
@@ -348,6 +336,23 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         INSIDEH=$(cat ~/.zen/tmp/${MOATS}/finside.json  | jq -rc '.[].ihash')
         echo "INSIDEH: $INSIDEH"
+
+        if [[ -s ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html ]]; then
+            tiddlywiki --load ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html \
+                --output ~/.zen/tmp/${MOATS} \
+                --render '.' "${FPLAYER}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${FPLAYER}" ## GET ORIGIN
+
+            ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
+            ## USE IPFSH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | ipfs add -q)
+            ## TODO MICROLEDGER TIDDLER
+            echo "ORIGINH: $ORIGINH"
+        else
+            ORIGINH="$INSIDEH"
+        fi
+
+        ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&) will be used TOMORROW
+            ipfs --timeout 480s cat --progress=false ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
+        ) &
 
         ## UPDATE IF IHASH CHANGED -> New drawing => Friend get informed
         if [[ -z $INSIDEH || $INSIDEH != $IHASH || $ORIGINH != $INSIDEH ]]; then
@@ -370,7 +375,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
                 && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                 && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
-                || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
+                || echo "ERROR - CANNOT IMPORT ${FPLAYER^^}.json - ERROR"
 
             if [[ $ORIGINH != $INSIDEH && $ORIGINH != "" ]]; then
                 echo "ORIGINH Update"
@@ -382,7 +387,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
                     && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
                     && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
-                    || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
+                    || echo "ERROR - CANNOT IMPORT ${FPLAYER}.json - ERROR"
             fi
 
         fi
@@ -535,7 +540,7 @@ if [[ ${days} -ge 14 ]]; then
         ## DEAD PLAYER ??
         if [[ ${days} -eq 27 ]]; then
             echo "<html><body><h1>WARNING.</h1> Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert
-            echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ♥ ($ZEN) </body></html>" >> ~/.zen/tmp/alert
+            echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ZEN ($ZEN) </body></html>" >> ~/.zen/tmp/alert
 
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
@@ -547,7 +552,7 @@ if [[ ${days} -ge 14 ]]; then
             continue
         fi
 
-        ## PAY 1 ♥ TO UMAPG1PUB
+        ## PAY 1 ZEN TO UMAPG1PUB
         [[ "${UMAPG1PUB}" != "" ]] \
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
 

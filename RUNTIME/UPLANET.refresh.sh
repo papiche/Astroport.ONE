@@ -74,7 +74,7 @@ for UMAP in ${unique_combined[@]}; do
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
-    echo "UMAP (${COINS} G1) ${ZEN} ♥ : ${G1PUB}"
+    echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${G1PUB}"
 
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
@@ -104,9 +104,9 @@ for UMAP in ${unique_combined[@]}; do
     ipfs --timeout 300s get --progress=false -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"
-        # Try retieve memory from UPlanet ♥ Memory
+        # Try retieve memory from UPlanet ZEN Memory
         [[ ${ZEN} -gt 0 ]] \
-            && echo "INTERCOM Refreshing from ♥ MEMORY" \
+            && echo "INTERCOM Refreshing from ZEN MEMORY" \
             && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}" "${G1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -191,13 +191,13 @@ for UMAP in ${unique_combined[@]}; do
     echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
     ######################################################## # NODE  SELECTION in UMAP.refresher
 
-    ############ 101 ♥ REFILL ?!
+    ############ 101 ZEN REFILL ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${UMAP}:${MIUSER}" \
-        && echo "UPLANET:101:${UMAP}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ _${LAT}_${LON} ~~ (♥‿‿♥) ~~~ "
+        && echo "UPLANET:101:${UMAP}:${MIUSER}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ "
 
     # %%%%%%%%%% ##################################################
     ## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${SLAT}_${SLON}
@@ -258,10 +258,11 @@ for UMAP in ${unique_combined[@]}; do
     rm ~/.zen/tmp/${MOATS}/next.priv
     ## BOOSTRAP SWARM PUBLICATION _next.umapns
     echo "${G1PUB}:${DEMAINDATE}:${NEXTNS}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.umapns
-    ## IN UMAP KEY PUBLICATION
-    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.umapns \
-        ~/.zen/tmp/${MOATS}/${UMAP}/
+        > ~/.zen/tmp/${MOATS}/${UMAP}/_next.umapns
+
+    cp ~/.zen/tmp/${MOATS}/${UMAP}/_next.umapns \
+        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+
     ## SECTOR NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.sector
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${SECTOR}" "${DEMAINDATE}${UPLANETNAME}${SECTOR}"
     ipfs key rm "next" > /dev/null 2>&1
@@ -271,10 +272,11 @@ for UMAP in ${unique_combined[@]}; do
     rm ~/.zen/tmp/${MOATS}/next.priv
     ## BOOSTRAP SWARM PUBLICATION _next.sectorns
     echo "${SECTORG1PUB}:${DEMAINDATE}:${NEXTNS}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.sectorns
-    ## IN UMAP KEY PUBLICATION
-    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.sectorns \
-        ~/.zen/tmp/${MOATS}/${UMAP}/
+        > ~/.zen/tmp/${MOATS}/${UMAP}/_next.sectorns
+
+    cp ~/.zen/tmp/${MOATS}/${UMAP}/_next.sectorns \
+        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+
     ## REGION NEXTNS ############### INFORM "PLAYER.refresh.sh" WITH _next.region
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/next.priv "${DEMAINDATE}${UPLANETNAME}${REGION}" "${DEMAINDATE}${UPLANETNAME}${REGION}"
     ipfs key rm "next" > /dev/null 2>&1
@@ -284,10 +286,11 @@ for UMAP in ${unique_combined[@]}; do
     rm ~/.zen/tmp/${MOATS}/next.priv
     ## BOOSTRAP SWARM PUBLICATION _next.regionns
     echo "${REGIONG1PUB}:${DEMAINDATE}:${NEXTNS}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.regionns
-    ## IN UMAP KEY PUBLICATION
-    cp ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/_next.regionns \
-        ~/.zen/tmp/${MOATS}/${UMAP}/
+        > ~/.zen/tmp/${MOATS}/${UMAP}/_next.regionns
+
+    cp ~/.zen/tmp/${MOATS}/${UMAP}/_next.regionns \
+        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+
     ####################################################################################
     ## TODATE DATA
     echo "WRITE $TODATE DATA /UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
@@ -507,12 +510,12 @@ for UMAP in ${unique_combined[@]}; do
         && echo "UPDATING MOATS"
 
 ######################################################
-    ## ♥ CHAINING
-    # Send 1 ♥ to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
+    ## ZEN CHAINING
+    # Send 1 ZEN to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
     INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
-    echo "> INTERCOM ${INTERCOM} (${ZEN} ♥ > 11 ?)"
+    echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN > 11 ?)"
     if [[ ${ZEN} -gt 11 ]]; then
-        echo "---ZZZ-- UMAP 2 SECTOR ♥ CHAINING ---ZZZ------ZZZ----"
+        echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
         ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
     fi
 
