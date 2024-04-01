@@ -38,7 +38,7 @@ YOU=$(myIpfsApi);
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
 TWUPLANET="/ipfs/bafybeigpwapdih24vnakummoyj6vodxiem4i6ezp5hxa35yt3paxpqz53y" ## WITH LIGHTBEAMS SAVER
-TWUPLANET="/ipfs/bafybeicku4z2diasnkc4tch45bcbuvkfqhsic7747uuecwoullts5ehwk4" ## WITH IPFS SAVER
+TWUPLANET="/ipfs/bafybeifhgqboszwgrvyxmyjctf6fshm6bkjsaqzghbiu2mn6dz3t4bcg2e" ## WITH IPFS SAVER
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
