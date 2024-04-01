@@ -1,0 +1,51 @@
+services:
+  wotwizard:
+    image: poka/wotwizard:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - duniterv1_data:/app/data
+      - data:/app/rsrc/duniter/System/
+    networks:
+      - frontend
+
+  duniter:
+    image: pinidh/duniter:1.8-dev
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:9220:9220
+    environment:
+      DEBUG_ENTRYPOINT: "true"
+      DUNITER_AUTO_SYNC: "true"
+      DUNITER_SYNC_HOST: "duniter.pini.fr:443"
+      DUNITER_UPNP: "false"
+      DUNITER_BMA_ENABLED: 'true'
+      DUNITER_BMA_IPV4: "0.0.0.0"
+      DUNITER_BMA_REMOTE_PORT: "443"
+      DUNITER_BMA_REMOTE_HOST: "duniterww.localhost"
+      DUNITER_WS2P_HOST: "0.0.0.0"
+      DUNITER_WS2P_PORT: '20901'
+      DUNITER_WS2P_PUBLIC: 'true'
+      DUNITER_WS2P_REMOTE_HOST: "duniterww.localhost"
+      DUNITER_WS2P_REMOTE_PORT: "443"
+      DUNITER_WS2P_REMOTE_PATH: "ws2p"
+      DUNITER_POW_CPU: "0.5""
+      DUNITER_POW_NBCORES: "1"
+    volumes:
+      - duniterv1_data:/app/data
+      - etc/etc/duniter
+    networks:
+      frontend:
+        ipv4_address: 172.18.0.42
+    mem_limit: 5g
+
+volumes:
+  data:
+  duniterv1_data:
+
+networks:
+  frontend:
+
+logging:
+  options:
