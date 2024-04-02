@@ -78,7 +78,7 @@ ENCODING=$(cat $HOME/.zen/tmp/${MOATS}/qrtw.ipfskey.$G1PUB.enc | base16)
 #~ echo $ENCODING
 
 ## TEST IPFS
-#~ ipfs --timeout=30s cat /ipns/${VOEUNS} > ~/.zen/tmp/${VOEUNS}.json
+#~ ipfs --timeout=30s cat --progress=false /ipns/${VOEUNS} > ~/.zen/tmp/${VOEUNS}.json
 #~ [[ -s ~/.zen/tmp/${VOEUNS}.json ]] \
 #~ && echo "HEY !!! UN CHANNEL EXISTE DEJA POUR CE VOEU !  ~/.zen/tmp/${VOEUNS}.json  - EXIT -" \
 #~ && exit 1

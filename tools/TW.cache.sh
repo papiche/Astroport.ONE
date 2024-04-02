@@ -17,8 +17,8 @@ if [[ ${IPFSNODEID} == "" ]]; then
     IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n')
 fi
             ## GETTING LAST TW via IPFS
-            echo "${ME} : IPFS : ipfs --timeout 120s cat  /ipns/${ASTRONAUTENS}"\
-            && ipfs --timeout 360s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html
+            echo "${ME} : IPFS : ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS}"\
+            && ipfs --timeout 360s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html
 
              ## GETTING LAST TW via HTTP
             #~ [[ ! -s ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ]] \

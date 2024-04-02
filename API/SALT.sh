@@ -242,8 +242,8 @@ if [[ "$APPNAME" == "testcraft" ]]; then
 
     ## TODO : modify timeout if isLAN or NOT
     [[ $isLAN ]] && WAIT=3 || WAIT=12
-    echo "1ST TRY : ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}"
-    ipfs --timeout ${WAIT}s cat /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}
+    echo "1ST TRY : ipfs --timeout ${WAIT}s cat --progress=false /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}"
+    ipfs --timeout ${WAIT}s cat --progress=false /ipfs/$DATAID  > ~/.zen/tmp/${IPFSNODEID}/${APPNAME}/${PLAYER}/${MOATS}.data.${WHAT}
 
 echo "" > ~/.zen/tmp/.ipfsgw.bad.twt # TODO move in 20h12.sh
 

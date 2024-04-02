@@ -54,7 +54,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     echo "SCANNING /ipns/${ASTRONAUTENS} for 180s"
     ## GETTING LAST TW via IPFS or HTTP GW
-    ipfs --timeout 180s cat  /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
+    ipfs --timeout 180s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/TW/index.html
 
     if [[ -s ~/.zen/tmp/${MOATS}/TW/index.html ]]; then
         echo "TW FOUND... BACKUP TIDDLERS"

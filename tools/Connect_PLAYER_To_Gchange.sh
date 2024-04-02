@@ -253,8 +253,8 @@ do
 
 
         [[ $YOU ]] \
-        && echo "ipfs --timeout 120s cat  /ipns/${FRIENDNS} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html" \
-        && ipfs --timeout 120s cat  /ipns/${FRIENDNS} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
+        && echo "ipfs --timeout 120s cat --progress=false /ipns/${FRIENDNS} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html" \
+        && ipfs --timeout 120s cat --progress=false /ipns/${FRIENDNS} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html
 
         [[ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]] \
         && echo "curl -m 120 -so ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html $LIBRA/ipns/${FRIENDNS}" \

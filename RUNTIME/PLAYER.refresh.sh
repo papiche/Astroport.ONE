@@ -351,7 +351,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         fi
 
         ( ## REFRESH LOCAL PLAYER CACHE with FRIEND ACTUAL TW (&) will be used TOMORROW
-            ipfs --timeout 480s cat --progress=false ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
+            ipfs --timeout 480s cat --progress="false" ${FTW} > ~/.zen/game/players/${PLAYER}/FRIENDS/${FPLAYER}/index.html
         ) &
 
         ## UPDATE IF IHASH CHANGED -> New drawing => Friend get informed
