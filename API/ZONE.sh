@@ -73,11 +73,11 @@ echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPN
         SECTOR="_${SLAT}_${SLON}"
         echo "SECTOR = ${SECTOR}"
         ZONEINDEX=$SECTORIPNS
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/SECTORNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/SECTORNS | tail -n 1)
         ZONEG1PUB=$SECTORG1PUB
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${SLAT}*_${SLON}*/SECTORG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/SECTORG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_${SLAT}_${SLON}/_*_*/SECTORG1PUB | tail -n 1)
         LAT=${SLAT}
         LON=${SLON}
         JSON="ZONE${SECTOR}_${DEG}.json"
@@ -92,11 +92,11 @@ echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPN
         REGION="_${RLAT}_${RLON}"
         echo "REGION = ${REGION}"
         ZONEINDEX=$REGIONIPNS
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
-        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_*_*/_*_*/REGIONNS | tail -n 1)
+        [[ ! $ZONEINDEX ]] && ZONEINDEX="/ipns/"$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_*_*/_*_*/REGIONNS | tail -n 1)
         ZONEG1PUB=$REGIONG1PUB
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
-        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${RLAT}*_${RLON}*/REGIONG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_*_*/_*_*/REGIONG1PUB | tail -n 1)
+        [[ ! $ZONEG1PUB ]] && ZONEG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/_${RLAT}_${RLON}/_*_*/_*_*/REGIONG1PUB | tail -n 1)
         LAT=${RLAT}
         LON=${RLON}
         JSON="ZONE${REGION}_${DEG}.json"
@@ -110,15 +110,15 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
     ## UMAP LEVEL
     if [[ ${DEG} == "0.001" ]]; then
 
-        swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
-        nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TW/* 2>/dev/null | wc -l )
+        swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* 2>/dev/null | wc -l )
+        nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* 2>/dev/null | wc -l )
         totnum=$(( swarmnum + nodenum ))
-        echo " ## UMAP _${LAT}*_${LON}* = ${totnum} PLAYERs"
+        echo " ## UMAP _${LAT}_${LON} = ${totnum} PLAYERs"
 
-        UMAPNS=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TODATENS)
-        [[ ! $UMAPNS ]] && UMAPNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/TODATENS)
-        G1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/G1PUB)
-        [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}*_${LON}*/G1PUB)
+        UMAPNS=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TODATENS | tail -n 1)
+        [[ ! $UMAPNS ]] && UMAPNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TODATENS | tail -n 1))
+        G1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/G1PUB | tail -n 1))
+        [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/G1PUB | tail -n 1))
 
         echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' \
             > ~/.zen/tmp/${MOATS}/http.grid

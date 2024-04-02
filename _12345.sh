@@ -151,7 +151,7 @@ while true; do
 
             ## IPFS GET TO /swarm/${ipfsnodeid}
             echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-            ipfs --timeout 720s get -o ~/.zen/tmp/-${ipfsnodeid}/ /ipns/${ipfsnodeid}/
+            ipfs --timeout 720s get --progress="false" -o ~/.zen/tmp/-${ipfsnodeid}/ /ipns/${ipfsnodeid}/
 
             ## SHOW WHAT WE GET
             echo "__________________________________________________"
@@ -198,7 +198,7 @@ while true; do
                     if [[ ! -d ~/.zen/tmp/swarm/${znod} ]]; then
                         echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
                         mkdir -p ~/.zen/tmp/swarm/${znod}
-                        ipfs --timeout 180s get -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
+                        ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
                     else
                         echo "____________ KNOW ${znod}"
                         # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LATEST
@@ -252,7 +252,7 @@ while true; do
         ## IPFS GET LAST ONLINE IPFSNODEID MAP
         rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
         mkdir -p ~/.zen/tmp/_${IPFSNODEID}
-        ipfs get -o ~/.zen/tmp/_${IPFSNODEID}/ /ipns/${IPFSNODEID}/
+        ipfs get --progress="false" -o ~/.zen/tmp/_${IPFSNODEID}/ /ipns/${IPFSNODEID}/
         NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | cut -f 1)
 
         ### CHECK IF SIZE DIFFERENCE ?
