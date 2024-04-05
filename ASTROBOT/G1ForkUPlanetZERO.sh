@@ -49,7 +49,7 @@ echo "${PLAYER} ${INDEX} ${ASTRONAUTENS} ${G1PUB} "
 mkdir -p $HOME/.zen/tmp/${MOATS}
 echo "~/.zen/tmp/${MOATS}/swarm.key"
 
-PLAYERPUB=$(cat $HOME/.zen/game/${PLAYER}/secret.dunikey | grep pub | cut -d ' ' -f 2)
+PLAYERPUB=$(cat $HOME/.zen/game/players/${PLAYER}/secret.dunikey | grep pub | cut -d ' ' -f 2)
 [[ "${PLAYERPUB}" == "" ]] && echo "FATAL ERROR PLAYER KEY MISSING" && exit 1
 
 ###################################################################
@@ -84,7 +84,7 @@ while read JSONUPLANET; do
     [[ $AHAH != $HASH ]] && echo " - WARNING - CONTRACT CHANGED - WARNING -"
 
     ## CHECK EXISTING ${WISHNAME}.${UPNAME}.swarm.key
-    [[ ! -s $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key ]] \
+    [[ ! -s $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key ]] \
         && MSG=$MSG" ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
 
     ## CREATE 64 bit swarm.key ( maximum individual Fork 1,844674407×10¹⁹ )
@@ -101,7 +101,7 @@ while read JSONUPLANET; do
         echo "NO SECRET FOUND" \
         && echo "NEW SECRET SWARM.KEY GENERATION" \
         && cat $HOME/.zen/tmp/${MOATS}/swarm.key \
-        && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+        && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
         && echo "------- KEY LOADED -----> ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key"
 
         ## CREATE SUB WORLD... MONITOR TEXT
@@ -114,32 +114,32 @@ while read JSONUPLANET; do
         ## TRY TO DECODE with PLAYER secret.dunikey
         ${MY_PATH}/../tools/natools.py decrypt \
                 -f pubsec \
-                -k $HOME/.zen/game/${PLAYER}/secret.dunikey \
+                -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey \
                 -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
                 -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
 
-        [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \\
+        [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \\
             && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
 
         ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
         [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
                 && cp ~/.zen/tmp/${MOATS}/swarmkey.decrypted \
-                    $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+                    $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
                 || echo "ERROR RELOADING SWARMKEY"
     fi
 
     #~ RECREATE SECRET
     ${MY_PATH}/../tools/natools.py encrypt \
         -p ${PLAYERPUB} \
-        -i $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-        -o $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
-    ENCODING=$(cat $HOME/.zen/game/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
+        -i $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
+        -o $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
+    ENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
 
 
     echo "${SECRET}"
     echo "${ENCODING}"
     ## PREPARE ENCODING FOR FRIENDS
-    friends=($(ls ~/.zen/game/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
+    friends=($(ls ~/.zen/game/players/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
 
     ## UPDATE JSONUPLANET
     jq '.[] | .UPname = "${UPNAME}" | .hash = "${HASH}" | .secret = "${ENCODING}"' ${JSONUPLANET} > ~/.zen/tmp/${MOATS}/${JSONUPLANET}.up
