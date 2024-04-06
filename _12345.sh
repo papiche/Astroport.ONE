@@ -89,12 +89,13 @@ while true; do
     if [[ ${duree} -gt 3600000 ]]; then
 
         ### STOP SWARM SYNC 1H BEFORE 20H12
-        current_time=$(date +%s)
-        file_modification_time=$(stat -c %Y "/tmp/20h12.log")
-        time_difference=$((current_time - file_modification_time))
-        [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
-            && echo "$(date +"%H%M") : 20H12 is coming... " && continue
-
+        if [[ -s /tmp/20h12.log ]]; then
+            current_time=$(date +%s)
+            file_modification_time=$(stat -c %Y "/tmp/20h12.log")
+            time_difference=$((current_time - file_modification_time))
+            [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
+                && echo "$(date +"%H%M") : 20H12 is coming... " && continue
+        fi
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
 
@@ -195,14 +196,9 @@ while true; do
                     cznod=$(${MY_PATH}/tools/ipfs_to_g1.py ${znod} 2>/dev/null)
                     [[ ${cznod} == "" || ${cznod} == "null" ]] && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" && continue
 
-                    if [[ ! -d ~/.zen/tmp/swarm/${znod} ]]; then
-                        echo "COMPLETING MY SWARM DATA WITH ZNOD=${znod}"
-                        mkdir -p ~/.zen/tmp/swarm/${znod}
-                        ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
-                    else
-                        echo "____________ KNOW ${znod}"
-                        # TODO : SPEEDUP REFRESH COMPARE _MySwarm.moats AND KEEP LATEST
-                    fi
+                    echo "REFRESHING MY SWARM DATA WITH ZNOD=${znod}"
+                    mkdir -p ~/.zen/tmp/swarm/${znod}
+                    ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
 
                     ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats 2>/dev/null)
                     MOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${MOATS})
