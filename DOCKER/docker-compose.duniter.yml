@@ -5,7 +5,7 @@ services:
     environment:
     #- DEBUG_ENTRYPOINT=${DUNITER_DEBUG_ENTRYPOINT:-${DEBUG_ENTRYPOINT:-${DEBUG:-}}}
     - DUNITER_AUTO_SYNC=true
-    - DUNITER_SYNC_HOST=${DUNITER_SYNC_HOST:-duniter.g1.1000i100.fr:443}
+    - DUNITER_SYNC_HOST=${DUNITER_SYNC_HOST:-duniter.pini.fr:443}
     - DUNITER_BMA_ENABLED=true
     - DUNITER_BMA_IP4=${DUNITER_BMA_IP4:-0.0.0.0}
     - DUNITER_BMA_REMOTE_HOST=${DUNITER_BMA_REMOTE_HOST:-duniter.localhost}
@@ -28,6 +28,7 @@ services:
     - DUNITER_WS2P_REMOTE_PORT=${DUNITER_WS2P_REMOTE_PORT:-443}
     - DUNITER_POW_CPU=0.5
     - DUNITER_POW_NBCORES=1
+    - DUNITER_MAX_OLD_SPACE_SIZE=${DUNITER_MAX_OLD_SPACE_SIZE:-8192}
     image: pinidh/duniter:dev
     networks:
     - private
