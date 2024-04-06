@@ -86,7 +86,7 @@ while true; do
     duree=$(expr ${MOATS} - $lastrun)
 
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
-    if [[ ${duree} -gt 3600000 ]]; then
+    if [[ ${duree} -gt 3600000 || ${duree} == "" ]]; then
 
         ### STOP SWARM SYNC 1H BEFORE 20H12
         if [[ -s /tmp/20h12.log ]]; then
@@ -340,7 +340,7 @@ Content-Type: application/json; charset=UTF-8
             timeon=`date +%s`
             mkdir -p ~/.zen/tmp/swarm/${ASTROTOIPFS}
             echo "<<< MAJOR TOM TO GROUND CONTROL >>> UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
-            ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
+            ipfs --timeout 240s get --progress="false" -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
             timeoff=`date +%s`
             echo ">>> GROUND CONTROL FINISH in $(( timeoff - timeon )) sec <<<"
             ) &

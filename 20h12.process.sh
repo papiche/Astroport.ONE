@@ -47,12 +47,19 @@ mv ~/.zen/coucou ~/.zen/tmp/coucou
 mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
 ### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-MOATS_plus_5_hours=$(date -d "now + 5 hours" +"%Y%m%d%H%M%S%4N")
-mkdir ~/.zen/tmp/${IPFSNODEID}
-echo ${MOATS_plus_5_hours} > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-echo 9000 > ~/.zen/tmp/random.sleep
-
+if [[ "${LOWMODE}" == "" ]]; then
+    ### NOT REFRESHING SWARM
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    MOATS_plus_5_hours=$(date -d "now + 5 hours" +"%Y%m%d%H%M%S%4N")
+    mkdir ~/.zen/tmp/${IPFSNODEID}
+    echo ${MOATS_plus_5_hours} > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    echo 9000 > ~/.zen/tmp/random.sleep
+else
+    # REFRESHING SWARM
+    echo 0 > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    curl -s "http://127.0.0.1:12345"
+    sleep 300 ## WAIT FOR 5MN
+fi
 ## UPDATE G1BILLETS code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
