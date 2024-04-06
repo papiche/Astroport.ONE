@@ -47,7 +47,7 @@ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]; then
     else
         cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json ~/.zen/tmp/coucou/
         echo "++ FOUND IN GCHANGE+ : $GFOUND"
-        [[ $COINS == "null" ]] && PALPE=10 ## 10 ♥ REWARD
+        [[ $COINS == "null" ]] && PALPE=10 ## 10 ZEN REWARD
     fi
 else
     echo "GCHANGE + : OK ~/.zen/tmp/coucou/${G1PUB}.gchange.json"

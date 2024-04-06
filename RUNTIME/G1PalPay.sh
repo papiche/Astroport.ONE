@@ -248,7 +248,7 @@ while read LINE; do
     ## Count emails found
     emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
-    #~ zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 ♥ each
+    #~ zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 ZEN each
 
     ## Get first zmail
     ZMAIL="${emails}"

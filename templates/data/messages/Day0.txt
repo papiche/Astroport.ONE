@@ -31,12 +31,12 @@ La "ZenCard", elle, donne accès au mode "LECTURE".
 ---
 
 Au 7e jour de votre enregistrement.
-Vous recevrez 3.1 G1, soit 21 ♥ pour participer au réseau de partage, où
+Vous recevrez 3.1 G1, soit 21 ZEN pour participer au réseau de partage, où
 
-* ne rien publier fait perdre 1 ♥ / jour.
-* publier rapporte entre 1 et 21 ♥ / jour (~3)
-* être copié rapporte 1 ♥ pour chaque partage à chaque partageur !
-* 30 jours d'inactivité ou moins de 10 ♥ : Vous êtes débranché !
+* ne rien publier fait perdre 1 ZEN / jour.
+* publier rapporte entre 1 et 21 ZEN / jour (~3)
+* être copié rapporte 1 ZEN pour chaque partage à chaque partageur !
+* 30 jours d'inactivité ou moins de 10 ZEN : Vous êtes débranché !
 
 ---
 

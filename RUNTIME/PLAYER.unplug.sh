@@ -51,7 +51,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
-    ## UNPLUG => SEND 10 ♥ to SECTORG1PUB
+    ## UNPLUG => SEND 10 ZEN to SECTORG1PUB
     ## ALL => SEND ALL to $WORLDG1PUB
 
     ALL="ALL"

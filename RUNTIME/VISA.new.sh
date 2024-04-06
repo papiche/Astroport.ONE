@@ -331,7 +331,7 @@ if [[ "${MACHINEPUB}" != "" ]]; then
     sed -i "s~${OLD16}~${ENCODING}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
     echo "ENCODING: ${ENCODING}"
 
-    # GIVE ♥ STATION TW ACCESS #
+    # GIVE ZEN STATION TW ACCESS #
 ###########
     #~ echo "# CRYPTO DECODING TESTING..."
     tiddlywiki \

@@ -40,13 +40,13 @@ INDEX="$3"
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu
 
 ###############################
-####### NEED G1 / ♥ TO RUN
+####### NEED G1 / ZEN TO RUN
     [[ ${COINS} == "null" || ${COINS} == "" ]] \
     && echo ">>> ${COINS} : DESACTIVATED - NEED G1 TO REFRESH WISH - EXIT - " \
     && exit 0
 echo "%% ${COINS} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
-[[ $(echo "$COINS < 2" | bc -l) -eq 1 ]] && echo ">>> ${COINS} ONLY : 1 G1 + 10 ♥ NEEDED TO CONTINUE" && exit 0
+[[ $(echo "$COINS < 2" | bc -l) -eq 1 ]] && echo ">>> ${COINS} ONLY : 1 G1 + 10 ZEN NEEDED TO CONTINUE" && exit 0
 
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
@@ -321,7 +321,7 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
     echo "***** PLAYER $PLAYER *************************************"
-    echo "GRATITUDE ${GRATITUDE} ♥ (${G1AMOUNT} G1)
+    echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
     to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
     echo "************************************************************"
     YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")

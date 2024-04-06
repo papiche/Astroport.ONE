@@ -94,7 +94,7 @@ if [[ ${QRCODE} == "station" ]]; then
         if [[ $carouselrunning ]]; then
             ISTATION="/ipfs/QmVTHH8sTXEqRBsvcKo5jDo16rvp7Q7ERyHZP5vmWUxeS6" ## G1WorldCrafting.jpg
         else
-            ## GENERATE PLAYER G1 TO ♥ ACCOUNTING
+            ## GENERATE PLAYER G1 TO ZEN ACCOUNTING
             ISTATION=$($MY_PATH/../tools/make_image_ipfs_index_carousel.sh | tail -n 1)
             echo $ISTATION > ~/.zen/tmp/ISTATION ## STATION G1WALLET CAROUSEL
         fi
@@ -272,7 +272,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 if [[ ! ${ISTHERE} ]]; then
                     (
                         echo "$HTTPCORS
-                        <h1>LOGOUT ERROR</h1><h2>${PLAYER} keys not found on ♥ Station</h2>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 \
+                        <h1>LOGOUT ERROR</h1><h2>${PLAYER} keys not found on ZEN Station</h2>" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 \
                         && echo "SLURP PLAYER ERROR ${player}"
                     ) &
                     exit 0
@@ -690,9 +690,9 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
     if [[ $VISITORCOINS == "null" || ${ZEN} -lt 10 ]]; then
 
         DISPLAY="$DISPLAY
-        <h2>!! LOW ♥ WALLET ZEN=${ZEN}<h2>"
+        <h2>!! LOW ZEN WALLET ZEN=${ZEN}<h2>"
 
-        DISPLAY="$DISPLAY<h3>LOW ♥ WARNING</h3>
+        DISPLAY="$DISPLAY<h3>LOW ZEN WARNING</h3>
         PLEASE CHARGE... ${ZEN} ZEN"
 
     fi

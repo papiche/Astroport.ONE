@@ -117,7 +117,7 @@ core_file="/tmp/core.html"
 echo "<!DOCTYPE html>
 <html>
 <head>
-<title>Astroport ♥ Gallery : $myIP</title>
+<title>Astroport ZEN Gallery : $myIP</title>
 <meta charset=\"UTF-8\">
 </head>
 <body>" > $html_file
