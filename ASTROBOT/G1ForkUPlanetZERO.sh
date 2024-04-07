@@ -118,7 +118,7 @@ while read JSONUPLANET; do
                 -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
                 -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
 
-        [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \\
+        [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \
             && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
 
         ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
