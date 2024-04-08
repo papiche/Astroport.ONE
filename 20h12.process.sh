@@ -84,15 +84,15 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
 #####################################
+# espeak "REFRESHING UPLANET" > /dev/null 2>&1
+#####################################
+${MY_PATH}/RUNTIME/UPLANET.refresh.sh
+#####################################
+#####################################
 # espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
 #####################################
 ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
-#####################################
-#####################################
-# espeak "REFRESHING UPLANET" > /dev/null 2>&1
-#####################################
-${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
 #####################################
 # espeak "REFRESHING NODE" > /dev/null 2>&1
