@@ -67,14 +67,14 @@ while read JSONUPLANET; do
 
     echo "JSONUPLANET=${JSONUPLANET}"
 
-    UPNAME=$(cat ${JSONUPLANET} | jq .title) # What name is given ?
+    UPNAME=$(echo ${JSONUPLANET} | jq .title) # What name is given ?
     [[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .UPname MISSING" && exit 1
-    HASH=$(cat ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
+    HASH=$(echo ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
     [[ "${HASH}" == "null" ||  "${HASH}" == "" ]] && echo "FATAL ERROR UPNAME .hash MISSING" && exit 1
-    SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
+    SECRET=$(echo ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
     [[ "${SECRET}" == "null" ||  "${SECRET}" == "" ]] && echo "FATAL ERROR UPNAME .secret MISSING" && exit 1
 
-    CONTRACT=$(cat ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
+    CONTRACT=$(echo ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
     [[ "${CONTRACT}" == "null" ||  "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
     echo "- CONTRACT -------------------------------------"
     echo $CONTRACT
