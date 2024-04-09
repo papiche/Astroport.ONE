@@ -119,9 +119,9 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
         echo " ## UMAP _${LAT}_${LON} = ${totnum} PLAYERs"
 
         UMAPNS=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TODATENS | tail -n 1)
-        [[ ! $UMAPNS ]] && UMAPNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TODATENS | tail -n 1))
-        G1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/G1PUB | tail -n 1))
-        [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/G1PUB | tail -n 1))
+        [[ ! $UMAPNS ]] && UMAPNS=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TODATENS | tail -n 1)
+        G1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/G1PUB | tail -n 1)
+        [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/G1PUB | tail -n 1)
 
         echo '{ "gridNumbers": [ {"lat": '${LAT}', "lon": '${LON}', "number": "(_'${LAT}'_'${LON}') = '${totnum}'", "ipns": "'${myIPFS}/ipns/${UMAPNS}/_index.html'" } ] }' \
             > ~/.zen/tmp/${MOATS}/http.grid
