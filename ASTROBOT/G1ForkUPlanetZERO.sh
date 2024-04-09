@@ -68,7 +68,7 @@ while read JSONUPLANET; do
     echo "JSONUPLANET=${JSONUPLANET}"
 
     UPNAME=$(echo ${JSONUPLANET} | jq .title) # What name is given ?
-    [[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .UPname MISSING" && exit 1
+    [[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .title MISSING" && exit 1
     HASH=$(echo ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
     [[ "${HASH}" == "null" ||  "${HASH}" == "" ]] && echo "FATAL ERROR UPNAME .hash MISSING" && exit 1
     SECRET=$(echo ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
