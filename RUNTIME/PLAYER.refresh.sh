@@ -539,8 +539,8 @@ if [[ ${days} -ge 14 ]]; then
         echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --"
         ## DEAD PLAYER ??
         if [[ ${days} -eq 27 ]]; then
-            echo "<html><body><h1>WARNING.</h1> Your TW will be UNPLUGGED and stop being published..." > ~/.zen/tmp/alert
-            echo "<br><h3>TW : <a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER}</a></h3> ADD MORE ZEN ($ZEN) </body></html>" >> ~/.zen/tmp/alert
+            echo "<html><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
+            echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
 
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
