@@ -54,6 +54,8 @@ for key in ${UKEYS[@]}; do
     [[ -d ~/.zen/tmp/flashmem/$key ]] \
         && echo "$key already copied" && medo=$((medo +1)) && continue
 
+    echo "SYNC $key"
+
     floop=$((floop +1))
     mkdir -p ~/.zen/tmp/flashmem/$key
 
@@ -79,6 +81,8 @@ for tw in ${TWS[@]}; do
 
     [[ -d ~/.zen/tmp/flashmem/tw/$tw ]] \
         && echo "$key already copied" && medo=$((medo +1)) && continue
+
+    echo "SYNC $key"
 
     floop=$((floop +1))
     mkdir -p ~/.zen/tmp/flashmem/tw/$tw
