@@ -261,12 +261,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     ################# PERSONAL VDO.NINJA PHONEBOOTH
     if [[ "${days}" == "3" ]]; then
         YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+        _USER=$(echo $YOUSER | sed "s~\.~_~g")
         # MAKE "VISIO" TIDDLER
         cat ${MY_PATH}/../templates/data/VISIO.json \
             | sed -e "s~_IPFSNINJA_~${VDONINJA}~g" \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_PLAYER_~${PLAYER}~g" \
-            -e "s~_PHONEBOOTH_~${YOUSER}~g" \
+            -e "s~_PHONEBOOTH_~${_USER}~g" \
                 > ~/.zen/tmp/${MOATS}/VISIO.json
 
     else
