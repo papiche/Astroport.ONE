@@ -9,9 +9,9 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 
-## IT MAKES WISH WALLET MASTER OF NEW UPLANET
-## IT MAKES swarm.key as UPLANETNAME
-## SAME WISH BE CONNECTED TO THE PRIVATE IPFS MADE FIRST
+## IT MAKES WISH OF NEW PRIVATE UPLANET
+## IT MAKES $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key
+## Then used to create an private IPFS swarm
 
 echo "(✜‿‿✜) Fork UPlanet
 This wish makes Player generate or join a private IPFS swarm
@@ -24,6 +24,8 @@ Default :
 flaoting points"
 
 echo "$ME RUNNING"
+
+CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 ########################################################################
 INDEX="$1"
@@ -59,111 +61,150 @@ tiddlywiki  --load ${INDEX} \
     --output ~/.zen/tmp/${MOATS} \
     --render '.' 'G1ForkUPlanetZERO.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[ForkUPlanetZERO]]'
 
+## KEEP ONLY ONE tag[ForkUPlanetZERO] WISH !
 echo "PREPARE INLINE JSON : cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json | jq -rc .[]"
 cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json \
-        | jq -rc .[] > ~/.zen/tmp/${MOATS}/inlineuplanets.json
+        | jq -rc .[] | head -n 1 > ~/.zen/tmp/${MOATS}/ONEuplanet.json
 
-while read JSONUPLANET; do
+JSONUPLANET="${HOME}/.zen/tmp/${MOATS}/ONEuplanet.json"
+[[ ! -s ${JSONUPLANET} ]] && echo "NO tag[ForkUPlanetZERO] for $PLAYER" && exit 0
 
-    echo "JSONUPLANET=${JSONUPLANET}"
+UPNAME=$(cat ${JSONUPLANET} | jq -r ".title") # What name is given ?
+[[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .title MISSING" && exit 1
+HASH=$(cat ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
+SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
 
-    UPNAME=$(echo ${JSONUPLANET} | jq -r ".title") # What name is given ?
-    [[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .title MISSING" && exit 1
-    HASH=$(echo ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
-    [[ "${HASH}" == "null" ||  "${HASH}" == "" ]] && echo "FATAL ERROR UPNAME .hash MISSING" && exit 1
-    SECRET=$(echo ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
-    [[ "${SECRET}" == "null" ||  "${SECRET}" == "" ]] && echo "FATAL ERROR UPNAME .secret MISSING" && exit 1
+CONTRACT=$(cat ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
+[[ "${CONTRACT}" == "null" || "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
+echo "- CONTRACT -------------------------------------"
+echo "$CONTRACT"
+echo "--------------------------------------"
+AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
 
-    CONTRACT=$(echo ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
-    [[ "${CONTRACT}" == "null" ||  "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
-    echo "- CONTRACT -------------------------------------"
-    echo $CONTRACT
-    echo "--------------------------------------"
-    AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
+[[ $AHAH != $HASH ]] && echo " - WARNING - CONTRACT CHANGED - WARNING -"
 
-    [[ $AHAH != $HASH ]] && echo " - WARNING - CONTRACT CHANGED - WARNING -"
+## CHECK EXISTING ${UPNAME}.swarm.key
+[[ ! -s $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ]] \
+    && MSG=$MSG" ${PLAYER}/.ipfs/${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
 
-    ## CHECK EXISTING ${WISHNAME}.${UPNAME}.swarm.key
-    [[ ! -s $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key ]] \
-        && MSG=$MSG" ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
+## CREATE 64 bit swarm.key ( maximum individual Fork 1,844674407×10¹⁹ )
+echo -e '/key/swarm/psk/1.0.0/\n/base16/' > $HOME/.zen/tmp/${MOATS}/swarm.key
+head -c 64 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
+echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 
-    ## CREATE 64 bit swarm.key ( maximum individual Fork 1,844674407×10¹⁹ )
-    echo -e '/key/swarm/psk/1.0.0/\n/base16/' > $HOME/.zen/tmp/${MOATS}/swarm.key
-    head -c 64 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
-    echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
+## EXTRACT CURRENT SECRET FROM JSONUPLANET
+# which is PLAYER pub encrypted base16 of swarm.key
+###################################################
+OLD16=$(cat ${JSONUPLANET} | jq -r ".secret")
 
-    ## EXTRACT CURRENT SECRET FROM JSONUPLANET
-    ########################################
-    OLD16=$(cat ${JSONUPLANET} | jq -r ".secret")
+if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
 
-    if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
+    echo "NO SECRET FOUND" \
+    && echo "NEW SECRET SWARM.KEY GENERATION" \
+    && cat $HOME/.zen/tmp/${MOATS}/swarm.key \
+    && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
+    && echo "------- KEY LOADED -----> ${PLAYER}/.ipfs/${UPNAME}.swarm.key"
 
-        echo "NO SECRET FOUND" \
-        && echo "NEW SECRET SWARM.KEY GENERATION" \
-        && cat $HOME/.zen/tmp/${MOATS}/swarm.key \
-        && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-        && echo "------- KEY LOADED -----> ${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key"
+    ## CREATE SUB WORLD... MONITOR TEXT
 
-        ## CREATE SUB WORLD... MONITOR TEXT
+else
+    ## DEBASE16
+    echo "${OLD16}" | base16 -d \
+            > ~/.zen/tmp/${MOATS}/swarmkey.crypted
+
+    ## TRY TO DECODE with PLAYER secret.dunikey
+    ${MY_PATH}/../tools/natools.py decrypt \
+            -f pubsec \
+            -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey \
+            -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
+            -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
+
+    [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key) ]] \
+        && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
+
+    ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
+    [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
+            && cp ~/.zen/tmp/${MOATS}/swarmkey.decrypted \
+                $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
+            && echo "PLAYER LOCAL SWARMKEY UPDATED" \
+            || echo "ERROR RELOADING SWARMKEY"
+fi
+
+#~ (RE)CREATE SECRET
+${MY_PATH}/../tools/natools.py encrypt \
+    -p ${PLAYERPUB} \
+    -i $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
+    -o $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc
+ENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc | base16)
+rm $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc
+echo "==> base16 ${PLAYER} encrypted swarm.key"
+echo "${SECRET}"
+echo "${ENCODING}"
+
+#################################################################
+## MAKE SAME ENCODING FOR FRIENDS
+friends=($(ls ~/.zen/game/players/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
+
+for f in ${friends[@]};
+do
+    ## Extract FRIENDG1PUB from TW (Astroport Tiddler)
+    ftw=${HOME}/.zen/game/players/${PLAYER}/FRIENDS/${f}/index.html
+    tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_Astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+    FRIENDG1PUB=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].g1pub)
+    echo "$f : $FRIENDG1PUB"
+    if [[ ${FRIENDG1PUB} ]]; then
+        #~ CHECK IF ALREADY IN JSON
+        echo "cat ${JSONUPLANET} | jq -r '.\"${f}\"'"
+        FRIENDIN=$(cat ${JSONUPLANET} | jq -r '."${f}"')
+        [[ "${FRIENDIN}" != "null" && "${FRIENDIN}" != "" ]] && echo "${FRIENDIN} OK" && continue
+
+        #~ CREATE FRIENDG1PUB
+        ${MY_PATH}/../tools/natools.py encrypt \
+            -p ${FRIENDG1PUB} \
+            -i $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
+            -o $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc
+        FENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc | base16)
+        rm $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc
+
+        cat ${JSONUPLANET} | jq '. | ."_f_" = "_FENCODING_"' > ~/.zen/tmp/${MOATS}/json.up \
+            && sed -i 's/_f_/'"$f"'/g; s/_FENCODING_/'"$FENCODING"'/g' ~/.zen/tmp/${MOATS}/json.up \
+            && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
 
     else
-        ## DEBASE16
-        echo "${OLD16}" | base16 -d \
-                > ~/.zen/tmp/${MOATS}/swarmkey.crypted
-
-        ## TRY TO DECODE with PLAYER secret.dunikey
-        ${MY_PATH}/../tools/natools.py decrypt \
-                -f pubsec \
-                -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey \
-                -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
-                -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
-
-        [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key) ]] \
-            && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
-
-        ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
-        [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
-                && cp ~/.zen/tmp/${MOATS}/swarmkey.decrypted \
-                    $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-                || echo "ERROR RELOADING SWARMKEY"
+        echo "- ERROR - Friend TW copy is broken !!"
     fi
 
-    #~ RECREATE SECRET
-    ${MY_PATH}/../tools/natools.py encrypt \
-        -p ${PLAYERPUB} \
-        -i $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key \
-        -o $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc
-    ENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/${WISHNAME}.${UPNAME}.swarm.key.enc | base16)
+done
 
+## UPDATE JSONUPLANET
+cat ${JSONUPLANET} | jq '. | ."UPname" = "_UPNAME_"' > ~/.zen/tmp/${MOATS}/json.up \
+    && sed -i 's/_UPNAME_/'"$UPNAME"'/g' ~/.zen/tmp/${MOATS}/json.up \
+    && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
+cat ${JSONUPLANET} | jq '. | ."hash" = "_HASH_"' > ~/.zen/tmp/${MOATS}/json.up \
+    && sed -i 's/_HASH_/'"$AHAH"'/g' ~/.zen/tmp/${MOATS}/json.up \
+    && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
+cat ${JSONUPLANET} | jq '. | ."secret" = "_SECRET_"' > ~/.zen/tmp/${MOATS}/json.up \
+    && sed -i 's/_SECRET_/'"$ENCODING"'/g' ~/.zen/tmp/${MOATS}/json.up \
+    && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
 
-    echo "${SECRET}"
-    echo "${ENCODING}"
-    ## PREPARE ENCODING FOR FRIENDS
-    friends=($(ls ~/.zen/game/players/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
+### PUT BACK IN TW
+tiddlywiki --load ${INDEX} \
+            --import ${JSONUPLANET} "application/json" \
+            --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
 
-    ## UPDATE JSONUPLANET
-    jq '.[] | .UPname = "${UPNAME}" | .hash = "${HASH}" | .secret = "${ENCODING}"' ${JSONUPLANET} > ~/.zen/tmp/${MOATS}/${JSONUPLANET}.up
+if [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]]; then
 
-    ### PUT BACK IN TW
-    tiddlywiki --load ${INDEX} \
-                --import ~/.zen/tmp/${MOATS}/${JSONUPLANET}.up "application/json" \
-                --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+    [[ $(diff ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} ) ]] \
+        && mv ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+        && echo "===> Mise à jour ${INDEX}"
 
-    if [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]]; then
+    cat ${JSONUPLANET} | jq
 
-        [[ $(diff ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} ) ]] \
-            && mv ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
-            && echo "===> Mise à jour ${INDEX}"
+else
+    echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${MOATS}/newindex.html"
+    echo "XXXXXXXXXXXXXXXXXXXXXXX"
+fi
 
-    else
-        echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${MOATS}/newindex.html"
-        echo "XXXXXXXXXXXXXXXXXXXXXXX"
-    fi
-
-
-
-done < ~/.zen/tmp/${MOATS}/inlineuplanets.json
-
-
+rm -Rf ~/.zen/tmp/${MOATS}
 
 exit 0

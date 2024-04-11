@@ -471,7 +471,7 @@ for UMAP in ${unique_combined[@]}; do
 
     PHONEBOOTH="${G1PUB::30}"
     cat ${MY_PATH}/../templates/UPlanetUmap/index.html \
-    | sed -e "s~_ZONE_~CASE ${UMAP}~g" \
+    | sed -e "s~_ZONE_~${UMAP}~g" \
               -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
               -e "s~_ZONENS_~${TODATENS}~g" \
               -e "s~_IPFSNINJA_~${VDONINJA}~g" \
