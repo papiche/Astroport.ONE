@@ -74,19 +74,19 @@ select fav in "${players[@]}"; do
         echo "'Secret 1'"
         read PPASS
         [[ ${PPASS} == "" ]] \
-            && PPASS=$(${MY_PATH}/tools/diceware.sh $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) | xargs)
+            && PPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
         echo "'Secret 2'"
         read NPASS
         [[ ${NPASS} == "" ]] \
-            && NPASS=$(${MY_PATH}/tools/diceware.sh $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) | xargs)
+            && NPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
         echo "'Latitude ?'"
         read LAT
         [[ ${LAT} == "" ]] && LAT="0.00"
         echo "'Longitude ?'"
         read LON
         [[ ${LON} == "" ]] && LON="0.00"
-        echo "${MY_PATH}/RUNTIME/VISA.new.sh" "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
-        ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "_URL_" "${LAT}" "${LON}"
+        echo "${MY_PATH}/RUNTIME/VISA.new.sh" "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}"
+        ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}"
         fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
         echo "Astronaute $fav bienvenue sur UPlanet..."
         exit
