@@ -546,9 +546,9 @@ done
 # Print the result with leading space removed
 echo -e "${ipns2did:1}"
 ####################################################### EMAIL
-[[ -s ${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html ]] \
-    && ZINE="${MY_PATH}/../templates/UPlanetZine/index.${LANG}.html" \
-    || ZINE="${MY_PATH}/../templates/UPlanetZine/index.html"
+[[ -s ${MY_PATH}/../templates/UPlanetZINE/day0/index.${LANG}.html ]] \
+    && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.${LANG}.html" \
+    || ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.html"
 ##UPlanetZine::/ipfs/QmUjgQYK74UgRoyLFfmR2LMX7rd6vNxmtWeUtRxjemELuZ - chained release -
 cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \

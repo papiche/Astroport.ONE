@@ -469,9 +469,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     ###########################
 
 
-    #### SEND TODAY UPlanetDAY${days} ZINE
-    ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.${lang}.html"
-    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetDAY${days}/index.html"
+    #### SEND TODAY UPlanetZINE/day${days} ZINE
+    ZINE2="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
     [[ -s ${ZINE2} ]] \
         && echo "SENDING ZINE2 DAY ${days} + mailjet TW import " \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
