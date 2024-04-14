@@ -25,7 +25,7 @@ PORT=45779
 mkdir -p ~/.zen/tmp ~/.zen/game/players/localhost # ~/.zen & myos compatibility
 
 ## CHECK FOR ANY ALREADY RUNNING nc
-ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "RESTARTING" && kill -9 $ncrunning
 ## NOT RUNNING TWICE
 
@@ -71,12 +71,12 @@ while true; do
     ## CHECK PORT IS FREE & KILL OLD ONE
     echo "SEARCHING FOR PORT ${PORT}"
     ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep'
-    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | cut -d " " -f 1)
+    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | xargs | cut -d " " -f 1)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "$(date) KILLING LOST $pidportinuse"
 
     ### START MAP STATION 12345
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
-    maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+    maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
     [[ ! $maprunning ]] \
     && echo '(ᵔ◡◡ᵔ) MAP LAUNCHING http://'${myIP}':12345 (ᵔ◡◡ᵔ)' \
     && exec $MY_PATH/_12345.sh &

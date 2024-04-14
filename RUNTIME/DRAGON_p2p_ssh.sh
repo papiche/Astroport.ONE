@@ -125,4 +125,10 @@ if [[ -s ~/.zen/prometheus/prometheus ]]; then
 
 fi
 
+ncrunning=$(ps axf --sort=+utime | grep -w 'node_exporter' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+[[ $ncrunning ]] && echo "RESTARTING" && kill -HUP $ncrunning
+/usr/local/bin/node_exporter &
+
+
+
 exit 0

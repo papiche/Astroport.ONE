@@ -176,8 +176,8 @@ fi
 
 ###
 # IS THERE ANY RUNNING IPFS ADD OR PUBLISH IN PROGRESS ?
-ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
 && espeak "I P F S task in progress. Wait finish & try later" && exit 1
 
@@ -847,7 +847,7 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
     ########################################################################
     echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
     ## GETTING LAST TW via IPFS or HTTP GW
-    LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2)
     rm -f ~/.zen/tmp/astronaut_TW.html > /dev/null 2>&1
     [[ $YOU ]] \
         && echo " ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} ($YOU)" \

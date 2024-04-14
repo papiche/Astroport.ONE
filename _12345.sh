@@ -18,10 +18,10 @@ exec 2>&1 >> ~/.zen/tmp/_12345.log
 PORT=12345
 
     YOU=$(myIpfsApi); ## API of $USER running ipfs
-    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
+    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 ## KILLING OLD DAEMON OF MYSELF
-ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 2)
+ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ncrunning != "" ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
 ## WHAT IS NODEG1PUB
@@ -224,7 +224,7 @@ while true; do
         while read branch; do [[ $branch =~ "4096" ]] && echo "empty $branch" && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
         ############### UPDATE MySwarm CHAN
         ls ~/.zen/tmp/swarm
-        SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | cut -f 1)
+        SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | xargs | cut -f 1)
 
         ## SIZE MODIFIED => PUBLISH MySwarm_${IPFSNODEID}
         [[ ${SWARMSIZE} != $(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null) ]] \
@@ -243,13 +243,13 @@ while true; do
 
         # Scan IPFSNODEID cache
         ls ~/.zen/tmp/${IPFSNODEID}/
-        BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+        BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
 
         ## IPFS GET LAST ONLINE IPFSNODEID MAP
         rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
         mkdir -p ~/.zen/tmp/_${IPFSNODEID}
         ipfs get --progress="false" -o ~/.zen/tmp/_${IPFSNODEID}/ /ipns/${IPFSNODEID}/
-        NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | cut -f 1)
+        NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
 
         ### CHECK IF SIZE DIFFERENCE ?
         ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH

@@ -170,7 +170,7 @@ myIpfsBootstrapNodes() {
 
 myIpfsGw() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myIpfsGw=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | cut -d ' ' -f 2)
+     && local myIpfsGw=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
     [ -n "$myIpfsGw" ] && echo "$myIpfsGw"
 }
 
@@ -407,13 +407,13 @@ myTs() {
 
 myTube() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | cut -d ' ' -f 3)
+     && local myTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3)
     [ -n "$myTube" ] && echo "$myTube"
 }
 
 myAstroTube() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myAstroTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
+     && local myAstroTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
     [ -n "$myAstroTube" ] && echo "$myAstroTube"
 }
 

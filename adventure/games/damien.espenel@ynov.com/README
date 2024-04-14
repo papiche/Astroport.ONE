@@ -54,7 +54,7 @@ mv mastergusser.sh rooms/riddle.sh
 ```
 
 ```
-mplayerrunning=$(ps axf --sort=+utime | grep -w 'mplayer' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+mplayerrunning=$(ps axf --sort=+utime | grep -w 'mplayer' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $mplayerrunning ]] && kill $mplayerrunning
 ```
 

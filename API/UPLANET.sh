@@ -39,7 +39,7 @@ Content-Type: text/html; charset=UTF-8
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 ## CHECK FOR NOT PUBLISHING ALREADY (AVOID IPNS CRUSH)
-alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+alreadypublishing=$(ps axf --sort=+utime | grep -w 'ipfs name publish --key=' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 if [[ ${alreadypublishing} ]]; then
      echo "$HTTPCORS ERROR - (╥☁╥ ) - IPFS ALREADY PUBLISHING RETRY LATER"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
      exit 1

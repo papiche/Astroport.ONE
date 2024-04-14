@@ -54,9 +54,9 @@ for VUID in $(cat ~/.zen/bunkerbox/crowd.json | jq -r '.posts | .[] | .video.id'
 
     echo ">>>>>>>>>>>>>>>> Downloading VIDEO"
     # Choose 360p or 480p or 240p
-    VSIZE=360 && VIDEOHEAD=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep -B1 ${VSIZE}p | head -n 1) && VIDEOSRC=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep ${VSIZE}p | tail -n 1 | cut -f 1 -d '.')
-    [[ "$VIDEOSRC" == "" ]] && VSIZE=480 && VIDEOHEAD=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep -B1 ${VSIZE}p | head -n 1) && VIDEOSRC=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep ${VSIZE}p | tail -n 1 | cut -f 1 -d '.')
-    [[ "$VIDEOSRC" == "" ]] && VSIZE=240 &&VIDEOHEAD=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep -B1 ${VSIZE}p | head -n 1) && VIDEOSRC=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep ${VSIZE}p | tail -n 1 | cut -f 1 -d '.')
+    VSIZE=360 && VIDEOHEAD=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep -B1 ${VSIZE}p | head -n 1) && VIDEOSRC=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep ${VSIZE}p | tail -n 1 | xargs | cut -f 1 -d '.')
+    [[ "$VIDEOSRC" == "" ]] && VSIZE=480 && VIDEOHEAD=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep -B1 ${VSIZE}p | head -n 1) && VIDEOSRC=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep ${VSIZE}p | tail -n 1 | xargs | cut -f 1 -d '.')
+    [[ "$VIDEOSRC" == "" ]] && VSIZE=240 &&VIDEOHEAD=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep -B1 ${VSIZE}p | head -n 1) && VIDEOSRC=$(cat ~/.zen/bunkerbox/$VUID/$VUID.m3u8 | grep ${VSIZE}p | tail -n 1 | xargs | cut -f 1 -d '.')
     VTHUMB="$(cat ~/.zen/bunkerbox/$VUID/$VUID.json | jq -r --arg VSIZE "$VSIZE"  '.video.thumbnails[] | select(.height == $VSIZE) | .url')"
 
     echo ">>>>>>>>>>>>>>>> Downloading Video $VSIZE Thumbnail"

@@ -22,7 +22,7 @@ devine_le_nombre() {
         echo "Fin de la session..."
         # kill $!
         ## CHECK FOR ANY ALREADY RUNNING mplayer
-        mplayerrunning=$(ps axf --sort=+utime | grep -w 'mplayer' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+        mplayerrunning=$(ps axf --sort=+utime | grep -w 'mplayer' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
         [[ $mplayerrunning ]] && kill $mplayerrunning
         exit 0
     elif [ $guess -lt $nombre_secret ]; then

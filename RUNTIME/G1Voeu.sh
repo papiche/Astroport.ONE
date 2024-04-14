@@ -92,7 +92,7 @@ echo ${WISHG1PUB} > ~/.zen/game/world/${VoeuName}/${WISHG1PUB}/.wish
 
 echo "# CREATION QR CODE"
 
-LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2)
 
 qrencode -s 12 -o "$HOME/.zen/game/world/${VoeuName}/${WISHG1PUB}/QR.WISHLINK.png" "$LIBRA/ipns/${VOEUNS}"
 

@@ -88,7 +88,7 @@ fi
 if [[ ${QRCODE} == "station" ]]; then
 
     ## CHECK FOR ANY ALREADY RUNNING make_image_ipfs_index_carousel
-    carouselrunning=$(ps axf --sort=+utime | grep -w 'make_image_ipfs_index_carousel' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+    carouselrunning=$(ps axf --sort=+utime | grep -w 'make_image_ipfs_index_carousel' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
         if [[ $carouselrunning ]]; then
@@ -166,7 +166,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             echo "COINScheck.sh ${G1PUB}"
             ${MY_PATH}/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
-            CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | cut -d '.' -f 1)
+            CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | xargs | cut -d '.' -f 1)
             CURZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
             echo "= $CURCOINS G1 / $CURZEN ZEN"
 
@@ -485,7 +485,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             if [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]]; then
                 HELLO="@PASS :: G1BILLET+ :: ${G1VOEUPUB} :: $(date) :: ${player} :: ${PLAYERORIG1}"
                 echo "${HELLO}"
-                avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$G1VOEUNS' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+                avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$G1VOEUNS' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
                 [[ ! $avanla ]] \
                     && ( ipfs cat /ipns/$G1VOEUNS > ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt \
                                 && [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]] \
@@ -583,7 +583,7 @@ if [[ ${QRCODE:0:2} == "G1" && ${AND} == "tw" ]]; then
 
     VOEU=${QRCODE:2} ## "G1G1Voeu" => "G1Voeu"
     # THIS is TW IPNS
-    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | tail -n 1 | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
+    ASTROPATH=$(grep -r ${THIS} ~/.zen/game/players/*/ipfs/moa | tail -n 1 | xargs | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev  2>/dev/null)
     echo "ASTROPATH=${ASTROPATH}"
 
     INDEX=${ASTROPATH}/index.html
