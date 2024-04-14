@@ -153,6 +153,12 @@ if [[ $USER != 'xbian' ]]; then
 
 fi
 
+################################################### NODE MONITORING LAYER
+[[ ! $isLAN ]] && plus="GRAFANA"
+echo "############# INSTALL PROMETHEUS NODE EXPORTER $plus"
+${MY_PATH}/install.prometheus_node_exporter_linux.sh $plus
+###############################################################
+
 #####################
 #### ~/.bashrc
 echo "########################### ♥BOX"

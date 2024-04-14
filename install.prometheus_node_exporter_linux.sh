@@ -9,9 +9,9 @@ cd  ~/.zen/tmp
 # Check processor architecture
 architecture=$(uname -m)
 
-######################################################
-## IF $1 == "GRAFANA"
-######################################################
+##############################################################
+## "GRAFANA" NODE + PROMETHEUS GATEWAY (CONSUME DISK SPACE !)
+##############################################################
 if [[ "$1" == "GRAFANA" && ! -d ~/.zen/prometheus ]]; then
     # Grafana
     sudo apt-get install -y adduser libfontconfig1 musl
@@ -41,7 +41,11 @@ if [[ "$1" == "GRAFANA" && ! -d ~/.zen/prometheus ]]; then
     tar -xvzf prometheus.tar.gz
     mv $(ls -d prometheus-*) ~/.zen/prometheus
 
+    ## prometheus.
+
 fi
+
+
 
 ######################################################
 ## PROMETHEUS node_exporter

@@ -69,12 +69,16 @@ echo
 PORT=22000
 PORT=$((PORT+${RANDOM:0:3}))
 
+#######################################################################
+## Adapt $USER for the UPlanet /home/$USER Private Swarm specific one
+#######################################################################
+
 echo '#!/bin/bash
 if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
     ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
     [[ $? == 0 ]] \
         && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-        && ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+        && ssh \$USER@127.0.0.1 -p '${PORT}' \
         || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
 ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
@@ -108,10 +112,17 @@ echo "
                              '------'      \
 
 "
-
 ############################################
 echo "CONNECT WITH THIS COMMAND"
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ############################################
+
+## PROMETHEUS NODE
+if [[ -s ~/.zen/prometheus/prometheus ]]; then
+
+    echo "UPDATING ~/.zen/prometheus/prometheus.yml"
+    ## ADD ALL SWARM NODES TO MONITORING LIST for prometheus (GRAFANA) node
+
+fi
 
 exit 0
