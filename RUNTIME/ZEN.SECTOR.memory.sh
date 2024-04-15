@@ -56,7 +56,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
     if [[ $ipfs_pop ]]; then
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
-        ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop
+        ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop \
             && ipfs pin rm $ipfs_pop \
             || echo "$ipfs_pop ERROR ... "
     else
