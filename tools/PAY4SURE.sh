@@ -76,13 +76,14 @@ rm -f ${PENDINGDIR}/${MOATS}.result.html
 # MAKE PAYMENT
 echo
 ${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/${MOATS}.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result.html
+ISOK=$?
 CHK1=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 1 )
 CHK2=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 2 )
-
+echo
 echo ${CHK1}
 echo ${CHK2}
-
-if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep 'conforme') ]]; then
+echo
+if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep 'conforme') ]]; then
     echo "TRANSACTION SENT"
     echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
 
@@ -124,29 +125,30 @@ if [[ $? == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep '
 else
 
     echo "TRANSACTION ERROR"
+    GVASERVER=$(${MY_PATH}/duniter_getnode.sh | tail -n 1)
 
-    ## INFORM SYSTEM MUST RENEW OPERATION
-    rm ${PENDINGFILE}
-    echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
-    <h1>-  MUST RETRY -</h1>
-    LAUNCHING SUB SHELL</html>" >> ${PENDINGDIR}/${MOATS}.result.html
+    #~ ## INFORM SYSTEM MUST RENEW OPERATION
+    #~ rm ${PENDINGFILE}
+    #~ echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
+    #~ <h1>-  MUST RETRY -</h1>
+    #~ LAUNCHING SUB SHELL</html>" >> ${PENDINGDIR}/${MOATS}.result.html
 
-    ## COUNT NUMBER OF TRY
-    try=$(cat ${PENDINGDIR}/${MOATS}.try 2>/dev/null) || try=0
+    #~ ## COUNT NUMBER OF TRY
+    #~ try=$(cat ${PENDINGDIR}/${MOATS}.try 2>/dev/null) || try=0
 
-    [ $try -gt 2 ] \
-    && echo "${MOATS} TOO MANY TRY ( $try )" >> ${PENDINGDIR}/${MOATS}.result.html \
-    && $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "PAYMENT CANCELED" \
-    && exit 1 \
-    || $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "PAYMENT REPLAY"
+    #~ [ $try -gt 2 ] \
+    #~ && echo "${MOATS} TOO MANY TRY ( $try )" >> ${PENDINGDIR}/${MOATS}.result.html \
+    #~ && $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "PAYMENT CANCELED" \
+    #~ && exit 1 \
+    #~ || $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "PAYMENT REPLAY"
 
-   (
-    ((try++)) && echo $try > ${PENDINGDIR}/${MOATS}.try
-    chmod +x  ${PENDINGDIR}/${MOATS}_replay.sh
-    sleep 3600
-    ${PENDINGDIR}/${MOATS}_replay.sh
-    exit 0
-   ) &
+   #~ (
+    #~ ((try++)) && echo $try > ${PENDINGDIR}/${MOATS}.try
+    #~ chmod +x  ${PENDINGDIR}/${MOATS}_replay.sh
+    #~ sleep 3600
+    #~ ${PENDINGDIR}/${MOATS}_replay.sh
+    #~ exit 0
+   #~ ) &
 
 
 fi
