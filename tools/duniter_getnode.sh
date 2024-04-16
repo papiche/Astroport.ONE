@@ -131,7 +131,7 @@ do
     [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
 
     [[ $loop -eq 8 ]] \
-        && result="g1.copylaradio.com:443" && break
+        && result="https://g1.copylaradio.com/gva" && break
 
     ((loop++))
 done < $DIR/good.nodes.txt

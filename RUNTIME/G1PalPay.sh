@@ -106,6 +106,13 @@ while read NLINE; do
 done < ~/.zen/tmp/${MOATS}/myN1.json
 
 ########################################################################################
+if [[ ${UPLANETNAME} != "" ]]; then
+    echo "# CHECK FOR PRIMAL REGULAR TX in INCOMING PAYMENTS"
+    # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
+
+fi
+
+########################################################################################
 echo "# CHECK FOR EMAILs IN PAYMENT COMMENT"
 ## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -r
 #################################################################
