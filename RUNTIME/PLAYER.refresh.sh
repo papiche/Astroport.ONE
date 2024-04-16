@@ -11,7 +11,25 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## Publish All PLAYER TW,
 # Run TAG subprocess: tube, voeu
 ############################################
-echo "## RUNNING PLAYER.refresh"
+echo "## RUNNING PLAYER.refresh
+
+        _..._
+      .'     '.      _
+     /    .-""-\   _/ \
+   .-|   /:.   |  |   |
+   |  \  |:.   /.-'-./
+   | .-'-;:__.'    =/
+   .'=  A=|STRO _.='
+  /   _.  |    ;
+ ;-.-'|    \   |
+/   | \    _\  _\
+\__/'._;.  ==' ==\
+         \    \   |
+         /    /   /
+         /-._/-._/
+  MIZ    \   `\  \
+          `-._/._/
+          "
 
 PLAYERONE="$1"
 # [[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
