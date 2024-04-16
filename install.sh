@@ -155,9 +155,15 @@ fi
 
 ################################################### NODE MONITORING LAYER
 [[ ! $isLAN ]] && plus="GRAFANA"
-echo "############# INSTALL PROMETHEUS NODE EXPORTER $plus"
+echo
+echo "## MONITORING LAYER #### $plus ## PROMETHEUS ### PROBE : node_exporter"
 ${MY_PATH}/install.prometheus_node_exporter_linux.sh $plus
+
+echo "## CLONING seedbox    "
+cd ~/.zen
+git clone https://github.com/papiche/seedbox.git
 ###############################################################
+echo
 
 #####################
 #### ~/.bashrc
@@ -182,7 +188,7 @@ sudo usermod -aG docker $USER
 curl https://raw.githubusercontent.com/\
 jesseduffield/lazydocker/master/scripts/\
 install_update_linux.sh | bash
-
+echo
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
 echo "#############################################"
@@ -231,16 +237,16 @@ echo "#############################################"
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
-    espeak "Welcome Space Kitty" 2>/dev/null
-echo ">>> Welcome Space Kitty <<<"
-echo "Explore Web2.0 / WEb3 frontier"
-echo "Join Dragons WOT by continuing keygen procedure..."
+    espeak "Welcome Web3 Astonaut" 2>/dev/null
+echo ">>> Welcome Web3 Astonaut <<<"
+echo "Create a PLAYER using : ~/.zen/Astroport.ONE/command.sh"
+echo "Join Dragons. Add DATA to UPlanet Common Good Ledger"
 echo "#############################################"
 # DESACTIVATING ASTROPORT DAEMONS
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 echo "############################## ♥BOX READY ###"
-echo ">>> ACTIVATE ASTROPORT DAEMONS <<<
- ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
+echo ">>> TO DESACTIVATE ASTROPORT <<<
+ ~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF"
 
 
 else

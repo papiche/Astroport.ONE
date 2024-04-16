@@ -24,13 +24,13 @@ if [[ "$1" == "GRAFANA" && ! -d ~/.zen/prometheus ]]; then
     && wget https://dl.grafana.com/oss/release/grafana_10.4.2_arm64.deb \
     && sudo dpkg -i grafana_10.4.2_arm64.deb
 
-
 ### NOT starting on installation, please execute the following statements to configure grafana to start automatically using systemd
  sudo systemctl daemon-reload
  sudo systemctl enable grafana-server
 ### You can start grafana-server by executing
  sudo systemctl start grafana-server
 
+echo "MONITORING : grafana : http://localhost:3000 (admin/admin)"
 
     ## PROMETHEUS GATEWAY
     [ "$architecture" == "x86_64" ] \
@@ -42,6 +42,7 @@ if [[ "$1" == "GRAFANA" && ! -d ~/.zen/prometheus ]]; then
     mv $(ls -d prometheus-*) ~/.zen/prometheus
 
     ## prometheus.
+echo "PROBE ENGINE : prometheus : http://localhost:9090"
 
 fi
 
@@ -79,7 +80,7 @@ cd ..
 && echo "node_exporter NOT installed" && exit 1 \
 || echo "node_exporter installed"
 
-
+echo "New prometheus PROBE node_exporter : https://grafana.com/dashboards/1860"
 
 
 exit 0
