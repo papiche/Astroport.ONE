@@ -164,7 +164,7 @@ for UMAP in ${unique_combined[@]}; do
 
     ## IF NOT UPDATED FOR TOO LONG
     [[ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) || ${DIFF_SECONDS} -eq 0 ]] \
-        && echo "More than 26H update - BOOSTRAP 0 ACTION -" \
+        && echo ">>>>>>>>>>>>>> More than 26H update - BOOSTRAP 0 ACTION -" \
         && ACTINGNODE=${STRAPS[0]}
 
     echo "* ACTINGNODE=${ACTINGNODE}"
@@ -191,7 +191,7 @@ for UMAP in ${unique_combined[@]}; do
     echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
     ######################################################## # NODE  SELECTION in UMAP.refresher
 
-    ############ 101 ZEN REFILL ?!
+    ############ 101 ZEN (11.1 G1) REFILL ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \

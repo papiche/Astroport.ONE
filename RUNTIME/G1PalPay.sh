@@ -196,6 +196,8 @@ while read LINE; do
     && echo "REDISTRIBUTION DONE" \
     && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate
 
+    sleep 3
+
 done < ~/.zen/tmp/${MOATS}/myPalPay.json
 
 echo "====(•‿‿•)======= %%%%% (°▃▃°) %%%%%%% ======(•‿‿•)========"

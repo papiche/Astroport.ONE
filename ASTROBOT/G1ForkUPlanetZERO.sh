@@ -70,7 +70,7 @@ JSONUPLANET="${HOME}/.zen/tmp/${MOATS}/ONEuplanet.json"
 [[ ! -s ${JSONUPLANET} ]] && echo "NO tag[ForkUPlanetZERO] for $PLAYER" && exit 0
 
 UPNAME=$(cat ${JSONUPLANET} | jq -r ".title") # What name is given ?
-[[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "FATAL ERROR UPNAME .title MISSING" && exit 1
+[[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "NO FORK UPLANET NAME .title MISSING" && exit 1
 HASH=$(cat ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
 SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
 
@@ -87,9 +87,9 @@ AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ]] \
     && MSG=$MSG" ${PLAYER}/.ipfs/${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
 
-## CREATE 64 bit swarm.key ( maximum individual Fork 1,844674407×10¹⁹ )
+## CREATE 32 octets swarm.key ( maximum individual Fork 7,922816251×10²⁸ )
 echo -e '/key/swarm/psk/1.0.0/\n/base16/' > $HOME/.zen/tmp/${MOATS}/swarm.key
-head -c 64 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
+head -c 32 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 
 ## EXTRACT CURRENT SECRET FROM JSONUPLANET
@@ -144,15 +144,19 @@ echo "${ENCODING}"
 #################################################################
 ## MAKE SAME ENCODING FOR FRIENDS
 friends=($(ls ~/.zen/game/players/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
-
+howmuch=0
 for f in ${friends[@]};
 do
     ## Extract FRIENDG1PUB from TW (Astroport Tiddler)
     ftw=${HOME}/.zen/game/players/${PLAYER}/FRIENDS/${f}/index.html
     tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_Astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
     FRIENDG1PUB=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].g1pub)
+    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].astroport)
+    [[ ${ASTROPORT} != "/ipns/${IPFSNODEID}" ]] && echo "FOREIGN ASTROPORT=${ASTROPORT}" && foreign="YES"
     echo "$f : $FRIENDG1PUB"
-    if [[ ${FRIENDG1PUB} ]]; then
+
+    if [[ ${FRIENDG1PUB} && ${FRIENDG1PUB} != "null" ]]; then
+
         #~ CHECK IF ALREADY IN JSON
         echo "cat ${JSONUPLANET} | jq -r '.\"${f}\"'"
         FRIENDIN=$(cat ${JSONUPLANET} | jq -r '."${f}"')
@@ -171,10 +175,26 @@ do
             && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
 
     else
-        echo "- ERROR - Friend TW copy is broken !!"
+        echo "- FATAL ERROR - Friend TW ${ftw} is broken !!"
+        continue
+    fi
+
+    ## CHECK IF FRIEND HAVE THE SAME ${UPNAME} tiddler
+    if [[ ${foreign} == "YES" ]]; then
+        howmuch=$(( howmuch + 1 ))
+
+        ## SEARCH FOR ${UPNAME} tiddler IN FRIEND TW
+        tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_${UPNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${UPNAME}"
+        cat ~/.zen/tmp/${MOATS}/${f}_${UPNAME}.json | jq -r '[]."${PLAYER}"'
+
+        ## CONTROL KEY DECODING
+
+
     fi
 
 done
+
+echo "<<< MY FRIENDS ARE LOCATED IN $howmuch FOREIGN ASTROPORT >>>"
 
 ## UPDATE JSONUPLANET
 cat ${JSONUPLANET} | jq '. | ."UPname" = "_UPNAME_"' > ~/.zen/tmp/${MOATS}/json.up \

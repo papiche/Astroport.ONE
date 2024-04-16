@@ -149,7 +149,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     ## IF NOT UPDATED FOR TOO LONG : STRAPS[0] get key control
     [ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) ] \
-        && echo "More than 26H update" \
+        && echo ">>>>>>>>>>>>>> More than 26H update - BOOSTRAP 0 ACTION -" \
         && ACTINGNODE=${STRAPS[0]}
 
     echo "* ACTINGNODE=${ACTINGNODE}"
@@ -170,8 +170,7 @@ for SECTOR in ${SECTORS[@]}; do
     mv ${UREFRESH}.shuf ${UREFRESH}
     echo "SETTING NEXT REFRESHER : $(cat ${UREFRESH} | head -n 1)"
 
-
-    ############ 101 ZEN REFILL ?!
+    ############ 101 ZEN (11.1 G1) REFILL ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
