@@ -15,21 +15,15 @@ echo "## RUNNING PLAYER.refresh
 
         _..._
       .'     '.      _
-     /    .-""-\   _/ \
+     /    .-°°-\   _/ \\
    .-|   /:.   |  |   |
    |  \  |:.   /.-'-./
    | .-'-;:__.'    =/
    .'=  A=|STRO _.='
   /   _.  |    ;
  ;-.-'|    \   |
-/   | \    _\  _\
-\__/'._;.  ==' ==\
-         \    \   |
-         /    /   /
-         /-._/-._/
-  MIZ    \   `\  \
-          `-._/._/
-          "
+/   | \    _\  _\\
+"
 
 PLAYERONE="$1"
 # [[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
@@ -229,7 +223,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
     if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
         echo "> PLAYER MOVED TO ${IPNSTAIL} : UNPLUG "
-        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "AstroID MUST BE DELETED"
+        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "Now TW is plugged to ${ASTROPORT}"
         echo ">>>> CIAO ${PLAYER}"
         continue
     fi
@@ -242,7 +236,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 ############################################## +2 DAYS & AstroID = UNPLUG !!
     ## REMOVE TW OLDER THAN 2 DAYS WITH AstroID
     [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
-        && ${MY_PATH}/PLAYER.unplug.sh  "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" \
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "TW EJECTION. Found an AstroID in your TW." \
         && echo "(#__#) AstroID +2 DAYS = SECURITY ERROR (#__#)" && continue
 
     ######################################

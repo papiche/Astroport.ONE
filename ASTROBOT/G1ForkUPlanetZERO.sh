@@ -67,10 +67,14 @@ cat ~/.zen/tmp/${MOATS}/G1ForkUPlanetZERO.json \
         | jq -rc .[] | head -n 1 > ~/.zen/tmp/${MOATS}/ONEuplanet.json
 
 JSONUPLANET="${HOME}/.zen/tmp/${MOATS}/ONEuplanet.json"
-[[ ! -s ${JSONUPLANET} ]] && echo "NO tag[ForkUPlanetZERO] for $PLAYER" && exit 0
+
+[[ ! -s ${JSONUPLANET} ]] \
+    && echo "NO tag[ForkUPlanetZERO] for $PLAYER" && exit 0
 
 UPNAME=$(cat ${JSONUPLANET} | jq -r ".title") # What name is given ?
-[[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] && echo "NO FORK UPLANET NAME .title MISSING" && exit 1
+[[ "${UPNAME}" == "null" ||  "${UPNAME}" == "" ]] \
+    && echo "NO FORK UPLANET NAME .title MISSING" && exit 1
+
 HASH=$(cat ${JSONUPLANET} | jq -r ".hash") ## What text hash it has ?
 SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
 
@@ -144,7 +148,6 @@ echo "${ENCODING}"
 #################################################################
 ## MAKE SAME ENCODING FOR FRIENDS
 friends=($(ls ~/.zen/game/players/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
-howmuch=0
 for f in ${friends[@]};
 do
     ## Extract FRIENDG1PUB from TW (Astroport Tiddler)
@@ -154,6 +157,8 @@ do
     ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].astroport)
     [[ ${ASTROPORT} != "/ipns/${IPFSNODEID}" ]] && echo "FOREIGN ASTROPORT=${ASTROPORT}" && foreign="YES"
     echo "$f : $FRIENDG1PUB"
+
+    ASTROPORTS=("${ASTROPORTS[@]}" "${ATROPORT}")
 
     if [[ ${FRIENDG1PUB} && ${FRIENDG1PUB} != "null" ]]; then
 
@@ -179,22 +184,28 @@ do
         continue
     fi
 
+    ZENSTATIONS=($(echo "${ASTROPORTS[@]}" | tr ' ' '\n' | sort -u))
     ## CHECK IF FRIEND HAVE THE SAME ${UPNAME} tiddler
     if [[ ${foreign} == "YES" ]]; then
-        howmuch=$(( howmuch + 1 ))
 
         ## SEARCH FOR ${UPNAME} tiddler IN FRIEND TW
         tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_${UPNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${UPNAME}"
-        cat ~/.zen/tmp/${MOATS}/${f}_${UPNAME}.json | jq -r '[]."${PLAYER}"'
+        cat ~/.zen/tmp/${MOATS}/${f}_${UPNAME}.json | jq -r '[]."'${PLAYER}'"'
 
-        ## CONTROL KEY DECODING
+        ## CONTROL SWARMKEY DECODING (must be similar to our)
 
+        ## IPFSNODEID IS FORKING TO NEW UPLANET
+        if [[ ${#ZENSTATIONS[@]} -gt 5 ]]; then
+            echo "UPlanet.ZERO WARPING... Activating ${UPNAME}"
+
+        fi
 
     fi
 
 done
 
-echo "<<< MY FRIENDS ARE LOCATED IN $howmuch FOREIGN ASTROPORT >>>"
+
+echo "<<< MY FRIENDS ARE LOCATED IN ${#ZENSTATIONS[@]} FOREIGN ASTROPORT >>>"
 
 ## UPDATE JSONUPLANET
 cat ${JSONUPLANET} | jq '. | ."UPname" = "_UPNAME_"' > ~/.zen/tmp/${MOATS}/json.up \

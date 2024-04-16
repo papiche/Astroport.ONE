@@ -62,6 +62,8 @@ echo "SOLDE : $CURCOINS G1"
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+    [[ "$CURCOIN" == "" ]] && echo "JAKLIS ERROR"
+    [[ "$CURCOIN" == "null" ]] && echo "EMPTY WALLET"
 
     echo "$CURCOINS" > "$COINSFILE"
 
