@@ -293,7 +293,7 @@ for UMAP in ${unique_combined[@]}; do
 
     ####################################################################################
     ## TODATE DATA
-    echo "WRITE $TODATE DATA /UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
+    echo "WRITE $TODATE DATA ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
     ####################################################################################
     echo "${TODATENS}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TODATENS
@@ -309,6 +309,7 @@ for UMAP in ${unique_combined[@]}; do
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
 
     ####################################################################################
+    ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
 
     # %%%%%%%%%% ##################################################
     ## COLLECT RSS FROM ALL PLAYERS WITH SAME UMAP IN SWARM MEMORY /UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??
@@ -507,7 +508,7 @@ for UMAP in ${unique_combined[@]}; do
     ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
     [[ ${ZCHAIN} && ${ZMOATS} ]] \
         && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain.${ZMOATS} \
-        && echo "UPDATING MOATS"
+        && echo "UPDATING MOATS=${MOATS}"
 
 ######################################################
     ## ZEN CHAINING

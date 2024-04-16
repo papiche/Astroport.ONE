@@ -67,6 +67,7 @@ if [[ ! -f  $DIR/duniter_nodes.txt ]]; then
     # Get New BMAS known Nodes list from shuffle one $DIR/good.nodes.txt
     [[ -f $DIR/good.nodes.txt ]] && DUNITER=$(shuf -n 1 $DIR/good.nodes.txt) || DUNITER="g1.copylaradio.com:443"
     curl -s https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep GVA | awk '{print $3,$4}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
+    [[ "$1" == "BMAS" ]] && curl -s https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep BMAS | awk '{print $2,$3}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
 fi
 
 # Grab the nodes we are actively watching - they will be in bold in the final output
@@ -82,7 +83,7 @@ rm $DIR/*out $DIR/*done $DIR/chains/* $DIR/NODE.* 2>/dev/null
 for node in $nodes
 do
     #~ echo "checkonenode $node "$watched" $DIR/$index.out"
-    checkonenode $node "$watched" $DIR/$index.out
+    checkonenode $node "$watched" $DIR/$index.out &
     #~ cat $DIR/$index.out
     ((index++))
 done
@@ -117,23 +118,35 @@ cat $DIR/chains/$longchain | shuf > $DIR/good.nodes.txt
 Dtest=""; IDtest=""; lastresult=""; loop=0
 while read lastresult;
 do
+
     ## CHECK if server is not too slow
-    echo "curl -s -m 5 https://$lastresult | jq -r .duniter.software"
-    Dtest=$(curl -s -m 5 https://$lastresult | jq -r .duniter.software)
+    echo "curl -s -m 2 https://$lastresult | jq -r .duniter.software"
+    Dtest=$(curl -s -m 2 https://$lastresult | jq -r .duniter.software)
     echo "$Dtest"
-    gvaserver=$(echo $lastresult | sed "s~:443~/gva~g" )
-    [[ "$Dtest" == "duniter" ]] \
-        && echo "jaklis -n https://$gvaserver balance -p DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech" \
-        && IDtest=$(jaklis -n https://$gvaserver balance -p DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech 2>/dev/null)
 
-    echo $IDtest
+    if [[ "$Dtest" == "duniter" ]]; then
+        if [[ "$1" == "BMAS" ]]; then
+            echo "silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
+            IDtest=$(silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech)
+            echo $IDtest
+            [[ $IDtest != "" && $IDtest != "null" ]] && result="$lastresult" && break
 
-    [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
+            [[ $loop -eq 8 ]] \
+                && result="g1.duniter.org" && break
+        else
+            gvaserver=$(echo $lastresult | sed "s~:443~/gva~g" )
+            echo "jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
+            IDtest=$(jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH 2>/dev/null)
+            echo $IDtest
+            [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
 
-    [[ $loop -eq 8 ]] \
-        && result="https://g1.copylaradio.com/gva" && break
+            [[ $loop -eq 8 ]] \
+                && result="https://g1.copylaradio.com/gva" && break
+        fi
+    fi
 
     ((loop++))
+
 done < $DIR/good.nodes.txt
 
 
