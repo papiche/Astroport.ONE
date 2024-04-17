@@ -126,7 +126,7 @@ if [[ -s ~/.zen/prometheus/prometheus ]]; then
     ncrunning=$(ps axf --sort=+utime | grep -w 'prometheus' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
     [[ $ncrunning ]] \
         && echo "RESTARTING" && kill -HUP $ncrunning \
-        || ~/.zen/prometheus/prometheus &
+        || { cd ~/.zen/prometheus/; ./prometheus & }
 
 fi
 

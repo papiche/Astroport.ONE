@@ -36,6 +36,8 @@ ipfs config --json Experimental.P2pHttpProxy true
     #~ "AcceleratedDHTClient": true
   #~ }
 #~ }'
+ipfs config --json Routing.AcceleratedDHTClient true
+
 
 ipfs config --json Swarm.ConnMgr.LowWater 20
 ipfs config --json Swarm.ConnMgr.HighWater 40
