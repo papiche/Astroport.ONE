@@ -244,10 +244,11 @@ echo "Join Dragons. Add DATA to UPlanet Common Good Ledger"
 echo "#############################################"
 # DESACTIVATING ASTROPORT DAEMONS
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
-echo "############################## ♥BOX READY ###"
 echo ">>> TO DESACTIVATE ASTROPORT <<<
  ~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF"
-
+echo "############################## ♥BOX READY ###"
+echo "PLEASE CREATE PLAYER"
+~/.zen/Astroport.ONE/command.sh
 
 else
 
