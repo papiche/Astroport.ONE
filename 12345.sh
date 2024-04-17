@@ -71,7 +71,7 @@ while true; do
     ## CHECK PORT IS FREE & KILL OLD ONE
     echo "SEARCHING FOR PORT ${PORT}"
     ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep'
-    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | xargs | cut -d " " -f 1)
+    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "$(date) KILLING LOST $pidportinuse"
 
     ### START MAP STATION 12345
