@@ -29,7 +29,7 @@ PLAYERONE="$1"
 # [[ $isLAN ]] && PLAYERONE=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ! ${PLAYERONE} ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
 
-echo "FOUND ${#PLAYERONE[@]} : ${PLAYERONE[@]}"
+echo "FOUND ${#PLAYERONE[@]} ASTRONAUTS : ${PLAYERONE[@]}"
 CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
 
 echo "RENEWING LOCAL UPLANET REPOSITORY (ADMIN=${CURRENT})
@@ -426,17 +426,17 @@ for PLAYER in ${PLAYERONE[@]}; do
         -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
-    echo "SECTOR $SECTOR SECTORTW=${SECTORIPNS}/TW"
+    echo "SECTORTW_NEWS $SECTOR SECTORTW=${SECTORIPNS}/TW :: ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json"
 
     #############################################################
     # Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
     ######################################### BETTER USE json FILE IN /ipns/$IPFSNODEID/COINS
     #~ echo "##################################################################"
 
-    #~ [[ $(echo "$COINS >= 500" | bc -l) -eq 1 ]]  \
-        #~ && echo "## Connect_PLAYER_To_Gchange.sh" \
-        #~ && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-        #~ || echo "$COINS <= 1 G1 + 10 ẑen : bypass Gchange stars exchange (★★★★★)"
+    [[ -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]  \
+        && echo "## Connect_PLAYER_To_Gchange.sh  (★★★★★)" \
+        && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
+        || echo "NO Gchange account found"
 
     ##############################################################
     # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
@@ -480,13 +480,14 @@ for PLAYER in ${PLAYERONE[@]}; do
         || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
     ###########################
 
-
-    #### SEND TODAY UPlanetZINE/day${days} ZINE
-    ZINE2="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
-    [[ ! -s ${ZINE2} ]] && ZINE2="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
-    [[ -s ${ZINE2} ]] \
-        && echo "SENDING ZINE2 DAY ${days} + mailjet TW import " \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${ZINE2} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
+    ########################
+    ## SEND TODAY ZINE
+    #### UPlanetZINE/day${days}/index.${lang}.html
+    TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
+    [[ -s ${TODAYZINE} ]] \
+        && echo "SENDING TODAYZINE DAY ${days} + mailjet TW import " \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${TODAYZINE} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
         || echo "NO ZINE FOR DAY ${days}"
 
 
@@ -506,6 +507,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     ######## UPDATING ${PLAYER}/ipfs/moa/.chain
     cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
        ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
+
+    ## CLEAN .chain CACHE
+    find  ~/.zen/game/players/${PLAYER}/ipfs/moa/ -mtime +30 -type f -exec rm -f '{}' \;
 
     ##########################################
     ## TW IPFS ADD & PUBLISH
@@ -528,63 +532,65 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-if [[ ${days} -ge 14 ]]; then
-    ###################
-    # REFRESH PLAYER_feed KEY
-    echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
+    #########################################################
+    ##### AFTER 2 WEEKS : START TW JSON RSS EXPORT
+    if [[ ${days} -ge 14 ]]; then
+        ###################
+        # REFRESH PLAYER_feed KEY
+        echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
 
-    #########################################################################################
-    ## CREATING 30 DAYS JSON RSS STREAM
-    # [days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]
-    #########################################################################################
-    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-        --output ~/.zen/game/players/${PLAYER}/ipfs \
-        --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]'
+        #########################################################################################
+        ## CREATING 30 DAYS JSON RSS STREAM
+        # [days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]
+        #########################################################################################
+        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+            --output ~/.zen/game/players/${PLAYER}/ipfs \
+            --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]'
 
-    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
-        && echo "NO ${PLAYER} RSS - BAD "
+        [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
+            && echo "NO ${PLAYER} RSS - BAD "
 
-    echo "~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json"
+        echo "~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json"
 
-    ########################################################
-    #### PLAYER ACCOUNT HAVE NEW TIDDLER or NOT #########
-    if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "${CURRENT}" != "${PLAYER}" ]]; then
-        echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN --"
-        ## DEAD PLAYER ??
-        if [[ ${days} -eq 27 ]]; then
-            echo "<html><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
-            echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
+        ########################################################
+        #### PLAYER ACCOUNT HAVE NEW TIDDLER or NOT #########
+        if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "${CURRENT}" != "${PLAYER}" ]]; then
+            echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN -- $days DAYS"
+            ## DEAD PLAYER ??
+            if [[ ${days} -eq 27 ]]; then
+                echo "<html><head><meta charset='utf-8'></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
+                echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
 
-            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
-            echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
+                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
+                echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
+            fi
+            if [[ ${days} -gt 29 ]]; then
+                #################################### UNPLUG ACCOUNT
+                echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
+                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
+                continue
+            fi
+
+            ## PAY 1 ZEN TO UMAPG1PUB
+            [[ "${UMAPG1PUB}" != "" ]] \
+            && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
+
+        else
+
+            ### PLAYER ALIVE PUBLISH RSS &
+            FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
+            [[ ${FEEDNS} ]] \
+                && IRSS=$(ipfs add --pin=false -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
+                && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
+                && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
+                || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
+
         fi
-        if [[ ${days} -gt 29 ]]; then
-            #################################### UNPLUG ACCOUNT
-            echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
-            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
-            continue
-        fi
 
-        ## PAY 1 ZEN TO UMAPG1PUB
-        [[ "${UMAPG1PUB}" != "" ]] \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
-
-    else
-
-        ### PLAYER ALIVE PUBLISH RSS &
-        FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
-        [[ ${FEEDNS} ]] \
-            && IRSS=$(ipfs add --pin=false -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-            && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
-            && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
-            || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
+                    > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
     fi
-
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
-                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
-
-fi
 
 
     ## TODO CREATING 30 DAYS XML RSS STREAM ???
