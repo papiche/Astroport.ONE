@@ -58,7 +58,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
-    echo "############################################ ~/.zen/tmp/${MOATS}"
+    echo "##### ${YOUSER} ################################ ~/.zen/tmp/${MOATS}"
     echo "##################################################################"
     echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW "
     echo "################################################ $(date)"
