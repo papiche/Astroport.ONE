@@ -238,6 +238,7 @@ if [[ ! ${TIDDLER} ]]; then
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
             <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            FOLDER="/MP4"
         else
             TEXT="<audio controls>
             <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
@@ -247,6 +248,7 @@ if [[ ! ${TIDDLER} ]]; then
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
             <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            FOLDER="/MP3"
         fi
 
         end=`date +%s`
@@ -271,7 +273,7 @@ if [[ ! ${TIDDLER} ]]; then
     "giftime": "'${PROBETIME}'",
     "gifanime": "'/ipfs/${ANIMH}'",
     "modified": "'${MOATS}'",
-    "title": "'${ZFILE}'",
+    "title": "'${FOLDER}/${ZFILE}'",
     "type": "'text/vnd.tiddlywiki'",
     "vtratio": "'${VTRATIO}'",
     "text": "'$TEXT'",
