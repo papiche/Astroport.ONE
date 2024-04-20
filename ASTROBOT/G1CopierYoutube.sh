@@ -232,6 +232,7 @@ if [[ ! ${TIDDLER} ]]; then
         ## PREPARE VIDEO HTML5 CODE
             TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'>
             <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
+            Your browser does not support the video element.
             </video>
             <br>
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
@@ -241,7 +242,11 @@ if [[ ! ${TIDDLER} ]]; then
             TEXT="<audio controls>
             <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
             Your browser does not support the audio element.
-            </audio>"
+            </audio>
+            <br>
+            {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
+            <br>
+            <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
         fi
 
         end=`date +%s`
