@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 # Takes care of analysing GChange+ Pod key and stars relations
@@ -74,8 +74,8 @@ if [[ $CPUB && $CPUB != 'null'  ]]; then
     CPSEUDO=$(cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '.title' 2>/dev/null)
 
     [[ ${CPSEUDO} ]] \
-    && echo "♥PARTNER ${CPSEUDO}" \
-    && echo "$CPUB" > ~~/.zen/tmp/coucou/${G1PUB}G1CPUB \
+    && echo "ZEN PARTNER ${CPSEUDO}" \
+    && echo "$CPUB" > ~/.zen/tmp/coucou/${G1PUB}G1CPUB \
     || echo "NO CPUB CESIUM PROFILE"
 
 else
@@ -97,7 +97,7 @@ fi
 
     [[ ${CPSEUDO} ]] \
     && echo "Ğ1 WALLET " \
-    && echo "${G1PUB}" > ~~/.zen/tmp/coucou/${G1PUB}G1WALLET \
+    && echo "${G1PUB}" > ~/.zen/tmp/coucou/${G1PUB}G1WALLET \
     || echo "NO WALLET FOR THIS PLAYER"
 
 ## KEEPING ALREADY EXISTING PROFILE DATA
@@ -130,21 +130,21 @@ echo ">> CESIUM+ : ${CPSEUDO} - ${CDESCR} : ${G1PUB} <<"
 ########################################################################
 # echo "set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}""
 ########################################################################
-#~ if [[ ! -s ~~/.zen/tmp/coucou/${G1PUB}G1WALLET && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
+#~ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}G1WALLET && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
 
     #~ echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=${G1PUB}"
 
     #~ ${MY_PATH}/timeout.sh -t 20 \
     #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
     #~ [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
-    #~ || cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json > ~~/.zen/tmp/coucou/${G1PUB}gchange.1st.json
+    #~ || cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json > ~/.zen/tmp/coucou/${G1PUB}gchange.1st.json
 
     #~ echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=${G1PUB}"
 
     #~ ${MY_PATH}/timeout.sh -t 20 \
     #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
     #~ [[ ! $? == 0 ]] && echo "CESIUM PROFILE CREATION FAILED" \
-    #~ || cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json > ~~/.zen/tmp/coucou/${G1PUB}cesium.1st.json
+    #~ || cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json > ~/.zen/tmp/coucou/${G1PUB}cesium.1st.json
 
 #~ fi
 
@@ -156,7 +156,7 @@ ${MY_PATH}/timeout.sh -t 20 \
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} get > ~/.zen/tmp/coucou/${G1PUB}.cesium.json
 
 ########################################################################
-        # Get PLAYER wallet amount :: ~~/.zen/tmp/coucou/${G1PUB}COINS
+        # Get PLAYER wallet amount :: ~/.zen/tmp/coucou/${G1PUB}COINS
         COINS=$($MY_PATH/COINScheck.sh ${G1PUB} | tail -n 1)
         echo "+++ YOU have ${COINS} Ğ1 Coins +++"
 ########################################################################
@@ -269,7 +269,7 @@ do
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
             echo "AUCUN TW ACTIF. PREVENONS LE"
             ${MY_PATH}/timeout.sh -t 20 \
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ♥BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ZEN BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
             ## +1 TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
