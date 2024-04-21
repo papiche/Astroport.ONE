@@ -52,9 +52,9 @@ curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/coucou/${G1PUB}.gchange.jso
     && exit 0
 
 ## GET AVATAR PICTURE
-cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json | jq -r '._source.avatar._content' | base64 -d > "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.gchange_avatar.png" 2>/dev/null
+cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}_g1.gchange_avatar.png" 2>/dev/null
 # CLEANING BAD FILE TYPE
-[[ ! $(file -b "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.gchange_avatar.png" | grep PNG) ]] && rm "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.gchange_avatar.png"
+[[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}_g1.gchange_avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}_g1.gchange_avatar.png"
 
 ## GET CESIUM PUBKEY & C+ PROFILE
 CPUB=$(cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json | jq -r '._source.pubkey' 2>/dev/null)
@@ -66,9 +66,9 @@ if [[ $CPUB && $CPUB != 'null'  ]]; then
     curl -s ${myCESIUM}/user/profile/${CPUB} > ~/.zen/tmp/coucou/${G1PUB}.cesium.json 2>/dev/null
     [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH CESIUM+ NODE ${myCESIUM} xxxxx"
 
-    cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" 2>/dev/null
+    cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" 2>/dev/null
     # CLEANING NOT PNG FILE
-    [[ ! $(file -b "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" | grep PNG) ]] && rm "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png"
+    [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png"
 
 
     CPSEUDO=$(cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '.title' 2>/dev/null)
@@ -90,8 +90,8 @@ fi
     curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/coucou/${G1PUB}.cesium.json 2>/dev/null
     [[ ! $? == 0 ]] && echo "xxxxx ERROR PROBLEM WITH CESIUM+ NODE ${myCESIUM} xxxxx"
 
-    cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" 2>/dev/null
-    [[ ! $(file -b "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" | grep PNG) ]] && rm "$HOME~/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png"
+    cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" 2>/dev/null
+    [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}_g1.cesium_avatar.png"
 
     CPSEUDO=$(cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '.title' 2>/dev/null)
 

@@ -91,7 +91,7 @@ AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ]] \
     && MSG=$MSG" ${PLAYER}/.ipfs/${UPNAME}.swarm.key NOT FOUND" && ERR="NO LOCAL KEY"
 
-## CREATE 32 octets swarm.key ( maximum individual Fork 7,922816251×10²⁸ )
+## CREATE 32 octets swarm.key ( maximum individual Fork : octal 8^32 = decimal 7,922816251×10^28 )
 echo -e '/key/swarm/psk/1.0.0/\n/base16/' > $HOME/.zen/tmp/${MOATS}/swarm.key
 head -c 32 /dev/urandom | od -t x1 -A none - | tr -d '\n ' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
@@ -109,9 +109,10 @@ if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
     && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
     && echo "------- KEY LOADED -----> ${PLAYER}/.ipfs/${UPNAME}.swarm.key"
 
-    ## CREATE SUB WORLD... MONITOR TEXT
+    ## THIS IS A PRIMAL WISH
 
 else
+
     ## DEBASE16
     echo "${OLD16}" | base16 -d \
             > ~/.zen/tmp/${MOATS}/swarmkey.crypted
@@ -132,6 +133,7 @@ else
                 $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
             && echo "PLAYER LOCAL SWARMKEY UPDATED" \
             || echo "ERROR RELOADING SWARMKEY"
+
 fi
 
 #~ (RE)CREATE SECRET
@@ -146,7 +148,7 @@ echo "${SECRET}"
 echo "${ENCODING}"
 
 #################################################################
-## MAKE SAME ENCODING FOR FRIENDS
+## MAKE KEY ENCODING FOR FRIENDS
 friends=($(ls ~/.zen/game/players/${PLAYER}/FRIENDS | grep "@" 2>/dev/null))
 for f in ${friends[@]};
 do
@@ -162,12 +164,12 @@ do
 
     if [[ ${FRIENDG1PUB} && ${FRIENDG1PUB} != "null" ]]; then
 
-        #~ CHECK IF ALREADY IN JSON
+        #~ CHECK IF player ALREADY IN JSON
         echo "cat ${JSONUPLANET} | jq -r '.\"${f}\"'"
         FRIENDIN=$(cat ${JSONUPLANET} | jq -r '."${f}"')
         [[ "${FRIENDIN}" != "null" && "${FRIENDIN}" != "" ]] && echo "${FRIENDIN} OK" && continue
 
-        #~ CREATE FRIENDG1PUB
+        #~ Create FRIENDG1PUB encrypted version of swarm.key
         ${MY_PATH}/../tools/natools.py encrypt \
             -p ${FRIENDG1PUB} \
             -i $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
@@ -175,6 +177,7 @@ do
         FENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc | base16)
         rm $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc
 
+        ## Addd email=crypt(swarmkey) field to ${JSONUPLANET} tiddler.
         cat ${JSONUPLANET} | jq '. | ."_f_" = "_FENCODING_"' > ~/.zen/tmp/${MOATS}/json.up \
             && sed -i 's/_f_/'"$f"'/g; s/_FENCODING_/'"$FENCODING"'/g' ~/.zen/tmp/${MOATS}/json.up \
             && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
@@ -196,7 +199,27 @@ do
 
         ## IPFSNODEID IS FORKING TO NEW UPLANET
         if [[ ${#ZENSTATIONS[@]} -gt 5 ]]; then
-            echo "UPlanet.ZERO WARPING... Activating ${UPNAME}"
+            echo "UPlanet.ZERO WARPING ZONE... Activating ${UPNAME}"
+            ## HERE eache PLAYER share the tiddler
+            # only secret field is "!=" in each, as it is self encoding key
+            # we must find our email="The same" in each friends TW
+            ## CONTROL
+            # round looking in friends TW... Can be done before...
+
+            ## APPLY
+            NEWUPLANETNAME=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key | tail -n 1)
+            ##################################################
+            # Let's clone & apply some patch to Astroport.ONE
+            # tools/my.sh
+            echo "UPLANETNAME=$NEWUPLANETNAME"
+            # Activate UPLANETNAME=SWARMKEY
+            # Adapt "boostrap list"
+            # make G1PalPay refuse not from Boostrap primal TX
+            # and adapt 20H12.process.sh
+
+            # now we add key into ~/.ipfs/swarm.key
+            #~ cp $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ~/.ipfs/swarm.key
+            # it will make IPFSNODEID restarting in private mode
 
         fi
 
