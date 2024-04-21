@@ -267,9 +267,9 @@ do
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
 
             ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
-            echo "AUCUN TW ACTIF. PREVENONS LE"
+            echo "AUCUN TW ACTIF $try " -t "HEY BRO !" -m "G1 TW : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
             ${MY_PATH}/timeout.sh -t 20 \
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 ZEN BOX : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
+            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW UPlanet : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
 
             ## +1 TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try

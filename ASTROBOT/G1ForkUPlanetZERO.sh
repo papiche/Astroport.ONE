@@ -154,6 +154,7 @@ for f in ${friends[@]};
 do
     ## Extract FRIENDG1PUB from TW (Astroport Tiddler)
     ftw=${HOME}/.zen/game/players/${PLAYER}/FRIENDS/${f}/index.html
+    [[ ! -s ${ftw} ]] && echo "FRIENDS/${f}" && continue
     tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_Astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
     FRIENDG1PUB=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].g1pub)
     ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].astroport)
