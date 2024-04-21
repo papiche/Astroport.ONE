@@ -27,7 +27,7 @@ start=`date +%s`
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
 #################################################################### TEST
-# tldr + mosquitto + promoetheus
+# tldr + mosquitto + promoetheus + meshtastic
 
 # MAIN # SI AUCUNE CLEF DE STATION...
 if [[ ! -d ~/.zen/game/players/ ]];
