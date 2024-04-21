@@ -238,6 +238,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
         && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "TW EJECTION. Found an AstroID in your TW." \
         && echo "(#__#) AstroID +2 DAYS = SECURITY ERROR (#__#)" && continue
+####################################################################### RTFM DUMB FIREWALL
+############################################################################################
 
     ######################################
     #### UPLANET GEO COORD EXTRACTION
@@ -302,10 +304,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "[]" > ~/.zen/tmp/${MOATS}/CESIUM.json
     fi
     #####################################################################
-    ########## $:/moa picture ## lightbeams replacement ###############
+    ########## $:/moa picture ## CREATE EMAIL from email tiddler ########
     ## GET $:/moa Tiddlers ####################################### START
     echo "GET $:/moa Tiddlers"
-    ###################################################### [tag[$:/moa]]
+    ###################################################### [tag[$:/moa]] used for "DID" declaration
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'FRIENDS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[$:/moa]]'  ## $:/moa EMAIL Tiddlers
@@ -356,8 +358,9 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --render '.' "${FPLAYER}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${FPLAYER}" ## GET ORIGIN
 
             ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
-            ## USE IPFSH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | ipfs add -q)
-            ## TODO MICROLEDGER TIDDLER
+            ## CAN USE IPFSH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | ipfs add -q)
+            ## TODO MICROLEDGER TIDDLER...
+            # we are monitoring email tiddler image change (the G1BILLET background can be made of).
             echo "ORIGINH: $ORIGINH"
         else
             ORIGINH="$INSIDEH"
@@ -467,16 +470,17 @@ for PLAYER in ${PLAYERONE[@]}; do
     cp -f ~/.zen/game/players/${PLAYER}/GPS.json ~/.zen/tmp/${MOATS}/
     ## WRITE TIDDLERS IN TW SECTORTW_NEWS.json
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+                --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/VISIO.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
-                --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
     ## CHECK IT IS OK
     [[ -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ]] \
         && cp ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         && rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/newindex.html \
+        && echo "TW UPlanet tiddlers updated" \
         || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
     ###########################
 
