@@ -42,9 +42,9 @@ mkdir -p ~/.zen/tmp/${MOATS}
 #####################################################
 # CREATION DE LA CLEF DERIVEE "G1VOEU"
 #####################################################
-source ~/.zen/game/players/${PLAYER}/secret.june ## LE PEPPER DU PLAYER DEVIENT LE SALT DU G1VOEU
-[[ ${PEPPER} ]] && echo "Using PLAYER PEPPER AS WISH SALT" && SECRET1=${PEPPER} ##
-[[ ! ${SECRET1} ]] && SECRET1=$(${MY_PATH}/../tools/diceware.sh 3 | xargs)
+source ~/.zen/game/players/${PLAYER}/secret.june ## LE PEPPER DU PLAYER DEVIENT LE SECRET1 DU G1VOEU
+[[ ${PEPPER} ]] && echo "Using PLAYER PEPPER AS WISH SALT" && SECRET1="${PEPPER}${UPLANETNAME}" ##
+[[ ! ${SECRET1} ]] && SECRET1=$(${MY_PATH}/../tools/diceware.sh 12 | xargs)
 
 #~ echo "${SECRET1}"
 
@@ -52,7 +52,7 @@ echo "## TITRE DU G1VOEU ? CapitalGluedWords please"
 [[ ! ${TITRE} ]] && read TITRE
 VoeuName=$(echo "${TITRE}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # VoeuName EST LE TITRE DU VOEU : CapitalGluedWords + EMAIL
 
-SECRET2="${VoeuName} ${PLAYER}" ## SECRET2 est "TitreDuVoeu PLAYER"
+SECRET2="${VoeuName} ${PLAYER} ${SALT}" ## SECRET2 est "TitreDuVoeu PLAYER SALT"
 
 echo "${SECRET2}" && [[ ! ${SECRET2} ]] && echo "EMPTY SECRET2 - ERROR" && exit 1
 
