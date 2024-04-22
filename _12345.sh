@@ -68,7 +68,6 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
 
-
 #### UPLANET FLASHMEM UPDATES
 ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
@@ -326,6 +325,7 @@ Content-Type: application/json; charset=UTF-8
 
     #####################################################################
     ### UPSYNC STATION REQUEST :12345/?G1PUB=g1_to_ipfs(G1PUB)&...
+    ## & JOIN 1234
     ### TODO : include CODE HASH & TOKEN ....
     #####################################################################
     if [[ ${arr[0]} != "" ]]; then
@@ -346,6 +346,13 @@ Content-Type: application/json; charset=UTF-8
             echo ">>> GROUND CONTROL FINISH in $(( timeoff - timeon )) sec <<<"
             ) &
         fi
+
+        ### PATCH 1234 : send & forget mode
+        if [[ ${arr[0]} == "salt" ]]; then
+            echo "'(ᵔ◡◡ᵔ)' SALT MODE RECEIVED... "
+            ## JUST ADD SOME LINE OF CODE ...
+        fi
+
     fi
 
     #### 12345 NETWORK MAP TOKEN
