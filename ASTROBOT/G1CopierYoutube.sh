@@ -132,7 +132,7 @@ while read LINE;
 
         start=`date +%s`
 
-        echo ".... Downloading $TITLE.mp4"
+        echo ".... Downloading $TITLE ${isMP3}"
         # https://github.com/yt-dlp/yt-dlp#format-selection-examples
         # SUBS ? --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
         # (bv*[height<=720][vcodec~='^((he|a)vc|h26[45])']+ba)

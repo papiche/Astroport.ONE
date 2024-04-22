@@ -159,7 +159,7 @@ echo "## Creation json tiddler : G1${VoeuName} /ipfs/${IVOEU}"
 echo '[
 {
 "created": "'${MOATS}'",
-"title": "'${VoeuName}'",
+"title": "'/${VoeuName}'",
 "type": "'text/vnd.tiddlywiki'",
 "astronautens": "'/ipns/${ASTRONAUTENS}'",
 "wishns": "'/ipns/${VOEUNS}'",
