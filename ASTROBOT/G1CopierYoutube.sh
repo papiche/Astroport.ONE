@@ -51,7 +51,7 @@ echo "DEBUG : cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.js
 TAGS=()
 TAGS=($(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json | jq -r .[].tags))
 echo "TAGS :${#TAGS[@]}: ${TAGS[@]}"
-isMP3=$(echo ${TAGS[@] | grep -w "MP3")
+isMP3=$(echo ${TAGS[@]} | grep -w "MP3")
 
 ## GET USER BROWSER for YOUTUBE COOKIES
 BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
