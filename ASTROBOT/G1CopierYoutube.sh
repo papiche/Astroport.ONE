@@ -11,11 +11,12 @@ ME="${0##*/}"
 
 echo "-----"
 echo "$ME RUNNING"
-
-# ASTROBOT FIRST SPECIFIC PROCESS
-# "Copier youtube" + (voeu) => CopierYoutube (G1Voeu G1CopierYoutube) = ASTROBOT copy Ŋ1 "(G1CopierYoutube)"
-
-
+#######################################################################
+# ASTROBOT SUBKEY PROGRAM : [G1]CopierYoutube "tag"
+# Ce script se déclenche si le tiddler "voeu" "CopierYoutube" a été formulé dans le TW du PLAYER
+# Il active l'extraction des liens (compatibles yt-dlp) trouvés dans les tiddlers portant le tag "CopierYoutube"
+# Les vidéos (mp4) ou audio (mp3) (+tag "CopierYoutube MP3") sont inscrites dans un json puis importés dans le TW.
+#######################################################################
 INDEX="$1"
 [[ ! ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
 [[ ! -s ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
@@ -96,29 +97,29 @@ tot=0
 # PROCESS YOUTUBEID VIDEO DOWNLOAD AND CREATE TIDDLER in TW
 ###################################################################
 while read LINE;
-        do
-        boucle=$((boucle+1))
-        echo "_____ $LINE _____ $boucle"
-        YID="$(echo "$LINE" | rev | cut -d '=' -f 1 | rev )"
+    do
+    boucle=$((boucle+1))
+    echo "_____ $LINE _____ $boucle"
+    YID="$(echo "$LINE" | rev | cut -d '=' -f 1 | rev )"
 
-        #~ [[ $boucle -gt 50 ]] && break ## TODO SCAN FOR ABROAD SAME COPY DONE
-        ### MAKE BETTER THAN RANDOM !! CONNECT TO THE WARM...
+    #~ [[ $boucle -gt 50 ]] && break ## TODO SCAN FOR ABROAD SAME COPY DONE
+    ### MAKE BETTER THAN RANDOM !! CONNECT TO THE WARM...
 
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
-        #~ echo "--- CACHE SEARCH FOR $YID ---"
-        TIDDLER=$(ls -t "${HOME}/.zen/game/players/"*"/G1CopierYoutube/$YID.TW.json" 2>/dev/null | head -n 1)
-        ## TODO CORRECT - CACHE CHANGED -
-        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
-        [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/swarm/"*"/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
-        #~ [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" \
-                                  #~ || echo "EMPTY."
+    #~ echo "--- CACHE SEARCH FOR $YID ---"
+    TIDDLER=$(ls -t "${HOME}/.zen/game/players/"*"/G1CopierYoutube/$YID.TW.json" 2>/dev/null | head -n 1)
+    ## TODO CORRECT - CACHE CHANGED -
+    [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
+    [[ ! $TIDDLER ]] && TIDDLER=$(ls -t "${HOME}/.zen/tmp/swarm/"*"/G1CopierYoutube/"*"/$YID.TW.json" 2>/dev/null | head -n 1)
+    #~ [[ $TIDDLER ]] && echo "Tiddler Found in CACHE  : $TIDDLER" \
+                              #~ || echo "EMPTY."
 ###################################################################
 
-if [[ ! ${TIDDLER} ]]; then
-###################################################################
-# COPY VIDEO AND MAKE TIDDLER
-###################################################################
+    if [[ ! ${TIDDLER} ]]; then
+    ###################################################################
+    # COPY VIDEO AND MAKE TIDDLER
+    ###################################################################
         ZYURL=$(echo "$LINE" | cut -d '&' -f 2-)
         echo "COPIE : $ZYURL"
 
@@ -191,7 +192,7 @@ if [[ ! ${TIDDLER} ]]; then
 
         echo
 
-####################################################
+    ####################################################
         echo "FOUND : ~/.zen/tmp/yt-dlp/${ZFILE}"
         FILE_BSIZE=$(du -b "${HOME}/.zen/tmp/yt-dlp/${ZFILE}" | awk '{print $1}')
         [[ ! $FILE_BSIZE ]] && echo "SIZE ERROR" && continue
@@ -262,78 +263,78 @@ if [[ ! ${TIDDLER} ]]; then
         [[ ! isLAN ]] && TEXT="$TEXT <<hide tiddler-controls>>"
         echo $TEXT
 
-    TIDDLER="${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/${YID}.TW.json"
+        TIDDLER="${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/${YID}.TW.json"
 
-    echo '[
-  {
-    "created": "'${MOATS}'",
-    "resolution": "'${RES}'",
-    "duree": "'${DUREE}'",
-    "duration": "'${DURATION}'",
-    "giftime": "'${PROBETIME}'",
-    "gifanime": "'/ipfs/${ANIMH}'",
-    "modified": "'${MOATS}'",
-    "title": "'${FOLDER}/${ZFILE}'",
-    "type": "'text/vnd.tiddlywiki'",
-    "vtratio": "'${VTRATIO}'",
-    "text": "'$TEXT'",
-    "g1pub": "'${G1PUB}'",
-    "mime": "'${MIME}'",
-    "size": "'${FILE_BSIZE}'",
-    "filesize": "'${FILE_SIZE}'",
-    "sec": "'${SEC}'",
-    "dur": "'${dur}'",
-    "ipfs": "'/ipfs/${ILINK}'",
-    "youtubeid": "'${YID}'",
-    "zurl": "'${ZYURL}'",
-    "issuer": "'${PLAYER}'",
-    "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} ${CTITLE}'"
-  }
-]
-' > ${TIDDLER}
+        echo '[
+      {
+        "created": "'${MOATS}'",
+        "resolution": "'${RES}'",
+        "duree": "'${DUREE}'",
+        "duration": "'${DURATION}'",
+        "giftime": "'${PROBETIME}'",
+        "gifanime": "'/ipfs/${ANIMH}'",
+        "modified": "'${MOATS}'",
+        "title": "'${FOLDER}/${ZFILE}'",
+        "type": "'text/vnd.tiddlywiki'",
+        "vtratio": "'${VTRATIO}'",
+        "text": "'$TEXT'",
+        "g1pub": "'${G1PUB}'",
+        "mime": "'${MIME}'",
+        "size": "'${FILE_BSIZE}'",
+        "filesize": "'${FILE_SIZE}'",
+        "sec": "'${SEC}'",
+        "dur": "'${dur}'",
+        "ipfs": "'/ipfs/${ILINK}'",
+        "youtubeid": "'${YID}'",
+        "zurl": "'${ZYURL}'",
+        "issuer": "'${PLAYER}'",
+        "tags": "'ipfs G1CopierYoutube ${PLAYER} ${EXTRATAG} ${MIME} ${CTITLE}'"
+      }
+    ]
+    ' > ${TIDDLER}
 
-    tot=$((tot+1))
+            tot=$((tot+1))
 
-else
-    ###################################################################
-    #~ echo "${TIDDLER} FOUND"
-    ###################################################################
-    ## TODO : ADD EMAIL TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
-    continue
-fi
+    else
+        ###################################################################
+        #~ echo "${TIDDLER} FOUND"
+        ###################################################################
+        ## TODO : ADD EMAIL TAG ( TIMESTAMP & ADD SIGNATURE over existing ones)
+        continue
+    fi
 
-        cp -f "${TIDDLER}" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/"
+    cp -f "${TIDDLER}" "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/"
 
 
 #################################################################
 ### ADDING $YID.TW.json to ASTRONAUTENS INDEX.html
 #################################################################
-        echo "=========================="
-        echo "Adding $YID tiddler to TW /ipns/$ASTRONAUTENS "
+    echo "=========================="
+    echo "Adding $YID tiddler to TW /ipns/$ASTRONAUTENS "
 
-        rm -f ~/.zen/tmp/${IPFSNODEID}/newindex.html
+    rm -f ~/.zen/tmp/${IPFSNODEID}/newindex.html
 
-        echo  ">>> Importing ${TIDDLER}"
+    echo  ">>> Importing ${TIDDLER}"
 
-        tiddlywiki --load ${INDEX} \
-                        --import "${TIDDLER}" "application/json" \
-                        --output ~/.zen/tmp/${IPFSNODEID} --render "$:/core/save/all" "newindex.html" "text/plain"
+    tiddlywiki --load ${INDEX} \
+                    --import "${TIDDLER}" "application/json" \
+                    --output ~/.zen/tmp/${IPFSNODEID} --render "$:/core/save/all" "newindex.html" "text/plain"
 
-        if [[ -s ~/.zen/tmp/${IPFSNODEID}/newindex.html ]]; then
+    if [[ -s ~/.zen/tmp/${IPFSNODEID}/newindex.html ]]; then
 
-            ## COPY JSON TIDDLER TO PLAYER
-            cd ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
-            ln -s "./$YID.TW.json" "${ZFILE}.json"
-            cd -
+        ## COPY JSON TIDDLER TO PLAYER
+        cd ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
+        ln -s "./$YID.TW.json" "${ZFILE}.json"
+        cd -
 
-            [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] \
-                && mv ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} \
-                && echo "===> Mise à jour ${INDEX}"
+        [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] \
+            && mv ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} \
+            && echo "===> Mise à jour ${INDEX}"
 
-        else
-            echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"
-            echo "XXXXXXXXXXXXXXXXXXXXXXX"
-        fi
+    else
+        echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"
+        echo "XXXXXXXXXXXXXXXXXXXXXXX"
+    fi
 
 done  < ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER} # FINISH YID loop 1
 
