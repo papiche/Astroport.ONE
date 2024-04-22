@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.5
+# Version: 1.0
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 # PAD COCODING : https://pad.p2p.legal/s/G1PalPay
@@ -207,7 +207,7 @@ while read LINE; do
 
     done
 
-    COMMENTTAIL=$(echo $COMMENT | rev | cut -d '/' -f 1 | rev)
+    COMMENTTAIL=$(echo $COMMENT | rev | cut -d '/' -f 1 | rev) ## can contain /ipfs/ link
     ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${REDIS}" "${ASTROG1}" "$REDISMAILS /ipfs/$COMMENTTAIL"
     STAMP=$?
     ## DONE STAMP IT
