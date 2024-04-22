@@ -81,6 +81,7 @@ while true; do
 
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    [[ ${myIP} == "" ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
 
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
