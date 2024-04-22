@@ -176,12 +176,25 @@ while read LINE; do
 
         fi
 
-        [[ ! ${ASTROG1} ]] \
-        && echo "<html><body><h1>${EMAIL} YOUR ACCOUNT IS MISSING</h1>" \
-        && echo " BRO. $PLAYER WISH TO SEND YOU SOME ẐEN <br><br>(♥‿‿♥)... Join <a href='https://qo-op.com'>UPlanet</a> to receive it</body></html>" > ~/.zen/tmp/palpay.bro \
-        && ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "INVITATION" \
-        && continue
+        if [[ ! ${ASTROG1} ]]; then
+            echo "<html><head><meta charset='UTF-8'>
+            <style>
+                body {
+                    font-family: 'Courier New', monospace;
+                }
+                pre {
+                    white-space: pre-wrap;
+                }
+            </style></head><body>" > ~/.zen/tmp/palpay.bro
 
+            echo "<h1>BRO.<h1>
+            $PLAYER wants to send you some ZEN...<br>
+            <br>(♥‿‿♥)... Join us on <a href='https://qo-op.com'>UPlanet</a>
+            </body></html>" >> ~/.zen/tmp/palpay.bro
+
+            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "BRO. $PLAYER INVITATION"
+            continue
+        fi
 
         ## MAKE FRIENDS & SEND G1
         echo "PalPay Friend $ASTROMAIL
@@ -277,27 +290,45 @@ while read LINE; do
         ##############################
         ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${nb}" "${ASTROG1}" "${emails[@]} /ipfs/${TOPIN}"
 
-        echo "<html><body><h1>BRO ${PLAYER}</h1> : $MSG" > ~/.zen/tmp/${MOATS}/g1message
+        echo "<html><head><meta charset='UTF-8'>
+            <style>
+                body {
+                    font-family: 'Courier New', monospace;
+                }
+                pre {
+                    white-space: pre-wrap;
+                }
+            </style></head><body><h1>BRO ${PLAYER}</h1> : $MSG" > ~/.zen/tmp/${MOATS}/g1message
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
         [[ ! -z $TOPIN ]] \
             && ipfs pin add $TOPIN \
-            && echo "<h2>PINNING $TOPIN</h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
+            && echo "<br> <a href='${myIPFSGW}'/ipns/${ASTROTW}#${TTITLE}>${TTITLE}</a>
+                <br>( ${emails[@]} )<br>
+                <h2>PIN: <a href='${myIPFSGW}'$TOPIN>$TOPIN</a></h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
             ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "TW5 PIN"
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "BRO. ${ZMAIL} TW5 PIN"
 
     else
-
+        ## ${ZMAIL} NOT A PLAYER YET
         ## SEND MESSAGE TO INFORM ${ZMAIL} OF THIS EXISTING TIDDLER
-        echo "<html><body>
+        echo "<html><head><meta charset='UTF-8'>
+        <style>
+            body {
+                font-family: 'Courier New', monospace;
+            }
+            pre {
+                white-space: pre-wrap;
+            }
+        </style></head><body>
         <h1>BRO. </h1>
-        <br>
-        ${PLAYER} <a href='${myIPFSGW}'/ipns/${ASTROTW}#${TTITLE}>Tiddler</a>
+        <br> <a href='${myIPFSGW}'/ipns/${ASTROTW}#${TTITLE}>${TTITLE}</a>
+        <br>( ${emails[@]} )<br>
         <br><b>${TTITLE}</b><br>(✜‿‿✜)
-        ... Join <a href='https://qo-op.com'>UPlanet</a> link your TW5 !
+        ... Join <a href='https://qo-op.com'>UPlanet</a>
         </body></html>" > ~/.zen/tmp/palpay.bro
 
-        ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "TW5 LINK"
+        ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} TW5 link"
 
     fi
 
