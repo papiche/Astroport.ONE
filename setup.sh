@@ -14,7 +14,7 @@ echo "#############################################"
 #### SETUP JAKLIS ###############################################################
 echo "=== SETUP jaklis"
 cd ~/.zen/Astroport.ONE/tools/jaklis
-sudo ./setup.sh
+./setup.sh
 
 ## XBIAN fail2ban ERROR correction ##
 #[....] Starting authentication failure monitor: fail2ban No file(s) found for glob /var/log/auth.log
@@ -50,9 +50,9 @@ mkdir -p ~/.zen/tmp
 for bin in fail2ban-client mount umount apt-get apt systemctl youtube-dl; do
 binpath=$(which $bin)
 [[ -x $binpath ]] \
-                        && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \
-                        && echo "SUDOERS RIGHT SET FOR : $binpath" \
-                        || echo "ERROR MISSING $bin"
+    && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \
+    && echo "SUDOERS RIGHT SET FOR : $binpath" \
+    || echo "ERROR MISSING $bin"
 done
 ### MODIFIYING /etc/sudoers ###
 [[ "$USER" == "xbian" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/astroport')

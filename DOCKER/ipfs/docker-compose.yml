@@ -1,0 +1,15 @@
+version: '3'
+services:
+  ipfs_node_1:
+    image: ipfs/go-ipfs:latest
+    container_name: ipfs_node_1
+    environment:
+      IPFS_SWARM_KEY_FILE: _SWARM_KEY_FILE_
+    volumes:
+      - _IPFSDATA_:/export
+      - _IPFSDATA_:/data/ipfs
+    ports:
+      - "64001:4001"
+      - "64001:4001/udp"
+      - "127.0.0.1:68080:8080"
+      - "127.0.0.1:65001:5001"

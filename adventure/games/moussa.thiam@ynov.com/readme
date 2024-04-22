@@ -1,0 +1,38 @@
+# SCRIPT01.CYBSEC
+
+more directions
+
++ 11 : game engine
++ 2 : multigame compatibility
+-1 : shellcheck error
+
+> final 12
+
+## "GameShell" LEVEL ?
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ./logic: leverlogic_1.ben
+Seulement dans ./logic: leverlogic.ben=
+Seulement dans ./rooms: black.sh
+Seulement dans ./rooms: blue.sh
+Les fichiers ./rooms/brown.sh et ../_votre jeu/rooms/brown.sh sont différents
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/gameroom.sh et ../_votre jeu/rooms/gameroom.sh sont différents
+Les fichiers ./rooms/mainroom.sh et ../_votre jeu/rooms/mainroom.sh sont différents
+Les fichiers ./rooms/meteofrance.sh et ../_votre jeu/rooms/meteofrance.sh sont différents
+Seulement dans ./rooms: purple.sh
+Seulement dans ./rooms: .purple.sh.swp
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Seulement dans ./rooms: yellow.sh
+
+```
+
+```
+shellcheck rooms/purple.sh ...
+
+esac error
+```
+

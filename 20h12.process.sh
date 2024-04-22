@@ -16,7 +16,13 @@ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START O
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
-sudo systemctl restart ipfs && sleep 10
+#~ sudo systemctl stop astroport
+## CHECK IF IPFS NODE IS RESPONDING (ipfs name resolve ?)
+ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
+[[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
+    && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
+    && sudo systemctl restart ipfs \
+    && sleep 60
 
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
@@ -27,19 +33,33 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
-## PING BOOSTRAP & SWARM NODES
-${MY_PATH}/ping_bootstrap.sh
-
 # show ZONE.sh cache of the day
-ls ~/.zen/tmp/ZONE_*
+echo "TODAY UPlanet landings"
+ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
-## REMOVE TMP BUT KEEP SWARM and coucou
+## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
+mv ~/.zen/tmp/flashmem ~/.zen/flashmem
 rm -Rf ~/.zen/tmp/*
 mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
+mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
+### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
+if [[ "${LOWMODE}" == "" ]]; then
+    ### NOT REFRESHING SWARM
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    MOATS_plus_5_hours=$(date -d "now + 5 hours" +"%Y%m%d%H%M%S%4N")
+    mkdir ~/.zen/tmp/${IPFSNODEID}
+    echo ${MOATS_plus_5_hours} > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    echo 9000 > ~/.zen/tmp/random.sleep
+else
+    # REFRESHING SWARM
+    echo 0 > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    curl -s "http://127.0.0.1:12345"
+    sleep 300 ## WAIT FOR 5MN
+fi
 ## UPDATE G1BILLETS code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
@@ -56,9 +76,18 @@ git pull
 ${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
-## PING BOOSTRAP & SWARM NODES
-${MY_PATH}/ping_bootstrap.sh
+## DRAGON SSH WOT
+echo "DRAGONS WOT OFF"
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 
+## PING BOOSTRAP & SWARM NODES
+${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
+
+#####################################
+# espeak "REFRESHING UPLANET" > /dev/null 2>&1
+#####################################
+${MY_PATH}/RUNTIME/UPLANET.refresh.sh
+#####################################
 #####################################
 # espeak "Players refresh" > /dev/null 2>&1
 # Refresh ~/.zen/game/players/PLAYER
@@ -66,15 +95,22 @@ ${MY_PATH}/ping_bootstrap.sh
 ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
 #####################################
 #####################################
-# espeak "REFRESHING UPLANET" > /dev/null 2>&1
-#####################################
-${MY_PATH}/RUNTIME/UPLANET.refresh.sh
-#####################################
-#####################################
 # espeak "REFRESHING NODE" > /dev/null 2>&1
 #####################################
 ${MY_PATH}/RUNTIME/NODE.refresh.sh
 #####################################
+
+## REMOVE TMP BUT KEEP swarm, flashmem and coucou
+mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
+mv ~/.zen/tmp/swarm ~/.zen/swarm
+mv ~/.zen/tmp/coucou ~/.zen/coucou
+mv ~/.zen/tmp/flashmem ~/.zen/flashmem
+rm -Rf ~/.zen/tmp/*
+mv ~/.zen/${IPFSNODEID} ~/.zen/tmp/${IPFSNODEID}
+mv ~/.zen/swarm ~/.zen/tmp/swarm
+mv ~/.zen/coucou ~/.zen/tmp/coucou
+mv ~/.zen/flashmem ~/.zen/tmp/flashmem
+
 
     ## if [[ ! $isLAN ]]; then
     ## REFRESH BOOSTRAP LIST (OFFICIAL SWARM)
@@ -98,15 +134,13 @@ seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
-## DRAGON SSH WOT
-echo "STOP DRAGONS WOT"
-${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
-## RESTART
 
 ## MAIL LOG : support@qo-op.com ##
 ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
+
+## RESTART
 
 # espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
@@ -143,6 +177,7 @@ sudo systemctl restart ipfs
 ### DRAGON WOT : SSH P2P RING OPENING
 #################################
 sleep 30
+echo "DRAGONS WOT ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 exit 0

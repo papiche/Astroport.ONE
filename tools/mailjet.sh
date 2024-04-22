@@ -10,6 +10,9 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 ME="${0##*/}"
 
+## LOG OUTPUT
+exec 2>&1 >> ~/.zen/tmp/mailjet.log
+
 echo '
 ########################################################################
 # \\///
@@ -21,6 +24,85 @@ echo '
     && exit 1
 
 mail="$1" # EMAIL DESTINATAIRE
+############################################## SEARCH in players
+$($MY_PATH/../tools/search_for_this_email_in_players.sh ${mail})
+echo "ASTROPORT=$ASTROPORT
+ASTROTW=$ASTRONAUTENS
+ASTROG1=$ASTROG1
+ASTROMAIL=$EMAIL
+ASTROFEED=$FEEDNS
+TW=$TW
+source=$source"
+
+
+#~ echo "DEST=$mail"
+# mail=geg-la_debrouille@super.chez-moi.com
+YUSER=$(echo ${mail} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
+LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
+CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
+YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
+pseudo="${CLYUSER}${YOMAIN}.${myDOMAIN}"
+#~ echo "PSEUDO=$pseudo"
+
+messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
+
+## add a tittle in message
+title="$3"
+
+SUBJECT="[UPlanet] ${title}"
+
+MESSAGESIGN="---<br>this message is sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your Astroport ♥BOX Zen Station"
+
+echo "
+########################################################################
+# $SUBJECT + $messfile -> $mail
+########################################################################"
+
+# + HTML in FILE
+rm -f ~/.zen/tmp/email.txt
+[[ -s $messfile ]] \
+    && cat $messfile >> ~/.zen/tmp/email.txt \
+    || echo "$messfile" >> ~/.zen/tmp/email.txt
+
+EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
+echo "/ipfs/${EMAILZ}"
+ipfs pin rm ${EMAILZ}
+
+################### TW INDEX TO LOAD IFRAME WITH ?
+INDEX="$4"
+if [[ -s ${INDEX} ]]; then
+    echo "INSERT ZINE INTO TW"
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    mkdir -p ~/.zen/tmp/${MOATS}
+
+    cat ${MY_PATH}/../templates/data/IFRAME.json \
+    | sed -e "s~_MOATS_~${MOATS}~g" \
+    -e "s~_TITLE_~${SUBJECT}~g" \
+    -e "s~_CID_~${EMAILZ}~g" \
+    -e "s~_PLAYER_~${mail}~g" \
+        > ~/.zen/tmp/iframe.json
+
+    ### IMPORT INTO TW
+    tiddlywiki --load ${INDEX} \
+                --import ~/.zen/tmp/iframe.json "application/json" \
+                --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+
+    if [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]]; then
+
+        [[ $(diff ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} ) ]] \
+            && mv ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+            && echo "===> Mise à jour ${INDEX}"
+
+    else
+        echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${MOATS}/newindex.html"
+        echo "XXXXXXXXXXXXXXXXXXXXXXX"
+    fi
+
+fi
+
+export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
+
+[[ $title == "" ]] && title="MESSAGE"
 
 ############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
 [[ ! -s ~/.zen/MJ_APIKEY ]] \
@@ -37,42 +119,6 @@ mail="$1" # EMAIL DESTINATAIRE
 ###################################
 source ~/.zen/MJ_APIKEY
 export RECIPIENT_EMAIL=${mail}
-
-#~ echo "DEST=$mail"
-# mail=geg-la_debrouille@super.chez-moi.com
-YUSER=$(echo ${mail} | cut -d '@' -f1)    # YUSER=geg-la_debrouille
-LYUSER=($(echo "$YUSER" | sed 's/[^a-zA-Z0-9]/\ /g')) # LYUSER=(geg la debrouille)
-CLYUSER=$(printf '%s\n' "${LYUSER[@]}" | tac | tr '\n' '.' ) # CLYUSER=debrouille.la.geg.
-YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
-pseudo="${CLYUSER}${YOMAIN}.${myDOMAIN}"
-#~ echo "PSEUDO=$pseudo"
-
-messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
-
-## add a tittle in message
-title="$3"
-
-SUBJECT="[UPlanet] ${title} ${pseudo}"
-
-MESSAGESIGN="---<br>this message is sent to you by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your ♥BOX Astroport.ONE Station"
-
-echo "
-########################################################################
-# $SUBJECT + $messfile -> $mail
-########################################################################"
-
-# + HTML in FILE
-rm -f ~/.zen/tmp/email.txt
-[[ -s $messfile ]] \
-    && cat $messfile >> ~/.zen/tmp/email.txt \
-    || echo "$messfile" >> ~/.zen/tmp/email.txt
-
-EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
-echo "/ipfs/${EMAILZ}"
-
-export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
-
-[[ $title == "" ]] && title="MESSAGE"
 
 json_payload='{
     "Messages": [
@@ -95,7 +141,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />May the good vibes be with you!<br>'${MESSAGESIGN}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIpfsGw)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />'${pseudo}', may the good vibes be with you!<br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'
@@ -110,6 +156,7 @@ curl -s \
     https://api.mailjet.com/v3.1/send \
     -H 'Content-Type: application/json' \
     -d "$json_payload"
+
 
 # This call sends an email to one recipient.
 #~ TEXTPART=$(cat ~/.zen/tmp/email.txt | sed ':a;N;$!ba;s/\n/\\n/g' | tr '"' '\\\"')

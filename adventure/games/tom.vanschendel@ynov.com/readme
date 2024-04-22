@@ -1,0 +1,49 @@
+# SCRIPT01.CYBSEC
+
+Game name ?
+
++ 12 : game engine
++ 2 : multigame compatibility
+- 1 : keep ze bug
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ../_votre jeu/: adventure.sh
+Les fichiers ./logic/leverlogic.ben et ../_votre jeu/logic/leverlogic.ben sont différents
+Seulement dans ./logic: leverlogic.ben=
+Seulement dans ./logic: leverlogictwo.ben
+Seulement dans ./logic: leverlogictwo.ben=
+Seulement dans ./: read.me
+Les fichiers ./rooms/brown.sh et ../_votre jeu/rooms/brown.sh sont différents
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/meteofrance.sh et ../_votre jeu/rooms/meteofrance.sh sont différents
+Seulement dans ./rooms: orange.sh
+Seulement dans ./rooms: purple.sh
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+
+```
+
+------------------------------------------------------------------------------
+  Searching for leverlogictwo recursively. Please Wait...
+------------------------------------------------------------------------------
+./rooms/orange.sh:leverstatetwo=`cat ../logic/leverlogictwo.ben`
+./rooms/purple.sh:levertwostate=`cat ../logic/leverlogictwo.ben`
+./rooms/purple.sh:        u ) levertwostate=`cat ../logic/leverlogictwo.ben`
+./rooms/purple.sh:                sed -i 's/off/on/' ../logic/leverlogictwo.ben
+./rooms/start.sh:sed -i 's/on/off/' ../logic/leverlogictwo.ben
+./rooms/end.sh:sed -i 's/on/off/' ../logic/leverlogictwo.ben
+------------------------------------------------------------------------------
+
+
+```
+# no sed bug correction
+ sed -i 's/on/off/' ../logic/leverlogictwo.ben
+ sed -i 's/on/off/' ../logic/leverlogictwo.ben
+
+```

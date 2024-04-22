@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.4
+# Version: 1.0
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -47,10 +47,17 @@ tiddlywiki  --load ${INDEX} \
                     --render '.' 'CopierYoutube.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[CopierYoutube]]'
 
 echo "DEBUG : cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json | jq -r"
+## CHEK FOR MP3 TAG
+TAGS=()
+TAGS=($(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json | jq -r .[].tags))
+echo "TAGS :${#TAGS[@]}: ${TAGS[@]}"
+isMP3=$(echo ${TAGS[@] | grep -w "MP3")
 
-        BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
-        [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
-        [[ ! $isLAN ]] && BROWSER=""
+## GET USER BROWSER for YOUTUBE COOKIES
+BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
+[[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
+[[ ! $isLAN ]] && BROWSER=""
+
 ###################################################################
 ## URL EXTRACTION & yt-dlp.cache.${PLAYER} upgrade
 for YURL in $(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.json | jq -r '.[].text' | grep 'http'); do
@@ -69,11 +76,11 @@ for YURL in $(cat ~/.zen/game/players/${PLAYER}/G1CopierYoutube/CopierYoutube.js
         lastrun=$(echo "$CMD" | rev | cut -d ':' -f 1 | rev) && echo "$CMD"
         duree=$(expr ${MOATS} - $lastrun)
     fi
-        # ONE WEEK NEW SCAN
-        if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} ]]; then
-            /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
-            sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
-        fi
+    # ONE WEEK NEW SCAN
+    if [[ $duree -ge 604800000 || ! -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER} ]]; then
+        /usr/local/bin/yt-dlp $BROWSER --print "%(id)s&%(webpage_url)s" "${YURL}" 2>/dev/null >> ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.cache.${PLAYER}
+        sed -i "s~$lastrun~$MOATS~g" ~/.zen/game/players/${PLAYER}/G1CopierYoutube/yt-dlp.command # UPDATE LASTRUN
+    fi
 
 done # FINISH YURL loop
 
@@ -93,6 +100,9 @@ while read LINE;
         boucle=$((boucle+1))
         echo "_____ $LINE _____ $boucle"
         YID="$(echo "$LINE" | rev | cut -d '=' -f 1 | rev )"
+
+        #~ [[ $boucle -gt 50 ]] && break ## TODO SCAN FOR ABROAD SAME COPY DONE
+        ### MAKE BETTER THAN RANDOM !! CONNECT TO THE WARM...
 
 ###################################################################
 ## Search for $YID.TW.json TIDDLER in local & MySwarm cache
@@ -133,41 +143,50 @@ if [[ ! ${TIDDLER} ]]; then
         ## EXTRA PARAM TO TRY
         #  --write-subs --write-auto-subs --sub-langs "fr, en, en-orig" --embed-subs
 
-        /usr/local/bin/yt-dlp -q -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
-                    $BROWSER \
-                    --download-archive ${HOME}/.zen/.yt-dlp.list \
-                    -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
-                    -o "${HOME}/.zen/tmp/yt-dlp/$TITLE.%(ext)s" ${ZYURL}
+        if [[ ${isMP3} == "" ]]; then
+        # copying video
+            /usr/local/bin/yt-dlp -q -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+                        $BROWSER \
+                        --download-archive ${HOME}/.zen/.yt-dlp.list \
+                        -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
+                        -o "${HOME}/.zen/tmp/yt-dlp/$TITLE.%(ext)s" "${ZYURL}"
+            ZFILE="$TITLE.mp4"
 
-        ################################################################################
-        ### ADAPT TO TW RYTHM (DELAY COPY?)
-        echo
-        ZFILE="$TITLE.mp4"
+            ############################################################################
+            ### CHECK RESULT CONVERT MKV TO MP4
+            [[ -s "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] \
+                && ffmpeg -loglevel quiet -i "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "${HOME}/.zen/tmp/yt-dlp/$TITLE.mp4" \
+                && rm "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"
 
-        ############################################################################
-        ### CHECK RESULT CONVERT MKV TO MP4
-        [[ -s "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"  ]] \
-            && ffmpeg -loglevel quiet -i "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv" -c:v libx264 -c:a aac "${HOME}/.zen/tmp/yt-dlp/$TITLE.mp4" \
-            && rm "${HOME}/.zen/tmp/yt-dlp/$TITLE.mkv"
+            if [[ ! -s "${HOME}/.zen/tmp/yt-dlp/${ZFILE}"  ]]; then
+                echo "No FILE -- TRYING TO RESTORE CACHE FROM TW -- ${ZFILE}"
+                tiddlywiki  --load ${INDEX} \
+                        --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
+                        --render '.' "$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}"
 
-        if [[ ! -s "${HOME}/.zen/tmp/yt-dlp/${ZFILE}"  ]]; then
-            echo "No FILE -- TRYING TO RESTORE CACHE FROM TW -- ${ZFILE}"
-            tiddlywiki  --load ${INDEX} \
-                    --output ~/.zen/game/players/${PLAYER}/G1CopierYoutube \
-                    --render '.' "$YID.TW.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${ZFILE}"
+                if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${YID}.TW.json ]]; then
+                    rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" 2>/dev/null
+                    cd ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
+                    ln -s "./${YID}.TW.json" "${ZFILE}.json"
+                    cd -
+                else
+                    ## REMOVE FILE FROM .yt-dlp.list - RETRY NEXT TIME
+                    grep -v -- "$YID" ${HOME}/.zen/.yt-dlp.list > /tmp/.yt-dlp.list
+                    mv /tmp/.yt-dlp.list ${HOME}/.zen/.yt-dlp.list
+                fi
 
-            if [[ -s ~/.zen/game/players/${PLAYER}/G1CopierYoutube/${YID}.TW.json ]]; then
-                rm "${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/${ZFILE}.json" 2>/dev/null
-                cd ${HOME}/.zen/game/players/${PLAYER}/G1CopierYoutube/
-                ln -s "./${YID}.TW.json" "${ZFILE}.json"
-                cd -
-            else
-                ## REMOVE FILE FROM .yt-dlp.list - RETRY NEXT TIME
-                grep -v -- "$YID" ${HOME}/.zen/.yt-dlp.list > /tmp/.yt-dlp.list
-                mv /tmp/.yt-dlp.list ${HOME}/.zen/.yt-dlp.list
+                continue
             fi
 
-            continue
+        else
+        # copying mp3
+            echo "TODO..."
+            /usr/local/bin/yt-dlp -q -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata \
+                        $BROWSER \
+                        --download-archive ${HOME}/.zen/.yt-dlp.list \
+                        -o "$HOME/Astroport/${PLAYER}/mp3/%(autonumber)s_%(title)s.%(ext)s" "${ZYURL}"
+
+            ZFILE="$TITLE.mp3"
         fi
 
         echo
@@ -178,12 +197,12 @@ if [[ ! ${TIDDLER} ]]; then
         [[ ! $FILE_BSIZE ]] && echo "SIZE ERROR" && continue
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
         echo "$boucle - ${ZFILE} - FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
-
-        espeak "GOOD! Video Number $boucle = $FILE_SIZE" > /dev/null 2>&1
-
+        echo
 
         ### CREATE GIF ANIM : make_video_gifanim_ipfs.sh
-        $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) ## export ANIMH
+        [[ ${isMP3} == "" ]] \
+            && $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) ## export ANIMH
+
         echo "HOP=$HOP
         ANIMH=$ANIMH
         PROBETIME=$PROBETIME
@@ -208,14 +227,29 @@ if [[ ! ${TIDDLER} ]]; then
         CHANNEL=$(/usr/local/bin/yt-dlp $BROWSER --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
         PLAYLIST=$(/usr/local/bin/yt-dlp $BROWSER --print "%(playlist)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
         EXTRATAG="$CHANNEL $PLAYLIST"
+
+        if [[ ${isMP3} == "" ]]; then
         ## PREPARE VIDEO HTML5 CODE
-        TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'>
-        <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
-        </video>
-        <br>
-        {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
-        <br>
-        <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            TEXT="<video controls width=100% poster='/ipfs/"${ANIMH}"'>
+            <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
+            Your browser does not support the video element.
+            </video>
+            <br>
+            {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
+            <br>
+            <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            FOLDER="/MP4"
+        else
+            TEXT="<audio controls>
+            <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
+            Your browser does not support the audio element.
+            </audio>
+            <br>
+            {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
+            <br>
+            <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            FOLDER="/MP3"
+        fi
 
         end=`date +%s`
         dur=`expr $end - $start`
@@ -239,7 +273,7 @@ if [[ ! ${TIDDLER} ]]; then
     "giftime": "'${PROBETIME}'",
     "gifanime": "'/ipfs/${ANIMH}'",
     "modified": "'${MOATS}'",
-    "title": "'${ZFILE}'",
+    "title": "'${FOLDER}/${ZFILE}'",
     "type": "'text/vnd.tiddlywiki'",
     "vtratio": "'${VTRATIO}'",
     "text": "'$TEXT'",

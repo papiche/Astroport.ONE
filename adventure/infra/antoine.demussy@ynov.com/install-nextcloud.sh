@@ -8,9 +8,6 @@
 #
 ############################################
 
-
-#!/bin/bash
-
 # Fonction pour afficher les messages d'erreur et quitter le script
 error_exit() {
     echo "$1" 1>&2
@@ -28,7 +25,9 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Répertoire où Nextcloud sera cloné
-install_dir="/opt/nextcloud"
+mkdir="/home/$USER/opt"
+mkdir="/home/$USER/opt/nextcloud"
+install_dir="/home/$USER/opt/nextcloud"
 
 # Cloner le dépôt Nextcloud depuis GitHub
 echo "Clonage du dépôt Nextcloud depuis GitHub..."

@@ -47,7 +47,7 @@ while true; do
             if [ "$leverstate" = "on" ]; then
                 echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
-                sed -i='' 's/off/on/' ../logic/leverlogic.ben
+                sed -i 's/off/on/' ../logic/leverlogic.ben
                 echo "Vous pianotez sur l'appareil..."
                 sleep 3
                 echo "A moment où vous touchez la touche '#' L'écran se met à clignoter..."

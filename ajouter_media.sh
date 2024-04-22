@@ -32,7 +32,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
-alias espeak='espeak 1>&2>/dev/null'
+alias espeak='espeak >/dev/null 2>&1'
 
 ## CHECK IF IPFS DAEMON IS STARTS WELL
 floop=0
@@ -71,7 +71,7 @@ if [[ ${PLAYER} == "" ]]; then
     players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 
     if [[ ${#players[@]} -ge 1 ]]; then
-        espeak "SELECT YOUR PLAYER" 2>/dev/null
+        espeak "SELECT YOUR PLAYER"
         OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
         [[ ${OUTPUT} == "" ]] && espeak "No player selected. EXIT" && exit 1
     else
@@ -86,10 +86,15 @@ else
 
 fi
 
+####### NO CURRENT ? PLAYER = .current
+[[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
+    && rm -f ~/.zen/game/players/.current \
+    && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+
+echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player)
+
 [[ ${OUTPUT} != ""  ]] \
-&& rm -f ~/.zen/game/players/.current \
-&& ln -s ~/.zen/game/players/$PLAYER ~/.zen/game/players/.current \
-&& espeak "CONNECTED" \
+&& espeak "${OUTPUT} CONNECTED" \
 && . "${MY_PATH}/tools/my.sh"
 
 ## NO PLAYER AT ALL
@@ -101,7 +106,7 @@ fi
 
 espeak "Hello $PSEUDO"
 
-G1PUB=$(myPlayerG1Pub)
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
 PLAYERNS=$(myPlayerNs) || { echo "noplayerns" && exit 1; }
@@ -171,8 +176,8 @@ fi
 
 ###
 # IS THERE ANY RUNNING IPFS ADD OR PUBLISH IN PROGRESS ?
-ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
-ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
 && espeak "I P F S task in progress. Wait finish & try later" && exit 1
 
@@ -842,9 +847,11 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
     ########################################################################
     echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
     ## GETTING LAST TW via IPFS or HTTP GW
-    LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | cut -d ' ' -f 2)
+    LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2)
     rm -f ~/.zen/tmp/astronaut_TW.html > /dev/null 2>&1
-    [[ $YOU ]] && echo " ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} ($YOU)" && ipfs --timeout 120s cat /ipns/${ASTRONAUTENS} > ~/.zen/tmp/astronaut_TW.html
+    [[ $YOU ]] \
+        && echo " ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} ($YOU)" \
+        && ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/astronaut_TW.html
     #~ [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/astronaut_TW.html "$LIBRA/ipns/${ASTRONAUTENS}"
     [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
     [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1

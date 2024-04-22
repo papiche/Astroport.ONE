@@ -26,6 +26,8 @@ MOATS=$9
 COOKIE=$10"
 PORT="$1" THAT="$2" AND="$3" THIS="$4"  APPNAME="$5" WHAT="$6" OBJ="$7" VAL="$8" MOATS="$9" COOKIE="$10"
 
+[[ "$PORT" == "" ]] && echo "$MY_PATH/AMZQR.sh '0' 'la chaine a mettre en QRCODE' 'et' 'TV'" && exit 1
+
 HTTPCORS="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: ${myASTROPORT}
 Access-Control-Allow-Credentials: true
@@ -37,6 +39,8 @@ Content-Type: text/html; charset=UTF-8
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
+
+[[ ${MOATS} == "" ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}/
 
 ##################################################
@@ -44,9 +48,11 @@ USTRING=$(urldecode "${THAT}")
 IMAGE="${THIS}"
 
 [[ ! -s ${MY_PATH}/../images/${IMAGE}.png || ${USTRING} == "" ]] \
-    && exho "UNKNOW IMAGE ${IMAGE}" \
-    &&  (echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
+    && echo "UNKNOW IMAGE ${IMAGE}" \
+    &&  ( [[ $PORT != "0" ]] && echo "$HTTPCORS ERROR - BAD PARAMS" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) \
     &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 1
+
+echo amzqr "${USTRING}" -l H -c -p ${MY_PATH}/../images/${IMAGE}.png -n ${MOATS}.png -d ~/.zen/tmp/${MOATS}/
 
 ## RUN AMZQR
 amzqr "${USTRING}" -l H -c -p ${MY_PATH}/../images/${IMAGE}.png -n ${MOATS}.png -d ~/.zen/tmp/${MOATS}/
@@ -55,7 +61,19 @@ echo "${myIPFS}/ipfs/${IPFSMG}"
 
 echo "$HTTPCORS <meta http-equiv=\"refresh\" content=\"0; url='${myIPFS}/ipfs/${IPFSMG}'\" />" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
+if [[ $PORT == "0" ]]; then
+    [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ${myIPFS}/ipfs/${IPFSMG}
+
+    LP=$(ls /dev/usb/lp* 2>/dev/null | head -n1)
+    if [[ $LP ]]; then
+        echo "IMPRESSION QRCODE"
+        brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/${MOATS}.png > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null
+        sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
+    fi
+fi
+
 rm -Rf ~/.zen/tmp/${MOATS}/
 end=`date +%s`
 echo "(AMZQR) Operation time was "`expr $end - $start` seconds.
+echo "/ipfs/${IPFSMG}"
 exit 0

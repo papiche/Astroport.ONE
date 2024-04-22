@@ -20,13 +20,14 @@ start=`date +%s`
 ################################################################### IPFS
 ########################################################################
 [[ ! $(which ipfs) ]] \
-&& echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/kubo_v0.20.0_linux.install.sh)" \
+&& echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.kubo_v0.20.0_linux.sh)" \
 && architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" || "$architecture" == "armv7l" ]] \
-&& bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/kubo_v0.20.0_linux.install.sh) \
+&& bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.kubo_v0.20.0_linux.sh) \
 || echo "=== IPFS FOUND === OK"
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
 #################################################################### TEST
+# tldr + mosquitto + promoetheus + meshtastic
 
 # MAIN # SI AUCUNE CLEF DE STATION...
 if [[ ! -d ~/.zen/game/players/ ]];
@@ -44,7 +45,7 @@ echo "#############################################"
 echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
 echo "#############################################"
 
-for i in git make cmake docker-compose fail2ban npm shellcheck netcat-traditional ncdu chromium miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp mpack; do
+for i in git make cmake docker-compose fail2ban npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp mpack; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -68,7 +69,7 @@ done
 echo "#############################################"
 echo "######### FUN INSTALL ASCII ART TOOLS ######"
 echo "#############################################"
-for i in cmatrix cowsay; do
+for i in cmatrix cowsay fonts-hack-ttf; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -116,7 +117,7 @@ fi
 echo "#####################################"
 echo "##  CRYPTO LIB & PYTHON TOOLS"
 export PATH=$HOME/.local/bin:$PATH
-for i in pip setuptools wheel cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry SecureBytes amzqr pdf2docx pyppeteer; do
+for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         python -m pip install --break-system-packages -U $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
@@ -153,6 +154,18 @@ if [[ $USER != 'xbian' ]]; then
 
 fi
 
+################################################### NODE MONITORING LAYER
+[[ ! $isLAN ]] && plus="GRAFANA"
+echo
+echo "## MONITORING LAYER #### $plus ## PROMETHEUS ### PROBE : node_exporter"
+${MY_PATH}/install.prometheus_node_exporter_linux.sh $plus
+
+echo "## CLONING seedbox    "
+cd ~/.zen
+git clone https://github.com/papiche/seedbox.git
+###############################################################
+echo
+
 #####################
 #### ~/.bashrc
 echo "########################### ♥BOX"
@@ -176,7 +189,7 @@ sudo usermod -aG docker $USER
 curl https://raw.githubusercontent.com/\
 jesseduffield/lazydocker/master/scripts/\
 install_update_linux.sh | bash
-
+echo
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
 echo "#############################################"
@@ -225,17 +238,18 @@ echo "#############################################"
 ##########################################################
     ## ON BOARDING PLAYER
     # ~/.zen/Astroport.ONE/start.sh
-    espeak "Welcome Space Kitty" 2>/dev/null
-echo ">>> Welcome Space Kitty <<<"
-echo "Explore Web2.0 / WEb3 frontier"
-echo "Join Dragons WOT by continuing keygen procedure..."
+    espeak "Welcome Web3 Astonaut" 2>/dev/null
+echo ">>> Welcome Web3 Astonaut <<<"
+echo "Create a PLAYER using : ~/.zen/Astroport.ONE/command.sh"
+echo "Join Dragons. Add DATA to UPlanet Common Good Ledger"
 echo "#############################################"
 # DESACTIVATING ASTROPORT DAEMONS
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
+echo ">>> TO DESACTIVATE ASTROPORT <<<
+ ~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF"
 echo "############################## ♥BOX READY ###"
-echo ">>> ACTIVATE ASTROPORT DAEMONS <<<
- ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
-
+echo "PLEASE CREATE PLAYER"
+~/.zen/Astroport.ONE/command.sh
 
 else
 

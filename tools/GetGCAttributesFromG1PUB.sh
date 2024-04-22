@@ -32,14 +32,14 @@ echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN"
 if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
 
     [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] \
-    && ${MY_PATH}/timeout.sh -t 20 $MY_PATH/jaklis/jaklis.py history -n 100 -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+    && ${MY_PATH}/timeout.sh -t 5 $MY_PATH/jaklis/jaklis.py history -n 100 -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
     echo "++ HISTORY OK"
 
 fi
 
 ## SCAN GCHANGE +
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]; then
-    ${MY_PATH}/timeout.sh -t 20 curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json
+    ${MY_PATH}/timeout.sh -t 5 curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json
     GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '.found')
 
     if [[ ! $GFOUND || $GFOUND == "false" ]]; then
@@ -56,7 +56,7 @@ fi
 ## SCAN CESIUM +
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json ]]; then
 
-    ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null
+    ${MY_PATH}/timeout.sh -t 5 curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null
     GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null | jq -r '.found')
 
     if [[ ! $GCFOUND || $GCFOUND == "false" ]]; then
@@ -80,7 +80,7 @@ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
     if [[ $CPLUS != "" && $CPLUS != 'null' && $CPLUS != $G1PUB ]]; then
 
         echo "SCAN GPLUS CESIUM + ACCOUNT"
-        ${MY_PATH}/timeout.sh -t 10 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json 2>/dev/null
+        ${MY_PATH}/timeout.sh -t 5 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json 2>/dev/null
 
         CCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json | jq -r '.found')
 

@@ -1,5 +1,0 @@
-# config.sh
-ROWS=6
-COLS=7
-PLAYER1_TOKEN="X"
-PLAYER2_TOKEN="O"
