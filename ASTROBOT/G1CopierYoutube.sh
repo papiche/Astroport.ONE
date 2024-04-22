@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 1.0
+# Version: 1.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -180,11 +180,11 @@ if [[ ! ${TIDDLER} ]]; then
 
         else
         # copying mp3
-            echo "TODO..."
-            /usr/local/bin/yt-dlp -q -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata \
+            echo "COPYING MP3 (!-q)"
+            /usr/local/bin/yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata \
                         $BROWSER \
                         --download-archive ${HOME}/.zen/.yt-dlp.list \
-                        -o "$HOME/Astroport/${PLAYER}/mp3/%(autonumber)s_%(title)s.%(ext)s" "${ZYURL}"
+                        -o "${HOME}/.zen/tmp/yt-dlp/$TITLE.%(ext)s" "${ZYURL}"
 
             ZFILE="$TITLE.mp3"
         fi
