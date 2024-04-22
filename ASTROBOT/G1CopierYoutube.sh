@@ -238,7 +238,7 @@ while read LINE;
             <br>
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
-            <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            <h1><a target='_blank' href='"${ZYURL}"'>"${TITLE}"</a></h1>"
             FOLDER="/MP4"
         else
             TEXT="<audio controls>
@@ -248,7 +248,7 @@ while read LINE;
             <br>
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
-            <h1><a href='"${ZYURL}"'>"${TITLE}"</a></h1>"
+            <h1><a target='_blank' href='"${ZYURL}"'>"${TITLE}"</a></h1>"
             FOLDER="/MP3"
         fi
 
