@@ -331,7 +331,9 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 > CAN BE EXTENDED
 
 ## ➤ AMZQR : Create a QRCode with "amzqr"
-### ```/?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}```
+```http
+GET /?amzqr=${URLENCODEDSTRING}&logo=${IMAGE}
+```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
@@ -341,7 +343,9 @@ GET /?player=${PLAYER}&moa=json&tag=G1CopierYoutube
 check available "logo.png" in [./images](./images)
 
 ## ➤ UPLANET : Create Umap, AstroID & ZenCard for PLAYER (email)
-### ```/?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}```
+```http
+GET /?uplanet=${PLAYER}&zlat=${LAT}&zlon=${LON}&g1pub=${PASS}
+```
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
@@ -473,12 +477,13 @@ http://localhost:12345 renvoi un json
 | created | date de creation du document |
 | hostname | nom de la station |
 | myIP | adresse IP de la station |
-| ipfsnodeid | date de creation du document |
+| ipfsnodeid | Clef publique, balise de la station |
 | astroport | Lien vers l'API de la station |
 | g1station | Lien vers la carte PLAYER de la Station |
 | g1swarm | Lien vers la carte des cartes des Stations de l'essaim |
 
-Afin de propager la carte chaque Stations lors de son raffraichissement de cache demande aux Boostrap de la récupérer
+Afin de propager la carte chaque station lors de son raffraichissement de cache
+ envoi aux Boostrap une requête pour upload (```/ipns/${IPFSNODEID}```)
 ```
 STATION MAP UPSYNC : http://$nodeip:12345/?${GNODEID}=${IPFSNODEID}
 ```
@@ -486,7 +491,7 @@ STATION MAP UPSYNC : http://$nodeip:12345/?${GNODEID}=${IPFSNODEID}
 
 # 20H12
 
-Chaque jour, les ASTROBOTs captent les :star: de leurs PLAYERs puis exécutent le protocole de synchronisation Ŋ1
+Chaque jour, les ASTROBOTs captent les :star: (tiddler 'email') de leurs PLAYERs puis exécutent le protocole de synchronisation Ŋ1
 
 [20H12.sh](/qo-op/Astroport.ONE/src/branch/master/20h12.sh)
 
@@ -537,10 +542,10 @@ https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 This "digital art" structure is a selection of some of the most valuable Free & OpenSource Software I ever had in my hand.
 Credits is going to all the kindness and care provided to make valuable and secure software available for all
 
-Did you ever dring a beer bought in G1 ?
+Did you ever [dring a beer bought in G1](https://monnaie-libre.fr) ?
 
-You can pay me a beer or more by contributing to our OpenCollective
-https://opencollective.com/monnaie-libre#category-ABOUT
+You can pay me a beer or more by [contributing to our OpenCollective](https://opencollective.com/monnaie-libre#category-ABOUT)
+
 
 ## IPFS Ecosystem Directory Submission Form
 https://airtable.com/appLWiIrg9SQaEtEq/shrjwvk9pAeAk0Ci7

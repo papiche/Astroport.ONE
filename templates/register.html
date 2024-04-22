@@ -155,8 +155,8 @@ input[name="uplanet"] {
     <br><br>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
 
-    <h1><a href="/"  title="BACK OFFICE" >U</a><span>Planet</span>
-    <br><span><a id="satLink" href="#" title="OSM Sat">&nbsp;*&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;*&nbsp;</a></span></h1>
+    <h1><a href="/"  title="/UPlanet" >U</a><span>Planet</span>
+    <br><span>(<a id="satLink" href="#" title="OSM Sat"><<&nbsp;sat <&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;> map&nbsp;>></a>)</span></h1>
 
         <span>Enter Email</span></br>
         <input name=uplanet value=''></br>
@@ -165,7 +165,7 @@ input[name="uplanet"] {
 
     <div id="yellow">
         <input name='zlat' value='0.00'>
-        <h3><a target="info" title="CHECK PORT" href="http://127.0.0.1:12345"> >>> [(♥‿‿♥)] <<< </a>
+        <h3><a target="info" title="CHECK PORT" href="http://127.0.0.1:12345"> >>> [(♥‿‿♥)] >>> </a>
         </h3>
         <input name='zlon' value='0.00'><br>
     </div>
@@ -196,6 +196,37 @@ input[name="uplanet"] {
 </center>
 </main>
 </body>
+  <script>
+    // Function to detect the browser language
+    function detectBrowserLanguage() {
+      // Check if the browser supports navigator.language
+      if (navigator.language) {
+        return navigator.language;
+      }
+      // For browsers that don't support navigator.language, fallback to navigator.browserLanguage
+      else if (navigator.browserLanguage) {
+        return navigator.browserLanguage;
+      }
+      // If neither is supported, return a default language
+      else {
+        return 'en'; // default to English if no language information is available
+      }
+    }
+
+    // Function to change iframe source based on browser language
+    function changeIframeSrc() {
+      var browserLanguage = detectBrowserLanguage();
+      var iframe = document.getElementById('aframe');
+      // Construct the new URL based on the detected language
+      var newSrc = 'https://pad.p2p.legal/Astroport_1234_' + browserLanguage;
+      iframe.src = newSrc;
+      const passElement = document.querySelector('input[name="g1pub"]');
+      passElement.value = browserLanguage;
+    }
+
+    // Call the function to change iframe source
+    changeIframeSrc();
+  </script>
 <script>
 
   // Extract latitude and longitude from URL parameters
@@ -209,13 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const latElement = document.querySelector('input[name="zlat"]');
   const lonElement = document.querySelector('input[name="zlon"]');
   const uplanetElement = document.querySelector('input[name="uplanet"]');
-  const passElement = document.querySelector('input[name="g1pub"]');
-
- //~ // Generate a random 6-digit number and set it as the default value for "PASS"
-  if (passElement) {
-    const randomPass = Math.floor(100000 + Math.random() * 900000); // Generates a random 6-digit number
-    passElement.value = randomPass.toString();
-  }
 
     if (latElement && lonElement) {
         latElement.value = zlat || '0.00'; // Default to '0.00' if lat is missing
@@ -276,7 +300,7 @@ setTimeout(() => {
         if (timeLeft == -1) {
             document.getElementById('countdown').style.visibility = 'visible';
             clearTimeout(timerId);
-            elem.innerHTML = "<a href=http://127.0.0.1:12345 target='aframe'>RETRY</a>"
+            elem.innerHTML = "<a href='http://127.0.0.1:1234'>RETRY</a>"
             document.getElementById('aframe').src = 'http://127.0.0.1:12345';
             document.getElementById('console').style.visibility = 'visible';
         } else {
@@ -286,6 +310,5 @@ setTimeout(() => {
     }
     // promptUser();
 </script>
-
 
 </html>

@@ -25,7 +25,7 @@ echo "## RUNNING NODE.refresh"
 if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
     # ONLY FRESH DATA HERE
-    BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+    BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
     ## Getting actual online version
     #~ ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
 
@@ -66,14 +66,14 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "############################################ MY MAP "
     ls ~/.zen/tmp/${IPFSNODEID}/
     echo "############################################"
-    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | cut -f 1)
+    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
     ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
     ipfs name publish /ipfs/${ROUTING}
     echo ">> $NSIZE Bytes STATION BALISE > ${myIPFS}/ipns/${IPFSNODEID}"
 
 fi
 
-## CLEANING SWARM 3 DAYS OLD
+echo "## CLEANING SWARM 3 DAYS OLD"
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
 
 exit 0

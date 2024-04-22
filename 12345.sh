@@ -25,7 +25,7 @@ PORT=45779
 mkdir -p ~/.zen/tmp ~/.zen/game/players/localhost # ~/.zen & myos compatibility
 
 ## CHECK FOR ANY ALREADY RUNNING nc
-ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 1234' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ncrunning ]] && echo "RESTARTING" && kill -9 $ncrunning
 ## NOT RUNNING TWICE
 
@@ -49,6 +49,10 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 #############################
 while true; do
 
+    ########################################################
+    ## /ipfs/QmQ9MdCEY1aMmpxBqZKcHTLafRxRFeK1Ku1DES1LCPaimA
+    ## TODO: STOP API ACCESS AFTER 20H12
+
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
@@ -67,18 +71,20 @@ while true; do
     ## CHECK PORT IS FREE & KILL OLD ONE
     echo "SEARCHING FOR PORT ${PORT}"
     ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep'
-    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | awk '{gsub(/^ +| +$/,"")} {print $0}' | tail -n 1 | cut -d " " -f 1)
+    pidportinuse=$(ps axf --sort=+utime | grep -w "nc -l -p ${PORT}" | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "$(date) KILLING LOST $pidportinuse"
 
     ### START MAP STATION 12345
     ## CHECK 12345 PORT RUNNING (STATION FoF MAP)
-    maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | cut -d " " -f 1)
+    maprunning=$(ps auxf --sort=+utime | grep -w '_12345.sh' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
     [[ ! $maprunning ]] \
     && echo '(ᵔ◡◡ᵔ) MAP LAUNCHING http://'${myIP}':12345 (ᵔ◡◡ᵔ)' \
     && exec $MY_PATH/_12345.sh &
 
-    # RESET VARIABLES
-    CMD="" THAT="" AND="" THIS=""  APPNAME="" WHAT="" OBJ="" VAL=""
+    ###############    ###############    ###############    ###############
+    # THIS SCRIPT STORES $i PARAMETER IN
+    # THOSE VARIABLES
+    CMD="" THAT="" AND="" THIS="" APPNAME="" WHAT="" OBJ="" VAL=""
 
     ###############    ###############    ###############    ############### templates/index.http
     # REPLACE myHOST in http response template (fixing next API meeting point)
@@ -86,12 +92,15 @@ while true; do
     myHtml >> ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## REPLACE RESPONSE PORT
-    sed -i -e "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" \
+    sed -i -e "s~http://127.0.0.1:12345~http://127.0.0.1:${PORT}~g" \
         ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
     [ -z "$isLAN" ] \
-        && sed -i -e "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+        && sed -i -e "s~http://127.0.0.1:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
+
+    [ -n "$(zIp)" ]\
+        && sed -i -e "s~http://127.0.0.1:${PORT}~$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## UPLANET HOME LINK REPLACEMENT
     sed -i -e "s~https://qo-op.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
@@ -99,10 +108,15 @@ while true; do
     ############################################################################
     ## SERVE LANDING REDIRECT PAGE ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http on PORT 1234 (LOOP BLOCKING POINT)
     ############################################################################
+    ###############    ###############    ###############    ############### WAIT FOR
+    ###############    ###############    ###############    ############### 1234 KNOC
     REQ=$(cat $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
+    ###############    ###############    ###############    ############### KNOC !!
+    ###############    ###############    ###############    ###############
 
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
+    AGENT=$(echo "$REQ" | grep '^User-Agent:') ### TODO : BAN LESS THAN 3 SEC REQUEST
     HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
 
     ## COOKIE RETRIEVAL ##

@@ -57,7 +57,7 @@ if [[ ! -d $img_dir ]]; then
 
         if [[ -s  ${INDEX} ]]; then
             # EXTRACT [tag[moa]] : ~/.zen/game/players/${PLAYER}/moa.jpg
-            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.moa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[moa]]'
+            tiddlywiki --load ${INDEX} --output ~/.zen/tmp --render '.' "${PLAYER}.moa.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${PLAYER}"
             cat ~/.zen/tmp/${PLAYER}.moa.json | jq -r '.[].text' | base64 -d > ~/.zen/game/players/${PLAYER}/moa.jpg
             echo "DESSIN DE MOA : ~/.zen/game/players/${PLAYER}/moa.jpg"
              [[ $(file -b ~/.zen/game/players/${PLAYER}/moa.jpg | cut -d ' ' -f 1) == "JPEG" ]] \
@@ -85,7 +85,7 @@ if [[ ! -d $img_dir ]]; then
                 echo "<button onclick=\"homeAstroportStation('$myASTROPORT/?qrcode=G1G1$WISHNAME&tw=$ASTRONAUTENS', 'tab', 9000)\">G1$WISHNAME</button>" >> ~/.zen/tmp/carousel/${pub}.button
             done < ~/.zen/tmp/${PLAYER}.g1wishes.txt
         fi
-        echo "<button onclick=\"window.open('"$myIPFS"/ipns/"$ASTRONAUTENS"');\">TW</button>" >> ~/.zen/tmp/carousel/${pub}.button
+        echo "<button onclick=\"window.open('"$myIPFS"/ipns/"$ASTRONAUTENS"');\">_*_ TW5 _☼☼☼☼☼</button>" >> ~/.zen/tmp/carousel/${pub}.button
 ##################
 
 
@@ -98,9 +98,9 @@ if [[ ! -d $img_dir ]]; then
 
         ## WRITE ON IT : ASK FOR REFILL
         convert -font 'Liberation-Sans' \
-        -pointsize 80 -fill purple -draw 'text 50,120 "'"$ZEN Zen"'"' \
-        -pointsize 30 -fill purple -draw 'text 40, 180 "'"$PLAYER"'"' \
-        -pointsize 14 -fill white -draw 'text 40, 200 "'"${birthdate}"'"' \
+        -pointsize 80 -fill orange -draw 'text 50,120 "'"$ZEN Zen"'"' \
+        -pointsize 30 -fill yellow -draw 'text 40, 180 "'"$PLAYER"'"' \
+        -pointsize 14 -fill blue -draw 'text 40, 200 "'"${birthdate}"'"' \
         "${HOME}/.zen/tmp/one.png" "${HOME}/.zen/tmp/carousel/${pub}.png" \
         && rm ${HOME}/.zen/tmp/carousel/${pub}.one.png
 
@@ -223,6 +223,6 @@ htmlipfs=$(ipfs add -q $html_file)
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open http://ipfs.localhost:8080/ipfs/$htmlipfs
 
 echo "/ipfs/$htmlipfs" > ~/.zen/tmp/ISTATION
-cat ~/.zen/tmp/ISTATION
+cat ~/.zen/tmp/ISTATION ### KEEPIT ON LAST LINE
 
 exit 0

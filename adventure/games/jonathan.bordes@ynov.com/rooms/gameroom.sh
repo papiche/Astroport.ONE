@@ -36,7 +36,7 @@ while true; do
             if [ "$leverstate" = "on" ]; then
                 echo "A chaque frappe d'une touche. l'écran fait défiler le texte 'SCANNEZ VISA SVP'."
             else
-                sed -i='' 's/off/on/' ../logic/stationlogic.ben
+                sed -i 's/off/on/' ../logic/stationlogic.ben
             echo "Vous appuyez sur l'interupteur de l'écran. Y apparaît alors :"
             sleep 3
             echo "AMBASSADE MadeInZion - TerraPi4 - 2 To -"

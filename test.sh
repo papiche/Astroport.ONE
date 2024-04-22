@@ -40,4 +40,7 @@ test=$tw$ipfs$keygen$jaklis$amzqr
 [[ ${test:2:2} == "11" ]] && echo "CRYPTO LAYER MALFUNCTION"
 [[ ${test::2} == "01" ]] && echo "IPFS DAEMON IS ABSENT"
 
+### PROMETHEUS NODE EXPORTER ##################
+ls /usr/local/bin/node_exporter
+
 exit 0

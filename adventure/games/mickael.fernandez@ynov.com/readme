@@ -1,0 +1,27 @@
+# SCRIPT01.CYBSEC
+
+Inventaire
+
++ 11 : game engine
++1 : multigame compatibility (+x)
++1 : shellcheck
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+
+```
+diff --recursive --brief ./ ../_votre\ jeu/
+Seulement dans ../_votre jeu/: adventure.sh
+Seulement dans ./logic: leverlogic.ben=
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Les fichiers ./rooms/white.sh et ../_votre jeu/rooms/white.sh sont différents
+Seulement dans ./script: inventaire.ben
+
+```
+
+
+chmod +x rooms/*.sh
+

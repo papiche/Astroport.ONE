@@ -1,0 +1,36 @@
+# SCRIPT01.CYBSEC
+
+SNAKe
+
++ 12 : game engine
++ 2 : multigame compatibility
+
+> final 14
+
+## "GameShell" LEVEL ?
+
+
+
+```
+Les fichiers ./adventure.sh et ../_votre jeu/adventure.sh sont différents
+Seulement dans ./: debug_wsl.docx
+Seulement dans ./: debug_wsl.md
+Les fichiers ./rooms/brown.sh et ../_votre jeu/rooms/brown.sh sont différents
+Les fichiers ./rooms/end.sh et ../_votre jeu/rooms/end.sh sont différents
+Les fichiers ./rooms/gameroom.sh et ../_votre jeu/rooms/gameroom.sh sont différents
+Les fichiers ./rooms/kroo2.sh et ../_votre jeu/rooms/kroo2.sh sont différents
+Les fichiers ./rooms/kroo.sh et ../_votre jeu/rooms/kroo.sh sont différents
+Les fichiers ./rooms/mainroom.sh et ../_votre jeu/rooms/mainroom.sh sont différents
+Les fichiers ./rooms/meteofrance.sh et ../_votre jeu/rooms/meteofrance.sh sont différents
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+
+
+```
+
+```
+geany ./rooms/meteofrance.sh
+
+
+```
+
+

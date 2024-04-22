@@ -1,0 +1,11 @@
+[
+  {
+    "created": "_MOATS_",
+    "modified": "_MOATS_",
+    "title": "_TITLE_",
+    "text": "<iframe src={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}} height='720' width='100%'></iframe>",
+    "tags": "UPlanetZine _PLAYER_",
+    "ipfs": "/ipfs/_CID_",
+    "type": "text/vnd.tiddlywiki"
+  }
+]

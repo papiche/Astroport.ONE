@@ -170,7 +170,7 @@ myIpfsBootstrapNodes() {
 
 myIpfsGw() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myIpfsGw=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | cut -d ' ' -f 2)
+     && local myIpfsGw=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
     [ -n "$myIpfsGw" ] && echo "$myIpfsGw"
 }
 
@@ -407,25 +407,62 @@ myTs() {
 
 myTube() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | cut -d ' ' -f 3)
+     && local myTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3)
     [ -n "$myTube" ] && echo "$myTube"
 }
 
 myAstroTube() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myAstroTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
+     && local myAstroTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
     [ -n "$myAstroTube" ] && echo "$myAstroTube"
 }
 
 function makecoord() {
     local input="$1"
 
+    input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')  # Ensure has exactly two decimal places
+
     if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
         input="${input}0"
+    elif [[ ${input} =~ ^\.[0-9]+$ ]]; then
+        input="0${input}"
+    elif [[ ${input} =~ ^-?[0-9]+\.$ ]]; then
+        input="${input}00"
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
         input="${input}.00"
     fi
     echo "${input}"
+}
+
+# Fonction pour récupérer la météo depuis l'API OpenWeatherMap
+recuperer_meteo() {
+    echo "En train de récupérer les données météo..."
+    # Récupérer la météo à l'aide de l'API OpenWeatherMap
+    ville="Paris" # Vous pouvez modifier la ville ici
+    api_key="310103dee4a9d1b716ee27d79f162c7e" # Remplacez YOUR_API_KEY par votre clé API OpenWeatherMap
+    url="http://api.openweathermap.org/data/2.5/weather?q=$ville&appid=$api_key&units=metric"
+    meteo=$(curl -s $url)
+    # Extraire les informations pertinentes de la réponse JSON
+    temperature=$(echo $meteo | jq -r '.main.temp')
+    description=$(echo $meteo | jq -r '.weather[0].description')
+    echo "La météo à $ville : $description, Température: $temperature °C"
+}
+
+# my_IPCity # Fonction pour récupérer la géolocalisation à partir de l'adresse IP
+my_IPCity() {
+    local ip=$1
+
+    if [ -z "$ip" ]; then
+        ip=$(curl 'https://api.ipify.org?format=json' --silent | jq -r '.ip')
+    fi
+
+    local url="http://ip-api.com/json/$ip"
+    local geolocalisation=$(curl -s "$url")
+
+    local ville=$(echo "$geolocalisation" | jq -r '.city')
+    local pays=$(echo "$geolocalisation" | jq -r '.country')
+
+    echo "$ville,$pays"
 }
 
 IPFSNODEID="$(myIpfsPeerId)"
@@ -440,16 +477,16 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 myDOMAIN="copylaradio.com"
 
 myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
-myASTROPORT="http://${myIP}:1234" # BE ACCESSIBLE THROUGH LAN
-myAPI="http://${myIP}:5001"
+myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
+myAPI="http://127.0.0.1:5001"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
-myG1BILLET="http://${myIP}:33101"
+myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
 myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
-myIPFS="http://${myIP}:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFS="http://127.0.0.1:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"
@@ -457,7 +494,7 @@ myASTROTUBE="https://$(myAstroTube)"
 ## WAN STATION
 [ -z "$isLAN" ] \
  && myASTROPORT="https://astroport.$(myDomainName)" \
- && myAPI="https://ipfs.$(myHostName)" \
+ && myAPI="https://ipfs.$(myHostName)/5001" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
  && myG1BILLET="https://libra.${myDOMAIN}" \
@@ -488,7 +525,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 fi
 
 ## https://git.p2p.legal/qo-op/OSM2IPFS
-EARTHCID="/ipfs/QmYGS24WxVbsmmQfqWohXhXQZiwSmNswhTtSj9msVWKkNh"
+EARTHCID="/ipfs/QmcPxZAYw7YeMS5SqsCZPSo2NNnofRmneRPNJd4Vrudy9r"
 FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 
 ###########################
@@ -514,7 +551,11 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 ## ACTIVATE SECONDARY PRIVATE IPFS SWARM
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
-[[ ${UPLANETNAME} == "" ]] && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
+[[ ${UPLANETNAME} == "" ]] \
+    && WORLDG1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
+
+[[ ${WORLDG1PUB} == "" ]] \
+    && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.
@@ -522,3 +563,6 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
+
+## WRITE THE DIFFERENT REWARDS
+G1LEVEL1="3.1"

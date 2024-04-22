@@ -1,0 +1,56 @@
+# SCRIPT01.CYBSEC
+
+Jeu du pendu
+
++ 10 : game engine
++2 : multigame compatibility
++1 : shellcheck
+
+> final 13
+
+## "GameShell" LEVEL ?
+
+
+## DIFFs
+``
+diff --recursive --brief ./ ../_votre\ jeu/
+
+Seulement dans ../_votre jeu/: adventure.sh
+Seulement dans ../_votre jeu/: art
+Seulement dans ../_votre jeu/: logic
+Seulement dans ./: readme
+Seulement dans ../_votre jeu/rooms: bigroom.sh
+Seulement dans ../_votre jeu/rooms: brown.sh
+Seulement dans ../_votre jeu/rooms: end.sh
+Seulement dans ../_votre jeu/rooms: gameroom.sh
+Seulement dans ../_votre jeu/rooms: green.sh
+Seulement dans ../_votre jeu/rooms: grue.sh
+Seulement dans ../_votre jeu/rooms: kroo2.sh
+Seulement dans ../_votre jeu/rooms: kroo.sh
+Seulement dans ../_votre jeu/rooms: magic8.sh
+Seulement dans ../_votre jeu/rooms: mainroom.sh
+Seulement dans ../_votre jeu/rooms: meteofrance.sh
+Seulement dans ../_votre jeu/rooms: red.sh
+Les fichiers ./rooms/start.sh et ../_votre jeu/rooms/start.sh sont différents
+Seulement dans ../_votre jeu/rooms: white.sh
+Seulement dans ../_votre jeu/: script
+```
+
+```
+diff rooms/start.sh ../_votre\ jeu/rooms/start.sh
+```
+
+Single file game
+
+##  shellcheck
+```
+shellcheck rooms/*
+
+
+```
+
+## modifs apportées
+
+* chmod +x rooms/start.sh
+
+

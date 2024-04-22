@@ -27,7 +27,8 @@ if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop"  ]]; then
 fi
 
 ############################################
-## DISTRIBUTE DRAGON SSH WOT SEED : A_boostrap_ssh.txt
+## DISTRIBUTE DRAGON SSH WOT SEED
+# A_boostrap_ssh.txt
 ############################################
 while IFS= read -r line
 do
@@ -48,18 +49,19 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt
 [[ -s ~/.ssh/id_ed25519.pub ]] && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
 ## DRAGONz PGP/SSH style (https://pad.p2p.legal/keygen)
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
 
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
 echo "Lanching  /x/ssh-${IPFSNODEID}"
 
-[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
+[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
+    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
 
 ipfs p2p ls
 
 echo
-echo "#!/bin/bash"
 ############################################
 ## PREPARE x_ssh.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
@@ -67,17 +69,73 @@ echo "#!/bin/bash"
 PORT=22000
 PORT=$((PORT+${RANDOM:0:3}))
 
-echo "if [[ ! \$(ipfs p2p ls | grep x/ssh-${IPFSNODEID}) ]]; then
-ipfs --timeout=5s ping -n 1 /p2p/${IPFSNODEID}
-ipfs p2p forward /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/$PORT /p2p/${IPFSNODEID}
-ssh $USER@127.0.0.1 -p $PORT
-fi" > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+#######################################################################
+## Adapt $USER for the UPlanet /home/$USER Private Swarm specific one
+#######################################################################
+
+echo '#!/bin/bash
+if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
+    ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+    [[ $? == 0 ]] \
+        && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+        && ssh \$USER@127.0.0.1 -p '${PORT}' \
+        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+fi
+' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
+echo "
+
+                      /|               /\\
+                 /^^^/ |^\Z           /  |
+                |         \Z         /   |
+                / @        \Z       /   / \_______
+   (  \      _ /            \Z     /   /         /
+ (     ---- /G       |\      |Z   /   /         /
+  (  / ---- \    /---'/\     |Z  /   /         /
+             \/--'   /--/   /Z  /             /
+              |     /--/   |Z  /            / \_______
+             /     /--/    |Z  \           /         /
+          --/     /--/     \Z   |         /         /
+           /     /--/       \Z  /                  /
+                |--|         \Z/                  /
+                |---|        /              /----'
+                 \---|                     /^^^^^^^^^^^^\Z
+                  \-/                                    \Z
+                   /     /        |                       \Z
+               \---'    |\________|      |_______          |Z
+             \--'     /\/ \|_|_|_||      |_|_|_|_|\_       |Z
+              '------'            /     /  /      |_       /Z
+                              \---'    |  / ``````        /Z
+                            \--'     /\/  \ _____________/Z
+                             '------'      \
+
+"
 ############################################
-echo
+echo "CONNECT WITH THIS COMMAND"
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ############################################
+
+## PROMETHEUS NODE
+if [[ -s ~/.zen/prometheus/prometheus ]]; then
+
+    echo "UPDATING ~/.zen/prometheus/prometheus.yml"
+    ## ADD ALL SWARM NODES TO MONITORING LIST for prometheus (GRAFANA) node
+
+    ncrunning=$(ps axf --sort=+utime | grep -w 'prometheus' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+    [[ $ncrunning ]] \
+        && echo "RESTARTING" && kill -HUP $ncrunning \
+        || { cd ~/.zen/prometheus/; ./prometheus & }
+
+fi
+
+## LAUNCHING node_exporter
+ncrunning=$(ps axf --sort=+utime | grep -w 'node_exporter' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+[[ $ncrunning ]] \
+    && echo "RESTARTING" && kill -HUP $ncrunning \
+    || { /usr/local/bin/node_exporter & }
+
+
 
 exit 0

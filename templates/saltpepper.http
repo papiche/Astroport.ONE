@@ -62,7 +62,8 @@ header {
             <div  id="login"><button onclick="promptUser('login')">LOGIN</button><button onclick="promptUser('logout')">LOGOUT</button></div>
 -->
     <h6>
-        <p id="station"> ♥<span>BOX <div id='countdown'></div></span></p>
+        <p id="station"> ♥<span>BOX </span><h3><a title="BACK TO ASTROPORT" href="http://127.0.0.1:1234"> <<< (◕‿‿◕) <<< </a></h3>
+</p>
    </h6>
         <span><div id="ainfo"></div></span>
         <div id="debug"></div>
@@ -78,24 +79,25 @@ header {
          <div>
         <button onclick="homeAstroportStation('http://127.0.1.1:1234/?qrcode=station', '', 21654)">Ẑen Station</button>
         </div>
+        <div id='countdown'></div>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
     <h1><span>Astroport</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
     <div id="yellow">
-        <h2>AstroID SECRETS</h2>
+        <h2>SALT</h2>
         <input name='salt' value='0'>
-<h3><a title="YOUR ASTRO PORT" href="http://127.0.0.1:12345"> >>> (◕‿‿◕) <<< </a></h3>
+        <h2>PEPPER</h2>
         <input name='pepper' value='0'>
 </div>
         <h2>
         <div id="typed-strings">
-            <p><span>/ <strong><em><a href="https://opencollective.com/monnaie-libre/projects/coeurbox" target="funding">La♥BOX</a></em></strong> /</span>^3223</p>
-            <p>&#8984; Interplanetary <em>Cloud Storage</em> &#9925;</span> ^3222</p>
-            <p>We Make <strong><em><u>👉<a href="https://opencollective.com/monnaie-libre">Le Claude</a>👈</u></em></strong>^3112</p>
+            <p><span>/ <strong><em>MULTIPASS</em></strong> /</span>^3223</p>
+            <p>&#8984; enter <em>UPlanet</em> secrets &#9925;</span> ^3222</p>
+            <p>plug your <strong><em><u>👉TW5👈</u></em></strong> there^3112</p>
             <p>🔥.^999.^888.^777.^666.5^555.4^444.3^333.2^222.1^111 🚀^4321</p>
         </div>
         <span id="typed"></span>
         </h2>
-        <span><a target="youtube" href="https://youtube.com">📺 (&#128077;)</a> : </span><input name=g1pub value='enter video source to feed in TW'></br>
+        <span>📺 TW5 : </span><input type='hidden' name=g1pub value='UPlanet'><a target="UPlanet" href="https://qo-op.com">(&#128077;)</a></br>
         <span>Email : </span><input name=email value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 
@@ -104,7 +106,7 @@ header {
 </h2>
 </br>
             <p>
-            <b><a target="pad" href="https://ipfs.copylaradio.com/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD/?room=cocoding">COCODING ROOM</a></b>
+            <b><a target="pad" href="https://ipfs.copylaradio.com/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD/?room=UPLANET">UPLANET VISIO ROOM</a></b>
             </p>
 </header>
 
@@ -223,7 +225,7 @@ function testLatency(cb) {
     function countdown() {
         if (timeLeft == -1) {
             clearTimeout(timerId);
-            document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><input type='hidden' name='type' value='UPlanet' ><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>New ZenCard</button></form>";
+            // document.getElementById("countdown").innerHTML = "<form method='get' action='http://g1billet.localhost:33101' target='aframe'><input type='hidden' name='montant' value='0' ><input type='hidden' name='type' value='UPlanet' ><input type='hidden' name='dice' value='4' >&nbsp;&nbsp;&nbsp;&nbsp;<button type='submit'>New ZenCard</button></form>";
         } else {
             // elem.innerHTML = timeLeft + " s";
             timeLeft--;

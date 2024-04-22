@@ -19,16 +19,17 @@ EMAIL="$1"
 
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
-    INDEX=$(ls $HOME/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) ## LOCAL
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) ## CACHE
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) ## SWARM
+    INDEX=$(ls $HOME/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) && source="LOCAL"
+    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) && source="CACHE"
+    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) && source="SWARM"
     [[ ! $INDEX ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
-    echo "export TW=${INDEX}"
+    echo "export TW=${INDEX} source=${source}"
 
     # SWARM CACHE index.html contains
-    # <meta http-equiv="refresh" content="0; url='/ipns/$EXTERNAL'" />
-    EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
+    # <meta http-equiv="refresh" content="0; url='/ipfs/$EXTERNAL'" />
+    [[ ${source} != "LOCAL" ]] \
+        && EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
 
     if [[ ! ${EXTERNAL} ]]; then
         ## EXTRACT DATA FROM TW
@@ -37,15 +38,17 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
         tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
 
-        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-        ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].g1pub)
+        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astroport)
+        ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].g1pub)
+        TWCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].chain)
 
         ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
-        ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astronautens)
+        ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
         [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
-        [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS=""
+        [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
     else
-        ASTRONAUTENS="/ipns/${EXTERNAL}"
+        ASTRONAUTENS="/ipfs/${EXTERNAL}"
+        ASTROPORT="/ipns/$(echo $INDEX | rev | cut -d / -f 4 | rev)"
     fi
 
     rm -Rf ~/.zen/tmp/${MOATS}
@@ -58,6 +61,6 @@ else
 
 fi
 
-
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS"
+### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
 exit 0

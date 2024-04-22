@@ -50,13 +50,14 @@ echo "%% ${COINS} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 ###############################
 ## EXTRACT G1Voeu from PLAYER TW
-echo "Exporting ${PLAYER} TW [tag[G1Voeu]]"
+echo "Exporting ${PLAYER} TW [days:created[-360]tag[G1Voeu]]"
 rm -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json
-tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1Voeu]]'
+tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu --render '.' "${PLAYER}.g1voeu.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-360]tag[G1Voeu]]'
 
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] && echo "AUCUN G1VOEU - EXIT -" && exit 0
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json ]] \
+    && echo "AUCUN G1VOEU - EXIT -" && exit 0
 
-cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r '.[].wish' > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
+cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json | jq -r 'map(select(.wish != null)) | .[].wish' > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 wishnumbers=$(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt | wc -l)
 echo "${wishnumbers} VOEUX : ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt "
 
@@ -91,14 +92,16 @@ do
 
     ## RUNNING WISH REFRESH : PLAYER CACHE
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/${WISH}
-
+    cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1voeu.json \
+        | jq .[] | jq -r 'select(.wish=="'${WISH}'")' \
+        > ~/.zen/tmp/${MOATS}/${WISH}.json
 ##########################################################################
 ##########################################################################
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
     if [[ -s $MY_PATH/../ASTROBOT/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh PROGRAM FOUND !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS"
+        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS" "~/.zen/tmp/${MOATS}/${WISH}.json"
         echo "________________________________   Finished ******"
     else
         echo "......................... NO G1${WISHNAME} PROGRAM... "
@@ -274,15 +277,21 @@ do
         ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}
 
         WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
-        ipfs name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
+        ipfs --timeout 180s name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
         echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH" ## TODO LOOP BOOSTRAP & ONLINE FRIENDS
         curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
 
         ## MOVE INTO PLAYER AREA
-        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)/${IPNS_VOEUNS}"
+        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${IPNS_VOEUNS}"
         echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
         cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
+
+        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+        echo "SEARCH WORLD SAME WISH CACHE"
+        [[ "$WISHNAME" != "" ]] && cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
+        ## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
+        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
@@ -303,30 +312,23 @@ if [[ ${wishnumbers} -gt 0 ]]; then
     LON=$(makecoord $LON)
     echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
     rm ~/.zen/tmp/${MOATS}/GPS.json
-    SECLAT="${LAT::-1}"
-    SECLON="${LON::-1}"
-    SECTOR="_${SECLAT}_${SECLON}"
-    ##############################################################
-    SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+
+    ## GET UMAP ENV
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
+    echo "export UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+
     ##############################################################
     GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
     G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
     echo "***** PLAYER $PLAYER *************************************"
-    echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
-    to ${SECTOR} WALLET ${SECTORG1PUB}"
+    echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
+    to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
     echo "************************************************************"
+    YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
     MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${SECTORG1PUB}" "/ipfs/${MYWISHFLUX}"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$YOUSER:/ipfs/${MYWISHFLUX}"
 fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
-
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-echo "TODO : REFRESH WORLD SAME WISH CACHE"
-cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
-## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-
-############################################
 
 exit 0

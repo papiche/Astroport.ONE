@@ -355,7 +355,8 @@ cp ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.
 
 ## TODO : Do we keep that ?
 # echo "SEND TW LINK to GCHANGE MESSAGE"
-[[ $3 ]] && ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
+[[ $3 ]] \
+&& ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
 
 fi
 
