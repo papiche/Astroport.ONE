@@ -28,10 +28,9 @@ if [[ -s /tmp/${MOATS}.html ]]; then
     cp /tmp/${MOATS}.html ${TW}
     rm /tmp/${MOATS}.html
     rm "${TIDDLER}.tmp"
-    echo "Updated TiddlyWiki: ${TW}"
-    echo "Temporary file: /tmp/${MOATS}.html"
+    echo "Updated TiddlyWiki:
+    ${TW}"
 else
-    echo "ERROR: Unable to import ${TIDDLER} into ${TW}"
     exit 1
 fi
 

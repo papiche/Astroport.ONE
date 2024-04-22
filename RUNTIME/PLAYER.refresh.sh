@@ -132,8 +132,8 @@ for PLAYER in ${PLAYERONE[@]}; do
 </style></head><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW LOADING TIMEOUT</a>" > ~/.zen/tmp/result
         echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
         echo "<br>" >> ~/.zen/tmp/result
-        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>TW[-1]</a>: /ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
-        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>TW[0]</a>: /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>[yesterday]</a>: /ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
+        echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>[today]</a>: /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
         echo "<br>" >> ~/.zen/tmp/result
         echo "<br> %%% WARNING %%% $try TRY LEFT %%%" >> ~/.zen/tmp/result
         echo "<br>------------------------------------------------" >> ~/.zen/tmp/result

@@ -22,9 +22,11 @@ if [[ -s ~/.zen/tmp/${MOATS}.html ]]; then
     echo "Tiddler deleted successfully."
     cp ~/.zen/tmp/${MOATS}.html ${TW}
     rm ~/.zen/tmp/${MOATS}.html
-    echo "Updated TiddlyWiki: ${TW}"
+    echo "Updated TiddlyWiki:
+    ${TW}"
 else
-    echo "ERROR: Cannot delete $TITLE from $TW"
+    echo "ERROR: Cannot delete $TITLE from
+    $TW"
     exit 1
 fi
 
