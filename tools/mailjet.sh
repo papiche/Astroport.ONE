@@ -68,7 +68,7 @@ EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
 ipfs pin rm ${EMAILZ}
 
-################### TW INDEX TO LOAD IFRAME WITH ?
+################### IMPORT MAILJET INTO IF $4=TW
 INDEX="$4"
 if [[ -s ${INDEX} ]]; then
     echo "INSERT ZINE INTO TW"
@@ -77,7 +77,7 @@ if [[ -s ${INDEX} ]]; then
 
     cat ${MY_PATH}/../templates/data/IFRAME.json \
     | sed -e "s~_MOATS_~${MOATS}~g" \
-    -e "s~_TITLE_~${SUBJECT}~g" \
+    -e "s~_TITLE_~/MAILJET/${SUBJECT^^}~g" \
     -e "s~_CID_~${EMAILZ}~g" \
     -e "s~_PLAYER_~${mail}~g" \
         > ~/.zen/tmp/iframe.json
