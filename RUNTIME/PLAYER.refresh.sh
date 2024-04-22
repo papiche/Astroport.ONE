@@ -34,8 +34,7 @@ CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
 
 echo "RENEWING LOCAL UPLANET REPOSITORY (ADMIN=${CURRENT})
  ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
-echo "CLEANING IPFSNODEID TW CACHE ~/.zen/tmp/${IPFSNODEID}/TW/"
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/
+
 
 ## RUNING FOR ALL LOCAL PLAYERS
 for PLAYER in ${PLAYERONE[@]}; do
@@ -102,6 +101,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
     ################### GET LATEST TW
+    rm -f ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
     echo "GETTING TW..."
     ####################################################################################################
     ipfs --timeout 480s get --progress=false -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}

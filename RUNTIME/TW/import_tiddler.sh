@@ -1,18 +1,38 @@
 #!/bin/bash
+
+# Generate a unique timestamp
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+
+# Check if TiddlyWiki file exists
 TW="$1"
-[[ ! -s $TW ]] && echo "no TW found $TW" && exit 1
+[[ ! -s $TW ]] && echo "No TiddlyWiki found at: $TW" && exit 1
+
+# Check if Tiddler JSON file exists
 TIDDLER="$2"
-[[ ! -s $TIDDLER || $TIDDLER == "" ]] && echo "need a $TIDDLER json file" && exit 1
+[[ ! -s $TIDDLER || $TIDDLER == "" ]] && echo "Need a Tiddler JSON file" && exit 1
 
-tiddlywiki --load ${TW} \
-    --import ${TIDDLER} 'application/json' \
-    --output ~/.zen/tmp \
-    --render "$:/core/save/all" "${MOATS}.html" "text/plain"
+# Add created and modified fields to the Tiddler JSON file
+echo "Adding created and modified fields to ${TIDDLER}..."
+jq '.[] + {created: $MOATS, modified: $MOATS}' --arg MOATS "$MOATS" "$TIDDLER" > "${TIDDLER}.tmp"
 
-[[ -s ~/.zen/tmp/${MOATS}.html ]] \
-    && cp ~/.zen/tmp/${MOATS}.html ${TW} \
-    && rm ~/.zen/tmp/${MOATS}.html \
-    || { echo "ERROR - CANNOT IMPORT ${TIDDLER} in ${TW} - ERROR" && exit 1 }
+# Run TiddlyWiki import command
+echo "Running TiddlyWiki import..."
+tiddlywiki --load "${TW}" \
+    --import "${TIDDLER}.tmp" 'application/json' \
+    --output /tmp \
+    --render '$:/core/save/all' "${MOATS}.html" 'text/plain'
 
-exit 0
+# Check if import was successful
+if [[ -s /tmp/${MOATS}.html ]]; then
+    echo "Import successful."
+    cp /tmp/${MOATS}.html ${TW}
+    rm /tmp/${MOATS}.html
+    rm "${TIDDLER}.tmp"
+    echo "Updated TiddlyWiki: ${TW}"
+    echo "Temporary file: /tmp/${MOATS}.html"
+else
+    echo "ERROR: Unable to import ${TIDDLER} into ${TW}"
+    exit 1
+fi
+
+echo "Done."

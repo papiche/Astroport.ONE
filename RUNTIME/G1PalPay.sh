@@ -58,8 +58,7 @@ echo "(✜‿‿✜) G1PalPay : CHECK LAST 15 TX comment"
 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 15 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
-&& echo "NO PAYMENT HISTORY.......................... EXIT" \
-&& exit 1
+&& echo "NO PAYMENT HISTORY.........................."
 ##############################
 ##########################################################
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
@@ -226,8 +225,7 @@ cat ~/.zen/tmp/${MOATS}/today.${PLAYER}.tiddlers.json \
          > ~/.zen/tmp/${MOATS}/@tags.json 2>/dev/null ## Get tiddlers with not my email in it
 
 [[ ! -s ~/.zen/tmp/${MOATS}/@tags.json ]] \
-    && echo "NO EXTRA @tags.json TIDDLERS TODAY" \
-    && exit 0
+    && echo "NO EXTRA @tags.json TIDDLERS TODAY"
 
 # LOG
 cat ~/.zen/tmp/${MOATS}/@tags.json
@@ -243,19 +241,19 @@ while read LINE; do
     echo "---------------------------------- PalPAY for Tiddler"
     TCREATED=$(echo ${LINE} | jq -r .created)
     TTITLE=$(echo ${LINE} | jq -r .title)
+    TTEXT=$(echo ${LINE} | jq -r '.text | match("/ipfs/[^\"\\s]+") | .string | first')
     TTAGS=$(echo ${LINE} | jq -r .tags)
 
-    ## PREPARE PINNING -
+    ## Extract "/ipfs/CID" from Tiddler - to pin TOPIN -
     TOPIN=$(echo ${LINE} | jq -r .ipfs) ## Tiddler produced by "Astroport Desktop"
-    [[ -z ${TOPIN} ]] && TOPIN=$(echo ${LINE} | jq -r ._canonical_uri) ## Tiddler is exported to IPFS
-    [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] \
-        && echo "NOT COMPATIBLE ${TOPIN}" \
-        && TOPIN=""
+    [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] && TOPIN=$(echo ${LINE} | jq -r ._canonical_uri) ## Tiddler is exported to IPFS
+    [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] && TOPIN=$(echo ${LINE} | jq -r '.text | match("/ipfs/[^\"\\s]+") | .string | first') ## Ket first /ipfs/ link from text field
+    [[ ! $(echo ${TOPIN} | grep '/ipfs') ]] && echo "NOT COMPATIBLE ${TOPIN}" && TOPIN=""
 
     echo "$TTITLE"
 
-    ## Count emails found
-    emails=($(echo "$TTAGS" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
+    ## Count extra emails found
+    emails=($(echo "$TTAGS" | sed "s~${PLAYER}~ ~g" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
     nb=${#emails[@]}
     #~ zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 ZEN each
 
@@ -271,6 +269,7 @@ while read LINE; do
     echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
     [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
 
+    echo "TOPIN=${TOPIN}"
     if [[ ${TOPIN} && ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
 
         ##############################
@@ -293,7 +292,7 @@ while read LINE; do
         echo "<html><body>
         <h1>BRO. </h1>
         <br>
-        <a href='${myIPFSGW}'/ipns/${ASTROTW}>${PLAYER}</a> has a shared Tiddler with you.
+        ${PLAYER} <a href='${myIPFSGW}'/ipns/${ASTROTW}#${TTITLE}>Tiddler</a>
         <br><b>${TTITLE}</b><br>(✜‿‿✜)
         ... Join <a href='https://qo-op.com'>UPlanet</a> link your TW5 !
         </body></html>" > ~/.zen/tmp/palpay.bro
