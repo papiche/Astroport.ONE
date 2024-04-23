@@ -107,14 +107,14 @@ if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | g
     ##### ADMIN MONITORING #########
     echo "<html><head><meta charset='UTF-8'>
     <title>${COMMENT}</title>
-<style>
-    body {
-        font-family: 'Courier New', monospace;
-    }
-    pre {
-        white-space: pre-wrap;
-    }
-</style></head><body>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            white-space: pre-wrap;
+        }
+    </style></head><body>
     <h1>${ZENAMOUNT} ZEN OPERATION</h1>
     ${COMMENT}
     <h3><a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
