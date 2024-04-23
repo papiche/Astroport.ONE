@@ -161,7 +161,7 @@ do
     [[ ${ASTROPORT} != "/ipns/${IPFSNODEID}" ]] && echo "FOREIGN ASTROPORT=${ASTROPORT}" && foreign="YES"
     echo "$f : $FRIENDG1PUB"
 
-    ASTROPORTS=("${ASTROPORTS[@]}" "${ATROPORT}")
+    ASTROPORTS=("${ASTROPORTS[@]}" "${ASTROPORT}")
 
     if [[ ${FRIENDG1PUB} && ${FRIENDG1PUB} != "null" ]]; then
 

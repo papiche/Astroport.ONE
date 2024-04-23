@@ -51,8 +51,8 @@ get_hex_code_from_image ~/.zen/tmp/base_white.png
 
 # Step 3: Mixing Colors
 composite -compose Multiply ~/.zen/tmp/base_white.png \
-                                                        ~/.zen/game/players/${PLAYER}/private_color.png \
-                                                        ~/.zen/tmp/mixed_color.png
+            ~/.zen/game/players/${PLAYER}/private_color.png \
+            ~/.zen/tmp/mixed_color.png
 
 xdg-open ~/.zen/tmp/mixed_color.png
 get_hex_code_from_image ~/.zen/tmp/mixed_color.png
@@ -60,5 +60,5 @@ get_hex_code_from_image ~/.zen/tmp/mixed_color.png
 echo "WAITING FOR ANOTHER mixed_color to reveal our shared secret"
 # Final Color Agreement
 #~ composite -compose Multiply ~/.zen/tmp/input_mixed_color.png \
-                                                        #~ ~/.zen/game/players/${PLAYER}/private_color.png \
-                                                         #~ ~/.zen/tmp/shared_secret.png
+            #~ ~/.zen/game/players/${PLAYER}/private_color.png \
+             #~ ~/.zen/tmp/shared_secret.png

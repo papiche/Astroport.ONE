@@ -4,12 +4,14 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 {
+## Détection emplacement script et initialisation "MY_PATH"
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
 
 ##################################################################  SUDO
+##  Lancement "root" interdit...
 ########################################################################
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. " && exit 1
 [[ ! $(groups | grep -w sudo) ]] \
@@ -18,6 +20,7 @@ start=`date +%s`
     && echo "Run Install Again..." && exit 0
 
 ################################################################### IPFS
+## installation de ipfs
 ########################################################################
 [[ ! $(which ipfs) ]] \
 && echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.kubo_v0.20.0_linux.sh)" \
@@ -26,14 +29,13 @@ start=`date +%s`
 || echo "=== IPFS FOUND === OK"
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
-#################################################################### TEST
-# tldr + mosquitto + promoetheus + meshtastic
 
-# MAIN # SI AUCUNE CLEF DE STATION...
+####################################################################
+# MAIN # AUCUNE CLEF PLAYER...
 if [[ ! -d ~/.zen/game/players/ ]];
 then
 echo "#############################################"
-echo "###### ASTROPORT.ONE STATION ##############"
+echo "###### ASTROPORT.ONE ZEN STATION ##############"
 echo "############# TW HOSTING & Ŋ1 SERVICES #############"
 echo "##################################################"
 
@@ -42,10 +44,9 @@ echo ; echo "UPDATING SYSTEM REPOSITORY"
 sudo apt-get update
 
 echo "#############################################"
-echo "######### INSTALL BASE & PYTHON3 PACKAGE ####"
+echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-
-for i in git make cmake docker-compose fail2ban npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools libsodium* libcurl4-openssl-dev python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp mpack; do
+for i in git tldr make cmake docker-compose fail2ban npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -53,6 +54,19 @@ for i in git make cmake docker-compose fail2ban npm shellcheck multitail netcat-
 
     fi
 done
+
+echo "#############################################"
+echo "######### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
+echo "#############################################"
+for i in python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp; do
+    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        sudo apt install -y $i
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+
+    fi
+done
+
 echo "#############################################"
 echo "######### INSTALL MULTIMEDIA TOOLS  ######"
 echo "#############################################"
@@ -67,7 +81,7 @@ for i in qrencode pv gnupg gpa pandoc ca-certificates basez jq bc file gawk ffmp
 done
 
 echo "#############################################"
-echo "######### FUN INSTALL ASCII ART TOOLS ######"
+echo "######### INSTALL ASCII ART TOOLS ######"
 echo "#############################################"
 for i in cmatrix cowsay fonts-hack-ttf; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
@@ -77,6 +91,7 @@ for i in cmatrix cowsay fonts-hack-ttf; do
 
     fi
 done
+
 
 if [[ $(which X 2>/dev/null) ]]; then
 echo "#############################################"
@@ -93,7 +108,7 @@ fi
 
 #### GIT CLONE ###############################################################
 echo "#############################################"
-echo "=== CODE CLONING  TO '~/.zen/Astroport.ONE'"
+echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
 echo "#############################################"
 mkdir -p ~/.zen
 cd ~/.zen
@@ -101,11 +116,13 @@ git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
 echo "#############################################"
-echo "######### INSTALL NODEJS & TIDDLYWIKI ############"
+echo "######### INSTALL TIDDLYWIKI ############"
 echo "#############################################"
 ##########################################################
 sudo npm install -g tiddlywiki
-[[ $? != 0 ]] && echo "INSTALL tiddlywikiFAILED." && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log
+[[ $? != 0 ]] \
+    && echo "INSTALL tiddlywiki FAILED." \
+    && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log
 
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
@@ -115,9 +132,10 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
 fi
 
 echo "#####################################"
-echo "##  CRYPTO LIB & PYTHON TOOLS"
+echo "## PYTHON TOOLS & CRYPTO LIB ##"
+echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
-for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry; do
+for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry paho-mqtt; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         python -m pip install --break-system-packages -U $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
@@ -160,16 +178,12 @@ echo
 echo "## MONITORING LAYER #### $plus ## PROMETHEUS ### PROBE : node_exporter"
 ${MY_PATH}/install.prometheus_node_exporter_linux.sh $plus
 
-echo "## CLONING seedbox    "
-cd ~/.zen
-git clone https://github.com/papiche/seedbox.git
-###############################################################
 echo
 
 #####################
 #### ~/.bashrc
-echo "########################### ♥BOX"
-sudo ln -f -s  /usr/bin/python3 /usr/bin/python
+echo "########################### ♥BOX ~/.bashrc"
+sudo ln -f -s /usr/bin/python3 /usr/bin/python
 
 while IFS= read -r line
 do
@@ -188,6 +202,12 @@ sudo usermod -aG docker $USER
 
 # INSTALL lazydocker GUI
 ${MY_PATH}/install.lazydocker.sh
+###############################################################
+## USING lazydocker + nginxproxymanager
+#~ echo "## CAN USE seedbox    "
+#~ cd ~/.zen
+#~ git clone https://github.com/papiche/seedbox.git
+###############################################################
 
 echo
 echo "#############################################"
@@ -224,45 +244,41 @@ echo "xXX please report any errors encountered during install  XXx"
 echo "################XXXX#########################"
 echo "RUN TEST : ~/.zen/Astroport.ONE/test.sh"
 echo
-echo "#############################################"
+echo "#########################################################"
 echo "Astroport.ONE - Web3 Information System over IPFS - "
 echo "#############################################"
-echo "##GROUND CONTROL #################################"
-echo "* WEB : http://127.0.0.1:1234/"
-echo "* CLI : ~/.zen/Astroport.ONE/command.sh"
-echo "#############################################"
-echo "### SUPPORT #############################"
+echo "### ASK FOR SUPPORT #########################"
 echo "### support@qo-op.com"
+echo "#############################################"
+echo "## TAKE CONTROL #################################"
+echo "* WEB : http://astroport.localhost:1234/"
+echo "* CLI : ~/.zen/Astroport.ONE/command.sh"
 echo "#############################################"
 
 ##########################################################
-    ## ON BOARDING PLAYER
-    # ~/.zen/Astroport.ONE/start.sh
-    espeak "Welcome Web3 Astonaut" 2>/dev/null
-echo ">>> Welcome Web3 Astonaut <<<"
-echo "Create a PLAYER using : ~/.zen/Astroport.ONE/command.sh"
-echo "Join Dragons. Add DATA to UPlanet Common Good Ledger"
+## ON BOARDING PLAYER
+espeak "Welcome Web3 Astonaut" 2>/dev/null
+
+echo ">>> Welcome Web3 Astronaut <<<"
 echo "#############################################"
-# DESACTIVATING ASTROPORT DAEMONS
+# ACTIVATING ASTROPORT DAEMONS
+echo ">>> ASTROPORT ON/OFF <<<
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
-echo ">>> TO DESACTIVATE ASTROPORT <<<
- ~/.zen/Astroport.ONE/tools/cron_VRFY.sh OFF"
 echo "############################## ♥BOX READY ###"
-echo "PLEASE CREATE PLAYER"
+echo "CREATE PLAYER......"
+
 ~/.zen/Astroport.ONE/command.sh
 
 else
 
-echo "Installation existante !!
-========================
-Astroport/TW
-========================
-Connectez-vous sur https://gchange.fr avec vos identifiants
-
+echo "ABORTING INSTALL
+===============================
+PLAYER already onboard...
+===============================
 $(cat ~/.zen/game/players/.current/secret.june)
-
-Powered by https://astroport.com
-"
+==============================="
 # MAIN #
+
 fi
 }
