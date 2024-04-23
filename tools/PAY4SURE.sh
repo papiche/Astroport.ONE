@@ -132,7 +132,7 @@ else
     if [[ $(cat ${PENDINGDIR}/${MOATS}.result.html | grep "insufficient balance") ]]; then
         echo "insufficient balance"
     else
-        GVASERVER=$(${MY_PATH}/duniter_getnode.sh | tail -n 1)
+        GVASERVER=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
         ## Changing GVA SERVER in tools/jaklis/.env
         [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
             && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
