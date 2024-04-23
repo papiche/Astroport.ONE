@@ -475,6 +475,7 @@ for UMAP in ${unique_combined[@]}; do
     | sed -e "s~_ZONE_~${UMAP}~g" \
               -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
               -e "s~_ZONENS_~${TODATENS}~g" \
+              -e "s~_ZCHAIN_~${ZCHAIN}~g" \
               -e "s~_IPFSNINJA_~${VDONINJA}~g" \
               -e "s~_HACKGIPFS_~${HACKGIPFS}~g" \
               -e "s~_UPZONE_~SECTOR ${SECTOR}~g" \

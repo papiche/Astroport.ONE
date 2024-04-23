@@ -325,6 +325,7 @@ for SECTOR in ${SECTORS[@]}; do
               -e "s~_LAT_~${SLAT}~g" \
               -e "s~_LON_~${SLON}~g" \
               -e "s~_EARTHCID_~${EARTHCID}~g" \
+              -e "s~_ZCHAIN_~${ZCHAIN}~g" \
               -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
               -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${RLAT}\&southWestLon=${RLON}\&deg=1~g" \
               -e "s~http://127.0.0.1:8080~~g" \
