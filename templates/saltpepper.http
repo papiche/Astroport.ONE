@@ -81,24 +81,24 @@ header {
         </div>
         <div id='countdown'></div>
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
-    <h1><span>Astroport</span> <a href="http://127.0.0.1:12345">Ŋ1</a></h1>
+    <h1><span>UPlanet</span> <a target="UPlanet" href="https://qo-op.com">(&#128077;)</a></h1>
     <div id="yellow">
         <h2>SALT</h2>
         <input name='salt' value='0'>
         <h2>PEPPER</h2>
         <input name='pepper' value='0'>
 </div>
+
+        <input type='hidden' name=g1pub value='fr'></br>
+        <span>&#9993; email : </span><input name=email value=''></br>
         <h2>
         <div id="typed-strings">
-            <p><span>/ <strong><em>MULTIPASS</em></strong> /</span>^3223</p>
-            <p>&#8984; enter <em>UPlanet</em> secrets &#9925;</span> ^3222</p>
-            <p>plug your <strong><em><u>👉TW5👈</u></em></strong> there^3112</p>
-            <p>🔥.^999.^888.^777.^666.5^555.4^444.3^333.2^222.1^111 🚀^4321</p>
+            <p>&#9737; enter <em>MULTIPASS</em> secrets</span> ... ^3222</p>
+            <p>&#8853; <strong><em><u>👉 email 👈</u></em></strong> ... 🚀^3112</p>
+            <p>🔥.^999.^888.^777.^666.5^555.4^444.3^333.2^222.1^111  <span> 📺 TW5 📺 </span> ^4321</p>
         </div>
         <span id="typed"></span>
         </h2>
-        <span>📺 TW5 : </span><input type='hidden' name=g1pub value='fr'><a target="UPlanet" href="https://qo-op.com">(&#128077;)</a></br>
-        <span>Email : </span><input name=email value=''></br></br>
         <input type='submit' value='[(♥‿‿♥)]'>
 
 </form>

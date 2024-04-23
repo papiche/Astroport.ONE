@@ -156,9 +156,9 @@ input[name="uplanet"] {
 <form id="formlink" action="http://127.0.0.1:1234" method="GET" enctype="application/x-www-form-urlencoded">
 
     <h1><a href="/"  title="/UPlanet" >U</a><span>Planet</span>
-    <br><span>(<a id="satLink" href="#" title="OSM Sat"><<&nbsp;sat <&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;> map&nbsp;>></a>)</span></h1>
+    <br><span>(<a id="satLink" href="#" title="OSM Sat">((&nbsp;sat <&nbsp;</a>(<a href="https://qo-op.com"  title="Navigate on UPlanet" >qo-op</a>)<a id="mapLink" href="#" title="OSM Map">&nbsp;> map&nbsp;))</a>)</span></h1>
 
-        <span>Enter Email</span></br>
+        </br>
         <input name=uplanet value=''></br>
 
 <br> [<span id='LAT'></span>]-[<span id='LON'></span>] <span>registration</span><br>
@@ -218,7 +218,7 @@ input[name="uplanet"] {
       var browserLanguage = detectBrowserLanguage();
       var iframe = document.getElementById('aframe');
       // Construct the new URL based on the detected language
-      var newSrc = 'https://pad.p2p.legal/Astroport_1234_' + browserLanguage;
+      var newSrc = 'https://pad.p2p.legal/s/Astroport_1234_' + browserLanguage;
       iframe.src = newSrc;
       const passElement = document.querySelector('input[name="g1pub"]');
       passElement.value = browserLanguage;
