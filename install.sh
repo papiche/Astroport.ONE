@@ -68,9 +68,8 @@ for i in python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg
 done
 
 echo "#############################################"
-echo "######### INSTALL MULTIMEDIA TOOLS  ######"
+echo "######### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
-# removed : sqlite
 for i in qrencode pv gnupg gpa pandoc ca-certificates basez jq bc file gawk ffmpeg dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text ssmtp imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -91,7 +90,6 @@ for i in cmatrix cowsay fonts-hack-ttf; do
 
     fi
 done
-
 
 if [[ $(which X 2>/dev/null) ]]; then
 echo "#############################################"
@@ -257,16 +255,17 @@ echo "#############################################"
 
 ##########################################################
 ## ON BOARDING PLAYER
-espeak "Welcome Web3 Astonaut" 2>/dev/null
-
-echo ">>> Welcome Web3 Astronaut <<<"
 echo "#############################################"
 # ACTIVATING ASTROPORT DAEMONS
 echo ">>> ASTROPORT ON/OFF <<<
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
+
 echo "############################## ♥BOX READY ###"
-echo "CREATE PLAYER......"
+espeak "Welcome Web 3 Astronaut" 2>/dev/null
+echo ">>> Welcome Web3 Astronaut <<<"
+echo "CREATE PLAYER
+"
 
 ~/.zen/Astroport.ONE/command.sh
 
