@@ -185,10 +185,10 @@ echo "<<< UPDATED>>> PATH=$PATH"
 echo "##  ADDING lazydocker ================"
 ### ADD TO DOCKER GROUP
 sudo usermod -aG docker $USER
+
 # INSTALL lazydocker GUI
-curl https://raw.githubusercontent.com/\
-jesseduffield/lazydocker/master/scripts/\
-install_update_linux.sh | bash
+${MY_PATH}/install.lazydocker.sh
+
 echo
 echo "#############################################"
 echo "######### SYSTEM SETUP  #########################"
