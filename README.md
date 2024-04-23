@@ -542,9 +542,9 @@ https://ipfs.copylaradio.com/ipfs/QmUtGpGeMZvwp47ftqebVmoFWCmvroy5wEtWsKvWvDWJpR
 This "digital art" structure is a selection of some of the most valuable Free & OpenSource Software I ever had in my hand.
 Credits is going to all the kindness and care provided to make valuable and secure software available for all
 
-Did you ever [dring a beer bought in G1](https://monnaie-libre.fr) ?
+Do you know [G1](https://monnaie-libre.fr) ? The best crypto coin you could ever dream about...
 
-You can pay me a beer or more by [contributing to our OpenCollective](https://opencollective.com/monnaie-libre#category-ABOUT)
+Thanks for contributions on [Swarm BUDGET](https://opencollective.com/monnaie-libre#category-BUDGET)
 
 
 ## IPFS Ecosystem Directory Submission Form
