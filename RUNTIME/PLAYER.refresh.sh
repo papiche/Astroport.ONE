@@ -121,7 +121,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
         ## SEND AN EMAIL ALERT TO PLAYER
-        echo "<html><head>
+        echo "<html><head><meta charset='UTF-8'>
 <style>
     body {
         font-family: 'Courier New', monospace;
@@ -562,7 +562,15 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN -- $days DAYS"
             ## DEAD PLAYER ??
             if [[ ${days} -eq 27 ]]; then
-                echo "<html><head><meta charset='utf-8'></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
+                echo "<html><head><meta charset='UTF-8'>
+                <style>
+                    body {
+                        font-family: 'Courier New', monospace;
+                    }
+                    pre {
+                        white-space: pre-wrap;
+                    }
+                </style></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
                 echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
 
                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"

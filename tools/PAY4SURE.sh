@@ -105,14 +105,23 @@ if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | g
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
     ##### MONITORING #########
-    echo "<html><h1>${ZENAMOUNT} ZEN OPERATION</h1>
+    echo "<html><head><meta charset='UTF-8'>
+<style>
+    body {
+        font-family: 'Courier New', monospace;
+    }
+    pre {
+        white-space: pre-wrap;
+    }
+</style></head><body>
+    <h1>${ZENAMOUNT} ZEN OPERATION</h1>
     ${COMMENT}
     <h3><a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
     (<a href='$myUPLANET/g1gate/?pubkey=${ISSUERPUB}'>SCAN</a>)
     <br> //--->> <a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${G1PUB}/'>${G1PUB}</a>
     (<a href='$myUPLANET/g1gate/?pubkey=${G1PUB}'>SCAN</a>)
     </h3>
-    </html>" > ${PENDINGDIR}/${MOATS}.result.html
+    </body></html>" > ${PENDINGDIR}/${MOATS}.result.html
 
     $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
 
@@ -124,9 +133,14 @@ if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | g
 
 else
 
-    echo "TRANSACTION ERROR"
+    echo "TRANSACTION ERROR... "
     GVASERVER=$(${MY_PATH}/duniter_getnode.sh | tail -n 1)
 
+    ## CHANGING GVA SERVER
+    [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
+        && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
+        && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
+        && echo "NEW GVA NODE : ${GVASERVER}"
     #~ ## INFORM SYSTEM MUST RENEW OPERATION
     #~ rm ${PENDINGFILE}
     #~ echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
