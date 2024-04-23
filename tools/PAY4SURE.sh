@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 # MAKE PAYMENTS ON DUNITER BLOCKCHAIN
 # VERIFY SUCCES & RENEW IF FAILED
@@ -54,7 +54,7 @@ echo
 echo "PAYMENT PROCESSOR ID ${MOATS}"
 echo "${ISSUERPUB} : (${AMOUNT}) -> ${G1PUB}"
 
-[[ -z $COMMENT ]] && COMMENT="ZEN:${MOATS}"
+[[ -z $COMMENT ]] && COMMENT="UPLANET:ZEN:${MOATS}"
 
 PENDINGDIR=$HOME/.zen/game/pending/${ISSUERPUB}
 ### PREPARE PENDINGFILE INFO ZONE
@@ -104,8 +104,9 @@ if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | g
     ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
 
-    ##### MONITORING #########
+    ##### ADMIN MONITORING #########
     echo "<html><head><meta charset='UTF-8'>
+    <title>${COMMENT}</title>
 <style>
     body {
         font-family: 'Courier New', monospace;
@@ -117,31 +118,31 @@ if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | g
     <h1>${ZENAMOUNT} ZEN OPERATION</h1>
     ${COMMENT}
     <h3><a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
-    (<a href='$myUPLANET/g1gate/?pubkey=${ISSUERPUB}'>SCAN</a>)
+    (<a href='$myUPLANET/g1gate/?pubkey=${ISSUERPUB}'>SCAN</a>) : ${ZENCUR} ZEN
     <br> //--->> <a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${G1PUB}/'>${G1PUB}</a>
-    (<a href='$myUPLANET/g1gate/?pubkey=${G1PUB}'>SCAN</a>)
+    (<a href='$myUPLANET/g1gate/?pubkey=${G1PUB}'>SCAN</a>) : ${ZENDES} ZEN
     </h3>
     </body></html>" > ${PENDINGDIR}/${MOATS}.result.html
 
     $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
 
-    ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
-    rm ${PENDINGDIR}/${MOATS}.key
-    rm ${PENDINGDIR}/${MOATS}_replay.sh
-    rm ${PENDINGDIR}/${MOATS}.result.html
-    rm ${PENDINGFILE}
-
 else
 
-    echo "TRANSACTION ERROR... "
-    GVASERVER=$(${MY_PATH}/duniter_getnode.sh | tail -n 1)
+    echo "(╥☁╥ ) TRANSACTION ERROR (╥☁╥ )"
+    if [[ $(cat ${PENDINGDIR}/${MOATS}.result.html | grep "insufficient balance") ]]; then
+        echo "insufficient balance"
+    else
+        GVASERVER=$(${MY_PATH}/duniter_getnode.sh | tail -n 1)
+        ## Changing GVA SERVER in tools/jaklis/.env
+        [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
+            && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
+            && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
+            && echo "OK. NEW GVA NODE : ${GVASERVER}" \
+            || echo "ERROR. BAD GVA NODE : ${GVASERVER}"
 
-    ## CHANGING GVA SERVER
-    [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
-        && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
-        && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
-        && echo "NEW GVA NODE : ${GVASERVER}"
-    #~ ## INFORM SYSTEM MUST RENEW OPERATION
+    fi
+
+    #~ ## MAKE SYSTEM RENEW OPERATION
     #~ rm ${PENDINGFILE}
     #~ echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
     #~ <h1>-  MUST RETRY -</h1>
@@ -166,5 +167,12 @@ else
 
 
 fi
+
+## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
+rm ${PENDINGDIR}/${MOATS}.key
+rm ${PENDINGDIR}/${MOATS}_replay.sh
+rm ${PENDINGDIR}/${MOATS}.result.html
+rm ${PENDINGFILE}
+
 
 exit 0
