@@ -31,6 +31,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
     ## COPY STATION  yt-dlp.list
     cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
+    cp $HOME/.zen/.yt-dlp.mp3.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.mp3.list
 
     ## COPY COINS VALUE OF THE DAY
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/COINS/

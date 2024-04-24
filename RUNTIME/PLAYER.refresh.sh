@@ -489,7 +489,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     #### UPlanetZINE/day${days}/index.${lang}.html
     TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
     [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
-    [[ -s ${TODAYZINE} ]] \
+    [[ -s ${TODAYZINE} && ${days} -gt 0 ]] \
         && echo "SENDING TODAYZINE DAY ${days} + mailjet TW import " \
         && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${TODAYZINE} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
         || echo "NO ZINE FOR DAY ${days}"

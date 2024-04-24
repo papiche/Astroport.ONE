@@ -184,7 +184,7 @@ while read LINE;
             echo "COPYING MP3 (!-q)"
             /usr/local/bin/yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata \
                         $BROWSER \
-                        --download-archive ${HOME}/.zen/.yt-dlp.list \
+                        --download-archive ${HOME}/.zen/.yt-dlp.mp3.list \
                         -o "${HOME}/.zen/tmp/yt-dlp/$TITLE.%(ext)s" "${ZYURL}"
 
             ZFILE="$TITLE.mp3"
@@ -239,7 +239,7 @@ while read LINE;
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
             <h1><a target='_blank' href='"${ZYURL}"'>Web2.0 Tube</a></h1>"
-            FOLDER="/MP4"
+
         else
             TEXT="<audio controls>
             <source src='/ipfs/"${ILINK}"' type='"${MIME}"'>
@@ -249,7 +249,7 @@ while read LINE;
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
             <h1><a target='_blank' href='"${ZYURL}"'>Web2.0 Tube</a></h1>"
-            FOLDER="/MP3"
+
         fi
 
         end=`date +%s`
@@ -274,7 +274,7 @@ while read LINE;
         "giftime": "'${PROBETIME}'",
         "gifanime": "'/ipfs/${ANIMH}'",
         "modified": "'${MOATS}'",
-        "title": "'${FOLDER}/${ZFILE}'",
+        "title": "'${ZFILE}'",
         "type": "'text/vnd.tiddlywiki'",
         "vtratio": "'${VTRATIO}'",
         "text": "'$TEXT'",

@@ -55,17 +55,27 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
     echo "SYNC ~/.zen/tmp/${MOATS}/${UMAP} <=> $ipfs_pop"
 
-    ## TODO: SECURITY PATCH : check payment emitter is from BOOSTRAP
     if [[ $ipfs_pop ]]; then
         echo "FOUND $todate MEMORY SLOT"
         g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
+
+        ## ADD SECURITY : check payment emitter is a "BOOSTRAP" (TODO)
+        nodeid=$(${MY_PATH}/../tools/g1_to_ipfs.py $g1pub)
+
+
         ipfs --timeout 360s get --progress="false" -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
             && ipfs pin rm $ipfs_pop \
             || echo "$ipfs_pop ERROR ... "
     else
         echo "WARNING cannot revover any memory !!"
     fi
+
+    ## REMOVE PREVIOUS PIN (in case last one was not mine)
+    antecom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .comment' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 2 | head -n 1)
+    ipfs_b=$(echo "$antecom" | rev | cut -d ':' -f 1 | rev)
+    [[ ! -z ${ipfs_b} ]] && ipfs pin rm ${ipfs_b}
+
 
 else
     echo "FATAL ERROR cannot access to SECTORG1PUB history"
