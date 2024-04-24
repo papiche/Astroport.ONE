@@ -67,8 +67,10 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 ############################################################
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
-
-#### UPLANET FLASHMEM UPDATES
+###################################################################
+###############################################
+##############################
+#### UPLANET GEOKEYS_refresh
 ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
 ###################################################################
@@ -81,6 +83,7 @@ while true; do
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ ${myIP} == "" ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
+    echo "/ip4/${myIP}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
@@ -181,11 +184,12 @@ while true; do
 
                 ############ UPSYNC CALL
                 echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
-                curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} -o ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json
+                curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} \
+                    -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
 
                 ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
                 echo "ANALYSING BOOSTRAP SWARM MAP"
-                itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/map.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
+                itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
                 ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 
                 echo "================ ${nodeip}:12345 ZNODS LIST"

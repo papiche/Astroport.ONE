@@ -13,7 +13,7 @@ ME="${0##*/}"
 ## IT MAKES $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key
 ## Then used to create an private IPFS swarm
 
-echo "(✜‿‿✜) Fork UPlanet
+echo "(✜‿‿✜) CURRENT Fork UPlanet
 This wish makes Player generate or join a private IPFS swarm
 It can be use to populate UPlanet ZERO (or not)
 All friends with the same wish will share the SECRET
@@ -21,20 +21,18 @@ then any can activate a new ipfs daemon connected to that private ZONE
 Planet shape could be define from text found in command tiddler
 and initiale new euclidian geokeys...
 Default :
-flaoting points"
+floating points"
 
 echo "$ME RUNNING"
 
 CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 ########################################################################
-INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
 [[ ! -s ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
 [[ ! -s ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 ORIGININDEX=${INDEX}
 
-PLAYER="$2"
 [[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 [[ ! ${PLAYER} ]] && echo "ERROR - Please provide PLAYER" && exit 1
 
@@ -44,12 +42,10 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ ! $G1PUB ]] && echo "ERROR - G1PUB ${PLAYER} VIDE"  && exit 1
 
-MOATS="$3"
 [[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 echo "${PLAYER} ${INDEX} ${ASTRONAUTENS} ${G1PUB} "
 mkdir -p $HOME/.zen/tmp/${MOATS}
-echo "~/.zen/tmp/${MOATS}/swarm.key"
 
 PLAYERPUB=$(cat $HOME/.zen/game/players/${PLAYER}/secret.dunikey | grep pub | cut -d ' ' -f 2)
 [[ "${PLAYERPUB}" == "" ]] && echo "FATAL ERROR PLAYER KEY MISSING" && exit 1
@@ -80,11 +76,11 @@ SECRET=$(cat ${JSONUPLANET} | jq -r ".secret") ## What is secret ?
 
 CONTRACT=$(cat ${JSONUPLANET} | jq -r ".text") ## What contract is applying ?
 [[ "${CONTRACT}" == "null" || "${CONTRACT}" == "" ]] && CONTRACT="☼☼☼☼☼ floating points ☼☼☼☼☼"
-echo "- CONTRACT -------------------------------------"
-echo "$CONTRACT"
-echo "--------------------------------------"
-AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
 
+AHAH=$(echo $CONTRACT | sha512sum | cut -d ' ' -f 1)
+echo "%%% CONTRACT HASH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+echo "$AHAH"
+echo "$HASH"
 [[ $AHAH != $HASH ]] && echo " - WARNING - CONTRACT CHANGED - WARNING -"
 
 ## CHECK EXISTING ${UPNAME}.swarm.key
@@ -99,9 +95,13 @@ echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 ## EXTRACT CURRENT SECRET FROM JSONUPLANET
 # which is PLAYER pub encrypted base16 of swarm.key
 ###################################################
-OLD16=$(cat ${JSONUPLANET} | jq -r ".secret")
+## check if we have a player slot with cyphered key
+IN16=$(cat ${JSONUPLANET} | jq -r '."${PLAYER}"')
+## secret is only decrypted by wish source player
+[[ ${IN16} == "" || ${IN16} == "null" ]] \
+    && IN16=$(cat ${JSONUPLANET} | jq -r ".secret")
 
-if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
+if [[ ${IN16} == "" || ${IN16} == "null" ]]; then
 
     echo "NO SECRET FOUND" \
     && echo "NEW SECRET SWARM.KEY GENERATION" \
@@ -114,25 +114,26 @@ if [[ ${OLD16} == "" || ${OLD16} == "null" ]]; then
 else
 
     ## DEBASE16
-    echo "${OLD16}" | base16 -d \
+    echo "${IN16}" | base16 -d \
             > ~/.zen/tmp/${MOATS}/swarmkey.crypted
 
-    ## TRY TO DECODE with PLAYER secret.dunikey
+    ## DECODING with PLAYER secret.dunikey
     ${MY_PATH}/../tools/natools.py decrypt \
             -f pubsec \
             -k $HOME/.zen/game/players/${PLAYER}/secret.dunikey \
             -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
             -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
 
+    ## CHEK KEY WITH ACTUAL ONE
     [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key) ]] \
-        && echo " SWARM AND LOCAL KEY ARE DIFFERENT " && ERR="TW SWARM CHANGED"
+        && echo "- WARNING - UPDATING ${UPNAME}.swarm.key ..." && ERR="TW SWARM CHANGED"
 
     ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
     [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
             && cp ~/.zen/tmp/${MOATS}/swarmkey.decrypted \
                 $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
-            && echo "PLAYER LOCAL SWARMKEY UPDATED" \
-            || echo "ERROR RELOADING SWARMKEY"
+            && echo "PLAYER ${UPNAME}.swarm.key IS VALID" \
+            || { echo "ERROR PLAYER ${UPNAME}.swarm.key IS NOT VALID"; exit 1; }
 
 fi
 
@@ -144,8 +145,8 @@ ${MY_PATH}/../tools/natools.py encrypt \
 ENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc | base16)
 rm $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc
 echo "==> base16 ${PLAYER} encrypted swarm.key"
-echo "${SECRET}"
-echo "${ENCODING}"
+#~ echo "${SECRET}"
+#~ echo "${ENCODING}"
 
 #################################################################
 ## MAKE KEY ENCODING FOR FRIENDS
@@ -154,23 +155,28 @@ for f in ${friends[@]};
 do
     ## Extract FRIENDG1PUB from TW (Astroport Tiddler)
     ftw=${HOME}/.zen/game/players/${PLAYER}/FRIENDS/${f}/index.html
-    [[ ! -s ${ftw} ]] && echo "FRIENDS/${f}" && continue
+    [[ ! -s ${ftw} ]] && echo "FRIENDS/${f} : $(cat "$HOME/.zen/game/players/${PLAYER}/FRIENDS/${f}")" && continue
     tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_Astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
     FRIENDG1PUB=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].g1pub)
-    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].astroport)
-    [[ ${ASTROPORT} != "/ipns/${IPFSNODEID}" ]] && echo "FOREIGN ASTROPORT=${ASTROPORT}" && foreign="YES"
+    echo "___________________"
     echo "$f : $FRIENDG1PUB"
 
-    ASTROPORTS=("${ASTROPORTS[@]}" "${ASTROPORT}")
+    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].astroport)
+    [[ ${ASTROPORT} != "/ipns/${IPFSNODEID}" ]] \
+        && echo "FOREIGN ASTROPORT=${ASTROPORT}" \
+        && foreign="YES" \
+        && ASTROPORTS=("${ASTROPORTS[@]}" "${ASTROPORT}")
 
     if [[ ${FRIENDG1PUB} && ${FRIENDG1PUB} != "null" ]]; then
 
         #~ CHECK IF player ALREADY IN JSON
         echo "cat ${JSONUPLANET} | jq -r '.\"${f}\"'"
         FRIENDIN=$(cat ${JSONUPLANET} | jq -r '."${f}"')
-        [[ "${FRIENDIN}" != "null" && "${FRIENDIN}" != "" ]] && echo "${FRIENDIN} OK" && continue
+        [[ "${FRIENDIN}" != "null" && "${FRIENDIN}" != "" ]] \
+            && echo "${FRIENDIN} ALREADY IN FORK TIDDLER." \
+            && continue
 
-        #~ Create FRIENDG1PUB encrypted version of swarm.key
+        echo "#~ Create FRIENDG1PUB encrypted version of swarm.key"
         ${MY_PATH}/../tools/natools.py encrypt \
             -p ${FRIENDG1PUB} \
             -i $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
@@ -178,7 +184,7 @@ do
         FENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc | base16)
         rm $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.${f}.swarm.key.enc
 
-        ## Addd email=crypt(swarmkey) field to ${JSONUPLANET} tiddler.
+        echo "## Addd email=crypt(swarmkey) field to ${JSONUPLANET} tiddler."
         cat ${JSONUPLANET} | jq '. | ."_f_" = "_FENCODING_"' > ~/.zen/tmp/${MOATS}/json.up \
             && sed -i 's/_f_/'"$f"'/g; s/_FENCODING_/'"$FENCODING"'/g' ~/.zen/tmp/${MOATS}/json.up \
             && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
@@ -186,50 +192,62 @@ do
     else
         echo "- FATAL ERROR - Friend TW ${ftw} is broken !!"
         continue
+
     fi
 
-    ZENSTATIONS=($(echo "${ASTROPORTS[@]}" | tr ' ' '\n' | sort -u))
-    ## CHECK IF FRIEND HAVE THE SAME ${UPNAME} tiddler
     if [[ ${foreign} == "YES" ]]; then
-
+    echo "## Check if friend have an ${UPNAME} tiddler and that secret is the same"
         ## SEARCH FOR ${UPNAME} tiddler IN FRIEND TW
-        tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_${UPNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${UPNAME}"
-        cat ~/.zen/tmp/${MOATS}/${f}_${UPNAME}.json | jq -r '[]."'${PLAYER}'"'
+        tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} \
+        --render '.' "${f}_${UPNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${UPNAME}"
 
-        ## CONTROL SWARMKEY DECODING (must be similar to our)
+        ## CONTROL SWARMKEY DECODING (must be equal)
+        OUT16=$(cat ~/.zen/tmp/${MOATS}/${f}_${UPNAME}.json | jq -r '[]."'${PLAYER}'"')
+        echo "${IN16}"
+        echo "${OUT16}"
 
-        ## IPFSNODEID IS FORKING TO NEW UPLANET
-        if [[ ${#ZENSTATIONS[@]} -gt 5 ]]; then
-            echo "UPlanet.ZERO WARPING ZONE... Activating ${UPNAME}"
-            ## HERE eache PLAYER share the tiddler
-            # only secret field is "!=" in each, as it is self encoding key
-            # we must find our email="The same" in each friends TW
-            ## CONTROL
-            # round looking in friends TW... Can be done before...
+        [[ ${IN16} == ${OUT16} ]] \
+            && echo "OK STATIONS +1 : TW sharing the same wish. " \
+            && OKSTATIONS=("${OKSTATIONS[@]}" "${ASTROPORT}") \
+            || echo "NO GOOD! TW not synchronized."
 
-            ## APPLY
-            NEWUPLANETNAME=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key | tail -n 1)
-            ##################################################
-            # Let's clone & apply some patch to Astroport.ONE
-            # tools/my.sh
-            echo "UPLANETNAME=$NEWUPLANETNAME"
-            # Activate UPLANETNAME=SWARMKEY
-            # Adapt "boostrap list"
-            # make G1PalPay refuse not from Boostrap primal TX
-            # and adapt 20H12.process.sh
-
-            # now we add key into ~/.ipfs/swarm.key
-            #~ cp $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ~/.ipfs/swarm.key
-            # it will make IPFSNODEID restarting in private mode
-
-        fi
-
+        foreign=""
     fi
 
 done
 
+ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## REMOVE DUPLICATE
+echo "<<< My Friends are located in ${#ASTROPORTS[@]} ASTROPORT(s) : ${#ZENSTATIONS[@]} are OK >>>"
 
-echo "<<< MY FRIENDS ARE LOCATED IN ${#ZENSTATIONS[@]} FOREIGN ASTROPORT >>>"
+## IPFSNODEID IS FORKING TO NEW UPLANET
+if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
+    echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
+    ## HERE each PLAYER share the same wish
+    # only secret field is "!=" in each, as it is self encoding key
+    # we must find our email="The same" in each friends TW
+    ## CONTROL
+    # round looking in friends TW... Can be done before...
+
+    ## APPLY
+    NEWUPLANETNAME=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key | tail -n 1)
+    ##################################################
+    # Let's clone & apply some patch to Astroport.ONE
+    # tools/my.sh
+    echo "UPLANETNAME=$NEWUPLANETNAME"
+    # Activate UPLANETNAME=SWARMKEY
+    for station in ${#ZENSTATIONS[@]}; do
+        # Adapt "boostrap list"
+        cat ~/.zen/tmp/swarm/${station}/myIPFS.txt
+    done
+    # make G1PalPay refuse not from Boostrap primal TX
+    # and adapt 20H12.process.sh
+
+
+    # now we add key into ~/.ipfs/swarm.key
+    #~ cp $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ~/.ipfs/swarm.key
+    # it will make IPFSNODEID restarting in private mode
+
+fi
 
 ## UPDATE JSONUPLANET
 cat ${JSONUPLANET} | jq '. | ."UPname" = "_UPNAME_"' > ~/.zen/tmp/${MOATS}/json.up \
