@@ -337,6 +337,7 @@ while read LINE;
     else
         echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"
         echo "XXXXXXXXXXXXXXXXXXXXXXX"
+        break
     fi
 
 done  < ~/.zen/tmp/${IPFSNODEID}/yt-dlp.cache.${PLAYER} # FINISH YID loop 1
