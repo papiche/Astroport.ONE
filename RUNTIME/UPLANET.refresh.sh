@@ -100,7 +100,7 @@ for UMAP in ${unique_combined[@]}; do
     start=`date +%s`
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     mkdir ~/.zen/tmp/${MOATS}/${UMAP}
-    echo "## IPFS GET YESTERDATENS"
+    echo "## IPFS GET YESTERDATENS /ipns/${YESTERDATENS}/"
     ipfs --timeout 300s get --progress=false -o ~/.zen/tmp/${MOATS}/${UMAP}/ /ipns/${YESTERDATENS}/
     if [[ $? != 0 ]]; then
         echo "(╥☁╥ ) swarm online memory empty (╥☁╥ )"

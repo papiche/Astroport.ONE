@@ -92,16 +92,32 @@ for i in cmatrix cowsay fonts-hack-ttf; do
 done
 
 if [[ $(which X 2>/dev/null) ]]; then
-echo "#############################################"
-echo "######### INSTALL DESKTOP TOOLS  ######"
-echo "#############################################"
-for i in x11-utils xclip zenity kodi; do
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        sudo apt install -y $i;
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+    echo "#############################################"
+    echo "######### INSTALL DESKTOP TOOLS  ######"
+    echo "#############################################"
+    for i in x11-utils xclip zenity kodi; do
+        if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+            echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+            sudo apt install -y $i;
+            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+        fi
+    done
+
+
+    if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
+    echo "#############################################"
+    echo " ### CONFIGURATION KODI FR PLUGIN ## "
+    echo "#############################################"
+    (
+        mkdir -p ~/.zen/tmp/kodi
+        echo "PATIENTEZ..."
+        ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
+        echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
+        mv ~/.kodi ~/.kodi.back 2>/dev/null
+        mv ~/.zen/tmp/kodi ~/.kodi
+        echo "Now run kodi and update plugins"
+    ) &
     fi
-done
 fi
 
 #### GIT CLONE ###############################################################
@@ -218,20 +234,6 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
-
-#~ if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
-#~ echo "#############################################"
-#~ echo " ### BONUS APP ## IPFS # KODI FR PLUGIN ## "
-#~ echo "#############################################"
-#~ (
-    #~ mkdir -p ~/.zen/tmp/kodi
-    #~ echo "PATIENTEZ..."
-    #~ ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
-    #~ echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
-    #~ mv ~/.kodi ~/.kodi.back 2>/dev/null
-    #~ mv ~/.zen/tmp/kodi ~/.kodi
-#~ ) &
-#~ fi
 
 end=`date +%s`
 echo Installation time was `expr $end - $start` seconds.

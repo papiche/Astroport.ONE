@@ -537,74 +537,71 @@ for PLAYER in ${PLAYERONE[@]}; do
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     #########################################################
-    ##### AFTER 2 WEEKS : START TW JSON RSS EXPORT
-    if [[ ${days} -ge 14 ]]; then
-        ###################
-        # REFRESH PLAYER_feed KEY
-        echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
+    ##### TW JSON RSS EXPORT
+    ###################
+    # REFRESH PLAYER_feed KEY
+    echo "(☉_☉ ) (☉_☉ ) (☉_☉ ) RSS"
 
-        #########################################################################################
-        ## CREATING 30 DAYS JSON RSS STREAM
-        # [days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]
-        #########################################################################################
-        tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-            --output ~/.zen/game/players/${PLAYER}/ipfs \
-            --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]'
+    #########################################################################################
+    ## CREATING 30 DAYS JSON RSS STREAM
+    # [days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]
+    #########################################################################################
+    tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        --output ~/.zen/game/players/${PLAYER}/ipfs \
+        --render '.' "${PLAYER}.rss.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]!externalTiddler[yes]!tag[load-external]]'
 
-        [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
-            && echo "NO ${PLAYER} RSS - BAD "
+    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json ]] \
+        && echo "NO ${PLAYER} RSS - BAD "
 
-        echo "~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json"
+    echo "~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json"
 
-        ########################################################
-        #### PLAYER ACCOUNT HAVE NEW TIDDLER or NOT #########
-        if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "${CURRENT}" != "${PLAYER}" ]]; then
-            echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN -- $days DAYS"
-            ## DEAD PLAYER ??
-            if [[ ${days} -eq 27 ]]; then
-                echo "<html><head><meta charset='UTF-8'>
-                <style>
-                    body {
-                        font-family: 'Courier New', monospace;
-                    }
-                    pre {
-                        white-space: pre-wrap;
-                    }
-                </style></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
-                echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
+    ########################################################
+    #### PLAYER ACCOUNT HAVE NEW TIDDLER or NOT #########
+    if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "${CURRENT}" != "${PLAYER}" ]]; then
+        echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN -- $days DAYS"
+        ## DEAD PLAYER ??
+        if [[ ${days} -eq 27 ]]; then
+            echo "<html><head><meta charset='UTF-8'>
+            <style>
+                body {
+                    font-family: 'Courier New', monospace;
+                }
+                pre {
+                    white-space: pre-wrap;
+                }
+            </style></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
+            echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
 
-                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
-                echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
-            fi
-            if [[ ${days} -gt 29 ]]; then
-                #################################### UNPLUG ACCOUNT
-                echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
-                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
-                continue
-            fi
-
-            ## PAY 1 ZEN TO UMAPG1PUB
-            [[ "${UMAPG1PUB}" != "" ]] \
-            && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
-
-        else
-
-            ### PLAYER ALIVE PUBLISH RSS &
-            FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
-            [[ ${FEEDNS} ]] \
-                && IRSS=$(ipfs add --pin=false -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
-                && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
-                && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
-                || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
-
+            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ALERT"
+            echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
+        fi
+        if [[ ${days} -gt 29 ]]; then
+            #################################### UNPLUG ACCOUNT
+            echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
+            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
+            continue
         fi
 
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
-                    > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
+        ## PAY 1 ZEN TO UMAPG1PUB
+        [[ "${UMAPG1PUB}" != "" ]] \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
+
+    else
+
+        ### PLAYER ALIVE PUBLISH RSS &
+        FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
+        [[ ${FEEDNS} ]] \
+            && IRSS=$(ipfs add --pin=false -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
+            && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
+            && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
+            || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
 
     fi
 
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
+                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
+    #########################################################
     ## TODO CREATING 30 DAYS XML RSS STREAM ???
     ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
     # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
