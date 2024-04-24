@@ -155,6 +155,13 @@ do
     ## Extract FRIENDG1PUB from TW (Astroport Tiddler)
     ftw=${HOME}/.zen/game/players/${PLAYER}/FRIENDS/${f}/index.html
     [[ ! -s ${ftw} ]] && echo "FRIENDS/${f} : $(cat "$HOME/.zen/game/players/${PLAYER}/FRIENDS/${f}")" && continue
+
+    ## Check if "f=PRESIDENT" in my friend "email" TW
+    tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${f}"
+    PRESIDENT=$(cat ~/.zen/tmp/${MOATS}/${f}_.json | jq -r .[].president)
+    [[ ${PRESIDENT} != ${f} ]] && echo "${f} Astroport is run by ${PRESIDENT}... No fork..." && continue
+
+    ## Check if Astroport is different from my node
     tiddlywiki --load ${ftw} --output ~/.zen/tmp/${MOATS} --render '.' "${f}_Astroport.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
     FRIENDG1PUB=$(cat ~/.zen/tmp/${MOATS}/${f}_Astroport.json | jq -r .[].g1pub)
     echo "___________________"
