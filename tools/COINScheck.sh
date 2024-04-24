@@ -50,7 +50,7 @@ mkdir -p $HOME/.zen/tmp/coucou/
 COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 #######################################################
 ## GET EXTERNAL G1 DATA
-${MY_PATH}/GetGCAttributesFromG1PUB.sh ${G1PUB}
+${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB}
 #######################################################
 #######################################################
 
@@ -62,8 +62,17 @@ echo "SOLDE : $CURCOINS G1"
 if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
-    [[ "$CURCOIN" == "" ]] && echo "JAKLIS ERROR"
-    [[ "$CURCOIN" == "null" ]] && echo "EMPTY WALLET"
+    if [[ "$CURCOINS" == "" ]]; then
+        echo "JAKLIS ERROR"
+        GVASERVER=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+        ## Changing GVA SERVER in tools/jaklis/.env
+        [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
+            && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
+            && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
+            && echo "OK. NEW GVA NODE : ${GVASERVER}" \
+            || echo "ERROR. BAD GVA NODE : ${GVASERVER}"
+    fi
+    [[ "$CURCOINS" == "null" ]] && echo "EMPTY WALLET"
 
     echo "$CURCOINS" > "$COINSFILE"
 

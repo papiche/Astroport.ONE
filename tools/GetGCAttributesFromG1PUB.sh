@@ -7,6 +7,8 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+
 . "${MY_PATH}/my.sh"
 
 [[ ${1} == "-h" || ${1} == "--help" ]] && echo "#################################################
@@ -26,15 +28,25 @@ mkdir -p ~/.zen/tmp/${MOATS}
 COINS=$(cat ~/.zen/tmp/coucou/${G1PUB}.COINS 2>/dev/null)
 ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
-echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN"
+echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN ($ME)"
 
 ## GET G1 WALLET HISTORY
 if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
 
     [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] \
     && ${MY_PATH}/timeout.sh -t 5 $MY_PATH/jaklis/jaklis.py history -n 100 -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
-    echo "++ HISTORY OK"
 
+    if [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
+        GVASERVER=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+        ## Changing GVA SERVER in tools/jaklis/.env
+        [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
+            && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
+            && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
+            && echo "OK. NEW GVA NODE : ${GVASERVER}" \
+            || echo "ERROR. BAD GVA NODE : ${GVASERVER}"
+    else
+        echo "++ HISTORY OK"
+    fi
 fi
 
 ## SCAN GCHANGE +
