@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 1.1
+# Version: 1.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -193,18 +193,20 @@ while read LINE;
         echo
 
     ####################################################
-        echo "FOUND : ~/.zen/tmp/yt-dlp/${ZFILE}"
+        [[ -s ~/.zen/tmp/yt-dlp/${ZFILE} ]] \
+            && echo "FOUND : ~/.zen/tmp/yt-dlp/${ZFILE}"
+
         FILE_BSIZE=$(du -b "${HOME}/.zen/tmp/yt-dlp/${ZFILE}" | awk '{print $1}')
         [[ ! $FILE_BSIZE ]] && echo "SIZE ERROR" && continue
+
         FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
         echo "$boucle - ${ZFILE} - FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
         echo
 
         ### CREATE GIF ANIM : make_video_gifanim_ipfs.sh
         [[ ${isMP3} == "" ]] \
-            && $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) ## export ANIMH
-
-        echo "HOP=$HOP
+            && $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) \
+            && echo "HOP=$HOP
         ANIMH=$ANIMH
         PROBETIME=$PROBETIME
         DURATION=$DURATION
@@ -263,6 +265,7 @@ while read LINE;
         [[ ! isLAN ]] && TEXT="$TEXT <<hide tiddler-controls>>"
         echo $TEXT
 
+        mkdir -p ${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER} ## MISSING FOR FIRST RUN
         TIDDLER="${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER}/${YID}.TW.json"
 
         echo '[
