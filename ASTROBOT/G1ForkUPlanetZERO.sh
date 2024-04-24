@@ -9,10 +9,9 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 
-## IT MAKES WISH OF NEW PRIVATE UPLANET
+## IT SEARCH FOR CURRENT TW ForkUPlanetZERO tag
 ## IT MAKES $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key
-## Then used to create an private IPFS swarm
-
+## IT CHECKS FOR SAME UPNAME WISH IN FRIENDS TW
 echo "(✜‿‿✜) CURRENT Fork UPlanet
 This wish makes Player generate or join a private IPFS swarm
 It can be use to populate UPlanet ZERO (or not)
@@ -173,7 +172,7 @@ do
         echo "cat ${JSONUPLANET} | jq -r '.\"${f}\"'"
         FRIENDIN=$(cat ${JSONUPLANET} | jq -r '."${f}"')
         [[ "${FRIENDIN}" != "null" && "${FRIENDIN}" != "" ]] \
-            && echo "${FRIENDIN} ALREADY IN FORK TIDDLER." \
+            && echo "${FRIENDIN} ALREADY IN FORK ${UPNAME} TIDDLER." \
             && continue
 
         echo "#~ Create FRIENDG1PUB encrypted version of swarm.key"

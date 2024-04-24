@@ -38,7 +38,7 @@ YOU=$(myIpfsApi);
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
 TWUPLANET="/ipfs/bafybeigpwapdih24vnakummoyj6vodxiem4i6ezp5hxa35yt3paxpqz53y" ## WITH LIGHTBEAMS SAVER
-TWUPLANET="/ipfs/bafybeifhgqboszwgrvyxmyjctf6fshm6bkjsaqzghbiu2mn6dz3t4bcg2e" ## WITH IPFS SAVER
+TWUPLANET="/ipfs/bafybeidxa45qgbf34p7uvmphj5zt6jp2zgpw7ouwb3e3urnbu4jrt2dgiq" ## WITH IPFS SAVER
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -258,7 +258,10 @@ sed -i "s~${SRCPASS}~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.ht
 #~ sed -i "s~G1Voeu~voeu~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 # INSERT PLAYER DATA
+CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
+[[ -z ${CURRENT} ]] && CURRENT=${PLAYER}
 sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+sed -i "s~_CURRENT_~${CURRENT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 #~ sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
@@ -482,7 +485,7 @@ echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
-####### NO CURRENT ? PLAYER = .current
+####### CORRECT NO CURRENT ? PLAYER = .current
 [[ ! -e ~/.zen/game/players/.current ]] \
     && rm ~/.zen/game/players/.current 2>/dev/null \
     && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
