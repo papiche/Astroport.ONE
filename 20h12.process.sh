@@ -10,14 +10,15 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
+########################################################################
 ## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
 [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]] && LOWMODE="NO 5001" ## IPFS IS STOPPED
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
-# echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
 
-#~ sudo systemctl stop astroport
+########################################################################
 ## CHECK IF IPFS NODE IS RESPONDING (ipfs name resolve ?)
+########################################################################
 ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
 [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
     && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
@@ -33,10 +34,12 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
+########################################################################
 # show ZONE.sh cache of the day
 echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
+########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
@@ -46,6 +49,7 @@ mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
 mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
+########################################################################
 ### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
 if [[ "${LOWMODE}" == "" ]]; then
     ### NOT REFRESHING SWARM
@@ -60,46 +64,53 @@ else
     curl -s "http://127.0.0.1:12345"
     sleep 300 ## WAIT FOR 5MN
 fi
+
+########################################################################
 ## UPDATE G1BILLETS code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
 && rm -Rf ~/.zen/G1BILLET/tmp/*
 
+########################################################################
 ## UPDATE Astroport.ONE code
 cd ${MY_PATH}/
 git pull
 
-## SOON /ipns/ Address !!!
-
-# espeak "20 HOURS 12 MINUTES. ASTROBOT RUNNING." > /dev/null 2>&1
+########################################################################
 ## Updating yt-dlp
 ${MY_PATH}/youtube-dl.sh
 sudo youtube-dl -U
 
+########################################################################
 ## DRAGON SSH WOT
 echo "DRAGONS WOT OFF"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 
+########################################################################
 ## PING BOOSTRAP & SWARM NODES
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
+########################################################################
+######################################################### UPLANET ######
 #####################################
-# espeak "REFRESHING UPLANET" > /dev/null 2>&1
+# GeoKeys UMAP / SECTOR / REGION ...
 #####################################
 ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
 #####################################
-# espeak "Players refresh" > /dev/null 2>&1
-# Refresh ~/.zen/game/players/PLAYER
+# Players TW analyse & ASTROBOT run
 #####################################
 ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
 #####################################
 #####################################
-# espeak "REFRESHING NODE" > /dev/null 2>&1
+# Node refreshing
 #####################################
 ${MY_PATH}/RUNTIME/NODE.refresh.sh
 #####################################
+########################################################################
+########################################################################
 
+########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
 mv ~/.zen/tmp/swarm ~/.zen/swarm
@@ -111,20 +122,23 @@ mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
 mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
-
-    ## if [[ ! $isLAN ]]; then
-    ## REFRESH BOOSTRAP LIST (OFFICIAL SWARM)
+########################################################################
+################################# updating ipfs bootstrap
     espeak "bootstrap refresh" > /dev/null 2>&1
-
     ipfs bootstrap rm --all > /dev/null 2>&1
-    for bootnode in $(cat ${MY_PATH}/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+
+    [[ -s ${HOME}/.zen/MY_boostrap_nodes.txt ]] \
+        && STRAPFILE="${HOME}/.zen/MY_boostrap_nodes.txt" \
+        || STRAPFILE="${MY_PATH}/A_boostrap_nodes.txt"
+
+    for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # remove comments
     do
         ipfsnodeid=${bootnode##*/}
         ipfs bootstrap add $bootnode
     done
 
-    ## fi
 
+########################################################################
 ########################################################################
 end=`date +%s`
 dur=`expr $end - $start`
