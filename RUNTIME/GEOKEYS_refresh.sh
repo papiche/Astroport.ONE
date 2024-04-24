@@ -38,13 +38,13 @@ echo ${#RKEYS[@]} " swarm REGIONS"
 
 ## COMBINE & SHUFFLE KEYS
 combined=("${LWKEYS[@]}" "${LSKEYS[@]}" "${LRKEYS[@]}" "${WKEYS[@]}" "${SKEYS[@]}" "${RKEYS[@]}")
-UKEYS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+UKEYS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u | shuf ))
 echo "SYNC ${#UKEYS[@]} GEOKEYS..."
 
 ## STORAGE FOR IPFS GET UplanetKeyS
 mkdir -p ~/.zen/tmp/flashmem
 
-## Remove flashmem/UplanetKey older than 3 hours
+## Refresh flashmem/UplanetKey every 3 hours => DATA SHAKER
 find ~/.zen/tmp/flashmem -mmin +180 -exec rm -rf {} +
 
 floop=0
