@@ -14,10 +14,9 @@ done
 pip3 install --break-system-packages -r requirements.txt || hasError=1
 chmod u+x jaklis.py
 
-mkdir -p $HOME/.local/bin/
-ln -sf $(realpath jaklis.py) $HOME/.local/bin/jaklis || hasError=1
-cp ${MY_PATH}/.env.template $HOME/.local/bin/.env || hasError=1
+ln -sf $(realpath jaklis.py) /usr/local/bin/jaklis || hasError=1
 cp ${MY_PATH}/.env.template ${MY_PATH}/.env || hasError=1
+ln -sf ${MY_PATH}/.env /usr/local/bin/.env || hasError=1
 
 if [[ hasError -eq 0 ]]; then
     echo "Setup done. You can use 'jaklis' command, try it."
