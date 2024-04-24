@@ -48,10 +48,11 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     ## RUNING FOR ALL LOCAL PLAYERS
     for PLAYER in ${PLAYERONE[@]}; do
         echo "${PLAYER} GCHANGE FRIENDS"
-        [[ -d ~/.zen/tmp/${IPFSNODEID}/${PLAYER} && ${PLAYER} != "" ]] && rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/ ## TODO REMOVE (PROTOCOL UPGRADE)
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/FRIENDS/
-        cp -Rf ~/.zen/game/players/${PLAYER}/FRIENDS/* ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/FRIENDS/ 2>/dev/null
+        [[ -d ~/.zen/tmp/${IPFSNODEID}/${PLAYER} && ${PLAYER} != "" ]] \
+            && rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     done
+    ## STOP GCHANGE SWARM SHARING --- too big data --- deprecated
+    rm -Rf ~/.zen/tmp/${IPFSNODEID}/GCHANGE ## UGGLY PATCH
 
     ## INFORM GPS LOCATION
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \
