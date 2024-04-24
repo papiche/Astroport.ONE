@@ -653,6 +653,15 @@ for PLAYER in ${PLAYERONE[@]}; do
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "${G1LEVEL1}" "${G1PUB}" "UPLANET:WELCOME:${MIUSER}:${YOUSER}" \
         && echo "UPLANET:WELCOME:${MIUSER}:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 
+    #####################################################################
+    ############ CURRENT #################### _ForkUPlanetZERO ?
+    if [[ $(echo "$COINS > 100" | bc -l) -eq 1 ]]; then
+        [[ ${CURRENT} == ${PLAYER} ]] && ${MY_PATH}/../ASTROBOT/_ForkUPlanetZERO.sh
+    fi
+    #################################### NEED > 100 G1 ##################
+        #####################################################################
+            #####################################################################
+
     ## MAINTAIN R/RW TW STATE
     [[ ${ASTRONS} == "" ]] \
     && echo "${PLAYER} DISCONNECT" \
