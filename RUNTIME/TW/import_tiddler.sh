@@ -5,14 +5,18 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 # Check if TiddlyWiki file exists
 TW="$1"
-[[ ! -s $TW ]] && echo "No TiddlyWiki found at: $TW" && exit 1
+[[ ! -s $TW ]] \
+    && echo "Missing TiddlyWiki index.html \$1: $TW" \
+    && exit 1
 
 # Check if Tiddler JSON file exists
 TIDDLER="$2"
-[[ ! -s $TIDDLER || $TIDDLER == "" ]] && echo "Need a Tiddler JSON file" && exit 1
+[[ ! -s $TIDDLER || $TIDDLER == "" ]] \
+    && echo "Missing Tiddler JSON file \$2: $TIDDLER" \
+    && exit 1
 
 # Add created and modified fields to the Tiddler JSON file
-echo "Adding created and modified fields to ${TIDDLER}..."
+echo "Putting ${TIDDLER} in ${TW}"
 jq '.[] + {created: $MOATS, modified: $MOATS}' --arg MOATS "$MOATS" "$TIDDLER" > "${TIDDLER}.tmp"
 
 # Run TiddlyWiki import command
@@ -30,8 +34,8 @@ if [[ -s /tmp/${MOATS}.html ]]; then
     rm "${TIDDLER}.tmp"
     echo "Updated TiddlyWiki:
     ${TW}"
+    exit 0
 else
+    echo "ERROR"
     exit 1
 fi
-
-echo "Done."
