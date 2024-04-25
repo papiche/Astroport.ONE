@@ -230,16 +230,30 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     ## CONTROL
     # round looking in friends TW... Can be done before...
 
-    ## APPLY
-    NEWUPLANETNAME=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key | tail -n 1)
+    ## APPLY ?!
     ##################################################
-    # Let's clone & apply some patch to Astroport.ONE
+    # Let's check and prepare Astroport mutation...
     # tools/my.sh
-    echo "UPLANETNAME=$NEWUPLANETNAME"
-    # Activate UPLANETNAME=SWARMKEY
-    for station in ${#ZENSTATIONS[@]}; do
-        # Adapt "boostrap list"
-        cat ~/.zen/tmp/swarm/${station}/myIPFS.txt
+    SECRETNAME=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key | tail -n 1)
+    echo "SECRETNAME=$SECRETNAME"
+
+    # Prepare "new_straps.list" from WAN only
+    for station in ${ZENSTATIONS[@]}; do
+        [[ ! -s ~/.zen/tmp/swarm/${station}/myIPFS.txt ]] \
+            && echo "Missing swarm/${station}/myIPFS.txt" \
+            && continue
+
+        bootnode=$(cat ~/.zen/tmp/swarm/${station}/myIPFS.txt)
+        echo "${bootnode}"
+        iptype=$(echo ${bootnode} | cut -d '/' -f 2)
+        nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
+        isnodeipLAN=$(echo $nodeip | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+        echo " ${iptype} address :: ${nodeip} (= ${isnodeipLAN})"
+        [[ ${nodeip} == ${isnodeipLAN} ]] && echo "LAN NODE... no good for bootstrap" && continue
+
+        echo "### OK adding to new_straps.list"
+        echo "${bootnode}" >> ~/.zen/tmp/${MOATS}/new_straps.list
+
     done
     # make G1PalPay refuse not from Boostrap primal TX
     # and adapt 20H12.process.sh

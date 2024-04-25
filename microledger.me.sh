@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -26,9 +26,12 @@ OLD=$(cat ${MY_PATH}/.chain)
     && echo /ipfs/${GENESYS} >> ${MY_PATH}/README.md \
     && echo "CHAIN BLOC ZERO : ${GENESYS}" \
 
+ts=$(cat ${MY_PATH}/.moats 2>/dev/null)
+[[ -z $ts ]] && ts=${MOATS}
+
 ## TIMESTAMP CHAIN SHIFTING
 cp ${MY_PATH}/.chain \
-        ${MY_PATH}/.chain.$(cat ${MY_PATH}/.moats)
+        ${MY_PATH}/.chain.$ts
 
 IPFSME=$(ipfs add -rwHq ${MY_PATH}/* | tail -n 1)
 
@@ -39,6 +42,7 @@ echo ${IPFSME} > ${MY_PATH}/.chain
 echo ${MOATS} > ${MY_PATH}/.moats
 
 ## README UPGRADE
+ipfs pin rm ${OLD}
 sed -i "s~${OLD}~${IPFSME}~g" ${MY_PATH}/README.md
 
 ## AUTO GIT
