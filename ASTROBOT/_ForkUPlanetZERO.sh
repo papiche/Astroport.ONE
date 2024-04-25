@@ -12,15 +12,11 @@ ME="${0##*/}"
 ## IT SEARCH FOR CURRENT TW ForkUPlanetZERO tag
 ## IT MAKES $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key
 ## IT CHECKS FOR SAME UPNAME WISH IN FRIENDS TW
-echo "(✜‿‿✜) CURRENT Fork UPlanet
-This wish makes Player generate or join a private IPFS swarm
-It can be use to populate UPlanet ZERO (or not)
-All friends with the same wish will share the SECRET
-then any can activate a new ipfs daemon connected to that private ZONE
-Planet shape could be define from text found in command tiddler
-and initiale new euclidian geokeys...
-Default :
-floating points"
+#~ echo "(✜‿‿✜) CURRENT Fork UPlanet
+#~ This program makes Player generate or join a private IPFS swarm
+#~ All friends with the same wish will share the SECRET
+#~ then any can activate a new ipfs daemon connected to that private ZONE
+## TIDDLER can contain parameters for UPlanet activation
 
 echo "$ME RUNNING"
 
@@ -103,12 +99,12 @@ IN16=$(cat ${JSONUPLANET} | jq -r '."${PLAYER}"')
 if [[ ${IN16} == "" || ${IN16} == "null" ]]; then
 
     echo "NO SECRET FOUND" \
-    && echo "NEW SECRET SWARM.KEY GENERATION" \
+    && echo ">> 🔑 ${UPNAME} SECRET SWARM.KEY GENERATION 🔑" \
     && cat $HOME/.zen/tmp/${MOATS}/swarm.key \
     && cp $HOME/.zen/tmp/${MOATS}/swarm.key $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key \
     && echo "------- KEY LOADED -----> ${PLAYER}/.ipfs/${UPNAME}.swarm.key"
 
-    ## THIS IS A PRIMAL WISH
+    ## THIS IS A PRIMAL TIDDLER
 
 else
 
@@ -125,7 +121,7 @@ else
 
     ## CHEK KEY WITH ACTUAL ONE
     [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key) ]] \
-        && echo "- WARNING - UPDATING ${UPNAME}.swarm.key ..." && ERR="TW SWARM CHANGED"
+        && echo "- 📸 WARNING 📸 - UPDATING ${UPNAME}.swarm.key ..." && ERR="TW SWARM CHANGED"
 
     ## UPDATE PLAYER LOCAL SWARMKEY FROM VALUE FOUND IN HIS OWN WISH TIDDLER !
     [[ -s ~/.zen/tmp/${MOATS}/swarmkey.decrypted ]] \
@@ -143,7 +139,7 @@ ${MY_PATH}/../tools/natools.py encrypt \
     -o $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc
 ENCODING=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc | base16)
 rm $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key.enc
-echo "==> base16 ${PLAYER} encrypted swarm.key"
+echo "==> base16 ${PLAYER} encrypted swarm.key is secret"
 #~ echo "${SECRET}"
 #~ echo "${ENCODING}"
 

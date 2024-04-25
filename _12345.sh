@@ -198,7 +198,12 @@ while true; do
                 for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do
                     # CHECK znod validity
                     cznod=$(${MY_PATH}/tools/ipfs_to_g1.py ${znod} 2>/dev/null)
-                    [[ ${cznod} == "" || ${cznod} == "null" ]] && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" && continue
+                    [[ ${cznod} == "" || ${cznod} == "null" ]] \
+                        && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" \
+                        && continue
+                    [[ ${cznod} == ${IPFSNODEID} ]] \
+                        && echo "IPFSNODEID MIRROR ME"
+                        && continue
 
                     echo "REFRESHING MY SWARM DATA WITH ZNOD=${znod}"
                     mkdir -p ~/.zen/tmp/swarm/${znod}
