@@ -255,7 +255,9 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
         echo "${bootnode}" >> ~/.zen/tmp/${MOATS}/new_straps.list
 
     done
-    # make G1PalPay refuse not from Boostrap primal TX
+
+    # make G1PalPay refuse not from "UPlanet Master Key" primal TX
+    # STABLE COIN : activate OpenCollective sync
     # and adapt 20H12.process.sh
 
 
