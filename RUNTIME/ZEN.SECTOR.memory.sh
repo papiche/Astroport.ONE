@@ -41,7 +41,7 @@ COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
 echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
 ## RETRIEVE FROM REGION UKEY
-${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 100 -p ${REGIONG1PUB} -j \
+${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 40 -p ${REGIONG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${REGION}.g1history.json
 
 ## SCAN FOR UPLANET:${SECTOR} in TX
@@ -50,7 +50,9 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
     intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
     ipfs_pop=$(echo "$intercom" | rev | cut -d ':' -f 1 | rev)
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
-    echo "SYNC ${SECTOR} <= $todate => $ipfs_pop"
+    echo "SYNC ${SECTOR} <= $todate (=${YESTERDATE})=> $ipfs_pop"
+
+    [[ ${todate} != ${YESTERDATE} ]] && echo "NO GOOD MEMORY - EXIT" && exit 1
 
     ## TODO: SECURITY PATCH : check payment emitter is from BOOSTRAP
     if [[ $ipfs_pop ]]; then

@@ -44,7 +44,7 @@ COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
 echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
 ## RETRIEVE FROM SECTOR UKEY
-${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 100 -p ${SECTORG1PUB} -j \
+${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 40 -p ${SECTORG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json
 
 ## SCAN FOR UPLANET:${UMAP} in TX
@@ -53,7 +53,9 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .comment' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
     ipfs_pop=$(echo "$intercom" | rev | cut -d ':' -f 1 | rev)
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
-    echo "SYNC ~/.zen/tmp/${MOATS}/${UMAP} <=> $ipfs_pop"
+    echo "SYNC ${UMAP} <= $todate (=${YESTERDATE})=> $ipfs_pop"
+
+    [[ ${todate} != ${YESTERDATE} ]] && echo "NO GOOD MEMORY - EXIT" && exit 1
 
     if [[ $ipfs_pop ]]; then
         echo "FOUND $todate MEMORY SLOT"
@@ -62,7 +64,6 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
 
         ## ADD SECURITY : check payment emitter is a "BOOSTRAP" (TODO)
         nodeid=$(${MY_PATH}/../tools/g1_to_ipfs.py $g1pub)
-
 
         ipfs --timeout 360s get --progress="false" -o ~/.zen/tmp/${MOATS}/${UMAP} $ipfs_pop \
             && ipfs pin rm $ipfs_pop \
