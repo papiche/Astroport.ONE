@@ -94,7 +94,7 @@ echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 IN16=$(cat ${JSONUPLANET} | jq -r '."${PLAYER}"')
 ## secret is only decrypted by wish source player
 [[ ${IN16} == "" || ${IN16} == "null" ]] \
-    && IN16=$(cat ${JSONUPLANET} | jq -r ".secret")
+    && IN16=$(cat ${JSONUPLANET} | jq -r ".secret") && echo "get from secret............"
 
 if [[ ${IN16} == "" || ${IN16} == "null" ]]; then
 
@@ -107,11 +107,12 @@ if [[ ${IN16} == "" || ${IN16} == "null" ]]; then
     ## THIS IS A PRIMAL TIDDLER
 
 else
-
+    echo "VERIFICATION ${IN16}"
     ## DEBASE16
     echo "${IN16}" | base16 -d \
             > ~/.zen/tmp/${MOATS}/swarmkey.crypted
 
+    echo ">> natools.py decrypt "
     ## DECODING with PLAYER secret.dunikey
     ${MY_PATH}/../tools/natools.py decrypt \
             -f pubsec \
@@ -119,6 +120,7 @@ else
             -i ~/.zen/tmp/${MOATS}/swarmkey.crypted \
             -o ~/.zen/tmp/${MOATS}/swarmkey.decrypted
 
+    echo ">> comparing decrypted key"
     ## CHEK KEY WITH ACTUAL ONE
     [[ $(diff ~/.zen/tmp/${MOATS}/swarmkey.decrypted $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key) ]] \
         && echo "- 📸 WARNING 📸 - UPDATING ${UPNAME}.swarm.key ..." && ERR="TW SWARM CHANGED"
@@ -277,6 +279,10 @@ cat ${JSONUPLANET} | jq '. | ."hash" = "_HASH_"' > ~/.zen/tmp/${MOATS}/json.up \
 cat ${JSONUPLANET} | jq '. | ."secret" = "_SECRET_"' > ~/.zen/tmp/${MOATS}/json.up \
     && sed -i 's/_SECRET_/'"$ENCODING"'/g' ~/.zen/tmp/${MOATS}/json.up \
     && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
+
+jq '.[] + {created: $MOATS, modified: $MOATS}' --arg MOATS "$MOATS" "${JSONUPLANET}" > ~/.zen/tmp/${MOATS}/json.up \
+    && mv ~/.zen/tmp/${MOATS}/json.up ${JSONUPLANET}
+
 
 ### PUT BACK IN TW
 tiddlywiki --load ${INDEX} \
