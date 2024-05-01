@@ -202,7 +202,7 @@ while true; do
                         && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" \
                         && continue
                     [[ ${cznod} == ${IPFSNODEID} ]] \
-                        && echo "IPFSNODEID MIRROR ME"
+                        && echo "IPFSNODEID MIRROR ME" \
                         && continue
 
                     echo "REFRESHING MY SWARM DATA WITH ZNOD=${znod}"
