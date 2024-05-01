@@ -33,7 +33,7 @@ ts=$(cat ${MY_PATH}/.moats 2>/dev/null)
 cp ${MY_PATH}/.chain \
         ${MY_PATH}/.chain.$ts
 
-IPFSME=$(ipfs add -rwHq ${MY_PATH}/* | tail -n 1)
+IPFSME=$(ipfs add -rwHq --ignore=.git --ignore-rules-path=.gitignore ${MY_PATH}/* | tail -n 1)
 
 [[ ${IPFSME} == ${OLD} ]] && echo "No change." && exit 0
 
