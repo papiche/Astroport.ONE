@@ -191,8 +191,8 @@ while read LINE; do
             </style></head><body>" > ~/.zen/tmp/palpay.bro
 
             echo "<h1>BRO.<h1>
-            $PLAYER wants to send you some ZEN...<br>
-            <br>(♥‿‿♥)... Join us on <a href='https://qo-op.com'>UPlanet</a>
+            $PLAYER wants to send you ${SHARE} G1...<br>
+            <br>(♥‿‿♥)... on <a href='https://qo-op.com'>UPlanet</a>
             </body></html>" >> ~/.zen/tmp/palpay.bro
 
             ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "BRO. $PLAYER INVITATION"
