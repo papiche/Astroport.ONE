@@ -134,6 +134,8 @@ while read LINE; do
     TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
+    lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.atdate)
+    [[ -z lastTXdate ]] && lastTXdate=0
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
         && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
         && continue
@@ -141,7 +143,7 @@ while read LINE; do
     ## GET EMAILS FROM COMMENT
     TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
-    [[ $(echo "$TXIAMOUNT < 0" | bc) ]] \
+    [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
         && echo "TX-OUT $TXIDATE" \
         && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
         && continue

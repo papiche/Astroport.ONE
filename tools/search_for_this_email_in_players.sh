@@ -26,30 +26,36 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ## TODO ? SEARCH WITH DNSLINK
     echo "export TW=${INDEX} source=${source}"
 
+    mkdir -p ~/.zen/tmp/${MOATS}
     # SWARM CACHE index.html contains
     # <meta http-equiv="refresh" content="0; url='/ipfs/$EXTERNAL'" />
-    [[ ${source} != "LOCAL" ]] \
-        && EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
-
-    if [[ ! ${EXTERNAL} ]]; then
-        ## EXTRACT DATA FROM TW
-        mkdir -p ~/.zen/tmp/${MOATS}
-        rm -f ~/.zen/tmp/${MOATS}/Astroport.json
-
-        tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-
-        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astroport)
-        ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].g1pub)
-        TWCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].chain)
-
-        ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
-        ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
-        [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
-        [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
-    else
-        ASTRONAUTENS="/ipfs/${EXTERNAL}"
-        ASTROPORT="/ipns/$(echo $INDEX | rev | cut -d / -f 4 | rev)"
+    if [[ ${source} != "LOCAL" ]]; then
+        EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
+        [[ ! -s $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html ]] \
+            && mkdir $HOME/.zen/tmp/flashmem/tw/${EXTERNAL} \
+            && ipfs cat /ipfs/${EXTERNAL} > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html
+        INDEX="$HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html"
     fi
+
+    #~ if [[ ! ${EXTERNAL} ]]; then
+    ## EXTRACT DATA FROM TW
+    rm -f ~/.zen/tmp/${MOATS}/Astroport.json
+
+    tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+
+    ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astroport)
+    ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].g1pub)
+    TWCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].chain)
+
+    ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
+    ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
+    [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
+    [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
+    #~ else
+        #~ ASTRONAUTENS="/ipfs/${EXTERNAL}"
+        #~ ASTROG1=$(${MY_PATH}/../tools/ipfs_to_g1.py ${EXTERNAL})
+        #~ ASTROPORT="/ipns/$(echo $INDEX | rev | cut -d / -f 4 | rev)"
+    #~ fi
 
     rm -Rf ~/.zen/tmp/${MOATS}
     # cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r
