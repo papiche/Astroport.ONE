@@ -51,11 +51,12 @@ mkdir -p $HOME/.zen/game/players/${PLAYER}/G1PalPay/
 mkdir -p $HOME/.zen/tmp/${MOATS}
 echo "=====(•‿‿•)====== ( ◕‿◕) (◕‿◕ ) =======(•‿‿•)======= ${PLAYER}
 ${INDEX}"
-echo "(✜‿‿✜) G1PalPay : CHECK LAST 15 TX comment"
+echo "(✜‿‿✜) G1PalPay : CHECK LAST 30 TX comment"
 
-# CHECK LAST 15 INCOMING PAYMENTS
+# CHECK LAST 30 INCOMING PAYMENTS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 15 -j > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
+${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 30 -j \
+    > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY.........................."
@@ -115,7 +116,8 @@ fi
 echo "# CHECK FOR EMAILs IN PAYMENT COMMENT"
 ## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -r
 #################################################################
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep '@' > ~/.zen/tmp/${MOATS}/myPalPay.json
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep '@' \
+    > ~/.zen/tmp/${MOATS}/myPalPay.json
 
 # IF COMMENT CONTAINS EMAIL ADDRESSES
 # SPREAD & TRANSFER AMOUNT TO NEXT (REMOVING IT FROM LIST)...
@@ -337,6 +339,7 @@ done < ~/.zen/tmp/${MOATS}/@tags.json
 
 echo "=====(•‿‿•)====== ( ◕‿◕)  (◕‿◕ ) =======(•‿‿•)======="
 
-rm -Rf $HOME/.zen/tmp/${MOATS}
+# rm -Rf $HOME/.zen/tmp/${MOATS}
+ls $HOME/.zen/tmp/${MOATS}
 
 exit 0

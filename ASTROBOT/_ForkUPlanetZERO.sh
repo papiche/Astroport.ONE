@@ -94,7 +94,7 @@ echo '' >> $HOME/.zen/tmp/${MOATS}/swarm.key
 IN16=$(cat ${JSONUPLANET} | jq -r '."${PLAYER}"')
 ## secret is only decrypted by wish source player
 [[ ${IN16} == "" || ${IN16} == "null" ]] \
-    && IN16=$(cat ${JSONUPLANET} | jq -r ".secret") && echo "get from secret............"
+    && IN16=$(cat ${JSONUPLANET} | jq -r ".secret") && echo "get IN16 from secret field"
 
 if [[ ${IN16} == "" || ${IN16} == "null" ]]; then
 

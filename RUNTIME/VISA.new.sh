@@ -562,6 +562,8 @@ cat ${ZINE} \
             -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
             -e "s~_ASTRODID_~${ipns2did:1}~g" \
             -e "s~0448~${PASS}~g" \
+            -e "s~_SALT_~${SALT}~g" \
+            -e "s~_PEPPER_~${PEPPER}~g" \
             -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
             -e "s~_EARTHCID_~${EARTHCID}~g" \
             -e "s~_SECTOR_~${SECTOR}~g" \
