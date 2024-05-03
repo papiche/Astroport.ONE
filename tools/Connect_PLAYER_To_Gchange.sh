@@ -189,6 +189,7 @@ for liking_me in $(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/liking_me | so
 do
     [[ "${liking_me}" == "" ]] && continue ## Protect from empty line !!
     echo "........................."
+    [[ $(echo ${liking_me} | grep '@') ]] && continue ## filter emails
     FRIENDNS=$(${MY_PATH}/g1_to_ipfs.py ${liking_me})
     echo "==========================="
     echo "${liking_me} IS LIKING ME"
