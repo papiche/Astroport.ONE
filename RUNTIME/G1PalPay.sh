@@ -144,15 +144,13 @@ while read LINE; do
     TXIMAILS=($(echo "$COMMENT" | grep -E -o "\b[a-zA-Z0-9.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b"))
 
     [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-        && echo "TX-OUT $TXIDATE" \
+        && echo "TX-OUT :: ${LINE}" \
         && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
         && continue
 
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#TXIMAILS[@]}"
     N=${#TXIMAILS[@]}
-    REDIS=0
-    REDISMAILS=""
 
     SHAREE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
     SHARE=$(makecoord ${SHAREE})
@@ -171,12 +169,13 @@ while read LINE; do
 
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED="" # RESET VAR
         $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
-        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
         [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
+        echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
         if [[ ! ${ASTROTW} ]]; then
 
-            echo "# PLAYER INCONNU $(date)"
+            echo "# PLAYER ${EMAIL} INCONNU $(date)"
+            continue
 
         fi
 
@@ -200,26 +199,24 @@ while read LINE; do
             continue
         fi
 
-        ## MAKE FRIENDS & SEND G1
-        echo "PalPay Friend $ASTROMAIL
+        sleep 3
+
+        ## SEND G1
+        echo "PalPay____________
+        SEND ${SHARE} G1 to $ASTROMAIL
         TW : $ASTROTW
-        G1 : ${ASTROG1}
-        ASTROIPFS : $ASTROIPFS
-        RSS : $ASTROFEED"
-        REDIS=$(( REDIS + 1 ))
-        REDISMAILS+=" ${EMAIL}"
+        G1 : ${ASTROG1}"
+
+        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:PALPAY"
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:PALPAY"
+        STAMP=$?
+        ## DONE STAMP IT
+        [[ $STAMP == 0 ]] \
+        && echo "REDISTRIBUTION DONE" \
+        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate
 
     done
 
-    COMMENTTAIL=$(echo $COMMENT | rev | cut -d '/' -f 1 | rev) ## can contain /ipfs/ link
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${REDIS}" "${ASTROG1}" "$REDISMAILS /ipfs/$COMMENTTAIL"
-    STAMP=$?
-    ## DONE STAMP IT
-    [[ $STAMP == 0 ]] \
-    && echo "REDISTRIBUTION DONE" \
-    && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate
-
-    sleep 3
 
 done < ~/.zen/tmp/${MOATS}/myPalPay.json
 
