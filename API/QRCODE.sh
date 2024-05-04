@@ -203,11 +203,6 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 fi
 
-            else
-
-                echo "<h2>ERROR - INVALID PIN - ERROR</h2>" >> ~/.zen/tmp/${MOATS}/disco
-                cat ~/.zen/tmp/${MOATS}/disco.aes >> ~/.zen/tmp/${MOATS}/disco
-
             fi
 
             if [[ ${APPNAME} == "flipper" ]]; then
