@@ -337,6 +337,17 @@ for SECTOR in ${SECTORS[@]}; do
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
+
+################# SIGNALING GPOD UPlanet SECTOR
+${MY_PATH}/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey \
+            set -n "UPlanet SECTOR ${SECTOR}" -v "TW5 Grid Mesh" -a " " -d " " \
+            -pos ${SLAT} ${SLON} -s https://qo-op.com \
+            -A ${MY_PATH}/../images/zenticket.png
+
+#################
+
+
     ## DOES CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
         && echo "${MOATS}:${IPFSNODEID}:${IPFSPOP}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain \
