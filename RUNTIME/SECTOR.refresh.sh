@@ -337,17 +337,7 @@ for SECTOR in ${SECTORS[@]}; do
 ###################################################### CHAINING BACKUP
     IPFSPOP=$(ipfs add -rwq ~/.zen/tmp/${MOATS}/${SECTOR}/* | tail -n 1)
 
-
-################# SIGNALING GPOD UPlanet SECTOR
-${MY_PATH}/timeout.sh -t 20 \
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey \
-            set -n "UPlanet SECTOR ${SECTOR}" -v "TW5 Grid Mesh" -a " " -d " " \
-            -pos ${SLAT} ${SLON} -s https://qo-op.com \
-            -A ${MY_PATH}/../images/zenticket.png
-
-#################
-
-
+################
     ## DOES CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${IPFSPOP} || ${ZCHAIN} == "" ]] \
         && echo "${MOATS}:${IPFSNODEID}:${IPFSPOP}" > ~/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/_chain \
@@ -369,6 +359,18 @@ ${MY_PATH}/timeout.sh -t 20 \
     start=`date +%s`
     ipfs --timeout 240s name publish -k ${TODATE}${G1PUB} /ipfs/${IPFSPOP}
     ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
+
+################# REGISTER UPlanet SECTOR to G1PODs
+    ${MY_PATH}/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey -n ${myDATA} \
+            set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet https://qo-op.com" \
+            -pos ${SLAT} ${SLON} -s ${myLIBRA}/ipfs/${IPFSPOP} \
+            -A ${MY_PATH}/../images/zenticket.png
+    ${MY_PATH}/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey -n ${myCESIUM} \
+            set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet https://qo-op.com" \
+            -pos ${SLAT} ${SLON} -s ${myLIBRA}/ipfs/${IPFSPOP} \
+            -A ${MY_PATH}/../images/zenticket.png
 
 ######################################################
     rm ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey
