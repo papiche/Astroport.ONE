@@ -361,12 +361,12 @@ for SECTOR in ${SECTORS[@]}; do
     ipfs key rm ${YESTERDATE}${G1PUB} ${G1PUB} > /dev/null 2>&1
 
 ################# REGISTER UPlanet SECTOR to G1PODs
-    ${MY_PATH}/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey -n ${myDATA} \
             set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet https://qo-op.com" \
             -pos ${SLAT} ${SLON} -s ${myLIBRA}/ipfs/${IPFSPOP} \
             -A ${MY_PATH}/../images/zenticket.png
-    ${MY_PATH}/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey -n ${myCESIUM} \
             set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet https://qo-op.com" \
             -pos ${SLAT} ${SLON} -s ${myLIBRA}/ipfs/${IPFSPOP} \
