@@ -61,6 +61,42 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY.........................."
 ##############################
+
+## CONTROL WALLET
+########################################################################################
+if [[ ${UPLANETNAME} != "" ]]; then
+echo "UPLANET ORIGIN CONTROL"
+while read LINE; do
+
+    echo "${LINE}"
+    JSON=${LINE}
+    TXIDATE=$(echo $JSON | jq -r .date)
+    TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
+    TXIAMOUNT=$(echo $JSON | jq -r .amount)
+    COMMENT=$(echo $JSON | jq -r .comment)
+
+    lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.uplanet.check)
+    [[ -z lastTXdate ]] && lastTXdate=0
+    [[ $(cat ~/.zen/game/players/${PLAYER}/.uplanet.check) -ge $TXIDATE ]]  \
+        && continue
+
+    [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
+        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
+        && continue
+
+    echo "# CHECK FOR PRIMAL REGULAR TX in INCOMING PAYMENTS"
+    # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
+    # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
+    line=$(silkaj money history $TXIPUBKEY | tail -n 3 | head -n 1)
+    pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
+    # pub8=$(echo $line | cut -d '│' -f 3 | cut -c 1-8)
+    # PUB8= UPLANET WALLET
+
+done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
+fi
+
+
+
 ##########################################################
 ############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
 #################################################################
@@ -104,13 +140,6 @@ while read NLINE; do
     fi
 
 done < ~/.zen/tmp/${MOATS}/myN1.json
-
-########################################################################################
-if [[ ${UPLANETNAME} != "" ]]; then
-    echo "# CHECK FOR PRIMAL REGULAR TX in INCOMING PAYMENTS"
-    # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
-
-fi
 
 ########################################################################################
 echo "# CHECK FOR EMAILs IN PAYMENT COMMENT"

@@ -265,7 +265,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     done
 
 ## INTRODUCE NEW BOOSTRAP LIST
-cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/MY_boostrap_nodes.txt
+cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/game/MY_boostrap_nodes.txt
 #######################################################################
 
     # make G1PalPay refuse not from "UPlanet Master Key" primal TX
@@ -274,9 +274,8 @@ cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/MY_boostrap_nodes.txt
 
     ## UPNAME = domain.tld
     # PACTHING Astroport.ONE code
-    grep -rl --exclude-dir='.git*' 'copylaradio.com' ./ | xargs sed -i "s~copylaradio.com~${UPNAME}~g"
-
-
+    grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
+    rm ~/.zen/game/myswarm_secret.dunikey
     # now we add key into ~/.ipfs/swarm.key
     #~ cp $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key ~/.ipfs/swarm.key
     # it will make IPFSNODEID restarting in private mode

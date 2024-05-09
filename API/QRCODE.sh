@@ -438,8 +438,8 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             ## REVEAL THE KEYS
                 # G1VOEU & IPNS KEY
                 [[ ${player} != "" ]] \
-                && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/playersecret.ipfs  "${player}" "G1${VoeuName} ${PLAYERORIG1}" \
-                && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/player.secret.key  "${player}" "G1${VoeuName} ${PLAYERORIG1}" \
+                && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/playersecret.ipfs  "${player}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}" \
+                && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/player.secret.key  "${player}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}" \
                 && G1VOEUPUB=$(cat ~/.zen/tmp/${MOATS}/player.secret.key | grep 'pub:' | cut -d ' ' -f 2)
                # INSTALL orikeyname IPNS KEY ON NODE
                 IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
@@ -447,9 +447,9 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
                 ## IS IT A TRANSFER ? MILGRAM G1MISSIVE
                 [[ ${DESTMAIL} != "" ]] \
-                    && echo "MILGRAM :: ${player} :: ${DESTMAIL}" \
-                    #~ && DESTG1=$(${MY_PATH}/../tools/keygen "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}") \
-                    #~ && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/destsecret.ipfs  "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}"
+                    && echo "MILGRAM :: ${player} :: ${DESTMAIL}"
+                    #~ && DESTG1=$(${MY_PATH}/../tools/keygen "${DESTMAIL}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}") \
+                    #~ && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/destsecret.ipfs  "${DESTMAIL}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}"
 
                # INSTALL orikeyname IPNS KEY ON NODE
                 IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
@@ -516,8 +516,8 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 echo "export ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${DESTMAIL} ASTROFEED=${FEEDNS}"
 
                  # Create Next G1 & IPNS KEY
-                DESTG1PUB=$(${MY_PATH}/../tools/keygen"${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}")
-                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/newsecret.ipfs  "${DESTMAIL}" "G1${VoeuName} ${PLAYERORIG1}"
+                DESTG1PUB=$(${MY_PATH}/../tools/keygen"${DESTMAIL}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}")
+                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/newsecret.ipfs  "${DESTMAIL}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}"
 
                 orikeyname="${DESTMAIL}_${VoeuName}"
                 # INSTALL NEXT IPNS KEY ON NODE

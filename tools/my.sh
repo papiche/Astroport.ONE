@@ -126,7 +126,7 @@ zIp() {
 }
 
 UPlanetSharedSecret() {
-    UPlanetSharedSecret=$(cat ~/.zen/UPlanetSharedSecret 2>/dev/null | head -n 1 )
+    UPlanetSharedSecret=$(cat ~/.zen/ipfs/swarm.key 2>/dev/null | tail -n 1 )
     [ -n "$UPlanetSharedSecret" ] && echo "$UPlanetSharedSecret" || false
 }
 
