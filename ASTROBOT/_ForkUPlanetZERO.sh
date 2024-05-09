@@ -234,10 +234,16 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
 
     ## APPLY ?!
     ##################################################
-    # Let's check and prepare Astroport mutation...
+    # Let's engage Astroport.ONE code mutation...
     # tools/my.sh
     SECRETNAME=$(cat $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key | tail -n 1)
     echo "SECRETNAME=$SECRETNAME"
+
+#######################################################################
+    echo "# UPlanet Swarm Bootstrap Stations #
+# https://ipfs.${UPNAME} ipfs.${UPNAME}
+#################################################################
+" > ~/.zen/tmp/${MOATS}/new_straps.list
 
     # Prepare "new_straps.list" from WAN only
     for station in ${ZENSTATIONS[@]}; do
@@ -258,9 +264,17 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
 
     done
 
+## INTRODUCE NEW BOOSTRAP LIST
+cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/MY_boostrap_nodes.txt
+#######################################################################
+
     # make G1PalPay refuse not from "UPlanet Master Key" primal TX
     # STABLE COIN : activate OpenCollective sync
     # and adapt 20H12.process.sh
+
+    ## UPNAME = domain.tld
+    # PACTHING Astroport.ONE code
+    grep -rl --exclude-dir='.git*' 'copylaradio.com' ./ | xargs sed -i "s~copylaradio.com~${UPNAME}~g"
 
 
     # now we add key into ~/.ipfs/swarm.key
