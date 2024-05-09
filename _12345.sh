@@ -84,7 +84,9 @@ while true; do
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ ${myIP} == "" ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
     echo "/ip4/${myIP}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
-    [[ ! -z ${zipit} ]] && echo "/ip4/${zipit}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
+    [[ ! -z ${zipit} ]] \
+        && myIP=${zipit} \
+        && echo "/ip4/${zipit}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
