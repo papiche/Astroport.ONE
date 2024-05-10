@@ -95,6 +95,10 @@ figcaption {
   margin: 1rem 0.5rem 0 0.5rem;
 }
 
+.language-css {
+    font-size: 80%;
+}
+
 /* Any styles that you **only** want to appear on a device should go in here! */
 
 @media screen {
