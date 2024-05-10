@@ -118,12 +118,9 @@ figcaption {
 }
 
 /* Any styles that you want to apply **just** when the zine is printed go in here! */
-
 @media print {
-
-
   body {
-    font-size: 66%;
+    font-size: 69%;
   }
 
   a {
@@ -135,17 +132,15 @@ figcaption {
     max-width: 4.4rem;
   }
 
-  /* The styles below here are specifically for creating the page layout.
-   * -> DON'T CHANGE THESE <- unless you know what you're doing!
-   */
-
+  /* Définition de la taille de la page pour le format A4 */
   @page {
-    size: landscape;
+    size: A4;
     margin: 0;
     bleed: 0;
   }
 
   .zine {
+    /* Modifier les styles de la grille pour s'adapter au format A4 */
     width: 100vw;
     height: 100vh;
     display: grid;
@@ -164,18 +159,18 @@ figcaption {
     overflow: hidden;
   }
 
+  /* Rotation des pages pour s'adapter au format paysage de l'A4 */
   .page-5, .page-4, .page-3, .page-2 {
     transform: rotate(180deg) translateX(-0.1px);
   }
 
+  /* Assignation des pages aux zones de la grille */
   .page-1 {
     grid-area: page-1;
-
   }
 
   .page-2 {
     grid-area: page-2;
-
   }
 
   .page-3 {
