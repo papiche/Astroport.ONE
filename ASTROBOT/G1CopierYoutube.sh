@@ -240,7 +240,7 @@ while read LINE;
             <br>
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
-            <h1><a target='_blank' href='"${ZYURL}"'>Web2.0 Tube</a></h1>"
+            <h1><a target='_blank' href='"${ZYURL}"'>Web2.0 Origin</a></h1>"
 
         else
             TEXT="<audio controls>
@@ -250,7 +250,7 @@ while read LINE;
             <br>
             {{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})
             <br>
-            <h1><a target='_blank' href='"${ZYURL}"'>Web2.0 Tube</a></h1>"
+            <h1><a target='_blank' href='"${ZYURL}"'>Web2.0 Origin</a></h1>"
 
         fi
 

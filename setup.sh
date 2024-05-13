@@ -78,7 +78,7 @@ After=network.target
 Requires=network.target
 
 [Service]
-Type=simple
+Type=idle
 User=_USER_
 RestartSec=1
 Restart=always
