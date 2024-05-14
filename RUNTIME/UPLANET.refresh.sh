@@ -537,6 +537,18 @@ for UMAP in ${unique_combined[@]}; do
     ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}" ## REMOVE IPNS KEY
     [[ ${ZCHAIN} != "" ]] && ipfs pin rm ${ZCHAIN}
 
+    ################# PUBLISH UPlanet UMAP to G1PODs
+    ${MY_PATH}/../tools/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myDATA} \
+            set -n "UPlanet ${UMAP}" -v " " -a " " -d "UPlanet ${myUPLANET}" \
+            -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
+            -A ${MY_PATH}/../images/extension_territoire.jpg
+    ${MY_PATH}/../tools/timeout.sh -t 20 \
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myCESIUM} \
+            set -n "UPlanet ${UMAP}" -v " " -a " " -d "UPlanet ${myUPLANET}" \
+            -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
+            -A ${MY_PATH}/../images/extension_territoire.jpg
+
     rm ~/.zen/tmp/${MOATS}/*.priv
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 

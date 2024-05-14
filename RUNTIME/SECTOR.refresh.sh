@@ -363,12 +363,12 @@ for SECTOR in ${SECTORS[@]}; do
 ################# REGISTER UPlanet SECTOR to G1PODs
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey -n ${myDATA} \
-            set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet https://qo-op.com" \
+            set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet ${myUPLANET}" \
             -pos ${SLAT} ${SLON} -s ${myLIBRA}/ipfs/${IPFSPOP} \
             -A ${MY_PATH}/../images/zenticket.png
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey -n ${myCESIUM} \
-            set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet https://qo-op.com" \
+            set -n "UPlanet SECTOR ${SECTOR}" -v " " -a " " -d "UPlanet ${myUPLANET}" \
             -pos ${SLAT} ${SLON} -s ${myLIBRA}/ipfs/${IPFSPOP} \
             -A ${MY_PATH}/../images/zenticket.png
 
