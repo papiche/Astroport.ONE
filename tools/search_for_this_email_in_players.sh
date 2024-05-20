@@ -33,7 +33,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
         [[ ! -s $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html ]] \
             && mkdir -p $HOME/.zen/tmp/flashmem/tw/${EXTERNAL} \
-            && ipfs --timeout=42s cat /ipfs/${EXTERNAL} > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html \
+            && ipfs --timeout=42s cat --progress=false /ipfs/${EXTERNAL} > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html \
             || INDEX=""
         INDEX="$HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html"
     fi
@@ -67,6 +67,9 @@ else
     exit 0
 
 fi
+
+[[ $XDG_SESSION_TYPE == 'x11' ]] \
+    && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
 echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
