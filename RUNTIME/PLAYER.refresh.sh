@@ -236,7 +236,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 ############################################## +2 DAYS & AstroID = UNPLUG !!
     ## REMOVE TW OLDER THAN 2 DAYS WITH AstroID
     [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
-        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "TW EJECTION. Found an AstroID in your TW." \
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "TW EJECTION. AstroID found in TW." \
         && echo "(#__#) AstroID +2 DAYS = SECURITY ERROR (#__#)" && continue
 ####################################################################### RTFM DUMB FIREWALL
 ############################################################################################
@@ -658,7 +658,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #####################################################################
     ############ CURRENT #################### _ForkUPlanetZERO ?
-    if [[ $(echo "$COINS > 100" | bc -l) -eq 1 ]]; then
+    if [[ $(echo "$COINS > 10" | bc -l) -eq 1 ]]; then
         [[ ${CURRENT} == ${PLAYER} ]] && ${MY_PATH}/../ASTROBOT/_ForkUPlanetZERO.sh
     fi
     #################################### NEED > 100 G1 ##################
