@@ -540,8 +540,8 @@ ipns2did=""
 # Loop through the ASTRONAUTENS two characters at a time
 for ((i = 0; i < ${#ASTRONAUTENS}; i += 2)); do
     ipns2did+=" ${ASTRONAUTENS:i:2}"
-    # Check if 12 doublets have been added
-    if (( (i / 2 + 1) % 12 == 0 )); then
+    # Check if 10 doublets have been added
+    if (( (i / 2 + 1) % 14 == 0 )); then
         ipns2did+="<br>"  # Add a newline character
     fi
 done

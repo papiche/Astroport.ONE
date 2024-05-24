@@ -578,7 +578,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ZEN ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
         fi
-        if [[ ${days} -gt 29 ]]; then
+        if [[ ${days} -gt 29 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]]; then
             #################################### UNPLUG ACCOUNT
             echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
             ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
