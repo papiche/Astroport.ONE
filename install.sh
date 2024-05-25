@@ -149,7 +149,7 @@ echo "#####################################"
 echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
-for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry paho-mqtt; do
+for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         python -m pip install --break-system-packages -U $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue

@@ -114,7 +114,7 @@ while read NLINE; do
     ## COMMENT FORMAT = N1$CMD:$TH:$TRAIL
     TXIDATE=$(echo ${NLINE} | jq -r .date)
     TXIPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
-
+    TXIAMOUNT=$(echo $NLINE | jq -r .amount)
     COMMENT=$(echo ${NLINE} | jq -r .comment)
     CMD=$(echo ${COMMENT} | cut -d ':' -f 1 | cut -c -12 ) # Maximum 12 characters CMD
 
@@ -129,9 +129,11 @@ while read NLINE; do
     if [[ -s ${MY_PATH}/../ASTROBOT/${CMD}.sh ]]; then
 
         echo "RECEIVED CMD=${CMD} from ${TXIPUBKEY}"
-        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${TXIPUBKEY} ${TH} ${TRAIL}
+        ${MY_PATH}/../ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${TXIPUBKEY} ${TH} ${TRAIL} ${TXIAMOUNT}
         ## WELL DONE .
-        [[ $? == 0 ]] && echo "${CMD} DONE" && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST TXIDATE
+        [[ $? == 0 ]] \
+            && echo "${CMD} DONE" \
+            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.ndate ## MEMORIZE LAST TXIDATE
 
     else
 
