@@ -1,0 +1,110 @@
+version: '3'
+
+services:
+  duniter:
+    container_name: duniter
+    environment:
+    - DEBUG_ENTRYPOINT=${DUNITER_DEBUG_ENTRYPOINT:-${DEBUG_ENTRYPOINT:-${DEBUG:-}}}
+    - DUNITER_AUTO_SYNC=${DUNITER_AUTO_SYNC:-true}
+    - DUNITER_BMA_ENABLED=${DUNITER_BMA_ENABLED:-true}
+    - DUNITER_BMA_IP4=${DUNITER_BMA_IP4:-0.0.0.0}
+    - DUNITER_BMA_REMOTE_HOST=${DUNITER_BMA_REMOTE_HOST:-duniter.localhost}
+    - DUNITER_BMA_REMOTE_PORT=${DUNITER_BMA_REMOTE:-443}
+    - DUNITER_GVA_ENABLED=${DUNITER_GVA_ENABLED:-true}
+    - DUNITER_GVA_PATH=${DUNITER_GVA_PATH:-gva}
+    - DUNITER_GVA_PORT=${DUNITER_GVA_PORT:-30901}
+    - DUNITER_GVA_REMOTE_HOST=${DUNITER_GVA_REMOTE_HOST:-duniter.localhost}
+    - DUNITER_GVA_REMOTE_PATH=${DUNITER_GVA_REMOTE_PATH:-gva}
+    - DUNITER_GVA_REMOTE_PORT=${DUNITER_GVA_REMOTE_PORT:-443}
+    - DUNITER_GVA_REMOTE_TLS=${DUNITER_GVA_REMOTE_TLS:-false}
+    - DUNITER_GVA_WHITELIST=${DUNITER_GVA_WHITELIST:-127.0.0.1,::1}
+    - DUNITER_MANUAL_CONFIG=${DUNITER_MANUAL_CONFIG:-false}
+    - DUNITER_POW_PREFIX=${DUNITER_POW_PREFIX:-}
+    - DUNITER_POW_CPU=${DUNITER_POW_CPU:-0.8}
+    - DUNITER_POW_NBCORES=${DUNITER_POW_NBCORES:-1}
+    - DUNITER_START_OPTS=${DUNITER_START_OPTS:-direct_webstart}
+    - DUNITER_SYNC_HOST=${DUNITER_SYNC_HOST:-g1.duniter.org:443}
+    - DUNITER_SYNC_OPTS=${DUNITER_SYNC_OPTS:-}
+    - DUNITER_WS2P_HOST=${DUNITER_WS2P_HOST:-0.0.0.0}
+    - DUNITER_WS2P_PORT=${DUNITER_W2SP_PORT:-20901}
+    - DUNITER_WS2P_PUBLIC=${DUNITER_W2SP_PUBLIC:-true}
+    - DUNITER_WS2P_REMOTE_HOST=${DUNITER_WS2P_REMOTE_HOST:-duniter.localhost}
+    - DUNITER_WS2P_REMOTE_PATH=${DUNITER_WS2P_REMOTE_PATH:-ws2p}
+    - DUNITER_WS2P_REMOTE_PORT=${DUNITER_WS2P_REMOTE_PORT:-443}
+    image: duniter/duniter:dev
+    networks:
+    - private
+    ports:
+    - 0.0.0.0:10901:10901
+    - 0.0.0.0:20901:20901
+    - 0.0.0.0:30901:30901
+    - 0.0.0.0:9220:9220
+    restart: unless-stopped
+    volumes:
+    - data:/var/lib/duniter
+    - etc:/etc/duniter
+    # Don't auto-updated duniter
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    # We start duniter but adding g1nkgo local IP to the allow list, so we can use GVA without rate limits (in theory)
+    entrypoint: /bin/sh -c "while ! getent hosts g1nkgo_host > /dev/null 2>&1; do echo 'Waiting for g1nkgo_host...'; sleep 1; done && G1NKGO_IP=`getent hosts g1nkgo_host | awk '{ print $$1 }'` && export DUNITER_GVA_WHITELIST=$$G1NKGO_IP,$${DUNITER_GVA_WHITELIST:-127.0.0.1,::1} && echo $$DUNITER_GVA_WHITELIST && exec /docker-entrypoint.sh"
+
+  g1nkgo:
+    # image: g1nkgo:latest
+    image: comunes/g1nkgo:latest
+    build:
+      context: .
+    container_name: g1nkgo
+    restart: always
+    hostname: g1nkgo
+    ports:
+      - "1801:80"
+      - "14431:443"
+    volumes:
+      - ~/.ginkgo/nginx-conf:/etc/nginx/:rw
+      # - ./assets:/usr/share/nginx/html/assets:rw
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      private:
+        aliases:
+          - g1nkgo_host
+
+    environment:
+      # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      # Useful for having logs with local time
+      - TZ=${TZ:-Europe/Copenhagen}
+      # Sentry conf
+      # SENTRY_DSN=https://306345cb87ee4e1cbbe9023fb4afc5fc@sentry.comunes.org/6
+      # Card customization
+      # Empty for default
+      - CARD_TEXT=${CARD_TEXT:-Ğ1 Wallet}
+      # Nodes space-separated
+      # The duniter nodes are only used at boot time, later it tries to calculate periodically the nodes
+      # that are available with the less latency
+      # SENTRY_DSN no tiene valor predeterminado, por lo que no se incluye aquí.
+      - DUNITER_NODES=${DUNITER_NODES:-https://g1.duniter.fr https://g1.le-sou.org https://g1.cgeek.fr https://g1.monnaielibreoccitanie.org https://g1.duniter.fr https://g1.le-sou.org https://g1.cgeek.fr}
+      - CESIUM_PLUS_NODES=${CESIUM_PLUS_NODES:-https://g1.data.le-sou.org https://g1.data.e-is.pro https://g1.data.presles.fr https://g1.data.mithril.re}
+      - GVA_NODES=${GVA_NODES:-https://g1v1.p2p.legal:443/gva https://g1.asycn.io:443/gva https://duniter.pini.fr:443/gva https://duniter.cuates.net:443/gva}
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: g1nkgo-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Additional watchtower args
+    # commmand:
+    networks:
+      - private
+
+networks:
+  private:
+    name: ${DOCKER_NETWORK_PRIVATE:-duniter}
+# Not in use
+#  public:
+#    name: ${DOCKER_NETWORK_PUBLIC:-host}
+
+volumes:
+  data:
+  etc:
