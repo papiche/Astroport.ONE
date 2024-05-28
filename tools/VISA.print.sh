@@ -104,9 +104,7 @@ convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,10 \"$PEPPER
 
 ## PRINT PGP AstroID
 convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.ZENCARD.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
-convert -gravity NorthWest -pointsize 15 -fill black -draw "text 20,2 \"$G1PUB\"" ~/.zen/tmp/${MOATS}/ASTROPORT.png ~/.zen/tmp/${MOATS}/one.png
-
-composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/one.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
+composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
