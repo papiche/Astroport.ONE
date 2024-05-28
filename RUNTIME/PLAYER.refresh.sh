@@ -430,6 +430,9 @@ for PLAYER in ${PLAYERONE[@]}; do
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
     echo "SECTORTW_NEWS $SECTOR SECTORTW=${SECTORIPNS}/TW :: ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json"
+    ${MY_PATH}/TW/delete_tiddler.sh \
+        ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
+        "${SECTOR}.NEWS"
     ${MY_PATH}/TW/import_tiddler.sh \
         ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
