@@ -56,6 +56,7 @@ while true; do
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
+    [[ ${myIP} == "" ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
 
     PORT=$(cat ~/.zen/tmp/PORT) || PORT=45779
 
