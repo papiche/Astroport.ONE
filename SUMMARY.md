@@ -12,3 +12,6 @@
     * [REGION.refresh.sh](astroport-20h12/uplanet.refresh.sh/region.refresh.sh.md)
   * [G1PalPay.sh](astroport-20h12/g1palpay.sh.md)
   * [tools/Connect\_PLAYER\_To\_Gchange.sh](astroport-20h12/tools-connect\_player\_to\_gchange.sh.md)
+* [API](api/README.md)
+  * [PLAYER.sh](api/player.sh.md)
+  * [QRCODE.sh](api/qrcode.sh.md)
