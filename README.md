@@ -127,6 +127,10 @@ https://astroport-1.gitbook.io/astroport.one/
 
 Ce projet est une sélection de certains des logiciels libres et open source les plus précieux. Les contributions sont les bienvenues sur [Swarm BUDGET](https://opencollective.com/monnaie-libre#category-BUDGET).
 
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
+
 ## Crédits
 
 Merci à tous ceux qui ont contribué à rendre ce logiciel disponible pour tous. Connaissez-vous [Ğ1](https://monnaie-libre.fr) ? La meilleure crypto-monnaie que vous puissiez rêver.
