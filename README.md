@@ -104,12 +104,12 @@ L'API `UPLANET.sh` est dédiée aux applications OSM2IPFS et UPlanet Client App.
 - `uplanet` : Email du joueur.
 - `zlat` : Latitude avec 2 décimales.
 - `zlon` : Longitude avec 2 décimales.
-- `g1pub` : (Facultatif) Clé publique parrainage.
+- `g1pub` : (Facultatif) Langue origine (fr, en, ...)
 
 #### Exemple de Requête
 
 ```http
-GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=PASS
+GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=fr
 ```
 
 | Parameter | Type     | Description                       |
@@ -117,7 +117,7 @@ GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=PASS
 | `uplanet` | `email`  | **Requis**. Email du joueur       |
 | `zlat`    | `decimal`| **Requis**. Latitude avec 2 décimales |
 | `zlon`    | `decimal`| **Requis**. Longitude avec 2 décimales |
-| `g1pub`   | `string` | **Facultatif**. Clé publique parrainage |
+| `g1pub`   | `string` | **Facultatif**. Langue origine (fr, en, ...) |
 
 ## DOCUMENTATION
 
@@ -125,7 +125,9 @@ https://astroport-1.gitbook.io/astroport.one/
 
 ## Contribution
 
-Ce projet est une sélection de certains des logiciels libres et open source les plus précieux. Les contributions sont les bienvenues sur [Swarm BUDGET](https://opencollective.com/monnaie-libre#category-BUDGET).
+Ce projet est [une sélection](/papiche/Astroport.solo) de certains des logiciels libres et open source les plus précieux.
+
+Les contributions sont les bienvenues sur [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
 
 ## Stargazers over time
 
