@@ -1,79 +1,132 @@
-# Intro
+# Astroport.ONE
 
-Les scripts fournis sont interconnectés et font partie d'un écosystème appelé Astroport.ONE, qui utilise IPFS (InterPlanetary File System) et la blockchain Ğ1 pour diverses opérations.&#x20;
+Bienvenue dans l'univers d'Astroport.ONE, une plateforme révolutionnaire qui combine la technologie blockchain avec le stockage interplanétaire pour offrir des solutions de paiement et de stockage de données sécurisées et sans commission.
 
-Voici une description des relations entre les scripts :
+## Introduction
 
-#### 1. `20h12.process.sh`
+**Astroport.ONE v1.0 : Stockage Décentralisé au-delà des Frontières**
 
-Ce script est exécuté quotidiennement à 20h12 et orchestre plusieurs tâches importantes :
+Astroport.ONE n'est pas seulement un logiciel de stockage distribué ; c'est une réinvention de la gestion des données. En utilisant IPFS et en introduisant un master boot record (MBR) et une table d'allocation pour les données Tiddlywiki, Astroport.ONE organise les informations avec une précision sans précédent. Dans le système de format UPlanet, la planète est découpée en segments de 0,01°, garantissant des Tiddlers enregistrés localement avec des signatures uniques.
 
-* **Vérification et redémarrage du démon IPFS** : Assure que le démon IPFS est actif et redémarre si nécessaire.
-* **Nettoyage des répertoires temporaires** : Nettoie les répertoires temporaires tout en conservant certains dossiers importants.
-* **Mise à jour du code source** : Met à jour le code source d'Astroport.ONE et de G1BILLET via Git.
-* **Exécution des scripts de mise à jour** : Exécute des scripts pour mettre à jour les joueurs, les nœuds, et les zones géographiques.
-* **Surveillance des transactions** : Utilise `G1PalPay.sh` pour surveiller les transactions sur la blockchain Ğ1.
-* **Notifications par email** : Utilise `mailjet.sh` pour envoyer des notifications par email en cas d'erreurs ou d'événements importants.
+**Station Extra-Terrestre Astroport.ONE : Là où l'Innovation Rencontre la Tranquillité**
 
-#### 2. `PLAYER.refresh.sh`
+Découvrez la Station Extra-Terrestre Astroport.ONE, un havre pour les volontaires cherchant à vivre en paix et en harmonie dans un vaisseau spatial transformé en jardin. Participez à un nouveau "Jeu de Société" développé par et pour les Astronautes de MadeInZion.
 
-Ce script gère les joueurs et leurs données :
+## Fonctionnalités Principales
 
-* **Mise à jour des données des joueurs** : Rafraîchit les données des joueurs, y compris les portefeuilles et les tiddlers (petits morceaux de contenu).
-* **Gestion des clés IPFS** : Vérifie et importe les clés IPFS des joueurs.
-* **Surveillance des transactions** : Utilise `G1PalPay.sh` pour surveiller les transactions et exécuter des commandes basées sur les commentaires des transactions.
+### ZenCard et AstroID
 
-#### 3. `NODE.refresh.sh`
+- **ZenCard** : Système de paiement basé sur QRCode.
+- **AstroID** : Identité numérique sécurisée.
 
-Ce script gère les nœuds IPFS :
+### Stockage Décentralisé
 
-* **Mise à jour des données des nœuds** : Rafraîchit les données des nœuds et publie des balises de station.
-* **Nettoyage des répertoires temporaires** : Nettoie les répertoires temporaires des nœuds.
+- **IPFS** : Utilisation d'IPFS pour le stockage distribué.
+- **MBR et Table d'Allocation** : Organisation précise des données Tiddlywiki.
 
-#### 4. `VOEUX.refresh.sh`
+### Gestion des Vœux
 
-Ce script gère les vœux des joueurs :
+- **Voeux** : Idées, plans, explications et erreurs financés collaborativement via des dons en monnaie libre Ğ1.
 
-* **Extraction des vœux** : Extrait les vœux des joueurs à partir de leurs tiddlers.
-* **Mise à jour des vœux** : Rafraîchit les vœux et exécute des programmes spécifiques basés sur les vœux.
+### Synchronisation et Communication
 
-#### 5. `REGION.refresh.sh`
+- **Stations Astroport.ONE** : Chaque station est une ambassade numérique qui communique et se synchronise avec ses pairs.
+- **AstroBot** : Contrat intelligent en BASH déclenché par des "G1Tag".
 
-Ce script gère les régions géographiques :
+## Installation
 
-* **Mise à jour des régions** : Rafraîchit les données des régions en collectant des informations à partir des secteurs.
-* **Publication des données** : Publie les données des régions sur IPFS.
+### Prérequis
 
-#### 6. `ZEN.UMAP.memory.sh`
+- **Système d'exploitation** : Linux Mint, Ubuntu, Debian
 
-Ce script gère la mémoire des cartes UMAP :
+### Commande d'Installation
 
-* **Récupération des données** : Récupère les données de mémoire des secteurs à partir de l'historique des transactions.
+```bash
+bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh)
+```
 
-#### 7. `G1PalPay.sh`
+### Processus en Cours d'Exécution
 
-Ce script surveille les transactions sur la blockchain Ğ1 :
+Après l'installation, vous devriez trouver les processus suivants en cours d'exécution :
 
-* **Surveillance des paiements entrants** : Vérifie les paiements entrants et exécute des commandes basées sur les commentaires des transactions.
-* **Redistribution des fonds** : Redistribue les fonds aux destinataires spécifiés dans les commentaires des transactions.
+```
+/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
+/bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
+/bin/bash /home/fred/.zen/Astroport.ONE/12345.sh
+/bin/bash /home/fred/.zen/Astroport.ONE/_12345.sh
+```
 
-#### 8. `DRAGON_p2p_ssh.sh`
+## Utilisation
 
-Ce script gère les connexions SSH sur IPFS :
+### Création d'un Joueur
 
-* **Ouverture et fermeture des connexions SSH** : Ouvre et ferme les connexions SSH sur IPFS pour le support et la maintenance.
+Pour créer un joueur, définissez les paramètres suivants : email, salt, pepper, lat, lon et PASS.
 
-#### 9. `G1Voeu.sh`
+```bash
+~/.zen/Astroport.ONE/command.sh
+```
 
-Ce script crée des vœux pour les joueurs :
+### API BASH
 
-* **Création de tiddlers de vœux** : Crée des tiddlers de vœux pour les joueurs et les publie sur IPFS.
+Une fois votre station Astroport démarrée, les ports suivants sont activés :
 
-#### Relations entre les scripts
+- **Port 1234** : Publie l'API.
+- **Port 12345** : Publie la carte des stations.
+- **Port 33101** : Publie les G1BILLETS.
+- **Ports 8080, 4001 et 5001** : Ports de la passerelle IPFS.
 
-* **Coordination** : `20h12.process.sh` coordonne l'exécution de plusieurs autres scripts (`PLAYER.refresh.sh`, `NODE.refresh.sh`, `VOEUX.refresh.sh`, etc.) pour assurer la mise à jour et la maintenance de l'écosystème.
-* **Dépendances** : Les scripts comme `PLAYER.refresh.sh` et `VOEUX.refresh.sh` dépendent de `G1PalPay.sh` pour surveiller les transactions et exécuter des commandes basées sur les paiements.
-* **Publication et mise à jour** : Les scripts `NODE.refresh.sh` et `REGION.refresh.sh` publient et mettent à jour les données sur IPFS, assurant que les informations sont synchronisées et accessibles.
-* **Gestion des clés et des connexions** : `DRAGON_p2p_ssh.sh` et `G1Voeu.sh` gèrent les clés IPFS et les connexions SSH, assurant la sécurité et la connectivité de l'écosystème.
+### Exemples d'Utilisation de l'API
 
-ces scripts travaillent ensemble pour maintenir et mettre à jour l'écosystème Astroport.ONE, en utilisant IPFS et la blockchain Ğ1 pour gérer les données, les transactions, et les connexions sécurisées.
+#### Créer un Joueur
+
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
+```
+
+#### Lire la Messagerie de la Base GChange
+
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
+```
+
+#### Déclencher un Paiement de Ğ1
+
+```http
+GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
+```
+
+### Utilisation de l'API UPLANET
+
+L'API `UPLANET.sh` est dédiée aux applications OSM2IPFS et UPlanet Client App. Elle gère les atterrissages UPLANET et la création de ZenCards et AstroIDs.
+
+#### Paramètres Requis
+
+- `uplanet` : Email du joueur.
+- `zlat` : Latitude avec 2 décimales.
+- `zlon` : Longitude avec 2 décimales.
+- `g1pub` : (Facultatif) Clé publique parrainage.
+
+#### Exemple de Requête
+
+```http
+GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=PASS
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `uplanet` | `email`  | **Requis**. Email du joueur       |
+| `zlat`    | `decimal`| **Requis**. Latitude avec 2 décimales |
+| `zlon`    | `decimal`| **Requis**. Longitude avec 2 décimales |
+| `g1pub`   | `string` | **Facultatif**. Clé publique parrainage |
+
+## DOCUMENTATION
+
+https://astroport-1.gitbook.io/astroport.one/
+
+## Contribution
+
+Ce projet est une sélection de certains des logiciels libres et open source les plus précieux. Les contributions sont les bienvenues sur [Swarm BUDGET](https://opencollective.com/monnaie-libre#category-BUDGET).
+
+## Crédits
+
+Merci à tous ceux qui ont contribué à rendre ce logiciel disponible pour tous. Connaissez-vous [Ğ1](https://monnaie-libre.fr) ? La meilleure crypto-monnaie que vous puissiez rêver.
