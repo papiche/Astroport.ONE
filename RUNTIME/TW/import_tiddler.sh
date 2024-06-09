@@ -27,6 +27,7 @@ TIDDLER="$2"
 # Add created and modified fields to the Tiddler JSON file
 echo "Putting ${TIDDLER} in ${TW}"
 cat "$TIDDLER" | jq --arg MOATS "$MOATS" '.[] + {created: $MOATS, modified: $MOATS}' > "${TIDDLER}.tmp"
+[ $? -ne 0 ] && cat "$TIDDLER" # DEBUG
 
 # Run TiddlyWiki import command
 echo "Running TiddlyWiki import..."
