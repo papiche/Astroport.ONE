@@ -125,7 +125,7 @@ https://astroport-1.gitbook.io/astroport.one/
 
 ## Contribution
 
-Ce projet est [une sélection](/papiche/Astroport.solo) de certains des logiciels libres et open source les plus précieux.
+Ce projet est [une sélection](https://github.com/papiche/Astroport.solo) de certains des logiciels libres et open source les plus précieux.
 
 Les contributions sont les bienvenues sur [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
 
@@ -135,4 +135,6 @@ Les contributions sont les bienvenues sur [opencollective.com/monnaie-libre](htt
 
 ## Crédits
 
-Merci à tous ceux qui ont contribué à rendre ce logiciel disponible pour tous. Connaissez-vous [Ğ1](https://monnaie-libre.fr) ? La meilleure crypto-monnaie que vous puissiez rêver.
+Merci à tous ceux qui ont contribué à rendre ce logiciel disponible pour tous. Connaissez-vous [Ğ1](https://monnaie-libre.fr) ?
+
+La meilleure crypto-monnaie dont vous puissiez rêver.
