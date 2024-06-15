@@ -8,6 +8,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
+exec 2>&1 >> ~/.zen/game/ForkUPlanetZERO.log
 
 ## IT SEARCH FOR CURRENT TW ForkUPlanetZERO tag
 ## IT MAKES $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key
