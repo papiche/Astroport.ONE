@@ -19,9 +19,10 @@ echo "$ME RUNNING"
 ## G1PalPAY incoming TX detected call
 ## ./ASTROBOT/${CMD}.sh ${INDEX} ${PLAYER} ${MOATS} ${TXIPUBKEY} ${TH} ${TRAIL} ${TXIAMOUNT}
 ########################################################################
-## TH=/ipfs/CID (mp4 source file to transcript "voice 2 text" or other depending MODE)
-## TRAIL=MODE:G1PUB (what to do and where to send response)
-# default: mp4TOtxt and alert back to emiter
+## TH=/ipfs/CID (source file to pass to AIApi)
+## TRAIL=MODE:G1PUB (what API function and who to send response)
+## DEFAULT /g1vlog and alert back to emiter
+## AIApi : https://github.com/papiche/AiApi
 ########################################################################
 ## THIS SCRIPT IS RUN WHEN A WALLET RECEIVED A TRANSACTION WITH COMMENT STARTING WITH N1GPU:
 ########################################################################
@@ -40,18 +41,21 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ ! $G1PUB ]] && echo "FATAL ERROR - G1PUB ${PLAYER} VIDE. LOCAL PLAYER ONLY."  && exit 1
 
-# Extract tag=tube from TW
 MOATS="$3"
 [[ ! ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+## CREDIT SOURCE
 IPUBKEY="$4"
 [[ ! ${IPUBKEY} ]] && echo "ERROR 4 - MISSING COMMAND ISSUER !"  && exit 1
 
+## IPFS CID
 TH="$5"
-[[ ! ${TH} ]] && echo "ERROR 5 - MISSING COMMAND TITLE HASH ADDRESS !"  && exit 1
+[[ ! ${TH} ]] && echo "ERROR 5 - MISSING IPFS CID !"  && exit 1
 
 TRAIL="$6" ## ::G1PUB
-MODE=$(echo ${TRAIL} | cut -d ':' -f 1)
+API=$(echo ${TRAIL} | cut -d ':' -f 1)
+[[ -z $API ]] && API="/g1vlog"
+
 GIPUBKEY=$(echo ${TRAIL} | cut -d ':' -f 2-)
 [[ ! -z ${GIPUBKEY} ]] \
     && DPUBKEY=${GIPUBKEY} \
@@ -60,15 +64,22 @@ GIPUBKEY=$(echo ${TRAIL} | cut -d ':' -f 2-)
 AMOUNT="$7"
 [[ ! ${AMOUNT} ]] && echo "ERROR 7 - AMOUNT=$7 7 "  && exit 1
 
+echo "API : $API"
+echo "Sender : ${IPUBKEY})
+Amount : ${AMOUNT} G1
+... Reply To : $DPUBKEY"
+
+## AMOUNT & RESTRICTION ...
+
 echo "${PLAYER} : ${IPUBKEY} ASK FOR PROCESSING ${TH}
 ${TRAIL}"
 
 #~ ###################################################################
-#~ ## CREATE APP NODE PLAYER PUBLICATION DIRECTORY
+#~ ## CREATE WORKING TEMP DIRECTORY
 #~ ###################################################################
 mkdir -p $HOME/.zen/tmp/${MOATS} && echo $HOME/.zen/tmp/${MOATS}
 
-
+## GET IPFS PARAMETER
 RESPIPFS="/ipfs/"$(ipfs add -q "$RESP")
 
 

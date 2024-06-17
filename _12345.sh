@@ -105,6 +105,9 @@ while true; do
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
 
+        # RESPECT LOWMODE. REMOVE THAT LINE TO FORCE IPFS WAKING UP
+        [[ $(sudo systemctl status ipfs | grep disabled) != "" ]] && continue
+
         ## CHECK IF IPFS NODE IS RESPONDING
         ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
         [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
