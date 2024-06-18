@@ -80,10 +80,10 @@ ${TRAIL}"
 mkdir -p $HOME/.zen/tmp/${MOATS} && echo $HOME/.zen/tmp/${MOATS}
 
 ## GET IPFS PARAMETER
-RESPIPFS="/ipfs/"$(ipfs add -q "$RESP")
+#~ RESPIPFS="/ipfs/"$(ipfs add -q "$RESP")
 
 
 ## SENDING GCHANGE & CESIUM+ MESSAGE
-$MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${DPUBKEY}" -t "N1GPU" -m "${MESSAGE}"
-$MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${DPUBKEY}" -t "N1GPU" -m "${MESSAGE}"
+#~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${DPUBKEY}" -t "N1GPU" -m "${MESSAGE}"
+#~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${DPUBKEY}" -t "N1GPU" -m "${MESSAGE}"
 
