@@ -14,7 +14,7 @@ exec 2>&1 >> ~/.zen/game/ForkUPlanetZERO.log
 ## IT MAKES $HOME/.zen/game/players/${PLAYER}/.ipfs/${UPNAME}.swarm.key
 ## IT CHECKS FOR SAME UPNAME WISH IN FRIENDS TW
 #~ echo "(✜‿‿✜) CURRENT Fork UPlanet
-#~ This program makes Player generate or join a private IPFS swarm
+#~ This program makes Player generate and join a private IPFS swarm
 #~ All friends with the same wish will share the SECRET
 #~ then any can activate a new ipfs daemon connected to that private ZONE
 ## TIDDLER can contain parameters for UPlanet activation

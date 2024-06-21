@@ -524,18 +524,20 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##########################################
     ## TW IPFS ADD & PUBLISH
     ##########################################
-    TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-    ipfs --timeout 720s name publish --key=${PLAYER} /ipfs/${TW}
+    if [[ ! -f ~/.zen/tmp/${MOATS}/AstroID.json ]]; then
+        TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
+        ipfs --timeout 720s name publish --key=${PLAYER} /ipfs/${TW}
 
-    ## LOCAL PLAYER CACHING
-    echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
-    echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
+        ## LOCAL PLAYER CACHING
+        echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
+        echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 
-    echo "================================================"
-    echo " NEW TW ${PLAYER} : =  ${myIPFS}/ipfs/${TW}"
-    echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
-    echo "================================================"
-    ipfs pin rm ${CURCHAIN}
+        echo "================================================"
+        echo " NEW TW ${PLAYER} : =  ${myIPFS}/ipfs/${TW}"
+        echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
+        echo "================================================"
+        ipfs pin rm ${CURCHAIN}
+    fi ## Avoid AstroID in TW history chain
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
@@ -587,10 +589,6 @@ for PLAYER in ${PLAYERONE[@]}; do
             ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
             continue
         fi
-
-        ## PAY 1 ZEN TO UMAPG1PUB
-        [[ "${UMAPG1PUB}" != "" ]] \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "0.1" "${UMAPG1PUB}" "UPLANET:TW:${YOUSER}:/ipfs/${TW}"
 
     else
 

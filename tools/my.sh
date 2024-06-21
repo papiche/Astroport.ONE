@@ -538,7 +538,7 @@ HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 ##########################
-## UPLANETNAME can be set ~/.zen/UPlanetSharedSecret
+## UPLANETNAME IS ~/.zen/ipfs/swarm.key OR EMPTY
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
@@ -560,5 +560,5 @@ TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 
-## WRITE THE DIFFERENT REWARDS
-G1LEVEL1="3.1"
+## HOW MANY G1 TO SEND FOR PRIMAL TX (used in PLAYER.refresh.sh)
+G1LEVEL1="1"
