@@ -415,17 +415,15 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "${UPLAYERSTIDS[@]}"
     UPLAYERSTIDS_STR=""
     for item in "${UPLAYERSTIDS[@]}"; do
-        UPLAYERSTIDS_STR+="\n* $item"
+        UPLAYERSTIDS_STR+=" * $item \n"
     done
-    # Trim leading space
-    UPLAYERSTIDS_STR="${UPLAYERSTIDS_STR# }"
     ######################################
     # (RE)MAKE "SECTORTW_NEWS" TIDDLER
     cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
         | sed -e "s~_SECTOR_~${SECTOR}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
         -e "s~_UPLANET_~https://qo-op.com~g" \
-        -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS_STR}~g" \
+        -z "s~_UPLAYERSTIDS_~${UPLAYERSTIDS_STR}~g" \
         -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
             > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
