@@ -415,17 +415,19 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "${UPLAYERSTIDS[@]}"
     UPLAYERSTIDS_STR=""
     for item in "${UPLAYERSTIDS[@]}"; do
-        UPLAYERSTIDS_STR+=" * $item \n"
+        UPLAYERSTIDS_STR+=" - $item \n"
     done
+
     ######################################
     # (RE)MAKE "SECTORTW_NEWS" TIDDLER
-    cat ${MY_PATH}/../templates/data/SECTORTW_NEWS.json \
-        | sed -e "s~_SECTOR_~${SECTOR}~g" \
+    sed -E \
+        -e "s~_SECTOR_~${SECTOR}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
         -e "s~_UPLANET_~https://qo-op.com~g" \
-        -z "s~_UPLAYERSTIDS_~${UPLAYERSTIDS_STR}~g" \
+        -e "s~_UPLAYERSTIDS_~$(echo -n "$UPLAYERSTIDS_STR")~" \
         -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
-            > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
+        ${MY_PATH}/../templates/data/SECTORTW_NEWS.json > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
+
 
     echo "SECTORTW_NEWS $SECTOR SECTORTW=${SECTORIPNS}/TW :: ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json"
     ${MY_PATH}/TW/delete_tiddler.sh \

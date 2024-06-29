@@ -777,7 +777,7 @@ mv ~/.zen/tmp/screen.png ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/screen.png
 
 ########################################################################
 # ADD $FILE to IPFS / ASTROPORT / KODI
-echo "(♥‿‿♥) new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" "$3"
+echo "(♥‿‿♥) new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" "$3" "$PLAYER"
 [[ -f ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] && cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 # LOG NOISE # [[ -f ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json ]] && cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json
 ########################################################################
@@ -808,7 +808,7 @@ if [[ ! -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]];
     #else" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
     # $3 is the G1PUB of the PLAYER
-    echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\"" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
+    echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\" \"$PLAYER\"" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
     #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 

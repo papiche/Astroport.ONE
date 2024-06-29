@@ -9,6 +9,8 @@
 ######## #### ### ## #
 start=`date +%s`
 
+exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
@@ -46,10 +48,11 @@ last_char=${path:length-1:1}
 file="$2"
 
 G1PUB="$3"
+PLAYER="$4"
 
 ### ECHO COMMAND RECEIVED :
 echo "FOUNIR 'PATH' 'FILE' et 'G1PUB' du PLAYER inscrit sur la STATION"
-echo "$MY_PATH/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\" G1PUB \"$G1PUB\" "
+echo "$MY_PATH/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\" G1PUB \"$G1PUB\" PLAYER \"$PLAYER\" "
 
 ################################################
 ## FILE ANALYSE & IDENTIFICATION TAGGINGS
@@ -78,9 +81,9 @@ MIME=$(file --mime-type -b "${path}${file}")
 # GET CONNECTED PLAYER
 ########################################################################
 [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
+[[ ! $PLAYER ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
 
-PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
-[[ ! $PLAYER ]] && echo "(╥☁╥ ) No current player. Please Login" && exit 1
+[[ ! $PLAYER ]] && echo "(╥☁╥ ) No player. Please Login" && exit 1
 
 # NOT CURRENT PLAYER (CHECK FOR TW & KEY
 [[ $(ipfs key list -l | grep -w $G1PUB) ]] \
