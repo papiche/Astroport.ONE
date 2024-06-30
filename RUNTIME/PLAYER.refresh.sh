@@ -415,7 +415,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "${UPLAYERSTIDS[@]}"
     UPLAYERSTIDS_STR=""
     for item in "${UPLAYERSTIDS[@]}"; do
-        UPLAYERSTIDS_STR+=" - $item \n"
+        UPLAYERSTIDS_STR+=" - $item "
     done
 
     ######################################
