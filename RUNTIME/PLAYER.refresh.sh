@@ -413,10 +413,6 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ################## PREPARE LIST TO INSERT IN SECTORTW_NEWS TID
     echo "${UPLAYERSTIDS[@]}"
-    UPLAYERSTIDS_STR=""
-    for item in "${UPLAYERSTIDS[@]}"; do
-        UPLAYERSTIDS_STR+=" - $item "
-    done
 
     ######################################
     # (RE)MAKE "SECTORTW_NEWS" TIDDLER
@@ -424,7 +420,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         -e "s~_SECTOR_~${SECTOR}~g" \
         -e "s~_MOATS_~${MOATS}~g" \
         -e "s~_UPLANET_~https://qo-op.com~g" \
-        -e "s~_UPLAYERSTIDS_~$(echo -n "$UPLAYERSTIDS_STR")~" \
+        -e "s~_UPLAYERSTIDS_~${UPLAYERSTIDS[*]}~" \
         -e "s~_SECTORTW_~${SECTORIPNS}/TW~g" \
         ${MY_PATH}/../templates/data/SECTORTW_NEWS.json > ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 

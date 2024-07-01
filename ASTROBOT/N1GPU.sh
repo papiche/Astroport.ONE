@@ -29,7 +29,6 @@ echo "$ME RUNNING"
 INDEX="$1"
 [[ ! ${INDEX} ]] && INDEX="$HOME/.zen/game/players/.current/ipfs/moa/index.html"
 [[ ! -s ${INDEX} ]] && echo "ERROR - Please provide path to source TW index.html" && exit 1
-[[ ! -s ${INDEX} ]] && echo "ERROR - Fichier TW absent. ${INDEX}" && exit 1
 
 PLAYER="$2"
 [[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
@@ -52,11 +51,11 @@ IPUBKEY="$4"
 TH="$5"
 [[ ! ${TH} ]] && echo "ERROR 5 - MISSING IPFS CID !"  && exit 1
 
-TRAIL="$6" ## ::G1PUB
+TRAIL="$6" ## :G1PUB
 API=$(echo ${TRAIL} | cut -d ':' -f 1)
 [[ -z $API ]] && API="/g1vlog"
 
-GIPUBKEY=$(echo ${TRAIL} | cut -d ':' -f 2-)
+GIPUBKEY=$(echo ${TRAIL} | cut -d ':' -f 2)
 [[ ! -z ${GIPUBKEY} ]] \
     && DPUBKEY=${GIPUBKEY} \
     || DPUBKEY=${IPUBKEY}
