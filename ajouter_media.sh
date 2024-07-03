@@ -68,7 +68,7 @@ echo ">>> RUNNING 'ajouter_media.sh' URL=$URL PLAYER=$PLAYER CHOICE=$CHOICE"
 # Check who is PLAYER  ?
 if [[ ${PLAYER} == "" ]]; then
 
-    players=($(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+    players=($(ls ~/.zen/game/players 2>/dev/null | grep "@"))
 
     if [[ ${#players[@]} -ge 1 ]]; then
         espeak "SELECT YOUR PLAYER"
@@ -104,19 +104,19 @@ echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player)
 && exit 1 \
 || PSEUDO=$(myPlayerUser)
 
+$($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER})
+
 espeak "Hello $PSEUDO"
 
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-PLAYERNS=$(myPlayerNs) || { echo "noplayerns" && exit 1; }
-
-ASTRONAUTENS=$(myAstroKey)
+ASTRONAUTENS=${ASTROTW}
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
-        BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
-        [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
-        [[ ! $isLAN ]] && BROWSER=""
+BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
+[[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
+[[ ! $isLAN ]] && BROWSER=""
 
 ###
 if [ $URL ]; then
