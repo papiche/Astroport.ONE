@@ -84,7 +84,7 @@ for SECTOR in ${SECTORS[@]}; do
 
     ###################### SPATIO TEMPORAL KEYS
     ## YESTERDATE ###############
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv  "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv "${YESTERDATE}${UPLANETNAME}${SECTOR}" "${YESTERDATE}${UPLANETNAME}${SECTOR}"
     ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
     YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
     echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
@@ -170,13 +170,13 @@ for SECTOR in ${SECTORS[@]}; do
     mv ${UREFRESH}.shuf ${UREFRESH}
     echo "SETTING NEXT REFRESHER : $(cat ${UREFRESH} | head -n 1)"
 
-    ############ 101 ZEN (11.1 G1) REFILL ?!
+    ############ 0 ZEN (1 G1) INIT ?!
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${SECTOR}:${MIUSER}" \
-        && echo "UPLANET:101:${SECTOR}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ "
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "1" "${G1PUB}" "UPLANET:INIT:${SECTOR}:${MIUSER}" \
+        && echo "UPLANET:INIT:${SECTOR}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ "
 
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS
@@ -350,7 +350,7 @@ for SECTOR in ${SECTORS[@]}; do
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
-        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
+        #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
     fi
     ##############################################################
     ## PUBLISHING ${SECTOR}

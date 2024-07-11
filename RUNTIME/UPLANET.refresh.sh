@@ -191,13 +191,13 @@ for UMAP in ${unique_combined[@]}; do
     echo ">> NEXT REFRESHER WILL BE $(cat ${UREFRESH} | head -n 1)"
     ######################################################## # NODE  SELECTION in UMAP.refresher
 
-    ############ 101 ZEN (11.1 G1) REFILL ?!
+    ############ 0 ZEN (1 G1) INITIALIZE UMAP
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "11.1" "${G1PUB}" "UPLANET:101ZEN:${UMAP}:${MIUSER}" \
-        && echo "UPLANET:101:${UMAP}:${MIUSER}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ "
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "1" "${G1PUB}" "UPLANET:INIT:${UMAP}:${MIUSER}" \
+        && echo "UPLANET:INIT:${UMAP}:${MIUSER}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ "
 
     # %%%%%%%%%% ##################################################
     ## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${SLAT}_${SLON}
@@ -518,7 +518,7 @@ for UMAP in ${unique_combined[@]}; do
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN > 11 ?)"
     if [[ ${ZEN} -gt 11 ]]; then
         echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"
-        ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
+        #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "0.1" "${SECTORG1PUB}" "${INTERCOM}"
     fi
 
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
