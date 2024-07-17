@@ -106,7 +106,8 @@ while true; do
         [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
 
         # RESPECT LOWMODE. REMOVE THAT LINE TO FORCE IPFS WAKING UP
-        [[ $(sudo systemctl status ipfs | grep disabled) != "" ]] && continue
+        #~ [[ $(sudo systemctl status ipfs | grep disabled) != "" ]] && continue
+        ## CONSUME TOO MUCH CPU "init splash"
 
         ## CHECK IF IPFS NODE IS RESPONDING
         ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
