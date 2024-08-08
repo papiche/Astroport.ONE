@@ -58,7 +58,7 @@ done
 echo "#############################################"
 echo "######### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp; do
+for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -149,9 +149,10 @@ echo "#####################################"
 echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
-for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry paho-mqtt ipfshttpclient; do
+for i in setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        python -m pip install --break-system-packages -U $i
+        # python -m pip install --break-system-packages -U $i
+        pipx install $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
 done
 
@@ -166,7 +167,8 @@ if [[ $USER != 'xbian' ]]; then
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-        python -m pip --break-system-packages install brother_ql
+        # python -m pip --break-system-packages install brother_ql
+        pipx install brother_ql
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin $USER
         sudo usermod -a -G tty $USER
