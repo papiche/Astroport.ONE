@@ -26,10 +26,11 @@ LANG="$5"
 
 ## UPLANET UMAP
 LAT="$6"
+LAT=$(makecoord ${LAT})
 [[ $LAT == "" ]] && LAT="0.00"
 LON="$7"
+LON=$(makecoord ${LON})
 [[ $LON == "" ]] && LON="0.00"
-
 ################################################################################
 YOU=$(myIpfsApi);
 ################################################################################
@@ -100,7 +101,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ZenCard=$(cat ~/.zen/tmp/${MOATS}/ZenCard.json | jq -r .[]._canonical_uri)
     echo "ZenCard=$ZenCard"
 
-    if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" ]]; then
+    if [[ ${ASTROPORT} != "" && ${ASTROPORT} != "null" && ${ASTROPORT} != "_ASTROPORT_" ]]; then
 
         IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
         echo "TW ASTROPORT GATEWAY : ${ASTROPORT}"
@@ -310,6 +311,10 @@ sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
 cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "_SECTORTW_"}' \
     > ~/.zen/tmp/${MOATS}/GPStw.json \
     && mv ~/.zen/tmp/${MOATS}/GPStw.json ~/.zen/tmp/${MOATS}/GPS.json
+
+## SHOW GPS TIDDLER
+echo "PLAYER $PLAYER GPS TIDDLER _$LAT_$LON"
+cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r
 
 ###########
 ## GET OLD16 FROM MadeInZion
