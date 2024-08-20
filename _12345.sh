@@ -103,7 +103,9 @@ while true; do
                 && echo "$(date +"%H%M") : 20H12 is coming... " && continue
         fi
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
-        [[ ${PLAYERONE[@]} == "" ]] && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" && continue
+        [[ ${PLAYERONE[@]} == "" ]] \
+            && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" \
+            && duree=0 && lastrun=${MOATS} && continue
 
         # RESPECT LOWMODE. REMOVE THAT LINE TO FORCE IPFS WAKING UP
         #~ [[ $(sudo systemctl status ipfs | grep disabled) != "" ]] && continue
