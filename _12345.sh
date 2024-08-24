@@ -104,7 +104,6 @@ while true; do
         fi
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         [[ ${PLAYERONE[@]} == "" ]] \
-            && echo "EMPTY ASTROPORT - NO PLAYER - NO PUBLISHING" \
             && duree=0 && lastrun=${MOATS} && continue
 
         # RESPECT LOWMODE. REMOVE THAT LINE TO FORCE IPFS WAKING UP
