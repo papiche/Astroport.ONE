@@ -111,7 +111,7 @@ espeak "Hello $PSEUDO"
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-ASTRONAUTENS=${ASTROTW}
+ASTRONAUTENS=$(basename $ASTROTW)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
 BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
