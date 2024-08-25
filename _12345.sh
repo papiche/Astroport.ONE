@@ -104,7 +104,7 @@ while true; do
         fi
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         [[ ${PLAYERONE[@]} == "" ]] \
-            && duree=0 && lastrun=${MOATS} && continue
+            && duree=0 && lastrun=${MOATS} && break
 
         # RESPECT LOWMODE. REMOVE THAT LINE TO FORCE IPFS WAKING UP
         #~ [[ $(sudo systemctl status ipfs | grep disabled) != "" ]] && continue
