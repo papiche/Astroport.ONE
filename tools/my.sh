@@ -466,6 +466,9 @@ IPFSNODEID="$(myIpfsPeerId)"
 isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
 
+## SEE https://pad.p2p.legal/s/keygen
+NODEG1PUB=$(cat ~/.zen/game/secret.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
 ## PATCH
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
