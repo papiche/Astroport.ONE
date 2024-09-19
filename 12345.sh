@@ -102,7 +102,7 @@ while true; do
         && echo "WAN STATION"
 
     [ -n "$(zIp)" ]\
-        && sed -i -e "s~http://127.0.0.1:${PORT}~$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
+        && sed -i -e "s~http://127.0.0.1:${PORT}~http://$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
         && echo "COEURBOX STATION"
 
     ## UPLANET HOME LINK REPLACEMENT

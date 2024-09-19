@@ -149,7 +149,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         try=$((try-1))
         echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
 
-        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "TW LOADING TIMEOUT"
+        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "TW LOADING TIMEOUT $try"
 
         continue
 
