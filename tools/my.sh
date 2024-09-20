@@ -544,7 +544,7 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 ## UPLANETNAME IS ~/.zen/ipfs/swarm.key OR EMPTY
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
-    || UPLANETNAME=""
+    || UPLANETNAME="portnawak"
 
 CAPTAING1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
 
