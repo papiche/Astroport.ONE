@@ -546,15 +546,12 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME=""
 
-## DETECT SWARM.KEY
-## ACTIVATE SECONDARY PRIVATE IPFS SWARM
+CAPTAING1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
-[[ ${UPLANETNAME} == "" ]] \
-    && WORLDG1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
+[[ ${CAPTAING1PUB} == "" ]] \
+    && CAPTAING1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
 
-[[ ${WORLDG1PUB} == "" ]] \
-    && WORLDG1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.

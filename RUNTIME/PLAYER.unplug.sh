@@ -52,11 +52,11 @@ mkdir -p ~/.zen/tmp/${MOATS}
     echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
     ## UNPLUG => SEND 10 ZEN to SECTORG1PUB
-    ## ALL => SEND ALL to $WORLDG1PUB
+    ## ALL => SEND ALL to $CAPTAING1PUB
 
     ALL="ALL"
     [[ $ONE == "ONE" ]] && ALL=1
-    [[ $ALL == "ALL" ]] && SECTORG1PUB=${WORLDG1PUB} && echo "DEST = WORLDG1PUB: ${WORLDG1PUB}"
+    [[ $ALL == "ALL" ]] && SECTORG1PUB=${CAPTAING1PUB} && echo "DEST = CAPTAING1PUB: ${CAPTAING1PUB}"
 
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     [[ ! -z ${SECTORG1PUB} ]] \

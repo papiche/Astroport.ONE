@@ -20,7 +20,7 @@ ${MY_PATH}/tools/keygen "coucou" "coucou"
 keygen=$?
 
 echo "jaklis can ACCESS BLOCKCHAIN"
-${MY_PATH}/tools/jaklis/jaklis.py history -p ${WORLDG1PUB}
+${MY_PATH}/tools/jaklis/jaklis.py history -p ${CAPTAING1PUB}
 jaklis=$?
 
 echo "amzqr can CREATE QR CODE"
