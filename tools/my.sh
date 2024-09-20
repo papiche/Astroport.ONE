@@ -562,3 +562,5 @@ DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 
 ## HOW MANY G1 TO SEND FOR PRIMAL TX (used in PLAYER.refresh.sh)
 G1LEVEL1="1"
+
+[[ -s ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
