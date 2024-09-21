@@ -16,7 +16,7 @@ HOP=0
 #################################################################################################################
 ############# CONVERT NOT MP4
         [[ ! $MIME == "video/mp4"  ]] \
-        && espeak "MP4 CONVERSION PLEASE WAIT" 2>/dev/null \
+        && echo "MP4 CONVERSION PLEASE WAIT" 2>/dev/null \
         && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
         && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}") && HOP=1
 
@@ -27,7 +27,7 @@ RES=${FILE_RES%?}0p
 ############# VIDEO LINES MAX IS 720p
 LINES=$(echo $RES | tr -dc '0-9')
 [ $LINES -gt 720 ] \
-&& espeak "VIDEO RESIZING HALF PLEASE WAIT" 2>/dev/null \
+&& echo "VIDEO RESIZING HALF PLEASE WAIT" 2>/dev/null \
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
 && [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
 && FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
