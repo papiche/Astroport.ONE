@@ -51,7 +51,7 @@ VTRATIO=$(echo "$DURATION / $FILE_BSIZE * 1024 * 1024" | bc -l | xargs printf "%
 rm -f ~/.zen/tmp/screen.gif
 ffmpeg -loglevel quiet -ss $PROBETIME -t 1.6 -loglevel quiet -i "${path}${file}" ~/.zen/tmp/screen.gif
 ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
-cp ~/.zen/tmp/screen.gif ${path}${file}.gif
+cp ~/.zen/tmp/screen.gif "${path}${file}.gif"
 
 ## -- cross "bash tail -n 1" variable setting in return --- BASH TRICK ;)
 echo "export HOP=$HOP ANIMH=$ANIMH PROBETIME=$PROBETIME DURATION=$DURATION DUREE=$DUREE RES=$RES MIME=$MIME VTRATIO=$VTRATIO file=$file"
