@@ -117,25 +117,4 @@ echo "CONNECT WITH THIS COMMAND"
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ############################################
 
-## PROMETHEUS NODE
-if [[ -s ~/.zen/prometheus/prometheus ]]; then
-
-    echo "UPDATING ~/.zen/prometheus/prometheus.yml"
-    ## ADD ALL SWARM NODES TO MONITORING LIST for prometheus (GRAFANA) node
-
-    ncrunning=$(ps axf --sort=+utime | grep -w 'prometheus' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
-    [[ $ncrunning ]] \
-        && echo "RESTARTING" && kill -HUP $ncrunning \
-        || { cd ~/.zen/prometheus/; ./prometheus & }
-
-fi
-
-## LAUNCHING node_exporter
-ncrunning=$(ps axf --sort=+utime | grep -w 'node_exporter' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
-[[ $ncrunning ]] \
-    && echo "RESTARTING" && kill -HUP $ncrunning \
-    || { /usr/local/bin/node_exporter & }
-
-
-
 exit 0
