@@ -8,6 +8,8 @@
 # Checks the current block number of $DIR/duniter_nodes.txt (is run in parallel)
 # and output random (from last synchronized) node
 
+BOOSTER=(gibraleon.g1server.net g1.asycn.io g1.cgeek.fr g1.copylaradio.com)
+
 checkonenode()
 {
     # Timeout in seconds for https nodes
@@ -65,7 +67,7 @@ mkdir -p $DIR/chains
 find $DIR/ -mmin +20 -type f -name "duniter_*" -exec rm -f '{}' \;
 if [[ ! -f  $DIR/duniter_nodes.txt ]]; then
     # Get New BMAS known Nodes list from shuffle one $DIR/good.nodes.txt
-    [[ -f $DIR/good.nodes.txt ]] && DUNITER=$(shuf -n 1 $DIR/good.nodes.txt) || DUNITER="g1.copylaradio.com:443"
+    [[ -f $DIR/good.nodes.txt ]] && DUNITER=$(shuf -n 1 $DIR/good.nodes.txt) || DUNITER="${BOOSTER[$((RANDOM % ${#BOOSTER[@]}))]}:443"
     curl -s https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep GVA | awk '{print $3,$4}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
     [[ "$1" == "BMAS" ]] && curl -s https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep BMAS | awk '{print $2,$3}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
 fi
@@ -141,7 +143,7 @@ do
             [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
 
             [[ $loop -eq 8 ]] \
-                && result="https://g1.copylaradio.com/gva" && break
+                && result="https://g1.asycn.io/gva" && break
         fi
     fi
 
