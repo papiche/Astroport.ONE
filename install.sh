@@ -126,7 +126,8 @@ echo "#####################################"
 echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
-for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
+pipx install duniterpy ## keeps own dep
+for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install  $i 2>> /tmp/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> /tmp/install.errors.log
