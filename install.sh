@@ -118,8 +118,8 @@ fi
 
 ### PYTHON ENV
 cd $HOME
-python -m venv env.astroport
-. ~/env.astroport/bin/activate
+python -m venv .astro
+. ~/.astro/bin/activate
 cd -
 
 echo "#####################################"
@@ -199,7 +199,7 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 ## EXTEND PATH
 echo 'export PATH=$HOME/.local/bin:$PATH
 ## Activate python env
-. $HOME/env.astroport/bin/activate
+. $HOME/.astro/bin/activate
 ' >> ~/.bashrc && source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
