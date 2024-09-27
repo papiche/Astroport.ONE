@@ -116,13 +116,19 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
 fi
 
+### PYTHON ENV
+cd $HOME
+python -m venv env.astroport
+. ~/env.astroport/bin/activate
+cd -
+
 echo "#####################################"
 echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google duniterpy silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        pip install --break-system-packages $i 2>> /tmp/install.errors.log
+        pip install  $i 2>> /tmp/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> /tmp/install.errors.log
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
 done
@@ -151,7 +157,7 @@ if [[ $USER != 'xbian' ]]; then
     if [[ $saisie != "" ]]; then
         ## PRINT & FONTS
         sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-        pip --break-system-packages install brother_ql
+        pip install brother_ql
         # pipx install brother_ql
         sudo cupsctl --remote-admin
         sudo usermod -aG lpadmin $USER
@@ -192,6 +198,8 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 
 ## EXTEND PATH
 echo 'export PATH=$HOME/.local/bin:$PATH
+## Activate python env
+. $HOME/env.astroport/bin/activate
 ' >> ~/.bashrc && source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
