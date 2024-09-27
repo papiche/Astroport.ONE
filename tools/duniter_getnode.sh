@@ -68,8 +68,8 @@ find $DIR/ -mmin +20 -type f -name "duniter_*" -exec rm -f '{}' \;
 if [[ ! -f  $DIR/duniter_nodes.txt ]]; then
     # Get New BMAS known Nodes list from shuffle one $DIR/good.nodes.txt
     [[ -f $DIR/good.nodes.txt ]] && DUNITER=$(shuf -n 1 $DIR/good.nodes.txt) || DUNITER="${BOOSTER[$((RANDOM % ${#BOOSTER[@]}))]}:443"
-    curl -s https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep GVA | awk '{print $3,$4}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
-    [[ "$1" == "BMAS" ]] && curl -s https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep BMAS | awk '{print $2,$3}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
+    curl -s -m 10 https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep GVA | awk '{print $3,$4}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
+    [[ "$1" == "BMAS" ]] && curl -s -m 10 https://$DUNITER/network/peers | jq '.peers[] | .endpoints' | grep BMAS | awk '{print $2,$3}' | sed s/\"//g | sed s/\,//g | sed s/\ /:/g | sort -u > $DIR/duniter_nodes.txt
 fi
 
 # Grab the nodes we are actively watching - they will be in bold in the final output
