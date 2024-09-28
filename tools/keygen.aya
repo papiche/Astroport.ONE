@@ -30,7 +30,7 @@ import configparser
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
 import duniterpy.key
-import gnupg
+import gpg
 from jwcrypto import jwk
 import logging as log
 import nacl.bindings
@@ -272,7 +272,8 @@ class keygen:
 
         self._check_args(args)
         self._load_config()
-        self.gpg = gnupg.GPG()
+        self.gpg = gpg.Context(armor=True, offline=True)
+        self.gpg.set_passphrase_cb(self.gpg_passphrase_cb)
         self.ed25519(args)
         method = getattr(self, f'do_{self.type}', self._invalid_type)
         return method()
@@ -677,6 +678,10 @@ class keygen:
             exit(2)
         log.debug("keygen.ed25519_seed_bytes=%s" % self.ed25519_seed_bytes)
 
+    def gpg_passphrase_cb(self, uid_hint, passphrase_info, prev_was_bad):
+        log.debug("keygen.gpg_passphrase_cb(%s, %s, %s)" % (uid_hint, passphrase_info, prev_was_bad))
+        return self.password
+
     def jwk_from_ed25519(self):
         log.debug("keygen.jwk_from_ed25519()")
         try:
@@ -705,25 +710,6 @@ class keygen:
             exit(2)
         log.debug("keygen.ed25519_secret_pem_pkcs8=%s" % self.ed25519_secret_pem_pkcs8)
 
-    def get_gpg_key(self):
-        keys = self.gpg.list_keys(secret=True)
-        for key in keys:
-            uids = key['uids']
-            for uid in uids:
-                if self.username in uid:
-                    return key['keyid']
-        return None
-
-    def extract_ed25519_from_gpg(self):
-        key_id = self.get_gpg_key()
-        if not key_id:
-            log.error(f"No GPG key found for {self.username}")
-            exit(2)
-
-        exported_key = self.gpg.export_keys(key_id, secret=True)
-        # Parse the exported key to extract the ed25519 key
-        # This part depends on the specific format of your GPG keys
-        # You may need to implement custom parsing logic here
     def pgpy_from_gpg(self):
         log.debug("keygen.pgpy_from_gpg()")
         try:
