@@ -46,7 +46,7 @@ sudo apt-get update
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in git tldr ssss make cmake docker.io docker-compose-v2 fail2ban npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev; do
+for i in git tldr ssss make cmake docker.io docker-compose-v2 fail2ban npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -127,7 +127,7 @@ echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy ## keeps own dep
-for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
+for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography jwcrypto Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install  $i 2>> /tmp/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> /tmp/install.errors.log
