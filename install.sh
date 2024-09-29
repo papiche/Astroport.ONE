@@ -201,7 +201,8 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 echo 'export PATH=$HOME/.local/bin:$PATH
 ## Activate python env
 . $HOME/.astro/bin/activate
-' >> ~/.bashrc && source ~/.bashrc
+cowsay $(hostname)' >> ~/.bashrc
+source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
 
