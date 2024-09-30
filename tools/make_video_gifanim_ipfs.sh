@@ -30,6 +30,7 @@ RES=${FILE_RES%?}0p
 LINES=$(echo $RES | tr -dc '0-9')
 [ $LINES -gt 720 ] \
 && echo "VIDEO RESIZING HALF PLEASE WAIT" 2>/dev/null \
+&& rm "${path}2${file}" \
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
 && [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
 && FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
