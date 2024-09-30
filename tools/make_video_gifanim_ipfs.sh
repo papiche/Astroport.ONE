@@ -3,6 +3,8 @@
 ## "(✜‿‿✜) GIFANIME $PROBETIME (✜‿‿✜)"
 # FORMAT MP4 max 720p
 # PHI GIFANIM CREATION
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 path="$1"
 file="$2"
 
@@ -50,6 +52,7 @@ VTRATIO=$(echo "$DURATION / $FILE_BSIZE * 1024 * 1024" | bc -l | xargs printf "%
 
 rm -f ~/.zen/tmp/screen.gif
 ffmpeg -loglevel quiet -ss $PROBETIME -t 1.6 -loglevel quiet -i "${path}${file}" ~/.zen/tmp/screen.gif
+[ ! -s ~/.zen/tmp/screen.gif ] && cp $MY_PATH/../images/CAP_theorem.png ~/.zen/tmp/screen.gif
 ANIMH=$(ipfs add -q ~/.zen/tmp/screen.gif)
 ipfs pin rm $ANIMH
 cp ~/.zen/tmp/screen.gif "${path}${file}.gif"
