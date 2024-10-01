@@ -42,11 +42,13 @@ if [ $LINES -gt 720 ]; then
     if [ $(($y2 % 2)) -ne 0 ]; then
         y2=$((y2 - 1))
     fi
+    echo "RESIZING TO scale=$x2:$y2"
     ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
     ## REPLACE SOURCE FIL
     [[ -s "${path}2${file}" ]] \
         && rm "${path}${file}" \
         && mv "${path}2${file}" "${path}${file}"
+    echo "conversion finished...."
     ## CHECK FOR NEW RES
     FILE_YY=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
     && RES=${FILE_YY%?}0p && echo $RES && HOP=2
