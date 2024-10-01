@@ -28,7 +28,7 @@ RES=${FILE_RES%?}0p
 #################################################################################################################
 ############# VIDEO LINES MAX IS 720p
 LINES=$(echo $RES | tr -dc '0-9')
-rm -f "${path}2${file}"
+
 [ $LINES -gt 720 ] \
 && echo "VIDEO RESIZING HALF PLEASE WAIT" 2>/dev/null \
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
