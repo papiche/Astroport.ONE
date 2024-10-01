@@ -25,25 +25,24 @@ HOP=0
 # Utiliser ffprobe pour obtenir les dimensions de la vidéo
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}")
 
-# Extraire les largeur (xX) et hauteur (yY) de la vidéo
+# Extraire les valeurs de largeur et de hauteur
 xX=$(echo $FILE_RES | cut -d "x" -f 1)
 yY=$(echo $FILE_RES | cut -d "x" -f 2)
+
 RES=${yY%?}0p && echo "File resolution : $RES"
 LINES=$(echo $RES | tr -dc '0-9')
 ############# VIDEO LINES MAX IS 720p
 if [ $LINES -gt 720 ]; then
-    # Vérifier si les dimensions sont paires ou impaires et ajuster en conséquence
-    if [ $((xX % 2)) -eq 0 ] && [ $((yY % 2)) -eq 0 ]; then
-        # Si xX et yY sont des nombres pairs
-        ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}"
-    elif [ $((xX % 2)) -ne 0 ] && [ $((yY % 2)) -ne 0 ]; then
-        # Si xX et yY sont des nombres impairs
-        x2=$((xX / 2))
-        y2=$((yY / 2))
-        ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
-    else
-        echo "Les dimensions de la vidéo ne sont ni toutes paires, ni toutes impaires."
+    # Vérifier si les dimensions sont des nombres pairs, sinon arrondir à plus proche inférieur
+    x2=$((xX % 2))
+    y2=$((yY % 2))
+    if [ $x2 -ne 0 ]; then
+        x2=$((xX - 1))
     fi
+    if [ $y2 -ne 0 ]; then
+        y2=$((yY - 1))
+    fi
+    ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
     ## REPLACE SOURCE FIL
     [[ -s "${path}2${file}" ]] \
         && rm "${path}${file}" \
