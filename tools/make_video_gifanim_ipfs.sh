@@ -22,21 +22,36 @@ HOP=0
 && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
 && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}") && HOP=1
 
-FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2)
-RES=${FILE_RES%?}0p
-echo "File resolution : $RES"
-#################################################################################################################
-############# VIDEO LINES MAX IS 720p
-LINES=$(echo $RES | tr -dc '0-9')
+# Utiliser ffprobe pour obtenir les dimensions de la vidéo
+FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}")
 
-[ $LINES -gt 720 ] \
-&& echo "VIDEO RESIZING HALF PLEASE WAIT" \
-&& ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
-&& echo "${path}2${file} DONE" \
-&& [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
-&& echo "Source Updated... " \
-&& FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
-&& RES=${FILE_RES%?}0p && echo $RES && HOP=2
+# Extraire les largeur (xX) et hauteur (yY) de la vidéo
+xX=$(echo $FILE_RES | cut -d "x" -f 1)
+yY=$(echo $FILE_RES | cut -d "x" -f 2)
+RES=${yY%?}0p && echo "File resolution : $RES"
+LINES=$(echo $RES | tr -dc '0-9')
+############# VIDEO LINES MAX IS 720p
+if [ $LINES -gt 720 ]; then
+    # Vérifier si les dimensions sont paires ou impaires et ajuster en conséquence
+    if [ $((xX % 2)) -eq 0 ] && [ $((yY % 2)) -eq 0 ]; then
+        # Si xX et yY sont des nombres pairs
+        ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}"
+    elif [ $((xX % 2)) -ne 0 ] && [ $((yY % 2)) -ne 0 ]; then
+        # Si xX et yY sont des nombres impairs
+        x2=$((xX / 2))
+        y2=$((yY / 2))
+        ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
+    else
+        echo "Les dimensions de la vidéo ne sont ni toutes paires, ni toutes impaires."
+    fi
+    ## REPLACE SOURCE FIL
+    [[ -s "${path}2${file}" ]] \
+        && rm "${path}${file}" \
+        && mv "${path}2${file}" "${path}${file}"
+    ## CHECK FOR NEW RES
+    FILE_YY=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
+    && RES=${FILE_YY%?}0p && echo $RES && HOP=2
+fi
 #################################################################################################################
 echo "File resolution : $RES"
 
