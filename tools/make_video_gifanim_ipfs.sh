@@ -36,11 +36,11 @@ if [ $LINES -gt 720 ]; then
     x2=$((xX / 2))
     y2=$((yY / 2))
     # Correct non pair result
-    if [ $x2 -ne 0 ]; then
-        x2=$((xX - 1))
+    if [ $(($x2 % 2)) -ne 0 ]; then
+        x2=$((x2 - 1))
     fi
-    if [ $y2 -ne 0 ]; then
-        y2=$((yY - 1))
+    if [ $(($y2 % 2)) -ne 0 ]; then
+        y2=$((y2 - 1))
     fi
     ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
     ## REPLACE SOURCE FIL
