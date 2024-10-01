@@ -32,10 +32,13 @@ LINES=$(echo $RES | tr -dc '0-9')
 [ $LINES -gt 720 ] \
 && echo "VIDEO RESIZING HALF PLEASE WAIT" \
 && ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=iw/2:ih/2" "${path}2${file}" \
+&& echo "${path}2${file} DONE" \
 && [[ -s "${path}2${file}" ]] && rm "${path}${file}" && mv "${path}2${file}" "${path}${file}" \
+&& echo "Source Updated... " \
 && FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}" | cut -d "x" -f 2) \
 && RES=${FILE_RES%?}0p && echo $RES && HOP=2
 #################################################################################################################
+echo "File resolution : $RES"
 
 FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
 
