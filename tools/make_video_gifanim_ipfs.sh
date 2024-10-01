@@ -33,9 +33,9 @@ RES=${yY%?}0p && echo "File resolution : $RES"
 LINES=$(echo $RES | tr -dc '0-9')
 ############# VIDEO LINES MAX IS 720p
 if [ $LINES -gt 720 ]; then
-    # Vérifier si les dimensions sont des nombres pairs, sinon arrondir à plus proche inférieur
-    x2=$((xX % 2))
-    y2=$((yY % 2))
+    x2=$((xX / 2))
+    y2=$((yY / 2))
+    # Correct non pair result
     if [ $x2 -ne 0 ]; then
         x2=$((xX - 1))
     fi
