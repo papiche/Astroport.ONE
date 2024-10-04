@@ -43,7 +43,7 @@ if [ $LINES -gt 720 ]; then
         y2=$((y2 - 1))
     fi
     echo "RESIZING TO scale=$x2:$y2"
-    ffmpeg -loglevel quiet -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
+    ffmpeg -loglevel quiet -hwaccel cuda -i "${path}${file}" -vf "scale=$x2:$y2" "${path}2${file}"
     ## REPLACE SOURCE FIL
     [[ -s "${path}2${file}" ]] \
         && rm "${path}${file}" \
