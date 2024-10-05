@@ -23,9 +23,9 @@ start=`date +%s`
 ## installation de ipfs
 ########################################################################
 [[ ! $(which ipfs) ]] \
-&& echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.kubo_v0.20.0_linux.sh)" \
+&& echo "bash <(wget -qO- https://git.p2p.legal/qo-op/Astroport.ONE/raw/branch/master/install.kubo_v0.30.0_linux.sh)" \
 && architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" || "$architecture" == "armv7l" ]] \
-&& bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.kubo_v0.20.0_linux.sh) \
+&& bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.kubo_v0.30.0_linux.sh) \
 || echo "=== IPFS FOUND === OK"
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
@@ -178,12 +178,6 @@ if [[ $USER != 'xbian' ]]; then
     fi
 
 fi
-
-################################################### NODE MONITORING LAYER
-[[ ! $isLAN ]] && plus="GRAFANA"
-echo
-echo "## MONITORING LAYER #### $plus ## PROMETHEUS ### PROBE : node_exporter"
-${MY_PATH}/install.prometheus_node_exporter_linux.sh $plus
 
 echo
 
