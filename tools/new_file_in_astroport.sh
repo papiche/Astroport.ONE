@@ -16,8 +16,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 
 ME="${0##*/}"
-countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|grep' | wc -l)
-[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
+countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
+[[ $countMErunning -gt 1 ]] && echo "$ME already running $countMErunning time" && exit 0
 
 YOU=$(myIpfsApi);
 [[ ! $IPFSNODEID ]] && echo 'ERROR missing IPFS Node id !! IPFS is not responding !?' && exit 1

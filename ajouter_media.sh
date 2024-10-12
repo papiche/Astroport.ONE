@@ -176,8 +176,8 @@ fi
 
 ###
 # IS THERE ANY RUNNING IPFS ADD OR PUBLISH IN PROGRESS ?
-ISADDING=$(ps auxf --sort=+utime | grep -w 'ipfs add' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
-ISPUBLISHING=$(ps auxf --sort=+utime | grep -w 'ipfs name publish' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+ISADDING=$(pgrep -au $USER -f 'ipfs add' | tail -n 1 | xargs | cut -d " " -f 1)
+ISPUBLISHING=$(pgrep -au $USER -f 'ipfs name publish' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
 && espeak "I P F S task in progress. Wait finish & try later" && exit 1
 

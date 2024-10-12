@@ -21,7 +21,7 @@ PORT=12345
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 ## KILLING OLD DAEMON OF MYSELF
-ncrunning=$(ps axf --sort=+utime | grep -w 'nc -l -p 12345' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+ncrunning=$(pgrep -au $USER -f 'nc -l -p 12345' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ncrunning != "" ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
 
 ## WHAT IS NODEG1PUB

@@ -7,7 +7,7 @@ ME="${0##*/}"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID)
 
-qrscan=$(ps auxf --sort=+utime | grep -w qrscan_login.sh | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+qrscan=$(pgrep -au $USER -f "qrscan_login.sh" | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $qrscan ]] && echo "qrscan already running" && exit 1
 
 # Check if Astroport Station already has a "captain"

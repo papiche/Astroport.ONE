@@ -15,8 +15,8 @@ exec 2>&1 >> ~/.zen/tmp/_12345.log
 echo "=========================="
 echo "(◕‿◕ ) ${ME} (◕‿◕ ) "
 #~ ## CHECK IF ALREADY MErunning
-countMErunning=$(ps auxf --sort=+utime | grep -w $ME | grep -v -E 'color=auto|grep' | wc -l)
-[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
+countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
+[[ $countMErunning -gt 1 ]] && echo "$ME already running $countMErunning time" && exit 0
 
 echo "(◕‿◕ ) ${ME} starting UPlanet Key Scan _______________________________"
 

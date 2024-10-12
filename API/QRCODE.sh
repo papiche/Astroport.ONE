@@ -88,7 +88,7 @@ fi
 if [[ ${QRCODE} == "station" ]]; then
 
     ## CHECK FOR ANY ALREADY RUNNING make_image_ipfs_index_carousel
-    carouselrunning=$(ps axf --sort=+utime | grep -w 'make_image_ipfs_index_carousel' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+    carouselrunning=$(pgrep -au $USER -f 'make_image_ipfs_index_carousel' | tail -n 1 | xargs | cut -d " " -f 1)
 
     if [[ ! -s ~/.zen/tmp/ISTATION ]]; then
         if [[ $carouselrunning ]]; then
@@ -480,7 +480,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             if [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]]; then
                 HELLO="@PASS :: G1BILLET+ :: ${G1VOEUPUB} :: $(date) :: ${player} :: ${PLAYERORIG1}"
                 echo "${HELLO}"
-                avanla=$(ps axf --sort=+utime | grep -w 'ipfs cat /ipns/$G1VOEUNS' | grep -v -E 'color=auto|grep' | tail -n 1 | xargs | cut -d " " -f 1)
+                avanla=$(pgrep -au $USER -f 'ipfs cat /ipns/$G1VOEUNS' | tail -n 1 | xargs | cut -d " " -f 1)
                 [[ ! $avanla ]] \
                     && ( ipfs cat /ipns/$G1VOEUNS > ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt \
                                 && [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYERORIG1}.${VoeuName}.missive.txt ]] \
