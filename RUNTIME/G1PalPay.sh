@@ -53,7 +53,7 @@ echo "=====(•‿‿•)====== ( ◕‿◕) (◕‿◕ ) =======(•‿‿•)=
 ${INDEX}"
 echo "(✜‿‿✜) G1PalPay : CHECK LAST 30 TX comment"
 
-# CHECK LAST 30 INCOMING PAYMENTS
+# CHECK LAST 30 TRANSACTIONS
 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
 ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 30 -j \
     > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
@@ -61,11 +61,15 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY.........................."
 ##############################
+## INLINE JSON | jq -rc .[]
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] \
+    > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 
 ## CONTROL WALLET
 ########################################################################################
 if [[ ${UPLANETNAME} != "" ]]; then
 echo "UPLANET ORIGIN CONTROL"
+
 while read LINE; do
 
     echo "${LINE}"
@@ -89,10 +93,12 @@ while read LINE; do
     # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
     line=$(silkaj money history $TXIPUBKEY | tail -n 3 | head -n 1)
     pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
+    echo "line = $line"
+    echo "pub8 = $pub8"
     # pub8=$(echo $line | cut -d '│' -f 3 | cut -c 1-8)
     # PUB8= UPLANET WALLET
 
-done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
+done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 fi
 
 

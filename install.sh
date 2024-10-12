@@ -118,7 +118,7 @@ fi
 
 ### PYTHON ENV
 cd $HOME
-python -m venv .astro
+/usr/bin/python -m venv .astro
 . ~/.astro/bin/activate
 cd -
 
@@ -126,7 +126,7 @@ echo "#####################################"
 echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
-pipx install duniterpy ## keeps own dep
+pipx install duniterpy --include-deps ## keeps own dep
 for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography jwcrypto Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install  $i 2>> /tmp/install.errors.log
@@ -171,7 +171,7 @@ if [[ $USER != 'xbian' ]]; then
         ## G1BILLET
         echo "INSTALL G1BILLET SERVICE : http://g1billet.localhost:33101"
         cd ~/.zen
-        git clone https://git.p2p.legal/qo-op/G1BILLET.git
+        git clone https://github.com/papiche/G1BILLET.git
         cd G1BILLET && ./setup_systemd.sh
         cd -
 

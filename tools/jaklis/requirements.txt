@@ -6,3 +6,4 @@ termcolor
 python-dotenv
 gql
 requests
+aiohttp
