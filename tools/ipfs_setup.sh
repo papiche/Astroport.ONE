@@ -24,7 +24,7 @@ err() {
 # CHECK node IP isLAN?
 myIP=$(hostname -I | awk '{print $1}')
 isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || pgrep -au $USER -f "ipfs daemon" && echo "$USER" | tail -n 1);
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER");
 
 MACHINE_TYPE=`uname -m`
 

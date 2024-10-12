@@ -9,7 +9,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
 ########################################################################
-YOU=$(myIpfsApi) || er+=" ipfs daemon not running"
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") || er+=" ipfs daemon not running"
 [[ "$YOU" == "" || "${IPFSNODEID}" == "" ]] && echo "ERROR : $er " && exit 1
 ########################################################################
 ## THIS SCRIPT COPY BOOSTRAP PUBKEY

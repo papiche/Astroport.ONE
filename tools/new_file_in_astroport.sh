@@ -19,7 +19,7 @@ ME="${0##*/}"
 countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
 [[ $countMErunning -gt 1 ]] && echo "$ME already running $countMErunning time" && exit 0
 
-YOU=$(myIpfsApi);
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 [[ ! $IPFSNODEID ]] && echo 'ERROR missing IPFS Node id !! IPFS is not responding !?' && exit 1
 
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'

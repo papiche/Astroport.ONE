@@ -253,7 +253,7 @@ do
 
         ## GET FRIEND TW !!
         echo "SEARCHING $FRIENDTITLE - ONLINE TW -"
-        YOU=$(ipfs swarm peers >/dev/null 2>&1 && echo "$USER" || pgrep -au $USER -f "ipfs daemon" && echo "$USER" | tail -n 1);
+        YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
         LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2)
 
         [[ $YOU ]] \

@@ -17,7 +17,7 @@ exec 2>&1 >> ~/.zen/tmp/_12345.log
 
 PORT=12345
 
-    YOU=$(myIpfsApi); ## API of $USER running ipfs
+    YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") ## $USER running ipfs
     LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
 
 ## KILLING OLD DAEMON OF MYSELF

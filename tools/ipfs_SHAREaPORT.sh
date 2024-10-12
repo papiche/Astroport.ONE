@@ -9,7 +9,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 ########################################################################
-YOU=$(myIpfsApi) || er+=" ipfs daemon not running"
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") || er+=" ipfs daemon not running"
 [[ $IPFSNODEID == "" ]] && IPFSNODEID=$(cat ~/.ipfs/config | jq -r .Identity.PeerID) || er+=" ipfs id problem"
 [[ "$YOU" == "" || "$IPFSNODEID" == "" ]] && echo "ERROR : $er " && exit 1
 ########################################################################

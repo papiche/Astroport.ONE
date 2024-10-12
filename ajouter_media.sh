@@ -182,7 +182,7 @@ ISPUBLISHING=$(pgrep -au $USER -f 'ipfs name publish' | tail -n 1 | xargs | cut 
 && espeak "I P F S task in progress. Wait finish & try later" && exit 1
 
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
-YOU=$(myIpfsApi)
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 [[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
 
 [[ ! $URL ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"

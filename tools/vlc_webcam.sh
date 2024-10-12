@@ -23,7 +23,7 @@ ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "${PLAYER} CLEF IPNS INTROUVABLE - EXIT -" && exit 1
 
-YOU=$(myIpfsApi)
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 LIBRA=$(myIpfsGw)
 
 mkdir -p ~/.zen/game/players/${PLAYER}/vlog

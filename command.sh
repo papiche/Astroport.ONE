@@ -35,7 +35,7 @@ echo
 
 ## VERIFY SOFTWARE DEPENDENCIES
 [[ ! $(which ipfs) ]] && echo "EXIT. Vous devez avoir installé ipfs CLI sur votre ordinateur" && echo "https://dist.ipfs.io/#go-ipfs" && exit 1
-YOU=$(myIpfsApi);
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP sudo systemctl start ipfs" && exit 1
 
 echo 'PRESS ENTER... '; read

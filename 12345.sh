@@ -15,7 +15,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 PORT=45779
 
-    YOU=$(myIpfsApi); ## API of $USER running ipfs
+    YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") ## $USER running ipfs
     echo "YOU=$YOU"
     LIBRA=$(myIpfsGw) ## SWARM#0 ENTRANCE URL
     echo "LIBRA=$LIBRA"
