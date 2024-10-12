@@ -11,6 +11,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
 
+export PATH=$HOME/.astro/bin:$HOME/.local/bin:$PATH
+
 ## SEND LOG TO ~/.zen/tmp/_12345.log
 rm ~/.zen/tmp/_12345.log
 exec 2>&1 >> ~/.zen/tmp/_12345.log
