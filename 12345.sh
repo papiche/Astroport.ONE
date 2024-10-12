@@ -119,7 +119,7 @@ while true; do
     REQ=$(cat $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http | nc -l -p 1234 -q 1 && rm $HOME/.zen/tmp/${MOATS}/${PORT}.myHOST.http) ## # WAIT FOR 1234 PORT CONTACT
     ###############    ###############    ###############    ############### KNOC !!
     ###############    ###############    ###############    ###############
-    echo $REQ
+    echo "REQ=$REQ"
     URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
     HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
     AGENT=$(echo "$REQ" | grep '^User-Agent:') ### TODO : BAN LESS THAN 3 SEC REQUEST

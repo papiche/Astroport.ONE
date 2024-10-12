@@ -17,7 +17,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 ME="${0##*/}"
 countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
-[[ $countMErunning -gt 1 ]] && echo "$ME already running $countMErunning time" && exit 0
+[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
 
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 [[ ! $IPFSNODEID ]] && echo 'ERROR missing IPFS Node id !! IPFS is not responding !?' && exit 1

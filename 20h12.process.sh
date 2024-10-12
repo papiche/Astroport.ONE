@@ -10,6 +10,9 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
+    export PATH=$HOME/.astro/bin:$HOME/.local/bin:$PATH
+    echo "PATH=$PATH"
+
 ########################################################################
 ## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -

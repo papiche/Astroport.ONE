@@ -16,7 +16,7 @@ echo "=========================="
 echo "(◕‿◕ ) ${ME} (◕‿◕ ) "
 #~ ## CHECK IF ALREADY MErunning
 countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
-[[ $countMErunning -gt 1 ]] && echo "$ME already running $countMErunning time" && exit 0
+[[ $countMErunning -gt 2 ]] && echo "$ME already running $countMErunning time" && exit 0
 
 echo "(◕‿◕ ) ${ME} starting UPlanet Key Scan _______________________________"
 
