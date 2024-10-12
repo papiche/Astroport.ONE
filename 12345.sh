@@ -129,7 +129,7 @@ while true; do
     ###############    ###############    ###############    ###############
     [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && espeak "Dong" >/dev/null 1>&2 &
     ############################################################################
-    [[ $URL == "/test"  || $URL == "" ]] && continue
+    [[ $URL == "/test" ]] && continue ## DROP /test
 
     echo "******* ${MOATS}  ********************************** $(date)"
     echo "ASTROPORT 1234 UP & RUNNING // API : $myASTROPORT //  IPFS : $myIPFS"
@@ -140,7 +140,7 @@ while true; do
 
     ############################################################################
     ## / CONTACT
-    if [[ $URL == "/" ]]; then
+    if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
         if [ -z "$isLAN" ]; then
