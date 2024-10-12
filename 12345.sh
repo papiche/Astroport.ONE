@@ -64,7 +64,7 @@ while true; do
 
     # ZIP (LAN Boostrap)
     if [[ $(zIp) ]]; then
-        [ ${PORT} -ge 45782 ] && PORT=45780 ## ♥Box LAN Boostrap : OPEN FIREWALL 1234 12345 45780 45781
+        [ ${PORT} -ge 45782 ] && PORT=45780 ## ♥Box LAN Boostrap : nginx-proxy SSL 1234 /12345 /45780 /45781 ... /45790
     fi ## Use "nginx proxy manager" for SSL
 
     echo ${PORT} > ~/.zen/tmp/PORT
@@ -101,9 +101,10 @@ while true; do
         && sed -i -e "s~http://127.0.0.1:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
         && echo "WAN STATION"
 
+#### >>> TODO ADD zDomain to manage SSL FRONT PORTAL
     [ -n "$(zIp)" ]\
         && sed -i -e "s~http://127.0.0.1:${PORT}~http://$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
-        && echo "COEURBOX STATION"
+        && echo "COEUR BOX LAN 2 WAN STATION"
 
     ## UPLANET HOME LINK REPLACEMENT
     sed -i -e "s~https://qo-op.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
