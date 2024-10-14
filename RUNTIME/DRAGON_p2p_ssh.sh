@@ -41,7 +41,7 @@ do
     else
         echo "TRUSTING ${LINE}"
     fi
-done < ${MY_PATH}/../A_boostrap_ssh.txt
+done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_ssh.pub"
 
 ############################################
 ## PUBLISH SSH PUBKEY OVER IPFS
@@ -78,7 +78,7 @@ if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
     ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
     [[ $? == 0 ]] \
         && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-        && ssh \$USER@127.0.0.1 -p '${PORT}' \
+        && ssh '${USER}'@127.0.0.1 -p '${PORT}' \
         || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
 ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
