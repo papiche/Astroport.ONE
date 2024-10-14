@@ -192,7 +192,7 @@ do
 done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 
 ## EXTEND PATH
-echo 'export PATH=$HOME/.local/bin:$PATH
+echo 'export PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/games:$PATH
 ## Activate python env
 . $HOME/.astro/bin/activate
 cowsay $(hostname)' >> ~/.bashrc
@@ -200,17 +200,12 @@ source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
 
+###############################################################
 echo "##  ADDING lazydocker ================"
 ### ADD TO DOCKER GROUP
 sudo usermod -aG docker $USER
-
 # INSTALL lazydocker GUI
 ${MY_PATH}/install.lazydocker.sh
-###############################################################
-## USING lazydocker + nginxproxymanager
-#~ echo "## CAN USE seedbox    "
-#~ cd ~/.zen
-#~ git clone https://github.com/papiche/seedbox.git
 ###############################################################
 
 echo
@@ -224,8 +219,6 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
-
-
 
 if [[ $(which X 2>/dev/null) ]]; then
 
@@ -277,7 +270,7 @@ echo ">>> ASTROPORT ON/OFF <<<
 echo "############################## ♥BOX READY ###"
 espeak "Welcome Web 3 Astronaut" 2>/dev/null
 echo ">>> Welcome Web3 Astronaut <<<"
-echo "CREATE PLAYER
+echo "PLEASE CREATE CAPTAIN ACCOUNT
 "
 
 ~/.zen/Astroport.ONE/command.sh
