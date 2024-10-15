@@ -9,6 +9,7 @@ Restart=on-failure
 RestartSec=10s
 CPUAccounting=true
 CPUQuota=60%
+CPUAffinity=0-1
 
 [Install]
 WantedBy=multi-user.target
