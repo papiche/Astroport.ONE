@@ -142,7 +142,10 @@ else
 
     fi
 
-    #~ ## MAKE SYSTEM RENEW OPERATION
+    #~ ## MAKE PAYMENT OPERATION AGAIN
+    ${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/${MOATS}.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result.html
+
+
     #~ rm ${PENDINGFILE}
     #~ echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
     #~ <h1>-  MUST RETRY -</h1>

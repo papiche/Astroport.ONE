@@ -61,51 +61,48 @@ ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dun
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY.........................."
-##############################
-## INLINE JSON | jq -rc .[]
+########################################################
+## CONVERT TO INLINE JSON | jq -rc .[]
 cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] \
     > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 
-## CONTROL WALLET
+########################################################################################
+echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
 if [[ ${UPLANETNAME} != "" ]]; then
-echo "UPLANET ORIGIN CONTROL"
-
-while read LINE; do
-
-    echo "${LINE}"
-    JSON=${LINE}
-    TXIDATE=$(echo $JSON | jq -r .date)
-    TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
-    TXIAMOUNT=$(echo $JSON | jq -r .amount)
-    COMMENT=$(echo $JSON | jq -r .comment)
-
-    lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.uplanet.check)
-    [[ -z lastTXdate ]] && lastTXdate=0
-    [[ $(cat ~/.zen/game/players/${PLAYER}/.uplanet.check) -ge $TXIDATE ]]  \
-        && continue
-
-    [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-        && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
-        && continue
-
-    echo "# CHECK FOR PRIMAL REGULAR TX in INCOMING PAYMENTS"
+    echo "UPLANET ORIGIN CONTROL"
+    echo "# CHECK FOR PRIMAL REGULAR TX in INCOMING PAYMENTS "
     # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
     # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
     line=$(silkaj money history $TXIPUBKEY | tail -n 3 | head -n 1)
     pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
     echo "line = $line"
     echo "pub8 = $pub8"
-    # pub8=$(echo $line | cut -d '│' -f 3 | cut -c 1-8)
-    # PUB8= UPLANET WALLET
+    #~ while read LINE; do
+        #~ ## MEMORIZE LAST TX DATE
+        #~ echo "${LINE}"
+        #~ JSON=${LINE}
+        #~ TXIDATE=$(echo $JSON | jq -r .date)
+        #~ TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
+        #~ TXIAMOUNT=$(echo $JSON | jq -r .amount)
+        #~ COMMENT=$(echo $JSON | jq -r .comment)
 
-done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
+        #~ ## PAST TX - continue
+        #~ lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.uplanet.check 2>/dev/null)
+        #~ [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/players/${PLAYER}/.uplanet.check ## INIT
+        #~ [[ $(cat ~/.zen/game/players/${PLAYER}/.uplanet.check) -ge $TXIDATE ]] \
+            #~ && continue
+
+        #~ ## OUTGOING TX - continue
+        #~ [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
+            #~ && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
+            #~ && continue
+
+    #~ done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 fi
 
-
-
 ##########################################################
-############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT
+echo "############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT"
 #################################################################
 # LOG / cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json  | jq -rc .[]
 ## TREAT ANY COMMENT STARTING WITH N1: exemple : N1Kodi.sh
@@ -164,7 +161,6 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 ## GET @ in JSON INLINE
 while read LINE; do
 
-    echo "${LINE}"
     JSON=${LINE}
     TXIDATE=$(echo $JSON | jq -r .date)
     TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
@@ -172,8 +168,8 @@ while read LINE; do
     TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
     COMMENT=$(echo $JSON | jq -r .comment)
 
-    lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.atdate)
-    [[ -z lastTXdate ]] && lastTXdate=0
+    lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.atdate 2>/dev/null)
+    [[ -z lastTXdate ]] && lastTXdate=0 && echo "0" > ~/.zen/game/players/${PLAYER}/.atdate
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
         && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
         && continue
@@ -186,6 +182,8 @@ while read LINE; do
         && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.atdate \
         && continue
 
+    ### MATCHING NEW RX-IN
+    echo "${LINE}"
     ## DIVIDE INCOMING AMOUNT TO SHARE
     echo "N=${#TXIMAILS[@]}"
     N=${#TXIMAILS[@]}
@@ -240,8 +238,7 @@ while read LINE; do
         sleep 3
 
         ## SEND G1
-        echo "PalPay____________
-        SEND ${SHARE} G1 to $ASTROMAIL
+        echo "PalPay_____ SENDING ${SHARE} G1 to $ASTROMAIL
         TW : $ASTROTW
         G1 : ${ASTROG1}"
 

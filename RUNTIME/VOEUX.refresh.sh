@@ -110,224 +110,213 @@ do
 ##########################################################################
 
 ###########################################################################################
-        ##################################
-        ## MAKE MY OWN EXTRACTION : [tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]
-        ################################## MOA MAINTENANT
-        echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.rss.json"
-        tiddlywiki --load ${INDEX} \
-                 --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME} \
-                 --render '.' _${PLAYER}'.tiddlers.rss.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
+    ##################################
+    ## MAKE MY OWN EXTRACTION : [tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]
+    ################################## MOA MAINTENANT
+    echo  "> EXPORT [tag[G1${WISHNAME}]!tag[G1Voeu]] § $myIPFSGW${IPNS_VOEUNS}/_${PLAYER}.tiddlers.rss.json"
+    tiddlywiki --load ${INDEX} \
+             --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME} \
+             --render '.' _${PLAYER}'.tiddlers.rss.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
 
 
     ## RUN TW Ŋ1 search & copy treatment
     echo "*********************************"
-        ##################################
-        ## Search for [tag[G1${WISHNAME}]] in all Friends TW.
-        ## Copy tiddlers ...
-        ##################################
-        echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=G1${WISHNAME}"
-        echo "ls ~/.zen/game/players/${PLAYER}/FRIENDS/*/index.html"
-        echo "*********************************"
-        ## Search in Local World (NB! G1Voeu TW copied by Connect_PLAYER_To_Gchange.sh)
-        FINDEX=($( ls $HOME/.zen/game/players/${PLAYER}/FRIENDS/*/index.html))
+    ##################################
+    ## Search for [tag[G1${WISHNAME}]] in all Friends TW.
+    ## Copy tiddlers ...
+    ##################################
+    echo "NOW SEARCH Ŋ1 FRIENDS TW's FOR tag=G1${WISHNAME}"
+    echo "ls ~/.zen/game/players/${PLAYER}/FRIENDS/*/index.html"
+    echo "*********************************"
+    ## Search in Local World (NB! G1Voeu TW copied by Connect_PLAYER_To_Gchange.sh)
+    FINDEX=($( ls $HOME/.zen/game/players/${PLAYER}/FRIENDS/*/index.html))
 
-        ## PREPARE Ŋ1 WORLD MAP
-        echo "var examples = {};
-        examples['locations'] = function() {
-        var locations = {
-        " > ~/.zen/tmp/world.js
-        floop=1
+    ## PREPARE Ŋ1 WORLD MAP
+    echo "var examples = {};
+    examples['locations'] = function() {
+    var locations = {
+    " > ~/.zen/tmp/world.js
+    floop=1
 
-        for FRIENDTW in ${FINDEX[@]};
-        do
+    for FRIENDTW in ${FINDEX[@]};
+    do
 
-            [[ ! -s ${FRIENDTW} ]] && echo "$floop / ${#FINDEX[@]} ${FRIENDTW} VIDE (AMI SANS TW)" && echo && ((floop++)) && continue
-
-            ## GET FRIEND EMAIL = APLAYER (VERIFY TW IS OK)
-            tiddlywiki --load ${FRIENDTW} \
-                --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-            [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
-
-            APLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
-
-            ## EXPORT LAST 30 DAYS G1WishName in _${APLAYER}.tiddlers.rss.json
-            rm -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json
-            echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
-            tiddlywiki --load ${FRIENDTW} \
-                                --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME} \
-                                --render '.' _${APLAYER}'.tiddlers.rss.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
-
-            [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json ]] \
-            && echo "NO ${WISHNAME} - CONTINUE -" \
+        [[ ! -s ${FRIENDTW} ]] \
+            && echo "$floop / ${#FINDEX[@]} ${FRIENDTW} VIDE (AMI SANS TW)" \
             && echo && ((floop++)) && continue
 
-            [[ $(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json) == "[]" ]] \
-            && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) \
-            && rm ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
-            && continue
+        ## GET FRIEND EMAIL = APLAYER (VERIFY TW IS OK)
+        tiddlywiki --load ${FRIENDTW} \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+        [[ ! -s ~/.zen/tmp/${MOATS}/MadeInZion.json ]] && echo "${PLAYER} MadeInZion : BAD TW (☓‿‿☓) " && continue
+
+        APLAYER=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].player)
+
+        ## EXPORT LAST 30 DAYS G1WishName in _${APLAYER}.tiddlers.rss.json
+        rm -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json
+        echo "$floop / ${#FINDEX[@]} TRY EXPORT [tag[G1${WISHNAME}]]  FROM $APLAYER TW"
+        tiddlywiki --load ${FRIENDTW} \
+            --output ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME} \
+            --render '.' _${APLAYER}'.tiddlers.rss.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[tag[G1'${WISHNAME}']!tag[G1Voeu]!sort[modified]limit[30]]'
+
+        [[ ! -s ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json ]] \
+        && echo "NO ${WISHNAME} - CONTINUE -" \
+        && echo && ((floop++)) && continue
+
+        [[ $(cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json) == "[]" ]] \
+        && echo "EMPTY ${WISHNAME} - CONTINUE -" && echo && ((floop++)) \
+        && rm ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
+        && continue
 
 #####################################################
-            echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
-            ##############################
-            ## WRITE FRIEND SAME WISH TIDDLERS IN PLAYER TW       ########
-            ##############################
-            ## SIGN Tiddlers
-            cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
-                | sed "s~${PLAYER}~~g" \
-                | sed "s~${APLAYER}~${APLAYER} ${PLAYER}~g" \
-                    > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json
+        echo "## TIDDLERS FOUND ;) MIAM >>> (◕‿‿◕) <<<"
+        ##############################
+        ## WRITE FRIEND SAME WISH TIDDLERS IN PLAYER TW       ########
+        ##############################
+        ## SIGN Tiddlers
+        cat ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.rss.json \
+            | sed "s~${PLAYER}~~g" \
+            | sed "s~${APLAYER}~${APLAYER} ${PLAYER}~g" \
+                > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json
 
-            ## ADD TO TW
-            tiddlywiki --load ${INDEX} \
-                        --import ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json "application/json" \
-                        --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
-            ## CHECK IT IS OK
-            [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] \
-                && cp ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
-                && rm ~/.zen/tmp/${MOATS}/newindex.html
+        ## ADD TO TW
+        tiddlywiki --load ${INDEX} \
+                    --import ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/_${APLAYER}.tiddlers.signed.json "application/json" \
+                    --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "newindex.html" "text/plain"
+        ## CHECK IT IS OK
+        [[ -s ~/.zen/tmp/${MOATS}/newindex.html ]] \
+            && cp ~/.zen/tmp/${MOATS}/newindex.html ${INDEX} \
+            && rm ~/.zen/tmp/${MOATS}/newindex.html
 
-            ##############################
-            echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.rss.json ${WISHNAME}"
+        ##############################
+        echo  ">>> G1FRIEND § $myIPFS${IPNS_VOEUNS}/_${APLAYER}.tiddlers.rss.json ${WISHNAME}"
 
-            # Extract Origin G1Voeu Tiddler
-            tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
-            FWISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
-#            FWISHPROG=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].text')
+        # Extract Origin G1Voeu Tiddler
+        tiddlywiki --load ${FRIENDTW} --output ~/.zen/tmp --render '.' "${APLAYER}.${WISHNAME}.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${WISHNAME}"
+        FWISHNS=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].wishns')
+#       FWISHPROG=$(cat ~/.zen/tmp/${APLAYER}.${WISHNAME}.json | jq -r '.[].text')
 # TIDDLER COULD CONTAIN #!/bin/bash PROGRAM !!!
-            [[ $FWISHNS == "null" ]] && echo "NO FWISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
-            echo ">>> ${myIPFS}${FWISHNS}"
+        [[ $FWISHNS == "null" ]] && echo "NO FWISHNS in ~/.zen/tmp/${APLAYER}.${WISHNAME}.json" && echo && ((floop++)) && continue
+        echo ">>> ${myIPFS}${FWISHNS}"
 
 ###########################################################################################
-            ## ADD WISH ON THE WORLD MAP (TODO: EXTRACT REAL GPS)
-            echo "${floop}: {
-              alpha: Math.random() * 2 * Math.PI,
-              delta: Math.random() * 2 * Math.PI,
-              name: '"${WISNAME} ${APLAYER}"',
-              link: '"${myIPFS}${FWISHNS}"'
-            }
-            ," >> ~/.zen/tmp/world.js
+        ## ADD WISH ON THE WORLD MAP (TODO: EXTRACT REAL GPS)
+        echo "${floop}: {
+          alpha: Math.random() * 2 * Math.PI,
+          delta: Math.random() * 2 * Math.PI,
+          name: '"${WISNAME} ${APLAYER}"',
+          link: '"${myIPFS}${FWISHNS}"'
+        }
+        ," >> ~/.zen/tmp/world.js
 
-            ((floop++))
-        done
+        ((floop++))
+    done
 
-        # REMOVE la dernière virgule
-        sed -i '$ d' ~/.zen/tmp/world.js
-        ##################################
-        ## FINISH LOCATIONS
-        echo "
-        };
-           \$('#sphere').earth3d({
-            locationsElement: \$('#locations'),
-            dragElement: \$('#locations'),
-            locations: locations
-          });
-        };
-        " >> ~/.zen/tmp/world.js
+    # REMOVE la dernière virgule
+    sed -i '$ d' ~/.zen/tmp/world.js
+    ##################################
+    ## FINISH LOCATIONS
+    echo "
+    };
+       \$('#sphere').earth3d({
+        locationsElement: \$('#locations'),
+        dragElement: \$('#locations'),
+        locations: locations
+      });
+    };
+    " >> ~/.zen/tmp/world.js
 
-        IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
-        echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
-        ##################################
-        ## PREPARE PLAYER G1 QRCODE : QRG1avatar.png
-        [[ -s ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png ]] \
-        && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
-        [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
+    IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
+    echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
+    ##################################
+    ## PREPARE PLAYER G1 QRCODE : QRG1avatar.png
+    [[ -s ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png ]] \
+    && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
+    [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
 
-        ### APPLY FOR ${WISHNAME} APP MODEL : make index.html
-        ################################## ${WISHNAME}/index.html
-        if [[ -s ${MY_PATH}/../WWW/${WISHNAME}/index.html ]]; then
+    ### APPLY FOR ${WISHNAME} APP MODEL : make index.html
+    ################################## ${WISHNAME}/index.html
+    if [[ -s ${MY_PATH}/../WWW/${WISHNAME}/index.html ]]; then
 
-        cat ${MY_PATH}/../WWW/${WISHNAME}/index.html \
-        | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
-                    -e "s~_G1VOEU_~${WISHNAME}~g" \
-                    -e "s~_PLAYER_~${PLAYER}~g" \
-                    -e "s~_____~${COINS}~g" \
-                    -e "s~_G1PUB_~${G1PUB}~g" \
-                    -e "s~_VOEUNS_~${IPNS_VOEUNS}~g" \
-                    -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
-                    -e "s~http://astroport.localhost:1234~${myASTROPORT}~g" \
-                    -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
-                    -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
-                    -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}~g" \
-                    -e "s~http://127.0.0.1:8080~~g" \
-        > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/index.html
+    cat ${MY_PATH}/../WWW/${WISHNAME}/index.html \
+    | sed -e "s~_LIBRA_~$(myIpfsGw)~g" \
+                -e "s~_G1VOEU_~${WISHNAME}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
+                -e "s~_____~${COINS}~g" \
+                -e "s~_G1PUB_~${G1PUB}~g" \
+                -e "s~_VOEUNS_~${IPNS_VOEUNS}~g" \
+                -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                -e "s~http://astroport.localhost:1234~${myASTROPORT}~g" \
+                -e "s~QmYdWBx32dP14XcbXF7hhtDq7Uu6jFmDaRnuL5t7ARPYkW/index_fichiers/world.js~${IAMAP}/world.js~g" \
+                -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                -e "s~QmWUpjGFuF7NhpXgkrCmx8Tbu4xjcFpKhE7Bsvt6HeKYxu/g1ticket_qrcode.png~${QRLINK}~g" \
+                -e "s~http://127.0.0.1:8080~~g" \
+    > ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/index.html
 
-        fi
-                ### PREPARE WISHNAME index.html - CREATE YOUR OWN DAPP -
-        ##################################
-
-###########################################################################################
-    ## N1Program are run through PLAYER G1PalPay RUNTIME
-        ## CAN BE EXTENDED WITH DATA POST TREATMENT PROGRAMS
-        ## RUN Z1Program ASTROBOT PROGRAM
-        #~ if [[ -s $MY_PATH/../ASTROBOT/Z1${WISHNAME}.sh ]]; then
-            #~ echo "........................ Astrobot Z1${WISHNAME}.sh post-treatment found !"
-            #~ echo "________________________________  Running it *****"
-            #~ ${MY_PATH}/../ASTROBOT/Z1${WISHNAME}.sh "~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}" "${PLAYER}" "$MOATS"
-            #~ echo "________________________________   Finished ******"
-        #~ fi
-
-###########################################################################################
-        ### ADD ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/*
-        ### AND PUBLISH WISH TO IPFS
-        echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/*"
-        ls ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/
+    fi
+    ### PREPARE WISHNAME index.html - CREATE YOUR OWN DAPP -
+    ##################################
+    ### ADD ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/*
+    ### AND PUBLISH WISH TO IPFS
+    echo "++WISH PUBLISHING++ ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/*"
+    ls ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/
 
     ## CREATE .all.json for WISHNAME
-        ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}
+    ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}
 
-        WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
-        ipfs --timeout 180s name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
+    WISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* | tail -n 1)  # ADDING JSONS TO IPFS
+    ipfs --timeout 180s name publish -k $VOEUKEY /ipfs/$WISHFLUX   # PUBLISH $VOEUKEY
 
-        echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH" ## TODO LOOP BOOSTRAP & ONLINE FRIENDS
-        curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
+    echo "## ASK ${myIPFSGW}${IPNS_VOEUNS} TO REFRESH" ## TODO LOOP BOOSTRAP & ONLINE FRIENDS
+    curl -m 120 -so ~/.zen/tmp/${WISHNAME}.astroindex.html "${myIPFSGW}${IPNS_VOEUNS}" &
 
-        ## MOVE INTO PLAYER AREA
-        echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${IPNS_VOEUNS}"
-        echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
-        cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
+    ## MOVE INTO PLAYER AREA
+    echo ">>> ${PLAYER} G1${WISHNAME} Ŋ1 FLUX $(myIpfsGw)${IPNS_VOEUNS}"
+    echo "WALLET ${VOEUKEY} FOUNDED by ${G1PUB}"
+    cp -f ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${WISHNAME}/* ~/.zen/game/players/${PLAYER}/G1${WISHNAME}/${G1PUB}/ 2>/dev/null
 
-        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-        echo "SEARCH WORLD SAME WISH CACHE"
-        [[ "$WISHNAME" != "" ]] && cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
-        ## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
-        echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    echo "SEARCH WORLD SAME WISH CACHE"
+    [[ "$WISHNAME" != "" ]] && cat ~/.zen/game/world/$WISHNAME/*/.link 2>/dev/null
+    ## ANYTIME  A PLAYER CHOOSE AN ASTROPORT - LOCAL WISH CACHE IS EXTENDED -
+    echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 done < ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/${PLAYER}.g1wishes.txt
 
-################################################
+################################################ deactivated
 ### SEND GRATITUDE TO SECTOR
 ## GET "GPS" TIDDLER
-if [[ ${wishnumbers} -gt 0 ]]; then
-    tiddlywiki --load ${INDEX} \
-        --output ~/.zen/tmp/${MOATS} \
-        --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
-    TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
-    [[ $TWMAPNS == "null" || $TWMAPNS == "" ]] && TWMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
-    LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-    [[ ${LAT} == "null" || ${LAT} == "" ]] && LAT="0.00"
-    LAT=$(makecoord $LAT)
-    LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-    [[ ${LON} == "null" || ${LON} == "" ]] && LON="0.00"
-    LON=$(makecoord $LON)
-    echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
-    rm ~/.zen/tmp/${MOATS}/GPS.json
+#~ if [[ ${wishnumbers} -gt 0 ]]; then
+    #~ tiddlywiki --load ${INDEX} \
+        #~ --output ~/.zen/tmp/${MOATS} \
+        #~ --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+    #~ TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+    #~ [[ $TWMAPNS == "null" || $TWMAPNS == "" ]] && TWMAPNS="/ipns/k51qzi5uqu5djg1gqzujq5p60w25mi235gdg0lgkk5qztkfrpi5c22oolrriyu"
+    #~ LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+    #~ [[ ${LAT} == "null" || ${LAT} == "" ]] && LAT="0.00"
+    #~ LAT=$(makecoord $LAT)
+    #~ LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+    #~ [[ ${LON} == "null" || ${LON} == "" ]] && LON="0.00"
+    #~ LON=$(makecoord $LON)
+    #~ echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
+    #~ rm ~/.zen/tmp/${MOATS}/GPS.json
 
-    ## GET UMAP ENV
-    $(${MY_PATH}/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
-    echo "export UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+    #~ ## GET UMAP ENV
+    #~ $(${MY_PATH}/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
+    #~ echo "export UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 
-    ##############################################################
-    GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
-    G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
-    echo "***** PLAYER $PLAYER *************************************"
-    echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
-    to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
-    echo "************************************************************"
-    YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
-    MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
+    #~ ##############################################################
+    #~ GRATITUDE=$($MY_PATH/../tools/getcoins_from_gratitude_box.sh)
+    #~ G1AMOUNT=$(echo "$GRATITUDE / 10" | bc -l | xargs printf "%.2f" | sed "s~,~.~g" )
+    #~ echo "***** PLAYER $PLAYER *************************************"
+    #~ echo "GRATITUDE ${GRATITUDE} ZEN (${G1AMOUNT} G1)
+    #~ to UMAP_${LAT}_${LON} WALLET ${UMAPG1PUB}"
+    #~ echo "************************************************************"
+    #~ YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+    #~ MYWISHFLUX=$(ipfs add -qHwr ~/.zen/tmp/${IPFSNODEID}/WISH/${PLAYER}/g1voeu/* | tail -n 1)  # ADDING JSONS TO IPFS
     #~ ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1AMOUNT}" "${UMAPG1PUB}" "UPLANET:UWISH:$YOUSER:/ipfs/${MYWISHFLUX}"
-fi
+#~ fi
 ################################################
 ################################################ GRATITUDE SENT TO SECTOR
 
