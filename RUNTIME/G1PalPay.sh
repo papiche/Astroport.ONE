@@ -290,7 +290,6 @@ while read LINE; do
     echo "---------------------------------- PalPAY for Tiddler"
     TCREATED=$(echo ${LINE} | jq -r .created)
     TTITLE=$(echo ${LINE} | jq -r .title)
-    TTEXT=$(echo ${LINE} | jq -r '.text | match("/ipfs/[^\"\\s]+") | .string | first')
     TTAGS=$(echo ${LINE} | jq -r .tags)
 
     ## Extract "/ipfs/CID" from Tiddler - to pin TOPIN -
@@ -307,7 +306,7 @@ while read LINE; do
     #~ zen=$(echo "scale=2; $nb / 10" | bc) ## / divide by 10 = 1 ZEN each
 
     ## Get first zmail
-    ZMAIL="${emails}"
+    ZMAIL="${emails[0]}"
 
     MSG="SEND + $nb JUNE TO BROs : ${emails[@]}"
     echo $MSG
@@ -324,7 +323,8 @@ while read LINE; do
         ##############################
         ### GET PAID & GET PINNED !!
         ##############################
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${nb}" "${ASTROG1}" "${emails[@]} /ipfs/${TOPIN}"
+        ZZMAIL=$(echo "${emails[@]}" | sed "s~${ZMAIL}~~g") # remove ZMAIL from ${emails[@]} list
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${nb}" "${ASTROG1}" "${ZZMAIL}:PIN:${TOPIN}"
 
         echo "<html><head><meta charset='UTF-8'>
             <style>
