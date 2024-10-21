@@ -308,7 +308,7 @@ while read LINE; do
     ## Get first zmail
     ZMAIL="${emails[0]}"
 
-    MSG="SEND + $nb JUNE TO BROs : ${emails[@]}"
+    MSG=">>> $nb G1 to ${emails[@]} <<<"
     echo $MSG
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
@@ -338,9 +338,9 @@ while read LINE; do
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
         [[ ! -z $TOPIN ]] \
             && ipfs pin add $TOPIN \
-            && echo "<br> <a href='${myIPFSGW}'${ASTROTW}#${TTITLE}>${TTITLE}</a>
+            && echo "<br> <a href='${myIPFSGW}${ASTROTW}#${TTITLE}'>${TTITLE}</a>
                 <br>( ${emails[@]} )<br>
-                <h2>PIN: <a href='${myIPFSGW}'$TOPIN>$TOPIN</a></h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
+                <h2>PIN: <a href='${myIPFSGW}${TOPIN}'>$TOPIN</a></h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
             ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "BRO. ${ZMAIL} TW5 PIN"
@@ -358,7 +358,7 @@ while read LINE; do
             }
         </style></head><body>
         <h1>BRO. </h1>
-        <br> <a href='${myIPFSGW}'${ASTROTW}#${TTITLE}>${TTITLE}</a>
+        <br> <a href='${myIPFSGW}${ASTROTW}#${TTITLE}'>${TTITLE}</a>
         <br>( ${emails[@]} )<br>
         <br><b>${TTITLE}</b><br>(✜‿‿✜)
         ... Join <a href='https://qo-op.com'>UPlanet</a>
