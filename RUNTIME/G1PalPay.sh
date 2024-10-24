@@ -71,34 +71,62 @@ echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
 if [[ ${UPLANETNAME} != "" ]]; then
     echo "UPLANET ORIGIN CONTROL"
-    echo "# CHECK FOR PRIMAL REGULAR TX in INCOMING PAYMENTS "
+
+    while read LINE; do
+        ## MEMORIZE LAST TX DATE
+        echo "${LINE}"
+        JSON=${LINE}
+        TXIDATE=$(echo $JSON | jq -r .date)
+        TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
+        TXIAMOUNT=$(echo $JSON | jq -r .amount)
+        COMMENT=$(echo $JSON | jq -r .comment)
+
+        ## PAST TX - continue
+        lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.uplanet.check 2>/dev/null)
+        [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/players/${PLAYER}/.uplanet.check ## INIT
+        [[ $(cat ~/.zen/game/players/${PLAYER}/.uplanet.check) -ge $TXIDATE ]] \
+            && continue
+
+        ## OUTGOING TX - continue
+        [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
+            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
+            && continue
+
+    echo "# RX from $TXIPUBKEY.... checking primal transaction..."
     # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
     # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
     line=$(silkaj money history $TXIPUBKEY | tail -n 3 | head -n 1)
     pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
     echo "line = $line"
     echo "pub8 = $pub8"
-    #~ while read LINE; do
-        #~ ## MEMORIZE LAST TX DATE
-        #~ echo "${LINE}"
-        #~ JSON=${LINE}
-        #~ TXIDATE=$(echo $JSON | jq -r .date)
-        #~ TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
-        #~ TXIAMOUNT=$(echo $JSON | jq -r .amount)
-        #~ COMMENT=$(echo $JSON | jq -r .comment)
+    ### IS IT A REAL UPLANET WALLET ??
+    UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
+    if [[ ${UPLANETG1PUB:0:8} == $pub8 ]]; then
+        echo "ZEN WALLET is certified by $UPLANETG1PUB source"
+        echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check
+    else
+        ## IF NOT SEND BACK G1
+        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET:INTRUSION ALERT"
+        ## SEND ALERT
+        echo "<html><head><meta charset='UTF-8'>
+        <style>
+            body {
+                font-family: 'Courier New', monospace;
+            }
+            pre {
+                white-space: pre-wrap;
+            }
+        </style></head><body>" > ~/.zen/tmp/palpay.bro
 
-        #~ ## PAST TX - continue
-        #~ lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.uplanet.check 2>/dev/null)
-        #~ [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/players/${PLAYER}/.uplanet.check ## INIT
-        #~ [[ $(cat ~/.zen/game/players/${PLAYER}/.uplanet.check) -ge $TXIDATE ]] \
-            #~ && continue
+        echo "<h1>$PLAYER<h1>
+        ZEN WALLET INTRUSION ALERT ... <br>
+        <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... DO NOT CHEAT !!
+        </body></html>" >> ~/.zen/tmp/palpay.bro
 
-        #~ ## OUTGOING TX - continue
-        #~ [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-            #~ && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
-            #~ && continue
+        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
+    fi
 
-    #~ done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
+    done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 fi
 
 ##########################################################
