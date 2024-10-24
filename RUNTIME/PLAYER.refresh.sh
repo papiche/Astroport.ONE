@@ -651,9 +651,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## DAY=1 : SEND ${G1LEVEL1} G1 to PLAYER
     [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
         && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
-        && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "${G1LEVEL1}" "${G1PUB}" "UPLANET:WELCOME:${MIUSER}:${YOUSER}" \
-        && echo "UPLANET:WELCOME:${MIUSER}:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
+        && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:WELCOME:${YOUSER}" \
+        && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+        && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
     #####################################################################
     ############ CURRENT #################### _ForkUPlanetZERO ?
