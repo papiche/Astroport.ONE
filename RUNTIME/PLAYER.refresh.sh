@@ -233,11 +233,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "CURCHAIN=${CURCHAIN}"
     echo "================================== TW $days days old"
 
-############################################## +2 DAYS & AstroID = UNPLUG !!
-    ## REMOVE TW OLDER THAN 2 DAYS WITH AstroID
+############################################## +2 DAYS REMOVE AstroID !!
+    ## REMOVE AstroID
     [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
-        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "TW EJECTION. AstroID found in TW." \
-        && echo "(#__#) AstroID +2 DAYS = SECURITY ERROR (#__#)" && continue
+        && ${MY_PATH}/TW/delete_tiddler.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "AstroID" \
+        && echo "(#__#) AstroID & PLAYER IPNS RW REMOVAL (#__#)" \
+        && ipfs key rm ${PLAYER} \
+        && ipfs key rm ${G1PUB}
 ####################################################################### RTFM DUMB FIREWALL
 ############################################################################################
 
@@ -256,7 +258,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 
-    UMAPNS=$(echo $UMAPIPNS | cut -d '/' -f 3)
+    UMAPNS=$(echo $UMAPIPNS | rev | cut -d '/' -f 1 | rev)
     #############################################
     # MAKE "GPS" TIDDLER
     cat ${MY_PATH}/../templates/data/GPS.json \
@@ -305,8 +307,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     fi
     #####################################################################
     ########## $:/moa picture ## CREATE EMAIL from email tiddler ########
-    ## GET $:/moa Tiddlers ####################################### START
-    echo "GET $:/moa Tiddlers"
+    ## GET $:/moa Tagged Tiddlers ################################# START
+    echo "GET $:/moa Tagged Tiddlers"
     ###################################################### [tag[$:/moa]] used for "DID" declaration
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
@@ -360,7 +362,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
             ## CAN USE IPFSH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | ipfs add -q)
             ## TODO MICROLEDGER TIDDLER...
-            # we are monitoring email tiddler image change (the G1BILLET background can be made of).
+            # we are monitoring email tiddler image change (G1BILLET background is made of).
             echo "ORIGINH: $ORIGINH"
         else
             ORIGINH="$INSIDEH"
@@ -646,9 +648,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
     #####################################################################
-    ## DAY=7 : SEND ${G1LEVEL1} G1 to PLAYER
-    [[ ${days} -eq 7 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
-        && echo "7 DAY. PLAYER STEP ONE SUCCEED." \
+    ## DAY=1 : SEND ${G1LEVEL1} G1 to PLAYER
+    [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
+        && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
         && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "${G1LEVEL1}" "${G1PUB}" "UPLANET:WELCOME:${MIUSER}:${YOUSER}" \
         && echo "UPLANET:WELCOME:${MIUSER}:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
