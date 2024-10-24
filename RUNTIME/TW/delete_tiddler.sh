@@ -1,5 +1,6 @@
 #!/bin/bash
-
+## DELETE A TIDDLER FROM A TW
+## PARAMETERS "/path/to/TW/index.html" "TiddlerTitle"
 # Generate a unique timestamp
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 

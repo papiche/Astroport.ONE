@@ -68,32 +68,32 @@ for UMAP in ${unique_combined[@]}; do
     ## UMAP WALLET CHECK
     ##############################################################
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-    G1PUB=$(cat ~/.zen/tmp/${MOATS}/${UMAP}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
-    [[ ! ${G1PUB} ]] && echo "ERROR generating UMAP WALLET" && exit 1
+    UMAPG1PUB=$(cat ~/.zen/tmp/${MOATS}/${UMAP}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+    [[ ! ${UMAPG1PUB} ]] && echo "ERROR generating UMAP WALLET" && exit 1
 
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${UMAPG1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
-    echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${G1PUB}"
+    echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${UMAPG1PUB}"
 
     ## ORIGIN ##########################################################
     ## CALCULATE INITIAL UMAP GEOSPACIAL IPNS KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${UMAP}.priv "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-    ipfs key rm ${G1PUB} > /dev/null 2>&1
-    UMAPNS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
+    ipfs key rm ${UMAPG1PUB} > /dev/null 2>&1
+    UMAPNS=$(ipfs key import ${UMAPG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${UMAP}.priv)
     echo "ORIGIN : ${myIPFS}/ipns/${UMAPNS}"
 
     ###################### SPATIO TEMPORAL KEYS
     ## TODATE #########################################
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${TODATE}.priv "${TODATE}${UPLANETNAME}${LAT}" "${TODATE}${UPLANETNAME}${LON}"
-    ipfs key rm ${TODATE}${G1PUB} > /dev/null 2>&1
-    TODATENS=$(ipfs key import ${TODATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
+    ipfs key rm ${TODATE}${UMAPG1PUB} > /dev/null 2>&1
+    TODATENS=$(ipfs key import ${TODATE}${UMAPG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${TODATE}.priv)
     echo "TODAY : ${myIPFS}/ipns/${TODATENS}"
 
     ## YESTERDATE ###############
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv "${YESTERDATE}${UPLANETNAME}${LAT}" "${YESTERDATE}${UPLANETNAME}${LON}"
-    ipfs key rm ${YESTERDATE}${G1PUB} > /dev/null 2>&1
-    YESTERDATENS=$(ipfs key import ${YESTERDATE}${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
+    ipfs key rm ${YESTERDATE}${UMAPG1PUB} > /dev/null 2>&1
+    YESTERDATENS=$(ipfs key import ${YESTERDATE}${UMAPG1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${YESTERDATE}.priv)
     echo "YESTERDAY : ${myIPFS}/ipns/${YESTERDATENS}"
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -107,7 +107,7 @@ for UMAP in ${unique_combined[@]}; do
         # Try retieve memory from UPlanet ZEN Memory
         [[ ${ZEN} -gt 0 ]] \
             && echo "INTERCOM Refreshing from ZEN MEMORY" \
-            && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}" "${G1PUB}"
+            && ${MY_PATH}/../RUNTIME/ZEN.UMAP.memory.sh "${UMAP}" "${MOATS}" "${UMAPG1PUB}"
     fi
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     end=`date +%s`
@@ -115,20 +115,20 @@ for UMAP in ${unique_combined[@]}; do
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     ## FORMAT CONTROL WARNING
-    [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
+    [[ ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN || ! -d ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} ]] \
         && echo ">>> INFO - INTIALIZE UMAP FORMAT - NEW UMAP KEY -" \
         && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON} \
-        && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN \
-        && echo ${MOATS} > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats
+        && mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN \
+        && echo ${MOATS} > ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_moats
 
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/RSS
     mkdir -p ~/.zen/tmp/${MOATS}/${UMAP}/TW
 
-    echo "~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/"
+    echo "~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/"
 
      ## zday of the week for IPFSNODEID
     rm -f ~/.zen/tmp/${MOATS}/${UMAP}/z*.html 2>/dev/null
-    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain 2>/dev/null | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_chain 2>/dev/null | rev | cut -d ':' -f 1 | rev 2>/dev/null)
     [[ "${ZCHAIN}" != "" ]] \
         && echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${ZCHAIN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/z$(date +%A-%d_%m_%Y).html
 
@@ -151,7 +151,7 @@ for UMAP in ${unique_combined[@]}; do
     [[ ! $(echo ${STRAPS[@]} | grep  ${ACTINGNODE}) ]] && ACTINGNODE=${STRAPS[0]}
 
     #  ++++++++++++++++++++ - - - - FIND LAST TREATMENT TIME
-    ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null) || ZMOATS=${MOATS}
+    ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_moats 2>/dev/null) || ZMOATS=${MOATS}
     # ZMOATS SHOULD BE MORE THAT 5 HOURS.
     MOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
     ZMOATS_SECONDS=$(${MY_PATH}/../tools/MOATS2seconds.sh ${ZMOATS})
@@ -164,14 +164,14 @@ for UMAP in ${unique_combined[@]}; do
 
     ## IF NOT UPDATED FOR TOO LONG
     [[ ${DIFF_SECONDS} -gt $(( 26 * 60 * 60 )) || ${DIFF_SECONDS} -eq 0 ]] \
-        && echo ">>>>>>>>>>>>>> More than 26H update - BOOSTRAP 0 ACTION -" \
+        && echo ">>>>>>>>>>>>>> 0 OR More than 26H update - BOOSTRAP 0 ACTION -" \
         && ACTINGNODE=${STRAPS[0]}
 
     echo "* ACTINGNODE=${ACTINGNODE}"
 
     if [[ "${ACTINGNODE}" != "${IPFSNODEID}" ]]; then
         echo ">> ACTINGNODE NOT ME - CONTINUE -"
-        ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}"
+        ipfs key rm "${TODATE}${UMAPG1PUB}"  "${YESTERDATE}${UMAPG1PUB}" "${UMAPG1PUB}"
         echo "------8<-------------8<------------------8<-----------------8<-----------------8<"
         continue
     fi
@@ -196,7 +196,7 @@ for UMAP in ${unique_combined[@]}; do
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "1" "${G1PUB}" "UPLANET:INIT:${UMAP}:${MIUSER}" \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "1" "${UMAPG1PUB}" "UPLANET:INIT:${UMAP}:${MIUSER}" \
         && echo "UPLANET:INIT:${UMAP}:${MIUSER}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ "
 
     # %%%%%%%%%% ##################################################
@@ -257,7 +257,7 @@ for UMAP in ${unique_combined[@]}; do
     ipfs key rm "next" > /dev/null 2>&1
     rm ~/.zen/tmp/${MOATS}/next.priv
     ## BOOSTRAP SWARM PUBLICATION _next.umapns
-    echo "${G1PUB}:${DEMAINDATE}:${NEXTNS}" \
+    echo "${UMAPG1PUB}:${DEMAINDATE}:${NEXTNS}" \
         > ~/.zen/tmp/${MOATS}/${UMAP}/_next.umapns
 
     cp ~/.zen/tmp/${MOATS}/${UMAP}/_next.umapns \
@@ -301,7 +301,7 @@ for UMAP in ${unique_combined[@]}; do
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORNS
     echo "${TODATEREGIONNS}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS
-    echo "${G1PUB}" \
+    echo "${UMAPG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
     echo "${SECTORG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
@@ -484,7 +484,7 @@ for UMAP in ${unique_combined[@]}; do
               -e "s~_UPUPZONENS_~${TODATEREGIONNS}~g" \
               -e "s~_PHONEBOOTH_~${PHONEBOOTH}~g" \
               -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
-              -e "s~_G1PUB_~${G1PUB}~g" \
+              -e "s~_G1PUB_~${UMAPG1PUB}~g" \
               -e "s~_DATE_~$(date +%A-%d_%m_%Y)~g" \
               -e "s~_UPLANETLINK_~${EARTHCID}/map_render.html\?southWestLat=${LAT}\&southWestLon=${LON}\&deg=0.01~g" \
               -e "s~http://127.0.0.1:8080~~g" \
@@ -505,10 +505,10 @@ for UMAP in ${unique_combined[@]}; do
     ##############################################################
     UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1)
 
-    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
-    ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats 2>/dev/null)
+    ZCHAIN=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_chain | rev | cut -d ':' -f 1 | rev 2>/dev/null)
+    ZMOATS=$(cat ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_moats 2>/dev/null)
     [[ ${ZCHAIN} && ${ZMOATS} ]] \
-        && cp ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain.${ZMOATS} \
+        && cp ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_chain ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_chain.${ZMOATS} \
         && echo "UPDATING MOATS=${MOATS}"
 
 ######################################################
@@ -523,18 +523,18 @@ for UMAP in ${unique_combined[@]}; do
 
     ## MICRO LEDGER CHAIN CHANGED or INIT ?
     [[ ${ZCHAIN} != ${UMAPROOT} || ${ZCHAIN} == "" ]] \
-        && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_chain \
-        && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${G1PUB}:ZEN/_moats \
+        && echo "${MOATS}:${IPFSNODEID}:${UMAPROOT}" > ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_chain \
+        && echo "${MOATS}" > ~/.zen/tmp/${MOATS}/${UMAP}/${UMAPG1PUB}:ZEN/_moats \
         && UMAPROOT=$(ipfs add -rwHq  ~/.zen/tmp/${MOATS}/${UMAP}/* | tail -n 1) \
         && echo "ROOT was ${ZCHAIN}"
 
     echo "PUBLISHING ${TODATE} UMAPROOT : ${myIPFS}/ipfs/${UMAPROOT}"
 
-    ipfs --timeout 300s name publish --key=${TODATE}${G1PUB} /ipfs/${UMAPROOT}
+    ipfs --timeout 300s name publish --key=${TODATE}${UMAPG1PUB} /ipfs/${UMAPROOT}
     end=`date +%s`
     echo "(UMAP) ${UMAP} ${TODATE} PUBLISH time was "`expr $end - $start` seconds.
 
-    ipfs key rm "${TODATE}${G1PUB}"  "${YESTERDATE}${G1PUB}" "${G1PUB}" ## REMOVE IPNS KEY
+    ipfs key rm "${TODATE}${UMAPG1PUB}"  "${YESTERDATE}${UMAPG1PUB}" "${UMAPG1PUB}" ## REMOVE IPNS KEY
     [[ ${ZCHAIN} != "" ]] && ipfs pin rm ${ZCHAIN}
 
     ################# PUBLISH UPlanet UMAP to G1PODs
