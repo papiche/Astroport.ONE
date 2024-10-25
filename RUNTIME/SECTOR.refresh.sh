@@ -174,9 +174,10 @@ for SECTOR in ${SECTORS[@]}; do
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
-        && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "1" "${G1PUB}" "UPLANET:INIT:${SECTOR}:${MIUSER}" \
-        && echo "UPLANET:INIT:${SECTOR}:${MIUSER}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ "
+        && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:INIT:${SECTOR}" \
+        && echo "UPLANET:INIT:${SECTOR}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ " \
+        && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS

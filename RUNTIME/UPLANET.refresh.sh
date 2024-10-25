@@ -195,9 +195,10 @@ for UMAP in ${unique_combined[@]}; do
     CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
     [[ ${COINS} == "" || ${COINS} == "null" ]] \
         && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
-        && MIUSER=$(${MY_PATH}/../tools/clyuseryomail.sh "${CURRENT}") \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/.current/secret.dunikey" "1" "${UMAPG1PUB}" "UPLANET:INIT:${UMAP}:${MIUSER}" \
-        && echo "UPLANET:INIT:${UMAP}:${MIUSER}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ "
+        && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${UMAPG1PUB}" "UPLANET:INIT:${UMAP}" \
+        && echo "UPLANET:INIT:${UMAP}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ " \
+        && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
     # %%%%%%%%%% ##################################################
     ## SECTOR LINKING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${SLAT}_${SLON}

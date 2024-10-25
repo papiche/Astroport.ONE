@@ -140,7 +140,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "<br>ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
         echo "</body></html>" >> ~/.zen/tmp/result
 
-
+        ### TO MANY ERROR LOADING TW
         [[ $try == 0 && "${CURRENT}" != "${PLAYER}" ]] \
             && echo "PLAYER ${PLAYER} UNPLUG" \
             && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL" \
@@ -223,7 +223,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
     if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
         echo "> PLAYER MOVED TO ${IPNSTAIL} : UNPLUG "
-        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "Now TW is plugged to ${ASTROPORT}"
+        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "TW moved to ${ASTROPORT}"
         echo ">>>> CIAO ${PLAYER}"
         continue
     fi
