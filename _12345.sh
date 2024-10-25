@@ -128,17 +128,17 @@ while true; do
         ( ##### SUB-PROCESS £
         start=`date +%s`
 
-        # MONITOR pending
-        for player in ${PLAYERONE[@]}; do
-            g1pub=$(cat ~/.zen/game/players/${player}/.g1pub 2>/dev/null)
-            # Check Station PLAYER payments
-            PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX" 2>/dev/null))
-            for pending in "${PENDINGS[@]}"; do
-                 echo ${pending}
-                 # TODO TREAT PENDINGS
-                 #
-            done
-        done
+        # MONITOR pending -- Activate to reduce TX failure --
+        #~ for player in ${PLAYERONE[@]}; do
+            #~ g1pub=$(cat ~/.zen/game/players/${player}/.g1pub 2>/dev/null)
+            #~ # Check Station PLAYER payments
+            #~ PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX" 2>/dev/null))
+            #~ for pending in "${PENDINGS[@]}"; do
+                 #~ echo ${pending}
+                 #~ # TODO TREAT PENDINGS
+                 #~ #
+            #~ done
+        #~ done
 
         ############# GET BOOSTRAP SWARM DATA
         for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
@@ -190,7 +190,7 @@ while true; do
 
             ## ASK BOOSTRAP NODE TO GET MY MAP UPSYNC
             ## - MAKES MY BALISE PRESENT IN BOOSTRAP SWARM KEY  -
-            if [[  $iptype == "ip4" || $iptype == "ip6" ]]; then
+            if [[ $iptype == "ip4" || $iptype == "ip6" ]]; then
 
                 ############ UPSYNC CALL
                 echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
@@ -234,6 +234,12 @@ while true; do
                 echo "============================================"
 
             fi ## IP4 WAN BOOTSRAP UPSYNC FINISHED
+            ### IN CASE BOOTSTRAP IS A DNS ADDRESS
+            if [[ $iptype == "dnsaddr" ]]; then
+                curl -s -m 10 https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID} \
+                -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
+            fi
+
 
         done
 
@@ -345,7 +351,6 @@ Content-Type: application/json; charset=UTF-8
     #####################################################################
     ### UPSYNC STATION REQUEST :12345/?G1PUB=g1_to_ipfs(G1PUB)&...
     ## & JOIN 1234
-    ### TODO : include CODE HASH & TOKEN ....
     #####################################################################
     if [[ ${arr[0]} != "" ]]; then
 

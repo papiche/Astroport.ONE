@@ -21,9 +21,10 @@ rm -f /tmp/mycron /tmp/newcron
 crontab -l > /tmp/mycron
 
 # DOUBLE CHECK (awk = nawk or gawk -i ?)
-# Remove any previous line containing "SHELL & PATH"
+# Remove any previous line containing "SHELL USER & PATH"
 # awk -i inplace -v rmv="20h12" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="SHELL" '!index($0,rmv)' /tmp/mycron
+awk -i inplace -v rmv="USER" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="PATH" '!index($0,rmv)' /tmp/mycron
 
 crontest=$(cat /tmp/mycron | grep -F '20h12.process.sh')
@@ -35,8 +36,9 @@ if [[ ! $crontest ]]; then
     ## HEADER
     [[ $1 == "OFF" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
+    [[ ! $(cat /tmp/mycron | grep -F 'USER') ]] \
+        && echo "USER=$USER" >> /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] \
-        && echo "USER=$USER" >> /tmp/newcron \
         && echo "PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
     cat /tmp/mycron >> /tmp/newcron
     # ADD  20h12.process.sh line
@@ -54,8 +56,9 @@ else
     ## HEADER
     [[ $1 == "ON" ]] && exit 0
     [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
+    [[ ! $(cat /tmp/mycron | grep -F 'USER') ]] \
+        && echo "USER=$USER" >> /tmp/newcron
     [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] \
-        && echo "USER=$USER" >> /tmp/newcron \
         && echo "PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
 
     ## REMOVE 20h12.process.sh line
@@ -69,9 +72,10 @@ else
         echo "KEEPING 20H12 CRON ACTIVATED"
         ## LOW DISK RESSOURCES IPFS MODE
         [[ ! $(cat /tmp/mycron | grep -F 'SHELL') ]] && echo "SHELL=/bin/bash" > /tmp/newcron
+        [[ ! $(cat /tmp/mycron | grep -F 'USER') ]] \
+            && echo "USER=$USER" >> /tmp/newcron
         [[ ! $(cat /tmp/mycron | grep -F 'PATH') ]] \
-        && echo "USER=$USER" >> /tmp/newcron \
-        && echo "PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
+            && echo "PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
 
         cat /tmp/mycron >> /tmp/newcron
         # ADD  20h12.process.sh line
