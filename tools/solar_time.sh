@@ -1,4 +1,6 @@
 #!/bin/bash
+LAT=$1
+LON=$2
 
 # Fonction pour calculer l'équation du temps (simplifiée)
 equation_of_time() {
@@ -16,14 +18,20 @@ time_offset() {
     echo $offset
 }
 
-# Vérification des arguments
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 <latitude> <longitude>"
-    exit 1
+# Récupérer LAT et LON depuis ~/.zen/GPS si non fournies
+if [ -z "$LAT" ] || [ -z "$LON" ]; then
+    if [ -f ~/.zen/GPS ]; then
+        source ~/.zen/GPS
+    else
+        echo "Fichier ~/.zen/GPS non trouvé. Veuillez fournir LAT et LON."
+        exit 1
+    fi
 fi
 
-LAT=$1
-LON=$2
+# Récupérer TZ du système si non fourni
+if [ -z "$TZ" ]; then
+    TZ=$(timedatectl show --property=Timezone --value)
+fi
 
 # Calcul de l'équation du temps
 EOT=$(equation_of_time)
@@ -35,11 +43,23 @@ OFFSET=$(time_offset $LON $EOT)
 OFFSET_HOURS=$(echo "scale=0; $OFFSET / 60" | bc)
 OFFSET_MINUTES=$(echo "scale=0; ($OFFSET - $OFFSET_HOURS * 60) / 1" | bc)
 
-# Calcul de l'heure légale
-LEGAL_HOUR=$(echo "scale=0; (20 - $OFFSET_HOURS + 24) % 24" | bc)
-LEGAL_MINUTE=$(echo "scale=0; (12 - $OFFSET_MINUTES + 60) % 60" | bc)
+# Obtenir l'heure UTC actuelle
+UTC_HOUR=$(TZ=UTC date +%H)
+UTC_MINUTE=$(TZ=UTC date +%M)
 
-# Formatage de l'heure légale
-echo "Aux coordonnées GPS $1 $2"
-printf "L'heure légale correspondant à 20h12 solaire est %02d:%02d\n" $LEGAL_HOUR $LEGAL_MINUTE
-echo "$LEGAL_HOUR $LEGAL_MINUTE"
+# Calculer l'heure solaire locale
+SOLAR_HOUR=$(echo "scale=0; ($UTC_HOUR + $OFFSET_HOURS + 24) % 24" | bc)
+SOLAR_MINUTE=$(echo "scale=0; ($UTC_MINUTE + $OFFSET_MINUTES + 60) % 60" | bc)
+
+# Calculer l'heure légale pour 20h12 solaire
+TARGET_SOLAR_HOUR=20
+TARGET_SOLAR_MINUTE=12
+LEGAL_HOUR=$(echo "scale=0; ($TARGET_SOLAR_HOUR - $OFFSET_HOURS + 24) % 24" | bc)
+LEGAL_MINUTE=$(echo "scale=0; ($TARGET_SOLAR_MINUTE - $OFFSET_MINUTES + 60) % 60" | bc)
+
+# Afficher les résultats
+echo "Coordonnées : LAT=$LAT, LON=$LON"
+echo "Fuseau horaire : $TZ"
+echo "Heure solaire actuelle : $(printf "%02d:%02d" $SOLAR_HOUR $SOLAR_MINUTE)"
+echo "Heure légale correspondant à 20h12 solaire : $(printf "%02d:%02d" $LEGAL_HOUR $LEGAL_MINUTE)"
+echo "$LEGAL_HOUR $LEGAL_MINUTE)"
