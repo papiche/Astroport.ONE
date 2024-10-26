@@ -319,7 +319,7 @@ Content-Type: application/json; charset=UTF-8
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
     \"astroport\" : \"http://${myIP}:1234\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
-    \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\"
+    \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
