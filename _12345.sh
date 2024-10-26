@@ -71,6 +71,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ###############################################
+UPLANETG1PUB=$(${MY_PATH}/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 ##############################
 #### UPLANET GEOKEYS_refresh
 ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
@@ -302,6 +303,7 @@ while true; do
 
     fi
 
+
 ############ PREPARE HTTP 12345 JSON DOCUMENT
     HTTPSEND="HTTP/1.1 200 OK
 Access-Control-Allow-Origin: \*
@@ -318,6 +320,7 @@ Content-Type: application/json; charset=UTF-8
     \"astroport\" : \"http://${myIP}:1234\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\"
+    \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
     ######################################################################################
