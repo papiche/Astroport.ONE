@@ -32,7 +32,7 @@ PLAYERONE="$1"
 echo "FOUND ${#PLAYERONE[@]} ASTRONAUTS : ${PLAYERONE[@]}"
 CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
 
-echo "RENEWING LOCAL UPLANET REPOSITORY (ADMIN=${CURRENT})
+echo "RENEWING LOCAL UPLANET REPOSITORY (CAPTAIN=${CURRENT})
  ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
 
 
