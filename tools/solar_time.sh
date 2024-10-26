@@ -1,6 +1,8 @@
 #!/bin/bash
+
 LAT=$1
 LON=$2
+TZ=$3
 
 # Fonction pour calculer l'équation du temps (simplifiée)
 equation_of_time() {
@@ -33,6 +35,13 @@ if [ -z "$TZ" ]; then
     TZ=$(timedatectl show --property=Timezone --value)
 fi
 
+# Obtenir le décalage horaire exact pour la date actuelle
+CURRENT_DATE=$(date +"%Y-%m-%d")
+TZ_OFFSET=$(TZ=$TZ date -d "$CURRENT_DATE" +%z)
+TZ_OFFSET_HOURS=$(echo $TZ_OFFSET | cut -c1-3)
+TZ_OFFSET_MINUTES=$(echo $TZ_OFFSET | cut -c4-5)
+TZ_OFFSET_TOTAL=$(echo "scale=2; $TZ_OFFSET_HOURS + $TZ_OFFSET_MINUTES/60" | bc)
+
 # Calcul de l'équation du temps
 EOT=$(equation_of_time)
 
@@ -43,23 +52,15 @@ OFFSET=$(time_offset $LON $EOT)
 OFFSET_HOURS=$(echo "scale=0; $OFFSET / 60" | bc)
 OFFSET_MINUTES=$(echo "scale=0; ($OFFSET - $OFFSET_HOURS * 60) / 1" | bc)
 
-# Obtenir l'heure UTC actuelle
-UTC_HOUR=$(TZ=UTC date +%H)
-UTC_MINUTE=$(TZ=UTC date +%M)
-
-# Calculer l'heure solaire locale
-SOLAR_HOUR=$(echo "scale=0; ($UTC_HOUR + $OFFSET_HOURS + 24) % 24" | bc)
-SOLAR_MINUTE=$(echo "scale=0; ($UTC_MINUTE + $OFFSET_MINUTES + 60) % 60" | bc)
-
 # Calculer l'heure légale pour 20h12 solaire
 TARGET_SOLAR_HOUR=20
 TARGET_SOLAR_MINUTE=12
-LEGAL_HOUR=$(echo "scale=0; ($TARGET_SOLAR_HOUR - $OFFSET_HOURS + 24) % 24" | bc)
+LEGAL_HOUR=$(echo "scale=0; ($TARGET_SOLAR_HOUR + $TZ_OFFSET_TOTAL - $OFFSET_HOURS + 24) % 24" | bc)
 LEGAL_MINUTE=$(echo "scale=0; ($TARGET_SOLAR_MINUTE - $OFFSET_MINUTES + 60) % 60" | bc)
 
 # Afficher les résultats
 echo "Coordonnées : LAT=$LAT, LON=$LON"
-echo "Fuseau horaire : $TZ"
-echo "Heure solaire actuelle : $(printf "%02d:%02d" $SOLAR_HOUR $SOLAR_MINUTE)"
+echo "Fuseau horaire : $TZ (décalage : $TZ_OFFSET)"
 echo "Heure légale correspondant à 20h12 solaire : $(printf "%02d:%02d" $LEGAL_HOUR $LEGAL_MINUTE)"
-echo "$LEGAL_HOUR $LEGAL_MINUTE)"
+echo
+echo "$LEGAL_MINUTE $LEGAL_HOUR * * * /bin/bash \$MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1"
