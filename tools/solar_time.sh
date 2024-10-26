@@ -38,9 +38,15 @@ fi
 # Obtenir le décalage horaire exact pour la date actuelle
 CURRENT_DATE=$(date +"%Y-%m-%d")
 TZ_OFFSET=$(TZ=$TZ date -d "$CURRENT_DATE" +%z)
-TZ_OFFSET_HOURS=$(echo $TZ_OFFSET | cut -c1-3)
-TZ_OFFSET_MINUTES=$(echo $TZ_OFFSET | cut -c4-5)
-TZ_OFFSET_TOTAL=$(echo "scale=2; $TZ_OFFSET_HOURS + $TZ_OFFSET_MINUTES/60" | bc)
+TZ_OFFSET_HOURS=$(echo $TZ_OFFSET | sed 's/^+//' | sed 's/^-//' | sed 's/..$//')
+TZ_OFFSET_MINUTES=$(echo $TZ_OFFSET | sed 's/.*\(..\)$/\1/')
+TZ_OFFSET_SIGN=$(echo $TZ_OFFSET | cut -c1)
+
+if [ "$TZ_OFFSET_SIGN" = "-" ]; then
+    TZ_OFFSET_TOTAL=$(echo "scale=2; -1 * ($TZ_OFFSET_HOURS + $TZ_OFFSET_MINUTES/60)" | bc)
+else
+    TZ_OFFSET_TOTAL=$(echo "scale=2; $TZ_OFFSET_HOURS + $TZ_OFFSET_MINUTES/60" | bc)
+fi
 
 # Calcul de l'équation du temps
 EOT=$(equation_of_time)
@@ -61,6 +67,6 @@ LEGAL_MINUTE=$(echo "scale=0; ($TARGET_SOLAR_MINUTE - $OFFSET_MINUTES + 60) % 60
 # Afficher les résultats
 echo "Coordonnées : LAT=$LAT, LON=$LON"
 echo "Fuseau horaire : $TZ (décalage : $TZ_OFFSET)"
-echo "Heure légale correspondant à 20h12 solaire : $(printf "%02d:%02d" $LEGAL_HOUR $LEGAL_MINUTE)"
+echo "Heure légale correspondant à 20h12 solaire : $(printf "%02d:%02d" ${LEGAL_HOUR%.*} ${LEGAL_MINUTE%.*})"
 echo
-echo "$LEGAL_MINUTE $LEGAL_HOUR * * * /bin/bash \$MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1"
+echo "${LEGAL_MINUTE%.*} ${LEGAL_HOUR%.*} * * * /bin/bash \$MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1"
