@@ -70,3 +70,4 @@ echo "Fuseau horaire : $TZ (décalage : $TZ_OFFSET)"
 echo "Heure légale correspondant à 20h12 solaire : $(printf "%02d:%02d" ${LEGAL_HOUR%.*} ${LEGAL_MINUTE%.*})"
 echo
 echo "${LEGAL_MINUTE%.*} ${LEGAL_HOUR%.*} * * * /bin/bash \$MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1"
+echo "${LEGAL_MINUTE%.*} ${LEGAL_HOUR%.*}"
