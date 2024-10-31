@@ -42,3 +42,17 @@ En adoptant une blockchain multi-grille sphérique et des clés géospatiales, c
 
 Ces stations, en synergie, visent à résoudre les problèmes évoqués, offrant une alternative innovante
 pour les investisseurs souhaitant participer à la transformation du paysage technologique.
+
+
+## Obligations "Made In Zen"
+
+Afin de distribuer notre technologie, nous allons utiliser la Ğ1 comme "jeton technique"...
+Formations dispensés :
+ * NIVEAU 1 : Raspbian sur RaspberryPi + PiHole + nginx-proxy-manager + ...
+ * NIVEAU 2 : PROXMOX sur son "PC GAMER" réimporter votre OS + Minux Mint
+ * NIVEAU 3 : Astroport.ONE & lazydocker = NextCloud AIO, Ollama, SearxNG, Perplexica
+
+UPassport = ZeroCard -> email + GPS => CAPTAIN
+MULTIPASS = ZenCard - UPLANET wallet + TW
+
+

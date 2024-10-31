@@ -103,27 +103,26 @@ while true; do
             file_modification_time=$(stat -c %Y "/tmp/20h12.log")
             time_difference=$((current_time - file_modification_time))
             [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
-                && echo "$(date +"%H%M") : 20H12 is coming... " && continue
+                && echo "$(date +"%H%M") : 20H12 is running... " && continue
         fi
+
+        ## NO CAPTAIN ON BOARD
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         [[ ${PLAYERONE[@]} == "" ]] \
             && duree=0 && lastrun=${MOATS} && break
-
-        # RESPECT LOWMODE. REMOVE THAT LINE TO FORCE IPFS WAKING UP
-        #~ [[ $(sudo systemctl status ipfs | grep disabled) != "" ]] && continue
-        ## CONSUME TOO MUCH CPU "init splash"
 
         ## CHECK IF IPFS NODE IS RESPONDING
         ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
         [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
             && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
-            && sudo systemctl restart ipfs \
+            && [[ $(sudo systemctl status ipfs | grep disabled) == "" ]] && sudo systemctl restart ipfs \
             && sleep 60
 
         ${MY_PATH}/ping_bootstrap.sh
 
         #### UPLANET FLASHMEM UPDATES
-        ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
+        GEOKEYSrunning=$(pgrep -au $USER -f 'GEOKEYS_refresh.sh' | tail -n 1 | xargs | cut -d " " -f 1)
+        [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
         #####################################
         ( ##### SUB-PROCESS £
@@ -198,6 +197,10 @@ while true; do
                 curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} \
                     -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
 
+                ### CHECK FOR SAME UPLANET
+                uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.UPLANETG1PUB')
+                [[ "$UPLANETG1PUB" != "$uplanetpub" ]] && echo "ALERT. UPlanet $uplanetpub : NOT THE SAME !!! "
+
                 ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
                 echo "ANALYSING BOOSTRAP SWARM MAP"
                 itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
@@ -225,7 +228,7 @@ while true; do
                     ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
                     DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
                     if [ ${DIFF_SECONDS} -gt $(( 3 * 24 * 60 * 60 )) ]; then
-                        echo "STATION IS STUCK... FOR TOO LONG... REMOVING ${znod} FROM SWARM"
+                        echo "STATION IS STUCK... FOR MORE THAN 3 DAYS... REMOVING ${znod} FROM SWARM"
                         rm -Rf ~/.zen/tmp/swarm/${znod}/
                     else
                         echo "${DIFF_SECONDS} seconds old"
@@ -303,16 +306,7 @@ while true; do
 
     fi
 
-
-############ PREPARE HTTP 12345 JSON DOCUMENT
-    HTTPSEND="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: \*
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Methods: GET
-Server: Astroport.ONE
-Content-Type: application/json; charset=UTF-8
-
-{
+NODE12345="{
     \"created\" : \"${MOATS}\",
     \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
@@ -322,6 +316,21 @@ Content-Type: application/json; charset=UTF-8
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
+"
+
+## PUBLISH ${IPFSNODEID}/12345.json
+[[ !-s ~/.zen/tmp/${IPFSNODEID}/12345.json ]] \
+    && echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
+
+############ PREPARE HTTP 12345 JSON DOCUMENT
+    HTTPSEND="HTTP/1.1 200 OK
+Access-Control-Allow-Origin: \*
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
+Server: Astroport.ONE
+Content-Type: application/json; charset=UTF-8
+
+${NODE12345}
 "
     ######################################################################################
     #  WAIT FOR REQUEST ON PORT12345 (netcat is waiting)
