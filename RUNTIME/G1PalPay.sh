@@ -99,14 +99,13 @@ if [[ ${UPLANETNAME} != "" ]]; then
     pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
     echo "line = $line"
     echo "pub8 = $pub8"
-    ### IS IT A REAL UPLANET WALLET ??
+    ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
+    ## Can evolve to accept cross Uplanet Zen TX.
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
     if [[ ${UPLANETG1PUB:0:8} == $pub8 ]]; then
-        echo "ZEN WALLET is certified by $UPLANETG1PUB source"
+        echo "GOOD ZEN WALLET was initialize by $UPLANETG1PUB"
         echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check
     else
-        ## IF NOT SEND BACK G1
-        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET:INTRUSION ALERT"
         ## SEND ALERT
         echo "<html><head><meta charset='UTF-8'>
         <style>
@@ -120,10 +119,14 @@ if [[ ${UPLANETNAME} != "" ]]; then
 
         echo "<h1>$PLAYER<h1>
         ZEN WALLET INTRUSION ALERT ... <br>
-        <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... DO NOT CHEAT !!
+        <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... PLEASE CREATE NEW ZENCARD !!
         </body></html>" >> ~/.zen/tmp/palpay.bro
-
+        ## ALERT PLAYER
         ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
+        ## SEND BACK G1
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION"
+        ## UNPLUG PLAYER (after 3 alerts)
+        #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
     fi
 
     done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json

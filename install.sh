@@ -104,7 +104,7 @@ echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"
 echo "#############################################"
 ##########################################################
-sudo npm install -g tiddlywiki
+sudo npm install -g tiddlywiki@5.2.3
 [[ $? != 0 ]] \
     && echo "INSTALL tiddlywiki FAILED." \
     && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log

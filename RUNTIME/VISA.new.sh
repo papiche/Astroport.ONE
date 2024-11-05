@@ -38,8 +38,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeicdwpmwntwmo5pghqjgog3r67murpmnhpx7zhde2jbnl6ic2zlgvy" ## 5.3.1 IPFS SAVER
-TWUPLANET="/ipfs/QmNRmVWDDVrwwR1gVnFqZfnYy1oQEfjoA35XXh18ws74zy" ## DEFAULT SAVE AS DOWNLOAD
+TWUPLANET="/ipfs/bafybeicdwpmwntwmo5pghqjgog3r67murpmnhpx7zhde2jbnl6ic2zlgvy" ##
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
