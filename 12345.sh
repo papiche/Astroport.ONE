@@ -145,15 +145,22 @@ while true; do
     if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
+        IP_REGEX='^([0-9]{1,3}\.){3}[0-9]{1,3}+$'
+        if [[ $HOST =~ $IP_REGEX ]]; then
+            echo "L'hôte $HOST est une adresse IP."
+            isLAN=1
+        fi
+
+
         if [ -z "$isLAN" ]; then
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
-            sed "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" | \
+            sed "s~http://${myIP}:${PORT}~${HOST}/${PORT}~g" | \
             sed  "s~https://qo-op.com~${myUPLANET}~g" | \
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         else
         mySalt | \
-            sed "s~http://127.0.0.1:12345~http://${myASTROPORT}:${PORT}~g" | \
+            sed "s~http://127.0.0.1:12345~http://${HOST}:${PORT}~g" | \
             sed  "s~https://qo-op.com~${myUPLANET}~g" | \
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         fi
@@ -170,17 +177,17 @@ while true; do
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
 
-    #####################################################################
-    ### /?poule
-    #####################################################################
-    if [[ ${arr[0]} == "poule" ]]; then
-        echo "UPDATING CODE git pull > ~/.zen/tmp/.lastpull"
-        echo "$HTTPCORS" > ~/.zen/tmp/.lastpull
-        cd ~/.zen/Astroport.ONE
-        git pull >> ~/.zen/tmp/.lastpull
-        rm ~/.zen/game/players/localhost/latest
-        (cat ~/.zen/tmp/.lastpull | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-    fi
+    #~ #####################################################################
+    #~ ### /?poule
+    #~ #####################################################################
+    #~ if [[ ${arr[0]} == "poule" ]]; then
+        #~ echo "UPDATING CODE git pull > ~/.zen/tmp/.lastpull"
+        #~ echo "$HTTPCORS" > ~/.zen/tmp/.lastpull
+        #~ cd ~/.zen/Astroport.ONE
+        #~ git pull >> ~/.zen/tmp/.lastpull
+        #~ rm ~/.zen/game/players/localhost/latest
+        #~ (cat ~/.zen/tmp/.lastpull | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
+    #~ fi
 
 ########## CHECK GET PARAM NAMES
 ###################################################################################################
@@ -232,6 +239,7 @@ while true; do
         ;;
 
         ### ADD API SCRIPT INTO /API
+        ## FORGE YOUR HTTPCORS FOR CLIENT ONLY SECURITTY
         *)
 
             [[ ! -s ${MY_PATH}/API/${CMD^^}.sh ]] \

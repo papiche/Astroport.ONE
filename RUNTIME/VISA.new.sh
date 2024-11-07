@@ -325,7 +325,7 @@ OLD16=$(cat ~/.zen/tmp/${MOATS}/MIZ.json | jq -r ".[].secret")
 [[ ${OLD16} == "" || ${OLD16} == "null" ]] && OLD16="_SECRET_"
 echo "${OLD16}"
 
-# TODO : MAKE NODE FORGET PASS THEN DECODE ${PLAYER}/secret.june FROM TW # PROD #
+# TODO : MAKE NODE FORGET PASS THEN DECODE .current/secret.june FROM CAPTAIN TW # PROD #
 MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
 
 if [[ "${MACHINEPUB}" != "" ]]; then
