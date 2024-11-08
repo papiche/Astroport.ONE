@@ -98,7 +98,7 @@ while true; do
         ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
-    [ -z "$isLAN" ] \
+    [ -z "$isLAN" || $HOST != "" ] \
         && sed -i -e "s~http://127.0.0.1:${PORT}~https://${HOST}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
         && echo "WAN STATION"
 
@@ -143,15 +143,7 @@ while true; do
     if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
-        IPV4_REGEX='^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]+$'    # IPv4 avec port (ex : 127.0.0.1:1234)
-        IPV6_REGEX='^\[([0-9a-fA-F:]+)\]:[0-9]+$'            # IPv6 avec port (ex : [2001:db8::1]:1234)
-        if [[ $HOST =~ $IPV4_REGEX || $HOST =~ $IPV6_REGEX ]]; then
-            isLAN=1
-        else
-            isLAN=""
-        fi
-
-        if [ -z "$isLAN" ]; then
+        if [ -z "$isLAN"  || $HOST != "" ]; then
         echo ${HOST}/${PORT}
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
