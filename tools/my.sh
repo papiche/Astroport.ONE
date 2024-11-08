@@ -549,6 +549,7 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
     || UPLANETNAME="EnfinLibre"
 
 CAPTAING1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
+CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
 [[ ${CAPTAING1PUB} == "" ]] \

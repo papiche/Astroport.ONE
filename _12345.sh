@@ -258,7 +258,7 @@ while true; do
         ## SIZE MODIFIED => PUBLISH MySwarm_${IPFSNODEID}
         [[ ${SWARMSIZE} != $(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null) ]] \
         && echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize \
-        && SWARMH=$(ipfs add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
+        && SWARMH=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
         && echo "=== ~/.zen/tmp/swarm EVOLVED : PUBLISHING NEW STATE ===" \
         && ipfs name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
     #############################################
@@ -284,7 +284,7 @@ while true; do
         ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
         [[ ${BSIZE} != ${NSIZE} ]] \
         && echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats \
-        && MYCACHE=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
+        && MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
         && echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets" \
         && ipfs name publish /ipfs/${MYCACHE}
 

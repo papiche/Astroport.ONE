@@ -145,12 +145,11 @@ while true; do
     if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
-        IP_REGEX='^([0-9]{1,3}\.){3}[0-9]{1,3}+$'
-        if [[ $HOST =~ $IP_REGEX ]]; then
-            echo "L'hôte $HOST est une adresse IP."
-            isLAN=1
+        IPV4_REGEX='^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]+$'    # IPv4 avec port (ex : 127.0.0.1:1234)
+        IPV6_REGEX='^\[([0-9a-fA-F:]+)\]:[0-9]+$'            # IPv6 avec port (ex : [2001:db8::1]:1234)
+        if [[ $HOSTP =~ $IPV4_REGEX || $HOSTP =~ $IPV6_REGEX ]]; then
+            isLAN=1 ## IP vs NAME
         fi
-
 
         if [ -z "$isLAN" ]; then
         mySalt | \
