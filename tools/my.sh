@@ -539,6 +539,8 @@ CESIUMIPFS="/ipfs/QmUJbCUcZKEsyRJie6NKiyKdseYtNNAGp1vEiSZqg5VL7i" # v1.7.13 - ch
 
 HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 
+[[ -s ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
+
 ##########################
 myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
@@ -564,7 +566,5 @@ YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 
 ## HOW MANY G1 TO SEND FOR PRIMAL TX (used in PLAYER.refresh.sh)
+## TODO ZEN TTX LEVEL
 G1LEVEL1="1"
-
-[[ -s ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
-
