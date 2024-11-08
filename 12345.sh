@@ -143,7 +143,7 @@ while true; do
     if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
-        if [ -z "$isLAN"  || $HOST != "" ]; then
+        if [[ -z "$isLAN"  || $HOST != "" ]]; then
         echo ${HOST}/${PORT}
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
