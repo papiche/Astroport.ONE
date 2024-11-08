@@ -65,7 +65,7 @@ while true; do
     PORT=$((PORT+1)) && [ ${PORT} -ge 45791 ] && PORT=45780 ## WAN ASTROPORT 45780 45781 ... 45790
 
     # .env HOST
-    if [[ $(HOST) != "" ]]; then
+    if [[ ${HOST} != "" ]]; then
         [ ${PORT} -ge 45783 ] && PORT=45780 ## ♥Box nginx-proxy SSL 1234 /12345 /45780 /45781 /45782
     fi ## Use "nginx proxy manager" for SSL
 
@@ -98,7 +98,7 @@ while true; do
         ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
-    [ -z "$isLAN" || $HOST != "" ] \
+    [[ -z "$isLAN" || $HOST != "" ]] \
         && sed -i -e "s~http://127.0.0.1:${PORT}~https://${HOST}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
         && echo "WAN STATION"
 
