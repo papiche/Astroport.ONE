@@ -65,13 +65,13 @@ while true; do
     PORT=$((PORT+1)) && [ ${PORT} -ge 45791 ] && PORT=45780 ## WAN ASTROPORT 45780 45781 ... 45790
 
     # .env HOST
-    if [[ ${HOST} != "" ]]; then
+    if [[ ${myASTROPORT} != "" ]]; then
         [ ${PORT} -ge 45783 ] && PORT=45780 ## ♥Box nginx-proxy SSL 1234 /12345 /45780 /45781 /45782
     fi ## Use "nginx proxy manager" for SSL
 
     echo ${PORT} > ~/.zen/tmp/PORT
     ## CHECK PORT IS FREE & KILL OLD ONE
-    echo "$HOST SEARCHING FOR PORT ${PORT}"
+    echo "$myASTROPORT SEARCHING FOR PORT ${PORT}"
     pgrep -au $USER -f "nc -l -p ${PORT} -q 1"
     pidportinuse=$(pgrep -au $USER -f "nc -l -p ${PORT} -q 1" | head -n 1 | xargs | cut -d " " -f 1)
     [[ $pidportinuse ]] && kill -9 $pidportinuse && echo "$(date) KILLING LOST $pidportinuse"
@@ -98,8 +98,8 @@ while true; do
         ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
-    [[ -z "$isLAN" || $HOST != "" ]] \
-        && sed -i -e "s~http://127.0.0.1:${PORT}~https://${HOST}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
+    [[ -z "$isLAN" || $myASTROPORT != "" ]] \
+        && sed -i -e "s~http://127.0.0.1:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
         && echo "WAN STATION"
 
 #### >>> TODO ADD zDomain to manage SSL FRONT PORTAL
@@ -134,7 +134,7 @@ while true; do
 
     echo "******* ${MOATS}  ********************************** $(date)"
     echo "ASTROPORT 1234 UP & RUNNING // API : $myASTROPORT //  IPFS : $myIPFS"
-    echo "NEXT COMMAND DELIVERY PAGE http://$myHOST:${PORT}"
+    echo "NEXT COMMAND DELIVERY PORT ${PORT}"
 
     ############################################################################
     start=`date +%s`
@@ -143,11 +143,11 @@ while true; do
     if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
-        if [[ -z "$isLAN"  || $HOST != "" ]]; then
-        echo ${HOST}/${PORT}
+        if [[ -z "$isLAN"  || $myASTROPORT != "" ]]; then
+        echo ${myASTROPORT}/${PORT}
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \
-            sed "s~http://${myIP}:${PORT}~https://${HOST}/${PORT}~g" | \
+            sed "s~http://${myIP}:${PORT}~${myASTROPORT}/${PORT}~g" | \
             sed  "s~https://qo-op.com~${myUPLANET}~g" | \
             ( nc -l -p ${PORT} -q 1 > /dev/null 2>&1 && echo " (‿/‿) $PORT CONSUMED in "`expr $(date +%s) - $start`" seconds." ) &
         else
