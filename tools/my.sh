@@ -567,3 +567,4 @@ DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 G1LEVEL1="1"
 
 [[ -s ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
+
