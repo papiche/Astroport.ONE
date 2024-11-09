@@ -493,12 +493,30 @@ for PLAYER in ${PLAYERONE[@]}; do
     #### UPlanetZINE/day${days}/index.${lang}.html
     TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
     [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
-    [[ -s ${TODAYZINE} && ${days} -gt 0 ]] \
-        && echo "SENDING TODAYZINE DAY ${days} + mailjet TW import " \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ${TODAYZINE} "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" \
-        || echo "NO ZINE FOR DAY ${days}"
+    if [[ -s ${TODAYZINE} && ${days} -gt 0 ]]; then
+        echo "SENDING TODAYZINE DAY ${days} + mailjet TW import "
+        cat ${TODAYZINE} \
+            | sed -e "s~_MOATS_~${MOATS}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
+                -e "s~_G1PUB_~${G1PUB}~g" \
+                -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                -e "s~_ASTRODID_~${ipns2did:1}~g" \
+                -e "s~0448~${PASS}~g" \
+                -e "s~_SALT_~${SALT}~g" \
+                -e "s~_PEPPER_~${PEPPER}~g" \
+                -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+                -e "s~_EARTHCID_~${EARTHCID}~g" \
+                -e "s~_SECTOR_~${SECTOR}~g" \
+                -e "s~_SLAT_~${SLAT}~g" \
+                -e "s~_SLON_~${SLON}~g" \
+                > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
+                                        "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html"
 
+    else
+        echo "NO ZINE FOR DAY ${days}"
+    fi
     ####################
     ## TW NEWINDEX .... #####
     ##############################################################
