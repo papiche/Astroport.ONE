@@ -659,7 +659,7 @@ echo "IPNS2G1=${IPNS2G1} ZCHK=${ZCHK}"
         && exit 0
 
 ## TEST G1 TYPE  ( try g1_to_ipfs )
-ASTROTOIPNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE} 2>/dev/null)
+ASTROTOIPNS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${QRCODE})
 echo "ASTROTOIPNS=${ASTROTOIPNS}"
         [[ ! ${ASTROTOIPNS} ]] \
         && echo "${PORT} INVALID QRCODE : ${QRCODE}" \
