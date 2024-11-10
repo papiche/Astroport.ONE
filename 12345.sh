@@ -98,7 +98,7 @@ while true; do
         ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
 
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
-    [[ -z "$isLAN" && $myASTROPORT != "" ]] \
+    [[ -z "$isLAN" || -s $MY_PATH/.env ]] \
         && sed -i -e "s~http://127.0.0.1:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
         && echo "WAN STATION"
 
@@ -143,7 +143,7 @@ while true; do
     if [[ $URL == "/" || $URL == "" ]]; then
         echo "/ CONTACT :  $HOSTP"
 
-        if [[ -z "$isLAN" && $myASTROPORT != "" ]]; then
+        if [[ -z "$isLAN" || -s $MY_PATH/.env ]]; then
         echo ${myASTROPORT}/${PORT}
         mySalt | \
             sed "s~http://127.0.0.1:12345~http://${myIP}:${PORT}~g" | \

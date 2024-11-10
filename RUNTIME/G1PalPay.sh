@@ -92,7 +92,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
             && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
             && continue
 
-    echo "# RX from $TXIPUBKEY.... checking primal transaction..."
+    echo "# RX from $TXIPUBKEY.... checking same primal transaction..."
     # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
     # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
     line=$(silkaj money history $TXIPUBKEY | tail -n 3 | head -n 1)
@@ -102,33 +102,36 @@ if [[ ${UPLANETNAME} != "" ]]; then
     ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
     ## Can evolve to accept cross Uplanet Zen TX.
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
-    if [[ ${UPLANETG1PUB:0:8} == $pub8 ]]; then
-        echo "GOOD ZEN WALLET was initialize by $UPLANETG1PUB"
-        echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check
+    if [[ $UPLANETG1PUB != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
+        if [[ ${UPLANETG1PUB:0:8} == $pub8 ]]; then
+            echo "GOOD ZEN WALLET primal TX by $UPLANETG1PUB"
+            echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check
+        else
+            ## SEND ALERT
+            echo "<html><head><meta charset='UTF-8'>
+            <style>
+                body {
+                    font-family: 'Courier New', monospace;
+                }
+                pre {
+                    white-space: pre-wrap;
+                }
+            </style></head><body>" > ~/.zen/tmp/palpay.bro
+
+            echo "<h1>$PLAYER<h1>
+            ZEN WALLET INTRUSION ALERT ... <br>
+            <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... NOT A ZEN WALLET FROM $UPLANETG1PUB !!
+            </body></html>" >> ~/.zen/tmp/palpay.bro
+            ## ALERT PLAYER
+            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
+            ## SEND BACK G1
+            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION"
+            ## UNPLUG PLAYER (after 3 alerts)
+            #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
+        fi
     else
-        ## SEND ALERT
-        echo "<html><head><meta charset='UTF-8'>
-        <style>
-            body {
-                font-family: 'Courier New', monospace;
-            }
-            pre {
-                white-space: pre-wrap;
-            }
-        </style></head><body>" > ~/.zen/tmp/palpay.bro
-
-        echo "<h1>$PLAYER<h1>
-        ZEN WALLET INTRUSION ALERT ... <br>
-        <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... PLEASE CREATE NEW ZENCARD !!
-        </body></html>" >> ~/.zen/tmp/palpay.bro
-        ## ALERT PLAYER
-        ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
-        ## SEND BACK G1
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION"
-        ## UNPLUG PLAYER (after 3 alerts)
-        #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
+        echo "UPlanet ORIGIN"
     fi
-
     done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 fi
 
