@@ -134,7 +134,7 @@ else
     else
         ## Changing GVA SERVER in tools/jaklis/.env
         GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
-        [[ ! -z $GVA ]]
+        [[ ! -z $GVA ]] \
             && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
             && echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env \
             && echo "GVA NODE=$GVA"
