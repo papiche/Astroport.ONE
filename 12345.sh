@@ -100,12 +100,12 @@ while true; do
     ## WAN REDIRECT TO HTTPS:// + /${PORT}
     [[ -z "$isLAN" || -s $MY_PATH/.env ]] \
         && sed -i -e "s~http://127.0.0.1:${PORT}~${myASTROPORT}/${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
-        && echo "WAN STATION"
+        && echo "WAN STATION ${myASTROPORT}/${PORT}"
 
 #### >>> TODO ADD zDomain to manage SSL FRONT PORTAL
     [ -n "$(zIp)" ]\
         && sed -i -e "s~http://127.0.0.1:${PORT}~http://$(zIp):${PORT}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http \
-        && echo "COEUR BOX LAN 2 WAN STATION"
+        && echo "COEUR BOX http://$(zIp):${PORT}"
 
     ## UPLANET HOME LINK REPLACEMENT
     sed -i -e "s~https://qo-op.com~${myUPLANET}~g" ~/.zen/tmp/${MOATS}/${PORT}.myHOST.http
