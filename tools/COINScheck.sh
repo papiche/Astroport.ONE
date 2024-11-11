@@ -64,13 +64,12 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
     if [[ "$CURCOINS" == "" ]]; then
         echo "JAKLIS ERROR"
-        GVASERVER=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
         ## Changing GVA SERVER in tools/jaklis/.env
-        [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
-            && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
-            && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
-            && echo "OK. NEW GVA NODE : ${GVASERVER}" \
-            || echo "ERROR. BAD GVA NODE : ${GVASERVER}"
+        GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+        [[ ! -z $GVA ]]
+            && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
+            && echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env \
+            && echo "GVA NODE=$GVA"
     fi
     [[ "$CURCOINS" == "null" ]] && echo "EMPTY WALLET"
 
