@@ -475,7 +475,6 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 myDOMAIN="copylaradio.com"
 
-myASTROPORTW="http://$(hostname).local:1234" #astroport.localhost
 myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
 myAPI="http://127.0.0.1:5001"
 myDATA="https://data.gchange.fr"
@@ -500,7 +499,7 @@ myASTROTUBE="https://$(myAstroTube)"
  && myIPFSW="https://ipfs.${myDOMAIN}" \
  || true
 
-## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45790 )
+## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45782 )
 [ -n "$(zIp)" ] \
  && myASTROPORT="http://$(zIp):1234" \
  && myAPI="http://$(zIp):5001" \
@@ -540,7 +539,9 @@ CESIUMIPFS="/ipfs/QmUJbCUcZKEsyRJie6NKiyKdseYtNNAGp1vEiSZqg5VL7i" # v1.7.13 - ch
 HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 
 [[ -s ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
-
+if [ -s "$HOME/.astro/bin/activate" ]; then
+    source $HOME/.astro/bin/activate
+fi
 ##########################
 myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
