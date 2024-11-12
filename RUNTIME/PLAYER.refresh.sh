@@ -221,13 +221,14 @@ for PLAYER in ${PLAYERONE[@]}; do
 ################################################## ANOTHER ASTROPORT !!
     IPNSTAIL=$(echo ${ASTROPORT} | rev | cut -f 1 -d '/' | rev) # Remove "/ipns/" part
     ########### ASTROPORT is not IPFSNODEID => EJECT TW
-    if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
-        echo "> PLAYER MOVED TO ${IPNSTAIL} : UNPLUG "
-        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "TW moved to ${ASTROPORT}"
-        echo ">>>> CIAO ${PLAYER}"
-        continue
+    if [[ ${IPNSTAIL} != "" ]]; then
+        if [[ ${IPNSTAIL} != ${IPFSNODEID} || ${IPNSTAIL} == "_ASTROPORT_" ]]; then
+            echo "> PLAYER MOVED TO ${IPNSTAIL} : UNPLUG "
+            ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ONE" "TW moved to ${ASTROPORT}"
+            echo ">>>> CIAO ${PLAYER}"
+            continue
+        fi
     fi
-
     ################ VERIFICATIONS DONE ######################
     echo "ASTROPORT ZenStation : ${ASTROPORT}"
     echo "CURCHAIN=${CURCHAIN}"
