@@ -51,19 +51,19 @@ mkdir -p ~/.zen/tmp/${MOATS}
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
-    ## UNPLUG => SEND 10 ZEN to SECTORG1PUB
+    ## UNPLUG => SEND 10 ZEN
     ## ALL => SEND ALL to $UPLANETG1PUB
 
     ALL="ALL"
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
     [[ $ONE == "ONE" ]] && ALL=1
-    [[ $ALL == "ALL" ]] && SECTORG1PUB=${UPLANETG1PUB} && echo "DEST = UPLANETG1PUB: ${UPLANETG1PUB}"
+    [[ $ALL == "ALL" ]] && echo "DEST = UPLANETG1PUB: ${UPLANETG1PUB}"
 
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     [[ ! -z ${SECTORG1PUB} ]] \
         && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${SECTORG1PUB}" "UPLANET:UNPLUG:${YOUSER}:${ALL}"
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETG1PUB}" "UPLANET:UNPLUG:${YOUSER}:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
