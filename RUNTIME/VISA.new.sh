@@ -60,11 +60,18 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         echo "TW FOUND... BACKUP TIDDLERS"
         # BACKUP tiddlers
         tiddlywiki --load ~/.zen/tmp/${MOATS}/TW/index.html --output ~/.zen/tmp/${MOATS} \
-        --render '.' 'backup.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '[!is[system]]'
+        --render '.' 'backup.json' 'text/plain' '$:/core/templates/exporters/JsonFile' \
+        'exportFilter' '[!is[system]]'
+        # Remove Astroport specific Tiddlers
+        jq '[.[] | select(.title | IN("INTRODUCTION", "ZenCard", "Astroport", "MadeInZion", "AstroID", "GPS") | not)]' ~/.zen/tmp/${MOATS}/backup.json > ~/.zen/tmp/${MOATS}/backup_filtered.json
 
-        [[ -s ~/.zen/tmp/${MOATS}/backup.json ]] \
-            && echo ">> Tiddlers Backup : ~/.zen/tmp/${MOATS}/backup.json" \
-            || echo "ERROR EXTRACTING TIDDLERS"
+        if [[ -s ~/.zen/tmp/${MOATS}/backup_filtered.json ]] && jq . ~/.zen/tmp/${MOATS}/backup_filtered.json > /dev/null 2>&1; then
+            echo ">> Tiddlers Backup : ~/.zen/tmp/${MOATS}/backup.json"
+            cp -f ~/.zen/tmp/${MOATS}/backup_filtered.json ~/.zen/tmp/${MOATS}/backup.json
+        else
+            echo "ERROR EXTRACTING TIDDLERS"
+            rm ~/.zen/tmp/${MOATS}/backup.json
+        fi
 
         rm ~/.zen/tmp/${MOATS}/TW/index.html
     fi

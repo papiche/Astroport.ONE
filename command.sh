@@ -17,6 +17,7 @@ CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ${CURRENT} == "" ]] \
     && lastplayer=$(ls -t ~/.zen/game/players 2>/dev/null | grep "@" | head -n 1) \
     && [[ ${lastplayer} ]] \
+    && rm ~/.zen/game/players/.current \
     && ln -s ~/.zen/game/players/${lastplayer} ~/.zen/game/players/.current && CURRENT=${lastplayer}
 
 UPLANETG1PUB=$(${MY_PATH}/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")

@@ -510,6 +510,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_SECTOR_~${SECTOR}~g" \
                 -e "s~_SLAT_~${SLAT}~g" \
                 -e "s~_SLON_~${SLON}~g" \
+                -e "s~qo-op.com~${myHOST}~g" \
                 > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
         ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
