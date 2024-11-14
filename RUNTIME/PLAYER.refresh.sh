@@ -229,10 +229,16 @@ for PLAYER in ${PLAYERONE[@]}; do
             continue
         fi
     fi
+
     ################ VERIFICATIONS DONE ######################
     echo "ASTROPORT ZenStation : ${ASTROPORT}"
     echo "CURCHAIN=${CURCHAIN}"
     echo "================================== TW $days days old"
+
+    ######################################## BAD ACCOUNT CLEANING
+    ## UNPLUG more than 21 days & less than 2 G1 account
+    [[ $(echo "$days >= 21" | bc -l) -eq 1 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]] \
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT"
 
 ############################################## +2 DAYS REMOVE AstroID !!
     ## REMOVE AstroID
@@ -667,14 +673,15 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
     #####################################################################
-    ## DAY=1 : SEND ${G1LEVEL1} G1 to PLAYER
-    [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
-        && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
-        && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
-        && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
-        && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
-
+    ## DAY=1 : CONTROL ${G1LEVEL1} G1 SENT to PLAYER
+    if [[ $(echo "$COINS < ${G1LEVEL1}" | bc -l) -eq 1 ]]; then
+        [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
+            && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
+            && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+            && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
+            && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+            && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
+    fi
     #####################################################################
     ############ CURRENT #################### _ForkUPlanetZERO ?
     if [[ $(echo "$COINS > 10" | bc -l) -eq 1 ]]; then

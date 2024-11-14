@@ -586,50 +586,12 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} MULTIPASS"
 
-#####################################################################"_EARTHCID_
-
-#~ echo "<html><head>
-#~ <style>
-    #~ body {
-        #~ font-family: 'Courier New', monospace;
-    #~ }
-    #~ pre {
-        #~ white-space: pre-wrap;
-    #~ }
-#~ </style></head>
-#~ <body>
-#~ <center>
-#~ <h3><a href='${myUPLANET}'>UPlanet</a></h3>
-#~ <h1>\"<a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}'>TW5</a>\"</h1>
-#~ did:/ipns/${ASTRONAUTENS}
-#~ <hr>
-#~ <hr><a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#AstroID'>AstroID<br>
-#~ <img width=300px src='$(myIpfsGw)${ASTROQR}'\></a><br>
-#~ <h2>SECRET1=\"$SALT\"<br>SECRET2=\"$PEPPER\"</h2>
-#~ <h2> CODE : $PASS </h2>
-#~ <hr>
-#~ <a target='TW' href='$(myIpfsGw)/ipns/${ASTRONAUTENS}#ZenCard' title='${G1PUB}'>ZenCard</a><br>
-#~ <img src='$(myIpfsGw)${IASTRO}'\><br><hr>
-#~ ${G1PUB}" > ~/.zen/tmp/${MOATS}/AstroID.html
-
-#~ echo "
-#~ <h3> /-> ASTROPORT : <a href='$(myIpfsGw)/ipns/${IPFSNODEID}'>/ipns/${IPFSNODEID}</a></h3>
-#~ <h3> /--> SECTOR : <a href='${EARTHCID}/map_render.html?southWestLat=${LAT::-1}&southWestLon=${LON::-1}&deg=0.1'>${SECTOR}</a></h3>
-#~ " >> ~/.zen/tmp/${MOATS}/AstroID.html
-
-#~ asciiart="${MY_PATH}/../images/logoastro.art"
-#~ while IFS= read -r line
-#~ do
-    #~ echo "$line" | sed "s~ ~\&nbsp;~g" >> ~/.zen/tmp/${MOATS}/AstroID.html
-    #~ echo "<br>" >> ~/.zen/tmp/${MOATS}/AstroID.html
-#~ done <"$asciiart"
-
-#~ echo "<br>${MOATS}<br>- print a copy -</center></body></html>" >> ~/.zen/tmp/${MOATS}/AstroID.html
-
-#~ $MY_PATH/../tools/mailjet.sh "${PLAYER}"  ~/.zen/tmp/${MOATS}/AstroID.html "TW5 & AstroID"
-
-#~ mpack -a -s "✅ UPlanet : AstroID ($PASS)" -d ~/.zen/tmp/${MOATS}/intro.txt \
-    #~ $HOME/.zen/game/players/${PLAYER}/AstroID.png ${PLAYER}
+### SEND WELCOMING G1
+YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+&& ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
+&& echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+&& rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
