@@ -85,7 +85,7 @@ cp ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MO
 convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 260 ~/.zen/tmp/${MOATS}/astroport.jpg
 
-composite -compose Over -gravity NorthEast -geometry +42+72 ~/.zen/tmp/${MOATS}/astroport.jpg ${MY_PATH}/../images/Brother_600x300.png ~/.zen/tmp/${MOATS}/one.png
+composite -compose Over -gravity NorthEast -geometry +42+72 ~/.zen/tmp/${MOATS}/astroport.jpg ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/one.png
 composite -compose Over -gravity NorthWest -geometry +0+12 ~/.zen/tmp/${MOATS}/QR.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/astroport.png
 # composite -compose Over -gravity NorthWest -geometry +280+280 ~/.zen/game/players/${PLAYER}/QRsec.png ~/.zen/tmp/${MOATS}/one.png ~/.zen/tmp/${MOATS}/image.png
 
@@ -100,18 +100,59 @@ convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,10 \"$PEPPER
 ## PRINT VISA
 [[ $LP ]] \
 && brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/ZenCard.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
-&& sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
+&& brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
 ## PRINT PGP AstroID
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.ZENCARD.png  -resize 400 ~/.zen/tmp/${MOATS}/ASTROPORT.png
-composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
+convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.ZENCARD.png  -resize 580 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x600.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 [[ $LP ]] \
-&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin 2>/dev/null \
-&& sudo brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
+&& brother_ql_create --model QL-700 --label-size 62 ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg > ~/.zen/tmp/${MOATS}/toprint.bin \
+&& brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
+
+if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] ; then
+    ipns2did=""
+
+    # Loop through the ASTRONAUTENS two characters at a time
+    for ((i = 0; i < ${#ASTRONAUTENS}; i += 2)); do
+        ipns2did+=" ${ASTRONAUTENS:i:2}"
+        # Check if 10 doublets have been added
+        if (( (i / 2 + 1) % 14 == 0 )); then
+            ipns2did+="<br>"  # Add a newline character
+        fi
+    done
+
+    IASTRO="/ipfs/$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/AstroID.png | tail -n 1)"
+    ASTROQR="/ipfs/$(ipfs add -q $HOME/.zen/game/players/${PLAYER}/AstroID.png | tail -n 1)"
+
+    # Print the result with leading space removed
+    echo -e "${ipns2did:1}"
+    ####################################################### EMAIL
+    ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.html"
+    cat ${ZINE} \
+        | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
+                -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
+                -e "s~_MOATS_~${MOATS}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
+                -e "s~_G1PUB_~${G1PUB}~g" \
+                -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                -e "s~_ASTRODID_~${ipns2did:1}~g" \
+                -e "s~0448~${PASS}~g" \
+                -e "s~_SALT_~${SALT}~g" \
+                -e "s~_PEPPER_~${PEPPER}~g" \
+                -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+                -e "s~_EARTHCID_~${EARTHCID}~g" \
+                -e "s~_SECTOR_~___~g" \
+                -e "s~_SLAT_~___~g" \
+                -e "s~_SLON_~___~g" \
+            > ~/.zen/tmp/${MOATS}/UPlanetZine.html
+
+
+    $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} MULTIPASS"
+fi
 
 echo "DEBUG ~/.zen/tmp/${MOATS}"
 ls ~/.zen/tmp/${MOATS}

@@ -148,7 +148,7 @@ echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choisissez : __ "
-choices=("MAKE A WHISH" "PRINT WHISH" "PRINT VISA" "UNPLUG PLAYER" "QUIT")
+choices=("PRINT VISA" "UNPLUG PLAYER" "QUIT")
 select fav in  "${choices[@]}"; do
     case $fav in
     "PRINT VISA")

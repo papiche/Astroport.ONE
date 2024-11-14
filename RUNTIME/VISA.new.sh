@@ -63,7 +63,8 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
         --render '.' 'backup.json' 'text/plain' '$:/core/templates/exporters/JsonFile' \
         'exportFilter' '[!is[system]]'
         # Remove Astroport specific Tiddlers
-        jq '[.[] | select(.title | IN("INTRODUCTION", "ZenCard", "Astroport", "MadeInZion", "AstroID", "GPS") | not)]' ~/.zen/tmp/${MOATS}/backup.json > ~/.zen/tmp/${MOATS}/backup_filtered.json
+        jq '[.[] | select(.title | IN("INTRODUCTION", "ZenCard", "Astroport", "MadeInZion", "AstroID", "GPS") | not)]' \
+                    ~/.zen/tmp/${MOATS}/backup.json > ~/.zen/tmp/${MOATS}/backup_filtered.json
 
         if [[ -s ~/.zen/tmp/${MOATS}/backup_filtered.json ]] && jq . ~/.zen/tmp/${MOATS}/backup_filtered.json > /dev/null 2>&1; then
             echo ">> Tiddlers Backup : ~/.zen/tmp/${MOATS}/backup.json"
