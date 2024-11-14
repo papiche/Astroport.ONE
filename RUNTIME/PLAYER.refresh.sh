@@ -509,6 +509,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
                 -e "s~_ASTRODID_~${ipns2did:1}~g" \
                 -e "s~0448~${PASS}~g" \
+                -e "s~_UPLANET8_~${UPLANETG1PUB:0:8}~g" \
                 -e "s~_SALT_~${SALT}~g" \
                 -e "s~_PEPPER_~${PEPPER}~g" \
                 -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
