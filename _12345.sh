@@ -314,6 +314,9 @@ NODE12345="{
     \"astroport\" : \"http://${myIP}:1234\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
+    \"myIPFS\" : \"${myIPFS}\",
+    \"myASTROPORT\" : \"${myASTROPORT}\",
+    \"myAPI\" : \"${myAPI}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
