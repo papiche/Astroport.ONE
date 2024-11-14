@@ -317,6 +317,7 @@ NODE12345="{
     \"myIPFS\" : \"${myIPFS}\",
     \"myASTROPORT\" : \"${myASTROPORT}\",
     \"myAPI\" : \"${myAPI}\",
+    \"version\" : \"1.9\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
