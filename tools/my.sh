@@ -556,7 +556,7 @@ CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER O
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
 [[ ${CAPTAING1PUB} == "" ]] \
-    && CAPTAING1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
+    && CAPTAING1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH" # fred@g1sms.fr G1FabLab Wallet
 
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"

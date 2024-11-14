@@ -533,6 +533,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ##################################################
     ######## UPDATING ${PLAYER}/ipfs/moa/.chain
+    echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
     cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
        ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
 
@@ -548,8 +549,6 @@ for PLAYER in ${PLAYERONE[@]}; do
 
         ## LOCAL PLAYER CACHING
         echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
-        echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
-
         echo "================================================"
         echo " NEW TW ${PLAYER} : =  ${myIPFS}/ipfs/${TW}"
         echo "  $myIPFSGW/ipns/${ASTRONAUTENS}"
@@ -672,7 +671,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
         && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
         && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:WELCOME:${YOUSER}" \
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
         && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
         && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 

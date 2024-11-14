@@ -70,7 +70,7 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
 if [[ ${UPLANETNAME} != "" ]]; then
-    echo "UPLANET ORIGIN CONTROL"
+    echo "CONTROL UPLANET ORIGIN"
 
     while read LINE; do
         ## MEMORIZE LAST TX DATE
@@ -280,8 +280,8 @@ while read LINE; do
         TW : $ASTROTW
         G1 : ${ASTROG1}"
 
-        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:PALPAY"
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:PALPAY"
+        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:${UPLANETG1PUB:0:8}:PALPAY"
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:${UPLANETG1PUB:0:8}:PALPAY"
         STAMP=$?
         ## DONE STAMP IT
         [[ $STAMP == 0 ]] \

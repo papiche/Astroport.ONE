@@ -176,6 +176,7 @@ select fav in  "${choices[@]}"; do
         ${MY_PATH}/RUNTIME/G1Voeu.sh "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
         DIFF=$(diff ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html)
         if [[ $DIFF ]]; then
+            echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
             cp   ~/.zen/game/players/$PLAYER/ipfs/moa/.chain \
                     ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
 
@@ -183,7 +184,6 @@ select fav in  "${choices[@]}"; do
             ipfs name publish --key=$PLAYER /ipfs/$TW
 
             echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
-            echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
         fi
     echo "================================================"
     echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"

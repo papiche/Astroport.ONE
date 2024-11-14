@@ -871,33 +871,32 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
 
+            NEWTW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
             ################################################
             ## UPDATE TW CHAIN WITH PREVIOUSLY RECORDED CHAIN
-            tiddlywiki --load ~/.zen/tmp/newindex.html \
+            tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
                 --output ~/.zen/tmp/${MOATS} \
                 --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
             ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
             CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
             [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
             echo "CURCHAIN=$CURCHAIN"
-            [[ -s ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ]] \
-            && ZCHAIN=$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.chain) \
-            && echo "# CHAIN : $CURCHAIN -> $ZCHAIN" \
-            && sed -i "s~$CURCHAIN~$ZCHAIN~g" ~/.zen/tmp/newindex.html
+
+            echo "$MOATS" > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+            cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+                ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
+            echo "$NEWTW" > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+
+            echo "# CHAIN : $CURCHAIN -> $NEWTW"
+            sed -i "s~$CURCHAIN~$NEWTW~g" ~/.zen/tmp/newindex.html
             ################################################
+            cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-        mv ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
+        mv ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json \
+            ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
+
         espeak "I P N S Publishing. Please wait..."
-        cp ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-        [[ $DIFF ]] && cp   ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-                                        ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
-
-        TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-        ipfs name publish --allow-offline -t 24h --key=${PLAYER} /ipfs/$TW
-
-        [[ $DIFF ]] && echo $TW > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
-        echo ${MOATS} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
-
+        ipfs name publish --key=${PLAYER} /ipfs/$NEWTW
 
         echo "================================================"
         echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"

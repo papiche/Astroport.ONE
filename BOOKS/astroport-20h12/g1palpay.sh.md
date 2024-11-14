@@ -33,7 +33,7 @@ Le script `G1PalPay.sh` est un outil puissant pour surveiller les transactions s
    *   Il utilise `PAY4SURE.sh` pour effectuer les paiements :
 
        ```bash
-       ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:PALPAY"
+       ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:${UPLANETG1PUB:0:8}:PALPAY"
        ```
 7. **Gestion des Tiddlers** :
    * Le script extrait les tiddlers modifiés au cours des dernières 24 heures et vérifie s'ils contiennent des adresses email dans les tags.

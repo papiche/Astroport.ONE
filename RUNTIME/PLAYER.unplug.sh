@@ -63,7 +63,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     [[ ! -z ${SECTORG1PUB} ]] \
         && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETG1PUB}" "UPLANET:UNPLUG:${YOUSER}:${ALL}"
+        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:UNPLUG:${YOUSER}:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
     G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
