@@ -3,3 +3,4 @@
 __pycache__
 tiddlywiki.html
 tools/jaklis/.env
+.aider*
