@@ -55,7 +55,7 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
 
-## PRODUCE SWARM SEED - will be used to create swarm.key
+## PRODUCE SWARM SEED PART - will be used to create swarm.key
 if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub ]]; then
     [[ ! -s ~/.zen/tmp/${IPFSNODEID}/.swarm_part.12.txt ]] \
         && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
