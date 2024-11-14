@@ -65,7 +65,7 @@ fi
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
-echo "Lanching  /x/ssh-${IPFSNODEID}"
+echo "Launching  /x/ssh-${IPFSNODEID}"
 
 [[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
     && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
@@ -92,9 +92,9 @@ if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
         && ssh '${USER}'@127.0.0.1 -p '${PORT}' \
         || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
-' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
-
-cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh.txt
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh ## TODO REMOVE (protocol evolution)
+cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh.txt
 
 echo "
 
