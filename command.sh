@@ -30,6 +30,7 @@ echo '
 /_/   \_\____/ |_| |_| \_\\___/|_|    \___/|_| \_\|_|    \___/|_| \_|_____|
 
 Astroport is a Web3 engine running UPlanet hosting TW5s on IPFS, and more...
+'${IPFSNODEID}'
 
 @@@@@@@@@@@@@@@@@@
 CAPTAIN = '${CURRENT}'

@@ -46,10 +46,18 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_
 ############################################
 ## PUBLISH SSH PUBKEY OVER IPFS
 ## KITTY ssh-keygen style
-[[ -s ~/.ssh/id_ed25519.pub ]] \
-    && [[ "$($MY_PATH/../tools/keygen -i ~/.ssh/id_ed25519 -t ipfs)" == "${IPFSNODEID}" ]] \
-    && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub \
-    || rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
+if [[ -s ~/.ssh/id_ed25519 ]]; then
+    SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
+    SECRET1=$(echo "$SSHASH" | cut -c 1-64) && echo "SECRET1=$SECRET1"
+    SECRET2=$(echo "$SSHASH" | cut -c 65-128) && echo "SECRET2=$SECRET2"
+    SSHYNODEID=$($MY_PATH/../tools/keygen -t ipfs "$SECRET1" "$SECRET2") && echo "SSHYNODEID=$SSHYNODEID"
+    if [[ "${SSHYNODEID}" == "${IPFSNODEID}" ]]; then
+        cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
+    else
+        rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
+        echo "PLEASE keygen your IPFSNODEID=${SSHYNODEID}"
+    fi
+fi
 
 ## DRAGONz PGP/SSH style (https://pad.p2p.legal/keygen)
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
