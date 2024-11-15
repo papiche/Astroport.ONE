@@ -546,7 +546,7 @@ echo ""
 ####tools##########################################getUMAP_ENV.sh
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 
-
+UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 ipns2did=""
 
 # Loop through the ASTRONAUTENS two characters at a time
@@ -583,7 +583,6 @@ cat ${ZINE} \
             -e "s~_SLAT_~${SLAT}~g" \
             -e "s~_SLON_~${SLON}~g" \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
-
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} MULTIPASS"
 
