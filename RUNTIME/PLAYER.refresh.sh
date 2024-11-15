@@ -675,19 +675,21 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #####################################################################
     ## DAY=1 : CONTROL ${G1LEVEL1} G1 SENT to PLAYER
-    if [[ $(echo "$COINS < ${G1LEVEL1}" | bc -l) -eq 1 ]]; then
-        [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
-            && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
-            && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-            && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
-            && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
-            && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
+    if [[ -s ~/.ipfs/swarm.key ]]; then
+        if [[ $(echo "$COINS < ${G1LEVEL1}" | bc -l) -eq 1 ]]; then
+            [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
+                && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
+                && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+                && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
+                && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+                && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
+        fi
     fi
     #####################################################################
-    ############ CURRENT #################### _ForkUPlanetZERO ?
-    if [[ $(echo "$COINS > 10" | bc -l) -eq 1 ]]; then
-        [[ ${CURRENT} == ${PLAYER} ]] && ${MY_PATH}/../ASTROBOT/_ForkUPlanetZERO.sh
-    fi
+    ############ CURRENT #################### _ForkUPlanetZERO - TO FINISH
+    #~ if [[ $(echo "$COINS > 10" | bc -l) -eq 1 ]]; then
+        #~ [[ ${CURRENT} == ${PLAYER} ]] && ${MY_PATH}/../ASTROBOT/_ForkUPlanetZERO.sh
+    #~ fi
     #################################### NEED > 100 G1 ##################
         #####################################################################
             #####################################################################

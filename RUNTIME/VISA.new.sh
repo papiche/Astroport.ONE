@@ -587,13 +587,14 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} MULTIPASS"
 
-### SEND WELCOMING G1
-YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-&& ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
-&& echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
-&& rm ~/.zen/tmp/${MOATS}/${MOATS}.key
-
+### SEND WELCOMING G1 (only for secret UPlanet)
+if [[ -s ~/.ipfs/swarm.key ]]; then
+    YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+    && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
+    && echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+    && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
+fi
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
 
