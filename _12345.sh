@@ -323,8 +323,7 @@ NODE12345="{
 "
 
 ## PUBLISH ${IPFSNODEID}/12345.json
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/12345.json ]] \
-    && echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
+echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
 
 ############ PREPARE HTTP 12345 JSON DOCUMENT
     HTTPSEND="HTTP/1.1 200 OK
