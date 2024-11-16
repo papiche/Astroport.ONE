@@ -30,18 +30,20 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     # SWARM CACHE index.html contains
     # <meta http-equiv="refresh" content="0; url='/ipfs/$EXTERNAL'" />
     if [[ ${source} != "LOCAL" ]]; then
-        EXTERNAL=$(grep -o "url='/[^']*'" ${INDEX} | sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}')
-        [[ ! -s $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html ]] \
+
+        cat ${INDEX}
+        EXTERNAL=$(grep -o "url='/[^']*'" "${INDEX}" | sed "s|url='||;s|'||" | awk -F"/" '{print $3}')
+        [[ ${EXTERNAL} != "" && ! -s $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html ]] \
             && mkdir -p $HOME/.zen/tmp/flashmem/tw/${EXTERNAL} \
-            && ipfs --timeout=42s cat --progress=false /ipfs/${EXTERNAL} > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html \
-            || INDEX=""
+            && ipfs --timeout=30s cat --progress=false /ipfs/${EXTERNAL} > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html &
+
         INDEX="$HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html"
+
     fi
 
-    #~ if [[ ! ${EXTERNAL} ]]; then
-    ## EXTRACT DATA FROM TW
     rm -f ~/.zen/tmp/${MOATS}/Astroport.json
 
+    ## EXTRACT DATA FROM TW
     tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
 
     ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astroport)
@@ -50,16 +52,14 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
-    [[ ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ]] && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
-    [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
-    #~ else
-        #~ ASTRONAUTENS="/ipfs/${EXTERNAL}"
-        #~ ASTROG1=$(${MY_PATH}/../tools/ipfs_to_g1.py ${EXTERNAL})
-        #~ ASTROPORT="/ipns/$(echo $INDEX | rev | cut -d / -f 4 | rev)"
-    #~ fi
 
-    rm -Rf ~/.zen/tmp/${MOATS}
+    [[ ${source} == "LOCAL" && ( ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ) ]] \
+        && ASTRONAUTENS="/ipns/"$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)
+
+    [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
+
     # cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r
+    rm -Rf ~/.zen/tmp/${MOATS}
 
 else
 
@@ -68,7 +68,7 @@ else
 
 fi
 
-[[ $XDG_SESSION_TYPE == 'x11' ]] \
+[[ $XDG_SESSION_TYPE == 'x11' && ${ASTRONAUTENS} != "" && ${ASTRONAUTENS} != "/ipfs/" && ${ASTRONAUTENS} != "/ipns/" ]] \
     && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
