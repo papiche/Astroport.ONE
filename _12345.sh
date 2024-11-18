@@ -190,12 +190,17 @@ while true; do
 
             ## ASK BOOSTRAP NODE TO GET MY MAP UPSYNC
             ## - MAKES MY BALISE PRESENT IN BOOSTRAP SWARM KEY  -
-            if [[ $iptype == "ip4" || $iptype == "ip6" ]]; then
-
+            if [[ $iptype == "ip4" || $iptype == "ip6" || $iptype == "dnsaddr" ]]; then
                 ############ UPSYNC CALL
-                echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
-                curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} \
-                    -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
+                if [[ $iptype == "dnsaddr" ]]; then
+                    echo "STATION MAP UPSYNC : curl -s https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID}"
+                    curl -s -m 10 https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID} \
+                        -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
+                else
+                    echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
+                    curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} \
+                        -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
+                fi
 
                 ### CHECK FOR SAME UPLANET
                 uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.UPLANETG1PUB')
@@ -206,7 +211,7 @@ while true; do
                 itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
                 ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 
-                echo "================ ${nodeip}:12345 ZNODS LIST"
+                echo "================ ${nodeip} 12345 ZNODS LIST"
                 cat ~/.zen/tmp/_swarm.${ipfsnodeid}
                 echo "============================================"
                 for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do
@@ -238,12 +243,6 @@ while true; do
                 echo "============================================"
 
             fi ## IP4 WAN BOOTSRAP UPSYNC FINISHED
-            ### IN CASE BOOTSTRAP IS A DNS ADDRESS
-            if [[ $iptype == "dnsaddr" ]]; then
-                curl -s -m 10 https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID} \
-                -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
-            fi
-
 
         done
 
