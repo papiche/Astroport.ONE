@@ -242,7 +242,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
 ############################################## +2 DAYS REMOVE AstroID !!
     ## REMOVE AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -eq 2 && "${CURRENT}" != "${PLAYER}" ]] \
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 && "${CURRENT}" != "${PLAYER}" ]] \
         && ${MY_PATH}/TW/delete_tiddler.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "AstroID"
         #~ && echo "(#__#) AstroID & PLAYER IPNS RW REMOVAL (#__#)" \
         #~ && ipfs key rm ${PLAYER} \
