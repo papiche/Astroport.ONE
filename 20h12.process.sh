@@ -151,13 +151,7 @@ seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
-
-## MAIL LOG : support@qo-op.com ##
-${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
-
-espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
-
-## RESTART
+## RESTART ASTROPORT & IPFS
 
 # espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
@@ -196,5 +190,10 @@ sudo systemctl restart ipfs
 sleep 30
 echo "DRAGONS WOT ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
+
+## MAIL LOG : support@qo-op.com ##
+${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
+
+espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
 exit 0
