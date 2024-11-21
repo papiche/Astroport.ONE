@@ -24,21 +24,24 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) && source="SWARM"
     [[ ! $INDEX ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
-    echo "export TW=${INDEX} source=${source}"
+    echo "export source=${source} TW=${INDEX}"
 
     mkdir -p ~/.zen/tmp/${MOATS}
     # SWARM CACHE index.html contains
     # <meta http-equiv="refresh" content="0; url='/ipfs/$EXTERNAL'" />
     if [[ ${source} != "LOCAL" ]]; then
-
+        echo "INDEX IS LINK"
         cat ${INDEX}
-        EXTERNAL=$(grep -o "url='/[^']*'" "${INDEX}" | sed "s|url='||;s|'||" | awk -F"/" '{print $3}')
+        ETWLINK=$(grep -o "url='/[^']*'" "${INDEX}" | sed "s|url='||;s|'||")
+        EXTERNAL=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
         [[ ${EXTERNAL} != "" && ! -s $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html ]] \
             && mkdir -p $HOME/.zen/tmp/flashmem/tw/${EXTERNAL} \
-            && ipfs --timeout=30s cat --progress=false /ipfs/${EXTERNAL} > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html &
+            && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
+                    > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html
 
         INDEX="$HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html"
-
+    else
+        echo "INDEX IS TW"
     fi
 
     rm -f ~/.zen/tmp/${MOATS}/Astroport.json
