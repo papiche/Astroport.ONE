@@ -19,9 +19,9 @@ EMAIL="$1"
 
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
-    INDEX=$(ls $HOME/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) && source="LOCAL"
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) && source="CACHE"
-    [[ ! $INDEX ]] && INDEX=$(ls $HOME/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) && source="SWARM"
+    INDEX=$(ls ${HOME}/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) && source="LOCAL"
+    [[ ! $INDEX ]] && INDEX=$(ls ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) && source="CACHE"
+    [[ ! $INDEX ]] && INDEX=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) && source="SWARM"
     [[ ! $INDEX ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
     echo "export source=${source} TW=${INDEX}"
@@ -36,16 +36,19 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         ITYPE=$(echo "${ETWLINK}" | cut -d '/' -f 2)
         ICID=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
 
-        [[ ${ITYPE} == "ipns" && ${ICID} != "" && ! -s $HOME/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
-            && mkdir -p $HOME/.zen/tmp/flashmem/tw/${ICID} \
+        [[ ${ITYPE} == "ipns" && ${ICID} != "" && ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
+            && mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID} \
             && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
-                    > $HOME/.zen/tmp/flashmem/tw/${ICID}/index.html \
-            && INDEX="$HOME/.zen/tmp/flashmem/tw/${ICID}/index.html"
+                    > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html \
+            && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
+
+        [[ -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
+            && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
 
         [[ ${ITYPE} == "ipfs" ]] \
             && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
-                > $HOME/.zen/tmp/${MOATS}/index.html \
-            && INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
+                > ${HOME}/.zen/tmp/${MOATS}/index.html \
+            && INDEX="${HOME}/.zen/tmp/${MOATS}/index.html"
 
     else
         echo "INDEX IS TW"
