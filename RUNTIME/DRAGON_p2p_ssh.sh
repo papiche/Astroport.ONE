@@ -19,7 +19,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") || er+=" ipf
 ## use STOP or OFF to finish forwarding
 
 PARAM="$1"
-if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop"  ]]; then
+if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop" ]]; then
     ipfs p2p close --all
     rm ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh 2>/dev/null
     rm ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub 2>/dev/null
@@ -45,7 +45,7 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_
 
 ############################################
 ## PUBLISH SSH PUBKEY OVER IPFS
-## KITTY ssh-keygen style
+## https://pad.p2p.legal/keygen
 if [[ -s ~/.ssh/id_ed25519 ]]; then
     SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
     SECRET1=$(echo "$SSHASH" | cut -c 1-64) && echo "SECRET1=$SECRET1"
@@ -59,16 +59,16 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
     fi
 fi
 
-## DRAGONz PGP/SSH style (https://pad.p2p.legal/keygen)
+## DRAGONz PGP style
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
 
 ## PRODUCE SWARM SEED PART - will be used to create swarm.key
 if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub ]]; then
-    [[ ! -s ~/.zen/tmp/${IPFSNODEID}/.swarm_part.12.txt ]] \
+    [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ]] \
         && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
-                        > ~/.zen/tmp/${IPFSNODEID}/.swarm_part.12.txt
-    [[ -s ~/.ipfs/swarm.key ]] && rm ~/.zen/tmp/${IPFSNODEID}/.swarm_part.12.txt ## ALREADY IN A PRIVATE SWARM
+                        > ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt
+    [[ -s ~/.ipfs/swarm.key ]] && rm ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ## ALREADY IN A PRIVATE SWARM
 fi
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}

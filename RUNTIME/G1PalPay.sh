@@ -353,7 +353,7 @@ while read LINE; do
     #### SEARCH FOR PALPAY ACOUNTS : USING PALPAY RELAY - COULD BE DONE BY A LOOP ?? §§§
     $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
     echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
-    [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
+    [[ ${ASTROTW} == "" ]] && ASTROTW="/ipns/${ASTRONAUTENS}"
 
     echo "TOPIN=${TOPIN}"
     if [[ ${TOPIN} && ${ASTROG1} && ${ASTROG1} != ${G1PUB} ]]; then
