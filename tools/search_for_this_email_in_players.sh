@@ -28,18 +28,25 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     mkdir -p ~/.zen/tmp/${MOATS}
     # SWARM CACHE index.html contains
-    # <meta http-equiv="refresh" content="0; url='/ipfs/$EXTERNAL'" />
+    # <meta http-equiv="refresh" content="0; url='/ipfs/$ICID'" />
     if [[ ${source} != "LOCAL" ]]; then
         echo "INDEX IS LINK"
         cat ${INDEX}
         ETWLINK=$(grep -o "url='/[^']*'" "${INDEX}" | sed "s|url='||;s|'||")
-        EXTERNAL=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
-        [[ ${EXTERNAL} != "" && ! -s $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html ]] \
-            && mkdir -p $HOME/.zen/tmp/flashmem/tw/${EXTERNAL} \
-            && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
-                    > $HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html
+        ITYPE=$(echo "${ETWLINK}" | cut -d '/' -f 2)
+        ICID=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
 
-        INDEX="$HOME/.zen/tmp/flashmem/tw/${EXTERNAL}/index.html"
+        [[ ${ITYPE} == "ipns" && ${ICID} != "" && ! -s $HOME/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
+            && mkdir -p $HOME/.zen/tmp/flashmem/tw/${ICID} \
+            && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
+                    > $HOME/.zen/tmp/flashmem/tw/${ICID}/index.html \
+            && INDEX="$HOME/.zen/tmp/flashmem/tw/${ICID}/index.html"
+
+        [[ ${ITYPE} == "ipfs" ]] \
+            && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
+                > $HOME/.zen/tmp/${MOATS}/index.html \
+            && INDEX="$HOME/.zen/tmp/${MOATS}/index.html"
+
     else
         echo "INDEX IS TW"
     fi
