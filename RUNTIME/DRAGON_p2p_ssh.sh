@@ -100,9 +100,9 @@ if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
         && ssh '${USER}'@127.0.0.1 -p '${PORT}' \
         || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
-' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh.txt
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh ## TODO REMOVE (protocol evolution)
-cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh.txt
+' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh.txt ## TODO REMOVE (protocol evolution)
+cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 echo "
 
@@ -132,7 +132,7 @@ echo "
 
 "
 ############################################
-echo "CONNECT WITH THIS COMMAND"
+echo "DRAGON WAKE UP DONE"
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ############################################
 

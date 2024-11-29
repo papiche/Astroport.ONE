@@ -402,7 +402,7 @@ while read LINE; do
         ... Join <a href='https://qo-op.com'>UPlanet</a>
         </body></html>" > ~/.zen/tmp/palpay.bro
 
-        ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} TW5 link"
+        ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} TW5 LINKING"
 
     fi
 

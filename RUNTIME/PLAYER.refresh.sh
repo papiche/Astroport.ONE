@@ -185,7 +185,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         --render '.' 'AstroID.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'AstroID' ## AstroID Tiddler
     [[ $(cat ~/.zen/tmp/${MOATS}/AstroID.json 2>/dev/null) == "[]" ]] && rm ~/.zen/tmp/${MOATS}/AstroID.json
     ########################################## used by Astroport :: Lasertag :: TW plugin ##
-    ## CHECK "$:/config/NewTiddler/Tags"
+    ## CHECK "$:/config/NewTiddler/Tags" is SET to PLAYER for signature
     tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
         --output ~/.zen/tmp/${MOATS} \
         --render '.' 'TWsign.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/config/NewTiddler/Tags' ## $:/config/NewTiddler/Tags Tiddler
