@@ -128,7 +128,7 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
-for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography jwcrypto Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient bitcoin monero; do
+for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography jwcrypto Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient bitcoin monero duniterpy; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install  $i 2>> /tmp/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> /tmp/install.errors.log

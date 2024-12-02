@@ -43,8 +43,15 @@ echo
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 [[ ! $YOU ]] && echo "Lancez 'ipfs daemon' SVP sudo systemctl start ipfs" && exit 1
 
-echo 'PRESS ENTER... '; read
 
+if [[ ${CURRENT} == "" ]]; then
+    ## NO CAPTAIN
+    echo "NO CAPTAIN ONBOARD... Automatic registration... "
+    echo "Did you run Astroport Twin Keys Linking Procedure ?"
+    echo "${MY_PATH}/tools/Ylevel.sh"
+fi
+
+echo 'PRESS CTRL+C or ENTER... '; read
 ## CREATE AND OR CONNECT USER
 PS3=' ____ Select  ___ ? '
 players=( "CREATE PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
