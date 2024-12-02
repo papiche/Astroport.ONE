@@ -43,6 +43,10 @@ import struct
 import sys
 import warnings
 import hashlib
+from monero.wallet import Wallet
+from monero.seed import Seed as MoneroSeed
+from monero.address import Address
+from monero.backends.offline import OfflineWallet
 from bitcoin import privkey_to_address, encode_privkey
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
@@ -228,13 +232,19 @@ class keygen:
         # Utiliser le seed ED25519 comme entrée pour la clé Monero
         seed = self.duniterpy.seed
 
-        # Créer un portefeuille Monero à partir du seed
-        wallet = monero.wallet.Wallet(seed=seed.hex())
+        # Créer un seed Monero à partir du seed ED25519
+        monero_seed = MoneroSeed(seed.hex())
+
+        # Générer l'adresse Monero à partir du seed
+        address = monero_seed.public_address()
+
+        # Créer un portefeuille Monero offline avec l'adresse générée
+        wallet = Wallet(OfflineWallet(Address(address)))
 
         # Extraire les clés Monero
-        self.monero_private_spend_key = wallet.spend_key()
-        self.monero_private_view_key = wallet.view_key()
-        self.monero_public_address = wallet.address()
+        self.monero_private_spend_key = monero_seed.secret_spend_key()
+        self.monero_private_view_key = monero_seed.secret_view_key()
+        self.monero_public_address = address
 
     def do_monero(self):
         log.debug("keygen.do_monero()")
