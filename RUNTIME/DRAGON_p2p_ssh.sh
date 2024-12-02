@@ -48,10 +48,12 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_
 ## https://pad.p2p.legal/keygen
 if [[ -s ~/.ssh/id_ed25519 ]]; then
     if [[ ! $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) ]]; then
-        cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
+        YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+        [[ ${IPFSNODEID} == ${YIPNS} ]] \
+            && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
-        echo "PLEASE keygen your IPFSNODEID=${SSHYNODEID}"
+        echo "PLEASE link SSH TO IPFSNODEID=${IPFSNODEID}"
     fi
 fi
 
@@ -63,8 +65,10 @@ gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~
 if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub ]]; then
     [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ]] \
         && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
-                        > ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt
-    [[ -s ~/.ipfs/swarm.key ]] && rm ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ## ALREADY IN A PRIVATE SWARM
+                > ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt
+    [[ -s ~/.ipfs/swarm.key ]] \
+        && cat ~/.ipfs/swarm.key | sha512sum | cut -d ' ' -f 1 \
+            > ~/.zen/tmp/${IPFSNODEID}/_UPlanet_H ## UPLANET PRIVATE SWARM
 fi
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
