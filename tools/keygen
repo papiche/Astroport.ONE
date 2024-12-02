@@ -123,7 +123,7 @@ class keygen:
         self.parser.add_argument(
             "-t",
             "--type",
-            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh'],
+            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh','monero'],
             default="base58",
             dest="type",
             help="output text format, default: base58",
@@ -219,6 +219,29 @@ class keygen:
         print(self.ssh_public_key.decode())
         # Ajoutez cette ligne pour sauvegarder les fichiers SSH
         self._output_ssh_files()
+
+    def generate_monero_keys(self):
+        log.debug("keygen.generate_monero_keys()")
+        if not hasattr(self, 'duniterpy'):
+            self.duniterpy_from_ed25519_seed_bytes()
+
+        # Utiliser le seed ED25519 comme entrée pour la clé Monero
+        seed = self.duniterpy.seed
+
+        # Créer un portefeuille Monero à partir du seed
+        wallet = monero.wallet.Wallet(seed=seed.hex())
+
+        # Extraire les clés Monero
+        self.monero_private_spend_key = wallet.spend_key()
+        self.monero_private_view_key = wallet.view_key()
+        self.monero_public_address = wallet.address()
+
+    def do_monero(self):
+        log.debug("keygen.do_monero()")
+        self.generate_monero_keys()
+        print("Monero Private Spend Key:", self.monero_private_spend_key)
+        print("Monero Private View Key:", self.monero_private_view_key)
+        print("Monero Public Address:", self.monero_public_address)
 
     def generate_bitcoin_keys(self):
         log.debug("keygen.generate_bitcoin_keys()")
