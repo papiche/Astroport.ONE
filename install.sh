@@ -195,6 +195,7 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 ## EXTEND PATH
 echo 'export PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/games:$PATH
 ## Activate python env
+alias command="$HOME/.zen/Astroport.ONE/command.sh"
 . $HOME/.astro/bin/activate
 cowsay $(hostname)' >> ~/.bashrc
 source ~/.bashrc
