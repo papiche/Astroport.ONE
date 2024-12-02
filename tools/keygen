@@ -42,8 +42,12 @@ import re
 import struct
 import sys
 import warnings
+import hashlib
+from bitcoin import privkey_to_address, encode_privkey
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
 
-__version__='0.0.5'
+__version__='0.0.7'
 
 class keygen:
     def __init__(self):
@@ -119,7 +123,7 @@ class keygen:
         self.parser.add_argument(
             "-t",
             "--type",
-            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk'],
+            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh'],
             default="base58",
             dest="type",
             help="output text format, default: base58",
@@ -168,10 +172,89 @@ class keygen:
             self._output_file()
             os.chmod(self.output, 0o600)
 
+    def generate_ssh_ed25519_key(self):
+        log.debug("keygen.generate_ssh_ed25519_key()")
+        if not hasattr(self, 'duniterpy'):
+            self.duniterpy_from_ed25519_seed_bytes()
+
+        # Utiliser le seed ED25519 comme entrée pour la clé SSH
+        seed = self.duniterpy.seed
+
+        # Générer une clé privée ED25519
+        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(seed)
+
+        # Générer la clé publique correspondante
+        public_key = private_key.public_key()
+
+        # Sérialiser la clé privée au format OpenSSH
+        self.ssh_private_key = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.OpenSSH,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
+        # Sérialiser la clé publique au format OpenSSH
+        self.ssh_public_key = public_key.public_bytes(
+            encoding=serialization.Encoding.OpenSSH,
+            format=serialization.PublicFormat.OpenSSH
+        )
+
+
+    def _output_ssh_files(self):
+        log.debug("keygen._output_ssh_files()")
+        try:
+            with open(self.output, "w") as private_file:
+                private_file.write(self.ssh_private_key.decode())
+            with open(f"{self.output}.pub", "w") as public_file:
+                public_file.write(self.ssh_public_key.decode())
+        except Exception as e:
+            log.error(f'Unable to output ssh key files: {e}')
+
+    def do_ssh(self):
+        log.debug("keygen.do_ssh()")
+        self.generate_ssh_ed25519_key()
+        print("SSH ED25519 Private Key:")
+        print(self.ssh_private_key.decode())
+        print("SSH ED25519 Public Key:")
+        print(self.ssh_public_key.decode())
+        # Ajoutez cette ligne pour sauvegarder les fichiers SSH
+        self._output_ssh_files()
+
+    def generate_bitcoin_keys(self):
+        log.debug("keygen.generate_bitcoin_keys()")
+        if not hasattr(self, 'duniterpy'):
+            self.duniterpy_from_ed25519_seed_bytes()
+
+        # Utiliser le seed ED25519 comme entrée pour la clé privée Bitcoin
+        seed = self.duniterpy.seed
+
+        # Créer une clé privée Bitcoin en hachant le seed
+        private_key = hashlib.sha256(seed).hexdigest()
+
+        # Convertir la clé privée en format WIF
+        self.bitcoin_private_key_wif = encode_privkey(private_key, 'wif')
+
+        # Générer l'adresse Bitcoin publique
+        self.bitcoin_public_address = privkey_to_address(private_key)
+
+    def do_bitcoin(self):
+        log.debug("keygen.do_bitcoin()")
+        self.base58_from_ed25519()
+        self.generate_bitcoin_keys()
+        self._output(self.ed25519_public_base58, self.ed25519_secret_base58, 'pub: ', 'sec: ')
+        print("Bitcoin Private Key (WIF):", self.bitcoin_private_key_wif)
+        print("Bitcoin Public Address:", self.bitcoin_public_address)
 
     def _output_file(self):
         log.debug("keygen._output_file()")
         try:
+            if self.type == 'ssh':
+                if not hasattr(self, 'ssh_private_key') or not hasattr(self, 'ssh_public_key'):
+                    self.generate_ssh_ed25519_key()
+                with open(self.output, "w") as private_file:
+                    private_file.write(self.ssh_private_key.decode())
+                with open(f"{self.output}.pub", "w") as public_file:
+                    public_file.write(self.ssh_public_key.decode())
             if self.format == 'dewif':
                 if not hasattr(self, 'duniterpy'):
                     self.duniterpy_from_ed25519_seed_bytes()

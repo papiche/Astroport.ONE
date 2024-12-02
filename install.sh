@@ -127,6 +127,7 @@ echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
+pipx install bitcoin ## bitcoin compatible keys
 for i in pip setuptools wheel amzqr pdf2docx pyppeteer cryptography jwcrypto Ed25519 base58 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt ipfshttpclient; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install  $i 2>> /tmp/install.errors.log
