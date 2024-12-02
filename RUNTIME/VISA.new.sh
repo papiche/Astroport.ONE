@@ -174,6 +174,7 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
 ## secret.june = SALT PEPPER CREDENTIALS
 echo "SALT=\"$SALT\"" > ~/.zen/game/players/${PLAYER}/secret.june
 echo "PEPPER=\"$PEPPER\"" >> ~/.zen/game/players/${PLAYER}/secret.june
+chmod 600 ~/.zen/game/players/${PLAYER}/secret.june
 ####
 ## MOVE ${MOATS} secret.dunikey IN PLAYER DIRECTORY
 mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/${PLAYER}/

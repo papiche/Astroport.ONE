@@ -47,11 +47,7 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_
 ## PUBLISH SSH PUBKEY OVER IPFS
 ## https://pad.p2p.legal/keygen
 if [[ -s ~/.ssh/id_ed25519 ]]; then
-    SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
-    SECRET1=$(echo "$SSHASH" | cut -c 1-64) && echo "SECRET1=$SECRET1"
-    SECRET2=$(echo "$SSHASH" | cut -c 65-128) && echo "SECRET2=$SECRET2"
-    SSHYNODEID=$($MY_PATH/../tools/keygen -t ipfs "$SECRET1" "$SECRET2") && echo "SSHYNODEID=$SSHYNODEID"
-    if [[ "${SSHYNODEID}" == "${IPFSNODEID}" ]]; then
+    if [[ ! $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) ]]; then
         cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub

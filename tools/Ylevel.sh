@@ -40,6 +40,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         <(''<)  <( ' ' )>  (> '')>
         ACTIVATING Y LEVEL"
         echo "SALT=$SECRET1; PEPPER=$SECRET2" > ~/.zen/game/secret.june
+        chmod 600 ~/.zen/game/secret.june
         ## supprimer les anciennes clef de SWARM
         rm ~/.zen/game/myswarm_secret.*
 
