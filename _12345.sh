@@ -204,7 +204,9 @@ while true; do
 
                 ### CHECK FOR SAME UPLANET
                 uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.UPLANETG1PUB')
-                [[ "$UPLANETG1PUB" != "$uplanetpub" ]] && echo "ALERT. UPlanet $uplanetpub : NOT THE SAME !!! "
+                [[ "$UPLANETG1PUB" != "$uplanetpub" && "$uplanetpub" != "" ]] \
+                    && echo "ALERT. UPlanet $uplanetpub IS DIRRERENT OF MINE ${UPLANETG1PUB} !!! NEXT." \
+                    && continue
 
                 ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
                 echo "ANALYSING BOOSTRAP SWARM MAP"
@@ -306,7 +308,9 @@ while true; do
     fi
 
 NODE12345="{
+    \"version\" : \"2.0\",
     \"created\" : \"${MOATS}\",
+    \"date\" : \"$(date -u)\",
     \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
@@ -316,7 +320,8 @@ NODE12345="{
     \"myIPFS\" : \"${myIPFS}\",
     \"myASTROPORT\" : \"${myASTROPORT}\",
     \"myAPI\" : \"${myAPI}\",
-    \"version\" : \"1.9\",
+    \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
+    \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "

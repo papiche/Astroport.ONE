@@ -41,19 +41,19 @@ do
     else
         echo "TRUSTING ${LINE}"
     fi
-done < ${MY_PATH}/../A_boostrap_ssh.txt ## TODO : Get it from IPFNODEID with "z_ssh.pub"
+done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
 
 ############################################
-## PUBLISH SSH PUBKEY OVER IPFS
+## PUBLISH SSH PUBKEY OVER IPFS y_ssh.pub
 ## https://pad.p2p.legal/keygen
-if [[ -s ~/.ssh/id_ed25519 ]]; then
-    if [[ ! $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) ]]; then
-        YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
-        [[ ${IPFSNODEID} == ${YIPNS} ]] \
-            && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
+if [[ -s ~/.ssh/id_ed25519.pub ]]; then
+    YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+    if [[ ${IPFSNODEID} == ${YIPNS} ]]; then
+        cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
-        echo "PLEASE link SSH TO IPFSNODEID=${IPFSNODEID}"
+        echo "PLEASE link SSH with IPFSNODEID"
+        echo "${YIPNS} != ${IPFSNODEID}"
     fi
 fi
 
@@ -97,14 +97,14 @@ if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
     ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
     [[ $? == 0 ]] \
         && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-        && ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+        && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
         || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
 ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh.txt ## TODO REMOVE (protocol evolution)
+
 cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
-echo "
+echo "${YIPNS}
 
                       /|               /\\
                  /^^^/ |^\Z           /  |
