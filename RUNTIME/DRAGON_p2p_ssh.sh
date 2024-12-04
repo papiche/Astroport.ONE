@@ -49,7 +49,14 @@ done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATIO
 if [[ -s ~/.ssh/id_ed25519.pub ]]; then
     YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
     if [[ ${IPFSNODEID} == ${YIPNS} ]]; then
-        cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
+        ## TEST
+        ${MY_PATH}/../tools/keygen "coucou" "coucou"
+        keygen=$?
+        ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CAPTAING1PUB}
+        jaklis=$?
+        [[ $keygen == 0 && $jaklis == 0 ]] \
+            && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub \
+            || echo "KEYGEN $keygen JAKLIS $jaklis DISFUNCTON"
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
         echo "PLEASE link SSH with IPFSNODEID"
