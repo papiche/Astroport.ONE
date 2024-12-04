@@ -92,13 +92,24 @@ if [[ ${UPLANETNAME} != "" ]]; then
             && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
             && continue
 
-        echo "# RX from $TXIPUBKEY.... checking same primal transaction..."
+        echo "# RX from ${TXIPUBKEY}.... checking same primal transaction..."
+        primal=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null) ### CACHE READING
         # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
         # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
-        line=$(silkaj money history $TXIPUBKEY | tail -n 3 | head -n 1)
-        pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
-        echo "line = $line"
+        if [[ -z ${primal} ]]; then
+            line=$(silkaj money history ${TXIPUBKEY} | tail -n 3 | head -n 1)
+            pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
+            echo "line = $line"
+        else
+            pub8="${primal}"
+        fi
         echo "pub8 = $pub8"
+
+        ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
+        [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]] \
+            && [[ ! -z ${pub8} ]] \
+            && echo "${pub8}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
+
         ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
         ## Can evolve to accept cross Uplanet Zen TX.
         UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
@@ -162,7 +173,7 @@ while read NLINE; do
 
     # Verify last recorded acting date (avoid running twice)
     [[ $(cat ~/.zen/game/players/${PLAYER}/.ndate) -ge $TXIDATE ]]  \
-        && echo "$CMD $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
+        && echo "$CMD $TXIDATE from ${TXIPUBKEY} ALREADY TREATED - continue" \
         && continue
 
     TH=$(echo ${COMMENT} | cut -d ':' -f 2)
@@ -209,7 +220,7 @@ while read LINE; do
     lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.atdate 2>/dev/null)
     [[ -z lastTXdate ]] && lastTXdate=0 && echo "0" > ~/.zen/game/players/${PLAYER}/.atdate
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
-        && echo "PalPay $TXIDATE from $TXIPUBKEY ALREADY TREATED - continue" \
+        && echo "PalPay $TXIDATE from ${TXIPUBKEY} ALREADY TREATED - continue" \
         && continue
 
     ## GET EMAILS FROM COMMENT
@@ -229,7 +240,7 @@ while read LINE; do
     SHAREE=$(echo "scale=2; $TXIAMOUNT / $N" | bc)
     SHARE=$(makecoord ${SHAREE})
     ## SHARE is received AMOUT divided by numbers of EMAILS in comment
-    echo "% ${#TXIMAILS[@]} % $SHARE % $TXIDATE $TXIPUBKEY $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS"
+    echo "% ${#TXIMAILS[@]} % $SHARE % $TXIDATE ${TXIPUBKEY} $TXIAMOUNT [$TXIAMOUNTUD] $TXIMAILS"
 
     # let's loop over TXIMAILS
     for EMAIL in "${TXIMAILS[@]}"; do

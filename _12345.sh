@@ -205,7 +205,7 @@ while true; do
                 ### CHECK FOR SAME UPLANET
                 uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.UPLANETG1PUB')
                 [[ "$UPLANETG1PUB" != "$uplanetpub" && "$uplanetpub" != "" ]] \
-                    && echo "ALERT. UPlanet $uplanetpub IS DIRRERENT OF MINE ${UPLANETG1PUB} !!! NEXT." \
+                    && echo "ALERT. UPlanet $uplanetpub IS DIFFERENT OF MINE ${UPLANETG1PUB} !!! NEXT." \
                     && continue
 
                 ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE

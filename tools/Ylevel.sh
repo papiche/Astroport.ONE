@@ -32,8 +32,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
     SECRET1=$(echo "$SSHASH" | cut -c 1-64)
     SECRET2=$(echo "$SSHASH" | cut -c 65-128)
     SSHYNODEID=$(~/.zen/Astroport.ONE/tools/keygen -t ipfs "$SECRET1" "$SECRET2")
-    echo "SSHYNODEID=${SSHYNODEID}"
-
+    echo "??? ${SSHYNODEID} = ${IPFSNODEID} ???"
 
    if [[ ${SSHYNODEID} != ${IPFSNODEID} ]]; then
         echo "
@@ -86,7 +85,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         [[ ${blurp} != "SUCCESS" ]] \
             && rm ~/.ipfs/config \
                 && mv ~/.ipfs/config.bkp ~/.ipfs/config \
-                    && exit 1
+                    && echo "IPFS CONFIG ROLL BACK" && exit 1
 
         ## Réactivation Astroport.ONE
         ~/.zen/Astroport.ONE/start.sh
