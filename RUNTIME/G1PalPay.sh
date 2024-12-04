@@ -107,7 +107,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
 
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]] \
-            && [[ ! -z ${pub8} ]] \
+            && [[ ! -z ${pub8} && ${pub8:0:1} != "#" ]] \
             && echo "${pub8}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
 
         ### IS IT A SAME PRIMO-TX UPLANET WALLET ??

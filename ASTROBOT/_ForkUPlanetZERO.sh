@@ -1,11 +1,14 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+
+echo "## $ME is abandonware ... Using TW is too complex and long procedure, NOW ssh=ipfs is now proof of RockerMe Today"
+exit 0
 
 . "${MY_PATH}/../tools/my.sh"
 exec 2>&1 >> ~/.zen/game/ForkUPlanetZERO.log

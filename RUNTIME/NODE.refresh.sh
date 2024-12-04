@@ -51,8 +51,6 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
         [[ -d ~/.zen/tmp/${IPFSNODEID}/${PLAYER} && ${PLAYER} != "" ]] \
             && rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
     done
-    ## STOP GCHANGE SWARM SHARING --- too big data --- deprecated
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/GCHANGE ## UGGLY PATCH
 
     ## INFORM GPS LOCATION
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \
@@ -77,5 +75,6 @@ fi
 
 echo "## CLEANING SWARM 3 DAYS OLD"
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
+rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
 
 exit 0

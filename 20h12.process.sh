@@ -106,16 +106,12 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
 ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
 #####################################
-#####################################
-# Node refreshing
-#####################################
-${MY_PATH}/RUNTIME/NODE.refresh.sh
-#####################################
+
 ########################################################################
 ########################################################################
 
 ########################################################################
-## REMOVE TMP BUT KEEP swarm, flashmem and coucou
+## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
 mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
@@ -143,35 +139,6 @@ mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
 
 ########################################################################
-########################################################################
-end=`date +%s`
-dur=`expr $end - $start`
-hours=$((dur / 3600))
-minutes=$(( (dur % 3600) / 60 ))
-seconds=$((dur % 60))
-echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
-echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
-
-## RESTART ASTROPORT & IPFS
-
-# espeak "Restarting Astroport Services" > /dev/null 2>&1
-## CLOSING API PORT
-[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) > /dev/null 2>&1
-## KILL ALL REMAINING nc
-killall nc 12345.sh > /dev/null 2>&1
-
-## SYSTEMD OR NOT SYSTEMD
-if [[ ! -f /etc/systemd/system/astroport.service ]]; then
-    ${MY_PATH}/12345.sh > ~/.zen/tmp/12345.log &
-    PID=$!
-    echo $PID > ~/.zen/.pid
-else
-    sudo systemctl restart astroport
-    [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
-    echo "Astroport processes systemd restart"
-
-fi
-
 echo "IPFS DAEMON LEVEL"
 ######### IPFS DAMEON NOT RUNNING ALL DAY
 ## IF IPFS DAEMON DISABLED : WAIT 1H & STOP IT
@@ -194,6 +161,38 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 ## MAIL LOG : support@qo-op.com ##
 ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
+
+## RESTART ASTROPORT
+# espeak "Restarting Astroport Services" > /dev/null 2>&1
+## CLOSING API PORT
+[[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) > /dev/null 2>&1
+## KILL ALL REMAINING nc
+killall nc 12345.sh > /dev/null 2>&1
+
+## SYSTEMD OR NOT SYSTEMD
+if [[ ! -f /etc/systemd/system/astroport.service ]]; then
+    ${MY_PATH}/12345.sh > ~/.zen/tmp/12345.log &
+    PID=$!
+    echo $PID > ~/.zen/.pid
+else
+    sudo systemctl restart astroport
+    [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
+    echo "Astroport processes systemd restart"
+
+fi
+#####################################
+# Node refreshing
+#####################################
+${MY_PATH}/RUNTIME/NODE.refresh.sh
+#####################################
+########################################################################
+end=`date +%s`
+dur=`expr $end - $start`
+hours=$((dur / 3600))
+minutes=$(( (dur % 3600) / 60 ))
+seconds=$((dur % 60))
+echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
+echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
