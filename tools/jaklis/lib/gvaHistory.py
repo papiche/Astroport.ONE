@@ -96,14 +96,6 @@ class History:
             sys.stderr.write("Echec de récupération de l'historique:\n" + message + "\n")
             sys.exit(1)
 
-    def getFirstTransaction(self):
-        self.sendDoc(1)  # Récupérer seulement la première transaction
-        transList = self.parseHistory()
-        if transList:
-            return transList[0]  # Retourner la plus ancienne transaction
-        else:
-            return None  # Aucune transaction trouvée
-
     def parseHistory(self):
         trans = []
         i = 0

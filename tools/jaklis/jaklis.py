@@ -23,7 +23,6 @@ parser.add_argument('-k', '--key', help="Chemin vers mon trousseau de clé (PubS
 parser.add_argument('-n', '--node', help="Adresse du noeud Cesium+, Gchange ou Duniter à utiliser")
 
 subparsers = parser.add_subparsers(title="Commandes de jaklis", dest="cmd")
-primetx_cmd = subparsers.add_parser('prime', help="Récupérer la première transaction d'un portefeuille")
 read_cmd = subparsers.add_parser('read', help="Lecture des messages")
 send_cmd = subparsers.add_parser('send', help="Envoi d'un message")
 delete_cmd = subparsers.add_parser('delete', help="Supression d'un message")
@@ -41,8 +40,6 @@ balance_cmd = subparsers.add_parser('balance', help="Voir le solde d'un compte �
 id_cmd = subparsers.add_parser('id', help="Voir l'identité d'une clé publique/username")
 id_balance_cmd = subparsers.add_parser('idBalance', help="Voir l'identité d'une clé publique/username et son solde")
 currentUd = subparsers.add_parser('currentUd', help="Affiche la montant actuel du dividende Universel")
-
-primetx_cmd.add_argument('-p', '--pubkey', required=True, help="Clé publique du compte visé")
 
 # Messages management
 read_cmd.add_argument('-n', '--number',type=int, default=3, help="Affiche les NUMBER derniers messages")
@@ -139,20 +136,6 @@ try:
     profile = args.profile
 except:
     profile = False
-
-if cmd == "prime":
-    pubkey = args.pubkey
-    if not pubkey:
-        print("Veuillez fournir une clé publique")
-        sys.exit(1)
-
-    gva = GvaApi(dunikey, node, pubkey)
-    first_tx = gva.getFirstTransaction()
-
-    if first_tx:
-        print("Primo TX:", first_tx)
-    else:
-        print("Aucune transaction trouvée pour cette clé publique")
 
 if cmd in ('history','balance','get','id','idBalance') and (pubkey or profile):
     noNeedDunikey = True
@@ -252,7 +235,7 @@ elif cmd in ("pay","history","balance","id","idBalance","currentUd"):
     else:
         node = os.getenv('NODE')
     if not node:
-        node="https://g1.librelois.fr/gva"
+        node="https://g1.copylaradio.com/gva"
 
     if args.pubkey:
         destPubkey = args.pubkey
