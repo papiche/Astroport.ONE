@@ -91,10 +91,16 @@ if [[ ${UPLANETNAME} != "" ]]; then
         [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
             && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
             && continue
-
-        echo "# RX from ${TXIPUBKEY}.... checking same primal transaction..."
+        ################################################################ PRIMAL TX CHECK
+        echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
+        ### jaklis 1000 history window
+        if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
+            milletxzero=$(jaklis history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
+            g1prime=$(echo $milletxzero | jq -r .pubkey)
+            [[ ! -z ${g1prime} ]] && echo "${g1prime:0:8}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
+        fi
         primal=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null) ### CACHE READING
-        # silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
+        # SECOND TRY : silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
         # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
         if [[ -z ${primal} ]]; then
             line=$(silkaj money history ${TXIPUBKEY} | tail -n 3 | head -n 1)
@@ -107,7 +113,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
 
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]] \
-            && [[ ! -z ${pub8} && ${pub8:0:1} != "#" ]] \
+            && [[ ! -z ${pub8} && ${pub8:0:1} != "--------" ]] \
             && echo "${pub8}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
 
         ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
