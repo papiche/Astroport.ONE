@@ -139,7 +139,7 @@ if [[ $(which X 2>/dev/null) ]]; then
     echo "#############################################"
     echo "######### INSTALL DESKTOP TOOLS  ######"
     echo "#############################################"
-    for i in x11-utils xclip zenity kodi; do
+    for i in x11-utils xclip zenity; do
         if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
             echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             sudo apt install -y $i;
@@ -153,32 +153,30 @@ echo "######### IMPRIMANTE & G1BILLET ##############"
 echo "#############################################"
 
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
-if [[ $USER != 'xbian' ]]; then
-    echo "INSTALL PRINTER FOR G1BILLET + AstroID & Zencard ..."
-    saisie="OK"
-    if [[ $saisie != "" ]]; then
-        ## PRINT & FONTS
-        sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-        pip install brother_ql
-        # pipx install brother_ql
-        sudo cupsctl --remote-admin
-        sudo usermod -aG lpadmin $USER
-        sudo usermod -a -G tty $USER
-        sudo usermod -a -G lp $USER
+echo "INSTALL PRINTER FOR G1BILLET + AstroID & Zencard ..."
+read
+if [[ $saisie != "" ]]; then
+    ## PRINT & FONTS
+    sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
+    pip install brother_ql
+    # pipx install brother_ql
+    sudo cupsctl --remote-admin
+    sudo usermod -aG lpadmin $USER
+    sudo usermod -a -G tty $USER
+    sudo usermod -a -G lp $USER
 
-        ## brother_ql_print
-        echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
+    ## brother_ql_print
+    echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
 
-        ## G1BILLET
-        echo "INSTALL G1BILLET SERVICE : http://g1billet.localhost:33101"
-        cd ~/.zen
-        git clone https://github.com/papiche/G1BILLET.git
-        cd G1BILLET && ./setup_systemd.sh
-        cd -
-
-    fi
+    ## G1BILLET
+    echo "INSTALL G1BILLET SERVICE : http://g1billet.localhost:33101"
+    cd ~/.zen
+    git clone https://github.com/papiche/G1BILLET.git
+    cd G1BILLET && ./setup_systemd.sh
+    cd -
 
 fi
+
 
 echo
 
@@ -221,25 +219,6 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
-
-if [[ $(which X 2>/dev/null) ]]; then
-
-    if  [[ $(which kodi) && $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
-    echo "#############################################"
-    echo " ### CONFIGURATION KODI FR PLUGIN ## "
-    echo "#############################################"
-    (
-        mkdir -p ~/.zen/tmp/kodi
-        echo "PATIENTEZ..."
-        ipfs get -o ~/.zen/tmp/kodi/ /ipfs/Qmc2jg96KvQrLs5R29jn3hjUb1ViMWzeygtPR59fTP6AVT
-        echo '## INSTALL FRANCETV + VSTREAM + FILMSFORACTION'
-        mv ~/.kodi ~/.kodi.back 2>/dev/null
-        mv ~/.zen/tmp/kodi ~/.kodi
-        echo "Now run kodi and update plugins"
-    ) &
-    fi
-fi
-
 
 end=`date +%s`
 echo Installation time was `expr $end - $start` seconds.

@@ -94,7 +94,9 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ## PING BOOSTRAP & SWARM NODES
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
-########################################################################
+##################################### CHECK FOR SWARM ALLIANCE #########
+${MY_PATH}/RUNTIME/_RocketMe.sh
+
 ######################################################### UPLANET ######
 #####################################
 # GeoKeys UMAP / SECTOR / REGION ...
