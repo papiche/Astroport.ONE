@@ -22,8 +22,10 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
         echo "Astroport SSH Key Transmutation Already Done/"
         cat ~/.ssh/id_ed25519.pub
-        [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) ]] \
+        YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+        [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) || ${YIPNS} != ${IPFSNODEID} ]] \
             && echo "SSH/IPFS KEY NOT MATCHING... CONTACT SUPPORT (_8^( l)" && exit 1
+        echo "SSH + IPFS : OK"
         exit 0
     fi
 
