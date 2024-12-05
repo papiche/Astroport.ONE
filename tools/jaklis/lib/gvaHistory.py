@@ -96,6 +96,13 @@ class History:
             sys.stderr.write("Echec de récupération de l'historique:\n" + message + "\n")
             sys.exit(1)
 
+    def getFirstTransaction(self):
+        self.sendDoc(1)  # Récupérer seulement la première transaction
+        transList = self.parseHistory()
+        if transList:
+            return transList[0]  # Retourner la plus ancienne transaction
+        else:
+            return None  # Aucune transaction trouvée
 
     def parseHistory(self):
         trans = []
@@ -173,15 +180,15 @@ class History:
         for i in trans:
             if i[6] == lastBase: i[6] = None
             else: lastBase = i[6]
-        
+
         return trans
 
     def printHistory(self, trans, noColors):
         # Get balance
-        if (self.historyDoc['balance'] == None): 
+        if (self.historyDoc['balance'] == None):
             balance = balanceUD = 'null'
         else:
-    
+
             balance = self.historyDoc['balance']['amount']/100
             balanceUD = round(balance/self.UD, 2)
 
@@ -242,7 +249,7 @@ class History:
             print(colored('Reçus', 'green'), '-', colored('En cours de réception', 'yellow'), '-', colored('Envoyé', 'blue'), '-', colored("En cours d'envoi", 'red'))
 
         return trans
-    
+
     def gen_checksum(self, pubkey):
         """
         Returns the checksum of the input pubkey (encoded in b58)
