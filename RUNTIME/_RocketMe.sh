@@ -8,7 +8,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
-exec 2>&1 >> ~/.zen/game/RocketMe.log
+#~ exec 2>&1 >> ~/.zen/game/RocketMe.log
 
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
