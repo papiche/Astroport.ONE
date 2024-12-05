@@ -97,30 +97,16 @@ if [[ ${UPLANETNAME} != "" ]]; then
         if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
             milletxzero=$(jaklis history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
             g1prime=$(echo $milletxzero | jq -r .pubkey)
-            [[ ! -z ${g1prime} ]] && echo "${g1prime:0:8}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
+            ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
+            [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
         fi
         primal=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null) ### CACHE READING
-        # SECOND TRY : silkaj money history DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech | tail -n 3 | head -n 1
-        # │ 2017-11-25     │ 5nk2qdh1…:GWD  │ 200        │ 18.332       │                │
-        if [[ -z ${primal} ]]; then
-            line=$(silkaj money history ${TXIPUBKEY} | tail -n 3 | head -n 1)
-            pub8=$(echo $line | awk -F'│' '{gsub(/[[:space:]]*/, "", $3); split($3, a, ":"); print substr(a[1], 1, 8)}')
-            echo "line = $line"
-        else
-            pub8="${primal}"
-        fi
-        echo "pub8 = $pub8"
-
-        ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
-        [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]] \
-            && [[ ! -z ${pub8} && ${pub8:0:1} != "--------" ]] \
-            && echo "${pub8}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
 
         ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
         ## Can evolve to accept cross Uplanet Zen TX.
         UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
         if [[ $UPLANETG1PUB != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
-            if [[ ${UPLANETG1PUB:0:8} == $pub8 ]]; then
+            if [[ ${UPLANETG1PUB} == "${primal}" ]]; then
                 echo "GOOD ZEN WALLET primal TX by $UPLANETG1PUB"
                 echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check
             else
@@ -151,7 +137,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
                 fi
             fi
         else
-            echo "UPlanet ORIGIN"
+            echo "UPlanet ORIGIN AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z - No Control -"
         fi
     done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 fi
