@@ -171,13 +171,13 @@ for SECTOR in ${SECTORS[@]}; do
     echo "SETTING NEXT REFRESHER : $(cat ${UREFRESH} | head -n 1)"
 
     ############ 0 ZEN (1 G1) INIT ?!
-    CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
-    [[ ${COINS} == "" || ${COINS} == "null" ]] \
-        && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
-        && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:INIT:${SECTOR}" \
-        && echo "UPLANET:INIT:${SECTOR}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ " \
-        && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
+    #~ CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
+    #~ [[ ${COINS} == "" || ${COINS} == "null" ]] \
+        #~ && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
+        #~ && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+        #~ && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:INIT:${SECTOR}" \
+        #~ && echo "UPLANET:INIT:${SECTOR}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ " \
+        #~ && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
 ##############################################################
     ## FEED SECTOR TW WITH UMAPS RSS
@@ -349,10 +349,10 @@ for SECTOR in ${SECTORS[@]}; do
     # Send 1 ZEN to UPlanet REGIONG1PUB Wallet containing REGION TW HASH
     INTERCOM="UPLANET:${SECTOR}:${TODATE}:/ipfs/${IPFSPOP}"
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
-    if [[ ${ZEN} -gt 11 ]]; then
-        echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
+    #~ if [[ ${ZEN} -gt 11 ]]; then
+        #~ echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
         #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
-    fi
+    #~ fi
     ##############################################################
     ## PUBLISHING ${SECTOR}
     ###############################
