@@ -9,6 +9,7 @@
 # and comes from http://files.au.adversary.org/crypto/gpgme-python-howto.html
 # gpg key extraction is taken from work of Simon Vareille available at
 # https://gist.github.com/SimonVareille/fda49baf5f3e15b5c88e25560aeb2822
+# FRD add ssh & pgp output format
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +23,6 @@
 
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import argparse
 import base58
 import base64
@@ -127,7 +127,7 @@ class keygen:
         self.parser.add_argument(
             "-t",
             "--type",
-            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh','monero'],
+            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh','monero','pgp'],
             default="base58",
             dest="type",
             help="output text format, default: base58",
@@ -223,6 +223,64 @@ class keygen:
         print(self.ssh_public_key.decode())
         # Ajoutez cette ligne pour sauvegarder les fichiers SSH
         self._output_ssh_files()
+
+    def generate_pgp_keys(self):
+        log.debug("keygen.generate_pgp_keys()")
+        if not hasattr(self, 'duniterpy'):
+            self.duniterpy_from_ed25519_seed_bytes()
+
+        # Utiliser le seed ED25519 comme entrée pour la clé PGP
+        seed = self.duniterpy.seed
+
+        # Créer une clé PGP à partir du seed
+        key = pgpy.PGPKey.new(pgpy.constants.PubKeyAlgorithm.EdDSA, pgpy.constants.EllipticCurveOID.Ed25519)
+
+        # Définir l'identité utilisateur
+        uid = pgpy.PGPUID.new(self.username if self.username else 'Anonymous')
+
+        # Ajouter l'identité à la clé
+        key.add_uid(uid, usage={pgpy.constants.KeyFlags.Sign, pgpy.constants.KeyFlags.Certify},
+                    hashes=[pgpy.constants.HashAlgorithm.SHA256],
+                    ciphers=[pgpy.constants.SymmetricKeyAlgorithm.AES256],
+                    compression=[pgpy.constants.CompressionAlgorithm.ZLIB])
+
+        self.pgp_private_key = str(key)
+        self.pgp_public_key = str(key.pubkey)
+
+    def _output_pgp_files(self):
+        log.debug("keygen._output_pgp_files()")
+        try:
+            if not hasattr(self, 'pgp_private_key') or not hasattr(self, 'pgp_public_key'):
+                self.generate_pgp_keys()
+
+            private_key_file = f"{self.output}_private.asc"
+            public_key_file = f"{self.output}_public.asc"
+
+            with open(private_key_file, "w") as private_file:
+                private_file.write(str(self.pgp_private_key))
+            os.chmod(private_key_file, 0o600)
+
+            with open(public_key_file, "w") as public_file:
+                public_file.write(str(self.pgp_public_key))
+
+            print(f"PGP Private Key saved to: {private_key_file}")
+            print(f"PGP Public Key saved to: {public_key_file}")
+        except Exception as e:
+            log.error(f'Unable to output PGP files: {e}')
+            exit(2)
+
+    def do_pgp(self):
+        log.debug("keygen.do_pgp()")
+        self.generate_pgp_keys()
+
+        if self.output:
+            self._output_pgp_files()
+        else:
+            print("PGP Private Key:")
+            print(self.pgp_private_key)
+            print("\nPGP Public Key:")
+            print(self.pgp_public_key)
+
 
     def generate_monero_keys(self):
         log.debug("keygen.generate_monero_keys()")
