@@ -98,17 +98,18 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     echo "${MAGIX[@]}"  | tr -d ' ' | head -c 32 | od -t x1 -A none - | tr -d '\n ' \
             > $HOME/.zen/tmp/${MOATS}/swarm.key ## NEW SWARM KEY
 
+    cat $HOME/.zen/tmp/${MOATS}/swarm.key
     ## INJECT NEW BOOSTRAP LIST
-    cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/game/MY_boostrap_nodes.txt
+    echo "cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/game/MY_boostrap_nodes.txt"
     #######################################################################
     ## UPNAME = domain.tld
     # PACTHING Astroport.ONE code --- breaks automatic git pull... manual update
     ##
-    grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
-    rm ~/.zen/game/myswarm_secret.dunikey
+    #~ grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
+    #~ rm ~/.zen/game/myswarm_secret.dunikey
 
     # PUT key into ~/.ipfs/swarm.key
-    cp $HOME/.zen/tmp/${MOATS}/swarm.key ~/.ipfs/swarm.key
+    echo "cp $HOME/.zen/tmp/${MOATS}/swarm.key ~/.ipfs/swarm.key"
     # it will make IPFSNODEID restarting in private mode
 
 fi
