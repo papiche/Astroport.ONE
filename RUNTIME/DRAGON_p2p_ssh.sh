@@ -44,18 +44,19 @@ do
 done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
 
 ############################################
-## PUBLISH SSH PUBKEY OVER IPFS y_ssh.pub
+## Y LEVEL = SSH PUBKEY OVER IPFS y_ssh.pub
 ## https://pad.p2p.legal/keygen
 if [[ -s ~/.ssh/id_ed25519.pub ]]; then
+    ## TEST IF TRANSMUTATION IS MADE
     YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
     if [[ ${IPFSNODEID} == ${YIPNS} ]]; then
-        ## TEST
+        ## TESTING TOOLS
         ${MY_PATH}/../tools/keygen "coucou" "coucou"
         keygen=$?
         ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CAPTAING1PUB}
         jaklis=$?
         [[ $keygen == 0 && $jaklis == 0 ]] \
-            && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub \
+            && echo "Y LEVEL CONFIRMED !" && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub \
             || echo "KEYGEN $keygen JAKLIS $jaklis DISFUNCTON"
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
@@ -68,48 +69,16 @@ fi
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
 
-## PRODUCE SWARM SEED PART - will be used to create swarm.key
+## PRODUCE SWARM SEED PART - used to create swarm.key
 if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub ]]; then
     [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ]] \
         && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
                 > ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt
+    ### INDICATE UPLANET SIGNATURE
     [[ -s ~/.ipfs/swarm.key ]] \
         && cat ~/.ipfs/swarm.key | sha512sum | cut -d ' ' -f 1 \
             > ~/.zen/tmp/${IPFSNODEID}/_UPlanet_H ## UPLANET PRIVATE SWARM
 fi
-############################################
-### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
-############################################
-echo "Launching  /x/ssh-${IPFSNODEID}"
-
-[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
-    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
-
-ipfs p2p ls
-
-echo
-############################################
-## PREPARE x_ssh.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-PORT=22000
-PORT=$((PORT+${RANDOM:0:3}))
-
-#######################################################################
-## Adapt $USER for the UPlanet /home/$USER Private Swarm specific one
-#######################################################################
-
-echo '#!/bin/bash
-if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
-    ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-    [[ $? == 0 ]] \
-        && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-        && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
-        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-fi
-' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
-
-cat ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 echo "${YIPNS}
 
@@ -139,8 +108,61 @@ echo "${YIPNS}
 
 "
 ############################################
-echo "DRAGON WAKE UP DONE"
-echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
+### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
+############################################
+if [[ ! -z $(pgrep sshd) ]]; then
+    echo "Launching SSH SHARE ACCESS /x/ssh-${IPFSNODEID}"
+    [[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
+    ############################################
+    ## PREPARE x_ssh.sh
+    ## REMOTE ACCESS COMMAND FROM DRAGONS
+    ############################################
+    PORT=22000
+    PORT=$((PORT+${RANDOM:0:3}))
+    echo '#!/bin/bash
+    if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
+        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+        [[ $? == 0 ]] \
+            && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+            && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    fi
+    ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
+
+fi
+############################################
+## PREPARE x_ollama.sh
+## REMOTE ACCESS COMMAND FROM DRAGONS
+############################################
+if [[ ! -z $(pgrep ollama) ]]; then
+    echo "Launching OLLAMA SHARE ACCESS /x/ollama-${IPFSNODEID}"
+    [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
+
+    PORT=44000
+    PORT=$((PORT+${RANDOM:0:3}))
+    echo '#!/bin/bash
+    if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
+        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+        [[ $? == 0 ]] \
+            && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+            && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    fi
+    ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+    #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_ollama.sh | bash"
+
+fi
+
+ipfs p2p ls
+
+############################################
+echo "DRAGON WOKE UP"
 ############################################
 
 exit 0
