@@ -31,9 +31,10 @@ YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
     && exit 0
 
 ## Init SEEDS
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ]] \
+        && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
+                > ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt
 SEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt)
-[[ $SEEDS == "" ]] \
-    && echo "NOT READY MISSING _swarm_part.12.txt" && exit 1
 
 ## CHECK IF ALREADY IPFS PRIVATE SWARM
 [[ -s ~/.ipfs/swarm.key ]] \
@@ -118,6 +119,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     # PUT key into ~/.ipfs/swarm.key
     echo "cp $HOME/.zen/tmp/${MOATS}/swarm.key ~/.ipfs/swarm.key"
     # it will make IPFSNODEID restarting in private mode
+    mv ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.${UPNAME}
 echo '
         /\_ _  __
   __  _ \( ! )/_/  __
