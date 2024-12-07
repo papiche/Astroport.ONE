@@ -97,7 +97,7 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
     if [[ ${duree} -gt 3600000 || ${duree} == "" ]]; then
 
-        ### STOP SWARM SYNC 1H BEFORE 20H12
+        ### STOP SWARM SYNC 1H BEFORE 20H12 : TODO CHECK THIS
         if [[ -s /tmp/20h12.log ]]; then
             current_time=$(date +%s)
             file_modification_time=$(stat -c %Y "/tmp/20h12.log")
@@ -127,21 +127,8 @@ while true; do
         #####################################
         ( ##### SUB-PROCESS £
         start=`date +%s`
-
-        # MONITOR pending -- Activate to reduce TX failure --
-        #~ for player in ${PLAYERONE[@]}; do
-            #~ g1pub=$(cat ~/.zen/game/players/${player}/.g1pub 2>/dev/null)
-            #~ # Check Station PLAYER payments
-            #~ PENDINGS=($(ls "$HOME/.zen/game/pending/${g1pub}/*.TX" 2>/dev/null))
-            #~ for pending in "${PENDINGS[@]}"; do
-                 #~ echo ${pending}
-                 #~ # TODO TREAT PENDINGS
-                 #~ #
-            #~ done
-        #~ done
-
         ############# GET BOOSTRAP SWARM DATA
-        for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
+        for bootnode in $(cat ${STRAPFILE} | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
         do
 
             ## ex: /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u)

@@ -133,7 +133,7 @@ for SECTOR in ${SECTORS[@]}; do
     ## CONTROL ACTINGNODE : BOOSTRAP DISTRIBUTED (jeu du mouchoir, token ring aléatoire)
     UREFRESH="${HOME}/.zen/tmp/${MOATS}/${SECTOR}/CHAIN/SECTOR.refresher"
     ALLNODES=($(cat ${UREFRESH}  | grep -v '^[[:space:]]*$' 2>/dev/null)) # ${ALLNODES[@]} without empty line
-    STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
+    STRAPS=($(cat ${STRAPFILE} | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
 
     if [[ ${ALLNODES[@]} == "" ]]; then
         for STRAP in ${STRAPS[@]}; do

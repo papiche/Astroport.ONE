@@ -510,7 +510,6 @@ myASTROTUBE="https://$(myAstroTube)"
  && myIPFSGW="$(zIp):8080" \
  || true
 
-
 ###
 if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 # GET SCREEN DIMENSIONS
@@ -553,6 +552,10 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 
 CAPTAING1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
 CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
+
+[[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
+    && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
+    || STRAPFILE="${MY_PATH}/A_boostrap_nodes.txt"
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
 [[ ${CAPTAING1PUB} == "" ]] \

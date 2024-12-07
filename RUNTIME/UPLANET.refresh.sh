@@ -136,7 +136,7 @@ for UMAP in ${unique_combined[@]}; do
     ## NODE  SELECTION in UMAP.refresher
     UREFRESH="${HOME}/.zen/tmp/${MOATS}/${UMAP}/${LAT}_${LON}/UMAP.refresher"
     ALLNODES=($(cat ${UREFRESH} 2>/dev/null)) # ${ALLNODES[@]}
-    STRAPS=($(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
+    STRAPS=($(cat ${STRAPFILE} | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$')) ## ${STRAPS[@]}
 
     if [[ ${ALLNODES[@]} == "" ]]; then
         for STRAP in ${STRAPS[@]}; do

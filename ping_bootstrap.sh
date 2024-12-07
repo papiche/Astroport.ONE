@@ -8,10 +8,14 @@ ipfs stats dht wan > ~/.zen/tmp/ipfs.stats.dht.wan
 # cat ~/.zen/tmp/ipfs.stats.dht.wan
 echo "#########################"
 
+[[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
+    && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
+    || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
+
 ## BOOSTRAP
 echo "#########################"
 echo "BOOSTRAP NODES"
-for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#" | grep -v '^[[:space:]]*$')
+for bootnode in $(cat ${STRAPFILE} | grep -Ev "#" | grep -v '^[[:space:]]*$')
 do
     ipfsnodeid=${bootnode##*/}
     ipfs swarm peers | grep $bootnode

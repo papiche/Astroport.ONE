@@ -127,11 +127,6 @@ mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 ################################# updating ipfs bootstrap
     espeak "bootstrap refresh" > /dev/null 2>&1
     ipfs bootstrap rm --all > /dev/null 2>&1
-
-    [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
-        && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
-        || STRAPFILE="${MY_PATH}/A_boostrap_nodes.txt"
-
     for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # remove comments
     do
         ipfsnodeid=${bootnode##*/}
