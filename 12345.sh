@@ -43,6 +43,7 @@ echo "_____________________ $PORT ________________________________ $(date)"
 echo "LAUNCHING Astroport  API Server : ASTROPORT : ${myASTROPORT}"
 echo
 echo "_________________________________________________________"
+echo "PATH=$PATH"
 
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 

@@ -11,8 +11,7 @@ echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
 [[ -s ~/.astro/bin/activate ]] && source ~/.astro/bin/activate
-    export PATH=$HOME/.astro/bin:$HOME/.local/bin:$PATH
-    echo "PATH=$PATH"
+echo "PATH=$PATH"
 
 ########################################################################
 ## IPFS DAEMON STATUS

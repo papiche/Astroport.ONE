@@ -119,11 +119,19 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     echo "cp $HOME/.zen/tmp/${MOATS}/swarm.key ~/.ipfs/swarm.key"
     # it will make IPFSNODEID restarting in private mode
 echo '
-  _  _  _
- {o}{o}{o}
-  |  |  |
- \|/\|/\|/
-[~~~~~~~~~] ${UPNAME}'
+        /\_ _  __
+  __  _ \( ! )/_/  __
+  \_\( % )>o<})# )/_/
+   _(%>o<(_!_)>o<#)_
+  /_/(_% ( | (_#_)/_/
+    ( ! (~>O<~) % ) _
+  _({>O<}(_|_)%>O<%)_>
+ /_/(_!_)# )( (_%_)
+     _(#>o<#)>o< )_
+    /_/(_#_)(_|_)\_\
+            \/      ${UPNAME}
+------------------------------------------------
+'
 
 fi
 
