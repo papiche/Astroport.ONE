@@ -20,8 +20,13 @@ echo "$ME RUNNING $(date)"
 ## CHECK MY Y/Z LEVEL tools/ssh_to_g1ipfs.py
 YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 [[ $YNODE != $IPFSNODEID || -z $YNODE ]] \
-    && echo "NOT READY ... SSH != IPFS ... $YNODE != $IPFSNODEID" \
+    && echo "MY NODE IS NOT READY ... SSH != IPFS ... $YNODE != $IPFSNODEID" \
     && exit 0
+
+## Init SEEDS
+SEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt)
+[[ $SEEDS == "" ]] \
+    && echo "MISSING _swarm_part.12.txt" && exit 1
 
 ## CHECK IF ALREADY IPFS PRIVATE SWARM
 [[ -s ~/.ipfs/swarm.key ]] \
@@ -32,35 +37,30 @@ YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 nodes=($(ls ~/.zen/tmp/swarm/*/y_ssh.pub | rev | cut -d '/' -f 2 | rev 2>/dev/null))
 for aport in ${nodes[@]};
 do
-    ## Contenu de la clef publique ssh
-    cat ~/.zen/tmp/swarm/${aport}/y_ssh.pub
-    ## Test de concordance avec "ipfsNodeID"
+    ## Test de concordance de la clef publique ssh avec "ipfsNodeID"
     ynodeid=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.zen/tmp/swarm/${aport}/y_ssh.pub)")
     [[ ${ynodeid} != ${aport} ]] \
         && echo " ${ynodeid} != ${aport} " \
         && continue
-    echo "${aport} : READY TO BLOOM"
-    OKSTATIONS=("${OKSTATIONS[@]}" "${aport}")
+    [[ ${aport} != ${IPFSNODEID} ]] \
+        && echo "${aport} : READY TO BLOOM" \
+        && OKSTATIONS=("${OKSTATIONS[@]}" "${aport}")
 done
 
 ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## SORT & REMOVE DUPLICATE
-echo "<<< Y Level Stations are ${#nodes[@]} ASTROPORT(s) over ${#ZENSTATIONS[@]} are READY >>>"
+echo "<<< Y Level Stations are ${#nodes[@]} ASTROPORT(s) and ${#ZENSTATIONS[@]} are READY >>>"
 
+## FIND MY DOMAIN
+MYASTROPORT="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .myASTROPORT)"
+echo $MYASTROPORT
+[[ $(echo ${MYASTROPORT} | grep 'https') ]] \
+    && UPNAME=$(echo ${MYASTROPORT} | rev | cut -d '.' -f -2 | rev) \
+    || UPNAME="copylaradio.com"
 
-## IPFSNODEID IS FORKING TO NEW UPLANET
-    echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
-
-    ## FIND MY DOMAIN
-    MYASTROPORT="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .myASTROPORT)"
-    echo $MYASTROPORT
-    [[ $(echo ${MYASTROPORT} | grep 'https') ]] \
-        && UPNAME=$(echo ${MYASTROPORT} | rev | cut -d '.' -f -2 | rev) \
-        || UPNAME="copylaradio.com"
-
-
+## IS IPFSNODEID FORGING NEW UPLANET
+echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
 
 if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
-
 #######################################################################
     echo "# UPlanet Swarm Bootstrap Stations #
 # https://ipfs.${UPNAME} ipfs.${UPNAME}

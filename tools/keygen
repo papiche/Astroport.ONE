@@ -51,7 +51,7 @@ from bitcoin import privkey_to_address, encode_privkey
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
 
-__version__='0.0.7'
+__version__='0.1.9'
 
 class keygen:
     def __init__(self):
