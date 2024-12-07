@@ -10,6 +10,13 @@ ME="${0##*/}"
 . "${MY_PATH}/../tools/my.sh"
 #~ exec 2>&1 >> ~/.zen/game/RocketMe.log
 
+echo '
+        ()    /)
+----.---/----(  )
+     \        \)
+     ()
+'
+
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
 ## Contrôle ou déclenche l'echange de 1 G1 en chacun pour décider du "domaine.tld" commun
@@ -26,7 +33,7 @@ YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 ## Init SEEDS
 SEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/_swarm_part.12.txt)
 [[ $SEEDS == "" ]] \
-    && echo "MISSING _swarm_part.12.txt" && exit 1
+    && echo "NOT READY MISSING _swarm_part.12.txt" && exit 1
 
 ## CHECK IF ALREADY IPFS PRIVATE SWARM
 [[ -s ~/.ipfs/swarm.key ]] \
@@ -48,7 +55,7 @@ do
 done
 
 ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## SORT & REMOVE DUPLICATE
-echo "<<< Y Level Stations are ${#nodes[@]} ASTROPORT(s) and ${#ZENSTATIONS[@]} are READY >>>"
+echo "<<< ${#nodes[@]} ASTROPORT(s) are YLevel : ${#ZENSTATIONS[@]} are READY >>>"
 
 ## FIND MY DOMAIN
 MYASTROPORT="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .myASTROPORT)"
@@ -59,9 +66,8 @@ echo $MYASTROPORT
 
 ## IS IPFSNODEID FORGING NEW UPLANET
 echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
-
-if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
 #######################################################################
+if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     echo "# UPlanet Swarm Bootstrap Stations #
 # https://ipfs.${UPNAME} ipfs.${UPNAME}
 #################################################################
@@ -94,6 +100,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     #### SWARM KEY SHARED SECRET CREATION
     #... TODO ... Add "zero proof knowledge" using "IPFS/SSH" contact
     MAGIX=($(echo "${SEEDS[@]}" | tr ' ' '\n' | sort -u)) ## SORT
+    echo "MAGIX : ${MAGIX[@]}" ## DEBUG
     MAGIH=$(echo "${MAGIX[@]}" | sha512sum | cut -d ' ' -f 1) ## HASH512
     echo "${MAGIX[@]}"  | tr -d ' ' | head -c 32 | od -t x1 -A none - | tr -d '\n ' \
             > $HOME/.zen/tmp/${MOATS}/swarm.key ## NEW SWARM KEY
@@ -111,6 +118,12 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
     # PUT key into ~/.ipfs/swarm.key
     echo "cp $HOME/.zen/tmp/${MOATS}/swarm.key ~/.ipfs/swarm.key"
     # it will make IPFSNODEID restarting in private mode
+echo '
+  _  _  _
+ {o}{o}{o}
+  |  |  |
+ \|/\|/\|/
+[~~~~~~~~~]'
 
 fi
 
