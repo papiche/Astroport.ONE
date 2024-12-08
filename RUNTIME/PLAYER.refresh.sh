@@ -294,7 +294,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
     ################# PERSONAL VDO.NINJA PHONEBOOTH
-    if [[ "${days}" == "3" ]]; then
+    if [[ "${days}" -gt "3" ]]; then
         YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
         _USER=$(echo $YOUSER | sed "s~\.~_~g")
         # MAKE "VISIO" TIDDLER
@@ -312,7 +312,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #####################################################################
     # MAKE "CESIUM" TIDDLER
-    if [[ "${days}" == "4" ]]; then
+    if [[ "${days}" -gt "4" ]]; then
         echo "Create CESIUM Tiddler"
         cat ${MY_PATH}/../templates/data/CESIUM.json \
             | sed -e "s~_G1PUB_~${G1PUB}~g" \
@@ -469,18 +469,18 @@ for PLAYER in ${PLAYERONE[@]}; do
     ##############################################################
     if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
         ##############################################################
-        # G1PalPay.sh #
+        # G1PalPay.sh # WALLET TX/RX MONITORING
         ##############################################################
         echo "## RUNNING G1PalPay Wallet Monitoring "
         ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
 
         ##############################################################
-        # VOEUX.create.sh #
+        # VOEUX.create.sh # TAG=voeu SUB KEY CREATION
         ##############################################################
         ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
 
         ##############################################################
-        # VOEUX.refresh.sh #
+        # VOEUX.refresh.sh # "G1Voeu" SUB RSS MERGINGS
         ##############################################################
         ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
@@ -619,7 +619,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ZEN ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
         fi
-        if [[ ${days} -gt 29 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]]; then
+        if [[ ${days} -gt 29 && $(echo "$COINS <= 2" | bc -l) -eq 1 && ${PLAYER} != ${CURRENT} ]]; then
             #################################### UNPLUG ACCOUNT
             echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
             ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
@@ -627,15 +627,18 @@ for PLAYER in ${PLAYERONE[@]}; do
         fi
 
     else
-
+        mkdir -p ~/.zen/tmp/${MOATS}/${PLAYER}.rss
+        cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
+            ~/.zen/tmp/${MOATS}/${PLAYER}.rss/rss.json
+        cp ~/.zen/tmp/coucou/${G1PUB}.gchange.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/gchange.json 2>/dev/null
+        cp ~/.zen/tmp/coucou/${G1PUB}.cesium.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/cesium.json 2>/dev/null
         ### PLAYER ALIVE PUBLISH RSS &
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
-        [[ ${FEEDNS} ]] \
-            && IRSS=$(ipfs add --pin=false -q ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json | tail -n 1) \
+        [[ ! -z ${FEEDNS} ]] \
+            && IRSS=$(ipfs add --pin=false -wq ~/.zen/tmp/${MOATS}/*.json | tail -n 1) \
             && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
             && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
             || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
-
     fi
 
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
