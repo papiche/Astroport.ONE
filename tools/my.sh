@@ -565,7 +565,7 @@ CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER O
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
-    || STRAPFILE="${MY_PATH}/A_boostrap_nodes.txt"
+    || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
 
 ## DEV support@qo-op.com Unamed UPlanet World Keeper.
 [[ ${CAPTAING1PUB} == "" ]] \
