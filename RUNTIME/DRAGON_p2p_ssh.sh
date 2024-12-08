@@ -144,8 +144,7 @@ if [[ ! -z $(pgrep ollama) ]]; then
     [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
         && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
 
-    PORT=44000
-    PORT=$((PORT+${RANDOM:0:3}))
+    PORT=11434
     echo '#!/bin/bash
     if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
         ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
