@@ -37,7 +37,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         ICID=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
         echo "ITYPE=$ITYPE ICID=$ICID"
         [[ ${ITYPE} == "ipns" && ${ICID} != "" && ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
-            && echo "flashmem ${ETWLINK}" \
+            && echo "refreshing flashmem ${ETWLINK}" \
             && mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID} \
             && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
                     > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html \
@@ -65,6 +65,9 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
     ASTROG1=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].g1pub)
     TWCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].chain)
 
+    tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'lightbeams.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key'
+    FEEDNS="/ipns/"$(cat ~/.zen/tmp/${MOATS}/lightbeams.json 2>/dev/null | jq -r .[].text)
+
     ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
 
@@ -78,7 +81,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
 else
 
-    echo "export ASTROTW='' # ${EMAIL} NOT FOUND"
+    echo "export ASTROTW='' # BAD ${EMAIL} FORMAT"
     exit 0
 
 fi
@@ -87,5 +90,5 @@ fi
     #~ && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS TWCHAIN=$TWCHAIN ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
 exit 0

@@ -85,7 +85,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
 
         source ~/.zen/game/players/${PLAYER}/secret.june
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $G1PUB"
         FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
 
         ## IF ASTRONS="" KEY WILL BE DELETED AFTER REFRESH

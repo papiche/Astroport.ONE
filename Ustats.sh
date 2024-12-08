@@ -22,11 +22,11 @@ echo "${#unique_combined[@]} TW(S) : ${unique_combined[@]}"
 echo "==========================================================="
 tw_array=()
 for player in ${unique_combined[@]}; do
-    $(${MY_PATH}/tools/search_for_this_email_in_players.sh $player | tail -n 1)
-    echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
+    $(${MY_PATH}/tools/search_for_this_email_in_players.sh "$player" | tail -n 1)
+    echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW TWCHAIN=$TWCHAIN ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED TW=$TW source=$source"
     # Construct JSON object using printf and associative array
-    tw_obj=$(printf '{"ASTROPORT": "%s", "ASTRONAUTENS": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "EMAIL": "%s", "ASTROFEED": "%s", "FEEDNS": "%s", "TW": "%s", "source": "%s"}' \
-                    "$ASTROPORT" "$ASTRONAUTENS" "$ASTROG1" "$EMAIL" "$EMAIL" "$ASTROFEED" "$FEEDNS" "$TW" "$source")
+    tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "TWCHAIN": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "TW": "%s", "source": "%s"}' \
+                    "$ASTROPORT" "$ASTROTW" "$TWCHAIN" "$ASTROG1" "$ASTROMAIL" "$ASTROFEED" "$TW" "$source")
     tw_array+=("$tw_obj")
 done
 ####################################
