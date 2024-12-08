@@ -108,8 +108,11 @@ do
         echo "TRUSTING ${LINE}"
     fi
 done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
-
+echo
+cat ~/.ssh/authorized_keys
+echo
 ipfs p2p ls
+echo
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
