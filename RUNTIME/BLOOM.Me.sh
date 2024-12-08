@@ -87,15 +87,23 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
             seed=$(cat ~/.zen/tmp/swarm/${station}/_swarm.egg.txt)
             SEEDS=("${SEEDS[@]}" "${seed}")
 
-            ## Adding to ~/.ssh/authorized_keys
+            ## Adding to ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
             [[ -s ~/.zen/tmp/swarm/${station}/y_ssh.pub && ! -z ${seed} ]] \
-                && cat ~/.zen/tmp/swarm/${station}/y_ssh.pub >> ~/.ssh/authorized_keys
+                && cat ~/.zen/tmp/swarm/${station}/y_ssh.pub >> ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
+
+            awk '!seen[$0]++' ~/.zen/Astroport.ONE/A_boostrap_ssh.txt > ~/.zen/tmp/${MOATS}/A_boostrap_ssh.temp
+            mv ~/.zen/tmp/${MOATS}/A_boostrap_ssh.temp ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
+
+            ## Adding to ~/.ssh/authorized_keys
+            cat ~/.zen/Astroport.ONE/A_boostrap_ssh.txt >> ~/.ssh/authorized_keys
+            awk '!seen[$0]++' ~/.ssh/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys
+            mv ~/.zen/tmp/${MOATS}/authorized_keys ~/.ssh/authorized_keys
 
             ## Adding to MY Bootstrap List
             bootnode=$(cat ~/.zen/tmp/swarm/${station}/myIPFS.txt)
             iptype=$(echo ${bootnode} | cut -d '/' -f 2)
             if [[ $iptype == "dnsaddr" ]]; then
-                echo "${bootnode}" > ~/.zen/tmp/${MOATS}/new_straps.temp
+                echo "${bootnode}" > ~/.zen/tmp/${MOATS}/new_straps.temp ## write first in list
                 cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/tmp/${MOATS}/new_straps.temp
                 mv ~/.zen/tmp/${MOATS}/new_straps.temp ~/.zen/tmp/${MOATS}/new_straps.list
                 continue
@@ -125,8 +133,8 @@ if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
             > $HOME/.zen/tmp/${MOATS}/swarm.key ## NEW SWARM KEY
 
     cat $HOME/.zen/tmp/${MOATS}/swarm.key
-    ## INJECT NEW BOOSTRAP LIST
-    [[ ! -s ~/.zen/game/MY_boostrap_nodes.txt ]] \
+## INJECT NEW BOOSTRAP LIST
+[[ ! -s ~/.zen/game/MY_boostrap_nodes.txt ]] \
 && echo "# UPlanet Swarm Bootstrap Stations #
 # https://ipfs.${UPNAME} ipfs.${UPNAME}
 #################################################################

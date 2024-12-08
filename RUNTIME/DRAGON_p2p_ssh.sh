@@ -109,6 +109,7 @@ do
     fi
 done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
 
+ipfs p2p ls
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
@@ -161,7 +162,6 @@ if [[ ! -z $(pgrep ollama) ]]; then
 
 fi
 
-ipfs p2p ls
 
 ############################################
 echo "DRAGON WOKE UP"
