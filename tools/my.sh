@@ -161,12 +161,16 @@ myIpfsBootstrapNode() {
 myIpfsBootstrapNodes() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
      && local myIpfsBootstrapNodes=$(awk -F/ '$6 != "" {print}' "$(myAstroPath)/A_boostrap_nodes.txt")
+    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
+     && local myIpfsBootstrapNodes=$(awk -F/ '$6 != "" {print}' "$(myAstroPath)/../game/MY_boostrap_nodes.txt")
     [ -n "$myIpfsBootstrapNodes" ] && echo "$myIpfsBootstrapNodes"
 }
 
 myIpfsGw() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
      && local myIpfsGw=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
+    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
+     && local myIpfsGw=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
     [ -n "$myIpfsGw" ] && echo "$myIpfsGw"
 }
 
@@ -404,12 +408,16 @@ myTs() {
 myTube() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
      && local myTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3)
+    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
+     && local myTube=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3)
     [ -n "$myTube" ] && echo "$myTube"
 }
 
 myAstroTube() {
     [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
      && local myAstroTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
+    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
+     && local myAstroTube=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
     [ -n "$myAstroTube" ] && echo "$myAstroTube"
 }
 
@@ -513,11 +521,13 @@ myASTROTUBE="https://$(myAstroTube)"
 ###
 if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 # GET SCREEN DIMENSIONS
+    if [[ -z $large && -z $haut ]]; then
     screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
     width=$(echo $screen | cut -d 'x' -f 1)
     height=$(echo $screen | cut -d 'x' -f 2)
     large=$((width-300))
     haut=$((height-200))
+    fi
 ###
 fi
 

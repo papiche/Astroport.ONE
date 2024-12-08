@@ -12,8 +12,8 @@ ME="${0##*/}"
 ### USE 12345 MAP
 ## EXPLORE SWARM BOOSTRAP REPLICATED TW CACHE
 
-    start=`date +%s`
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+start=`date +%s`
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 EMAIL="$1"
 
@@ -35,8 +35,9 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         ETWLINK=$(grep -o "url='/[^']*'" "${INDEX}" | sed "s|url='||;s|'||")
         ITYPE=$(echo "${ETWLINK}" | cut -d '/' -f 2)
         ICID=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
-
+        echo "ITYPE=$ITYPE ICID=$ICID"
         [[ ${ITYPE} == "ipns" && ${ICID} != "" && ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
+            && echo "flashmem ${ETWLINK}" \
             && mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID} \
             && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
                     > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html \
@@ -46,6 +47,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
             && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
 
         [[ ${ITYPE} == "ipfs" ]] \
+            && echo "caching ${ETWLINK}" \
             && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
                 > ${HOME}/.zen/tmp/${MOATS}/index.html \
             && INDEX="${HOME}/.zen/tmp/${MOATS}/index.html"
@@ -81,8 +83,8 @@ else
 
 fi
 
-[[ $XDG_SESSION_TYPE == 'x11' && ${ASTRONAUTENS} != "" && ${ASTRONAUTENS} != "/ipfs/" && ${ASTRONAUTENS} != "/ipns/" ]] \
-    && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
+#~ [[ $XDG_SESSION_TYPE == 'x11' && ${ASTRONAUTENS} != "" && ${ASTRONAUTENS} != "/ipfs/" && ${ASTRONAUTENS} != "/ipns/" ]] \
+    #~ && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
 echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"

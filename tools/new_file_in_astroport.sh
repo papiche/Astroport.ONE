@@ -58,34 +58,32 @@ echo "$MY_PATH/new_file_in_astroport.sh PATH/ \"$path\" FILE \"$file\" G1PUB \"$
 ## FILE ANALYSE & IDENTIFICATION TAGGINGS
 extension="${file##*.}"
 TITLE="${file%.*}"
-    # CapitalGluedTitle
-    CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
+# CapitalGluedTitle
+CapitalGluedTitle=$(echo "${TITLE}" | sed -r 's/\<./\U&/g' | sed 's/ //g')
 
 # .part file false flag correcting (in case inotify has launched script)
 #~ [[ ! -f "${path}${file}" ]] && file="${TITLE%.*}" && extension="${TITLE##*.}" && [[ ! -f "${path}${file}" ]] && er="NO FILE" && echo "$er" && exit 1
 
 MIME=$(file --mime-type -b "${path}${file}")
 
-
-
-    ############# EXTEND MEDIAKEY IDENTIFATORS https://github.com/NapoleonWils0n/ffmpeg-scripts
-    if [[ $(echo "$MIME" | grep 'video') ]]; then
-        ## Create gifanime ##  TODO Search for similarities BEFORE ADD
-        echo "(✜‿‿✜) GIFANIME (✜‿‿✜)"
-        $(${MY_PATH}/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1)
-        [ $HOP -gt 0 ] && espeak "HOP $HOP. File is ready for Astroport Now" && echo "HOP HOP HOP $HOP" && exit 0
-        echo "$DUREE GIFANIM ($PROBETIME) : /ipfs/$ANIMH"
-    fi
+############# EXTEND MEDIAKEY IDENTIFATORS https://github.com/NapoleonWils0n/ffmpeg-scripts
+if [[ $(echo "$MIME" | grep 'video') ]]; then
+    ## Create gifanime ##
+    echo "(✜‿‿✜) GIFANIME (✜‿‿✜)"
+    $(${MY_PATH}/make_video_gifanim_ipfs.sh "$path" "$file" | tail -n 1)
+    echo "HOP=$HOP ANIMH=$ANIMH PROBETIME=$PROBETIME DURATION=$DURATION DUREE=$DUREE RES=$RES MIME=$MIME VTRATIO=$VTRATIO file=$file"
+    #~ [[ -s "${path}${file}.mp4" ]] && file="${file}.mp4"
+    echo "$DUREE GIFANIM ($PROBETIME) : /ipfs/$ANIMH"
+fi
 
 ########################################################################
 # GET CONNECTED PLAYER
 ########################################################################
 [[ ! $G1PUB ]] && G1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null)
 [[ ! $PLAYER ]] && PLAYER=$(cat ~/.zen/game/players/.current/.player 2>/dev/null);
-
 [[ ! $PLAYER ]] && echo "(╥☁╥ ) No player. Please Login" && exit 1
 
-# NOT CURRENT PLAYER (CHECK FOR TW & KEY
+# NOT CURRENT PLAYER (CHECK FOR TW & KEY)
 [[ $(ipfs key list -l | grep -w $G1PUB) ]] \
 && echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
 && ASTRONS=$($MY_PATH/g1_to_ipfs.py "$G1PUB") \
@@ -93,12 +91,13 @@ MIME=$(file --mime-type -b "${path}${file}")
 || echo "(╥☁╥ ) I cannot help you"
 
 ########################################################################
-
 ## Indicate IPFSNODEID copying
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
 
 ### SOURCE IS ~/Astroport/${PLAYER}/ !!
-[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] && er="Les fichiers sont à placer dans ~/Astroport/${PLAYER}/ MERCI" && echo "$er" && exit 1
+[[ ! $(echo "$path" | cut -d '/' -f 4 | grep 'Astroport') ]] \
+    && er="Les fichiers sont à placer dans ~/Astroport/${PLAYER}/ MERCI" \
+    && echo "$er" && exit 1
 
 ### TyPE & type & T = related to ~/astroport location of the infile (mimetype subdivision)
 TyPE=$(echo "$path" | cut -d '/' -f 6) # ex: /home/$YOU/Astroport/${PLAYER}/... TyPE(film, youtube, mp3, video, pdf)/ REFERENCE /
@@ -154,16 +153,16 @@ esac
 [[ $MEDIAKEY == "" ]] && MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
 echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 
-######################### Decimal convert
-    rm ~/.zen/tmp/decimal
-    echo "$CapitalGluedTitle" > ~/.zen/tmp/convert
+#~ ######################### Decimal convert
+    #~ rm ~/.zen/tmp/decimal
+    #~ echo "$CapitalGluedTitle" > ~/.zen/tmp/convert
 
-    # iteracte through each like
-    while read -r -n1 char; do
-        arr+=$(printf '%d+' "'$char");
-    done <<< ~/.zen/tmp/convert
+    #~ # iteracte through each like
+    #~ while read -r -n1 char; do
+        #~ arr+=$(printf '%d+' "'$char");
+    #~ done <<< ~/.zen/tmp/convert
 
-    printf '%s' "${arr[@]::-3}" > ~/.zen/tmp/decimal
+    #~ printf '%s' "${arr[@]::-3}" > ~/.zen/tmp/decimal
     ## TODO USE IT TO MAKE A MEDIAKEY IMAGE KEY "SONDE" FOR FILTERING ?
     # ISSUE11 : https://git.p2p.legal/qo-op/Astroport.ONE/issues/11
 ##########################
@@ -172,9 +171,9 @@ echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 echo "ADDING ${path}${file} to IPFS "
 echo "-----------------------------------------------------------------"
 
-       ### FILE SIZING ####
-        FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
-        FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
+### FILE SIZING ####
+FILE_BSIZE=$(du -b "${path}${file}" | awk '{print $1}')
+FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
 
 ################################
 ###########################################
@@ -192,48 +191,48 @@ IPFSID=$(echo $IPFS | cut -d ' ' -f 1)
 
 end=`date +%s`
 ipfsdur=`expr $end - $startipfs`
-echo IPFS ADD time was $ipfsdur seconds.
-###########################################################
-############################################
-################################
-APPNAME="KEY"
-echo "-----------------------------------------------------------------"
-echo "IPFS $file DIRECTORY: ipfs ls /ipfs/$IPFSREPFILEID"
-echo "APP $APPNAME OUTPUT -----------------------------------------------------------------"
-echo "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${APPNAME}/${MIME}/${MEDIAKEY}/${G1PUB}/ "
+echo "IPFS ADD time was $ipfsdur seconds. $URLENCODE_FILE_NAME"
 
 URLENCODE_FILE_NAME=$(echo ${file} | jq -Rr @uri)
 
-### MEDIAKEY FORGE
-########################################################################
-## CREATE NEW ipns KEY : ${MEDIAKEY}
-########################################################################
-## IPFS SELF IPNS DATA STORAGE
-## ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/
-########################################################################
-if [[ ! $(ipfs key list | grep -w "${MEDIAKEY}") ]]; then
-    echo "CREATING NEW IPNS $MEDIAKEY"
-    ## IPNS KEY CREATION ?
-    mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}
-    KEY=$(ipfs key gen "${MEDIAKEY}")
-    KEYFILE=$(~/.zen/Astroport.ONE/tools/give_me_keystore_filename.py "${MEDIAKEY}") # better method applied
-fi
+#~ ###########################################################
+#~ ############################################
+#~ ################################
+#~ APPNAME="KEY"
+#~ echo "-----------------------------------------------------------------"
+#~ echo "IPFS $file DIRECTORY: ipfs ls /ipfs/$IPFSREPFILEID"
+#~ echo "APP $APPNAME OUTPUT -----------------------------------------------------------------"
+#~ echo "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${APPNAME}/${MIME}/${MEDIAKEY}/${G1PUB}/ "
+#~ ### MEDIAKEY FORGE
+#~ ########################################################################
+#~ ## CREATE NEW ipns KEY : ${MEDIAKEY}
+#~ ########################################################################
+#~ ## IPFS SELF IPNS DATA STORAGE
+#~ ## ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/
+#~ ########################################################################
+#~ if [[ ! $(ipfs key list | grep -w "${MEDIAKEY}") ]]; then
+    #~ echo "CREATING NEW IPNS $MEDIAKEY"
+    #~ ## IPNS KEY CREATION ?
+    #~ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}
+    #~ KEY=$(ipfs key gen "${MEDIAKEY}")
+    #~ KEYFILE=$(~/.zen/Astroport.ONE/tools/give_me_keystore_filename.py "${MEDIAKEY}") # better method applied
+#~ fi
 
-## IS IT NEW IPNS KEY?
-if [[ $KEY ]]; then
-    # memorize IPNS key filename for easiest exchange
-    echo "$KEYFILE" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename
-    # Publishing IPNS key
-    echo "$KEY" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link
-    # CREATE .zen = ZEN economic value counter
-    touch ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.zen
-    ################ STORE ENCRYPT keystore/$KEYFILE
-    cp ~/.ipfs/keystore/$KEYFILE ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/
-else
-    KEY=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link)
-    KEYFILE=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename)
-    echo "## ALREADY EXISTING IPNS KEY $KEYFILE ($KEY)"
-fi
+#~ ## IS IT NEW IPNS KEY?
+#~ if [[ $KEY ]]; then
+    #~ # memorize IPNS key filename for easiest exchange
+    #~ echo "$KEYFILE" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename
+    #~ # Publishing IPNS key
+    #~ echo "$KEY" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link
+    #~ # CREATE .zen = ZEN economic value counter
+    #~ touch ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.zen
+    #~ ################ STORE ENCRYPT keystore/$KEYFILE
+    #~ cp ~/.ipfs/keystore/$KEYFILE ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/
+#~ else
+    #~ KEY=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link)
+    #~ KEYFILE=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename)
+    #~ echo "## ALREADY EXISTING IPNS KEY $KEYFILE ($KEY)"
+#~ fi
 
 
 ########################################################################
@@ -352,14 +351,17 @@ echo "~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json copy 
 
 #############################################################################
 ## ARCHIVE FOR IPFSNODEID CACHE SHARING (APPNAME=KEY)
-mkdir -p "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/"
-cp ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/tiddler.json"
+#~ mkdir -p "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/"
+#~ cp ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json \
+    #~ "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/tiddler.json"
 #############################################################################
 
 ## TODO : Do we keep that ?
 # echo "SEND TW LINK to GCHANGE MESSAGE"
 [[ $3 ]] \
-&& ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
+&& ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
+    -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" \
+    -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
 
 fi
 
@@ -372,7 +374,7 @@ fi
 ########################################################################
 # echo "DUNIKEY PASS $PASS"
 echo "NEW $TyPE ($file) ADDED. $myIPFS/ipfs/$IPFSREPFILEID/$URLENCODE_FILE_NAME"
-echo "VIDEO IPNS LINK : $myIPFS/ipns/$KEY/$G1PUB/  = Create 'G1${CAT}.sh' to adapt 20H12 Ŋ1 process"
+#~ echo "VIDEO IPNS LINK : $myIPFS/ipns/$KEY/$G1PUB/  = Create 'G1${CAT}.sh' to adapt 20H12 Ŋ1 process"
 echo "#### EXCECUTION TIME"
 end=`date +%s`
 dur=`expr $end - $start`

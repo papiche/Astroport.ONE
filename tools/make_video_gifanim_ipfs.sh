@@ -3,6 +3,8 @@
 ## "(✜‿‿✜) GIFANIME $PROBETIME (✜‿‿✜)"
 # FORMAT MP4 max 720p
 # PHI GIFANIM CREATION
+#~ exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+export HOP
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 path="$1"
@@ -18,9 +20,11 @@ HOP=0
 #################################################################################################################
 ############# CONVERT NOT MP4
 [[ ! $MIME == "video/mp4"  ]] \
-&& echo "MP4 CONVERSION PLEASE WAIT" \
-&& ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
-&& [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" && file="${file}.mp4"  && extension="mp4" && MIME=$(file --mime-type -b "${path}${file}") && HOP=1
+    && echo "MP4 CONVERSION PLEASE WAIT" \
+    && ffmpeg -loglevel error -i "${path}${file}" -c:v libx264 -c:a aac "${path}${file}.mp4" \
+    && [[ -s "${path}${file}.mp4" ]] && rm "${path}${file}" \
+    && file="${file}.mp4"  && extension="mp4" \
+    && MIME=$(file --mime-type -b "${path}${file}") && HOP=1
 
 # Utiliser ffprobe pour obtenir les dimensions de la vidéo
 FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${path}${file}")

@@ -38,7 +38,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeicdwpmwntwmo5pghqjgog3r67murpmnhpx7zhde2jbnl6ic2zlgvy" ##
+TWUPLANET="/ipfs/bafybeibmbd6fjkemelsfonraqc3ejwhiseteb3dh6gagrex4ivffunrlkm" ##
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -121,8 +121,6 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
     fi
 
-
-
     ipfs key rm ${MOATS} 2>/dev/null ## CLEANING MOATS KEY
 
 fi
@@ -140,10 +138,10 @@ fi
 
 #~ echo "Inscription..."
 
-[[ $SALT == "" ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 4 | xargs)
+[[ $SALT == "" ]] && SALT=$(${MY_PATH}/../tools/diceware.sh 5 | xargs)
 #~ echo "-> ID : $SALT"
 
-[[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/../tools/diceware.sh 4 | xargs)
+[[ $PEPPER == "" ]] && PEPPER=$(${MY_PATH}/../tools/diceware.sh 5 | xargs)
 #~ echo "-> PASS : $PEPPER"
 
 [[ ! $PSEUDO ]] && PSEUDO=${PLAYER%%[0-9]*}
@@ -250,7 +248,9 @@ sed "s~_BIRTHDATE_~${MOATS}~g" ~/.zen/tmp/${MOATS}/TW/index.html \
 # INSERT ASTROPORT ADDRESS
 tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html --output ~/.zen/tmp/${MOATS} --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
 ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+
 sed -i "s~${ASTROPORT}~/ipns/${IPFSNODEID}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+sed -i "s~_MYIPFS_~${myIPFS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 # TW CHAIN INIT WITH TWMODEL
 sed -i "s~_MOATS_~${MOATS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
