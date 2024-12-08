@@ -53,7 +53,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
             && INDEX="${HOME}/.zen/tmp/${MOATS}/index.html"
 
     else
-        echo "INDEX IS TW"
+        echo "INDEX IS LOCAL PLAYER TW"
     fi
 
     rm -f ~/.zen/tmp/${MOATS}/Astroport.json

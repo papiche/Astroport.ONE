@@ -76,6 +76,16 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
 
+####################################################################################
+######################### TO REMOVE PATCH BAD ${PLAYER}_feed GENERATION
+####################################################################################
+        ipfs key rm "${PLAYER}_feed" 2>/dev/null
+        source ~/.zen/game/players/${PLAYER}/secret.june
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $G1PUB"
+        FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
+####################################################################################
+####################################################################################
+
     ############### CANNOT FIND PLAYER KEY ###########
     if [[ ! ${ASTRONAUTENS} ]]; then
 
@@ -84,6 +94,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
         ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
 
+        ipfs key rm "${PLAYER}_feed" 2>/dev/null
         source ~/.zen/game/players/${PLAYER}/secret.june
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $G1PUB"
         FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
@@ -235,7 +246,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "CURCHAIN=${CURCHAIN}"
     echo "================================== TW $days days old"
 
-    ######################################## BAD ACCOUNT CLEANING
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ######################################## BAD ACCOUNT CLEANING !
     ## UNPLUG more than 21 days & less than 2 G1 account
     [[ $(echo "$days >= 21" | bc -l) -eq 1 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]] \
         && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT"

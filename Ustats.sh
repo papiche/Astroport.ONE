@@ -62,6 +62,6 @@ umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_
 final_json="{\"TWs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
 
 #Print and format the JSON string.
-echo "$final_json" | jq '.'
+echo "$final_json" | jq -rc '.'
 
 exit 0
