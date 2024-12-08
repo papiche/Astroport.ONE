@@ -632,6 +632,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             ~/.zen/tmp/${MOATS}/${PLAYER}.rss/rss.json
         cp ~/.zen/tmp/coucou/${G1PUB}.gchange.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/gchange.json 2>/dev/null
         cp ~/.zen/tmp/coucou/${G1PUB}.cesium.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/cesium.json 2>/dev/null
+
         ### PLAYER ALIVE PUBLISH RSS &
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
         [[ ! -z ${FEEDNS} ]] \
