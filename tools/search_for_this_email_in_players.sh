@@ -46,7 +46,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         [[ -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
             && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
 
-        [[ ${ITYPE} == "ipfs" ]] \
+        [[ ${ITYPE} == "ipfs" && ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
             && echo "caching ${ETWLINK}" \
             && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
                 > ${HOME}/.zen/tmp/${MOATS}/index.html \
@@ -67,6 +67,10 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
     tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'lightbeams.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' '$:/plugins/astroport/lightbeams/saver/ipns/lightbeam-key'
     FEEDNS="/ipns/"$(cat ~/.zen/tmp/${MOATS}/lightbeams.json 2>/dev/null | jq -r .[].text)
+
+    tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'
+    LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json 2>/dev/null | jq -r .[].lat)
+    LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json 2>/dev/null | jq -r .[].lon)
 
     ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
@@ -90,5 +94,5 @@ fi
     #~ && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS TWCHAIN=$TWCHAIN ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
 exit 0

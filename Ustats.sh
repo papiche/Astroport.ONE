@@ -23,10 +23,10 @@ echo "==========================================================="
 tw_array=()
 for player in ${unique_combined[@]}; do
     $(${MY_PATH}/tools/search_for_this_email_in_players.sh "$player" | tail -n 1)
-    echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW TWCHAIN=$TWCHAIN ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED TW=$TW source=$source"
+    echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED TW=$TW source=$source"
     # Construct JSON object using printf and associative array
-    tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "TWCHAIN": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "TW": "%s", "source": "%s"}' \
-                    "$ASTROPORT" "$ASTROTW" "$TWCHAIN" "$ASTROG1" "$ASTROMAIL" "$ASTROFEED" "$TW" "$source")
+    tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "TW": "%s", "source": "%s"}' \
+                    "$ASTROPORT" "$ASTROTW" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "$ASTROFEED" "$TW" "$source")
     tw_array+=("$tw_obj")
 done
 ####################################
@@ -50,7 +50,8 @@ for umap in "${unique_combinedUMAPS[@]}"; do
     $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
     echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
     # Construct JSON object using printf and associative array
-    umap_obj=$(printf '{"lat": "%s", "lon": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s"}' "$lat" "$lon" "${UMAPG1PUB}" "${UMAPIPNS}" "${SECTORG1PUB}" "${SECTORIPNS}" "${REGIONG1PUB}" "${REGIONIPNS}")
+    umap_obj=$(printf '{"lat": "%s", "lon": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s"}' \
+                        "$lat" "$lon" "${UMAPG1PUB}" "${UMAPIPNS}" "${SECTORG1PUB}" "${SECTORIPNS}" "${REGIONG1PUB}" "${REGIONIPNS}")
     umap_array+=("$umap_obj")
     echo
 done
@@ -59,9 +60,8 @@ done
 tw_json_array=$(printf '%s,' "${tw_array[@]}"); tw_json_array="${tw_json_array%,}" #remove trailing comma
 umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
 
-final_json="{\"TWs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+final_json="{\"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
 
-#Print and format the JSON string.
+#Print and format INLINE the JSON string.
 echo "$final_json" | jq -rc '.'
-
 exit 0
