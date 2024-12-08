@@ -23,6 +23,11 @@ echo '
 ## Au minimum 3 Stations peuvent forger un nouvel essaim par jour.
 
 echo "$ME RUNNING $(date)"
+## CHECK IF ALREADY IPFS PRIVATE SWARM
+[[ -s ~/.ipfs/swarm.key ]] \
+    && echo "PRIVATE SWARM ALREADY ACTIVATED ~/.ipfs/swarm.key" \
+    && exit 0
+
 #################################################################
 ## CHECK MY Y/Z LEVEL tools/ssh_to_g1ipfs.py
 YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
@@ -32,20 +37,17 @@ YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 
 ## Init SEEDS
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
-        && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
-                > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+    && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
+    > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 SEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt)
 
-## CHECK IF ALREADY IPFS PRIVATE SWARM
-[[ -s ~/.ipfs/swarm.key ]] \
-    && echo "PRIVATE SWARM ALREADY ACTIVATED ~/.ipfs/swarm.key" \
-    && exit 0
+totnodes=($(ls ~/.zen/tmp/swarm/*/12345.json | rev | cut -d '/' -f 2 | rev 2>/dev/null))
 
 ## CHECK OTHER ASTROPORT PUBLISHING Y LEVEL
 nodes=($(ls ~/.zen/tmp/swarm/*/y_ssh.pub | rev | cut -d '/' -f 2 | rev 2>/dev/null))
 for aport in ${nodes[@]};
 do
-    ## Test de concordance de la clef publique ssh avec "ipfsNodeID"
+    ## Test  "REAL YLEVEL" : clef publique ssh = "ipfsNodeID"
     ynodeid=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.zen/tmp/swarm/${aport}/y_ssh.pub)")
     [[ ${ynodeid} != ${aport} ]] \
         && echo " ${ynodeid} != ${aport} " \
@@ -56,7 +58,7 @@ do
 done
 
 ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## SORT & REMOVE DUPLICATE
-echo "<<< ${#nodes[@]} ASTROPORT(s) are YLevel : ${#ZENSTATIONS[@]} are READY >>>"
+echo "<<< TOTAL ${#totnodes[@]} ~~~ ${#nodes[@]} YLEVEL ~~~ ${#ZENSTATIONS[@]} READY TO BLOOM >>>"
 
 ## FIND MY DOMAIN
 MYASTROPORT="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .myASTROPORT)"
@@ -69,57 +71,79 @@ echo $MYASTROPORT
 echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
 #######################################################################
 if [[ ${#ZENSTATIONS[@]} -ge 3 ]]; then
-    echo "# UPlanet Swarm Bootstrap Stations #
-# https://ipfs.${UPNAME} ipfs.${UPNAME}
-#################################################################
-" > ~/.zen/tmp/${MOATS}/new_straps.list
 
     # Prepare "new_straps.list" from WAN only
     for station in ${ZENSTATIONS[@]}; do
-        ## COLLECT _swarm.egg.txt SEEDS
-        seed=$(cat ~/.zen/tmp/swarm/${station}/_swarm.egg.txt)
-        SEEDS=("${SEEDS[@]}" "${seed}")
-
         [[ ! -s ~/.zen/tmp/swarm/${station}/myIPFS.txt ]] \
             && echo "Missing swarm/${station}/myIPFS.txt" \
             && continue
 
-        bootnode=$(cat ~/.zen/tmp/swarm/${station}/myIPFS.txt)
-        echo "${bootnode}"
-        iptype=$(echo ${bootnode} | cut -d '/' -f 2)
-        nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
-        isnodeipLAN=$(echo $nodeip | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-        echo " ${iptype} address :: ${nodeip} (= ${isnodeipLAN})"
-        [[ ${nodeip} == ${isnodeipLAN} ]] && echo "LAN NODE... no good for bootstrap" && continue
+        ## Check if same UPNAME
+        mystro="$(cat ~/.zen/tmp/swarm/${station}/12345.json | jq -r .myASTROPORT)"
+        echo $mystro
+        hopname=$(echo ${mystro} | rev | cut -d '.' -f -2 | rev)
+        if [[ ${UPNAME} == ${hopname} ]]; then
+            ## COLLECT _swarm.egg.txt SEEDS
+            seed=$(cat ~/.zen/tmp/swarm/${station}/_swarm.egg.txt)
+            SEEDS=("${SEEDS[@]}" "${seed}")
 
-        echo "### OK adding to new_straps.list"
-        echo "${bootnode}" >> ~/.zen/tmp/${MOATS}/new_straps.list
+            ## Adding to ~/.ssh/authorized_keys
+            [[ -s ~/.zen/tmp/swarm/${station}/y_ssh.pub && ! -z ${seed} ]] \
+                && cat ~/.zen/tmp/swarm/${station}/y_ssh.pub >> ~/.ssh/authorized_keys
 
+            ## Adding to MY Bootstrap List
+            bootnode=$(cat ~/.zen/tmp/swarm/${station}/myIPFS.txt)
+            iptype=$(echo ${bootnode} | cut -d '/' -f 2)
+            if [[ $iptype == "dnsaddr" ]]; then
+                echo "${bootnode}" > ~/.zen/tmp/${MOATS}/new_straps.temp
+                cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/tmp/${MOATS}/new_straps.temp
+                mv ~/.zen/tmp/${MOATS}/new_straps.temp ~/.zen/tmp/${MOATS}/new_straps.list
+                continue
+            fi
+
+            nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
+            isnodeipLAN=$(echo $nodeip | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+            echo " ${iptype} address :: ${nodeip} (= ${isnodeipLAN})"
+            [[ ${nodeip} == ${isnodeipLAN} ]] && echo "LAN NODE... no good for bootstrap" && continue
+
+            echo "### OK adding ${bootnode} to new_straps.list"
+            echo "${bootnode}" >> ~/.zen/tmp/${MOATS}/new_straps.list
+        fi
     done
+
+    ## DEDOUBLAGE DE LIGNE
+    awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/new_straps.list > ~/.zen/tmp/${MOATS}/new_straps.temp
+    mv ~/.zen/tmp/${MOATS}/new_straps.temp ~/.zen/tmp/${MOATS}/new_straps.list
     cat ~/.zen/tmp/${MOATS}/new_straps.list ## NEW BOOTSTRAP LIST
 
     #### SWARM KEY SHARED SECRET CREATION
     #... TODO ... Add "zero proof knowledge" using "IPFS/SSH" contact
     MAGIX=($(echo "${SEEDS[@]}" | tr ' ' '\n' | sort -u)) ## SORT
-    echo "MAGIX : ${MAGIX[@]}" ## DEBUG
+    echo "／人 ◕‿‿◕ 人＼ : ${MAGIX[@]}" ## DEBUG
     MAGIH=$(echo "${MAGIX[@]}" | sha512sum | cut -d ' ' -f 1) ## HASH512
     echo "${MAGIX[@]}"  | tr -d ' ' | head -c 32 | od -t x1 -A none - | tr -d '\n ' \
             > $HOME/.zen/tmp/${MOATS}/swarm.key ## NEW SWARM KEY
 
     cat $HOME/.zen/tmp/${MOATS}/swarm.key
     ## INJECT NEW BOOSTRAP LIST
-    echo "cp ~/.zen/tmp/${MOATS}/new_straps.list ~/.zen/game/MY_boostrap_nodes.txt"
+    [[ ! -s ~/.zen/game/MY_boostrap_nodes.txt ]] \
+&& echo "# UPlanet Swarm Bootstrap Stations #
+# https://ipfs.${UPNAME} ipfs.${UPNAME}
+#################################################################
+" > ~/.zen/tmp/${MOATS}/MY_boostrap_nodes.txt
+cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
     #######################################################################
     ## UPNAME = domain.tld
     # PACTHING Astroport.ONE code --- breaks automatic git pull... manual update
     ##
     #~ grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
     #~ rm ~/.zen/game/myswarm_secret.dunikey
-
-    # PUT key into ~/.ipfs/swarm.key
-    echo "cp $HOME/.zen/tmp/${MOATS}/swarm.key ~/.ipfs/swarm.key"
+    #####################################################
+    echo "# ACTIVATING ~/.ipfs/swarm.key"
+    cat $HOME/.zen/tmp/${MOATS}/swarm.key > ~/.ipfs/swarm.key
     # it will make IPFSNODEID restarting in private mode
-    mv ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.${UPNAME}
+    echo ${UPNAME} > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+
 echo '
         /\_ _  __
   __  _ \( ! )/_/  __

@@ -26,22 +26,6 @@ if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop" ]]; then
     echo "STOP" && exit 0
 fi
 
-############################################
-## DISTRIBUTE DRAGON SSH WOT SEED
-# A_boostrap_ssh.txt
-############################################
-while IFS= read -r line
-do
-    LINE=$(echo "$line"  | grep "ssh-ed25519" | grep -Ev "#") # Remove # & not ssh-ed25519
-    [[ ! ${LINE} ]] && continue
-    if [[ ! $(cat ~/.ssh/authorized_keys | grep "${LINE}") ]]
-    then
-        echo "# ADDING ${LINE} to ~/.ssh/authorized_keys"
-        mkdir -p ~/.ssh && echo "${LINE}" >> ~/.ssh/authorized_keys
-    else
-        echo "TRUSTING ${LINE}"
-    fi
-done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
 
 ############################################
 ## Y LEVEL = SSH PUBKEY OVER IPFS y_ssh.pub
@@ -107,6 +91,24 @@ echo "${YIPNS}
                              '------'      \
 
 "
+
+############################################
+## DISTRIBUTE DRAGON SSH WOT SEED
+# A_boostrap_ssh.txt
+############################################
+while IFS= read -r line
+do
+    LINE=$(echo "$line"  | grep "ssh-ed25519" | grep -Ev "#") # Remove # & not ssh-ed25519
+    [[ ! ${LINE} ]] && continue
+    if [[ ! $(cat ~/.ssh/authorized_keys | grep "${LINE}") ]]
+    then
+        echo "# ADDING ${LINE} to ~/.ssh/authorized_keys"
+        mkdir -p ~/.ssh && echo "${LINE}" >> ~/.ssh/authorized_keys
+    else
+        echo "TRUSTING ${LINE}"
+    fi
+done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
+
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
