@@ -635,7 +635,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         ### PLAYER ALIVE PUBLISH RSS &
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
         [[ ! -z ${FEEDNS} ]] \
-            && IRSS=$(ipfs add --pin=false -wq ~/.zen/tmp/${MOATS}/*.json | tail -n 1) \
+            && IRSS=$(ipfs add --pin=false -wq ~/.zen/tmp/${MOATS}/${PLAYER}.rss/*.json | tail -n 1) \
             && echo "Publishing ${PLAYER}_feed: /ipns/${FEEDNS} => /ipfs/${IRSS}" \
             && ipfs --timeout 300s name publish --key="${PLAYER}_feed" /ipfs/${IRSS} \
             || echo ">>>>> WARNING ${PLAYER}_feed IPNS KEY PUBLISHING CUT - WARNING"
