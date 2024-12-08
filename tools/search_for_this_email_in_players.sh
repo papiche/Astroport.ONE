@@ -41,7 +41,7 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
             [[ ${ICID} != "" ]] \
                 && echo "refreshing flashmem ${ETWLINK}" \
                 && mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID} \
-                && ipfs --timeout=15s cat --progress=false ${ETWLINK} \
+                && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
                         > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html
 
             [[ -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
