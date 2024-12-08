@@ -127,7 +127,7 @@ if [[ ! -z $(pgrep sshd) ]]; then
         ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
         [[ $? == 0 ]] \
             && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+            && echo "SSH PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
             || echo "CONTACT IPFSNODEID FAILED - ERROR -"
     fi
     ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
@@ -145,12 +145,13 @@ if [[ ! -z $(pgrep ollama) ]]; then
         && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
 
     PORT=11434
+    PORT=$((PORT+${RANDOM:0:3}))
     echo '#!/bin/bash
     if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
         ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
         [[ $? == 0 ]] \
             && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+            && echo "OLLAMA PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
             || echo "CONTACT IPFSNODEID FAILED - ERROR -"
     fi
     ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
