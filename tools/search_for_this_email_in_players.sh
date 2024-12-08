@@ -13,9 +13,10 @@ ME="${0##*/}"
 ## EXPLORE SWARM BOOSTRAP REPLICATED TW CACHE
 
 start=`date +%s`
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 EMAIL="$1"
+MOATS="$2"
+[[ -z $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
 
@@ -36,21 +37,19 @@ if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
         ITYPE=$(echo "${ETWLINK}" | cut -d '/' -f 2)
         ICID=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
         echo "ITYPE=$ITYPE ICID=$ICID"
-        [[ ${ITYPE} == "ipns" && ${ICID} != "" && ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
-            && echo "refreshing flashmem ${ETWLINK}" \
-            && mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID} \
-            && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
-                    > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html \
-            && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
+        if [[ ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]]; then
+            [[ ${ICID} != "" ]] \
+                && echo "refreshing flashmem ${ETWLINK}" \
+                && mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID} \
+                && ipfs --timeout=15s cat --progress=false ${ETWLINK} \
+                        > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html
 
-        [[ -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
-            && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
-
-        [[ ${ITYPE} == "ipfs" && ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
-            && echo "caching ${ETWLINK}" \
-            && ipfs --timeout=30s cat --progress=false ${ETWLINK} \
-                > ${HOME}/.zen/tmp/${MOATS}/index.html \
-            && INDEX="${HOME}/.zen/tmp/${MOATS}/index.html"
+            [[ -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]] \
+                && INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html" \
+                || { echo "export ASTROTW=''"; exit 0; }
+        else
+            INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
+        fi
 
     else
         echo "INDEX IS LOCAL PLAYER TW"
