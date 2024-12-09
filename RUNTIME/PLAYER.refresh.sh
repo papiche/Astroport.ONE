@@ -81,6 +81,9 @@ for PLAYER in ${PLAYERONE[@]}; do
 ####################################################################################
         ipfs key rm "${PLAYER}_feed" 2>/dev/null
         source ~/.zen/game/players/${PLAYER}/secret.june
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
+        OLDFEEDNS=$(ipfs key import "${PLAYER}_old" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
+        ipfs key rm "${PLAYER}_old" 2>/dev/null
         ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $IPFSNODEID"
         FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
 ####################################################################################
@@ -549,6 +552,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     && echo "# CHAIN : ${CURCHAIN} -> ${ZCHAIN}" \
     && [[ ${CURCHAIN} != "" && ${ZCHAIN} != "" ]]  \
     && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+
+    ### TODO REMOVE -- FIXING ${OLDFEEDNS} -- Ustats
+    [[ ! -z ${OLDFEEDNS} && ! -z ${FEEDNS} ]] \
+        && sed -i "s~${OLDFEEDNS}~${FEEDNS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     ##################################################
     ######## UPDATING ${PLAYER}/ipfs/moa/.chain
