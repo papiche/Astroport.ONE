@@ -17,7 +17,7 @@ mkdir -p ~/.zen/game
 
 if [[ -s ~/.ssh/id_ed25519 ]]; then
     echo ‎"(/.__.)/   \(.__.\)"
-
+    echo "SSH ED25519 KEY EXISTING"
     if [[ -s ~/.zen/game/id_ssh.pub ]]; then
         echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
         echo "Astroport SSH Key Transmutation Already Done/"
@@ -29,10 +29,37 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         exit 0
     fi
 
-    ### GET SHA512 SSH PRIVATE KEY AS SEED FOR SECRETS SPLIT
-    SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
-    SECRET1=$(echo "$SSHASH" | cut -c 1-64)
-    SECRET2=$(echo "$SSHASH" | cut -c 65-128)
+    echo "<(''<)  <( ' SSH TRANSMUTATION )>  (> '')>"
+    PS3="Choose KEY type : "
+    choices=("CAPTAIN" "PLAYER")
+    select fav in  "${choices[@]}"; do
+        case $fav in
+        "CAPTAIN")
+            ### GET SHA512 SSH PRIVATE KEY AS SEED FOR SECRETS SPLIT
+            SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
+            SECRET1=$(echo "$SSHASH" | cut -c 1-64)
+            SECRET2=$(echo "$SSHASH" | cut -c 65-128)
+
+            break
+            ;;
+
+        "PLAYER")
+            echo "ENTER MULTIPASS SALT & PEPPER ?"
+            echo "Salt ?"
+            read SECRET1
+            echo "Pepper ?"
+            read SECRET2
+
+            break
+            ;;
+
+        "")
+            echo "Mauvais choix."
+            ;;
+
+        esac
+    done
+
     SSHYNODEID=$(~/.zen/Astroport.ONE/tools/keygen -t ipfs "$SECRET1" "$SECRET2")
     echo "??? ${SSHYNODEID} = ${IPFSNODEID} ???"
 
@@ -101,7 +128,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         cp ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub && chmod 644 ~/.ssh/id_ed25519.pub
 
         ## SUCCESS
-        echo "PLEASE REMOVE OLD SSH KEY BACKUP ~/.ssh/origin.key"
+        echo "YOUR PREVIOUS SSH KEY IS ~/.ssh/origin.key"
         echo "\(^-^)/ SSH/IPFS Twin key secrets"
         echo "SECRET1=$SECRET1"
         echo "SECRET2=$SECRET2"
@@ -117,6 +144,5 @@ else
     ssh-keygen -t ed25519
     echo "FINISH YOUR NODE TRANSFORMATION. PLEASE RUN $ME AGAIN
     (╯°□°)--︻╦╤─ - - - "
-
 fi
 
