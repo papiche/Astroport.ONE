@@ -227,6 +227,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ${CURCHAIN} == "" ||  ${CURCHAIN} == "null" ]] \
         && CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
 
+    ## SSHPUB is used to allow REMOTE TCP access through "ipfs p2p"
+    SSHPUB="$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].sshpub)"
+    [[ ! -z "${SSHPUB}" ]] && echo "${SSHPUB}" > ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+
     SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
     SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})
     DIFF_SECONDS=$(( SNOW - SBIRTH ))
