@@ -38,7 +38,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeibmbd6fjkemelsfonraqc3ejwhiseteb3dh6gagrex4ivffunrlkm" ##
+TWUPLANET="/ipfs/bafybeic6jcu53uiivo2eq35fshpyd2y2vvr3c2yncerxn2oad7oa3m6kj4" ##
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -51,6 +51,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/player.key "$SALT" "$PEPPER" 2>/dev/null
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
     # echo "/ipns/${ASTRONAUTENS}"
+
+    ## CREATING SALT/PEPPER SSH KEY
+    ${MY_PATH}/../tools/keygen -t ssh -o ~/.zen/tmp/${MOATS}/ssh "$SALT" "$PEPPER" 2>/dev/null
+    SSHPUB="$(cat ~/.zen/tmp/${MOATS}/ssh.pub)"
 
     echo "SCANNING /ipns/${ASTRONAUTENS} for 180s"
     ## GETTING LAST TW via IPFS or HTTP GW
@@ -273,7 +277,7 @@ sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.htm
 sed -i "s~_CURRENT_~${CURRENT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_G1PUB_~${G1PUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-#~ sed -i "s~_QRSEC_~${PASsec}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+sed -i "s~_SSHPUB_~${SSHPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 # La Clef IPNS porte comme nom G1PUB et ${PLAYER}
 sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
