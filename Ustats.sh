@@ -65,5 +65,5 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
 fi
-cat ~/.zen/tmp/Ustats.json
+echo "$HOME/.zen/tmp/Ustats.json"
 exit 0

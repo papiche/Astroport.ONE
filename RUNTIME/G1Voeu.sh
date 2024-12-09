@@ -57,7 +57,7 @@ SECRET2="${VoeuName} ${PLAYER} ${SALT}" ## SECRET2 est "TitreDuVoeu PLAYER SALT"
 echo "${SECRET2}" && [[ ! ${SECRET2} ]] && echo "EMPTY SECRET2 - ERROR" && exit 1
 
 echo "## keygen PLAYER DERIVATE WISH KEY"
-${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/${MOATS}/wish.dunikey "${SECRET1}${UPLANETNAME}" "${SECRET2}${UPLANETNAME}"
+${MY_PATH}/../tools/keygen  -t duniter -o ~/.zen/tmp/${MOATS}/wish.dunikey "${SECRET1}" "${SECRET2}"
 WISHG1PUB=$(cat ~/.zen/tmp/${MOATS}/wish.dunikey | grep "pub:" | cut -d ' ' -f 2)
 echo "WISHG1PUB (G1PUB) = ${WISHG1PUB}"
 [[ ${WISHG1PUB} == "" ]] && echo "EMPTY WISHG1PUB G1PUB - ERROR" && exit 1
@@ -66,7 +66,7 @@ mv ~/.zen/tmp/${MOATS}/wish.dunikey ~/.zen/game/players/${PLAYER}/voeux/${VoeuNa
 
 echo "# NOUVEAU VOEU"
 mkdir -p ~/.zen/game/players/${PLAYER}/voeux/${VoeuName}/${WISHG1PUB}/
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/voeux/${VoeuName}/${WISHG1PUB}/qrtw.ipfskey "${SECRET1}${UPLANETNAME}" "${SECRET2}${UPLANETNAME}"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/voeux/${VoeuName}/${WISHG1PUB}/qrtw.ipfskey "${SECRET1}" "${SECRET2}"
 ipfs key import ${WISHG1PUB} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/voeux/${VoeuName}/${WISHG1PUB}/qrtw.ipfskey
 VOEUNS=$(ipfs key list -l | grep -w "${WISHG1PUB}" | cut -d ' ' -f 1 )
 echo "/ipns/${VOEUNS}"
