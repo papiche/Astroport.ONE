@@ -96,18 +96,29 @@ echo "${YIPNS}
 ## DISTRIBUTE DRAGON SSH WOT SEED
 # A_boostrap_ssh.txt
 ############################################
+[[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+mkdir -p ~/.zen/tmp/${MOATS}
+cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys
 while IFS= read -r line
 do
-    LINE=$(echo "$line"  | grep "ssh-ed25519" | grep -Ev "#") # Remove # & not ssh-ed25519
+    LINE=$(echo "$line" | grep "ssh-ed25519" | grep -Ev "#") # Remove # & not ssh-ed25519
     [[ ! ${LINE} ]] && continue
-    if [[ ! $(cat ~/.ssh/authorized_keys | grep "${LINE}") ]]
+    if [[ ! $(cat ~/.zen/tmp/${MOATS}/authorized_keys | grep "${LINE}") ]]
     then
-        echo "# ADDING ${LINE} to ~/.ssh/authorized_keys"
-        mkdir -p ~/.ssh && echo "${LINE}" >> ~/.ssh/authorized_keys
+        echo "# ADDING ${LINE} to ~/.zen/tmp/${MOATS}/authorized_keys"
+        mkdir -p ~/.ssh && echo "${LINE}" >> ~/.zen/tmp/${MOATS}/authorized_keys
     else
-        echo "TRUSTING ${LINE}"
+        echo "ALREADY TRUSTING ${LINE}"
     fi
-done < ${MY_PATH}/../A_boostrap_ssh.txt ## MODIFIFIED BY PRIVATE SWARM ACTIVATION
+done < ${MY_PATH}/../A_boostrap_ssh.txt ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
+
+## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys
+
+### REMOVING DUPLICATION (NO ORDER CHANGING)
+awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean
+cat ~/.zen/tmp/${MOATS}/authorized_keys.clean > ~/.ssh/authorized_keys
+
 echo
 cat ~/.ssh/authorized_keys
 echo
@@ -165,7 +176,30 @@ if [[ ! -z $(pgrep ollama) ]]; then
 
 fi
 
+############################################
+## PREPARE x_comfyui.sh
+## REMOTE ACCESS COMMAND FROM DRAGONS
+############################################
+if [[ ! -z $(lsof -i :8188 | grep LISTEN) ]]; then
+    echo "Launching comfyui SHARE ACCESS /x/comfyui-${IPFSNODEID}"
+    [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/8188
 
+    PORT=8188
+    echo '#!/bin/bash
+    if [[ ! $(ipfs p2p ls | grep x/comfyui-'${IPFSNODEID}') ]]; then
+        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+        [[ $? == 0 ]] \
+            && ipfs p2p forward /x/comfyui-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+            && echo "comfyui PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    fi
+    ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
+    #~ cat ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_comfyui.sh | bash"
+
+fi
 ############################################
 echo "DRAGON WOKE UP"
 ############################################
