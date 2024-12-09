@@ -12,7 +12,7 @@ ME="${0##*/}"
 mkdir -p ~/.zen/game
 
 ## CE SCRIPT ASSURE LA COHERENCE CRYPTO ENTRE USER SSH ET IPFSNODEID
-## A CAPTAIN IS ACTIVATING ASTROPORT
+## A CAPTAIN IS ACTIVATING ASTROPORT or PLAYER joining DRAGON "ipfs p2p"
 ## Convert SSH key into IPFS key (Node ID) & USER NEW SSH ASTROPORT KEY
 
 if [[ -s ~/.ssh/id_ed25519 ]]; then
@@ -35,6 +35,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         case $fav in
         "CAPTAIN")
             ### GET SHA512 SSH PRIVATE KEY AS SEED FOR SECRETS SPLIT
+            echo " HASH & SPLIT ~/.ssh/id_ed25519"
             SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
             SECRET1=$(echo "$SSHASH" | cut -c 1-64)
             SECRET2=$(echo "$SSHASH" | cut -c 65-128)
@@ -43,17 +44,21 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
             ;;
 
         "PLAYER")
-            echo "ENTER MULTIPASS SALT & PEPPER ?"
+            echo "MULTIPASS SALT & PEPPER ?"
             echo "Salt ?"
             read SECRET1
             echo "Pepper ?"
             read SECRET2
+            echo "G1PUB"
+            ~/.zen/Astroport.ONE/tools/keygen "$SECRET1" "$SECRET2"
+            echo "IS IT YOUR G1PUB ? Enter to Confirm / Ctrl+C if wrong !"
+            read
 
             break
             ;;
 
         "")
-            echo "Mauvais choix."
+            echo "BAD CHOICE"
             ;;
 
         esac
@@ -65,7 +70,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
    if [[ ${SSHYNODEID} != ${IPFSNODEID} ]]; then
         echo "
         <(''<)  <( ' ' )>  (> '')>
-        ACTIVATING Y LEVEL"
+        ACTIVATING IPFS NODE Y LEVEL"
         echo "SALT=$SECRET1; PEPPER=$SECRET2" > ~/.zen/game/secret.june
         chmod 600 ~/.zen/game/secret.june
         ## supprimer les anciennes clef de SWARM
@@ -121,10 +126,10 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         echo "##############################################################"
         echo ">>> SSH LINK ACTIVATION ~/.zen/game/id_ssh == ~/.ssh/id_ed25519"
         echo "##############################################################"
-        mv ~/.ssh/id_ed25519 ~/.ssh/origin.key
-        mv ~/.ssh/id_ed25519.pub ~/.ssh/origin.pub
-        mv ~/.zen/game/id_ssh ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
-        cp ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub && chmod 644 ~/.ssh/id_ed25519.pub
+        [[ ! -s ~/.ssh/origin.key ]] && mv ~/.ssh/id_ed25519 ~/.ssh/origin.key
+        [[ ! -s ~/.ssh/origin.pub ]] && mv ~/.ssh/id_ed25519.pub ~/.ssh/origin.pub
+        cat ~/.zen/game/id_ssh > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+        cat ~/.zen/game/id_ssh.pub > ~/.ssh/id_ed25519.pub && chmod 644 ~/.ssh/id_ed25519.pub
 
         ## SUCCESS
         echo "YOUR PREVIOUS SSH KEY IS ~/.ssh/origin.key"
