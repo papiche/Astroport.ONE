@@ -16,8 +16,7 @@ mkdir -p ~/.zen/game
 ## Convert SSH key into IPFS key (Node ID) & USER NEW SSH ASTROPORT KEY
 
 if [[ -s ~/.ssh/id_ed25519 ]]; then
-    echo ‎"(/.__.)/   \(.__.\)"
-    echo "SSH ED25519 KEY EXISTING"
+    echo ‎"(/.__.)/  $(cat ~/.ssh/id_ed25519.pub)  \(.__.\)"
     if [[ -s ~/.zen/game/id_ssh.pub ]]; then
         echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
         echo "Astroport SSH Key Transmutation Already Done/"
@@ -29,8 +28,8 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         exit 0
     fi
 
-    echo "<(''<)  <( ' SSH TRANSMUTATION )>  (> '')>"
-    PS3="Choose KEY type : "
+    echo "<(''<)  <( ' SSH TRANSMUTATION ' )>  (> '')>"
+    PS3="Select KEY type ? "
     choices=("CAPTAIN" "PLAYER")
     select fav in  "${choices[@]}"; do
         case $fav in
