@@ -19,9 +19,6 @@ exec 2>&1 >> ~/.zen/tmp/_12345.log
 
 PORT=12345
 
-    YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") ## $USER running ipfs
-    LIBRA=$(head -n 2 ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2) ## SWARM#0 ENTRANCE URL
-
 ## KILLING OLD DAEMON OF MYSELF
 ncrunning=$(pgrep -au $USER -f 'nc -l -p 12345' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ncrunning != "" ]] && echo "(≖‿‿≖) - KILLING Already Running MAP Server -  (≖‿‿≖) " && kill -9 $ncrunning
@@ -386,12 +383,6 @@ ${NODE12345}
             timeoff=`date +%s`
             echo ">>> GROUND CONTROL FINISH in $(( timeoff - timeon )) sec <<<"
             ) &
-        fi
-
-        ### PATCH 1234 : send & forget mode
-        if [[ ${arr[0]} == "salt" ]]; then
-            echo "'(ᵔ◡◡ᵔ)' SALT MODE RECEIVED... "
-            ## JUST ADD SOME LINE OF CODE ...
         fi
 
     fi
