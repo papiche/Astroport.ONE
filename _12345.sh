@@ -112,10 +112,14 @@ while true; do
                 && echo "$(date +"%H%M") : 20H12 is running... " && continue
         fi
 
-        ## NO CAPTAIN ON BOARD
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
-        [[ ${PLAYERONE[@]} == "" ]] \
-            && duree=0 && lastrun=${MOATS} && break
+        YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+        ## NOT Y LEVEL STATIONS
+        if [[ ${IPFSNODEID} != ${YIPNS} ]]; then
+            ## NO CAPTAIN ON BOARD
+            [[ ${PLAYERONE[@]} == "" ]] \
+                && duree=0 && lastrun=${MOATS} && break
+        fi
 
         ## CHECK IF IPFS NODE IS RESPONDING
         ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
