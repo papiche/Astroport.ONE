@@ -118,38 +118,37 @@ cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys
 ### REMOVING DUPLICATION (NO ORDER CHANGING)
 awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean
 cat ~/.zen/tmp/${MOATS}/authorized_keys.clean > ~/.ssh/authorized_keys
-
-echo
+echo "-----------------------------------------------------"
+echo "~/.ssh/authorized_keys"
 cat ~/.ssh/authorized_keys
-echo
+echo "-----------------------------------------------------"
+echo "ipfs p2p ls"
 ipfs p2p ls
-echo
+echo "-----------------------------------------------------"
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
-if [[ ! -z $(pgrep sshd) ]]; then
-    echo "Launching SSH SHARE ACCESS /x/ssh-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
-    ############################################
-    ## PREPARE x_ssh.sh
-    ## REMOTE ACCESS COMMAND FROM DRAGONS
-    ############################################
-    PORT=22000
-    PORT=$((PORT+${RANDOM:0:3}))
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "SSH PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-    fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
-
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
-
+echo "Launching SSH SHARE ACCESS /x/ssh-${IPFSNODEID}"
+[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
+    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
+############################################
+## PREPARE x_ssh.sh
+## REMOTE ACCESS COMMAND FROM DRAGONS
+############################################
+PORT=22000
+PORT=$((PORT+${RANDOM:0:3}))
+echo '#!/bin/bash
+if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
+    ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+    [[ $? == 0 ]] \
+        && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+        && echo "SSH PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
 fi
+' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+
+echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
+
 ############################################
 ## PREPARE x_ollama.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
