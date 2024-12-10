@@ -12,6 +12,9 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
+if [ -s "$HOME/.astro/bin/activate" ]; then
+    source $HOME/.astro/bin/activate
+fi
 
 PORT=45779
 
@@ -21,7 +24,7 @@ PORT=45779
     echo "LIBRA=$LIBRA"
     TUBE=$(myTube)
     echo "TUBE=$TUBE"
-    export PATH=$HOME/.astro/bin:$HOME/.local/bin:$PATH
+    export PATH=$HOME/.local/bin:$PATH
     echo "PATH=$PATH"
 
 mkdir -p ~/.zen/tmp ~/.zen/game/players/localhost # ~/.zen & myos compatibility

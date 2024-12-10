@@ -147,55 +147,59 @@ fi
 
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 
-############################################
-## PREPARE x_ollama.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-if [[ ! -z $(pgrep ollama) ]]; then
-    echo "Launching OLLAMA SHARE ACCESS /x/ollama-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
+if [[ ! -s ~/.ipfs/swarm.key ]]; then
+    ############################################
+    ## PREPARE x_ollama.sh
+    ## REMOTE ACCESS COMMAND FROM DRAGONS
+    ############################################
+    if [[ ! -z $(pgrep ollama) ]]; then
+        echo "Launching OLLAMA SHARE ACCESS /x/ollama-${IPFSNODEID}"
+        [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
+            && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
 
-    PORT=11434
-    PORT=$((PORT+${RANDOM:0:3}))
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "OLLAMA PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+        PORT=11434
+        PORT=$((PORT+${RANDOM:0:3}))
+        echo '#!/bin/bash
+        if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
+            ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+            [[ $? == 0 ]] \
+                && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+                && echo "OLLAMA PORT FOR ${IPFSNODEID}" \
+                && export OLLAMA_API_BASE="http://127.0.0.1:'${PORT}'" \
+                && echo "OLLAMA_API_BASE=$OLLAMA_API_BASE" \
+                || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+        fi
+        ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+        #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+
+        echo "ipfs cat /ipns/${IPFSNODEID}/x_ollama.sh | bash"
+
     fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
-    #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
 
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_ollama.sh | bash"
+    ############################################
+    ## PREPARE x_comfyui.sh
+    ## REMOTE ACCESS COMMAND FROM DRAGONS
+    ############################################
+    if [[ ! -z $(lsof -i :8188 | grep LISTEN) ]]; then
+        echo "Launching comfyui SHARE ACCESS /x/comfyui-${IPFSNODEID}"
+        [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
+            && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/8188
 
-fi
+        PORT=8188
+        echo '#!/bin/bash
+        if [[ ! $(ipfs p2p ls | grep x/comfyui-'${IPFSNODEID}') ]]; then
+            ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+            [[ $? == 0 ]] \
+                && ipfs p2p forward /x/comfyui-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+                && echo "comfyui PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+                || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+        fi
+        ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
+        #~ cat ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
 
-############################################
-## PREPARE x_comfyui.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-if [[ ! -z $(lsof -i :8188 | grep LISTEN) ]]; then
-    echo "Launching comfyui SHARE ACCESS /x/comfyui-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/8188
+        echo "ipfs cat /ipns/${IPFSNODEID}/x_comfyui.sh | bash"
 
-    PORT=8188
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/comfyui-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/comfyui-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "comfyui PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
     fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
-    #~ cat ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
-
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_comfyui.sh | bash"
-
 fi
 echo "-----------------------------------------------------"
 echo "ipfs p2p ls"

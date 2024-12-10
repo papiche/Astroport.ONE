@@ -5,6 +5,8 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
+[[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" && exit 0
 
 . "${MY_PATH}/tools/my.sh"
 if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
