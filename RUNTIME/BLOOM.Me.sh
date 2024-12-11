@@ -9,7 +9,9 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 #~ exec 2>&1 >> ~/.zen/game/RocketMe.log
-
+if [ -s "$HOME/.astro/bin/activate" ]; then
+    source $HOME/.astro/bin/activate
+fi
 echo '
         ()    /)
 ----.---/----(  )

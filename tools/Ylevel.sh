@@ -8,7 +8,9 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 ME="${0##*/}"
-
+if [ -s "$HOME/.astro/bin/activate" ]; then
+    source $HOME/.astro/bin/activate
+fi
 mkdir -p ~/.zen/game
 
 ## CE SCRIPT ASSURE LA COHERENCE CRYPTO ENTRE USER SSH ET IPFSNODEID
