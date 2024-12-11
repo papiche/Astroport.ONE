@@ -5,12 +5,15 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
+if [ -s "$HOME/.astro/bin/activate" ]; then
+    source $HOME/.astro/bin/activate
+fi
+
 . "${MY_PATH}/tools/my.sh"
 start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
-[[ -s ~/.astro/bin/activate ]] && source ~/.astro/bin/activate
 echo "PATH=$PATH"
 
 ########################################################################
