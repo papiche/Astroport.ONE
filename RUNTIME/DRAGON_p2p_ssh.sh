@@ -140,8 +140,12 @@ if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
     ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
     [[ $? == 0 ]] \
         && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-        && echo "SSH PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+        && echo "ssh '${USER}'@127.0.0.1 -p '${PORT}'" \
         || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+else
+    echo "Tunnel x/ssh '${PORT}' already active..."
+    echo "ssh '${USER}'@127.0.0.1 -p '${PORT}'"
+    echo "ipfs p2p close -p x/ssh-'${IPFSNODEID}'"
 fi
 ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
@@ -168,6 +172,9 @@ if [[ ! -s ~/.ipfs/swarm.key ]]; then
                 && export OLLAMA_API_BASE="http://127.0.0.1:'${PORT}'" \
                 && echo "OLLAMA_API_BASE=$OLLAMA_API_BASE" \
                 || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+        else
+                echo "Tunnel x/ollama '${PORT}' already active..."
+                echo "ipfs p2p close -p x/ollama-'${IPFSNODEID}'"
         fi
         ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
         #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
@@ -191,8 +198,11 @@ if [[ ! -s ~/.ipfs/swarm.key ]]; then
             ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
             [[ $? == 0 ]] \
                 && ipfs p2p forward /x/comfyui-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-                && echo "comfyui PORT FOR ${IPFSNODEID}" && echo ssh '${USER}'@127.0.0.1 -p '${PORT}' \
+                && echo "xdg-open http://127.0.0.1:'${PORT}'" \
                 || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+        else
+                echo "Tunnel x/comfyui '${PORT}' already active..."
+                echo "ipfs p2p close -p x/comfyui-'${IPFSNODEID}'"
         fi
         ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
         #~ cat ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
