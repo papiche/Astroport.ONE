@@ -563,6 +563,11 @@ myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
 CAPTAING1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
 CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
 
+UPLANETG1PUB=$(cat ~/.zen/game/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
+[[ -z ${UPLANETG1PUB} ]] \
+    && UPLANETG1PUB=$(./keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
+    && echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
+
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"

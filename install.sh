@@ -153,7 +153,7 @@ echo "######### IMPRIMANTE & G1BILLET ##############"
 echo "#############################################"
 
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
-echo "INSTALL PRINTER FOR G1BILLET + AstroID & Zencard ..."
+echo "INSTALL PRINTER ? (empty = no)"
 read
 if [[ $saisie != "" ]]; then
     ## PRINT & FONTS
@@ -177,7 +177,6 @@ if [[ $saisie != "" ]]; then
 
 fi
 
-
 echo
 
 #####################
@@ -194,6 +193,9 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 echo 'export PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/games:$PATH
 ## Activate python env
 alias command="$HOME/.zen/Astroport.ONE/command.sh"
+alias jaklis="$HOME/.zen/Astroport.ONE/tools/jaklis/jaklis.py"
+alias natools="$HOME/.zen/Astroport.ONE/tools/natools.py"
+alias keygen="$HOME/.zen/Astroport.ONE/tools/keygen"
 . $HOME/.astro/bin/activate
 cowsay $(hostname)' >> ~/.bashrc
 source ~/.bashrc
@@ -222,11 +224,15 @@ echo "=== SETUP ASTROPORT"
 
 end=`date +%s`
 echo Installation time was `expr $end - $start` seconds.
+
+echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX LOG ERRORS XXx"
 cat /tmp/install.errors.log
+echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX please report any errors encountered during install  XXx"
-echo "################XXXX#########################"
+echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "RUN TEST : ~/.zen/Astroport.ONE/test.sh"
 echo
 echo "#########################################################"
@@ -244,17 +250,36 @@ echo "#############################################"
 ## ON BOARDING PLAYER
 echo "#############################################"
 # ACTIVATING ASTROPORT DAEMONS
-echo ">>> ASTROPORT ON/OFF <<<
+echo ">>> SWITHCIN ASTROPORT ON <<<
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
 echo "############################## ♥BOX READY ###"
 espeak "Welcome Web 3 Astronaut" 2>/dev/null
 echo ">>> Welcome Web3 Astronaut <<<"
-echo "PLEASE CREATE CAPTAIN ACCOUNT
-"
+PS3="Select Mode ? "
+choices=("COMMAND" "TRANSMUTE")
+select fav in  "${choices[@]}"; do
+    case $fav in
+    "COMMAND")
+        ~/.zen/Astroport.ONE/command.sh
 
-~/.zen/Astroport.ONE/command.sh
+        break
+        ;;
+
+    "TRANSMUTE")
+        ~/.zen/Astroport.ONE/tools/Ylevel.sh
+
+        break
+        ;;
+
+    "")
+        echo "BAD CHOICE"
+        ;;
+
+    esac
+done
+
 
 else
 

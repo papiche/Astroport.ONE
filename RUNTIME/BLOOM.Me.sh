@@ -34,7 +34,8 @@ echo "$ME RUNNING $(date)"
 ## CHECK MY Y/Z LEVEL tools/ssh_to_g1ipfs.py
 YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 [[ $YNODE != $IPFSNODEID || -z $YNODE ]] \
-    && echo "MY NODE IS NOT READY ... SSH != IPFS ... $YNODE != $IPFSNODEID" \
+    && echo "$YNODE != $IPFSNODEID" \
+    && echo "MY NODE IS NOT READY ... SSH != IPFS ..." \
     && exit 0
 
 ## Init SEEDS
@@ -147,7 +148,9 @@ cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
     # PACTHING Astroport.ONE code --- breaks automatic git pull... manual update
     ##
     #~ grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
-    #~ rm ~/.zen/game/myswarm_secret.dunikey
+    rm ~/.zen/game/myswarm_secret.dunikey
+    rm ~/.zen/game/UPLANETG1PUB
+
     #####################################################
     echo "# ACTIVATING ~/.ipfs/swarm.key"
     cat $HOME/.zen/tmp/${MOATS}/swarm.key > ~/.ipfs/swarm.key
