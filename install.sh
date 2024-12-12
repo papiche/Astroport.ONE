@@ -192,12 +192,15 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 ## EXTEND PATH
 echo 'export PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/games:$PATH
 ## Activate python env
+. $HOME/.astro/bin/activate
+## ALIASING commands
 alias command="$HOME/.zen/Astroport.ONE/command.sh"
 alias jaklis="$HOME/.zen/Astroport.ONE/tools/jaklis/jaklis.py"
 alias natools="$HOME/.zen/Astroport.ONE/tools/natools.py"
 alias keygen="$HOME/.zen/Astroport.ONE/tools/keygen"
-. $HOME/.astro/bin/activate
-cowsay $(hostname)' >> ~/.bashrc
+$HOME/.zen/Astroport.ONE/tools/my.sh
+
+cowsay $(hostname : $IPFSNODEID : $UPLANETG1PUB)' >> ~/.bashrc
 source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
