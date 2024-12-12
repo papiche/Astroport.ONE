@@ -46,20 +46,20 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 
 if [[ ${CURRENT} == "" ]]; then
     ## NO CAPTAIN
-    echo "NO CAPTAIN ONBOARD... Automatic registration... "
-    echo "Did you run Astroport Twin Keys Linking Procedure ?"
+    echo "NO CAPTAIN ONBOARD."
+    echo "Activate $USER SSH transmutation"
     echo "${MY_PATH}/tools/Ylevel.sh"
 fi
 
 echo 'PRESS CTRL+C or ENTER... '; read
 ## CREATE AND OR CONNECT USER
 PS3=' ____ Select  ___ ? '
-players=( "CREATE PLAYER" "PRINT QRCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+players=( "NEW PLAYER" "PRINT ZENCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 ## MULTIPLAYER
 
 select fav in "${players[@]}"; do
     case $fav in
-    "PRINT QRCARD")
+    "PRINT ZENCARD")
         ## DIRECT VISA.print.sh
         echo "'Email ?'"
         read EMAIL
@@ -79,7 +79,7 @@ select fav in "${players[@]}"; do
 
         exit
         ;;
-    "CREATE PLAYER")
+    "NEW PLAYER")
         echo "'Email ?'"
         read EMAIL
         [[ ${EMAIL} == "" ]] && break
@@ -121,7 +121,7 @@ PLAYER=$fav
 
 pass=$(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)
 ########################################## DEVEL
-echo "Saisissez votre PASS -- FREE MODE -- $pass" && read PASS
+echo "ENTER PASS -- FREE MODE -- $pass" && read PASS
 
 ## DECODE CURRENT PLAYER CRYPTO
 # echo "********* DECODAGE SecuredSocketLayer *********"
@@ -139,11 +139,11 @@ echo "Saisissez votre PASS -- FREE MODE -- $pass" && read PASS
 echo "________LOGIN OK____________";
 echo
 echo "DECHIFFRAGE CLEFS ASTRONAUTE"
-echo "Votre Pass Astroport.ONE  : $(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)"
+echo "PASS Astroport.ONE  : $(cat ~/.zen/game/players/$PLAYER/.pass 2>/dev/null)"
 export G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 [ ! ${G1PUB} ] && echo "ERROR. MAUVAIS PASS. EXIT" && exit 1
 
-echo "Clef Publique Astronaute : $G1PUB"
+echo "G1PUB Astronaute : $G1PUB"
 echo "ENTREE ACCORDEE"
 echo
 export ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
@@ -155,7 +155,7 @@ echo "Activation Réseau P2P Astroport !"
 [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
 
 echo
-PS3="$PLAYER choisissez : __ "
+PS3="$PLAYER choose : __ "
 choices=("PRINT VISA" "UNPLUG PLAYER" "QUIT")
 select fav in  "${choices[@]}"; do
     case $fav in
