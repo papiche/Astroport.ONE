@@ -98,7 +98,10 @@ echo "${YIPNS}
 ############################################
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
-cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys
+[[ -s ~/.ssh/authorized_keys ]] \
+    && cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys \
+    || echo "# ASTRO # ~/.ssh/authorized_keys" > ~/.zen/tmp/${MOATS}/authorized_keys
+
 while IFS= read -r line
 do
     LINE=$(echo "$line" | grep "ssh-ed25519" | grep -Ev "#") # Remove # & not ssh-ed25519
