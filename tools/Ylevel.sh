@@ -148,7 +148,8 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
 else
     echo "GENERATING FIRST SSH ED25519 KEY"
     ssh-keygen -t ed25519
-    echo "FINISH YOUR NODE TRANSFORMATION. PLEASE RUN $ME AGAIN
+    echo "FINISH SSH TRANSFORMATION. RUNNING $ME AGAIN
     (╯°□°)--︻╦╤─ - - - "
+    ~/.zen/Astroport.ONE/tools/Ylevel.sh
 fi
 
