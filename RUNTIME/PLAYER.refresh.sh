@@ -229,7 +229,18 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## SSHPUB is used to allow REMOTE TCP access through "ipfs p2p"
     SSHPUB="$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].sshpub)"
-    [[ ! -z "${SSHPUB}" ]] && echo "${SSHPUB}" > ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+    ## NEEDS more than 1 COIN to activate IPFS P2P SSH authorization
+    if [[ ! -z "${SSHPUB}" ]]; then
+        if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+            ## PUBLISH SSHPUB for DRAGON_p2p_ssh.sh
+            echo "${SSHPUB}" > ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+        else
+            ## REMOVE FROM ~/.ssh/authorized_keys
+            rm -f ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+            cat ~/.ssh/authorized_keys | grep -v "${SSHPUB}" > ~/.zen/tmp/${MOATS}/new_auth
+            cat ~/.zen/tmp/${MOATS}/new_auth > ~/.ssh/authorized_keys
+        fi
+    fi
 
     SBIRTH=$(${MY_PATH}/../tools/MOATS2seconds.sh ${BIRTHDATE})
     SNOW=$(${MY_PATH}/../tools/MOATS2seconds.sh ${MOATS})

@@ -149,13 +149,11 @@ if [[ $(which X 2>/dev/null) ]]; then
 fi
 
 echo "#############################################"
-echo "######### IMPRIMANTE & G1BILLET ##############"
 echo "#############################################"
-
+LP=$(ls /dev/usb/lp* 2>/dev/null)
+[[ ! -z $LP ]]; then
+echo "######### $LP PRINTER ##############"
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
-echo "INSTALL PRINTER ? (empty = no)"
-read
-if [[ $saisie != "" ]]; then
     ## PRINT & FONTS
     sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
     pip install brother_ql
@@ -164,18 +162,17 @@ if [[ $saisie != "" ]]; then
     sudo usermod -aG lpadmin $USER
     sudo usermod -a -G tty $USER
     sudo usermod -a -G lp $USER
-
     ## brother_ql_print
     echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
-
-    ## G1BILLET
-    echo "INSTALL G1BILLET SERVICE : http://g1billet.localhost:33101"
-    cd ~/.zen
-    git clone https://github.com/papiche/G1BILLET.git
-    cd G1BILLET && ./setup_systemd.sh
-    cd -
-
 fi
+
+## G1BILLET
+echo "######### G1BILLET ##############"
+echo "INSTALL G1BILLET : http://g1billet.localhost:33101"
+cd ~/.zen
+git clone https://github.com/papiche/G1BILLET.git
+cd G1BILLET && ./setup_systemd.sh
+cd -
 
 echo
 
@@ -190,28 +187,24 @@ do
 done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 
 ## EXTEND PATH
-echo 'export PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/games:$PATH
-## Activate python env
-. $HOME/.astro/bin/activate
+echo '#############################################################
+export PATH=$HOME/.local/bin:/usr/games:$PATH
 ## ALIASING commands
 alias command="$HOME/.zen/Astroport.ONE/command.sh"
 alias jaklis="$HOME/.zen/Astroport.ONE/tools/jaklis/jaklis.py"
 alias natools="$HOME/.zen/Astroport.ONE/tools/natools.py"
 alias keygen="$HOME/.zen/Astroport.ONE/tools/keygen"
-$HOME/.zen/Astroport.ONE/tools/my.sh
+alias 1ping="$HOME/.zen/Astroport.ONE/ping_bootstrap.sh"
+alias 1stat="$HOME/.zen/Astroport.ONE/Ustats.sh"
 
-cowsay $(hostname : $IPFSNODEID : $UPLANETG1PUB)' >> ~/.bashrc
+## Activate python env
+. $HOME/.astro/bin/activate
+
+cowsay $(hostname) : $(cat $HOME/.zen/game/UPLANETG1PUB 2>/dev/null)' >> ~/.bashrc
+
 source ~/.bashrc
 
 echo "<<< UPDATED>>> PATH=$PATH"
-
-###############################################################
-echo "##  ADDING lazydocker ================"
-### ADD TO DOCKER GROUP
-sudo usermod -aG docker $USER
-# INSTALL lazydocker GUI
-${MY_PATH}/install.lazydocker.sh
-###############################################################
 
 echo
 echo "#############################################"
@@ -224,6 +217,14 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
+
+###############################################################
+echo "##  ADDING lazydocker ================"
+### ADD TO DOCKER GROUP
+sudo usermod -aG docker $USER
+# INSTALL lazydocker GUI
+${MY_PATH}/install.lazydocker.sh
+###############################################################
 
 end=`date +%s`
 echo Installation time was `expr $end - $start` seconds.

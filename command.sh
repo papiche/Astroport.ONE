@@ -46,9 +46,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 
 if [[ ${CURRENT} == "" ]]; then
     ## NO CAPTAIN
-    echo "NO CAPTAIN ONBOARD."
-    echo "Activate $USER SSH transmutation"
-    echo "${MY_PATH}/tools/Ylevel.sh"
+    echo "NO CAPTAIN ONBOARD !!!"
 fi
 
 echo 'PRESS CTRL+C or ENTER... '; read
