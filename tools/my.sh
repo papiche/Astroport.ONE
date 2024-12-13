@@ -565,7 +565,7 @@ CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER O
 
 UPLANETG1PUB=$(cat ~/.zen/game/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
 [[ -z ${UPLANETG1PUB} ]] \
-    && UPLANETG1PUB=$(./keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
+    && UPLANETG1PUB=$(keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
     && echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \

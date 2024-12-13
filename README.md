@@ -39,10 +39,10 @@ Découvrez la Station Extra-Terrestre Astroport.ONE, un havre pour les volontair
 
 - **Système d'exploitation** : Linux Mint, Ubuntu, Debian
 
-### Commande d'Installation
+### Script d'Installation
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh)
+bash <(curl -sL https://install.astroport.com)
 ```
 
 ### Processus en Cours d'Exécution
