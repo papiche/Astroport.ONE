@@ -31,11 +31,11 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
     fi
 
     echo "<(''<)  <( ' SSH TRANSMUTATION ' )>  (> '')>"
-    PS3="Select KEY type ? "
-    choices=("CAPTAIN" "PLAYER")
+    PS3="Select KEY creation type ? "
+    choices=("AUTOMATIC" "MANUAL")
     select fav in  "${choices[@]}"; do
         case $fav in
-        "CAPTAIN")
+        "AUTOMATIC")
             ### GET SHA512 SSH PRIVATE KEY AS SEED FOR SECRETS SPLIT
             echo " HASH & SPLIT ~/.ssh/id_ed25519"
             SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
@@ -45,15 +45,15 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
             break
             ;;
 
-        "PLAYER")
-            echo "MULTIPASS SALT & PEPPER ?"
+        "MANUAL")
+            echo "ENTER 'SALT & PEPPER' :"
             echo "Salt ?"
             read SECRET1
             echo "Pepper ?"
             read SECRET2
-            echo "G1PUB"
+            echo ">>> Resulting G1PUB :"
             ~/.zen/Astroport.ONE/tools/keygen "$SECRET1" "$SECRET2"
-            echo "IS IT YOUR G1PUB ? Enter to Confirm / Ctrl+C if wrong !"
+            echo "Is it your key ? Enter to Confirm / Ctrl+C if wrong !"
             read
 
             break
@@ -138,6 +138,17 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         echo "\(^-^)/ SSH/IPFS Twin key secrets"
         echo "SECRET1=$SECRET1"
         echo "SECRET2=$SECRET2"
+
+        echo "ENTER SWARM DOMAIN ? (default 'copylaradio.com')"
+        read MYDOMAIN
+        [[ -z $MYDOMAIN ]] && MYDOMAIN="copylaradio.com"
+        echo "#########################################
+myIPFS=https://ipfs.$MYDOMAIN
+myASTROPORT=https://astroport.$MYDOMAIN
+###################################
+" > ~/.zen/Astroport.ONE/.env
+
+        cat ~/.zen/Astroport.ONE/.env
 
     else
         echo "Y LEVEL ALREADY ACTIVATED : $IPFSNODEID "
