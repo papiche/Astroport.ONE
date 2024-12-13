@@ -130,3 +130,16 @@ fi
 echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
 ~/.zen/Astroport.ONE/youtube-dl.sh
 
+echo "... Optimizing security into /etc/ssh/sshd_config"
+# Sauvegarde du fichier original
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+# Effectue les modifications en utilisant sed
+sudo sed -i 's/^.*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo sed -i 's/^.*PermitEmptyPasswords .*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
+sudo sed -i 's/^.*ChallengeResponseAuthentication .*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+sudo sed -i 's/^.*PubkeyAuthentication .*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+sudo sed -i 's/^.*X11Forwarding .*/X11Forwarding yes/' /etc/ssh/sshd_config
+sudo sed -i 's/^.*ClientAliveInterval .*/ClientAliveInterval 60/' /etc/ssh/sshd_config
+sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_config
+
