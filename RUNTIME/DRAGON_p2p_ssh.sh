@@ -148,7 +148,7 @@ if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
 else
     echo "Tunnel x/ssh '${PORT}' already active..."
     echo "ssh '${USER}'@127.0.0.1 -p '${PORT}'"
-    echo "ipfs p2p close -p x/ssh-'${IPFSNODEID}'"
+    echo "ipfs p2p close -p /x/ssh-'${IPFSNODEID}'"
 fi
 ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
@@ -177,7 +177,7 @@ if [[ ! -s ~/.ipfs/swarm.key ]]; then
                 || echo "CONTACT IPFSNODEID FAILED - ERROR -"
         else
                 echo "Tunnel x/ollama '${PORT}' already active..."
-                echo "ipfs p2p close -p x/ollama-'${IPFSNODEID}'"
+                echo "ipfs p2p close -p /x/ollama-'${IPFSNODEID}'"
         fi
         ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
         #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
