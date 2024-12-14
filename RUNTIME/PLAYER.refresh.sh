@@ -229,9 +229,9 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## SSHPUB is used to allow REMOTE TCP access through "ipfs p2p"
     SSHPUB="$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].sshpub)"
-    ## NEEDS more than 1 COIN to activate IPFS P2P SSH authorization
+    ## NEEDS more than 10 ZEN to activate IPFS P2P SSH authorization
     if [[ ! -z "${SSHPUB}" ]]; then
-        if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$COINS > 2" | bc -l) -eq 1 ]]; then
             ## PUBLISH SSHPUB for DRAGON_p2p_ssh.sh
             echo "${SSHPUB}" > ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
         else
