@@ -1,0 +1,49 @@
+#!/bin/bash
+# Script pour extraire les fichiers texte avec une extension spécifique
+# d'un dossier source et copier le contenu dans le presse-papier.
+# Vérifie que les arguments nécessaires sont fournis
+if [ "$#" -lt 2 ]; then
+    echo "Usage : $0 <extension> <dossier_source>"
+    exit 1
+fi
+
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+EXTENSION=$1
+SOURCE_DIR=$2
+
+# Vérifie si l'utilitaire de gestion du presse-papier est disponible
+if command -v xclip &>/dev/null; then
+    CLIP_CMD="xclip -selection clipboard"
+elif command -v pbcopy &>/dev/null; then
+    CLIP_CMD="pbcopy"
+else
+    echo "Erreur : ni 'xclip' (Linux) ni 'pbcopy' (macOS) n'est installé."
+    exit 1
+fi
+
+# Initialise une variable pour contenir le résultat
+RESULT=""
+
+echo find "$SOURCE_DIR" -type f -name "*.$EXTENSION"
+# Parcourt les fichiers avec l'extension donnée dans le dossier source
+find "$SOURCE_DIR" -type f -name "*.$EXTENSION" | while read -r FILE; do
+    # Vérifie si le fichier est un fichier texte
+    if file "$FILE" | grep -q "text"; then
+        # Récupère le chemin relatif et le nom de fichier sans extension
+        RELATIVE_PATH=$(realpath --relative-to="$SOURCE_DIR" "$FILE")
+        FILENAME=$(basename "$FILE" ".$EXTENSION")
+        echo "Adding $FILE"
+        # Ajoute le chemin, le titre et le contenu au résultat
+        RESULT+="Chemin : $RELATIVE_PATH\n"
+        RESULT+="Titre : $FILENAME\n\n"
+        RESULT+="$(cat "$FILE")\n\n"
+        echo "$RESULT" >> /tmp/$MOATS
+    fi
+done
+
+echo "==========================================================="
+# Copie le résultat dans le presse-papier
+cat /tmp/$MOATS | $CLIP_CMD
+echo "Le contenu texte a été copié dans le presse-papier."
+rm /tmp/$MOATS
+exit 0
