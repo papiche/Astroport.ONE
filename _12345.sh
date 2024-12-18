@@ -91,6 +91,10 @@ while true; do
         && myIP=${zipit} \
         && echo "/ip4/${zipit}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
+    [[ ! -z ${myDNSADDR} ]] \
+        && myIP=${zipit} \
+        && echo "/dnsaddr/${myDNSADDR}/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
+
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
