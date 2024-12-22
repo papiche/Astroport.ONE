@@ -21,8 +21,7 @@ echo '
 
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
-## Contrôle ou déclenche l'echange de 1 G1 en chacun pour décider du "domaine.tld" commun
-## Au minimum 3 Stations peuvent forger un nouvel essaim par jour.
+## Au minimum 3 Stations peuvent forker un nouvel essaim par jour.
 
 echo "$ME RUNNING $(date)"
 ## CHECK IF ALREADY IPFS PRIVATE SWARM
