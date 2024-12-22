@@ -431,7 +431,7 @@ tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
         CIMG="${MY_PATH}/../images/zenticket.png"
 
         # QRG1avatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
+        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
         # QRTWavatar.png
         [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr "${myIPFS}/ipns/${ASTRONAUTENS}" -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
 
