@@ -151,7 +151,7 @@ cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
     ##
     #~ grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
     rm ~/.zen/game/myswarm_secret.dunikey
-    rm ~/.zen/game/UPLANETG1PUB
+    echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
 
     #####################################################
     echo "# ACTIVATING ~/.ipfs/swarm.key"
