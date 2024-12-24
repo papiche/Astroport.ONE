@@ -235,6 +235,30 @@ class keygen:
         # Créer une clé PGP à partir du seed
         key = pgpy.PGPKey.new(pgpy.constants.PubKeyAlgorithm.EdDSA, pgpy.constants.EllipticCurveOID.Ed25519)
 
+        # Définir l'identité utilisateur (UID)
+        uid_string = "anonymous@uplanet.pgp"
+        uid = pgpy.PGPUID.new(uid_string)
+
+        # Ajouter l'identité à la clé
+        key.add_uid(uid, usage={pgpy.constants.KeyFlags.Sign, pgpy.constants.KeyFlags.Certify},
+                    hashes=[pgpy.constants.HashAlgorithm.SHA256],
+                    ciphers=[pgpy.constants.SymmetricKeyAlgorithm.AES256],
+                    compression=[pgpy.constants.CompressionAlgorithm.ZLIB])
+
+        self.pgp_private_key = str(key)
+        self.pgp_public_key = str(key.pubkey)
+
+    def generate_pgp_keys(self):
+        log.debug("keygen.generate_pgp_keys()")
+        if not hasattr(self, 'duniterpy'):
+            self.duniterpy_from_ed25519_seed_bytes()
+
+        # Utiliser le seed ED25519 comme entrée pour la clé PGP
+        seed = self.duniterpy.seed
+
+        # Créer une clé PGP à partir du seed
+        key = pgpy.PGPKey.new(pgpy.constants.PubKeyAlgorithm.EdDSA, pgpy.constants.EllipticCurveOID.Ed25519)
+
         # Définir l'identité utilisateur
         uid = pgpy.PGPUID.new(self.username if self.username else 'Anonymous')
 
