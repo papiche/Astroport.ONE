@@ -83,9 +83,10 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
 
         ## Check if same UPNAME
         mystro="$(cat ~/.zen/tmp/swarm/${station}/12345.json | jq -r .myASTROPORT)"
+        captain="$(cat ~/.zen/tmp/swarm/${station}/12345.json | jq -r .captain)"
         echo $mystro
         hopname=$(echo ${mystro} | rev | cut -d '.' -f -2 | rev)
-        echo "STATION ${hopname}"
+        echo "STATION ${captain} ${hopname}"
         ## COLLECT _swarm.egg.txt SEEDS
         seed=$(cat ~/.zen/tmp/swarm/${station}/_swarm.egg.txt)
         SEEDS=("${SEEDS[@]}" "${seed}")
@@ -171,9 +172,9 @@ echo '
  /_/(_!_)# )( (_%_)
      _(#>o<#)>o< )_
     /_/(_#_)(_|_)\_\
-            \/      ${UPNAME}
+            \/      '${UPNAME}'
 ------------------------------------------------
-${UPLANETG1PUB}'
+'${UPLANETG1PUB}
 
 fi
 
