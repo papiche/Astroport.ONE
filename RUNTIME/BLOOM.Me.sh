@@ -73,7 +73,8 @@ echo $MYASTROPORT
 echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
 #######################################################################
 if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
-
+    [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    mkdir -p ~/.zen/tmp/${MOATS}
     # Prepare "new_straps.list" from WAN only
     for station in ${ZENSTATIONS[@]}; do
         [[ ! -s ~/.zen/tmp/swarm/${station}/myIPFS.txt ]] \

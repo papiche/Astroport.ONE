@@ -317,6 +317,7 @@ NODE12345="{
     \"astroport\" : \"http://${myIP}:1234\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
+    \"captain\" : \"${CAPTAINEMAIL}\",
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
