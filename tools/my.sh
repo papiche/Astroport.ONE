@@ -44,16 +44,16 @@ myAstroKeyFile() {
 }
 
 myAstroPath() {
-    local myAstroPath=$(cd ~/.zen/Astroport.ONE/ && pwd -P)
+    local myAstroPath=$(cd $HOME/.zen/Astroport.ONE/ && pwd -P)
     [ -n "$myAstroPath" ] && echo "$myAstroPath"
 }
 
 #~ myAstroPlayersPage() {
-    #~ local myAstroPlayersPage=$(cat ~/.zen/tmp/myAstroPlayersPage)
+    #~ local myAstroPlayersPage=$(cat $HOME/.zen/tmp/myAstroPlayersPage)
     #~ if [[ ! "$myAstroPlayersPage" ]]; then
         #~ counter=1
-        #~ for tw in ls ~/.zen/game/players/*/ipfs/moa/index.html; do
-            #~ tiddlywiki --load $tw --output ~/.zen/tmp --render '.' "${counter}ZenCard.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
+        #~ for tw in ls $HOME/.zen/game/players/*/ipfs/moa/index.html; do
+            #~ tiddlywiki --load $tw --output $HOME/.zen/tmp --render '.' "${counter}ZenCard.json" 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'ZenCard'
 
             #~ ((counter++))
         #~ done
@@ -116,12 +116,12 @@ myHName() {
 }
 
 zIp() {
-    zipit=$(cat ~/.zen/♥Box 2>/dev/null | head -n 1 )
+    zipit=$(cat $HOME/.zen/♥Box 2>/dev/null | head -n 1 )
     [ -n "$zipit" ] && echo "$zipit" || false
 }
 
 UPlanetSharedSecret() {
-    UPlanetSharedSecret=$(cat ~/.zen/ipfs/swarm.key 2>/dev/null | tail -n 1 )
+    UPlanetSharedSecret=$(cat $HOME/.zen/ipfs/swarm.key 2>/dev/null | tail -n 1 )
     [ -n "$UPlanetSharedSecret" ] && echo "$UPlanetSharedSecret" || false
 }
 
@@ -205,7 +205,7 @@ myIpns() {
 }
 
 myPath() {
-    local myPath=$(cd ~/.zen/game/players/ && pwd -P)
+    local myPath=$(cd $HOME/.zen/game/players/ && pwd -P)
     [ -n "$myPath" ] && echo "$myPath"
 }
 
@@ -371,7 +371,7 @@ myHtml() {
         -e "s~g1billet.localhost~${myIP}~g" \
         -e "s~_HOSTNAME_~$(hostname)~g" \
         -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
-      ~/.zen/Astroport.ONE/templates/register.html)
+      $HOME/.zen/Astroport.ONE/templates/register.html)
     [ -z "$isLAN" ] \
      || myHtml=$($RUN echo "$myHtml" | sed \
       -e "s~<input type='"'hidden'"' name='"'salt'"' value='"'0'"'>~<input name='"'salt'"' value='"''"'>~g" \
@@ -391,7 +391,7 @@ mySalt() {
         -e "s~g1billet.localhost~${myIP}~g" \
         -e "s~_HOSTNAME_~$(hostname)~g" \
         -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
-      ~/.zen/Astroport.ONE/templates/saltpepper.http)
+      $HOME/.zen/Astroport.ONE/templates/saltpepper.http)
     [ -z "$isLAN" ] \
      || mySalt=$($RUN echo "$mySalt" | sed \
       -e "s~<input type='"'hidden'"' name='"'salt'"' value='"'0'"'>~<input name='"'salt'"' value='"''"'>~g" \
@@ -475,7 +475,7 @@ isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
 
 ## SEE https://pad.p2p.legal/s/keygen
-NODEG1PUB=$(cat ~/.zen/game/secret.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+NODEG1PUB=$(cat $HOME/.zen/game/secret.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
 ## PATCH
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
@@ -507,7 +507,7 @@ myASTROTUBE="https://$(myAstroTube)"
  && myIPFSW="https://ipfs.${myDOMAIN}" \
  || true
 
-## zIP :: PUT YOUR Internet Box IP IN ~/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45782 )
+## zIP :: PUT YOUR Internet Box IP IN $HOME/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45782 )
 [ -n "$(zIp)" ] \
  && myASTROPORT="http://$(zIp):1234" \
  && myAPI="http://$(zIp):5001" \
@@ -547,26 +547,26 @@ CESIUMIPFS="/ipfs/QmUJbCUcZKEsyRJie6NKiyKdseYtNNAGp1vEiSZqg5VL7i" # v1.7.13 - ch
 
 HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 
-[[ -s ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
+[[ -s $HOME/.zen/Astroport.ONE/.env ]] && source $HOME/.zen/Astroport.ONE/.env
 if [ -s "$HOME/.astro/bin/activate" ]; then
     source $HOME/.astro/bin/activate
 fi
 ##########################
 myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
-myLIBRA="https://ipfs.asycn.io" ## READ ONLY IPFS GATEWAY
+myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
 ##########################
-## UPLANETNAME IS ~/.zen/ipfs/swarm.key OR EMPTY
+## UPLANETNAME IS $HOME/.zen/ipfs/swarm.key OR EMPTY
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME="EnfinLibre"
 
-CAPTAING1PUB=$(cat ~/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
-CAPTAINEMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
+CAPTAING1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
+CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
 
-UPLANETG1PUB=$(cat ~/.zen/game/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
+UPLANETG1PUB=$(cat $HOME/.zen/game/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
 [[ -z ${UPLANETG1PUB} ]] \
     && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
-    && echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
+    && echo ${UPLANETG1PUB} > $HOME/.zen/game/UPLANETG1PUB
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
