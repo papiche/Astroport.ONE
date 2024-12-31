@@ -21,7 +21,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") || er+=" ipf
 PARAM="$1"
 if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop" ]]; then
     ipfs p2p close --all
-    rm ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh 2>/dev/null
+    rm ~/.zen/tmp/${IPFSNODEID}/x_*.sh 2>/dev/null
     rm ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub 2>/dev/null
     echo "STOP" && exit 0
 fi

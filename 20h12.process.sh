@@ -89,7 +89,7 @@ sudo yt-dlp -U
 
 ########################################################################
 ## DRAGON SSH WOT
-echo "DRAGONS WOT OFF"
+echo "DRAGONS SHIELD OFF"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 
 ########################################################################
@@ -155,7 +155,7 @@ sudo systemctl restart ipfs
 ### DRAGON WOT : SSH P2P RING OPENING
 #################################
 sleep 30
-echo "DRAGONS WOT ON"
+echo "DRAGONS SHIELD ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 ## MAIL LOG : support@qo-op.com ##

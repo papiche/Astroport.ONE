@@ -233,7 +233,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     if [[ ! -z "${SSHPUB}" ]]; then
         if [[ $(echo "$COINS > 2" | bc -l) -eq 1 ]]; then
             ## PUBLISH SSHPUB for DRAGON_p2p_ssh.sh
-            echo "${SSHPUB}" > ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+            [[ "${SSHPUB}" != "null" ]] \
+                && echo "${SSHPUB}" > ${HOME}/.zen/game/players/${PLAYER}/ssh.pub \
+                || rm -f ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
         else
             ## REMOVE FROM ~/.ssh/authorized_keys
             rm -f ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
