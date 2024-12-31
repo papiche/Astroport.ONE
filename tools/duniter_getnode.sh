@@ -8,7 +8,7 @@
 # Checks the current block number of $DIR/duniter_nodes.txt (is run in parallel)
 # and output random (from last synchronized) node
 
-BOOSTER=(gibraleon.g1server.net g1.asycn.io g1.cgeek.fr g1.copylaradio.com)
+BOOSTER=(g1.brussels.ovh g1.asycn.io g1.cgeek.fr g1.copylaradio.com g1.guenoel.fr duniter.econolib.re)
 
 checkonenode()
 {
