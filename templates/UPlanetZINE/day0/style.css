@@ -197,3 +197,9 @@ figcaption {
     grid-area: page-8;
   }
 }
+/* Style pour réduire la taille du texte dans les balises <code> */
+code {
+  font-size: 47%; /* Ajuste ce pourcentage selon tes besoins */
+  display: block; /* Pour que le code prenne toute la largeur disponible et ait une marge si besoin */
+  padding: 0.5rem; /* Ajoute une petite marge autour du code pour une meilleure lisibilité */
+}
