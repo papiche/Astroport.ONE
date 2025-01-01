@@ -59,6 +59,8 @@ do
     && OKSTATIONS=("${OKSTATIONS[@]}" "${aport}")
 done
 
+## ADD MYSELF
+OKSTATIONS=("${OKSTATIONS[@]}" "${IPFSNODEID}")
 ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## SORT & REMOVE DUPLICATE
 echo "<<< TOTAL ${#totnodes[@]} ~~~ ${#nodes[@]} YLEVEL ~~~ ${#ZENSTATIONS[@]} READY TO BLOOM >>>"
 
@@ -77,23 +79,28 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
     mkdir -p ~/.zen/tmp/${MOATS}
     # Prepare "new_straps.list" from WAN only
     for station in ${ZENSTATIONS[@]}; do
-        [[ ! -s ~/.zen/tmp/swarm/${station}/myIPFS.txt ]] \
-            && echo "Missing swarm/${station}/myIPFS.txt" \
+        [[ $station != ${IPFSNODEID} ]] \
+            && NodePath=${HOME}/.zen/tmp/swarm/${station} \
+            || NodePath=${HOME}/.zen/tmp/${station}
+
+        [[ ! -s ${NodePath}/myIPFS.txt ]] \
+            && echo "Missing /${station}/myIPFS.txt" \
             && continue
 
         ## Check if same UPNAME
-        mystro="$(cat ~/.zen/tmp/swarm/${station}/12345.json | jq -r .myASTROPORT)"
-        captain="$(cat ~/.zen/tmp/swarm/${station}/12345.json | jq -r .captain)"
+        mystro="$(cat ${NodePath}/12345.json | jq -r .myASTROPORT)"
+        captain="$(cat ${NodePath}/12345.json | jq -r .captain)"
         echo $mystro
         hopname=$(echo ${mystro} | rev | cut -d '.' -f -2 | rev)
         echo "STATION ${captain} ${hopname}"
+
         ## COLLECT _swarm.egg.txt SEEDS
-        seed=$(cat ~/.zen/tmp/swarm/${station}/_swarm.egg.txt)
+        seed=$(cat ${NodePath}/_swarm.egg.txt)
         SEEDS=("${SEEDS[@]}" "${seed}")
 
         ## Adding to ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
-        [[ -s ~/.zen/tmp/swarm/${station}/y_ssh.pub && ! -z ${seed} ]] \
-            && cat ~/.zen/tmp/swarm/${station}/y_ssh.pub >> ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
+        [[ -s ${NodePath}/y_ssh.pub && ! -z ${seed} ]] \
+            && cat ${NodePath}/y_ssh.pub >> ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
         ## Remove duplicate
         awk '!seen[$0]++' ~/.zen/Astroport.ONE/A_boostrap_ssh.txt > ~/.zen/tmp/${MOATS}/A_boostrap_ssh.temp
         mv ~/.zen/tmp/${MOATS}/A_boostrap_ssh.temp ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
@@ -104,7 +111,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
         mv ~/.zen/tmp/${MOATS}/authorized_keys ~/.ssh/authorized_keys
 
         ## Adding to MY Bootstrap List
-        bootnode=$(cat ~/.zen/tmp/swarm/${station}/myIPFS.txt)
+        bootnode=$(cat ${NodePath}/myIPFS.txt)
         iptype=$(echo ${bootnode} | cut -d '/' -f 2)
         if [[ $iptype == "dnsaddr" ]]; then
             echo "### Heading ${bootnode} to new_straps.list"
@@ -133,11 +140,11 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
     #... TODO ... Add "zero proof knowledge" using "IPFS/SSH" contact
     MAGIX=($(echo "${SEEDS[@]}" | tr ' ' '\n' | sort -u)) ## SORT
     echo "／人 ◕‿‿◕ 人＼ : ${MAGIX[@]}" ## DEBUG
-    MAGIH=$(echo "${MAGIX[@]}" | sha512sum | cut -d ' ' -f 1) ## HASH512
-    echo "${MAGIX[@]}"  | tr -d ' ' | head -c 32 | od -t x1 -A none - | tr -d '\n ' \
-            > $HOME/.zen/tmp/${MOATS}/swarm.key ## NEW SWARM KEY
-
-    UPLANETNAME=$(cat $HOME/.zen/tmp/${MOATS}/swarm.key) ## THIS IS OUR SECRET
+    ## NEW SWARM KEY
+echo "/key/swarm/psk/1.0.0/
+/base16/
+$(echo "${MAGIX[@]}" | tr -d ' ' | head -c 32 | xxd -p -c 32)" > $HOME/.zen/tmp/${MOATS}/swarm.key
+    UPLANETNAME=$(cat $HOME/.zen/tmp/${MOATS}/swarm.key | tail -n 1) ## THIS IS OUR SECRET
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
 ## INJECT NEW BOOSTRAP LIST
@@ -146,20 +153,21 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
 # https://ipfs.${UPNAME} ipfs.${UPNAME}
 #################################################################
 " > ~/.zen/tmp/${MOATS}/MY_boostrap_nodes.txt
-cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
+[[ ! -s ~/.zen/tmp/${MOATS}/new_straps.list ]] \
+    cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
     #######################################################################
     ## UPNAME = domain.tld
     # PACTHING Astroport.ONE code --- breaks automatic git pull... manual update
     ##
     #~ grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
-    rm ~/.zen/game/myswarm_secret.dunikey
+    rm -f ~/.zen/game/myswarm_secret.dunikey
     echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
 
     #####################################################
     echo "# ACTIVATING ~/.ipfs/swarm.key"
     cat $HOME/.zen/tmp/${MOATS}/swarm.key > ~/.ipfs/swarm.key
     # IPFSNODEID will restart in private mode
-    echo ${UPLANETG1PUB} > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+    rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 
 echo '
         /\_ _  __
