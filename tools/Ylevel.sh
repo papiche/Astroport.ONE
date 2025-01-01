@@ -131,7 +131,9 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         [[ ! -s ~/.ssh/origin.key ]] && mv ~/.ssh/id_ed25519 ~/.ssh/origin.key
         [[ ! -s ~/.ssh/origin.pub ]] && mv ~/.ssh/id_ed25519.pub ~/.ssh/origin.pub
         cat ~/.zen/game/id_ssh > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
-        cat ~/.zen/game/id_ssh.pub > ~/.ssh/id_ed25519.pub && chmod 644 ~/.ssh/id_ed25519.pub
+        cat ~/.zen/game/id_ssh.pub > ~/.ssh/id_ed25519.pub \
+            && chmod 644 ~/.ssh/id_ed25519.pub \
+            && rm ~/.zen/game/id_ssh && ln -s ~/.ssh/id_ed25519.pub ~/.zen/game/id_ssh ## LINKING SSHPUB
 
         ## SUCCESS
         echo "YOUR PREVIOUS SSH KEY IS ~/.ssh/origin.key"
