@@ -85,6 +85,7 @@ while true; do
     start=`date +%s`
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
+    [[ ${CHAN} == "" ]] && CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
     echo "/ip4/${myIP}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
