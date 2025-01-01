@@ -143,7 +143,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
     ## NEW SWARM KEY
 echo "/key/swarm/psk/1.0.0/
 /base16/
-$(echo "${MAGIX[@]}" | tr -d ' ' | head -c 32 | xxd -p -c 32)" > $HOME/.zen/tmp/${MOATS}/swarm.key
+$(echo "${MAGIX[@]}" | tr -d ' ' | head -c 32)" > $HOME/.zen/tmp/${MOATS}/swarm.key
     UPLANETNAME=$(cat $HOME/.zen/tmp/${MOATS}/swarm.key | tail -n 1) ## THIS IS OUR SECRET
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
