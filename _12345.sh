@@ -307,7 +307,7 @@ while true; do
 NODE12345="{
     \"version\" : \"2.0\",
     \"created\" : \"${MOATS}\",
-    \"date\" : \"$(date -u)\",
+    \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
     \"myASTROPORT\" : \"${myASTROPORT}\",
