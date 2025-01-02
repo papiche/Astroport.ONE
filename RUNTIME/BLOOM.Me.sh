@@ -97,6 +97,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
 
         ## COLLECT _swarm.egg.txt SEEDS
         seed=$(cat ${NodePath}/_swarm.egg.txt)
+        echo "cat ${NodePath}/_swarm.egg.txt : ${seed}"
         SEEDS=("${SEEDS[@]}" "${seed}")
 
         ## Adding to ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
