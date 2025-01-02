@@ -154,7 +154,7 @@ $(echo "${MAGIX[@]}" | tr -d ' ' | head -c 32)" > $HOME/.zen/tmp/${MOATS}/swarm.
 #################################################################
 " > ~/.zen/tmp/${MOATS}/MY_boostrap_nodes.txt
 [[ ! -s ~/.zen/tmp/${MOATS}/new_straps.list ]] \
-    cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
+    && cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
     #######################################################################
     ## UPNAME = domain.tld
     # PACTHING Astroport.ONE code --- breaks automatic git pull... manual update
