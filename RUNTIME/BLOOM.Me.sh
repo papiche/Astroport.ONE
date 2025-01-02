@@ -168,27 +168,28 @@ $(echo "${MAGIX[@]}" | tr -d ' ' | head -c 64)" > $HOME/.zen/tmp/${MOATS}/swarm.
     UPLANETNAME=$(cat $HOME/.zen/tmp/${MOATS}/swarm.key | tail -n 1) ## THIS IS OUR SECRET
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
-## INJECT NEW BOOSTRAP LIST
-[[ ! -s ~/.zen/game/MY_boostrap_nodes.txt ]] \
-&& echo "# UPlanet Swarm Bootstrap Stations #
-# https://ipfs.${UPNAME} ipfs.${UPNAME}
-#################################################################
-" > ~/.zen/tmp/${MOATS}/MY_boostrap_nodes.txt
-[[ ! -s ~/.zen/tmp/${MOATS}/new_straps.list ]] \
-    && cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
-    #######################################################################
-    ## UPNAME = domain.tld
-    # PACTHING Astroport.ONE code --- breaks automatic git pull... manual update
-    ##
-    #~ grep -rl --exclude-dir='.git*' 'copylaradio.com' ~/.zen | xargs sed -i "s~copylaradio.com~${UPNAME,,}~g"
-    rm -f ~/.zen/game/myswarm_secret.dunikey
-    echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
 
-    #####################################################
-    echo "# ACTIVATING ~/.ipfs/swarm.key"
-    cat $HOME/.zen/tmp/${MOATS}/swarm.key > ~/.ipfs/swarm.key
-    # IPFSNODEID will restart in private mode
-    rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+if [[ -s ~/.zen/tmp/${MOATS}/new_straps.list ]]; then
+    ## INJECT NEW BOOSTRAP LIST
+    if [[ ! -s ~/.zen/game/MY_boostrap_nodes.txt ]]; then
+        echo "# UPlanet Swarm Bootstrap Stations #
+    # https://ipfs.${UPNAME} ipfs.${UPNAME}
+    #################################################################
+    " > ~/.zen/tmp/${MOATS}/MY_boostrap_nodes.txt
+    fi
+    cat ~/.zen/tmp/${MOATS}/new_straps.list >> ~/.zen/game/MY_boostrap_nodes.txt
+fi
+
+#######################################################################
+## UPNAME = domain.tld
+rm -f ~/.zen/game/myswarm_secret.dunikey
+echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
+
+#####################################################
+echo "# ACTIVATING ~/.ipfs/swarm.key"
+cat $HOME/.zen/tmp/${MOATS}/swarm.key > ~/.ipfs/swarm.key
+# IPFSNODEID will restart in private mode
+rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 
 echo '
         /\_ _  __
@@ -206,7 +207,6 @@ echo '
 '${UPLANETG1PUB}
 
 fi
-
 
 rm -Rf ~/.zen/tmp/${MOATS}
 
