@@ -37,10 +37,11 @@ if [[ -s ~/.ssh/id_ed25519.pub ]]; then
         ## TESTING TOOLS
         ${MY_PATH}/../tools/keygen "coucou" "coucou"
         keygen=$?
+        echo "CAPTAIN WALLET BALANCE ${CAPTAING1PUB}"
         ${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${CAPTAING1PUB}
         jaklis=$?
         [[ $keygen == 0 && $jaklis == 0 ]] \
-            && echo "Y LEVEL CONFIRMED !" && cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub \
+            && echo "Y LEVEL CONFIRMED !" && cat ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub \
             || echo "KEYGEN $keygen JAKLIS $jaklis DISFUNCTON"
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
