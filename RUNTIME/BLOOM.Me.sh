@@ -80,6 +80,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
     mkdir -p ~/.zen/tmp/${MOATS}
     # Prepare "new_straps.list" from WAN only
     for station in ${ZENSTATIONS[@]}; do
+        echo '---------------------------------------------------------------------------'
         [[ $station != ${IPFSNODEID} ]] \
             && NodePath=${HOME}/.zen/tmp/swarm/${station} \
             || NodePath=${HOME}/.zen/tmp/${station}
