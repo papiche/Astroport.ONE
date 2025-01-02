@@ -50,7 +50,7 @@ gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~
 ## PRODUCE SWARM SEED PART - used to create swarm.key
 if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub ]]; then
     [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
-        && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
+        && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d ' ' \
                 > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
     ### INDICATE UPLANET SIGNATURE
     [[ -s ~/.ipfs/swarm.key ]] && rm -f ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt \

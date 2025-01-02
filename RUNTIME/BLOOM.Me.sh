@@ -19,7 +19,7 @@ echo '
      ()
 '
 
-[[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt && exit 0
+[[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt && exit 0
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
 ## Au minimum 3 Stations peuvent forker un nouvel essaim par jour.
@@ -53,13 +53,14 @@ fi
 YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 [[ $YNODE != $IPFSNODEID || -z $YNODE ]] \
     && echo "$YNODE != $IPFSNODEID" \
-    && echo "MY NODE IS NOT READY ... SSH != IPFS ..." \
+    && echo "YLEVEL NOT READY ... SSH != IPFS ..." \
     && exit 0
 
-## Init SEEDS
+## Init SEEDS - DRAGON made it
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
-    && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d '\n ' \
+    && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d ' ' \
     > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+
 SEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt)
 
 totnodes=($(ls ~/.zen/tmp/swarm/*/12345.json | rev | cut -d '/' -f 2 | rev 2>/dev/null))
@@ -84,6 +85,7 @@ ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## SORT & REMOV
 echo "<<< TOTAL ${#totnodes[@]} ~~~ ${#nodes[@]} in swarm ~~~ ${#ZENSTATIONS[@]} READY TO BLOOM >>>"
 
 ## FIND MY DOMAIN
+MYhostname="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .hostname)"
 MYASTROPORT="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .myASTROPORT)"
 echo $MYASTROPORT
 [[ $(echo ${MYASTROPORT} | grep 'https') ]] \
@@ -91,7 +93,7 @@ echo $MYASTROPORT
     || UPNAME="copylaradio.com"
 
 ## IS IPFSNODEID FORGING NEW UPLANET
-echo "UPlanet.ZERO /// ENTERING WARPING ZONE /// ${UPNAME} ACTIVATION"
+echo "UPlanet ORIGIN /// $MYhostname WARPING /// ${UPNAME} ACTIVATION"
 #######################################################################
 if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
     [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -125,11 +127,6 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
         ## Remove duplicate
         awk '!seen[$0]++' ~/.zen/game/My_boostrap_ssh.txt > ~/.zen/tmp/${MOATS}/My_boostrap_ssh.temp
         mv ~/.zen/tmp/${MOATS}/My_boostrap_ssh.temp ~/.zen/game/My_boostrap_ssh.txt
-
-        ## Adding to ~/.ssh/authorized_keys
-        cat ~/.zen/game/My_boostrap_ssh.txt >> ~/.ssh/authorized_keys
-        awk '!seen[$0]++' ~/.ssh/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys
-        mv ~/.zen/tmp/${MOATS}/authorized_keys ~/.ssh/authorized_keys
 
         ## Adding to MY Bootstrap List
         bootnode=$(cat ${NodePath}/myIPFS.txt)
@@ -181,15 +178,14 @@ if [[ -s ~/.zen/tmp/${MOATS}/new_straps.list ]]; then
 fi
 
 #######################################################################
-## UPNAME = domain.tld
-rm -f ~/.zen/game/myswarm_secret.dunikey
+## RESET SWARM KEY
+rm -f ~/.zen/game/myswarm_secret.*
 echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
 
 #####################################################
 echo "# ACTIVATING ~/.ipfs/swarm.key"
 cat $HOME/.zen/tmp/${MOATS}/swarm.key > ~/.ipfs/swarm.key
 # IPFSNODEID will restart in private mode
-rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 
 echo '
         /\_ _  __
@@ -207,6 +203,15 @@ echo '
 '${UPLANETG1PUB}
 
 fi
+
+cat ~/.ipfs/swarm.key
+cat ~/.zen/game/MY_boostrap_nodes.txt
+cat ~/.zen/game/My_boostrap_ssh.txt
+cat ~/.zen/game/UPLANETG1PUB
+
+## DRY RUN
+rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
+#~ rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 
 rm -Rf ~/.zen/tmp/${MOATS}
 
