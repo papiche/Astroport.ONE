@@ -94,7 +94,8 @@ echo "${YIPNS}
 
 ############################################
 ## DISTRIBUTE DRAGON SSH WOT SEED
-# A_boostrap_ssh.txt
+SSHAUTHFILE="${MY_PATH}/../A_boostrap_ssh.txt"
+[[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt"
 ############################################
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
@@ -113,9 +114,9 @@ do
     else
         echo "ALREADY TRUSTING ${LINE}"
     fi
-done < ${MY_PATH}/../A_boostrap_ssh.txt ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
+done < ${SSHAUTHFILE} ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
 
-## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub
+## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub (made during PLAYER.refresh)
 cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys
 
 ### REMOVING DUPLICATION (NO ORDER CHANGING)

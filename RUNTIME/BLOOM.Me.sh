@@ -103,13 +103,13 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
 
         ## Adding to ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
         [[ -s ${NodePath}/y_ssh.pub && ! -z ${seed} ]] \
-            && cat ${NodePath}/y_ssh.pub >> ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
+            && cat ${NodePath}/y_ssh.pub >> ~/.zen/game/My_boostrap_ssh.txt
         ## Remove duplicate
-        awk '!seen[$0]++' ~/.zen/Astroport.ONE/A_boostrap_ssh.txt > ~/.zen/tmp/${MOATS}/A_boostrap_ssh.temp
-        mv ~/.zen/tmp/${MOATS}/A_boostrap_ssh.temp ~/.zen/Astroport.ONE/A_boostrap_ssh.txt
+        awk '!seen[$0]++' ~/.zen/game/My_boostrap_ssh.txt > ~/.zen/tmp/${MOATS}/My_boostrap_ssh.temp
+        mv ~/.zen/tmp/${MOATS}/My_boostrap_ssh.temp ~/.zen/game/My_boostrap_ssh.txt
 
         ## Adding to ~/.ssh/authorized_keys
-        cat ~/.zen/Astroport.ONE/A_boostrap_ssh.txt >> ~/.ssh/authorized_keys
+        cat ~/.zen/game/My_boostrap_ssh.txt >> ~/.ssh/authorized_keys
         awk '!seen[$0]++' ~/.ssh/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys
         mv ~/.zen/tmp/${MOATS}/authorized_keys ~/.ssh/authorized_keys
 
@@ -146,7 +146,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
     ## NEW SWARM KEY
 echo "/key/swarm/psk/1.0.0/
 /base16/
-$(echo "${MAGIX[@]}" | tr -d ' ' | head -c 32)" > $HOME/.zen/tmp/${MOATS}/swarm.key
+$(echo "${MAGIX[@]}" | tr -d ' ' | head -c 64)" > $HOME/.zen/tmp/${MOATS}/swarm.key
     UPLANETNAME=$(cat $HOME/.zen/tmp/${MOATS}/swarm.key | tail -n 1) ## THIS IS OUR SECRET
     UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
