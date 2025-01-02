@@ -19,6 +19,7 @@ echo '
      ()
 '
 
+[[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
 ## Au minimum 3 Stations peuvent forker un nouvel essaim par jour.
@@ -62,7 +63,7 @@ done
 ## ADD MYSELF
 OKSTATIONS=("${OKSTATIONS[@]}" "${IPFSNODEID}")
 ZENSTATIONS=($(echo "${OKSTATIONS[@]}" | tr ' ' '\n' | sort -u)) ## SORT & REMOVE DUPLICATE
-echo "<<< TOTAL ${#totnodes[@]} ~~~ ${#nodes[@]} YLEVEL ~~~ ${#ZENSTATIONS[@]} READY TO BLOOM >>>"
+echo "<<< TOTAL ${#totnodes[@]} ~~~ ${#nodes[@]} in swarm ~~~ ${#ZENSTATIONS[@]} READY TO BLOOM >>>"
 
 ## FIND MY DOMAIN
 MYASTROPORT="$(cat ~/.zen/tmp/${IPFSNODEID}/12345.json | jq -r .myASTROPORT)"
@@ -92,7 +93,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
         captain="$(cat ${NodePath}/12345.json | jq -r .captain)"
         echo $mystro
         hopname=$(echo ${mystro} | rev | cut -d '.' -f -2 | rev)
-        echo "STATION ${captain} ${hopname}"
+        echo "${captain} STATION (${hopname})"
 
         ## COLLECT _swarm.egg.txt SEEDS
         seed=$(cat ${NodePath}/_swarm.egg.txt)
