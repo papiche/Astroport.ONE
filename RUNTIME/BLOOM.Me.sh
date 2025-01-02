@@ -19,7 +19,7 @@ echo '
      ()
 '
 
-[[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt
+[[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt && exit 0
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
 ## Au minimum 3 Stations peuvent forker un nouvel essaim par jour.
