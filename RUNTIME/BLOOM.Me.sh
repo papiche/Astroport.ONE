@@ -156,7 +156,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
 
     #### SWARM KEY SHARED SECRET CREATION
     #... TODO ... Add "zero proof knowledge" using "IPFS/SSH" contact
-    MAGIX=($(echo "${SEEDS[@]}" | tr ' ' '\n' | sort -u)) ## SORT
+    MAGIX=($(printf "%s\n" "${SEEDS[@]}" | sort -u))
     echo "／人 ◕‿‿◕ 人＼ : ${MAGIX[@]}" ## DEBUG
     ## NEW SWARM KEY
 echo "/key/swarm/psk/1.0.0/
