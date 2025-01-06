@@ -654,6 +654,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     else
         mkdir -p ~/.zen/tmp/${MOATS}/${PLAYER}.rss
+        cp -f ${HOME}/.zen/game/players/${PLAYER}/G1*/*.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/ ## POPULATE WISH RESULTS
         cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
             ~/.zen/tmp/${MOATS}/${PLAYER}.rss/rss.json
         cp ~/.zen/tmp/coucou/${G1PUB}.gchange.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/gchange.json 2>/dev/null
