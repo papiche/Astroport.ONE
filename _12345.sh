@@ -170,12 +170,17 @@ while true; do
 
             ## LOCAL CACHE SWITCH WITH LATEST
             if [[ -s ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats  ]]; then
-                if [[ $(diff ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats) || $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null) == "" ]]; then
+                 # Compare MOATs here
+                local_moat=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null)
+                remote_moat=$(cat ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats)
+
+                if [[ "$local_moat" != "$remote_moat"  || "$local_moat" == "" ]]; then
+
                     rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
                     mv ~/.zen/tmp/-${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
                     echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
                 else
-                    echo "TimeStamp unchanged : $(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats)"
+                    echo "TimeStamp unchanged : ${local_moat}"
                     rm -Rf ~/.zen/tmp/-${ipfsnodeid}/
                     continue
                 fi
@@ -254,11 +259,13 @@ while true; do
         SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | xargs | cut -f 1)
 
         ## SIZE MODIFIED => PUBLISH MySwarm_${IPFSNODEID}
-        [[ ${SWARMSIZE} != $(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null) ]] \
-        && echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize \
-        && SWARMH=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 ) \
-        && echo "=== ~/.zen/tmp/swarm EVOLVED : PUBLISHING NEW STATE ===" \
-        && ipfs --timeout=180s name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
+          local_swarm_size=$(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null)
+        if [[ "$SWARMSIZE" != "$local_swarm_size"  || "$local_swarm_size" == "" ]] ; then
+        echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize
+        SWARMH=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 )
+        echo "=== ~/.zen/tmp/swarm EVOLVED : PUBLISHING NEW STATE ==="
+        ipfs --timeout=180s name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
+         fi
     #############################################
 
         ######################################
@@ -280,11 +287,16 @@ while true; do
 
         ### CHECK IF SIZE DIFFERENCE ?
         ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
-        [[ ${BSIZE} != ${NSIZE} ]] \
-        && echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats \
-        && MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 ) \
-        && echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets" \
-        && ipfs --timeout=180s name publish /ipfs/${MYCACHE}
+
+           local_moat_self=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats 2>/dev/null)
+           remote_moat_self=$(cat ~/.zen/tmp/_${IPFSNODEID}/_MySwarm.moats 2>/dev/null)
+
+           if [[ "$BSIZE" != "$NSIZE"  || "$local_moat_self" != "$remote_moat_self" || "$local_moat_self" == "" ]]; then
+            echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+            MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
+            echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets"
+            ipfs --timeout=180s name publish /ipfs/${MYCACHE}
+           fi
 
         end=`date +%s`
         echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. '$(date)
