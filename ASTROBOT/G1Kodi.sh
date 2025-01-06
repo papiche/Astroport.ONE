@@ -14,12 +14,14 @@ ME="${0##*/}"
 . "${MY_PATH}/../tools/my.sh"
 
 echo "(✜‿‿✜) G1Kodi
-Insert G1Kodi Tiddlers from Kodi database from ~/.kodi/userdata/Database/MyVideos116.db
+Insert G1Kodi Tiddlers from Kodi database from VIDEODB
 should export movie to RSS (ex : http://ipfs.localhost:8080/ipfs/QmSJYf4uTj3NmqovSFZpBZuUhSS8j9FXKKnAjUMuVE896k)"
 echo "$ME RUNNING"
 
+VIDEODB=$(ls ~/.kodi/userdata/Database/MyVideos*.db)
+[[ -z $VIDEODB ]] && VIDEODB=$(ls $HOME/.var/app/tv.kodi.Kodi/data/userdata/Database/MyVideos*.db)
 ## EXTRACT MOVIES FROM KODI
-[[ ! -s ~/.kodi/userdata/Database/MyVideos116.db ]] && echo "KODI MOVIE SQLITE DB MISSING - EXIT -" && exit 1
+[[ ! -s $VIDEODB ]] && echo "KODI MOVIE SQLITE DB MISSING - EXIT -" && exit 1
 ## CREATE 1ST ONLY TIDDLER INTO TW
 
 ########################################################################
@@ -86,7 +88,7 @@ echo "=========== ( ◕‿◕) EXTRACT KODI MyVideos DB (◕‿◕ ) ===========
 
 ## EXTRACT MOVIE FILES LIST TO CSV
 echo "\"titre\",\"desc\",\"sub\",\"source\",\"cat\",\"extrait\",\"prem\"" > ~/.zen/tmp/${MOATS}/${PLAYER}.movie.csv
-sqlite3 -csv ~/.kodi/userdata/Database/MyVideos116.db 'select c00, c01, c03, c22, c14, c19, premiered from movie' >> ~/.zen/tmp/${MOATS}/${PLAYER}.movie.csv
+sqlite3 -csv $VIDEODB 'select c00, c01, c03, c22, c14, c19, premiered from movie' >> ~/.zen/tmp/${MOATS}/${PLAYER}.movie.csv
 [[ ! -s ~/.zen/tmp/${MOATS}/${PLAYER}.movie.csv ]] && echo "EMPTY KODI MOVIE DATABASE - EXIT -" && exit 0
 #################################
 
