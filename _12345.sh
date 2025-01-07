@@ -122,10 +122,11 @@ while true; do
 
         ## CHECK IF IPFS NODE IS RESPONDING
         ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
-        [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]] \
-            && echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----" \
-            && [[ $(sudo systemctl status ipfs | grep disabled) == "" ]] && sudo systemctl restart ipfs \
-            && sleep 60
+        if [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]]; then
+            echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----"
+            [[ $(sudo systemctl status ipfs | grep disabled) == "" ]] && sudo systemctl restart ipfs
+            # sleep 60
+        fi
 
         ${MY_PATH}/ping_bootstrap.sh
 
