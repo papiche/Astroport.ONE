@@ -22,7 +22,7 @@ echo '
 [[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt && exit 0
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
-## Au minimum 3 Stations peuvent forker un nouvel essaim par jour.
+## Au minimum 4 Stations peuvent forker un nouvel essaim par jour.
 
 echo "$ME RUNNING $(date)"
 ## CHECK IF ALREADY IPFS PRIVATE SWARM
@@ -30,21 +30,21 @@ if [[ -s ~/.ipfs/swarm.key ]]; then
     cat ~/.ssh/authorized_keys
     echo "
                 __====-_  _-====__
-        _--^^^#####//      \\#####^^^--_
-     _-^##########// (    ) \\##########^-_
-    -############//  |\^^/|  \\############-
-  _/############//   (@::@)   \\############\_
- /#############((      \\//      ))#############\
+         _--^^^#####//      \\#####^^^--_
+      _-^##########// (    ) \\##########^-_
+     -############//  |\^^/|  \\############-
+   _/############//   (@::@)   \\############\_
+ /##############((     \\//     ))#############\
 -###############\\     (oo)     //###############-
--#################\\    / "" \    //#################-
--###################\\  /      \  //###################-
--####################\\/        \//####################-
-_#/|##########/\######(          )######/\##########|\#_
-|/ |#/\#/\#/\/  \#/\##\          /##/\#/  \/\#/\#/\#| \
-    |/  V  |/         \|        |/         |V  \|
-PRIVATE SWARM ACTIVATED ~/.ipfs/swarm.key
+-################\\   / "" \   //#################-
+-#################\\ / /  \ \ //###################-
+-##################\\/     \\//####################-
+_#/|##########/\#####(      )######/\##########|\#_
+|/ |#/\#/\#/\/  \#/\#/       /##/\#/  \/\#/\#/\#| \
+    |/  V  |/      \|        |/         |V  \|
+    DRAGON PRIVATE SWARM ${UPLANETG1PUB}
 ------------------------------------------------
-${UPLANETG1PUB}"
+"
     ipfs p2p ls
     exit 0
 fi
@@ -204,14 +204,14 @@ echo '
 
 fi
 
-cat ~/.ipfs/swarm.key
-cat ~/.zen/game/MY_boostrap_nodes.txt
-cat ~/.zen/game/My_boostrap_ssh.txt
-cat ~/.zen/game/UPLANETG1PUB
+#~ cat ~/.ipfs/swarm.key
+#~ cat ~/.zen/game/MY_boostrap_nodes.txt
+#~ cat ~/.zen/game/My_boostrap_ssh.txt
+#~ cat ~/.zen/game/UPLANETG1PUB
 
-## DRY RUN
-rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
-#~ rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+#~ ## DRY RUN
+#~ rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
+rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 
 rm -Rf ~/.zen/tmp/${MOATS}
 
