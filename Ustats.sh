@@ -27,8 +27,8 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
         $(${MY_PATH}/tools/search_for_this_email_in_players.sh "$player" | tail -n 1)
         echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED TW=$TW source=$source"
         # Construct JSON object using printf and associative array
-        tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "TW": "%s", "SOURCE": "%s"}' \
-                        "$ASTROPORT" "$ASTROTW" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "$ASTROFEED" "$TW" "$source")
+        tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "SOURCE": "%s"}' \
+                        "${myIPFS}$ASTROPORT" "${myIPFS}$ASTROTW" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "${myIPFS}$ASTROFEED" "$source")
         tw_array+=("$tw_obj")
     done
     ####################################
@@ -53,7 +53,7 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
         echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
         # Construct JSON object using printf and associative array
         umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s"}' \
-                            "$lat" "$lon" "${UMAPG1PUB}" "${UMAPIPNS}" "${SECTORG1PUB}" "${SECTORIPNS}" "${REGIONG1PUB}" "${REGIONIPNS}")
+                            "$lat" "$lon" "${UMAPG1PUB}" "${myIPFS}${UMAPIPNS}" "${SECTORG1PUB}" "${myIPFS}${SECTORIPNS}" "${REGIONG1PUB}" "${myIPFS}${REGIONIPNS}")
         umap_array+=("$umap_obj")
         echo
     done

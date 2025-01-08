@@ -30,8 +30,8 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     #~ ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
 
     ## COPY STATION  yt-dlp.list
-    cp -f $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
-    cp -f $HOME/.zen/.yt-dlp.mp3.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.mp3.list
+    cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list 2>/dev/null
+    cp $HOME/.zen/.yt-dlp.mp3.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.mp3.list 2>/dev/null
 
     ## COPY COINS VALUE OF THE DAY
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/COINS/
