@@ -703,7 +703,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/RSS/
     #### CREATE ALL JSON COMPILATION
     ${MY_PATH}/../tools/json_dir.all.sh \
-        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/RSS/
+        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/RSS
 
     ## IPFS PLAYER TW #
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/TW/${PLAYER}
