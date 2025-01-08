@@ -52,10 +52,6 @@ if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh
     [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
         && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d ' ' \
                 > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
-    ### INDICATE UPLANET SIGNATURE
-    [[ -s ~/.ipfs/swarm.key ]] && rm -f ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt \
-        && cat ~/.ipfs/swarm.key | sha512sum | cut -d ' ' -f 1 \
-            > ~/.zen/tmp/${IPFSNODEID}/_UPlanet_H ## UPLANET PRIVATE SWARM
 fi
 
 echo "${YIPNS}
