@@ -115,7 +115,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
     ################### GET LATEST TW
-    rm -f ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+    rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
     echo "GETTING TW..."
     ####################################################################################################
     ipfs --timeout 480s get --progress=false -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
@@ -601,11 +601,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         ipfs pin rm ${CURCHAIN}
     fi ## Avoid AstroID in TW history chain
 
-    ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
-    [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
-                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
-
     #########################################################
     ##### TW JSON RSS EXPORT
     ###################
@@ -653,12 +648,15 @@ for PLAYER in ${PLAYERONE[@]}; do
         fi
 
     else
+
+        ## PUBLISH RSS FEED
         mkdir -p ~/.zen/tmp/${MOATS}/${PLAYER}.rss
-        cp -f ${HOME}/.zen/game/players/${PLAYER}/G1*/*.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/ ## POPULATE WISH RESULTS
+
         cp ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json \
             ~/.zen/tmp/${MOATS}/${PLAYER}.rss/rss.json
         cp ~/.zen/tmp/coucou/${G1PUB}.gchange.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/gchange.json 2>/dev/null
         cp ~/.zen/tmp/coucou/${G1PUB}.cesium.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/cesium.json 2>/dev/null
+        # cp -f ${HOME}/.zen/game/players/${PLAYER}/G1*/*.json ~/.zen/tmp/${MOATS}/${PLAYER}.rss/ ## POPULATE WISH RESULTS
 
         ### PLAYER ALIVE PUBLISH RSS &
         FEEDNS=$(ipfs key list -l | grep -w "${PLAYER}_feed" | cut -d ' ' -f 1)
@@ -671,6 +669,12 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
+
+
+    ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
+    [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
+                > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     #########################################################
     ## TODO CREATING 30 DAYS XML RSS STREAM ???
