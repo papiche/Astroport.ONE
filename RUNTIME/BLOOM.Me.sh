@@ -204,14 +204,17 @@ echo '
 
 fi
 
-#~ cat ~/.ipfs/swarm.key
-#~ cat ~/.zen/game/MY_boostrap_nodes.txt
-#~ cat ~/.zen/game/My_boostrap_ssh.txt
-#~ cat ~/.zen/game/UPLANETG1PUB
+#### DEBUG
+echo "~/.ipfs/swarm.key_______________"
+cat ~/.ipfs/swarm.key
+echo "~/.zen/game/MY_boostrap_nodes.txt_________"
+cat ~/.zen/game/MY_boostrap_nodes.txt
+echo "~/.zen/game/My_boostrap_ssh.txt__________"
+cat ~/.zen/game/My_boostrap_ssh.txt
 
 #~ ## DRY RUN
-#~ rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
-rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+[[ "$1" == "reset" ]] \
+&& rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
 
 rm -Rf ~/.zen/tmp/${MOATS}
 
