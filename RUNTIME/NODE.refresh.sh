@@ -30,8 +30,8 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     #~ ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
 
     ## COPY STATION  yt-dlp.list
-    cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
-    cp $HOME/.zen/.yt-dlp.mp3.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.mp3.list
+    cp -f $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list
+    cp -f $HOME/.zen/.yt-dlp.mp3.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.mp3.list
 
     ## COPY COINS VALUE OF THE DAY
     rm -Rf ~/.zen/tmp/${IPFSNODEID}/COINS/
@@ -41,16 +41,6 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     ## COPY 20h12.log
     rm -f ~/.zen/tmp/${IPFSNODEID}/20h12.log ## TODO REMOVE
     cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/20h12.txt
-
-    ## COPY FRIENDS
-    PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
-    echo "FOUND : ${PLAYERONE[@]}"
-    ## RUNING FOR ALL LOCAL PLAYERS
-    for PLAYER in ${PLAYERONE[@]}; do
-        echo "${PLAYER} GCHANGE FRIENDS"
-        [[ -d ~/.zen/tmp/${IPFSNODEID}/${PLAYER} && ${PLAYER} != "" ]] \
-            && rm -Rf ~/.zen/tmp/${IPFSNODEID}/${PLAYER}/
-    done
 
     ## INFORM GPS LOCATION
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \
