@@ -216,6 +216,14 @@ cat ~/.zen/game/My_boostrap_ssh.txt
 [[ "$1" == "reset" ]] \
 && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
 
+###### REFRESH IPFS BOOSTRAP LIST
+source ~/.zen/Astroport.ONE/tools/my.sh
+for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # parse STRAPFILE
+do
+    ipfsnodeid=${bootnode##*/}
+    ipfs bootstrap add $bootnode
+done
+
 rm -Rf ~/.zen/tmp/${MOATS}
 
 exit 0

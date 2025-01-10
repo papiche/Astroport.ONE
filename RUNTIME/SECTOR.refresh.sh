@@ -218,6 +218,7 @@ for SECTOR in ${SECTORS[@]}; do
     #################### RSS2UPlanetSECTORTW #########################
     ############################ TRANSFER SIGNED TIDDLER IN SECTOR TW
     for RSS in ${RSSALL[@]}; do
+        echo "Treating ${RSS}"
         ############################################################
         ## Extract New Tiddlers and maintain fusion in Sector TW.
         ############################################################

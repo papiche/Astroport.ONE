@@ -87,14 +87,14 @@ while true; do
     [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
     [[ ${CHAN} == "" ]] && CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
-    echo "/ip4/${myIP}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
+    echo "/ip4/${myIP}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
     [[ ! -z ${zipit} ]] \
         && myIP=${zipit} \
-        && echo "/ip4/${zipit}/tcp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
+        && echo "/ip4/${zipit}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
     [[ ! -z ${myDNSADDR} ]] \
-        && echo "/dnsaddr/${myDNSADDR}/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
+        && echo "/dnsaddr/${myDNSADDR}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
