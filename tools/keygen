@@ -45,7 +45,8 @@ import warnings
 import hashlib
 from ecdsa import SigningKey, SECP256k1
 import pynostr
-import pynostr.bech32
+from pynostr.key import PrivateKey
+import bech32
 from monero.wallet import Wallet
 from monero.seed import Seed as MoneroSeed
 from monero.address import Address
@@ -352,30 +353,27 @@ class keygen:
         try:
             seed = hashlib.sha256(f"{self.username}:{self.password}".encode()).digest()
             private_key = SigningKey.from_string(seed[:32], curve=SECP256k1)
-            public_key = private_key.get_verifying_key()
             self.nostr_private_hex = private_key.to_string().hex()
-            public_key_bytes = public_key.to_string()
-            self.nostr_public_hex = public_key_bytes.hex()
-
-            # Convert public key to npub format
-            npub_bytes = b'\x00' + public_key_bytes
-            npub_int = int.from_bytes(npub_bytes, 'big')
-            npub_base32 = base64.b32encode(npub_int.to_bytes((npub_int.bit_length() + 7) // 8, 'big'))
-            self.nostr_public_npub = 'npub' + npub_base32.decode('utf-8').lower().rstrip('=')
 
             # Convert private key to nsec format
-            nsec_bytes = b'\x80' + private_key.to_string()
-            nsec_int = int.from_bytes(nsec_bytes, 'big')
-            nsec_base32 = base64.b32encode(nsec_int.to_bytes((nsec_int.bit_length() + 7) // 8, 'big'))
-            self.nostr_private_nsec = 'nsec' + nsec_base32.decode('utf-8').lower().rstrip('=')
+            private_key_bytes = bytes.fromhex(self.nostr_private_hex)
+            self.nostr_private_nsec = bech32.bech32_encode('nsec', bech32.convertbits(private_key_bytes, 8, 5))
 
+            nsec_key = bech32.bech32_encode('nsec', bech32.convertbits(private_key_bytes, 8, 5))
+            # Charger la clé privée
+            private_key = PrivateKey.from_nsec(nsec_key)
+            # Calculer la clé publique correspondante
+            npub_key = private_key.public_key.bech32()
+
+            self.nostr_public_npub = npub_key
 
         except Exception as e:
             log.error(f'Unable to get nostr key from ed25519: {e}')
             exit(2)
         log.debug("keygen.nostr_private_hex=%s" % self.nostr_private_hex)
-        log.debug("keygen.nostr_public_hex=%s" % self.nostr_public_hex)
         log.debug("keygen.nostr_private_nsec=%s" % self.nostr_private_nsec)
+        log.debug("keygen.nostr_public_npub=%s" % self.nostr_public_npub)
+
 
     def _output_file(self):
         log.debug("keygen._output_file()")
