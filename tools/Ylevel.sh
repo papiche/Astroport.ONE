@@ -133,7 +133,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         cat ~/.zen/game/id_ssh > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
         cat ~/.zen/game/id_ssh.pub > ~/.ssh/id_ed25519.pub \
             && chmod 644 ~/.ssh/id_ed25519.pub \
-            && rm ~/.zen/game/id_ssh && ln -s ~/.ssh/id_ed25519.pub ~/.zen/game/id_ssh ## LINKING SSHPUB
+            && rm ~/.zen/game/id_ssh && ln -s ~/.ssh/id_ed25519.pub ~/.zen/game/id_ssh.pub ## LINKING SSHPUB
 
         ## SUCCESS
         echo "YOUR PREVIOUS SSH KEY IS ~/.ssh/origin.key"
