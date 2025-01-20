@@ -65,7 +65,7 @@ for PLAYER in "${NOSTR[@]}"; do
             milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
             g1prime=$(echo $milletxzero | jq -r .pubkey)
             ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
-            [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+            [[ ! -z ${g1prime} && ${g1prime} != "null" ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
         fi
         primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
     fi
@@ -97,34 +97,51 @@ for PLAYER in "${NOSTR[@]}"; do
 
     # Decrypt the tail part using UPLANETNAME
     cat ~/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.asc | gpg -d --batch --passphrase "$UPLANETNAME" > "$tmp_tail"
-cat "$tmp_mid" "$tmp_tail"
+
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
     echo "DISCO = $DISCO"
-    #~ arr=(${DISCO//[=&]/ })
-    #~ s=$(urldecode ${arr[0]} | xargs)
-    #~ salt=$(urldecode ${arr[1]} | xargs)
-    #~ p=$(urldecode ${arr[2]} | xargs)
-    #~ pepper=$(urldecode ${arr[3]} | xargs)
-    #~ [[ ! -z $s ]] && rm "$tmp_mid" "$tmp_tail" || { echo "DISCO DECODING ERROR"; continue }
-    #~ ##################################################### DISCO REVEALED
-    #~ ## s=/?email
-    #~ echo $s
-    #~ echo $salt $pepper
+    arr=(${DISCO//[=&]/ })
+    s=$(urldecode ${arr[0]} | xargs)
+    salt=$(urldecode ${arr[1]} | xargs)
+    p=$(urldecode ${arr[2]} | xargs)
+    pepper=$(urldecode ${arr[3]} | xargs)
+    if [[ $s =~ ^/.*?$ ]]; then
+        [[ ! -z $s ]] \
+            && rm "$tmp_mid" "$tmp_tail" \
+            || { echo "DISCO DECODING ERROR"; continue; };
+    else
+        echo "BAD DISCO FORMAT"
+        continue
+    fi
+    ##################################################### DISCO REVEALED
+    ## s=/?email
+    echo $s
+    echo $salt $pepper
 
-    #~ ## CHECK PRIMAL
-    #~ if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
-        #~ mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
-        #~ ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
-        #~ cp ~/.zen/tmp/coucou/${primal}* > ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-    #~ fi
+    ## CHECK PRIMAL
+    if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
 
-    #~ ## N1 SCAN primal
-    #~ if [[ ${primal} != "" && ${primal} != "null" ]]; then
-        #~ echo "PRIMAL=${primal}"
-        #~ ## APPEL /upassport API
-    #~ fi
+        mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
+        ## SCAN CESIUM/GCHANGE PRIMAL STATUS
+        ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
+        cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+        ## IS PRIMAL CESIUM+
+        [[ -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json ]] \
+            && rm ~/.zen/game/nostr/${PLAYER}/_index.html ## REMOVE NOSTR ZINE (should habe been printed by MEMBER)
+    fi
 
+    ## UPASSPORT N1 SCAN primal
+    if [[ ${primal} != "" && ${primal} != "null" ]]; then
+        echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
+        ## APPEL /upassport API
+        curl -X POST \
+        -F "${primal}" \
+        http://127.0.0.1:54321/upassport
+
+    fi
+
+    echo "___________________________________________________"
     sleep 1
 
 done
