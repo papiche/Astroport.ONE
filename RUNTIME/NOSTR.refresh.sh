@@ -42,16 +42,17 @@ destroy_nostrcard() {
 ########################################################################
 
 ## RUNING FOR ALL LOCAL PLAYERS
-for PLAYER in ${NOSTR[@]}; do
-
+for PLAYER in "${NOSTR[@]}"; do
     echo "\m/_(>_<)_\m/ _______________________________________ ${PLAYER} "
+
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     echo ${G1PUBNOSTR}
+
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
-#~ $(echo "$COINS > 0" | bc -l) -eq 1
     echo "______ AMOUNT = ${COINS} G1"
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
 
+    #~ $(echo "$COINS > 0" | bc -l) -eq 1
     if [[ -z ${COINS} ]]; then
         echo "EMPTY NOSTR CARD.............."
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
@@ -92,38 +93,42 @@ for PLAYER in ${NOSTR[@]}; do
     tmp_tail=$(mktemp)
     # Decrypt the middle part using CAPTAING1PUB key
     ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" \
-    -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
+            -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
     # Decrypt the tail part using UPLANETNAME
     cat ~/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.asc | gpg -d --batch --passphrase "$UPLANETNAME" > "$tmp_tail"
-
+cat "$tmp_mid" "$tmp_tail"
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
     echo "DISCO = $DISCO"
-    arr=(${DISCO//[=&]/ })
-    s=$(urldecode ${arr[0]} | xargs)
-    salt=$(urldecode ${arr[1]} | xargs)
-    p=$(urldecode ${arr[2]} | xargs)
-    pepper=$(urldecode ${arr[3]} | xargs)
-    [[ ! -z $s ]] && rm "$tmp_mid" "$tmp_tail" || { echo "DISCO DECODING ERROR"; continue }
-    ##################################################### DISCO REVEALED
-    ## s=/?email
-    echo $s
-    echo $salt $pepper
+    #~ arr=(${DISCO//[=&]/ })
+    #~ s=$(urldecode ${arr[0]} | xargs)
+    #~ salt=$(urldecode ${arr[1]} | xargs)
+    #~ p=$(urldecode ${arr[2]} | xargs)
+    #~ pepper=$(urldecode ${arr[3]} | xargs)
+    #~ [[ ! -z $s ]] && rm "$tmp_mid" "$tmp_tail" || { echo "DISCO DECODING ERROR"; continue }
+    #~ ##################################################### DISCO REVEALED
+    #~ ## s=/?email
+    #~ echo $s
+    #~ echo $salt $pepper
 
-    ## CHECK PRIMAL
-    if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
-        mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
-        ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
-        cp ~/.zen/tmp/coucou/${primal}* > ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-    fi
+    #~ ## CHECK PRIMAL
+    #~ if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
+        #~ mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
+        #~ ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
+        #~ cp ~/.zen/tmp/coucou/${primal}* > ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+    #~ fi
 
-    ## N1 SCAN primal
+    #~ ## N1 SCAN primal
+    #~ if [[ ${primal} != "" && ${primal} != "null" ]]; then
+        #~ echo "PRIMAL=${primal}"
+        #~ ## APPEL /upassport API
+    #~ fi
 
     sleep 1
 
 done
-echo "============================================ NOSTR.refresh DONE."
 
+echo "============================================ NOSTR.refresh DONE."
 
 exit 0
