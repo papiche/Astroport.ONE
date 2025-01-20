@@ -4,7 +4,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 ################################################################################
-## API: QRCODE - ANY/MULTI KEY OPERATIONS
+## NB : EXTRACTED FROM PYTHON API UPassport/upassport.sh code
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -39,8 +39,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [ ! $? -eq 0 ] && echo "ERROR! SSSSKEY DECODING FAILED" && echo "${MY_PATH}/templates/wallet.html" && exit 1
 
     # 1. Generate a DISCO Nostr key pair
-    NPRIV=$(${MY_PATH}/tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
-    NPUBLIC=$(${MY_PATH}/tools/keygen -t nostr "${SALT}" "${PEPPER}")
+    NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
+    NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
     echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC"
 
@@ -49,7 +49,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "$NPUBLIC" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.pub
 
     # Create an G1CARD : G1Wallet waiting for G1 to make key batch running
-    ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey "${SALT}" "${PEPPER}"
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey "${SALT}" "${PEPPER}"
     G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
     echo "G1NOSTR _WALLET: $G1PUBNOSTR"
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
@@ -58,12 +58,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ##########################################################################
     ### CRYPTO ZONE
     ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
-    echo "${MY_PATH}/tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.nostr.enc"
-    ${MY_PATH}/tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.head.nostr.enc
+    echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.nostr.enc"
+    ${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.head.nostr.enc
 
     ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB
-    echo "${MY_PATH}/tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc"
-    ${MY_PATH}/tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc
+    echo "${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc"
+    ${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc
 
     ## DISCO TAIL ENCRYPT WITH UPLANETNAME
     cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail | gpg --symmetric --armor --batch --passphrase "${UPLANETNAME}" -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc
@@ -72,7 +72,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     rm ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
 
     ## CREATE IPNS KEY (SIDE STORAGE)
-    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns "${SALT}" "${PEPPER}"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns "${SALT}" "${PEPPER}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns)
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
@@ -112,9 +112,11 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
-    echo "NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
-    NOSTRG1PUB=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} NOSTRNS=${NOSTRNS} \
-    CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
+    ### SEND BACK RESULT
+    echo "SALT=$SALT PEPPER=$PEPPER \
+NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
+NOSTRG1PUB=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} NOSTRNS=${NOSTRNS} \
+CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
 
     exit 0
 
