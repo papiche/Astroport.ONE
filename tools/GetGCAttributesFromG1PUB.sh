@@ -15,6 +15,7 @@ ME="${0##*/}"
 # GIVEN A PUBKEY -
 # This program scan for presence in GChange & Cesium Elastic Search Databases
 # So it detect attributes attached to actual key $G1PUB
+# .g1history.json .cesium.json ( .gchange.json .cplus.json )
 #################################################"
 G1PUB="$1"
 MOATS="$2"

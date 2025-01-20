@@ -109,6 +109,27 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     G1PUBNOSTRQR=$(ipfs add -q ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}
 
+
+
+    ##############################################################
+    ### PREPARE NOSTR ZINE
+    cat ${MY_PATH}/static/zine/nostr.html \
+    | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
+            -e "s~nsec13x0643lc3al5fk92auurh7ww0993syj566eh7ta8r2jpkprs44rs33cute~${NPRIV}~g" \
+            -e "s~toto@yopmail.com~${EMAIL}~g" \
+            -e "s~QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${SSSSQR}~g" \
+            -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
+            -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
+            -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
+            -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
+            -e "s~_NOSTRG1PUB_~${G1PUBNOSTR}~g" \
+            -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
+            -e "s~_DATE_~$(date -u)~g" \
+            -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/_index.html
+
+    echo "${HOME}/.zen/game/nostr/${EMAIL}/_index.html"
+
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 

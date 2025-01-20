@@ -45,14 +45,14 @@ destroy_nostrcard() {
 for PLAYER in ${NOSTR[@]}; do
 
     echo "\m/_(>_<)_\m/ _______________________________________ ${PLAYER} "
-    ls ~/.zen/game/nostr/${PLAYER}
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     echo ${G1PUBNOSTR}
-    G1AMOUNT=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
-    echo "______ AMOUNT = ${G1AMOUNT} G1"
+    COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
+#~ $(echo "$COINS > 0" | bc -l) -eq 1
+    echo "______ AMOUNT = ${COINS} G1"
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
 
-    if [[ -z ${G1AMOUNT} ]]; then
+    if [[ -z ${COINS} ]]; then
         echo "EMPTY NOSTR CARD.............."
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue
@@ -82,10 +82,12 @@ for PLAYER in ${NOSTR[@]}; do
 
     ## NOSTR CARD OPENING
     if [[ ! -z ${VAULTFS} ]]; then
-        echo "NOSTRVAULT listing : ${VAULTFS}"
+        echo "NOSTRVAULT updating : ${VAULTFS}"
         ipfs get ${VAULTFS} -o ~/.zen/game/nostr/
+        ls ~/.zen/game/nostr/${PLAYER}
     fi
 
+    ########################## DISCO DECRYPTION
     tmp_mid=$(mktemp)
     tmp_tail=$(mktemp)
     # Decrypt the middle part using CAPTAING1PUB key
@@ -103,10 +105,20 @@ for PLAYER in ${NOSTR[@]}; do
     salt=$(urldecode ${arr[1]} | xargs)
     p=$(urldecode ${arr[2]} | xargs)
     pepper=$(urldecode ${arr[3]} | xargs)
-    [[ ! -z $s ]] && rm "$tmp_mid" "$tmp_tail" || echo "DISCO DECODING ERROR"
+    [[ ! -z $s ]] && rm "$tmp_mid" "$tmp_tail" || { echo "DISCO DECODING ERROR"; continue }
+    ##################################################### DISCO REVEALED
     ## s=/?email
     echo $s
     echo $salt $pepper
+
+    ## CHECK PRIMAL
+    if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
+        mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
+        ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
+        cp ~/.zen/tmp/coucou/${primal}* > ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+    fi
+
+    ## N1 SCAN primal
 
     sleep 1
 
