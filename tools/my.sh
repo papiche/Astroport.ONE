@@ -1,4 +1,5 @@
 #shellcheck shell=sh disable=SC2034
+function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 Base32Normalize() {
     awk '{printf $0}' | basenc --base32 | Normalize

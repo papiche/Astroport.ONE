@@ -95,7 +95,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
         echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
         ### jaklis 1000 history window
         if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
-            milletxzero=$(jaklis history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
+            milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
             g1prime=$(echo $milletxzero | jq -r .pubkey)
             ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
             [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal

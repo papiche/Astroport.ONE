@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# install_nostr_commander.sh
 # Couleurs pour la sortie
 GREEN="\033[0;32m"
 RED="\033[0;31m"
@@ -10,6 +10,14 @@ if command -v nostr-commander-rs &> /dev/null; then
     exit 0
 fi
 echo -e "${GREEN}Installation de nostr-commander-rs${NC}"
+
+# Étape 0 : Vérifier que nostr-relay est installé
+if command -v nostr-relay &> /dev/null; then
+    echo -e "${GREEN}nostr-relay est déjà installé !${NC}"
+else
+    echo -e "${RED}Installation de nostr-relay ...${NC}"
+    pip install nostr-relay pynostr bech32
+fi
 
 # Étape 1 : Vérifier que Rust est installé
 if ! command -v cargo &> /dev/null; then
@@ -59,7 +67,43 @@ else
     exit 1
 fi
 
-# Étape 6 : Vérification de l'installation
+# Étape 6 : Création du fichier credentials.json
+CREDENTIALS_DIR="$HOME/.local/share/nostr-commander-rs"
+CREDENTIALS_FILE="$CREDENTIALS_DIR/credentials.json"
+
+echo -e "${GREEN}Création du fichier credentials.json...${NC}"
+mkdir -p "$CREDENTIALS_DIR"
+cat > "$CREDENTIALS_FILE" <<EOL
+{
+  "secret_key_bech32": "nsec1hsmhy4d6ve325gxpgk0lzlmu4vymf49r4gq07sw5wjsezz74nrls8cryds",
+  "public_key_bech32": "npub1eq0gkvwm43jc506neat4y8t4cyp4z2w846qtxexuc5syh9h5v47sptlfff",
+  "relays": [
+    {
+      "url": "wss://relay.primal.net/",
+      "proxy": null
+    },
+    {
+      "url": "ws://127.0.0.1:6969/",
+      "proxy": null
+    }
+  ],
+  "metadata": {
+    "name": "coucou",
+    "display_name": "coucou",
+    "about": "coucou",
+    "picture": "http://127.0.0.1:8080/ipfs/QmbUAMgnTm4dFnH66kgmUXpBBqUMdTmfedvzuYTmgXd8s9",
+    "nip05": "coucou@yopmail.com"
+  },
+  "contacts": [],
+  "subscribed_pubkeys": [],
+  "subscribed_authors": [],
+  "subscribed_channels": []
+}
+EOL
+
+echo -e "${GREEN}Fichier credentials.json créé avec succès dans ${CREDENTIALS_DIR}.${NC}"
+
+# Étape 7 : Vérification de l'installation
 if command -v nostr-commander-rs &> /dev/null; then
     echo -e "${GREEN}nostr-commander-rs a été installé avec succès !${NC}"
 else
