@@ -135,11 +135,28 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ${primal} != "" && ${primal} != "null" ]]; then
         echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
         ## APPEL /upassport API
-        curl -X POST \
-        -F "${primal}" \
-        http://127.0.0.1:54321/upassport
+        curl_output=$(curl -s -X POST \
+        -F "parametre=${primal}" \
+        http://127.0.0.1:54321/upassport)
 
+        # Check if the curl command succeeded and returned a valid HTML response
+        if [[ $? -eq 0 && "$curl_output" != *"error"* ]]; then
+          echo "UPASSPORT API call successful, saving output."
+          echo "$curl_output" > ~/.zen/game/nostr/${PLAYER}/_index.html
+        else
+          echo "ERROR: UPASSPORT API call failed or returned an error."
+          echo "ERROR OUTPUT : $curl_output"
+        fi
     fi
+
+    ## CREATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
+    ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
+    NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
+    echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
+    ## UPDATE IPNS RESOLVE
+    NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
     echo "___________________________________________________"
     sleep 1

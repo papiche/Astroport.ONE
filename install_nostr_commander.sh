@@ -3,12 +3,41 @@
 # Couleurs pour la sortie
 GREEN="\033[0;32m"
 RED="\033[0;31m"
+YELLOW="\033[0;33m"
 NC="\033[0m" # Pas de couleur
+
+# Fonction pour vérifier la version de Rust
+check_rust_version() {
+    if command -v rustc &> /dev/null; then
+        rustc_version=$(rustc --version | awk '{print $2}')
+        required_version="1.70.0"
+
+        if [[ "$rustc_version" == "$required_version" ]] || [[ "$rustc_version" > "$required_version" ]]; then
+            echo -e "${GREEN}Rust est installé et à la version $rustc_version (ou supérieure).${NC}"
+            return 0  # Rust est à jour
+        else
+            echo -e "${YELLOW}Rust est installé mais à la version $rustc_version, une mise à jour vers $required_version ou une version plus récente est nécessaire.${NC}"
+            return 1  # Rust doit être mis à jour
+        fi
+    else
+        echo -e "${RED}Rust n'est pas installé. Installation requise.${NC}"
+        return 2 # Rust n'est pas installé
+    fi
+}
+
+
+# Fonction pour mettre à jour rust
+update_rust() {
+  echo -e "${YELLOW}Mise à jour de Rust...${NC}"
+  rustup update stable
+  source $HOME/.cargo/env
+}
 
 if command -v nostr-commander-rs &> /dev/null; then
     echo -e "${GREEN}nostr-commander-rs est déjà installé !${NC}"
     exit 0
 fi
+
 echo -e "${GREEN}Installation de nostr-commander-rs${NC}"
 
 # Étape 0 : Vérifier que nostr-relay est installé
@@ -19,13 +48,14 @@ else
     pip install nostr-relay pynostr bech32
 fi
 
-# Étape 1 : Vérifier que Rust est installé
-if ! command -v cargo &> /dev/null; then
-    echo -e "${RED}Rust n'est pas installé. Installation de Rust...${NC}"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source $HOME/.cargo/env
-else
-    echo -e "${GREEN}Rust est déjà installé.${NC}"
+# Étape 1 : Vérifier et installer/mettre à jour Rust
+rust_status=$(check_rust_version)
+if [ "$rust_status" -eq 2 ]; then
+  echo -e "${RED}Rust n'est pas installé. Installation de Rust...${NC}"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source $HOME/.cargo/env
+elif [ "$rust_status" -eq 1 ]; then
+  update_rust
 fi
 
 # Étape 2 : Vérifier si Git est installé
@@ -49,7 +79,10 @@ fi
 # Étape 4 : Construire le projet
 cd "$INSTALL_DIR"
 echo -e "${GREEN}Construction de nostr-commander-rs...${NC}"
-cargo build --release
+if ! cargo build --release; then
+    echo -e "${RED}La construction de nostr-commander-rs a échoué. Vérifiez que Rust est à jour et que les dépendances sont correctes.${NC}"
+    exit 1
+fi
 
 # Étape 5 : Ajouter l'exécutable au PATH
 EXECUTABLE_PATH="$INSTALL_DIR/target/release/nostr-commander-rs"
@@ -58,7 +91,7 @@ if [ -f "$EXECUTABLE_PATH" ]; then
     echo -e "${GREEN}Ajout au PATH (via ~/.bashrc)...${NC}"
     if ! grep -q "$INSTALL_DIR/target/release" "$HOME/.bashrc"; then
         echo "export PATH=\"\$PATH:$INSTALL_DIR/target/release\"" >> "$HOME/.bashrc"
-        echo -e "${GREEN}Redémarrez votre terminal ou exécutez 'source ~/.bashrc' pour activer.${NC}"
+        echo -e "${GREEN}Redémarrez votre terminal ou exécutez 'source ~/.bashrc' pour activer les changements de PATH.${NC}"
     else
         echo -e "${GREEN}Le chemin est déjà dans ~/.bashrc.${NC}"
     fi

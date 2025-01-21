@@ -78,7 +78,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
 
-    amzqr "${ipfsNODE}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/static/img/no_str.png -c -n ${G1PUBNOSTR}.IPNS.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/static/img/no_str.png -c -n ${G1PUBNOSTR}.IPNS.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     convert ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.IPNS.QR.png \
         -gravity SouthWest \
         -pointsize 18 \
