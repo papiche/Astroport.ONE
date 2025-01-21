@@ -15,18 +15,19 @@ check_rust_version() {
 
         echo "Rust version: $rustc_version, Cargo version: $cargo_version"
 
-        if [[ "$rustc_version" == "$required_version" ]] || [[ "$rustc_version" > "$required_version" ]]; then
+        if [[ $(printf '%s\n' "$rustc_version" "$required_version" | sort -V | head -n 1) == "$required_version" ]]; then
             echo -e "${GREEN}Rust est installé et à la version $rustc_version (ou supérieure), Cargo est à la version $cargo_version.${NC}"
-             if [[ "$cargo_version" < "1.70.0" ]] ; then
-                  echo -e "${YELLOW}La version de Cargo est trop ancienne($cargo_version), une mise à jour est nécessaire.${NC}"
+            if [[ $(printf '%s\n' "$cargo_version" "1.70.0" | sort -V | head -n 1) == "1.70.0" ]]; then
+                return 0  # Rust et Cargo sont à jour
+            else
+                echo -e "${YELLOW}La version de Cargo est trop ancienne ($cargo_version), une mise à jour est nécessaire.${NC}"
                 return 1
-               else
-                  return 0  # Rust et Cargo sont à jour
-                fi
+            fi
         else
             echo -e "${YELLOW}Rust est installé mais à la version $rustc_version, une mise à jour vers $required_version ou une version plus récente est nécessaire.${NC}"
             return 1  # Rust doit être mis à jour
         fi
+
     else
         echo -e "${RED}Rust n'est pas installé. Installation requise.${NC}"
         return 2 # Rust n'est pas installé
@@ -41,7 +42,16 @@ update_rust() {
         echo -e "${RED}La mise à jour de Rust a échoué. Veuillez vérifier votre connexion internet et réessayer.${NC}"
         exit 1
     fi
-  source $HOME/.cargo/env
+
+    source $HOME/.cargo/env
+
+
+    # Vérification de la version après mise à jour
+     new_rust_status=$(check_rust_version)
+      if [ "$new_rust_status" -ne 0 ]; then
+           echo -e "${RED}La mise à jour de Rust a échoué, veuillez réessayer manuellement.${NC}"
+         exit 1
+     fi
 }
 
 if command -v nostr-commander-rs &> /dev/null; then
@@ -68,13 +78,6 @@ if [ "$rust_status" -eq 2 ]; then
 elif [ "$rust_status" -eq 1 ]; then
   update_rust
 fi
-# On revérifie au cas où
-rust_status=$(check_rust_version)
-if [ "$rust_status" -ne 0 ]; then
-    echo -e "${RED}Erreur: Rust n'est toujours pas à jour après la tentative de mise à jour.${NC}"
-    exit 1
-fi
-
 
 # Étape 2 : Vérifier si Git est installé
 if ! command -v git &> /dev/null; then
