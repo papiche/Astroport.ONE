@@ -11,7 +11,7 @@ check_rust_version() {
     if command -v rustc &> /dev/null; then
         rustc_version=$(rustc --version | awk '{print $2}')
         required_version="1.70.0"
-        cargo_version=$(cargo --version | sed -E 's/cargo //g')
+        cargo_version=$(cargo --version | sed -E 's/cargo ([0-9\.]+) .*/\1/')
 
         echo "Rust version: $rustc_version, Cargo version: $cargo_version"
 
