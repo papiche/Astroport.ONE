@@ -52,8 +52,8 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "______ AMOUNT = ${COINS} G1"
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
 
-    #~ $(echo "$COINS > 0" | bc -l) -eq 1
-    if [[ -z ${COINS} ]]; then
+    #~ EMPTY WALLET ???
+    if [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
         echo "EMPTY NOSTR CARD.............."
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue
