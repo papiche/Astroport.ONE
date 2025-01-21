@@ -117,7 +117,7 @@ if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
         .metadata.about = $new_about' "$CREDENTIALS_FILE" > "$CREDENTIALS_FILE.tmp" && mv "$CREDENTIALS_FILE.tmp" "$CREDENTIALS_FILE"
 
     ## SEND NOSTR MESSAGE
-    nostr-commander-rs --publish "COUCOU"
+    $HOME/.zen/nostr-commander-rs/target/release/nostr-commander-rs --publish "COUCOU"
 
 fi
 
@@ -147,7 +147,7 @@ do
 done < ${SSHAUTHFILE} ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
 
 ## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub (made during PLAYER.refresh)
-cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys
+cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null
 
 ### REMOVING DUPLICATION (NO ORDER CHANGING)
 awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean

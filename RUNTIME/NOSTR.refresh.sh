@@ -26,7 +26,7 @@ echo "## RUNNING NOSTR.refresh.sh
 
 "
 
-NOSTR=($(ls -t ~/.zen/game/nostr/  | grep "@" 2>/dev/null))
+NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 # Fonction pour détruire une NOSTRCARD
 destroy_nostrcard() {
