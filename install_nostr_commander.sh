@@ -11,7 +11,7 @@ check_rust_version() {
     if command -v rustc &> /dev/null; then
         rustc_version=$(rustc --version | awk '{print $2}')
         required_version="1.70.0"
-        cargo_version=$(cargo --version | sed -E 's/cargo ([0-9\.]+) .*/\1/')
+        cargo_version=$(cargo --version | sed -E 's/cargo //g')
 
         echo "Rust version: $rustc_version, Cargo version: $cargo_version"
 
@@ -73,7 +73,7 @@ fi
 rust_status=$(check_rust_version)
 if [ "$rust_status" -eq 2 ]; then
   echo -e "${RED}Rust n'est pas installé. Installation de Rust...${NC}"
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   source $HOME/.cargo/env
 elif [ "$rust_status" -eq 1 ]; then
   update_rust
