@@ -11,10 +11,17 @@ check_rust_version() {
     if command -v rustc &> /dev/null; then
         rustc_version=$(rustc --version | awk '{print $2}')
         required_version="1.70.0"
+         cargo_version=$(cargo --version | awk '{print $3}')
+
 
         if [[ "$rustc_version" == "$required_version" ]] || [[ "$rustc_version" > "$required_version" ]]; then
-            echo -e "${GREEN}Rust est installé et à la version $rustc_version (ou supérieure).${NC}"
-            return 0  # Rust est à jour
+            echo -e "${GREEN}Rust est installé et à la version $rustc_version (ou supérieure), Cargo est à la version $cargo_version.${NC}"
+              if [[ "$cargo_version" < "1.70.0" ]] ; then
+                  echo -e "${YELLOW}La version de Cargo est trop ancienne($cargo_version), une mise à jour est nécessaire.${NC}"
+                return 1
+               else
+                  return 0  # Rust et Cargo sont à jour
+                fi
         else
             echo -e "${YELLOW}Rust est installé mais à la version $rustc_version, une mise à jour vers $required_version ou une version plus récente est nécessaire.${NC}"
             return 1  # Rust doit être mis à jour
@@ -28,8 +35,11 @@ check_rust_version() {
 
 # Fonction pour mettre à jour rust
 update_rust() {
-  echo -e "${YELLOW}Mise à jour de Rust...${NC}"
-  rustup update stable
+  echo -e "${YELLOW}Mise à jour de Rust (incluant Cargo)...${NC}"
+    if ! rustup update; then
+        echo -e "${RED}La mise à jour de Rust a échoué. Veuillez vérifier votre connexion internet et réessayer.${NC}"
+        exit 1
+    fi
   source $HOME/.cargo/env
 }
 
