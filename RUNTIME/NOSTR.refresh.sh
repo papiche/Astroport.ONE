@@ -150,6 +150,8 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ## CREATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
+    [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    mkdir -p ~/.zen/tmp/${MOATS}
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
