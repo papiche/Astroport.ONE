@@ -133,7 +133,7 @@ cat > "$CREDENTIALS_FILE" <<EOL
   "public_key_bech32": "npub1eq0gkvwm43jc506neat4y8t4cyp4z2w846qtxexuc5syh9h5v47sptlfff",
   "relays": [
     {
-      "url": "wss://relay.primal.net/",
+      "url": "wss://relay.g1sms.fr/",
       "proxy": null
     },
     {
@@ -146,7 +146,7 @@ cat > "$CREDENTIALS_FILE" <<EOL
     "display_name": "coucou",
     "about": "coucou",
     "picture": "http://127.0.0.1:8080/ipfs/QmbUAMgnTm4dFnH66kgmUXpBBqUMdTmfedvzuYTmgXd8s9",
-    "nip05": "coucou@yopmail.com"
+    "nip05": "support@qo-op.com"
   },
   "contacts": [],
   "subscribed_pubkeys": [],

@@ -81,6 +81,46 @@ echo "${YIPNS}
                              '------'      \
 
 "
+# Couleurs
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[0;33m"
+NC="\033[0m" # Pas de couleur
+############################################ CHECK NOSTR IDENTITY
+# nostr-commander-rs credentials.json
+CREDENTIALS_FILE="$HOME/.local/share/nostr-commander-rs/credentials.json"
+SECRET_JUNE_FILE="$HOME/.zen/game/secret.june"
+if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
+    echo -e "${GREEN}Mise à jour des clés et métadonnées Nostr dans credentials.json...${NC}"
+    source "$SECRET_JUNE_FILE"
+    NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
+    NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
+    # Afficher les clés pour vérification
+    echo -e "${GREEN}Nostr Private Key: ${NC}$NPRIV"
+    echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
+
+    # STATION IDENTITY
+    STATION_NAME="$IPFSNODEID"
+    STATION_ABOUT="$NODEG1PUB"
+    STATION_DISPLAY_NAME="$(hostname)"
+
+    # Mise à jour du CREDENTIALS_FILE
+    jq --arg new_secret_key "$NPRIV" \
+       --arg new_public_key "$NPUBLIC" \
+       --arg new_name "$STATION_NAME" \
+       --arg new_display_name "$STATION_DISPLAY_NAME" \
+       --arg new_about "$STATION_ABOUT" \
+      '.secret_key_bech32 = $new_secret_key |
+       .public_key_bech32 = $new_public_key |
+        .metadata.name = $new_name |
+        .metadata.display_name = $new_display_name |
+        .metadata.about = $new_about' "$CREDENTIALS_FILE" > "$CREDENTIALS_FILE.tmp" && mv "$CREDENTIALS_FILE.tmp" "$CREDENTIALS_FILE"
+
+    ## SEND NOSTR MESSAGE
+    nostr-commander-rs --publish "COUCOU"
+
+fi
+
 
 ############################################
 ## DISTRIBUTE DRAGON SSH WOT SEED
