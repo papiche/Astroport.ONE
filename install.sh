@@ -189,17 +189,12 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 ## EXTEND PATH
 echo '#############################################################
 export PATH=$HOME/.local/bin:/usr/games:$PATH
-## ALIASING commands
-alias command="$HOME/.zen/Astroport.ONE/command.sh"
-alias jaklis="$HOME/.zen/Astroport.ONE/tools/jaklis/jaklis.py"
-alias natools="$HOME/.zen/Astroport.ONE/tools/natools.py"
-alias keygen="$HOME/.zen/Astroport.ONE/tools/keygen"
-alias 1ping="$HOME/.zen/Astroport.ONE/ping_bootstrap.sh"
-alias 1stat="$HOME/.zen/Astroport.ONE/Ustats.sh"
 
 ## Activate python env
 . $HOME/.astro/bin/activate
+. $HOME/.zen/Astroport.ONE/tools/my.sh
 
+echo "$IPFSNODEID"
 cowsay $(hostname) : $(cat $HOME/.zen/game/UPLANETG1PUB 2>/dev/null)' >> ~/.bashrc
 
 source ~/.bashrc
