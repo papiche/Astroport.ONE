@@ -141,7 +141,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'$(myIPFS)'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />'${pseudo}', may the good vibes be with you!<br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
+            "HTMLPart": "<h1>Bro</h1><h3>You have a <br><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a>!</h3> on <a href=\"https://qo-op.com\">UPlanet</a><br />'${pseudo}', may the good vibes be with you!<br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'

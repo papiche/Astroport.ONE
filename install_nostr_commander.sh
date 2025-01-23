@@ -109,13 +109,14 @@ fi
 EXECUTABLE_PATH="$INSTALL_DIR/target/release/nostr-commander-rs"
 if [ -f "$EXECUTABLE_PATH" ]; then
     echo -e "${GREEN}Le binaire nostr-commander a été construit avec succès.${NC}"
-    echo -e "${GREEN}Ajout au PATH (via ~/.bashrc)...${NC}"
-    if ! grep -q "$INSTALL_DIR/target/release" "$HOME/.bashrc"; then
-        echo "export PATH=\"\$PATH:$INSTALL_DIR/target/release\"" >> "$HOME/.bashrc"
-        echo -e "${GREEN}Redémarrez votre terminal ou exécutez 'source ~/.bashrc' pour activer les changements de PATH.${NC}"
-    else
-        echo -e "${GREEN}Le chemin est déjà dans ~/.bashrc.${NC}"
-    fi
+    echo -e "${GREEN}Installation dans ~/.local/bin ...${NC}"
+    mv "$INSTALL_DIR/target/release/nostr-commander-rs" ~/.local/bin
+    #~ if ! grep -q "$INSTALL_DIR/target/release" "$HOME/.bashrc"; then
+        #~ echo "export PATH=\"\$PATH:$INSTALL_DIR/target/release\"" >> "$HOME/.bashrc"
+        #~ echo -e "${GREEN}Redémarrez votre terminal ou exécutez 'source ~/.bashrc' pour activer les changements de PATH.${NC}"
+    #~ else
+        #~ echo -e "${GREEN}Le chemin est déjà dans ~/.bashrc.${NC}"
+    #~ fi
 else
     echo -e "${RED}Erreur : le binaire nostr-commander-rs n'a pas été construit correctement.${NC}"
     exit 1
