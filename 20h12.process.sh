@@ -18,7 +18,7 @@ echo "PATH=$PATH"
 
 ########################################################################
 ## IPFS DAEMON STATUS
-LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
+LOWMODE=$(sudo systemctl status ipfs | grep "preset: disabled") ## IPFS DISABLED - START ONLY FOR SYNC -
 [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]] && LOWMODE="NO 5001" ## IPFS IS STOPPED
 [[ ! $isLAN ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 
