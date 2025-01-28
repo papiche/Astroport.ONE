@@ -69,6 +69,11 @@ else
     pip install nostr-relay pynostr bech32
 fi
 
+# INSTALL strfry + strfry.conf
+STRamd64="/ipfs/QmPq6nbDDXP33n8XG7jJsc5j92xJ7tqsZSeVqkhTYt4V8D"
+STRarm64="/ipfs/Qmb2TNyXhdvaUxec69W7UPQ1yfBAmXpR6TyhXWopzwWi9X"
+#~ mkdir -p ~/.zen/strfry
+
 # Étape 1 : Vérifier et installer/mettre à jour Rust
 rust_status=$(check_rust_version)
 if [ "$rust_status" -eq 2 ]; then

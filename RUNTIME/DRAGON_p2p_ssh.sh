@@ -38,7 +38,7 @@ if [[ -s ~/.ssh/id_ed25519.pub ]]; then
             && cat ~/.ssh/id_ed25519.pub > ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
     else
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
-        echo "PLEASE link SSH with IPFSNODEID"
+        echo "IPFSNODEID not linked with SSH _____ ٩(̾●̮̮̃̾•̃̾)۶ _____"
         echo "${YIPNS} != ${IPFSNODEID}"
     fi
 fi
