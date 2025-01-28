@@ -143,7 +143,7 @@ cat > "$CREDENTIALS_FILE" <<EOL
       "proxy": null
     },
     {
-      "url": "ws://127.0.0.1:6969/",
+      "url": "ws://127.0.0.1:7777/",
       "proxy": null
     }
   ],
