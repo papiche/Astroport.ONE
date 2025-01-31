@@ -117,7 +117,7 @@ if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
         .metadata.about = $new_about' "$CREDENTIALS_FILE" > "$CREDENTIALS_FILE.tmp" && mv "$CREDENTIALS_FILE.tmp" "$CREDENTIALS_FILE"
 
     ## SEND NOSTR MESSAGE
-    $HOME/.zen/nostr-commander-rs/target/release/nostr-commander-rs --publish "COUCOU"
+    $HOME/.zen/nostr-commander-rs/target/release/nostr-commander-rs --publish "$myIPFS/ipns/$IPFSNODEID"
 
 fi
 

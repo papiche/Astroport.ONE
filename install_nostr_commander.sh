@@ -45,7 +45,6 @@ update_rust() {
 
     source $HOME/.cargo/env
 
-
     # Vérification de la version après mise à jour
      new_rust_status=$(check_rust_version)
       if [ "$new_rust_status" -ne 0 ]; then
@@ -69,10 +68,6 @@ else
     pip install nostr-relay pynostr bech32
 fi
 
-# INSTALL strfry + strfry.conf
-STRamd64="/ipfs/QmPq6nbDDXP33n8XG7jJsc5j92xJ7tqsZSeVqkhTYt4V8D"
-STRarm64="/ipfs/Qmb2TNyXhdvaUxec69W7UPQ1yfBAmXpR6TyhXWopzwWi9X"
-#~ mkdir -p ~/.zen/strfry
 
 # Étape 1 : Vérifier et installer/mettre à jour Rust
 rust_status=$(check_rust_version)
@@ -92,12 +87,13 @@ fi
 
 # Étape 3 : Cloner le dépôt nostr-commander-rs
 REPO_URL="https://github.com/8go/nostr-commander-rs"
-INSTALL_DIR="$HOME/.zen/nostr-commander-rs"
+INSTALL_DIR="$HOME/.zen/workspace/nostr-commander-rs"
 
 if [ -d "$INSTALL_DIR" ]; then
     echo -e "${GREEN}Le dépôt existe déjà dans ${INSTALL_DIR}. Mise à jour...${NC}"
     cd "$INSTALL_DIR" && git pull
 else
+    mkdir -p "$INSTALL_DIR"
     echo -e "${GREEN}Clonage du dépôt nostr-commander-rs...${NC}"
     git clone "$REPO_URL" "$INSTALL_DIR"
 fi
@@ -116,12 +112,6 @@ if [ -f "$EXECUTABLE_PATH" ]; then
     echo -e "${GREEN}Le binaire nostr-commander a été construit avec succès.${NC}"
     echo -e "${GREEN}Installation dans ~/.local/bin ...${NC}"
     mv "$INSTALL_DIR/target/release/nostr-commander-rs" ~/.local/bin
-    #~ if ! grep -q "$INSTALL_DIR/target/release" "$HOME/.bashrc"; then
-        #~ echo "export PATH=\"\$PATH:$INSTALL_DIR/target/release\"" >> "$HOME/.bashrc"
-        #~ echo -e "${GREEN}Redémarrez votre terminal ou exécutez 'source ~/.bashrc' pour activer les changements de PATH.${NC}"
-    #~ else
-        #~ echo -e "${GREEN}Le chemin est déjà dans ~/.bashrc.${NC}"
-    #~ fi
 else
     echo -e "${RED}Erreur : le binaire nostr-commander-rs n'a pas été construit correctement.${NC}"
     exit 1
