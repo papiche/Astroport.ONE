@@ -53,7 +53,7 @@ for PLAYER in "${NOSTR[@]}"; do
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
 
     #~ EMPTY WALLET ???
-    if [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
+    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" ]]; then
         echo "EMPTY NOSTR CARD.............."
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue

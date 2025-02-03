@@ -133,6 +133,10 @@ cat > "$CREDENTIALS_FILE" <<EOL
       "proxy": null
     },
     {
+      "url": "wss://relay.copylaradio.com/",
+      "proxy": null
+    },
+    {
       "url": "ws://127.0.0.1:7777/",
       "proxy": null
     }
