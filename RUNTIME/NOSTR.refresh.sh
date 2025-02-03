@@ -100,7 +100,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
-    echo "DISCO = $DISCO"
+    #~ echo "DISCO = $DISCO"
     arr=(${DISCO//[=&]/ })
     s=$(urldecode ${arr[0]} | xargs)
     salt=$(urldecode ${arr[1]} | xargs)
@@ -117,7 +117,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ##################################################### DISCO REVEALED
     ## s=/?email
     echo $s
-    echo $salt $pepper
+    #~ echo $salt $pepper
 
     ## CHECK PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
@@ -142,7 +142,7 @@ for PLAYER in "${NOSTR[@]}"; do
         # Check if the curl command succeeded and returned a valid HTML response
         if [[ $? -eq 0 && "$curl_output" != *"error"* ]]; then
           echo "UPASSPORT API call successful, saving output."
-          echo "$curl_output" > ~/.zen/game/nostr/${PLAYER}/_index.html
+          echo "$curl_output" > ~/.zen/game/nostr/${PLAYER}/primal.html
         else
           echo "ERROR: UPASSPORT API call failed or returned an error."
           echo "ERROR OUTPUT : $curl_output"
