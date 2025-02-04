@@ -4,7 +4,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 ################################################################################
-## NB : EXTRACTED FROM PYTHON API UPassport/upassport.sh code
+## INITIALIZE NOSTR CARD + G1 + IPNS App Storage
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -36,7 +36,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "TEST DECODING..."
     echo "$HEAD
     $TAIL" | ssss-combine -t 2 -q
-    [ ! $? -eq 0 ] && echo "ERROR! SSSSKEY DECODING FAILED" && echo "${MY_PATH}/templates/wallet.html" && exit 1
+    [ ! $? -eq 0 ] && echo "ERROR! SSSSKEY DECODING FAILED" && echo "${MY_PATH}/../templates/wallet.html" && exit 1
 
     # 1. Generate a DISCO Nostr key pair
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
@@ -78,7 +78,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
 
-    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/static/img/no_str.png -c -n ${G1PUBNOSTR}.IPNS.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_str.png -c -n ${G1PUBNOSTR}.IPNS.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     convert ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.IPNS.QR.png \
         -gravity SouthWest \
         -pointsize 18 \
@@ -91,12 +91,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ipfs pin rm /ipfs/${VAULTNSQR}
 
     ## HEAD SSSS CLEAR
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)" -l H -p ${MY_PATH}/static/img/key.png -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)" -l H -p ${MY_PATH}/../templates/img/key.png -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     SSSSQR=$(ipfs add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
     ipfs pin rm /ipfs/${SSSSQR}
 
     ## Create G1PUBNOSTR QR Code
-    amzqr "${G1PUBNOSTR}" -l H -p ${MY_PATH}/static/img/nature_cloud_face.png -c -n G1PUBNOSTR.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    amzqr "${G1PUBNOSTR}" -l H -p ${MY_PATH}/../templates/img/nature_cloud_face.png -c -n G1PUBNOSTR.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
     convert ~/.zen/tmp/${MOATS}/G1PUBNOSTR.QR.png \
             -gravity SouthWest \
@@ -109,11 +109,15 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     G1PUBNOSTRQR=$(ipfs add -q ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}
 
-
+    ##############################################################
+    # INSERT NOSTR ORACOLO APP
+    cat ${MY_PATH}/../templates/NOSTR/oracolo/index.html \
+        | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
+            > ${HOME}/.zen/game/nostr/${EMAIL}/oracolo.html
 
     ##############################################################
     ### PREPARE NOSTR ZINE
-    cat ${MY_PATH}/static/zine/nostr.html \
+    cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \
     | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
             -e "s~nsec13x0643lc3al5fk92auurh7ww0993syj566eh7ta8r2jpkprs44rs33cute~${NPRIV}~g" \
             -e "s~toto@yopmail.com~${EMAIL}~g" \
@@ -133,6 +137,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
+    ## CLEAN CACHE
+    rm -Rf ~/.zen/tmp/${MOATS}
     ### SEND BACK RESULT
     echo "SALT=$SALT PEPPER=$PEPPER \
 NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
