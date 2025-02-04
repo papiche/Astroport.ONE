@@ -15,7 +15,7 @@ IMAGE="$2"
 
 echo "Email detected: $EMAIL"
 [[ -s "~/.zen/tmp/${MOATS}/${EMAIL}_index.html" ]] \
-    && rm -Rf "${HOME}/.zen/game/nostr/${EMAIL}/" ## CLEANING OLD NOSTR
+    && rm -Rf "${HOME}/.zen/game/nostr/${EMAIL-null}/" ## CLEANING OLD NOSTR
 
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}/
@@ -43,6 +43,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
     echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC"
+
+    HEX=$(nostr-commander-rs --npub-to-hex $NPUBLIC -o json 2> /dev/null | jq -r .hex)
+    echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX
 
     # 2. Store the keys in a file or a secure place (avoid printing them to console if possible)
     echo "$NPRIV" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.priv
@@ -130,20 +133,20 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
             -e "s~_DATE_~$(date -u)~g" \
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/_index.html
-
-    echo "${HOME}/.zen/game/nostr/${EMAIL}/_index.html"
+        > ${HOME}/.zen/game/nostr/${EMAIL}/zine.html
 
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
     ## CLEAN CACHE
-    rm -Rf ~/.zen/tmp/${MOATS}
+    rm -Rf ~/.zen/tmp/${MOATS-null}
     ### SEND BACK RESULT
-    echo "SALT=$SALT PEPPER=$PEPPER \
-NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
-NOSTRG1PUB=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} NOSTRNS=${NOSTRNS} \
-CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
+    #~ echo "SALT=$SALT PEPPER=$PEPPER \
+#~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
+#~ NOSTRG1PUB=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} NOSTRNS=${NOSTRNS} \
+#~ CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
+
+    echo "${HOME}/.zen/game/nostr/${EMAIL}/zine.html"
 
     exit 0
 
