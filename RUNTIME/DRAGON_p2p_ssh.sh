@@ -99,26 +99,14 @@ if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
     #~ echo -e "${GREEN}Nostr Private Key: ${NC}$NPRIV"
     #~ echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
 
-    # STATION IDENTITY
-    STATION_NAME="$IPFSNODEID"
-    STATION_ABOUT="$NODEG1PUB"
-    STATION_DISPLAY_NAME="$(hostname)"
-
-    # Mise à jour du CREDENTIALS_FILE
-    jq --arg new_secret_key "$NPRIV" \
-       --arg new_public_key "$NPUBLIC" \
-       --arg new_name "$STATION_NAME" \
-       --arg new_display_name "$STATION_DISPLAY_NAME" \
-       --arg new_about "$STATION_ABOUT" \
-      '.secret_key_bech32 = $new_secret_key |
-       .public_key_bech32 = $new_public_key |
-        .metadata.name = $new_name |
-        .metadata.display_name = $new_display_name |
-        .metadata.about = $new_about' "$CREDENTIALS_FILE" > "$CREDENTIALS_FILE.tmp" \
-            && mv "$CREDENTIALS_FILE.tmp" "$CREDENTIALS_FILE"
-
-    ## SEND NOSTR MESSAGE
-    $HOME/.zen/nostr-commander-rs/target/release/nostr-commander-rs --publish "$myIPFS/ipns/$IPFSNODEID"
+    ## UPDATE PROFILE
+    ${MY_PATH}/../tools/setup_nostr_profile.py \
+        "$NPRIV" \
+        "$CAPTAING1PUB" "♥Box $(hostname) on UPlanet $UPLANETG1PUB" "$myIPFS/ipns/$IPFSNODEID" \
+        "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
+        "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+        "" "" "" "" "" "" \
+        "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
 
 fi
 
