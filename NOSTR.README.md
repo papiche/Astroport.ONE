@@ -6,7 +6,7 @@ Voici comment utiliser nostr-commander-rs :
 2. Configuration initiale :
    - Créez un nouvel utilisateur avec la commande :
      ```
-     nostr-commander-rs --create-user --name "Votre Nom" --display-name "Pseudo" --about "Description" --picture "URL_avatar" --nip05 "votre_id@example.org" --add-relay "wss://relay1.com" "wss://relay2.com"
+     nostr-commander-rs --create-user --name "Votre Nom" --display-name "Pseudo" --about "Description" --picture "URL_avatar" --nip05 "votre_id@example.org" --add-relay "wss://relay.copylaradio.com" "wss://relay.g1sms.fr"
      ```
    - Cela générera un fichier de configuration par défaut dans `$HOME/.local/share/nostr-commander-rs/credentials.json`.
 
@@ -41,7 +41,7 @@ Voici comment utiliser nostr-commander-rs :
 5. Utilisation avancée :
    - Utiliser un proxy :
      ```
-     nostr-commander-rs --add-relay "wss://relay.com" --proxy "127.0.0.1:9050"
+     nostr-commander-rs --add-relay "wss://relay.copylaradio.com" --proxy "127.0.0.1:9050"
      ```
    - Convertir les clés :
      ```

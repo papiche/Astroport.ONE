@@ -96,8 +96,8 @@ if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
     # Afficher les clés pour vérification
-    echo -e "${GREEN}Nostr Private Key: ${NC}$NPRIV"
-    echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
+    #~ echo -e "${GREEN}Nostr Private Key: ${NC}$NPRIV"
+    #~ echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
 
     # STATION IDENTITY
     STATION_NAME="$IPFSNODEID"
@@ -114,7 +114,8 @@ if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
        .public_key_bech32 = $new_public_key |
         .metadata.name = $new_name |
         .metadata.display_name = $new_display_name |
-        .metadata.about = $new_about' "$CREDENTIALS_FILE" > "$CREDENTIALS_FILE.tmp" && mv "$CREDENTIALS_FILE.tmp" "$CREDENTIALS_FILE"
+        .metadata.about = $new_about' "$CREDENTIALS_FILE" > "$CREDENTIALS_FILE.tmp" \
+            && mv "$CREDENTIALS_FILE.tmp" "$CREDENTIALS_FILE"
 
     ## SEND NOSTR MESSAGE
     $HOME/.zen/nostr-commander-rs/target/release/nostr-commander-rs --publish "$myIPFS/ipns/$IPFSNODEID"

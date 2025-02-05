@@ -132,22 +132,48 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ## UPASSPORT N1 SCAN primal
-    if [[ ${primal} != "" && ${primal} != "null" ]]; then
-        echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
-        ## APPEL /upassport API
-        curl_output=$(curl -s -X POST \
-        -F "parametre=${primal}" \
-        http://127.0.0.1:54321/upassport)
+    if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
+        if [[ ${primal} != "" && ${primal} != "null" ]]; then
+            echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
+            ## APPEL /upassport API
+            curl_output=$(curl -s -X POST \
+            -F "parametre=${primal}" \
+            http://127.0.0.1:54321/upassport)
 
-        # Check if the curl command succeeded and returned a valid HTML response
-        if [[ $? -eq 0 && "$curl_output" != *"error"* ]]; then
-          echo "UPASSPORT API call successful, saving output."
-          echo "$curl_output" > ~/.zen/game/nostr/${PLAYER}/primal.html
-        else
-          echo "ERROR: UPASSPORT API call failed or returned an error."
-          echo "ERROR OUTPUT : $curl_output"
+            # Check if the curl command succeeded and returned a valid HTML response
+            if [[ $? -eq 0 && "$curl_output" != *"error"* ]]; then
+                echo "UPASSPORT API call successful, saving output."
+                echo "$curl_output" > ~/.zen/game/nostr/${PLAYER}/primal.html
+                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
+                    ~/.zen/game/nostr/${PLAYER}/primal.html \
+                    "UPASSPORT + 1 G1"
+            else
+                echo "ERROR: UPASSPORT API call failed or returned an error."
+                echo "ERROR OUTPUT : $curl_output"
+            fi
+
+
+
         fi
     fi
+    echo "## CREATE NOSTR PROFILE"
+    NSEC=$(${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}" -s)
+    if [[ -s ~/.zen/tmp/coucou/${primal}.cesium.json ]]; then
+        echo "## CREATE FROM CESIUM"
+        ls ~/.zen/tmp/coucou/${primal}.*
+        #~ ${MY_PATH}/../tools/setup_nostr_profile.py \
+            #~ "$NSEC" \
+            #~ "totodu56" "TOTO du 56" "Compte toto NOSRT du 56" \
+            #~ "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
+            #~ "https://ipfs.g1sms.fr/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+            #~ "" "" "" "" "" "" \
+            #~ "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
+    else
+        echo "## CREATE Nostr Card DATA"
+        ls ~/.zen/game/nostr/${PLAYER}
+
+    fi
+
 
     ## CREATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
     [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
