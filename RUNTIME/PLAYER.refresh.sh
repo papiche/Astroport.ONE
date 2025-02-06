@@ -271,7 +271,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## UNPLUG more than 21 days & less than 2 G1 account
     [[ "${CURRENT}" != "${PLAYER}" && $(echo "$days >= 21" | bc -l) -eq 1 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]] \
         && echo "LOW ZEN PLAYER UNPLUG" \
-        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT"
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT" \
+        && continue
 
 ############################################## +2 DAYS REMOVE AstroID !!
     ## REMOVE AstroID
