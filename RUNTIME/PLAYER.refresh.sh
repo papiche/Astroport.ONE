@@ -360,7 +360,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     UPLAYERSTIDS=()
     for fp in ${fplayers[@]}; do
 
-        [[ ! "${fp}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] && echo "BAD ${fp} FORMAT" && continue
+        [[ ! "${fp}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] && echo "BAD ${fp} FORMAT" && continue
         [[ "${fp}" == "${PLAYER}" ]] && echo "IT'S ME - CONTINUE" && continue
 
         FPLAYER=$(cat ~/.zen/tmp/${MOATS}/FRIENDS.json  | jq .[] | jq -r 'select(.title=="'${fp}'") | .player')

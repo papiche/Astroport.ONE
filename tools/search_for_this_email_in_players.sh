@@ -18,7 +18,7 @@ EMAIL="$1"
 MOATS="$2"
 [[ -z $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
-if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     INDEX=$(ls ${HOME}/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) && source="LOCAL"
     [[ ! $INDEX ]] && INDEX=$(ls ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) && source="CACHE"

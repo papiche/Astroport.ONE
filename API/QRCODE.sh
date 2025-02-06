@@ -259,7 +259,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 player=$(echo "${salt}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kind
                 ## REMOVE PLAYER IPNS KEY FROM STATION
-                [[ "${player}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                [[ "${player}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] \
                 && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
@@ -291,7 +291,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
                 player=$(echo "${salt}" | cut -d '_' -f 1 | cut -d ' ' -f 1) ## EMAIL_dice_words kind
 
-                [[ "${player}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+                [[ "${player}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] \
                 && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
@@ -505,7 +505,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             [[ ${DESTMAIL} == "" || ${DESTMAIL} == "undefined" ]] && echo "<br> Missing Destination EMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco
 
             ## CHECK VALID EMAIL FORMAT
-            [[ "${DESTMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+            [[ "${DESTMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] \
                 &&  echo "<br> GOOD $DESTMAIL <br>" >> ~/.zen/tmp/${MOATS}/disco \
                 && GOMAIL=1
 

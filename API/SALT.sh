@@ -149,7 +149,7 @@ if [[ "$APPNAME" == "g1pub" ]]; then
         [[ ! ${EMAIL} ]] && (echo "$HTTPCORS ERROR - MISSING ${EMAIL} FOR ${WHAT} CONTACT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) &&  echo "(☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. &&  exit 0
 
         ## CHECK WHAT IS EMAIL
-        if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+        if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             echo "VALID EMAIL OK"
         else
             echo "BAD EMAIL"
@@ -437,7 +437,7 @@ fi
 if [[ $APPNAME == "login" ]]; then
 
     ## INSTALL PLAYER IPNS KEY ON STATION
-    [[ "${SALT}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+    [[ "${SALT}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] \
     && PLAYER=${SALT} \
     || PLAYER=${WHAT}
 
@@ -476,7 +476,7 @@ fi
 if [[ $APPNAME == "logout" ]]; then
 
     ## REMOVE PLAYER IPNS KEY FROM STATION
-    [[ "${SALT}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]] \
+    [[ "${SALT}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] \
     && PLAYER=${SALT} \
     || PLAYER=${WHAT}
 

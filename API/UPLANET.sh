@@ -76,7 +76,7 @@ EMAIL="${PLAYER,,}" # lowercase
     &&  exit 0
 
 ## CHECK WHAT IS EMAIL
-if [[ "${EMAIL}" =~ ^[a-zA-Z0-9.%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]; then
+if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     echo "VALID ${EMAIL} EMAIL OK"
 
