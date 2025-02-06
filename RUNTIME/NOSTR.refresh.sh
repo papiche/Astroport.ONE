@@ -159,7 +159,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     echo "## CREATE NOSTR PROFILE"
-    NSEC=$(${MY_PATH}/../tools/keygen -t nostr -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}" -s)
+    NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]]; then
         echo "## NOSTR PROFILE CREATION..."
