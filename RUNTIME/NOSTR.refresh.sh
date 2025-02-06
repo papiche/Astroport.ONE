@@ -129,6 +129,7 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
         ## SCAN CESIUM/GCHANGE PRIMAL STATUS
         ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
+        #######################################################################
         ## COPY PRIMAL DUNITER/CESIUM METADATA
         cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
         ## IS PRIMAL CESIUM+
@@ -147,12 +148,12 @@ for PLAYER in "${NOSTR[@]}"; do
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
-                    "UPassport Fac Simile"
+                    "UPassport / UPLanet ${UPLANETG1PUB:0:8} / ($CAPTAINEMAIL)"
             else
                 ## UPassport is fac simile
                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
-                    "PLEASE ACTIVATE / UPLanet ${UPLANETG1PUB:0:8} / ($CAPTAINEMAIL)"
+                    "PLEASE ACTIVATE UPASSPORT"
             fi
         fi
     fi
@@ -164,7 +165,9 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "## NOSTR PROFILE CREATION..."
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
+        LAT=$(makecoord $zlat)
         zlon=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lon)
+        LON=$(makecoord $zlon)
         title=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.title)
         [[ -z $title ]] && title="$PLAYER"
         city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
@@ -191,16 +194,33 @@ for PLAYER in "${NOSTR[@]}"; do
             "" "" "" "" "" "" \
             "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net" \
             > ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+        ## RECORD GPS
+        echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
         ## HEX
         cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
         cat ~/.zen/game/nostr/${PLAYER}/HEX
 
-        ## CREATE UPlanet ZenCard with zlat/zlon
-
     else
-        echo "## Nostr Card PROFILE"
+
+        echo "## Nostr Card PROFILE ALREADY EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+
+        #~ if [[ ! -d ~/.zen/game/players/${PLAYER} ]];
+            #~ ## CREATE UPlanet ZenCard with GPS
+            #~ source ~/.zen/game/nostr/${PLAYER}/GPS
+            #~ PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+            #~ NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+
+            #~ ## CREATE ASTRONAUTE TW ZENCARD
+            #~ echo VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+            #~ ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+
+        #~ else
+            #~ echo "ZENCARD EXISTING"
+            #~ ls ~/.zen/game/players/${PLAYER}
+
+        #~ fi
     fi
 
 

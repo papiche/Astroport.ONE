@@ -546,6 +546,8 @@ VDONINJA="/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD"
 CESIUMIPFS="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k" # v1.7.10
 CESIUMIPFS="/ipfs/QmUJbCUcZKEsyRJie6NKiyKdseYtNNAGp1vEiSZqg5VL7i" # v1.7.13 - changed init scan
 
+CORACLEIPFS="/ipfs/QmQHo54E61trS2DKVnWqVvhStX7gJK2aArSWwiAigwRS8g"
+
 HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 
 [[ -s $HOME/.zen/Astroport.ONE/.env ]] && source $HOME/.zen/Astroport.ONE/.env
