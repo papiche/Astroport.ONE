@@ -129,15 +129,15 @@ for REGION in ${REGIONS[@]}; do
     done
     NS=${#RSSWARM[@]}
 
-    ## CREATE /.all.json FROM *.rss.json
+    ## CREATE /manifest.json FROM *.rss.json
     ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${MOATS}/${REGION}/RSS
 
     ## REMOVE SECTORS PARTS
     rm -f ~/.zen/tmp/${MOATS}/${REGION}/RSS/*.week.rss.json
 
-    ## MAKE FINAL _${RLAT}_${RLON}.week.rss.json
-    mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
-            ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${RLAT}_${RLON}.week.rss.json
+    #~ ## MAKE FINAL _${RLAT}_${RLON}.week.rss.json
+    #~ mv  ~/.zen/tmp/${MOATS}/${REGION}/RSS/.all.json \
+            #~ ~/.zen/tmp/${MOATS}/${REGION}/RSS/_${RLAT}_${RLON}.week.rss.json
 
     ## PREPARING JOURNAL
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}

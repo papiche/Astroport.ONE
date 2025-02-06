@@ -224,12 +224,13 @@ for SECTOR in ${SECTORS[@]}; do
         ############################################################
         ${MY_PATH}/RSS2UPlanetSECTORTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
         ############################################################
-        ## create sector RSS _all.json
-        cat ${RSS} >> ~/.zen/tmp/${MOATS}/${SECTOR}/RSS/_all.json
+        cp ${RSS} ~/.zen/tmp/${MOATS}/${SECTOR}/RSS/
         ############################################################
     done
     TOTL=$((${NL}+${NS}))
     ##############################################################
+    ## create sector RSS manifest.json
+    ${MY_PATH}/../tools/json_dir.all.sh ~/.zen/tmp/${MOATS}/${SECTOR}/RSS
 
     # Update COIN & ZEN value
     echo ${COINS} > ~/.zen/tmp/${MOATS}/${SECTOR}/COINS

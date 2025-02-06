@@ -1,5 +1,5 @@
 #!/bin/bash
-# GET AND COMBINE ALL JSON IN DIRECTORY
+# Generate a manifest.json referencing all JSON files in the directory
 DIR="$1"
 
 # Check if the directory exists
@@ -8,29 +8,30 @@ if [[ ! -d "$DIR" ]]; then
     exit 1
 fi
 
-## COMBINE ALL JSON
-json_array=()
-# Loop through each *.rss.json file and append its content to the array
-for file in ${DIR}/*.rss.json; do
+# Initialize an empty JSON array
+manifest_array=()
+
+# Loop through each *.rss.json file
+for file in "$DIR"/*.rss.json; do
     # Check if the file is not empty and does not contain just []
     if [[ -s "$file" && "$(jq -e '. == []' "$file")" != "true" ]]; then
-        # Use jq to extract the JSON array from each file
-        data=$(jq '.' "$file")
-        json_array+=("$data")
+        # Get file metadata
+        size=$(stat -c %s "$file")
+        modified=$(stat -c %Y "$file")
+
+        # Append JSON object to the array
+        manifest_array+=("{\"filename\": \"$(basename "$file")\", \"size\": $size, \"modified\": $modified}")
     fi
 done
 
 # If no valid JSON files were found, exit gracefully
-if [[ ${#json_array[@]} -eq 0 ]]; then
+if [[ ${#manifest_array[@]} -eq 0 ]]; then
     echo "No valid JSON files found in $DIR"
+    echo '{"files": []}' > "${DIR}/manifest.json"
     exit 0
 fi
 
-temp_file=$(mktemp)
-printf '%s\n' "${json_array[@]}" > "$temp_file"
-# Use jq to read the array from the temporary file and create the merged JSON
-jq -n --slurpfile array "$temp_file" '{"data": $array}' > "${DIR}/.all.json"
-# Remove the temporary file
-rm "$temp_file"
+# Create the JSON manifest
+echo "{\"files\": [$(IFS=,; echo "${manifest_array[*]}")]}" > "${DIR}/manifest.json"
 
-echo "Combined JSON saved to ${DIR}/.all.json"
+echo "Manifest created: ${DIR}/manifest.json"

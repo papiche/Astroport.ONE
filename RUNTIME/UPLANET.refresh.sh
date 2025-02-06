@@ -544,11 +544,22 @@ for UMAP in ${unique_combined[@]}; do
             set -n "UPlanet ${UMAP}" -v " " -a " " -d "UPlanet ${myUPLANET}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
             -A ${MY_PATH}/../images/extension_territoire.jpg
+
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myCESIUM} \
             set -n "UPlanet ${UMAP}" -v " " -a " " -d "UPlanet ${myUPLANET}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
             -A ${MY_PATH}/../images/extension_territoire.jpg
+
+    #### PUBLISH TO NOSTR
+    UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    ${MY_PATH}/../tools/setup_nostr_profile.py \
+    "$UMAPNSEC" \
+    "UPlanet ${UMAP}" "${UMAP}" "UPlanet ${TODATE}" \
+    "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
+    "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+    "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" "" \
+    "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
 
     rm ~/.zen/tmp/${MOATS}/*.priv
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
