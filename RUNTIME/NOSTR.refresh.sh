@@ -159,7 +159,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     echo "## CREATE NOSTR PROFILE"
-    NSEC=$(${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}" -s)
+    NSEC=$(${MY_PATH}/../tools/keygen -t nostr -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}" -s)
 
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]]; then
         echo "## NOSTR PROFILE CREATION..."
@@ -194,12 +194,17 @@ for PLAYER in "${NOSTR[@]}"; do
             "" "" "" "" "" "" \
             "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net" \
             > ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+
+        ## EMPTY FILE
+        [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]] \
+            && rm ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile 2>/dev/null
+
         ## RECORD GPS
         echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
         ## HEX COMPARE
-        cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
-        cat ~/.zen/game/nostr/${PLAYER}/HEX
+        cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile 2>/dev/null
+        cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null
 
         ## ADD CORACLE to NOSTRVAULT
 
