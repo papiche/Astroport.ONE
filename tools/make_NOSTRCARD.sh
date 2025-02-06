@@ -55,6 +55,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey "${SALT}" "${PEPPER}"
     G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
     echo "G1NOSTR _WALLET: $G1PUBNOSTR"
+    ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
 
@@ -81,6 +82,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
 
+    ## QR CODE accès NOSTR VAULTNSQR
     amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_str.png -c -n ${G1PUBNOSTR}.IPNS.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     convert ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.IPNS.QR.png \
         -gravity SouthWest \
@@ -108,7 +110,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ipfs pin rm /ipfs/${SSSSQR}
 
     ## Create G1PUBNOSTR QR Code
-    amzqr "${G1PUBNOSTR}" -l H -p ${MY_PATH}/../templates/img/nature_cloud_face.png -c -n G1PUBNOSTR.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    ## Use webcam picture ?
+    [[ -s ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ]] \
+        && FDQR=${HOME}/.zen/game/nostr/${EMAIL}/picture.png \
+        || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
+
+    amzqr "${G1PUBNOSTR}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
     convert ~/.zen/tmp/${MOATS}/G1PUBNOSTR.QR.png \
             -gravity SouthWest \
@@ -118,8 +125,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -annotate +1+3 "${G1PUBNOSTR}" \
             ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
 
+    ## REMOVE webcam picture
+    rm -f ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
+
     G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}
+    echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png.cid
 
     ##############################################################
     # INSERT NOSTR ORACOLO APP

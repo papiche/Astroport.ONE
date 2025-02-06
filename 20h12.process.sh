@@ -80,6 +80,10 @@ sudo systemctl stop astroport
 && cd ~/.zen/G1BILLET/ && git pull \
 && rm -Rf ~/.zen/G1BILLET/tmp/*
 
+## UPDATE UPassport
+[[ -s ~/.zen/UPassport/54321.py ]] \
+&& cd ~/.zen/UPassport && git pull
+
 ########################################################################
 ## UPDATE Astroport.ONE code
 cd ${MY_PATH}/

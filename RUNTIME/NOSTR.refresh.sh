@@ -26,6 +26,9 @@ echo "## RUNNING NOSTR.refresh.sh
 
 "
 
+[[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+mkdir -p ~/.zen/tmp/${MOATS}
+
 NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 # Fonction pour détruire une NOSTRCARD
@@ -63,7 +66,6 @@ for PLAYER in "${NOSTR[@]}"; do
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         [[ ! -z ${g1prime} && ${g1prime} != "null" ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
     fi
-
 
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
     pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
@@ -157,26 +159,52 @@ for PLAYER in "${NOSTR[@]}"; do
 
     echo "## CREATE NOSTR PROFILE"
     NSEC=$(${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}" -s)
-    if [[ -s ~/.zen/tmp/coucou/${primal}.cesium.json ]]; then
-        echo "## CREATE FROM CESIUM"
-        ls ~/.zen/tmp/coucou/${primal}.*
-        #~ ${MY_PATH}/../tools/setup_nostr_profile.py \
-            #~ "$NSEC" \
-            #~ "totodu56" "TOTO du 56" "Compte toto NOSRT du 56" \
-            #~ "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
-            #~ "https://ipfs.g1sms.fr/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-            #~ "" "" "" "" "" "" \
-            #~ "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
-    else
-        echo "## CREATE Nostr Card DATA"
-        ls ~/.zen/game/nostr/${PLAYER}
 
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]]; then
+        echo "## NOSTR PROFILE CREATION..."
+        ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+        zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
+        zlon=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lon)
+        title=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.title)
+        [[ -z $title ]] && title="$PLAYER"
+        city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
+        [[ -z $city ]] && city="UPlanet"
+        description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
+        [[ -z $description ]] && description="Nostr Card"
+        zavatar="/ipfs/$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR.QR.png.cid 2>/dev/null)"
+        [[ $zavatar == "/ipfs/" ]] \
+            && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
+
+        ## DEBUG
+        echo "$NSEC" \
+            "$primal" "$title" "$description - $city" \
+            "$myIPFS/ipfs/$zavatar" \
+            "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+            "" "" "" "" "" "" \
+            "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
+
+        ${MY_PATH}/../tools/setup_nostr_profile.py \
+            "$NSEC" \
+            "$primal" "$title" "$description - $city" \
+            "$myIPFS/ipfs/$zavatar" \
+            "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+            "" "" "" "" "" "" \
+            "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net" \
+            > ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+
+        ## HEX
+        cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+        cat ~/.zen/game/nostr/${PLAYER}/HEX
+
+        ## CREATE UPlanet ZenCard with zlat/zlon
+
+    else
+        echo "## Nostr Card PROFILE"
+        cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
     fi
 
 
     ## CREATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
-    [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    mkdir -p ~/.zen/tmp/${MOATS}
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
