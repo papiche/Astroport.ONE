@@ -148,12 +148,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
-                    "UPassport / UPLanet ${UPLANETG1PUB:0:8} / ($CAPTAINEMAIL)"
-            else
-                ## UPassport is fac simile
-                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
-                    ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
-                    "PLEASE ACTIVATE UPASSPORT"
+                    "♥Box UPassport / Captain : $CAPTAINEMAIL  / UPlanet : ${UPLANETG1PUB:0:8}"
             fi
         fi
     fi
