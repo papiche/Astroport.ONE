@@ -197,9 +197,14 @@ for PLAYER in "${NOSTR[@]}"; do
         ## RECORD GPS
         echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
-        ## HEX
+        ## HEX COMPARE
         cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
         cat ~/.zen/game/nostr/${PLAYER}/HEX
+
+        ## ADD CORACLE to NOSTRVAULT
+
+        echo "<meta http-equiv=\"refresh\" content=\"0; url='${CORACLEIPFS}'\" />CORACLE : ${PLAYER}" \
+                > ~/.zen/game/nostr/${PLAYER}/coracle.html
 
     else
 
@@ -224,7 +229,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
 
-    ## CREATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
+    ## UPDATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
