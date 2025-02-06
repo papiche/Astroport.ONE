@@ -44,7 +44,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC"
 
-    HEX=$(nostr-commander-rs --npub-to-hex $NPUBLIC -o json 2> /dev/null | jq -r .hex)
+    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
     echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX
 
     # 2. Store the keys in a file or a secure place (avoid printing them to console if possible)
@@ -90,12 +90,21 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         -annotate +1+3 "[APP] $NOSTRNS" \
         ${HOME}/.zen/game/nostr/${EMAIL}/IPNS.QR.png
 
-    VAULTNSQR=$(ipfs add -q ${HOME}/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
+    VAULTNSQR=$(ipfs --timeout 15s add -q ${HOME}/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
+    ## CHECK IPFS ADD IS GOOD
+    if [[ ! $? -eq 0 ]]; then
+        cat ~/.zen/UPassport/templates/wallet.html \
+        | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
+             -e "s~_AMOUNT_~IPFS DAEMON ERROR~g" \
+            > ${MY_PATH}/tmp/${MOATS}.out.html
+        echo "${MY_PATH}/tmp/${MOATS}.out.html"
+        exit 0
+    fi
     ipfs pin rm /ipfs/${VAULTNSQR}
 
     ## HEAD SSSS CLEAR
     amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)" -l H -p ${MY_PATH}/../templates/img/key.png -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
-    SSSSQR=$(ipfs add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
+    SSSSQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
     ipfs pin rm /ipfs/${SSSSQR}
 
     ## Create G1PUBNOSTR QR Code
@@ -109,7 +118,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -annotate +1+3 "${G1PUBNOSTR}" \
             ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
 
-    G1PUBNOSTRQR=$(ipfs add -q ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
+    G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}
 
     ##############################################################
@@ -135,7 +144,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/zine.html
 
-    NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+    NOSTRIPFS=$(ipfs --timeout 15s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
     ## CLEAN CACHE

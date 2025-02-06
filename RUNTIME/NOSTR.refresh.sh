@@ -33,9 +33,13 @@ destroy_nostrcard() {
     local player="$1"
     local g1pubnostr="$2"
     echo "DESTROYING NOSTRCARD for ${player}..."
+    ## PUBLISH null
+    ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT
+    ## Remove IPNS key
     ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
-    rm ~/.zen/tmp/coucou/${g1pubnostr}.*
-    rm -Rf ~/.zen/game/nostr/${player}
+    ## Cleaning local cache
+    rm ~/.zen/tmp/coucou/${g1pubnostr-null}.*
+    rm -Rf ~/.zen/game/nostr/${player-null}
     echo "NOSTRCARD for ${player} DELETED."
 }
 
@@ -50,39 +54,38 @@ for PLAYER in "${NOSTR[@]}"; do
 
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
     echo "______ AMOUNT = ${COINS} G1"
-    primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
 
-    #~ EMPTY WALLET ???
-    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" ]]; then
+    if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]]; then
+    ################################################################ PRIMAL TX CHECK
+        echo "# RX from ${G1PUBNOSTR}.... checking primal transaction..."
+        milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
+        g1prime=$(echo $milletxzero | jq -r .pubkey)
+        ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
+        [[ ! -z ${g1prime} && ${g1prime} != "null" ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+    fi
+
+
+    primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
+    pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
+
+    #~ EMPTY WALLET or without primal
+    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         echo "EMPTY NOSTR CARD.............."
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue
-    else
-        ################################################################ PRIMAL TX CHECK
-        echo "# RX from ${G1PUBNOSTR}.... checking primal transaction..."
-        ### jaklis 1000 history window
-        if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]]; then
-            milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
-            g1prime=$(echo $milletxzero | jq -r .pubkey)
-            ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
-            [[ ! -z ${g1prime} && ${g1prime} != "null" ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
-        fi
-        primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### CACHE READING
     fi
 
+    echo "PRIMAL :$pcoins: $primal"
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
     echo "NOSTR VAULT IPNS : ${myIPFS}${NOSTRNS}"
-    VAULTFS=$(ipfs --timeout 3s name resolve ${NOSTRNS})
+    VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
 
     if [[ -z ${VAULTFS} ]]; then
         echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue
-    fi
-
-    ## NOSTR CARD OPENING
-    if [[ ! -z ${VAULTFS} ]]; then
+    else
         echo "NOSTRVAULT updating : ${VAULTFS}"
         ipfs get ${VAULTFS} -o ~/.zen/game/nostr/
         ls ~/.zen/game/nostr/${PLAYER}
@@ -111,13 +114,12 @@ for PLAYER in "${NOSTR[@]}"; do
             && rm "$tmp_mid" "$tmp_tail" \
             || { echo "DISCO DECODING ERROR"; continue; };
     else
-        echo "BAD DISCO FORMAT"
+        echo "ERROR : BAD DISCO DECODING"
         continue
     fi
-    ##################################################### DISCO REVEALED
+    ##################################################### DISCO DECODED
     ## s=/?email
     echo $s
-    #~ echo $salt $pepper
 
     ## CHECK PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
@@ -125,37 +127,34 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
         ## SCAN CESIUM/GCHANGE PRIMAL STATUS
         ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
+        ## COPY PRIMAL DUNITER/CESIUM METADATA
         cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
         ## IS PRIMAL CESIUM+
         [[ -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json ]] \
-            && rm ~/.zen/game/nostr/${PLAYER}/_index.html ## REMOVE NOSTR ZINE (should habe been printed by MEMBER)
+            && rm ~/.zen/game/nostr/${PLAYER}/zine.html ## REMOVE NOSTR ZINE
     fi
 
-    ## UPASSPORT N1 SCAN primal
+    ## REAL UPASSPORT ?
     if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
+        ## PRIMAL EXISTS ?
         if [[ ${primal} != "" && ${primal} != "null" ]]; then
-            echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
-            ## APPEL /upassport API
-            curl_output=$(curl -s -X POST \
-            -F "parametre=${primal}" \
-            http://127.0.0.1:54321/upassport)
-
-            # Check if the curl command succeeded and returned a valid HTML response
-            if [[ $? -eq 0 && "$curl_output" != *"error"* ]]; then
-                echo "UPASSPORT API call successful, saving output."
-                echo "$curl_output" > ~/.zen/game/nostr/${PLAYER}/primal.html
+            ## MAKE /upassport API make /PRIMAL/_upassport.html
+            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html ]]; then
+                echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
+                curl -s -X POST -F "parametre=${primal}" http://127.0.0.1:54321/upassport \
+                    > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
-                    ~/.zen/game/nostr/${PLAYER}/primal.html \
-                    "UPASSPORT + 1 G1"
+                    ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
+                    "UPassport Fac Simile"
             else
-                echo "ERROR: UPASSPORT API call failed or returned an error."
-                echo "ERROR OUTPUT : $curl_output"
+                ## UPassport is fac simile
+                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
+                    ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
+                    "PLEASE ACTIVATE / UPLanet ${UPLANETG1PUB:0:8} / ($CAPTAINEMAIL)"
             fi
-
-
-
         fi
     fi
+
     echo "## CREATE NOSTR PROFILE"
     NSEC=$(${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}" -s)
     if [[ -s ~/.zen/tmp/coucou/${primal}.cesium.json ]]; then
