@@ -146,11 +146,15 @@ for PLAYER in "${NOSTR[@]}"; do
                 echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
                 curl -s -X POST -F "parametre=${primal}" http://127.0.0.1:54321/upassport \
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
-                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
+                [[ $? -eq 0 ]] \
+                    && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
-                    "♥Box UPassport / Captain : $CAPTAINEMAIL  / UPlanet : ${UPLANETG1PUB:0:8}"
+                    "♥Box UPassport / Captain : $CAPTAINEMAIL  / UPlanet : ${UPLANETG1PUB:0:8}" \
+                    || rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html 2>/dev/null
             fi
         fi
+    else
+        echo "## STATION OWNER ?! Check ZenCard..."
     fi
 
     echo "## CREATE NOSTR PROFILE"
@@ -159,6 +163,8 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]]; then
         echo "## NOSTR PROFILE CREATION..."
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+
+        ## EXTACT PRIMAL CESIUM PROFILE
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
         LAT=$(makecoord $zlat)
         zlon=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lon)
@@ -173,7 +179,7 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
-        ### WRITE PROFILE TO NOSTR RELAYS
+        ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/setup_nostr_profile.py \
             "$NSEC" \
             "$primal" "$title" "$description - $city" \
