@@ -10,7 +10,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 
-EMAIL="$1"
+PARAM="$1"
+EMAIL="${PARAM,,}" ## lowercase
 IMAGE="$2"
 
 echo "Email detected: $EMAIL"
@@ -21,6 +22,8 @@ echo "Email detected: $EMAIL"
 mkdir -p ~/.zen/tmp/${MOATS}/
 
 if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+
+
     ############################################## PREPARE SALT PEPPER
     SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
     PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)

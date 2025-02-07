@@ -184,7 +184,7 @@ for PLAYER in "${NOSTR[@]}"; do
             > ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
 
         ## DOES COMMAND SUCCEED ?
-        if [[ ! $? -eq 0 ]]; then \
+        [[ ! $? -eq 0 ]] \
             && rm ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile 2>/dev/null
 
         ## RECORD GPS (for ZenCard activation)
