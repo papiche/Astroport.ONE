@@ -75,6 +75,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ $(diff -q ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail) != "" ]] && echo "ERROR: GPG ENCRYPTION FAILED !!!"
     rm ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
 
+    ## DISCO TAIL ENCRYPT WITH UPLANETG1PUB
+    echo "${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc"
+    ${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc
+
     ## CREATE IPNS KEY (SIDE STORAGE)
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns "${SALT}" "${PEPPER}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
@@ -105,7 +109,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ipfs pin rm /ipfs/${VAULTNSQR}
 
     ## HEAD SSSS CLEAR
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)" -l H -p ${MY_PATH}/../templates/img/key.png -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
     SSSSQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
     ipfs pin rm /ipfs/${SSSSQR}
 

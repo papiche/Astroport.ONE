@@ -555,10 +555,10 @@ for UMAP in ${unique_combined[@]}; do
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     ${MY_PATH}/../tools/setup_nostr_profile.py \
     "$UMAPNSEC" \
-    "UPlanet ${UMAP}" "${UMAP}" "UPlanet ${TODATE}" \
+    "${UPLANETG1PUB:0:8}${UMAP}" "${UMAP}" "UPlanet Information ${TODATE}" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" "" \
+    "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
     "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
 
     rm ~/.zen/tmp/${MOATS}/*.priv
