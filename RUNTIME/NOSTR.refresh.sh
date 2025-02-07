@@ -204,7 +204,7 @@ for PLAYER in "${NOSTR[@]}"; do
         cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
 
         ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
-        if [[ ! -d ~/.zen/game/players/${PLAYER} ]];
+        if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
 
             source ~/.zen/game/nostr/${PLAYER}/GPS
             PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
