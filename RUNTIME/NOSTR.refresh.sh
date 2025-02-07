@@ -173,14 +173,7 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
-        ## DEBUG
-        echo "$NSEC" \
-            "$primal" "$title" "$description - $city" \
-            "$myIPFS/ipfs/$zavatar" \
-            "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-            "" "" "" "" "" "" \
-            "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
-
+        ### WRITE PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/setup_nostr_profile.py \
             "$NSEC" \
             "$primal" "$title" "$description - $city" \
@@ -190,11 +183,11 @@ for PLAYER in "${NOSTR[@]}"; do
             "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net" \
             > ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
 
-        ## EMPTY FILE
-        [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]] \
+        ## DOES COMMAND SUCCEED ?
+        if [[ ! $? -eq 0 ]]; then \
             && rm ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile 2>/dev/null
 
-        ## RECORD GPS
+        ## RECORD GPS (for ZenCard activation)
         echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
         ## HEX COMPARE
@@ -202,7 +195,6 @@ for PLAYER in "${NOSTR[@]}"; do
         cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null
 
         ## ADD CORACLE to NOSTRVAULT
-
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${CORACLEIPFS}'\" />CORACLE : ${PLAYER}" \
                 > ~/.zen/game/nostr/${PLAYER}/coracle.html
 
@@ -211,21 +203,25 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "## Nostr Card PROFILE ALREADY EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
 
-        #~ if [[ ! -d ~/.zen/game/players/${PLAYER} ]];
-            #~ ## CREATE UPlanet ZenCard with GPS
-            #~ source ~/.zen/game/nostr/${PLAYER}/GPS
-            #~ PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
-            #~ NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+        ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
+        if [[ ! -d ~/.zen/game/players/${PLAYER} ]];
 
-            #~ ## CREATE ASTRONAUTE TW ZENCARD
-            #~ echo VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
-            #~ ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+            source ~/.zen/game/nostr/${PLAYER}/GPS
+            PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+            NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
 
-        #~ else
-            #~ echo "ZENCARD EXISTING"
-            #~ ls ~/.zen/game/players/${PLAYER}
+            ## CREATE ASTRONAUTE TW ZENCARD
+            echo VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
 
-        #~ fi
+        else
+
+            echo "ZENCARD EXISTING"
+            ls ~/.zen/game/players/${PLAYER}
+            echo "RELATED TO NOSTR CARD"
+            ls ~/.zen/game/nostr/${PLAYER}
+
+        fi
     fi
 
 

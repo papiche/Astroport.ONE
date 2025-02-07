@@ -599,9 +599,9 @@ if [[ -s ~/.ipfs/swarm.key ]]; then
     && echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
     && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 fi
+
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
-
 
 #####################################################################"
 
