@@ -313,7 +313,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             > ~/.zen/tmp/${MOATS}/GPS.json
 
     ## UPDATE PLAYER CACHE
-    echo "_${LAT}_${LON}" > ~/.zen/game/players/${PLAYER}/.umap
+    echo "LAT=${LAT}; LON=${LON};" > ~/.zen/game/players/${PLAYER}/.umap
     cp ~/.zen/tmp/${MOATS}/GPS.json ~/.zen/game/players/${PLAYER}/
 
     ################# PERSONAL VDO.NINJA PHONEBOOTH

@@ -24,11 +24,6 @@ echo "## RUNNING NODE.refresh"
 # UDATE STATION BALISE
 if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
-    # ONLY FRESH DATA HERE
-    BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
-    ## Getting actual online version
-    #~ ipfs get -o ~/.zen/tmp/${IPFSNODEID} /ipns/${IPFSNODEID}/
-
     ## COPY STATION  yt-dlp.list
     cp $HOME/.zen/.yt-dlp.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.list 2>/dev/null
     cp $HOME/.zen/.yt-dlp.mp3.list ~/.zen/tmp/${IPFSNODEID}/yt-dlp.mp3.list 2>/dev/null
@@ -39,10 +34,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
 
     ## COPY 20h12.log
-    rm -f ~/.zen/tmp/${IPFSNODEID}/20h12.log ## TODO REMOVE
     cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/20h12.txt
 
-    ## INFORM GPS LOCATION
+    ## INFORM NODE GPS LOCATION from CAPTAIN player
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \
         && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/ \
         && LAT=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lat) \
@@ -56,6 +50,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "############################################ MY MAP "
     ls ~/.zen/tmp/${IPFSNODEID}/
     echo "############################################"
+    RESOLV=$(ipfs name resolve /ipns/${IPFSNODEID})
+    ipfs pin rm ${RESOLV}
+
     NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
     ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
     ipfs name publish /ipfs/${ROUTING}

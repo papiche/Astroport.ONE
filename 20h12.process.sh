@@ -55,22 +55,6 @@ mv ~/.zen/swarm ~/.zen/tmp/swarm
 mv ~/.zen/coucou ~/.zen/tmp/coucou
 mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
-########################################################################
-#~ ### DELAY _12345 ASTROPORT DURING 20H12 UPDATE ###
-#~ if [[ "${LOWMODE}" == "" ]]; then
-    #~ ### NOT REFRESHING SWARM
-    #~ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    #~ MOATS_plus_5_hours=$(date -d "now + 5 hours" +"%Y%m%d%H%M%S%4N")
-    #~ mkdir ~/.zen/tmp/${IPFSNODEID}
-    #~ echo ${MOATS_plus_5_hours} > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-    #~ echo 9000 > ~/.zen/tmp/random.sleep
-#~ else
-    #~ # REFRESHING SWARM
-    #~ echo 0 > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-    #~ curl -s "http://127.0.0.1:12345"
-    #~ sleep 300 ## WAIT FOR 5MN
-#~ fi
-
 ## STOPPING ASTROPORT
 sudo systemctl stop astroport
 
@@ -106,6 +90,10 @@ ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 ################################ CHECK FOR PRIVATE SWARM BLOOM #########
 ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 
+#################### NOSTR (Notes and Other Stuff Transmitted by Relays)
+${MY_PATH}/RUNTIME/NOSTR.refresh.sh
+########################################################################
+
 ######################################################### UPLANET ######
 #####################################
 # GeoKeys UMAP / SECTOR / REGION ...
@@ -117,10 +105,6 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
 ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
 #####################################
-
-########################################################################
-${MY_PATH}/RUNTIME/NOSTR.refresh.sh
-########################################################################
 
 ########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
@@ -166,9 +150,6 @@ sleep 30
 echo "DRAGONS SHIELD ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
-## MAIL LOG : support@qo-op.com ##
-${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
-
 ## RESTART ASTROPORT
 # espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
@@ -200,6 +181,9 @@ minutes=$(( (dur % 3600) / 60 ))
 seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
+
+## MAIL LOG : support@qo-op.com ##
+${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
