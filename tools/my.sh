@@ -554,6 +554,12 @@ HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 if [ -s "$HOME/.astro/bin/activate" ]; then
     source $HOME/.astro/bin/activate
 fi
+
+## NOSTR RELAY ADDRESS
+myRELAY=$(echo $myIPFS | sed 's|https://ipfs|wss://relay|') ## wss://
+[[ $myRELAY == $myIPFS ]] \
+    && myRELAY=$(echo $myIPFS | sed 's~http://~ws://~' | sed 's~8080~7777~' ) ## ws://
+
 ##########################
 myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY

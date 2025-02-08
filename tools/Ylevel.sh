@@ -150,14 +150,15 @@ myASTROPORT=https://astroport.$MYDOMAIN
 ###################################
 " > ~/.zen/Astroport.ONE/.env
 
-        cat ~/.zen/Astroport.ONE/.env
-
     else
         echo "Y LEVEL ALREADY ACTIVATED : $IPFSNODEID "
+
     fi
 
     NODEG1PUB=$(cat ~/.zen/game/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "NODEG1PUB=${NODEG1PUB}"
+    cat ~/.zen/Astroport.ONE/.env
+
 else
     echo "GENERATING FIRST SSH ED25519 KEY"
     ssh-keygen -t ed25519

@@ -87,10 +87,9 @@ RED="\033[0;31m"
 YELLOW="\033[0;33m"
 NC="\033[0m" # Pas de couleur
 ############################################ CHECK NOSTR IDENTITY
-# nostr-commander-rs credentials.json
-CREDENTIALS_FILE="$HOME/.local/share/nostr-commander-rs/credentials.json"
+# GET
 SECRET_JUNE_FILE="$HOME/.zen/game/secret.june"
-if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
+if [[ -s "$SECRET_JUNE_FILE" ]]; then
     echo -e "${GREEN}Mise à jour des clés et métadonnées Nostr dans credentials.json...${NC}"
     source "$SECRET_JUNE_FILE"
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
@@ -99,14 +98,14 @@ if [[ -s "$CREDENTIALS_FILE" && -s "$SECRET_JUNE_FILE" ]]; then
     #~ echo -e "${GREEN}Nostr Private Key: ${NC}$NPRIV"
     #~ echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
 
-    ## UPDATE PROFILE
+    ## UPDATE PROFILE ON RELAYS
     ${MY_PATH}/../tools/setup_nostr_profile.py \
         "$NPRIV" \
         "$CAPTAING1PUB" "♥Box $(hostname) on UPlanet $UPLANETG1PUB" "$myIPFS/ipns/$IPFSNODEID" \
         "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
         "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
         "" "" "" "" "" "" \
-        "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net"
+        "wss://relay.copylaradio.com" "$myRELAY" "wss://relay.primal.net"
 
 fi
 
