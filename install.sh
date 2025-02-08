@@ -195,7 +195,7 @@ export PATH=$HOME/.local/bin:/usr/games:$PATH
 . $HOME/.zen/Astroport.ONE/tools/my.sh
 
 echo "IPFSNODEID=$IPFSNODEID"
-cowsay $(hostname) : UPLANETG1PUB=$(cat $HOME/.zen/game/UPLANETG1PUB 2>/dev/null)' >> ~/.bashrc
+cowsay $(hostname) : UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null)' >> ~/.bashrc
 
 source ~/.bashrc
 

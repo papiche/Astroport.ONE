@@ -19,7 +19,8 @@ echo '
      ()
 '
 
-[[ "$1" == "reset" ]] && rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt && exit 0
+[[ "$1" == "reset" ]] \
+    && rm ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt && exit 0
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
 ## Au minimum 4 Stations peuvent forker un nouvel essaim par jour.
@@ -180,7 +181,7 @@ fi
 #######################################################################
 ## RESET SWARM KEY
 rm -f ~/.zen/game/myswarm_secret.*
-echo ${UPLANETG1PUB} > ~/.zen/game/UPLANETG1PUB
+echo ${UPLANETG1PUB} > ~/.zen/tmp/UPLANETG1PUB
 
 #####################################################
 echo "# ACTIVATING ~/.ipfs/swarm.key"
@@ -214,7 +215,7 @@ cat ~/.zen/game/My_boostrap_ssh.txt
 
 #~ ## DRY RUN
 [[ "$1" == "reset" ]] \
-&& rm ~/.zen/game/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
+&& rm ~/.zen/tmp/UPLANETG1PUB ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt
 
 ###### REFRESH IPFS BOOSTRAP LIST
 source ~/.zen/Astroport.ONE/tools/my.sh

@@ -572,10 +572,10 @@ myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
 CAPTAING1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
 CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
 
-UPLANETG1PUB=$(cat $HOME/.zen/game/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
+UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
 [[ -z ${UPLANETG1PUB} ]] \
     && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
-    && echo ${UPLANETG1PUB} > $HOME/.zen/game/UPLANETG1PUB
+    && echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
