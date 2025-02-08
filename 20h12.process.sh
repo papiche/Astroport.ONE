@@ -75,7 +75,7 @@ mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 sudo systemctl stop astroport
 
 ########################################################################
-## UPDATE G1BILLETS code
+## UPDATE G1BILLET code
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
 && rm -Rf ~/.zen/G1BILLET/tmp/*
