@@ -32,7 +32,7 @@ echo
 ## EXTRACT PLAYER FROM RSS FILE NAME
 PLAYER=$(echo ${RSS} | rev | cut -d '/' -f 1 | rev | sed "s~.rss.json~~g")
 ## GET PLAYER INFORMATION
-$($MY_PATH/../tools/search_for_this_email_in_players.sh ${PLAYER})
+$($MY_PATH/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
 echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
 echo "======= ${INDEX} =======
