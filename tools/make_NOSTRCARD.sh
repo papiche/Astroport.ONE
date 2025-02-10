@@ -99,7 +99,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         -annotate +1+3 "[APP] $NOSTRNS" \
         ${HOME}/.zen/game/nostr/${EMAIL}/IPNS.QR.png
 
-    VAULTNSQR=$(ipfs --timeout 15s add -q ${HOME}/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
+    VAULTNSQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.IPNS.QR.png)
     ## CHECK IPFS ADD IS GOOD
     if [[ ! $? -eq 0 ]]; then
         cat ~/.zen/UPassport/templates/wallet.html \
@@ -135,7 +135,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## REMOVE webcam picture
     rm -f ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
 
-    G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
+    G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png.cid
 
