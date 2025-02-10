@@ -87,11 +87,12 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue
-    else
-        echo "NOSTRVAULT updating : ${VAULTFS}"
-        ipfs get ${VAULTFS} -o ~/.zen/game/nostr
-        ls ~/.zen/game/nostr
     fi
+        #~ echo "NOSTRVAULT updating : ${VAULTFS}"
+        #~ ipfs get ${VAULTFS} -o ~/.zen/game/nostr
+        #~ rm -Rf ~/.zen/game/nostr/nostr ## Cleaning loops
+        #~ ls ~/.zen/game/nostr
+    #~ fi
 
     ########################## DISCO DECRYPTION
     tmp_mid=$(mktemp)
