@@ -89,8 +89,8 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     else
         echo "NOSTRVAULT updating : ${VAULTFS}"
-        ipfs get ${VAULTFS} -o ~/.zen/game/nostr/
-        ls ~/.zen/game/nostr/${PLAYER}
+        ipfs get ${VAULTFS} -o ~/.zen/game/nostr
+        ls ~/.zen/game/nostr
     fi
 
     ########################## DISCO DECRYPTION
