@@ -14,6 +14,7 @@ PARAM="$1"
 EMAIL="${PARAM,,}" ## lowercase
 IMAGE="$2"
 
+
 echo "Email detected: $EMAIL"
 [[ -s "~/.zen/tmp/${MOATS}/${EMAIL}_index.html" ]] \
     && rm -Rf "${HOME}/.zen/game/nostr/${EMAIL-null}/" ## CLEANING OLD NOSTR
