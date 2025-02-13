@@ -6,9 +6,6 @@
 # PAD COCODING : https://pad.p2p.legal/s/G1PalPay
 # This script monitors G1 Blockchain
 ########################################################################
-# TODO : CHECK RX coming from UPlanet Wallet
-## meaning an initial 3.1G1 from a ZenStation admin wallet
-## if not relay payment to ZenStation admin
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -245,7 +242,7 @@ while read LINE; do
         echo "EMAIL : ${EMAIL}"
 
         ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED="" # RESET VAR
-        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+        $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL} | tail -n 1) ## export ASTROTW and more
         [[ ${ASTROTW} == "" ]] && ASTROTW=${ASTRONAUTENS}
         echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 

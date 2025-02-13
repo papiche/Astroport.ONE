@@ -82,7 +82,7 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "VALID ${EMAIL} EMAIL OK"
 
     ## CHECK if PLAYER exists in SWARM
-    $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL}) ## export ASTROTW and more
+    $($MY_PATH/../tools/search_for_this_email_in_players.sh ${EMAIL} | tail -n 1) ## export ASTROTW and more
     echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
 
     ## YES = OPEN TW

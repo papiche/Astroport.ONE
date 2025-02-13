@@ -25,7 +25,7 @@ echo '
 
 mail="$1" # EMAIL DESTINATAIRE
 ############################################## SEARCH in players
-$($MY_PATH/../tools/search_for_this_email_in_players.sh ${mail})
+$($MY_PATH/../tools/search_for_this_email_in_players.sh ${mail} | tail -n 1)
 echo "ASTROPORT=$ASTROPORT
 ASTROTW=$ASTRONAUTENS
 ASTROG1=$ASTROG1

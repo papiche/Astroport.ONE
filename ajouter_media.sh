@@ -104,7 +104,7 @@ echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player)
 && exit 1 \
 || PSEUDO=$(myPlayerUser)
 
-$($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER})
+$($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
 
 espeak "Hello $PSEUDO"
 
