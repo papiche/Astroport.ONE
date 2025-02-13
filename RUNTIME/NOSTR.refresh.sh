@@ -88,12 +88,8 @@ for PLAYER in "${NOSTR[@]}"; do
         destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
         continue
     fi
-        #~ echo "NOSTRVAULT updating : ${VAULTFS}"
-        #~ ipfs get ${VAULTFS} -o ~/.zen/game/nostr
-        #~ rm -Rf ~/.zen/game/nostr/nostr ## Cleaning loops
-        #~ ls ~/.zen/game/nostr
-    #~ fi
 
+    #################################################################
     ########################## DISCO DECRYPTION
     tmp_mid=$(mktemp)
     tmp_tail=$(mktemp)
@@ -161,7 +157,7 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "## CREATE NOSTR PROFILE"
     NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 
-    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile ]]; then
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
         echo "## NOSTR PROFILE CREATION..."
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
 
@@ -189,24 +185,24 @@ for PLAYER in "${NOSTR[@]}"; do
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
         ### SEND PROFILE TO NOSTR RELAYS
-        ${MY_PATH}/../tools/setup_nostr_profile.py \
+        ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
             "$primal" "$title" "$description - $city" \
             "$myIPFS/ipfs/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
             "" "" "" "" "" "" \
             "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net" \
-            > ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+            > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?
         [[ ! $? -eq 0 ]] \
-            && rm ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile 2>/dev/null
+            && rm ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
 
         ## RECORD GPS (for ZenCard activation)
         echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
         ## HEX COMPARE
-        cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile 2>/dev/null
+        cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
         cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null
 
         ## ADD CORACLE to NOSTRVAULT
@@ -216,7 +212,7 @@ for PLAYER in "${NOSTR[@]}"; do
     else
 
         echo "## Nostr Card PROFILE ALREADY EXISTING"
-        cat ~/.zen/game/nostr/${PLAYER}/setup_nostr_profile
+        cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
         if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then

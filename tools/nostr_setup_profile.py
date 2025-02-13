@@ -6,7 +6,7 @@ from pynostr.event import Event
 from pynostr.relay_manager import RelayManager
 from pynostr.key import PrivateKey
 
-def setup_nostr_profile(args):
+def nostr_setup_profile(args):
     # Initialize relay manager
     relay_manager = RelayManager()
     for relay in args.relays:
@@ -78,4 +78,4 @@ if __name__ == "__main__":
     parser.add_argument("relays", nargs="+", help="List of relays")
 
     args = parser.parse_args()
-    setup_nostr_profile(args)
+    nostr_setup_profile(args)

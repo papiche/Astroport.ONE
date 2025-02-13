@@ -99,7 +99,7 @@ if [[ -s "$SECRET_JUNE_FILE" ]]; then
     #~ echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
 
     ## UPDATE PROFILE ON RELAYS
-    ${MY_PATH}/../tools/setup_nostr_profile.py \
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "$CAPTAING1PUB" "♥Box $(hostname) on UPlanet $UPLANETG1PUB" "$myIPFS/ipns/$IPFSNODEID" \
         "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \

@@ -345,17 +345,32 @@ class keygen:
 
     def do_nostr(self):
         log.debug("keygen.do_nostr()")
-        self.nostr_from_ed25519()
+
+        # Force recalculate public and secret bytes using the seed
+        self.ed25519_public_bytes, self.ed25519_secret_bytes = nacl.bindings.crypto_sign_seed_keypair(self.ed25519_seed_bytes) # FORCE RECALCULATION
+
+        log.debug(f"do_nostr: self.ed25519_seed_bytes={self.ed25519_seed_bytes.hex()}")
+        log.debug(f"do_nostr: self.ed25519_public_bytes={self.ed25519_public_bytes.hex()}")
+        log.debug(f"do_nostr: self.ed25519_secret_bytes={self.ed25519_secret_bytes.hex()}")
+        self.nostr_from_ed25519_from_existing_seed() # Call a new or modified function
         self._output(self.nostr_public_npub, self.nostr_private_nsec, 'npub: ', 'nsec: ', )
 
-    def nostr_from_ed25519(self):
-        log.debug("keygen.nostr_from_ed25519()")
+
+    def nostr_from_ed25519_from_existing_seed(self):
+        log.debug("keygen.nostr_from_ed25519_from_existing_seed()")
         try:
-            seed = hashlib.sha256(f"{self.username}:{self.password}".encode()).digest()
-            private_key = SigningKey.from_string(seed[:32], curve=SECP256k1)
+            # Use the existing Ed25519 seed bytes
+            ed25519_seed = self.ed25519_seed_bytes
+
+            # Derive a seed for SECP256k1 by hashing the Ed25519 seed (SHA256 is a common choice)
+            secp256k1_seed = hashlib.sha256(ed25519_seed).digest()
+
+            # Use the derived seed to create a SECP256k1 private key
+            private_key = SigningKey.from_string(secp256k1_seed[:32], curve=SECP256k1) # Take first 32 bytes if SHA256 is longer
+
             self.nostr_private_hex = private_key.to_string().hex()
 
-            # Convert private key to nsec format
+            # Convert private key to nsec format (same as before)
             private_key_bytes = bytes.fromhex(self.nostr_private_hex)
             self.nostr_private_nsec = bech32.bech32_encode('nsec', bech32.convertbits(private_key_bytes, 8, 5))
 
@@ -368,7 +383,7 @@ class keygen:
             self.nostr_public_npub = npub_key
 
         except Exception as e:
-            log.error(f'Unable to get nostr key from ed25519: {e}')
+            log.error(f'Unable to get nostr key from ed25519 seed: {e}') # Updated error message
             exit(2)
         log.debug("keygen.nostr_private_hex=%s" % self.nostr_private_hex)
         log.debug("keygen.nostr_private_nsec=%s" % self.nostr_private_nsec)
@@ -552,6 +567,13 @@ class keygen:
 
     def do_base58(self):
         log.debug("keygen.do_base58()")
+
+        # Force recalculate public and secret bytes using the seed
+        self.ed25519_public_bytes, self.ed25519_secret_bytes = nacl.bindings.crypto_sign_seed_keypair(self.ed25519_seed_bytes) # FORCE RECALCULATION
+
+        log.debug(f"do_base58: self.ed25519_seed_bytes={self.ed25519_seed_bytes.hex()}")
+        log.debug(f"do_base58: self.ed25519_public_bytes={self.ed25519_public_bytes.hex()}")
+        log.debug(f"do_base58: self.ed25519_secret_bytes={self.ed25519_secret_bytes.hex()}")
         self.base58_from_ed25519()
         self._output(self.ed25519_public_base58, self.ed25519_secret_base58, 'pub: ', 'sec: ')
 

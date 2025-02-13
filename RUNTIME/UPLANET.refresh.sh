@@ -553,7 +553,7 @@ for UMAP in ${unique_combined[@]}; do
 
     #### PUBLISH TO NOSTR
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-    ${MY_PATH}/../tools/setup_nostr_profile.py \
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "${UPLANETG1PUB:0:8}${UMAP}" "${UMAP}" "UPlanet Information ${TODATE}" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \

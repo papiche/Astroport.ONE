@@ -12,7 +12,7 @@ if [[ $(which nemo) && -d ~/.local/share/nemo/actions/ ]]; then
     echo '[Nemo Action]
 Name=Add to IPFS
 Comment=Adding %f to IPFS
-Exec=sh -c "/usr/local/bin/ipfs add -q %F | xargs -L1 -I %  /usr/bin/zenity --width=300 --height=100 --info --text=%"
+Exec=sh -c "CID=$(/usr/local/bin/ipfs add -rwq %F | tail -n1); /usr/bin/zenity --width=400 --height=150 --info --text=/ipfs/$CID/%f"
 Selection=s
 Extensions=nodirs;
 Quote=double
