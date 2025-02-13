@@ -74,10 +74,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc
 
     ## DISCO TAIL ENCRYPT WITH UPLANETNAME
-    cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail | gpg --symmetric --armor --batch --passphrase "${UPLANETNAME}" -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc
-    cat ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc | gpg -d --passphrase "${UPLANETNAME}" --batch > ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
-    [[ $(diff -q ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail) != "" ]] && echo "ERROR: GPG ENCRYPTION FAILED !!!"
-    rm ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
+    #~ cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail | gpg --symmetric --armor --batch --passphrase "${UPLANETNAME}" -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc
+    #~ cat ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc | gpg -d --passphrase "${UPLANETNAME}" --batch > ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
+    #~ [[ $(diff -q ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail) != "" ]] && echo "ERROR: GPG ENCRYPTION FAILED !!!"
+    #~ rm ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
 
     ## DISCO TAIL ENCRYPT WITH UPLANETG1PUB
     echo "${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc"
@@ -165,6 +165,15 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     NOSTRIPFS=$(ipfs --timeout 15s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
+
+        ### SEND PROFILE TO NOSTR RELAYS
+        ${MY_PATH}/../tools/nostr_setup_profile.py \
+            "$NPRIV" \
+            "${G1PUBNOSTR}" "[•͡˘㇁•͡˘]" "Virgin NOSTR Card" \
+            "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
+            "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
+            "${EMAIL}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
+            "$myRELAY" "wss://relay.copylaradio.com" "wss://relay.primal.net"
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}

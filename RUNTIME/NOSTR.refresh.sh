@@ -35,7 +35,10 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 destroy_nostrcard() {
     local player="$1"
     local g1pubnostr="$2"
+    local secnostr="$3"
     echo "DESTROYING NOSTRCARD for ${player}..."
+    ## REMOVE PROFILE
+    $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com" "wss://relay.primal.net"
     ## PUBLISH null
     ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT
     ## Remove IPNS key
@@ -70,35 +73,20 @@ for PLAYER in "${NOSTR[@]}"; do
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
     pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
 
-    #~ EMPTY WALLET or without primal
-    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
-        echo "EMPTY NOSTR CARD.............."
-        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
-        continue
-    fi
-
-    echo "PRIMAL :$pcoins: $primal"
-    ## ACTIVATED NOSTR CARD
-    NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
-    echo "NOSTR VAULT IPNS : ${myIPFS}${NOSTRNS}"
-    VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
-
-    if [[ -z ${VAULTFS} ]]; then
-        echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
-        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}"
-        continue
-    fi
-
     #################################################################
     ########################## DISCO DECRYPTION
     tmp_mid=$(mktemp)
     tmp_tail=$(mktemp)
-    # Decrypt the middle part using CAPTAING1PUB key
+    # Decrypt the middle part using CAPTAIN key
     ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" \
             -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
-    # Decrypt the tail part using UPLANETNAME
-    cat ~/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.asc | gpg -d --batch --passphrase "$UPLANETNAME" > "$tmp_tail"
+    # Decrypt the tail part using UPLANET key
+    ${MY_PATH}/../tools/keygen -duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+    ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
+            -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
+
+    rm ~/.zen/game/uplanet.dunikey
 
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
@@ -118,7 +106,27 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
     ##################################################### DISCO DECODED
     ## s=/?email
+    NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
     echo $s
+
+    #~ EMPTY WALLET or without primal
+    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
+        echo "EMPTY NOSTR CARD.............."
+        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}"
+        continue
+    fi
+
+    echo "PRIMAL :$pcoins: $primal"
+    ## ACTIVATED NOSTR CARD
+    NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
+    echo "NOSTR VAULT IPNS : ${myIPFS}${NOSTRNS}"
+    VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
+
+    if [[ -z ${VAULTFS} ]]; then
+        echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
+        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}"
+        continue
+    fi
 
     ## CHECK PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
@@ -155,7 +163,6 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     echo "## CREATE NOSTR PROFILE"
-    NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
         echo "## NOSTR PROFILE CREATION..."
@@ -190,8 +197,8 @@ for PLAYER in "${NOSTR[@]}"; do
             "$primal" "$title" "$description - $city" \
             "$myIPFS/ipfs/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-            "" "" "" "" "" "" \
-            "wss://relay.copylaradio.com" "wss://relay.g1sms.fr" "wss://relay.primal.net" \
+            "${PLAYER}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
+            "$myRELAY" "wss://relay.copylaradio.com" "wss://relay.primal.net" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?
