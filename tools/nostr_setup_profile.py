@@ -31,7 +31,7 @@ def nostr_setup_profile(args):
     tags = []
     if args.g1pub:
         tags.append(["i", f"g1pub:{args.g1pub}", ""])
-     if args.github:
+    if args.github:
         tags.append(["i", f"github:{args.github}", ""])
     if args.twitter:
         tags.append(["i", f"twitter:{args.twitter}", ""])

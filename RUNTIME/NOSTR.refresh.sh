@@ -61,7 +61,7 @@ for PLAYER in "${NOSTR[@]}"; do
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
     echo "______ AMOUNT = ${COINS} G1"
 
-    if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]]; then
+    if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL TX CHECK
         echo "# RX from ${G1PUBNOSTR}.... checking primal transaction..."
         milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
@@ -128,7 +128,7 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
 
-    ## CHECK PRIMAL
+    ## CREATE NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
 
         mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
@@ -163,7 +163,8 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "## CREATE NOSTR PROFILE"
 
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
-        echo "## NOSTR PROFILE CREATION..."
+        echo "#############################################"
+        echo "## NOSTR PROFILE VALIDATION..."
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
 
         ## EXTACT PRIMAL CESIUM PROFILE
@@ -178,21 +179,22 @@ for PLAYER in "${NOSTR[@]}"; do
         description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
         [[ -z $description ]] && description="Nostr Card"
 
+        ## GET CESIUM AVATAR
         if [[ -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]]; then
-            ## GET CESIUM AVATAR
             zavatar="/ipfs/"$(ipfs --timeout 10s add -q "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" 2>/dev/null)
         else
-            ## GET NOSTR(+PICTURE) QRCODE
+        ## OR NOSTR(+PICTURE) G1PUB QRCODE
             zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR.QR.png.cid 2>/dev/null)
         fi
-            ## ELSE ASTROPORT LOGO
+        ## ELSE ASTROPORT LOGO
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
+        g1pubnostr=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
         ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
-            "$title" "$primal" \
+            "$title" "$g1pubnostr:$primal" \
             "$description - $city" \
             "$myIPFS/ipfs/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
@@ -216,7 +218,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 > ~/.zen/game/nostr/${PLAYER}/coracle.html
 
     else
-
+        echo "#############################################"
         echo "## Nostr Card PROFILE ALREADY EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
@@ -250,6 +252,8 @@ for PLAYER in "${NOSTR[@]}"; do
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
+    ## TODO : REMOVE from 5001 API
+    #~ ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
 
     echo "___________________________________________________"
     sleep 1

@@ -152,7 +152,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ### SEND PROFILE TO NOSTR RELAYS
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
-        "[•͡˘㇁•͡˘]" "Virgin NOSTR Card" "${G1PUBNOSTR}" \
+        "[•͡˘㇁•͡˘]" "${G1PUBNOSTR}" \
+        "NEW NOSTR Card ... waiting for Ğ1 activation ..." \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "${EMAIL}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
