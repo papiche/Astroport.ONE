@@ -12,14 +12,13 @@ def nostr_setup_profile(args):
     for relay in args.relays:
         relay_manager.add_relay(relay)
 
-    # Create private key from nsec
+    # Create private_key / public_key from nsec
     private_key = PrivateKey.from_nsec(args.private_key)
     public_key = private_key.public_key.hex()
 
     # Create metadata JSON
     metadata = {
         "name": args.name,
-        "g1pub": args.g1pub,
         "about": args.about,
         "picture": args.avatar_url,
         "banner": args.banner_url,
@@ -30,7 +29,9 @@ def nostr_setup_profile(args):
 
     # Prepare tags for external identities
     tags = []
-    if args.github:
+    if args.g1pub:
+        tags.append(["i", f"g1pub:{args.g1pub}", ""])
+     if args.github:
         tags.append(["i", f"github:{args.github}", ""])
     if args.twitter:
         tags.append(["i", f"twitter:{args.twitter}", ""])
@@ -39,13 +40,13 @@ def nostr_setup_profile(args):
     if args.telegram:
         tags.append(["i", f"telegram:{args.telegram}", ""])
 
-    # Create and publish metadata event
+    # Create and publish PROFILE + metadata event
     metadata_event = Event(kind=0, content=json.dumps(metadata), tags=tags)
     metadata_event.sign(private_key.hex())
     print("Publishing metadata event...")
     relay_manager.publish_event(metadata_event)
 
-    # Create and publish relay list event
+    # Create and publish PREFERED relay list event
     relay_list = {relay: {"read": True, "write": True} for relay in args.relays}
     relay_event = Event(kind=10002, content=json.dumps(relay_list))
     relay_event.sign(private_key.hex())
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Setup Nostr profile")
     parser.add_argument("private_key", help="Private key (nsec)")
     parser.add_argument("name", help="Name")
-    parser.add_argument("g1pub", help="G1 Wallet public key")
+    parser.add_argument("g1pub", help="G1 Pubkey")
     parser.add_argument("about", help="About")
     parser.add_argument("avatar_url", help="Avatar URL")
     parser.add_argument("banner_url", help="Banner URL")
