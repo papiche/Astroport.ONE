@@ -551,7 +551,6 @@ for UMAP in ${unique_combined[@]}; do
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
             -A ${MY_PATH}/../images/extension_territoire.jpg
 
-    #### MUST FIND A RELAY WHITELISTING CONTROL
     #### PUBLISH TO NOSTR
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     ${MY_PATH}/../tools/nostr_setup_profile.py \
@@ -562,6 +561,14 @@ for UMAP in ${unique_combined[@]}; do
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
+
+    ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
+    [[ ! -s ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/HEX ]]; then
+        NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+        HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
+        mkdir -p ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/
+        echo "$HEX" > ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/HEX
+    fi
 
     rm ~/.zen/tmp/${MOATS}/*.priv
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
