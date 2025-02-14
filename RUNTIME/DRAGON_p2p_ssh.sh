@@ -91,21 +91,22 @@ NC="\033[0m" # Pas de couleur
 SECRET_JUNE_FILE="$HOME/.zen/game/secret.june"
 if [[ -s "$SECRET_JUNE_FILE" ]]; then
     echo -e "${GREEN}Mise à jour des clés et métadonnées Nostr dans credentials.json...${NC}"
-    source "$SECRET_JUNE_FILE"
+
+    source "$SECRET_JUNE_FILE" ## STATION salt pepper
+    STATIONG1PUB=$(cat "$HOME/.zen/game/secret.duniter" | grep 'pub:' | cut -d ' ' -f 2)
+
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
-    # Afficher les clés pour vérification
-    #~ echo -e "${GREEN}Nostr Private Key: ${NC}$NPRIV"
-    #~ echo -e "${GREEN}Nostr Public Key: ${NC}$NPUBLIC"
-
-    ## UPDATE PROFILE ON RELAYS
+    ###############################################################
+    ## UPDATE STATION PROFILE ON RELAYS
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
-        "$CAPTAING1PUB" "♥Box $(hostname) on UPlanet $UPLANETG1PUB" "$myIPFS/ipns/$IPFSNODEID" \
+        "♥Box $(hostname)" "$STATIONG1PUB" \
+        "Astroport.ONE ♥Box Station on UPlanet ${UPLANETG1PUB:0:8}" \
         "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
         "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-        "" "" "" "" "" "" \
-        "wss://relay.copylaradio.com" "$myRELAY" "wss://relay.primal.net"
+        "" "$myIPFS/ipns/$IPFSNODEID" "" "" "" "" \
+        "wss://relay.copylaradio.com" "$myRELAY"
 
 fi
 

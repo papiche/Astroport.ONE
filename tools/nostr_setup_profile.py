@@ -19,7 +19,7 @@ def nostr_setup_profile(args):
     # Create metadata JSON
     metadata = {
         "name": args.name,
-        "display_name": args.display_name,
+        "g1pub": args.g1pub,
         "about": args.about,
         "picture": args.avatar_url,
         "banner": args.banner_url,
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Setup Nostr profile")
     parser.add_argument("private_key", help="Private key (nsec)")
     parser.add_argument("name", help="Name")
-    parser.add_argument("display_name", help="Display name")
+    parser.add_argument("g1pub", help="G1 Wallet public key")
     parser.add_argument("about", help="About")
     parser.add_argument("avatar_url", help="Avatar URL")
     parser.add_argument("banner_url", help="Banner URL")

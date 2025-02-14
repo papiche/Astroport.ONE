@@ -38,7 +38,7 @@ destroy_nostrcard() {
     local secnostr="$3"
     echo "DESTROYING NOSTRCARD for ${player}..."
     ## REMOVE PROFILE
-    $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com" "wss://relay.primal.net"
+    $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
     ## PUBLISH null
     ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT
     ## Remove IPNS key
@@ -82,7 +82,7 @@ for PLAYER in "${NOSTR[@]}"; do
             -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
     # Decrypt the tail part using UPLANET key
-    ${MY_PATH}/../tools/keygen -duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
     ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
             -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
 
@@ -137,9 +137,7 @@ for PLAYER in "${NOSTR[@]}"; do
         #######################################################################
         ## COPY PRIMAL DUNITER/CESIUM METADATA
         cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-        ## IS PRIMAL CESIUM+
-        [[ -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json ]] \
-            && rm ~/.zen/game/nostr/${PLAYER}/zine.html ## REMOVE NOSTR ZINE
+
     fi
 
     ## REAL UPASSPORT ?
@@ -194,7 +192,8 @@ for PLAYER in "${NOSTR[@]}"; do
         ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
-            "$primal" "$title" "$description - $city" \
+            "$title" "$primal" \
+            "$description - $city" \
             "$myIPFS/ipfs/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
             "${PLAYER}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \

@@ -66,18 +66,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ##########################################################################
     ### CRYPTO ZONE
     ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
-    echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.nostr.enc"
-    ${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.head.nostr.enc
+    echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.head.player.enc"
+    ${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.head.player.enc
 
     ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB
     echo "${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc"
     ${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.mid.captain.enc
-
-    ## DISCO TAIL ENCRYPT WITH UPLANETNAME
-    #~ cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail | gpg --symmetric --armor --batch --passphrase "${UPLANETNAME}" -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc
-    #~ cat ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.asc | gpg -d --passphrase "${UPLANETNAME}" --batch > ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
-    #~ [[ $(diff -q ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail) != "" ]] && echo "ERROR: GPG ENCRYPTION FAILED !!!"
-    #~ rm ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.ssss.test
 
     ## DISCO TAIL ENCRYPT WITH UPLANETG1PUB
     echo "${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc"
@@ -91,17 +85,11 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
 
     ## QR CODE accès NOSTR VAULTNSQR
-    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_str.png -c -n ${G1PUBNOSTR}.IPNS.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
-    convert ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.IPNS.QR.png \
-        -gravity SouthWest \
-        -pointsize 18 \
-        -fill black \
-        -annotate +2+2 "[APP] $NOSTRNS" \
-        -annotate +1+3 "[APP] $NOSTRNS" \
-        ${HOME}/.zen/game/nostr/${EMAIL}/IPNS.QR.png
+    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_str.png \
+        -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
 
-    VAULTNSQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/${G1PUBNOSTR}.IPNS.QR.png)
-    ## CHECK IPFS ADD IS GOOD
+    VAULTNSQR=$(ipfs --timeout 15s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
+    ## CHECK IPFS IS WORKING GOOD (sometimes stuck)
     if [[ ! $? -eq 0 ]]; then
         cat ~/.zen/UPassport/templates/wallet.html \
         | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
@@ -110,12 +98,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         echo "${MY_PATH}/tmp/${MOATS}.out.html"
         exit 0
     fi
-    ipfs pin rm /ipfs/${VAULTNSQR}
+    ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
 
-    ## HEAD SSSS CLEAR
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE
+    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png \
+        -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+
     SSSSQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
-    ipfs pin rm /ipfs/${SSSSQR}
+    ipfs pin rm /ipfs/${SSSSQR} 2>/dev/null
 
     ## Create G1PUBNOSTR QR Code
     ## Use webcam picture ?
@@ -123,20 +113,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         && FDQR=${HOME}/.zen/game/nostr/${EMAIL}/picture.png \
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
-    amzqr "${G1PUBNOSTR}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
+    amzqr "${G1PUBNOSTR}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
-    convert ~/.zen/tmp/${MOATS}/G1PUBNOSTR.QR.png \
-            -gravity SouthWest \
-            -pointsize 18 \
-            -fill black \
-            -annotate +2+2 "${G1PUBNOSTR}" \
-            -annotate +1+3 "${G1PUBNOSTR}" \
-            ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
 
     ## REMOVE webcam picture
     rm -f ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
 
-    G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/G1PUBNOSTR.QR.png)
+    G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png.cid
 
@@ -144,7 +127,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # INSERT NOSTR ORACOLO APP
     cat ${MY_PATH}/../templates/NOSTR/oracolo/index.html \
         | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
-            > ${HOME}/.zen/game/nostr/${EMAIL}/oracolo.html
+            > ${HOME}/.zen/game/nostr/${EMAIL}/nostr.blog.html
 
     ##############################################################
     ### PREPARE NOSTR ZINE
@@ -161,29 +144,29 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
             -e "s~_DATE_~$(date -u)~g" \
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/zine.html
+        > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
     NOSTRIPFS=$(ipfs --timeout 15s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
-        ### SEND PROFILE TO NOSTR RELAYS
-        ${MY_PATH}/../tools/nostr_setup_profile.py \
-            "$NPRIV" \
-            "${G1PUBNOSTR}" "[•͡˘㇁•͡˘]" "Virgin NOSTR Card" \
-            "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
-            "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
-            "${EMAIL}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
-            "wss://relay.copylaradio.com" "$myRELAY"
+    ### SEND PROFILE TO NOSTR RELAYS
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
+        "$NPRIV" \
+        "[•͡˘㇁•͡˘]" "Virgin NOSTR Card" "${G1PUBNOSTR}" \
+        "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
+        "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
+        "${EMAIL}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
+        "wss://relay.copylaradio.com" "$myRELAY"
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
-    ### SEND BACK RESULT
+    ### UNCOMMENT for DEBUG
     #~ echo "SALT=$SALT PEPPER=$PEPPER \
 #~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
 #~ NOSTRG1PUB=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} NOSTRNS=${NOSTRNS} \
 #~ CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
 
-    echo "${HOME}/.zen/game/nostr/${EMAIL}/zine.html"
+    echo "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
 
     exit 0
 
