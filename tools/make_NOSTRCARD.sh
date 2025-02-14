@@ -127,7 +127,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # INSERT NOSTR ORACOLO APP
     cat ${MY_PATH}/../templates/NOSTR/oracolo/index.html \
         | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
-            > ${HOME}/.zen/game/nostr/${EMAIL}/nostr.blog.html
+            -e "s~_MYRELAY_~${myRELAY}~g" \
+            > ${HOME}/.zen/game/nostr/${EMAIL}/_index.BLOG.html
 
     ##############################################################
     ### PREPARE NOSTR ZINE
