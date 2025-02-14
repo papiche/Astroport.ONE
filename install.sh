@@ -166,6 +166,12 @@ echo "######### $LP PRINTER ##############"
     echo "$USER ALL=(ALL) NOPASSWD:/usr/local/bin/brother_ql_print" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/brother_ql_print')
 fi
 
+## UPASSPORT API
+echo "######### UPASSPORT ##############"
+echo "INSTALL UPASSPORT : http://localhost:54321"
+${MY_PATH}/install_upassport.sh
+
+
 ## G1BILLET
 echo "######### G1BILLET ##############"
 echo "INSTALL G1BILLET : http://g1billet.localhost:33101"

@@ -21,6 +21,7 @@ echo "## RUNNING NODE.refresh"
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
 
+
 # UDATE STATION BALISE
 if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
