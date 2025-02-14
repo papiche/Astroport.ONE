@@ -198,7 +198,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "$myIPFS/ipfs/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
             "${PLAYER}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
-            "$myRELAY" "wss://relay.copylaradio.com" "wss://relay.primal.net" \
+            "wss://relay.copylaradio.com" "$myRELAY" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?

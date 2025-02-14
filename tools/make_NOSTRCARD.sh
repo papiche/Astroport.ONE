@@ -48,9 +48,6 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC"
 
-    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
-    echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX
-
     # 2. Store the keys in a file or a secure place (avoid printing them to console if possible)
     echo "$NPRIV" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.priv
     echo "$NPUBLIC" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.pub
@@ -62,6 +59,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
+
+    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
+    echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX
 
     ##########################################################################
     ### CRYPTO ZONE
@@ -173,7 +173,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
             "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
             "${EMAIL}" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
-            "$myRELAY" "wss://relay.copylaradio.com" "wss://relay.primal.net"
+            "wss://relay.copylaradio.com" "$myRELAY"
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
