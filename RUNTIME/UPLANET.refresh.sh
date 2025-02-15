@@ -563,7 +563,7 @@ for UMAP in ${unique_combined[@]}; do
     "$myRELAY" "wss://relay.copylaradio.com"
 
     ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
-    [[ ! -s ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/HEX ]]; then
+    if [[ ! -s ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/HEX ]]; then
         NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
         HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
         mkdir -p ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/
