@@ -36,7 +36,8 @@ destroy_nostrcard() {
     local player="$1"
     local g1pubnostr="$2"
     local secnostr="$3"
-    echo "DESTROYING NOSTRCARD for ${player}..."
+    local pubnostr="$4"
+    echo "DESTROYING NOSTRCARD for ${player}... $pubnostr"
     ## REMOVE PROFILE
     $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
     ## PUBLISH null
@@ -107,12 +108,13 @@ for PLAYER in "${NOSTR[@]}"; do
     ##################################################### DISCO DECODED
     ## s=/?email
     NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
+    NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
     #~ EMPTY WALLET or without primal
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         echo "EMPTY NOSTR CARD.............."
-        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}"
+        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
         continue
     fi
 
@@ -124,7 +126,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     if [[ -z ${VAULTFS} ]]; then
         echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
-        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}"
+        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
         continue
     fi
 
