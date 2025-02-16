@@ -66,14 +66,24 @@ fi
 echo "Refresh Swarm NOSTR Nodes => strfry relay whitelist"
 rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE OLD VALUE
 ## Get swarm NODES HEX
-HEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
+NODEHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
 ## Create
-for nhex in ${HEXLIST[@]}; do
+for nhex in ${NODEHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexnode=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
     echo "NOSTR UNODE $hexnode : HEX = $hex"
     mkdir -p ~/.zen/game/nostr/UNODE_$hexnode
     echo "$hex" > ~/.zen/game/nostr/UNODE_$hexnode/HEX
+done
+##########################################################
+rm -Rf ~/.zen/game/nostr/UMAP_* ## REMOVE OLD VALUE
+UMAPHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*_*/_*_*/HEX))
+for nhex in ${NODEHEXLIST[@]}; do
+    hex=$(cat $nhex)
+    hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
+    echo "NOSTR UMAP $hexumap : HEX = $hex"
+    mkdir -p ~/.zen/game/nostr/UMAP_$hexnode
+    echo "$hex" > ~/.zen/game/nostr/UMAP$hexumap/HEX
 done
 ##########################################################
 

@@ -308,6 +308,14 @@ for UMAP in ${unique_combined[@]}; do
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
     echo "${REGIONG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
+    ####################################################################################
+    ## WRITE NOSTR HEX ADDRESS USED FOR strfry whitelisting
+    NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUB)
+    echo "$HEX" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX
+    echo "$NPUB" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/NPUB
 
     ####################################################################################
     ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
@@ -555,20 +563,12 @@ for UMAP in ${unique_combined[@]}; do
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
-    "GEOKEY_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
+    "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
     "UPlanet ${TODATE}${UMAP} JOURNAL" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
-
-    ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
-    if [[ ! -s ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/HEX ]]; then
-        NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-        HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
-        mkdir -p ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/
-        echo "$HEX" > ~/.zen/game/nostr/UMAP_${UPLANETG1PUB:0:8}${UMAP}/HEX
-    fi
 
     rm ~/.zen/tmp/${MOATS}/*.priv
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
