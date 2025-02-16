@@ -108,12 +108,6 @@ if [[ -s "$SECRET_JUNE_FILE" ]]; then
         "" "$myIPFS/ipns/$IPFSNODEID" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY"
 
-    ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
-    if [[ ! -s ~/.zen/game/nostr/UNODE_$STATIONG1PUB/HEX ]]; then
-        HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
-        mkdir -p ~/.zen/game/nostr/UNODE_$STATIONG1PUB/
-        echo "$HEX" > ~/.zen/game/nostr/UNODE_$STATIONG1PUB/HEX
-    fi
 fi
 
 

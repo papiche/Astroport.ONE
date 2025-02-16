@@ -140,6 +140,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
+            -e "s~_MYRELAY_~${myRELAY}~g" \
             -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
             -e "s~_NOSTRG1PUB_~${G1PUBNOSTR}~g" \
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \

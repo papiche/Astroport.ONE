@@ -61,6 +61,22 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
 fi
 
+######################################################
+## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
+echo "Refresh Swarm NOSTR Nodes => strfry relay whitelist"
+rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE OLD VALUE
+## Get swarm NODES HEX
+HEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
+## Create
+for nhex in ${HEXLIST[@]}; do
+    hex=$(cat $nhex)
+    hexnode=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
+    echo "NOSTR UNODE $hexnode : HEX = $hex"
+    mkdir -p ~/.zen/game/nostr/UNODE_$hexnode
+    echo "$hex" > ~/.zen/game/nostr/UNODE_$hexnode/HEX
+done
+##########################################################
+
 echo "## CLEANING SWARM 3 DAYS OLD"
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
 rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
