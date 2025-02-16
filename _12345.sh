@@ -61,6 +61,18 @@ echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
     CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
  fi
 ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
+## NOSTR ##############################################
+## CREATE ~/.zen/game/secret.nostr (YLEVEL NODES)
+if [[ -s ~/.zen/game/secret.june ]]; then
+    source ~/.zen/game/secret.june
+    npub=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
+    hex=$(${MY_PATH}/tools/nostr2hex.py "$npub")
+    nsec=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER" -s)
+    echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > ~/.zen/game/secret.nostr
+    chmod 600 ~/.zen/game/secret.nostr
+    echo $hex > ~/.zen/tmp/${IPFSNODEID}/HEX
+fi
+##################################################
 
 ## PUBLISH CHANNEL IPNS
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
