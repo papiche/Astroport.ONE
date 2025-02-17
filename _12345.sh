@@ -55,9 +55,9 @@ echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
     SECRET2=${IPFSNODEID}
     ipfs key rm "MySwarm_${IPFSNODEID}"
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
-    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipfskey "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
+    ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipns "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
     ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/myswarm_secret.dunikey "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
-    ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipfskey
+    ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipns
     CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
 fi
 ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
@@ -155,6 +155,9 @@ while true; do
         #### UPLANET FLASHMEM UPDATES
         GEOKEYSrunning=$(pgrep -au $USER -f 'GEOKEYS_refresh.sh' | tail -n 1 | xargs | cut -d " " -f 1)
         [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
+
+        ### NOSTR refresh
+        ${MY_PATH}/RUNTIME/NOSTR.refresh.sh &
 
         #####################################
         ( ##### SUB-PROCESS £

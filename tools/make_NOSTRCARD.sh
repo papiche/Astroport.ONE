@@ -24,7 +24,6 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
 if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
-
     ############################################## PREPARE SALT PEPPER
     SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
     PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
@@ -45,8 +44,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # 1. Generate a DISCO Nostr key pair
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
+    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
+
     #~ echo "Nostr Private Key: $NPRIV"
-    echo "Nostr Public Key: $NPUBLIC"
+    echo "Nostr Public Key: $NPUBLIC = $HEX"
 
     # 2. Store the keys in a file or a secure place (avoid printing them to console if possible)
     echo "$NPRIV" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.priv
@@ -56,13 +57,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey "${SALT}" "${PEPPER}"
     G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
     echo "G1NOSTR _WALLET: $G1PUBNOSTR"
+
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
 
-    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
-    echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX
-
+    echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX ## COPY HEX
     ##########################################################################
     ### CRYPTO ZONE
     ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY

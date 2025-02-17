@@ -153,11 +153,8 @@ for PLAYER in "${NOSTR[@]}"; do
                 echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
                 curl -s -X POST -F "parametre=${primal}" http://127.0.0.1:54321/upassport \
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
-                [[ $? -eq 0 ]] \
-                    && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" \
-                    ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html \
-                    "♥Box UPassport / Captain : $CAPTAINEMAIL  / UPlanet : ${UPLANETG1PUB:0:8}" \
-                    || rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html 2>/dev/null
+                [[ ! $? -eq 0 ]] \
+                    && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html 2>/dev/null
             fi
         fi
     else
