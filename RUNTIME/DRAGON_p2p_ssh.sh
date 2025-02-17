@@ -93,7 +93,7 @@ if [[ -s "$SECRET_JUNE_FILE" ]]; then
     echo -e "${GREEN}Mise à jour des clés et métadonnées Nostr dans credentials.json...${NC}"
 
     source "$SECRET_JUNE_FILE" ## STATION salt pepper
-    STATIONG1PUB=$(cat "$HOME/.zen/game/secret.duniter" | grep 'pub:' | cut -d ' ' -f 2)
+    STATIONG1PUB=$(cat "$HOME/.zen/game/secret.dunikey" | grep 'pub:' | cut -d ' ' -f 2)
 
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")

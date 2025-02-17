@@ -54,7 +54,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     RESOLV=$(ipfs name resolve /ipns/${IPFSNODEID})
     ipfs pin rm ${RESOLV}
 
-    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
+    NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -d ' ' -f 1)
     ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
     ipfs name publish /ipfs/${ROUTING}
     echo ">> $NSIZE Bytes STATION BALISE > ${myIPFS}/ipns/${IPFSNODEID}"
@@ -63,7 +63,8 @@ fi
 
 ######################################################
 ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
-echo "Refresh Swarm NOSTR Nodes => strfry relay whitelist"
+echo "############################################"
+echo "REFRESH UNODEs HEX"
 rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE OLD VALUE
 ## Get swarm NODES HEX
 NODEHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
@@ -76,13 +77,15 @@ for nhex in ${NODEHEXLIST[@]}; do
     echo "$hex" > ~/.zen/game/nostr/UNODE_$hexnode/HEX
 done
 ##########################################################
-rm -Rf ~/.zen/game/nostr/UMAP_* ## REMOVE OLD VALUE
-UMAPHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*_*/_*_*/HEX))
+echo "############################################"
+echo "REFRESH UMAPs HEX"
+rm -Rf ~/.zen/game/nostr/UMAP* ## REMOVE OLD VALUE
+UMAPHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/dev/null))
 for nhex in ${NODEHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
     echo "NOSTR UMAP $hexumap : HEX = $hex"
-    mkdir -p ~/.zen/game/nostr/UMAP_$hexnode
+    mkdir -p ~/.zen/game/nostr/UMAP$hexumap
     echo "$hex" > ~/.zen/game/nostr/UMAP$hexumap/HEX
 done
 ##########################################################
