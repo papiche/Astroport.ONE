@@ -130,6 +130,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_MYRELAY_~${myRELAY}~g" \
             > ${HOME}/.zen/game/nostr/${EMAIL}/_index.BLOG.html
 
+    ## TODATE TIME STAMP
+    echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
+
     ##############################################################
     ### PREPARE NOSTR ZINE
     cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \

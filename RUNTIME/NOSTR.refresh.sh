@@ -10,7 +10,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 [[ -z $IPFSNODEID ]] && echo "ERROR ASTROPORT BROKEN" && exit 1
 ################################################################################
-## Scan ~/.zen/game/nostr/[EMAIL]
+## Scan ~/.zen/game/nostr/[PLAYER]
 ## Check "G1 NOSTR" RX - ACTIVATE "NOSTRCARD"
 ## CREATE nostr profile
 ## CONTACT N1 WoT
@@ -114,7 +114,9 @@ for PLAYER in "${NOSTR[@]}"; do
     #~ EMPTY WALLET or without primal
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         echo "EMPTY NOSTR CARD.............."
-        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+        ## TODATE PRESERVATION
+        [[ ${TODATE} != $(cat ~/.zen/game/nostr/${PLAYER}/TODATE) ]] \
+            && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
         continue
     fi
 
@@ -250,9 +252,9 @@ for PLAYER in "${NOSTR[@]}"; do
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
-    echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
+    echo "${G1PUBNOSTR}:NOSTR ${PLAYER} STORAGE: /ipns/$NOSTRNS"
     ## UPDATE IPNS RESOLVE
-    NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+    NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
     ## TODO : REMOVE from 5001 API
     #~ ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
