@@ -361,6 +361,7 @@ NODE12345="{
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"NODENPUB\" : \"${npub}\",
+    \"NODEHEX\" : \"${hex}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
