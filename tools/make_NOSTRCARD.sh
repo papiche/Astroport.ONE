@@ -30,7 +30,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
     # Creating a NOSTRCARD for ${EMAIL}
     DISCO="/?${EMAIL}=${SALT}&nostr=${PEPPER}"
-    echo "DISCO : "$DISCO
+    #~ echo "DISCO : "$DISCO
 
     ## ssss-split : Keep 2 needed over 3
     echo "$DISCO" | ssss-split -t 2 -n 3 -q > ~/.zen/tmp/${MOATS}/${EMAIL}.ssss
@@ -45,7 +45,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # 1. Generate a DISCO Nostr key pair
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
-    echo "Nostr Private Key: $NPRIV"
+    #~ echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC"
 
     # 2. Store the keys in a file or a secure place (avoid printing them to console if possible)
