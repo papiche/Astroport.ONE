@@ -142,6 +142,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
             -e "s~_MYRELAY_~${myRELAY}~g" \
             -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
+            -e "s~_SALT_~${SALT}~g" \
+            -e "s~_PEPPER_~${PEPPER}~g" \
             -e "s~_NOSTRG1PUB_~${G1PUBNOSTR}~g" \
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
             -e "s~_DATE_~$(date -u)~g" \

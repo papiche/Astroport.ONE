@@ -124,11 +124,11 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "NOSTR VAULT IPNS : ${myIPFS}${NOSTRNS}"
     VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
 
-    if [[ -z ${VAULTFS} ]]; then
-        echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
-        destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
-        continue
-    fi
+    #~ if [[ -z ${VAULTFS} ]]; then
+        #~ echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
+        #~ destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+        #~ continue
+    #~ fi
 
     ## CREATE NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
@@ -159,13 +159,13 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
         fi
     else
-        echo "## STATION OWNER ?! Check ZenCard..."
+        echo "## THIS IS A STATION coOWNER => Check ZenCard..."
     fi
 
     echo "## CREATE NOSTR PROFILE"
 
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
-        echo "#############################################"
+        echo "######################################## DAY 1"
         echo "## NOSTR PROFILE VALIDATION..."
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
 
@@ -220,7 +220,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 > ~/.zen/game/nostr/${PLAYER}/coracle.html
 
     else
-        echo "#############################################"
+        echo "########################################## DAY 2"
         echo "## Nostr Card PROFILE ALREADY EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
