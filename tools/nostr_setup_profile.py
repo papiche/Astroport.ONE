@@ -40,6 +40,10 @@ def nostr_setup_profile(args):
     if args.telegram:
         tags.append(["i", f"telegram:{args.telegram}", ""])
 
+    # Add IPFS Gateway tag if provided
+    if args.ipfs_gateway:
+        tags.append(["i", f"ipfs_gateway:{args.ipfs_gateway}", ""])
+
     # Create and publish PROFILE + metadata event
     metadata_event = Event(kind=0, content=json.dumps(metadata), tags=tags)
     metadata_event.sign(private_key.hex())
@@ -77,6 +81,7 @@ if __name__ == "__main__":
     parser.add_argument("mastodon", help="Mastodon URL")
     parser.add_argument("telegram", help="Telegram URL")
     parser.add_argument("relays", nargs="+", help="List of relays")
+    parser.add_argument("--ipfs_gateway", help="IPFS Gateway URL", default=None)
 
     args = parser.parse_args()
     nostr_setup_profile(args)

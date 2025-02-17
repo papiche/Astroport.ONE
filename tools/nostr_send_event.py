@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument("content", help="Contenu de l'événement")
 
     # Options
-    parser.add_argument("--relay", type=str, action="append", default=["wss://relay.damus.io"],
+    parser.add_argument("--relay", type=str, action="append", default=["wss://relay.copylaradio.com"],
                         help="URL du relai Nostr (peut être utilisé plusieurs fois)")
     parser.add_argument("--timeout", type=int, default=10, help="Temps d'attente max pour la confirmation (secondes)")
     parser.add_argument("--tags", type=str, action="append", default=[],
