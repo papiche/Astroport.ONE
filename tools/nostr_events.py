@@ -1,86 +1,101 @@
 #!/usr/bin/env python3
 import argparse
+import time
 import json
 import logging
 import asyncio
+import signal
+import sys
 from pynostr.key import PublicKey
-from pynostr.filters import FiltersList, Filters
-from pynostr.event import EventKind
 from pynostr.relay_manager import RelayManager
-from tornado.platform.asyncio import AsyncIOMainLoop
+from pynostr.filters import Filters
+from pynostr.message_type import ClientMessageType
+
+# Capture SIGINT et SIGTERM pour fermer proprement
+def cleanup_and_exit(sig, frame):
+    print("\n🚨 Interruption détectée ! Fermeture des connexions...")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, cleanup_and_exit)
+signal.signal(signal.SIGTERM, cleanup_and_exit)
 
 # Configuration des logs
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# Liste des types d'événements courants sur NOSTR
 EVENT_TYPES = {
-    EventKind.SET_METADATA: "Mise à jour de profil",
-    EventKind.TEXT_NOTE: "Message texte",
-    EventKind.CONTACTS: "Liste des contacts",
-    EventKind.ENCRYPTED_DIRECT_MESSAGE: "Message privé",
-    EventKind.REACTION: "Reaction (like/dislike)",
+    0: "Mise à jour de profil",
+    1: "Message texte",
+    3: "Liste des contacts",
+    4: "Message privé",
+    7: "Reaction (like/dislike)",
     40: "Début d'une communauté",
     41: "Mise à jour de communauté",
     42: "Post dans une communauté"
 }
 
-async def fetch_events(npub: str, relay_url: str):
+async def fetch_events(npub, relay_url, timeout=6):
     """Récupère et affiche les messages NOSTR d'un utilisateur."""
     try:
-        # Convertir npub en clé publique hexadécimale
         public_key = PublicKey.from_npub(npub).hex()
         logging.info(f"Clé publique hexadécimale : {public_key}")
 
-        # Configurer le gestionnaire de relais et les filtres
-        relay_manager = RelayManager(timeout=6)
+        relay_manager = RelayManager()
         relay_manager.add_relay(relay_url)
 
-        filters = FiltersList([
-            Filters(authors=[public_key], kinds=list(EVENT_TYPES.keys()), limit=50)
-        ])
+        await relay_manager.open_connections()
+        await asyncio.sleep(1)  # Attente pour l'établissement des connexions
 
-        # Connexion aux relais et récupération des événements
-        logging.info(f"Connexion au relais : {relay_url}")
-        relay_manager.open_connections()
-        await asyncio.sleep(1)  # Attendre que les connexions soient établies
+        filters = Filters([{
+            "authors": [public_key],
+            "kinds": list(EVENT_TYPES.keys()),
+            "limit": 50
+        }])
 
-        relay_manager.subscribe(filters)
-        await asyncio.sleep(2)  # Attendre les réponses des relais
+        sub_id = "fetch_events"
+        message = [ClientMessageType.REQUEST, sub_id, filters.to_dict()]  # Correction : `to_dict()` est correct
+        relay_manager.publish_message(json.dumps(message))
 
-        event_dict = {}
-        for message in relay_manager.message_pool.get_events():
-            event_type = EVENT_TYPES.get(message.kind, f"Type inconnu ({message.kind})")
-            if event_type not in event_dict:
-                event_dict[event_type] = []
-            event_dict[event_type].append(message.content)
+        events = []
+        start_time = time.time()
 
-            logging.info(f"Événement reçu : {event_type} -> {message.content[:100]}...")
+        while time.time() - start_time < timeout:
+            await relay_manager.run_async()
+            for relay in relay_manager.relays.values():
+                for event in relay.subscription_handlers.get(sub_id, {}).get("events", []):
+                    event_type = EVENT_TYPES.get(event.kind, f"Type inconnu ({event.kind})")
+                    events.append({"type": event_type, "content": event.content})
 
-        relay_manager.close_connections()
+            if events:
+                break
 
-        # Afficher les résultats
-        if event_dict:
+        await asyncio.sleep(1)  # Laisser du temps pour les derniers messages
+        await relay_manager.close_connections()
+
+        if events:
             logging.info("Événements classés par type :")
-            print(json.dumps(event_dict, indent=4, ensure_ascii=False))
+            print(json.dumps(events, indent=4, ensure_ascii=False))
         else:
             logging.warning("Aucun événement trouvé pour cet utilisateur.")
 
     except Exception as e:
         logging.error(f"Erreur lors de la récupération des événements : {e}")
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Lister les messages NOSTR d'un utilisateur et les classer par type.")
     parser.add_argument("npub", help="Clé publique NOSTR (npub1...)")
-    parser.add_argument("--relay", default="ws://127.0.0.1:7777", help="URL du relais NOSTR (par défaut : ws://127.0.0.1:7777)")
+    parser.add_argument("--relay", default="wss://relay.copylaradio.com", help="URL du relais NOSTR (par défaut : wss://relay.copylaradio.com)")
+    parser.add_argument("--timeout", type=int, default=6, help="Temps d'attente pour la réponse (secondes)")
 
     args = parser.parse_args()
 
-    # Vérifier si le paramètre npub est présent
-    if not args.npub:
-        parser.error("Le paramètre npub est requis. Veuillez fournir une clé publique NOSTR (npub1...).")
+    # Gestion de la boucle asyncio pour éviter "This event loop is already running"
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-    # Configure Tornado's AsyncIOMainLoop to work with asyncio
-    AsyncIOMainLoop().install()
+    loop.run_until_complete(fetch_events(args.npub, args.relay, args.timeout))
 
-    # Run the main coroutine using asyncio's default loop
-    asyncio.run(fetch_events(args.npub, args.relay))
+if __name__ == "__main__":
+    main()

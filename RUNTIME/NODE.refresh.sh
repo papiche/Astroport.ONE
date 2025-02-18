@@ -81,7 +81,7 @@ echo "############################################"
 echo "REFRESH UMAPs HEX"
 rm -Rf ~/.zen/game/nostr/UMAP* ## REMOVE OLD VALUE
 UMAPHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/dev/null))
-for nhex in ${NODEHEXLIST[@]}; do
+for nhex in ${UMAPHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
     echo "NOSTR UMAP $hexumap : HEX = $hex"
