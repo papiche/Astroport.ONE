@@ -32,6 +32,7 @@ LON="$7"
 LON=$(makecoord ${LON})
 [[ $LON == "" ]] && LON="0.00"
 
+## NOSTR Card linking
 NPUB="$8"
 HEX="$9"
 

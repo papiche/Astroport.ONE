@@ -230,7 +230,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
             ## CREATE ASTRONAUTE TW ZENCARD
             echo "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
-            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}" "NPUB" "HEX"
 
         else
 
