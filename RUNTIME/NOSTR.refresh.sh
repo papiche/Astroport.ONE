@@ -16,6 +16,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## CONTACT N1 WoT
 ## REFRESH N1/N2
 ############################################
+start=`date +%s`
+
 echo "## RUNNING NOSTR.refresh.sh
                  _
  _ __   ___  ___| |_ _ __
@@ -63,7 +65,7 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "______ AMOUNT = ${COINS} G1"
 
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
-    ################################################################ PRIMAL TX CHECK
+    ################################################################ PRIMAL RX CHECK
         echo "# RX from ${G1PUBNOSTR}.... checking primal transaction..."
         milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
         g1prime=$(echo $milletxzero | jq -r .pubkey)
@@ -111,7 +113,7 @@ for PLAYER in "${NOSTR[@]}"; do
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
-    #~ EMPTY WALLET or without primal
+    #~ EMPTY WALLET or without PRIMAL
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         echo "EMPTY NOSTR CARD.............."
         ## TODATE PRESERVATION
@@ -120,26 +122,20 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
 
-    echo "PRIMAL :$pcoins: $primal"
+    echo ">>> NOSTR PRIMAL :$pcoins: $primal"
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
-    echo "NOSTR VAULT IPNS : ${myIPFS}${NOSTRNS}"
+    echo "IPNS VAULT : ${myIPFS}${NOSTRNS}"
     VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
 
-    #~ if [[ -z ${VAULTFS} ]]; then
-        #~ echo "VAULTFS KEY EMPTY !!!!!!! ${G1PUBNOSTR}:NOSTR"
-        #~ destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
-        #~ continue
-    #~ fi
-
-    ## CREATE NOSTRCard/PRIMAL
+    ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
 
         mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
         ## SCAN CESIUM/GCHANGE PRIMAL STATUS
         ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
         #######################################################################
-        ## COPY PRIMAL DUNITER/CESIUM METADATA
+        ## COPY PRIMAL DUNITER/CESIUM METADATA (from "coucou" cache)
         cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
 
     fi
@@ -155,17 +151,19 @@ for PLAYER in "${NOSTR[@]}"; do
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 [[ ! $? -eq 0 ]] \
                     && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html 2>/dev/null
+            else
+                echo "## PRIMAL UPassport already existing"
+                ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
             fi
         fi
     else
-        echo "## THIS IS A STATION coOWNER => Check ZenCard..."
+        echo "## REAL UPASSPORT : ${primal} is STATION co OWNER !!"
     fi
 
-    echo "## CREATE NOSTR PROFILE"
-
+    ######### NOSTR PROFILE ACTIVE : CREATING UPASSPORT
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
-        echo "######################################## DAY 1"
-        echo "## NOSTR PROFILE VALIDATION..."
+        echo "######################################## STEP 1"
+        echo "## NOSTR PROFILE PRIMAL LINKING"
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
 
         ## EXTACT PRIMAL CESIUM PROFILE
@@ -211,35 +209,33 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
         ## HEX COMPARE
-        cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
-        cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null
+        #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
+        #~ cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null
 
         ## ADD CORACLE to NOSTRVAULT
         echo "<meta http-equiv=\"refresh\" content=\"0; url='${CORACLEIPFS}'\" />CORACLE : ${PLAYER}" \
                 > ~/.zen/game/nostr/${PLAYER}/coracle.html
 
     else
-        echo "########################################## DAY 2"
-        echo "## Nostr Card PROFILE ALREADY EXISTING"
+        echo "########################################## STEP 2"
+        echo "## Nostr Card PROFILE EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
         if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
-
+            echo "## MULTIPASS ZenCard creation "
             source ~/.zen/game/nostr/${PLAYER}/GPS
             PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
             NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
 
             ## CREATE ASTRONAUTE TW ZENCARD
-            echo VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+            echo "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
             ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
 
         else
 
-            echo "ZENCARD EXISTING"
-            ls ~/.zen/game/players/${PLAYER}
-            echo "RELATED TO NOSTR CARD"
-            ls ~/.zen/game/nostr/${PLAYER}
+            echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
+            ## Inject new NOSTR EVENTS into TW (TODO)
 
         fi
     fi
@@ -261,6 +257,10 @@ for PLAYER in "${NOSTR[@]}"; do
 
 done
 
+end=`date +%s`
+dur=`expr $end - $start`
+hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
+echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "============================================ NOSTR.refresh DONE."
 
 exit 0

@@ -31,6 +31,10 @@ LAT=$(makecoord ${LAT})
 LON="$7"
 LON=$(makecoord ${LON})
 [[ $LON == "" ]] && LON="0.00"
+
+NPUB="$8"
+HEX="$9"
+
 ################################################################################
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
@@ -38,7 +42,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeic6jcu53uiivo2eq35fshpyd2y2vvr3c2yncerxn2oad7oa3m6kj4" ##
+TWUPLANET="/ipfs/bafybeicwphbbz5r65qqprlzx3qrug2niyxngaazq3pqlra6vhoijze34ce" ##
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -283,6 +287,9 @@ sed -i "s~_SSHPUB_~${SSHPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.htm
 sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+# NOSTR Card : keep reference of PLAYER NostrCard
+sed -i "s~_NPUB_~${NPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
+sed -i "s~_HEX_~${HEX}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 ## AstroID Tiddler UPGRADE
 cat ${MY_PATH}/../templates/data/AstroID.json \
