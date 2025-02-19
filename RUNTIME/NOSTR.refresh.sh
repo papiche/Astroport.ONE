@@ -39,17 +39,25 @@ destroy_nostrcard() {
     local g1pubnostr="$2"
     local secnostr="$3"
     local pubnostr="$4"
-    echo "DESTROYING NOSTRCARD for ${player}... $pubnostr"
+    echo "DELETE ${player} NOSTRCARD : $pubnostr"
     ## REMOVE PROFILE
     $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
-    ## PUBLISH null
-    ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT
-    ## Remove IPNS key
+    ## REMOVE MULTIPASS
+    if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
+        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
+    fi
+
+    ## SEND EMAIL with G1PUBNOSTR.QR
+    ${MY_PATH}/../tools/mailjet.sh "${player}" "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png" "NOSTR Card DELETED"
+
+    ## REMOVE NOSTR IPNS VAULT key
+    ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT ## "null" CID
     ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
     ## Cleaning local cache
     rm ~/.zen/tmp/coucou/${g1pubnostr-null}.*
     rm -Rf ~/.zen/game/nostr/${player-null}
     echo "NOSTRCARD for ${player} DELETED."
+
 }
 
 ########################################################################
@@ -70,7 +78,8 @@ for PLAYER in "${NOSTR[@]}"; do
         milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
         g1prime=$(echo $milletxzero | jq -r .pubkey)
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
-        [[ ! -z ${g1prime} && ${g1prime} != "null" ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+        [[ ! -z ${g1prime} && ${g1prime} != "null" ]] \
+            && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
     fi
 
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
@@ -137,6 +146,7 @@ for PLAYER in "${NOSTR[@]}"; do
         #######################################################################
         ## COPY PRIMAL DUNITER/CESIUM METADATA (from "coucou" cache)
         cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+        echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME
 
     fi
 

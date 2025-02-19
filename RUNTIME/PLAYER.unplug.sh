@@ -28,50 +28,50 @@ MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
 ## PLAYER UMAP ?
-    ## GET "GPS" TIDDLER
-    tiddlywiki --load ${INDEX} \
-        --output ~/.zen/tmp/${MOATS} \
-        --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
-    TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
-    LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-                [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
-    LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-                [[ $LON == "null" || $LON == "" ]] && LON="0.00"
-    echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
-    rm ~/.zen/tmp/${MOATS}/GPS.json
+## GET "GPS" TIDDLER
+tiddlywiki --load ${INDEX} \
+    --output ~/.zen/tmp/${MOATS} \
+    --render '.' 'GPS.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'GPS'  ## GPS Tiddler
+TWMAPNS=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].umap)
+LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
+            [[ $LAT == "null" || $LAT == "" ]] && LAT="0.00"
+LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
+            [[ $LON == "null" || $LON == "" ]] && LON="0.00"
+echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
+rm ~/.zen/tmp/${MOATS}/GPS.json
 
-    ########## SEND COINS TO SECTORG1PUB - ẐEN VIRTUAL BANK - EVERY 800 METERS - ;)
-    LAT=$(makecoord $LAT)
-    LON=$(makecoord $LON)
-    ##############################################################
-    ## POPULATE UMAP IPNS & G1PUB
-    $($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
+########## SEND COINS TO SECTORG1PUB - ẐEN VIRTUAL BANK - EVERY 800 METERS - ;)
+LAT=$(makecoord $LAT)
+LON=$(makecoord $LON)
+##############################################################
+## POPULATE UMAP IPNS & G1PUB
+$($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
 
-    ## GET COINS
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
-    echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
+## GET COINS
+COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
-    ## UNPLUG => SEND 10 ZEN
-    ## ALL => SEND ALL to $UPLANETG1PUB
+## UNPLUG => SEND 10 ZEN
+## ALL => SEND ALL to $UPLANETG1PUB
 
-    ALL="ALL"
-    UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
+ALL="ALL"
+UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
-    [[ $ONE == "ONE" ]] && ALL=1
-    [[ $ALL == "ALL" ]] && echo "DEST = UPLANETG1PUB: ${UPLANETG1PUB}"
+[[ $ONE == "ONE" ]] && ALL=1
+[[ $ALL == "ALL" ]] && echo "DEST = UPLANETG1PUB: ${UPLANETG1PUB}"
 
-    YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-    [[ ! -z ${SECTORG1PUB} ]] \
-        && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
-        && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:UNPLUG:${YOUSER}:${ALL}"
+YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+[[ ! -z ${SECTORG1PUB} ]] \
+    && echo "> PAY4SURE ZEN:${ALL} WALLET MOVE" \
+    && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:UNPLUG:${YOUSER}:${ALL}"
 
 ## REMOVING PLAYER from ASTROPORT
-    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
-    ipfs key rm "${PLAYER}" "${PLAYER}_feed" "${G1PUB}"
-    for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
-        echo "removing wish ${vk}"
-        [[ ${vk} != "" ]] && ipfs key rm ${vk}
-    done
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+ipfs key rm "${PLAYER}" "${PLAYER}_feed" "${G1PUB}"
+for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
+    echo "removing wish ${vk}"
+    [[ ${vk} != "" ]] && ipfs key rm ${vk}
+done
 
 ## SEND PLAYER LAST KNOW TW
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
