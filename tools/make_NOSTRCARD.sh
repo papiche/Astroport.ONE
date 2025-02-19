@@ -85,7 +85,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
 
     ## QR CODE accès NOSTR VAULTNSQR
-    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_str.png \
+    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
         -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
 
     VAULTNSQR=$(ipfs --timeout 15s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
@@ -145,8 +145,6 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
             -e "s~_MYRELAY_~${myRELAY}~g" \
             -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
-            -e "s~_SALT_~${SALT}~g" \
-            -e "s~_PEPPER_~${PEPPER}~g" \
             -e "s~_NOSTRG1PUB_~${G1PUBNOSTR}~g" \
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
             -e "s~_DATE_~$(date -u)~g" \
