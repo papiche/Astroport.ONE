@@ -351,7 +351,7 @@ while read LINE; do
 
     ASTROTW="" STAMP="" ASTROG1="" ASTROIPFS="" ASTROFEED=""
     #### SEARCH FOR PALPAY ACOUNTS : USING PALPAY RELAY - COULD BE DONE BY A LOOP ?? §§§
-    $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL}) ## export ASTROTW and more
+    $($MY_PATH/../tools/search_for_this_email_in_players.sh ${ZMAIL} | tail -n 1) ## export ASTROTW and more
     echo "export ASTROPORT=${ASTROPORT} ASTROTW=${ASTROTW} ASTROG1=${ASTROG1} ASTROMAIL=${EMAIL} ASTROFEED=${FEEDNS}"
     [[ ${ASTROTW} == "" ]] && ASTROTW="/ipns/${ASTRONAUTENS}"
 

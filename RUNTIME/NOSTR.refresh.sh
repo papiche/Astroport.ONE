@@ -199,6 +199,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
             "" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
+            --ipfs_gw "$myIPFS" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?
@@ -220,6 +221,7 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "########################################## STEP 2"
         echo "## Nostr Card PROFILE EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
+        HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
 
         ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
         if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
@@ -230,12 +232,14 @@ for PLAYER in "${NOSTR[@]}"; do
 
             ## CREATE ASTRONAUTE TW ZENCARD
             echo "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
-            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}" "NPUB" "HEX"
+            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
         else
 
             echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
-            ## Inject new NOSTR EVENTS into TW (TODO)
+            $(${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
+            ## Inject new NOSTR EVENTS into TW
+
 
         fi
     fi
