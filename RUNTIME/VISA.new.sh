@@ -597,7 +597,7 @@ cat ${ZINE} \
             -e "s~_SLON_~${SLON}~g" \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} MULTIPASS"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "MULTIPASS"
 
 ### SEND WELCOMING G1 (only for secret UPlanet)
 if [[ -s ~/.ipfs/swarm.key ]]; then

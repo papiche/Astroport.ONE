@@ -44,6 +44,7 @@ destroy_nostrcard() {
     $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
     ## REMOVE MULTIPASS
     if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
+        echo "/PLAYER.unplug MULTIPASS"
         ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
     fi
 
