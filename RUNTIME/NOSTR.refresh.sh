@@ -159,13 +159,15 @@ for PLAYER in "${NOSTR[@]}"; do
             if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html ]]; then
                 echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
                 curl -s -X POST -F "parametre=${primal}" http://127.0.0.1:54321/upassport \
-                    > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
+                    > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html
                 [[ ! $? -eq 0 ]] \
-                    && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html 2>/dev/null
-                ## GET UPassport /N1
+                    && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html 2>/dev/null
+                ## CHECK UPassport /N1 : PRIMAL is G1 MEMBER
                 if [[ -d ~/.zen/UPassport/pdf/${primal}/N1 ]]; then
                     cp -Rf ~/.zen/UPassport/pdf/${primal}/N1 \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+                    mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
+                        ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 fi
             else
                 echo "## PRIMAL UPassport already existing"
