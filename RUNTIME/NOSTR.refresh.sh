@@ -162,6 +162,11 @@ for PLAYER in "${NOSTR[@]}"; do
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 [[ ! $? -eq 0 ]] \
                     && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html 2>/dev/null
+                ## GET UPassport /N1
+                if [[ -d ~/.zen/UPassport/pdf/${primal}/N1 ]]; then
+                    cp -Rf ~/.zen/UPassport/pdf/${primal}/N1 \
+                        ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+                fi
             else
                 echo "## PRIMAL UPassport already existing"
                 ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/

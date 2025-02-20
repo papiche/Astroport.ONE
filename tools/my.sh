@@ -471,7 +471,6 @@ my_IPCity() {
 }
 
 IPFSNODEID="$(myIpfsPeerId)"
-[[ ! $MOATS ]] && MOATS="$(myDate)"
 isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
 
