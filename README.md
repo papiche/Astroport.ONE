@@ -70,10 +70,11 @@ Pour créer un joueur, définissez les paramètres suivants : email, salt, peppe
 
 Une fois votre station Astroport démarrée, les ports suivants sont activés :
 
-- **Port 1234** : Publie l'API.
+- **Port 1234** : Publie l'API v1 (/45780, /45781 et /45782 en sont les ports de réponse)
 - **Port 12345** : Publie la carte des stations.
-- **Port 33101** : Publie les G1BILLETS.
+- **Port 33101** : Comande la création G1BILLETS (:33102 permet leur récupération)
 - **Ports 8080, 4001 et 5001** : Ports de la passerelle IPFS.
+- **Port 54321** : Publie l'API v2 ([UPassport](https://github.com/papiche/UPassport/)).
 
 ### Exemples d'Utilisation de l'API
 
