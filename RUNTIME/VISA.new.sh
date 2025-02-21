@@ -189,8 +189,7 @@ mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/${PLAYER}/
 NID="${myIPFS}"
 WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
 
-[[ $isLAN ]] && NID="http://ipfs.localhost:8080" \
-             && WID="http://ipfs.localhost:5001"
+[[ $isLAN ]] && WID="http://ipfs.localhost:5001"
 
 # Create ${PLAYER} "IPNS Key"
 ipfs key rm ${PLAYER} >/dev/null 2>&1
