@@ -1,42 +1,41 @@
-# Bienvenue à Astroport.ONE : Votre Portail Vers un Internet Décentralisé
+# Astroport.ONE : Votre Portail Décentralisé vers une Nouvelle Frontière Numérique
 
-Astroport.ONE n'est pas juste un logiciel ; c'est une plateforme complète et robuste, conçue pour propulser vos données et vos transactions dans l'ère de la décentralisation. Nous combinons la puissance du peer-to-peer et la pérennité d'IPFS avec la sécurité et la transparence de la blockchain Ğ1, offrant une solution sans équivalent pour un stockage de données souverain et des paiements sans intermédiaires.
+**Bienvenue sur Astroport.ONE !** Imaginez un monde numérique où vous avez le contrôle, où les données sont sécurisées, les paiements fluides et la communauté prospère au-delà des frontières. Astroport.ONE construit cet avenir, et vous êtes invité à en faire partie.
 
-## Découvrez Astroport.ONE : Plus Qu'un Simple Logiciel
+**Qu'est-ce qu'Astroport.ONE ?**
 
-Astroport.ONE représente une refonte fondamentale de la gestion de données. En intégrant le Système de Fichiers Interplanétaire (IPFS) et une architecture de Master Boot Record (MBR) pour Tiddlywiki, nous offrons une organisation de l'information d'une précision inégalée. Notre système UPlanet découpe l'espace numérique en segments de 0.01°, assurant que chaque donnée (Tiddler) est enregistrée localement avec une signature unique et vérifiable.
+Astroport.ONE est une plateforme révolutionnaire conçue pour autonomiser les individus et les communautés à l'ère du Web3. C'est plus qu'un simple logiciel ; c'est une boîte à outils pour créer votre propre ambassade numérique décentralisée - une **Station** - où vous pouvez gérer votre identité numérique, participer à une économie décentralisée en utilisant la cryptomonnaie Ğ1 (June), et contribuer à un réseau mondial de stations interconnectées.
 
-Imaginez Astroport.ONE comme votre station spatiale personnelle dans un univers numérique en expansion. Chaque station est une porte d'entrée, une ambassade numérique dans un monde de données interconnectées et sécurisées.
+**Voyez Astroport.ONE comme :**
 
-## Fonctionnalités Essentielles : La Puissance d'Astroport.ONE
+*   **Votre Havre de Données Personnel :** Stockez et gérez vos données en toute sécurité grâce au système de fichiers interplanétaire (IPFS), garantissant ainsi qu'elles résistent à la censure et qu'elles sont toujours accessibles.
+*   **Un Système de Paiement Sans Commission :** Utilisez la cryptomonnaie Ğ1 (June) pour des transactions pair-à-pair sans intermédiaires ni frais, favorisant une économie juste et équitable.
+*   **Un Constructeur de Communauté Numérique :** Connectez-vous avec d'autres Stations Astroport.ONE et utilisateurs à travers le monde, partageant des informations, des ressources, et construisant des réseaux basés sur la confiance.
+*   **Un "Guide de Construction" pour le Web Décentralisé :** Tirez parti de nos outils et logiciels open-source pour créer et déployer vos propres applications et services Web3.
 
-*   **ZenCard et AstroID : Vos Clés d'Accès**
+**Fonctionnalités Principales en un Coup d'Œil :**
 
-    *   **ZenCard** : Un système de paiement innovant basé sur la simplicité et la sécurité des QR Codes.
-    *   **AstroID** : Votre identité numérique, inviolable et sous votre contrôle total.
+*   **ZenCard & AstroID :** Système de paiement simple et sécurisé basé sur QRCode (**ZenCard**) et une solution d'identité numérique robuste (**AstroID**).
+*   **Stockage Décentralisé avec IPFS :** Utilisation d'IPFS pour un stockage de données distribué, résilient et résistant à la censure.
+*   **Intégration de la Cryptomonnaie Ğ1 (June) :** Permet des transactions sans commission et une participation à une économie alternative dynamique.
+*   **Système de Vœux :** Financez collaborativement des idées, des projets et des initiatives communautaires grâce à des dons en Ğ1, encourageant l'action collective.
+*   **Réseau de Stations & Carte :** Chaque installation Astroport.ONE devient une **Station**, contribuant à une carte et un réseau mondiaux, facilitant la découverte et la connexion.
+*   **AstroBots :** Contrats intelligents en BASH déclenchés par des "G1Tag", permettant des contrats intelligents et des applications décentralisées.
 
-*   **Stockage Décentralisé et Organisé**
+**À Qui s'Adresse Astroport.ONE ?**
 
-    *   **IPFS au Cœur** : Bénéficiez d'un stockage distribué, résistant à la censure et aux pannes centralisées.
-    *   **MBR et Table d'Allocation** : Une organisation des données Tiddlywiki optimisée pour la performance et la fiabilité.
+*   **Aux individus recherchant la souveraineté numérique :** Reprenez le contrôle de vos données et de votre présence en ligne.
+*   **Aux communautés construisant des solutions décentralisées :** Créez et gérez des ressources partagées et des projets collaboratifs.
+*   **Aux développeurs et innovateurs :** Explorez le potentiel du Web3 et construisez des applications décentralisées sur une plateforme robuste.
+*   **Aux utilisateurs de la cryptomonnaie Ğ1 (June) :** Améliorez votre expérience Ğ1 avec des paiements sécurisés et un écosystème florissant.
+*   **À toute personne intéressée par un monde numérique plus libre, plus sûr et plus interconnecté.**
 
-*   **Vœux : Les Mots-Clés qui Animent AstroBot**
+**Démarrez avec Astroport.ONE :**
 
-    *   **Système de Vœux** :  Plus que de simples souhaits, les "Vœux" sont des mots-clés que *vous* définissez dans votre TiddlyWiki pour déclencher **AstroBot**, le cœur automatisé d'Astroport.ONE. Ces mots-clés activent des programmes en BASH, des contrats intelligents rudimentaires, qui permettent d'automatiser des actions, de synchroniser des données, ou de réaliser des tâches spécifiques au sein de votre station. Bien que les Vœux puissent être soutenus par des dons en monnaie libre Ğ1, leur fonction première est d'orchestrer l'automatisation via AstroBOT, et non le financement collaboratif.
+**Installation (Linux - Debian/Ubuntu/Mint) :**
 
-*   **Synchronisation et Communication P2P**
+Configurer votre Station Astroport.ONE est facile grâce à notre script d'installation automatisé :
 
-    *   **Stations Astroport.ONE** : Votre station communique et se synchronise avec un réseau d'ambassades numériques, assurant une cohérence et une disponibilité maximales des données.
-    *   **AstroBot : L'Intelligence au Service de Vos Données** : Un système de contrats intelligents en BASH, réagissant aux événements du réseau Ğ1 et aux "Vœux" pour automatiser et optimiser votre expérience.
-    *   **G1PalPay.sh : Le Moniteur de Transactions Ğ1** : Un script crucial qui surveille en temps réel la blockchain Ğ1. Il permet à Astroport.ONE de réagir aux transactions, d'exécuter des commandes basées sur les commentaires de transaction, et de gérer les flux financiers au sein de l'écosystème.
-
-## Installation
-
-### Prérequis
-
-- **Système d'exploitation** : Linux Mint, Ubuntu, Debian
-
-### Script d'Installation
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
