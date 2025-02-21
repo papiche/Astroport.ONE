@@ -1,63 +1,63 @@
-# Astroport.ONE : Votre Portail Décentralisé vers une Nouvelle Frontière Numérique
+# Astroport.ONE: Your Decentralized Portal to a New Digital Frontier
 
-**Bienvenue sur Astroport.ONE !** Imaginez un monde numérique où vous avez le contrôle, où les données sont sécurisées, les paiements fluides et la communauté prospère au-delà des frontières. Astroport.ONE construit cet avenir, et vous êtes invité à en faire partie.
+[FR](README.fr.md) - [ES](README.es.md)
 
-**Qu'est-ce qu'Astroport.ONE ?**
+**Welcome to Astroport.ONE!** Imagine a digital world where you are in control, where data is secure, payments are seamless, and community thrives beyond borders. Astroport.ONE is building this future, and you are invited to be a part of it.
 
-Astroport.ONE est une plateforme révolutionnaire conçue pour autonomiser les individus et les communautés à l'ère du Web3. C'est plus qu'un simple logiciel ; c'est une boîte à outils pour créer votre propre ambassade numérique décentralisée - une **Station** - où vous pouvez gérer votre identité numérique, participer à une économie décentralisée en utilisant la cryptomonnaie Ğ1 (June), et contribuer à un réseau mondial de stations interconnectées.
+**What is Astroport.ONE?**
 
-**Voyez Astroport.ONE comme :**
+Astroport.ONE is a revolutionary platform designed to empower individuals and communities in the Web3 era. It's more than just software; it's a toolkit for creating your own decentralized digital embassy - a **Station** - where you can manage your digital identity, participate in a decentralized economy using the Ğ1 (June) cryptocurrency, and contribute to a global network of interconnected stations.
 
-*   **Votre Havre de Données Personnel :** Stockez et gérez vos données en toute sécurité grâce au système de fichiers interplanétaire (IPFS), garantissant ainsi qu'elles résistent à la censure et qu'elles sont toujours accessibles.
-*   **Un Système de Paiement Sans Commission :** Utilisez la cryptomonnaie Ğ1 (June) pour des transactions pair-à-pair sans intermédiaires ni frais, favorisant une économie juste et équitable.
-*   **Un Constructeur de Communauté Numérique :** Connectez-vous avec d'autres Stations Astroport.ONE et utilisateurs à travers le monde, partageant des informations, des ressources, et construisant des réseaux basés sur la confiance.
-*   **Un "Guide de Construction" pour le Web Décentralisé :** Tirez parti de nos outils et logiciels open-source pour créer et déployer vos propres applications et services Web3.
+**Think of Astroport.ONE as:**
 
+*   **Your Personal Data Haven:** Store and manage your data securely thanks to the InterPlanetary File System (IPFS), ensuring it is censorship-resistant and always accessible.
+*   **A Commission-Free Payment System:** Use the Ğ1 (June) cryptocurrency for peer-to-peer transactions without intermediaries or fees, fostering a fair and equitable economy.
+*   **A Digital Community Builder:** Connect with other Astroport.ONE Stations and users worldwide, sharing information, resources, and building trust-based networks.
+*   **A "Construction Guide" for the Decentralized Web:** Leverage our open-source tools and software to create and deploy your own Web3 applications and services.
 
-## Fonctionnalités Essentielles : La Puissance d'Astroport.ONE
+## Essential Features: The Power of Astroport.ONE
 
-*   **ZenCard et AstroID : Vos Clés d'Accès**
+*   **ZenCard and AstroID: Your Access Keys**
 
-    *   **ZenCard** : Un système de paiement innovant basé sur la simplicité et la sécurité des QR Codes.
-    *   **AstroID** : Votre identité numérique, inviolable et sous votre contrôle total.
+    *   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes.
+    *   **AstroID**: Your digital identity, inviolable and under your complete control.
 
-*   **Stockage Décentralisé et Organisé**
+*   **Decentralized and Organized Storage**
 
-    *   **IPFS au Cœur** : Bénéficiez d'un stockage distribué, résistant à la censure et aux pannes centralisées.
-    *   **MBR et Table d'Allocation** : Une organisation des données Tiddlywiki optimisée pour la performance et la fiabilité.
+    *   **IPFS at its Core**: Benefit from distributed storage, resistant to censorship and centralized failures.
+    *   **MBR and Allocation Table**: A Tiddlywiki data organization optimized for performance and reliability.
 
-*   **Vœux : Les Mots-Clés qui Animent AstroBot**
+*   **Vœux: The Keywords that Animate AstroBot**
 
-    *   **Système de Vœux** :  Plus que de simples souhaits, les "Vœux" sont des mots-clés que *vous* définissez dans votre TiddlyWiki pour déclencher **AstroBot**, le cœur automatisé d'Astroport.ONE. Ces mots-clés activent des programmes en BASH, des contrats intelligents rudimentaires, qui permettent d'automatiser des actions, de synchroniser des données, ou de réaliser des tâches spécifiques au sein de votre station. Bien que les Vœux puissent être soutenus par des dons en monnaie libre Ğ1, leur fonction première est d'orchestrer l'automatisation via AstroBOT, et non le financement collaboratif.
+    *   **Vœux System**: More than just wishes, "Vœux" (Vows) are keywords that *you* define in your TiddlyWiki to trigger **AstroBot**, the automated heart of Astroport.ONE. These keywords activate BASH programs, rudimentary smart contracts, that allow you to automate actions, synchronize data, or perform specific tasks within your station. While Vœux can be supported by donations in the Ğ1 free currency, their primary function is to orchestrate automation via AstroBOT, not collaborative funding.
 
-*   **Synchronisation et Communication P2P**
+*   **Synchronization and P2P Communication**
 
-    *   **Stations Astroport.ONE** : Votre station communique et se synchronise avec un réseau d'ambassades numériques, assurant une cohérence et une disponibilité maximales des données.
-    *   **AstroBot : L'Intelligence au Service de Vos Données** : Un système de contrats intelligents en BASH, réagissant aux événements du réseau Ğ1 et aux "Vœux" pour automatiser et optimiser votre expérience.
-    *   **G1PalPay.sh : Le Moniteur de Transactions Ğ1** : Un script crucial qui surveille en temps réel la blockchain Ğ1. Il permet à Astroport.ONE de réagir aux transactions, d'exécuter des commandes basées sur les commentaires de transaction, et de gérer les flux financiers au sein de l'écosystème.
+    *   **Astroport.ONE Stations**: Your station communicates and synchronizes with a network of digital embassies, ensuring maximum data consistency and availability.
+    *   **AstroBot: Intelligence Serving Your Data**: A system of smart contracts in BASH, reacting to events on the Ğ1 network and to "Vœux" to automate and optimize your experience.
+    *   **G1PalPay.sh: The Ğ1 Transaction Monitor**: A crucial script that monitors the Ğ1 blockchain in real-time. It allows Astroport.ONE to react to transactions, execute commands based on transaction comments, and manage financial flows within the ecosystem.
 
-## **À Qui s'Adresse Astroport.ONE ?**
+## **Who is Astroport.ONE For?**
 
-*   **Aux individus recherchant la souveraineté numérique :** Reprenez le contrôle de vos données et de votre présence en ligne.
-*   **Aux communautés construisant des solutions décentralisées :** Créez et gérez des ressources partagées et des projets collaboratifs.
-*   **Aux développeurs et innovateurs :** Explorez le potentiel du Web3 et construisez des applications décentralisées sur une plateforme robuste.
-*   **Aux utilisateurs de la cryptomonnaie Ğ1 (June) :** Améliorez votre expérience Ğ1 avec des paiements sécurisés et un écosystème florissant.
-*   **À toute personne intéressée par un monde numérique plus libre, plus sûr et plus interconnecté.**
+*   **Individuals seeking digital sovereignty:** Take back control of your data and your online presence.
+*   **Communities building decentralized solutions:** Create and manage shared resources and collaborative projects.
+*   **Developers and innovators:** Explore the potential of Web3 and build decentralized applications on a robust platform.
+*   **Users of the Ğ1 (June) cryptocurrency:** Enhance your Ğ1 experience with secure payments and a thriving ecosystem.
+*   **Anyone interested in a freer, safer, and more interconnected digital world.**
 
-## **Démarrez avec Astroport.ONE :**
+## **Get Started with Astroport.ONE:**
 
-**Installation (Linux - Debian/Ubuntu/Mint) :**
+**Installation (Linux - Debian/Ubuntu/Mint):**
 
-Configurer votre Station Astroport.ONE est facile grâce à notre script d'installation automatisé :
-
+Setting up your Astroport.ONE Station is easy thanks to our automated installation script:
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
 ```
 
-### Processus en Cours d'Exécution
+### Running Processes
 
-Après l'installation, vous devriez trouver les processus suivants en cours d'exécution :
+After installation, you should find the following processes running:
 
 ```
 /usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
@@ -66,58 +66,58 @@ Après l'installation, vous devriez trouver les processus suivants en cours d'ex
 /bin/bash /home/fred/.zen/Astroport.ONE/_12345.sh
 ```
 
-## Utilisation
+## Usage
 
-### Création d'un Joueur
+### Creating a Player
 
-Pour créer un joueur, définissez les paramètres suivants : email, salt, pepper, lat, lon et PASS.
+To create a player, define the following parameters: email, salt, pepper, lat, lon and PASS.
 
 ```bash
 ~/.zen/Astroport.ONE/command.sh
 ```
 
-### API BASH
+### BASH API
 
-Une fois votre station Astroport démarrée, les ports suivants sont activés :
+Once your Astroport station is started, the following ports are activated:
 
-- **Port 1234** : Publie l'API v1 (/45780, /45781 et /45782 en sont les ports de réponse)
-- **Port 12345** : Publie la carte des stations.
-- **Port 33101** : Comande la création G1BILLETS (:33102 permet leur récupération)
-- **Ports 8080, 4001 et 5001** : Ports de la passerelle IPFS.
-- **Port 54321** : Publie l'API v2 ([UPassport](https://github.com/papiche/UPassport/)).
+- **Port 1234**: Publishes API v1 (/45780, /45781 and /45782 are the response ports)
+- **Port 12345**: Publishes the station map.
+- **Port 33101**: Commands the creation of G1BILLETS (:33102 allows their retrieval)
+- **Ports 8080, 4001 and 5001**: IPFS gateway ports.
+- **Port 54321**: Publishes API v2 ([UPassport](https://github.com/papiche/UPassport/)).
 
-### Exemples d'Utilisation de l'API
+### Examples of API Usage
 
-#### Créer un Joueur
+#### Create a Player
 
 ```http
 GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
 ```
 
-#### Lire la Messagerie de la Base GChange
+#### Read GChange Database Messaging
 
 ```http
 GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
 ```
 
-#### Déclencher un Paiement de Ğ1
+#### Trigger a Ğ1 Payment
 
 ```http
 GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
 ```
 
-### Utilisation de l'API UPLANET
+### UPLANET API Usage
 
-L'API `UPLANET.sh` est dédiée aux applications OSM2IPFS et UPlanet Client App. Elle gère les atterrissages UPLANET et la création de ZenCards et AstroIDs.
+The `UPLANET.sh` API is dedicated to OSM2IPFS and UPlanet Client App applications. It manages UPLANET landings and the creation of ZenCards and AstroIDs.
 
-#### Paramètres Requis
+#### Required Parameters
 
-- `uplanet` : Email du joueur.
-- `zlat` : Latitude avec 2 décimales.
-- `zlon` : Longitude avec 2 décimales.
-- `g1pub` : (Facultatif) Langue origine (fr, en, ...)
+- `uplanet`: Player's email.
+- `zlat`: Latitude with 2 decimal places.
+- `zlon`: Longitude with 2 decimal places.
+- `g1pub`: (Optional) Origin language (fr, en, ...)
 
-#### Exemple de Requête
+#### Example Request
 
 ```http
 GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=fr
@@ -125,10 +125,10 @@ GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=fr
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
-| `uplanet` | `email`  | **Requis**. Email du joueur       |
-| `zlat`    | `decimal`| **Requis**. Latitude avec 2 décimales |
-| `zlon`    | `decimal`| **Requis**. Longitude avec 2 décimales |
-| `g1pub`   | `string` | **Facultatif**. Langue origine (fr, en, ...) |
+| `uplanet` | `email`  | **Required**. Player's email       |
+| `zlat`    | `decimal`| **Required**. Latitude with 2 decimal places |
+| `zlon`    | `decimal`| **Required**. Longitude with 2 decimal places |
+| `g1pub`   | `string` | **Optional**. Origin language (fr, en, ...) |
 
 ## DOCUMENTATION
 
@@ -136,16 +136,17 @@ https://astroport-1.gitbook.io/astroport.one/
 
 ## Contribution
 
-Ce projet est [une sélection](https://github.com/papiche/Astroport.solo) de certains des logiciels libres et open source les plus précieux.
+This project is [a selection](https://github.com/papiche/Astroport.solo) of some of the most valuable free and open-source software.
 
-Les contributions sont les bienvenues sur [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
+Contributions are welcome on [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
 
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
 
-## Crédits
+## Credits
 
-Merci à tous ceux qui ont contribué à rendre ce logiciel disponible pour tous. Connaissez-vous [Ğ1](https://monnaie-libre.fr) ?
+Thank you to everyone who has contributed to making this software available to all. Do you know [Ğ1](https://monnaie-libre.fr)?
 
-La meilleure crypto-monnaie dont vous puissiez rêver.
+The best cryptocurrency you could dream of.
+
