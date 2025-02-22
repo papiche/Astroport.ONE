@@ -274,14 +274,12 @@ for PLAYER in ${PLAYERONE[@]}; do
         && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT" \
         && continue
 
-############################################## +2 DAYS REMOVE AstroID !!
+############################################## +1 DAY REMOVE AstroID !!
     ## REMOVE AstroID
-    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 2 ]] \
+    [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 1 ]] \
         && ${MY_PATH}/TW/delete_tiddler.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "AstroID" \
         && rm ~/.zen/tmp/${MOATS}/AstroID.json
-        #~ && echo "(#__#) AstroID & PLAYER IPNS RW REMOVAL (#__#)" \
-        #~ && ipfs key rm ${PLAYER} \
-        #~ && ipfs key rm ${G1PUB}
+
 ####################################################################### RTFM DUMB FIREWALL
 ############################################################################################
 

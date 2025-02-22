@@ -31,18 +31,18 @@ echo "## RUNNING NOSTR.refresh.sh
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
-NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
-
 # Fonction pour détruire une NOSTRCARD
 destroy_nostrcard() {
     local player="$1"
     local g1pubnostr="$2"
     local secnostr="$3"
     local pubnostr="$4"
-    echo "DELETE ${player} NOSTRCARD : $pubnostr"
-    ## REMOVE PROFILE
+    echo "DELETING ${player} NOSTRCARD : $pubnostr"
+
+    ## 1. REMOVE NOSTR PROFILE
     $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
-    ## REMOVE MULTIPASS
+
+    ## 2. REMOVE MULTIPASS
     if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
         echo "/PLAYER.unplug MULTIPASS"
         ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
@@ -62,8 +62,10 @@ destroy_nostrcard() {
 }
 
 ########################################################################
+########################################################################
+NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
-## RUNING FOR ALL LOCAL PLAYERS
+## RUNING FOR ALL LOCAL NOSTR CARDS
 for PLAYER in "${NOSTR[@]}"; do
     echo "\m/_(>_<)_\m/ _______________________________________ ${PLAYER} "
 
@@ -123,15 +125,16 @@ for PLAYER in "${NOSTR[@]}"; do
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
-    #~ EMPTY WALLET or without PRIMAL
+    ########################################################################
+    #~ EMPTY WALLET or without PRIMAL ? (NOT TODATE)
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         echo "EMPTY NOSTR CARD.............."
-        ## TODATE PRESERVATION
         [[ ${TODATE} != $(cat ~/.zen/game/nostr/${PLAYER}/TODATE) ]] \
             && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
         continue
     fi
 
+    ########################################################################
     echo ">>> NOSTR PRIMAL :$pcoins: $primal"
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
@@ -147,11 +150,12 @@ for PLAYER in "${NOSTR[@]}"; do
         #######################################################################
         ## COPY PRIMAL DUNITER/CESIUM METADATA (from "coucou" cache)
         cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-        echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME
+        echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME
 
     fi
 
-    ## REAL UPASSPORT ?
+    ########################################################################
+    ## STATION OFFICIAL UPASSPORT ?
     if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
         ## PRIMAL EXISTS ?
         if [[ ${primal} != "" && ${primal} != "null" ]]; then
@@ -162,7 +166,8 @@ for PLAYER in "${NOSTR[@]}"; do
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html
                 [[ ! $? -eq 0 ]] \
                     && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html 2>/dev/null
-                ## CHECK UPassport /N1 : PRIMAL is G1 MEMBER
+                ################################################
+                ## PRIMAL IS MEMBER : COPY UPassport /N1
                 if [[ -d ~/.zen/UPassport/pdf/${primal}/N1 ]]; then
                     cp -Rf ~/.zen/UPassport/pdf/${primal}/N1 \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
@@ -171,15 +176,18 @@ for PLAYER in "${NOSTR[@]}"; do
                     mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 fi
+                ###############################################
             else
                 echo "## PRIMAL UPassport already existing"
-                ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+                ## SENDING MESSAGE TO MY RELATIONS
+                #~ ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
             fi
         fi
     else
-        echo "## REAL UPASSPORT : ${primal} is STATION co OWNER !!"
+        echo "## OFFICIAL UPASSPORT : ${primal} is STATION co OWNER !!"
     fi
 
+    ########################################################################
     ######### NOSTR PROFILE ACTIVE : CREATING UPASSPORT
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
         echo "######################################## STEP 1"
@@ -229,14 +237,6 @@ for PLAYER in "${NOSTR[@]}"; do
         ## RECORD GPS (for ZenCard activation)
         echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
-        ## HEX COMPARE
-        #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
-        #~ cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null
-
-        ## ADD CORACLE to NOSTRVAULT
-        echo "<meta http-equiv=\"refresh\" content=\"0; url='${CORACLEIPFS}'\" />CORACLE : ${PLAYER}" \
-                > ~/.zen/game/nostr/${PLAYER}/coracle.html
-
     else
         echo "########################################## STEP 2"
         echo "## Nostr Card PROFILE EXISTING"
@@ -264,17 +264,15 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
     fi
 
-
-    ## UPDATE IPNS NOSTRVAULT KEY  (SIDE STORAGE)
+    ########################################################################
+    ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
     echo "${G1PUBNOSTR}:NOSTR ${PLAYER} STORAGE: /ipns/$NOSTRNS"
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
-    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
-    ## TODO : REMOVE from 5001 API
-    #~ ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
+    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null
 
     echo "___________________________________________________"
     sleep 1
