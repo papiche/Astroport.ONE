@@ -68,6 +68,8 @@ echo "REFRESH UNODEs HEX"
 rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE OLD VALUE
 ## Get swarm NODES HEX
 NODEHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
+# Ajouter le HEX de $IPFSNODEID
+NODEHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/HEX 2>/dev/null))
 ## Create
 for nhex in ${NODEHEXLIST[@]}; do
     hex=$(cat $nhex)
@@ -80,7 +82,12 @@ done
 echo "############################################"
 echo "REFRESH UMAPs HEX"
 rm -Rf ~/.zen/game/nostr/UMAP* ## REMOVE OLD VALUE
+# Récupérer la liste des fichiers HEX du swarm
 UMAPHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/dev/null))
+# Ajouter les fichiers HEX $IPFSNODEID
+UMAPHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/dev/null))
+
+# Parcourir tous les fichiers HEX dans UMAPHEXLIST
 for nhex in ${UMAPHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
