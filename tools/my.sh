@@ -538,7 +538,7 @@ FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
 ###########################
 ## VISIO ROOM APP
 ## https://github.com/steveseguin/vdo.ninja
-VDONINJA="/ipfs/QmdGGAukDepUiH63YgnMsvb4BySNPqM2bLz81bx4rjqCJD"
+VDONINJA="/ipfs/QmRq6LusiEG49BA3nsUTQvBmQxUQnY3tjqNM4M66rbBEt7"
 ###########################
 ## CESIUM APP
 ## https://cesium.app
