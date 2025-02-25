@@ -76,19 +76,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## REFRESH ASTRONAUTE TW
     ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
 
-####################################################################################
-######################### TO REMOVE PATCH BAD ${PLAYER}_feed GENERATION
-####################################################################################
-        ipfs key rm "${PLAYER}_feed" 2>/dev/null
-        source ~/.zen/game/players/${PLAYER}/secret.june
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$G1PUB"
-        OLDFEEDNS=$(ipfs key import "${PLAYER}_old" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
-        ipfs key rm "${PLAYER}_old" 2>/dev/null
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $IPFSNODEID"
-        FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
-####################################################################################
-####################################################################################
-
     ############### CANNOT FIND PLAYER KEY ###########
     if [[ ! ${ASTRONAUTENS} ]]; then
 
@@ -115,7 +102,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/
 
     ################### GET LATEST TW
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
+    rm -f ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
     echo "GETTING TW..."
     ####################################################################################################
     ipfs --timeout 480s get --progress=false -o ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html /ipns/${ASTRONAUTENS}
@@ -277,7 +264,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 ############################################## +1 DAY REMOVE AstroID !!
     ## REMOVE AstroID
     [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 1 ]] \
-        && ${MY_PATH}/TW/delete_tiddler.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "AstroID" \
+        && ${MY_PATH}/TW/delete_tiddler.sh "~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" "AstroID" \
         && rm ~/.zen/tmp/${MOATS}/AstroID.json
 
 ####################################################################### RTFM DUMB FIREWALL
@@ -570,10 +557,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     && echo "# CHAIN : ${CURCHAIN} -> ${ZCHAIN}" \
     && [[ ${CURCHAIN} != "" && ${ZCHAIN} != "" ]]  \
     && sed -i "s~${CURCHAIN}~${ZCHAIN}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-    ### TODO REMOVE -- FIXING ${OLDFEEDNS} -- Ustats
-    [[ ! -z ${OLDFEEDNS} && ! -z ${FEEDNS} ]] \
-        && sed -i "s~${OLDFEEDNS}~${FEEDNS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
     ##################################################
     ######## UPDATING ${PLAYER}/ipfs/moa/.chain
