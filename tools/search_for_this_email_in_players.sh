@@ -71,6 +71,9 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     LAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json 2>/dev/null | jq -r .[].lat)
     LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json 2>/dev/null | jq -r .[].lon)
 
+    tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'email.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${EMAIL}"
+    HEX=$(cat ~/.zen/tmp/${MOATS}/email.json 2>/dev/null | jq -r .[].hex)
+
     ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
 
@@ -93,5 +96,5 @@ fi
     #~ && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX source=$source"
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX HEX=$HEX source=$source"
 exit 0
