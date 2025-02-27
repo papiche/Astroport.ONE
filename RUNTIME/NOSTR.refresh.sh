@@ -225,9 +225,10 @@ for PLAYER in "${NOSTR[@]}"; do
             "$description - $city" \
             "$myIPFS/ipfs/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-            "" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
+            "" "$myIPFS${NOSTRNS}" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
             --ipfs_gw "$myIPFS" \
+            --ipns_vault "${NOSTRNS}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?

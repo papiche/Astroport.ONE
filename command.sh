@@ -52,7 +52,7 @@ fi
 echo 'PRESS CTRL+C or ENTER... '; read
 ## CREATE AND OR CONNECT USER
 PS3=' ____ Select  ___ ? '
-players=( "NEW PLAYER" "PRINT ZENCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+players=( "NOSTR Card" "ZEN Card" "PRINT ZENCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 ## MULTIPLAYER
 
 select fav in "${players[@]}"; do
@@ -70,14 +70,28 @@ select fav in "${players[@]}"; do
         [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
         echo "'PIN ?'"
         read PASS
+
         echo "${MY_PATH}/tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
         ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
 
-         [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] && rm -Rf ~/.zen/game/players/${EMAIL}/
+        [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] \
+            && rm -Rf ~/.zen/game/players/${EMAIL}/
 
         exit
         ;;
-    "NEW PLAYER")
+    "NOSTR Card")
+        echo "'Email ?'"
+        read EMAIL
+        [[ ${EMAIL} == "" ]] && break
+
+        echo "Creating NOSTR Card .........."
+        ${MY_PATH}/tools/make_NOSTRCARD.sh "${EMAIL}" "${MY_PATH}/images/TV.png"
+
+        xdg-open ~/.zen/game/nostr/${EMAIL}/.nostr.zine.html
+
+        exit
+        ;;
+    "ZEN Card")
         echo "'Email ?'"
         read EMAIL
         [[ ${EMAIL} == "" ]] && break
@@ -95,6 +109,7 @@ select fav in "${players[@]}"; do
         echo "'Longitude ?'"
         read LON
         [[ ${LON} == "" ]] && LON="0.00"
+
         echo "${MY_PATH}/RUNTIME/VISA.new.sh" "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}"
         ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}"
         fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO

@@ -652,6 +652,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipfs/${IRSS}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.feed.html
 
+    ######################################################
+    ## Transfer NOSTR Card HEX
+    cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null \
+        > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}.hex
 
     ######################### REPLACE TW with REDIRECT to latest IPFS or IPNS (reduce 12345 cache size)
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"

@@ -612,7 +612,7 @@ fi
 rm -Rf ~/.zen/tmp/${MOATS}
 
 #####################################################################"
-
+## FIRST ACCOUNT IS CAPTAIN
 ## CHECK .current
 [[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
 && rm ~/.zen/game/players/.current 2>/dev/null \

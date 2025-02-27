@@ -14,7 +14,7 @@ fi
 mkdir -p ~/.zen/game
 
 ## CE SCRIPT ASSURE LA COHERENCE CRYPTO ENTRE USER SSH ET IPFSNODEID
-## A CAPTAIN IS ACTIVATING ASTROPORT or PLAYER joining DRAGON "ipfs p2p"
+## CAPTAIN ACTIVATING ASTROPORT / PLAYER joining DRAGON "ipfs p2p"
 ## Convert SSH key into IPFS key (Node ID) & USER NEW SSH ASTROPORT KEY
 
 if [[ -s ~/.ssh/id_ed25519 ]]; then
