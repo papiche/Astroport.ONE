@@ -23,6 +23,7 @@ if [[ ! -d ~/.zen/UPassport ]]; then
     ./setup_systemd.sh
 
     ## CREATE .env
+    # Ǧinspecte : https://ginspecte.mithril.re/
 cat > .env <<EOL
 myDUNITER="https://g1.cgeek.fr"
 myCESIUM="https://g1.data.e-is.pro"
@@ -30,7 +31,12 @@ ipfsNODE="$myIPFS"
 CESIUMAPPIPFS="$CESIUMIPFS"
 OBSkey="null"
 EOL
-    ## BAXK TO
+
+    echo "############################################################"
+    echo "# Adapt .env using Ǧinspecte : https://ginspecte.mithril.re/"
+    echo "############################################################"
+    cat .env
+    ## BACK TO
     cd -
 
 else
