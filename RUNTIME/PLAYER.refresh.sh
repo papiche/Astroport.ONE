@@ -320,18 +320,18 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     #####################################################################
     # MAKE "CESIUM" TIDDLER
-    if [[ "${days}" -gt "4" ]]; then
-        echo "Create CESIUM Tiddler"
-        cat ${MY_PATH}/../templates/data/CESIUM.json \
-            | sed -e "s~_G1PUB_~${G1PUB}~g" \
-            -e "s~_MOATS_~${MOATS}~g" \
-            -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
-            -e "s~_PLAYER_~${PLAYER}~g" \
-                > ~/.zen/tmp/${MOATS}/CESIUM.json
+    #~ if [[ "${days}" -gt "4" ]]; then
+        #~ echo "Create CESIUM Tiddler"
+        #~ cat ${MY_PATH}/../templates/data/CESIUM.json \
+            #~ | sed -e "s~_G1PUB_~${G1PUB}~g" \
+            #~ -e "s~_MOATS_~${MOATS}~g" \
+            #~ -e "s~_CESIUMIPFS_~${CESIUMIPFS}~g" \
+            #~ -e "s~_PLAYER_~${PLAYER}~g" \
+                #~ > ~/.zen/tmp/${MOATS}/CESIUM.json
 
-    else
-        echo "[]" > ~/.zen/tmp/${MOATS}/CESIUM.json
-    fi
+    #~ else
+        #~ echo "[]" > ~/.zen/tmp/${MOATS}/CESIUM.json
+    #~ fi
     #####################################################################
     ########## $:/moa picture ## CREATE EMAIL from email tiddler ########
     ## GET $:/moa Tagged Tiddlers ################################# START
@@ -504,7 +504,6 @@ for PLAYER in ${PLAYERONE[@]}; do
                 --import ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/GPS.json "application/json" \
                 --import ~/.zen/tmp/${MOATS}/VISIO.json "application/json" \
-                --import ~/.zen/tmp/${MOATS}/CESIUM.json "application/json" \
                 --output ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} --render "$:/core/save/all" "newindex.html" "text/plain"
 
     ## CHECK IT IS OK
