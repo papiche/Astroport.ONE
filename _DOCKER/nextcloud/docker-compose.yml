@@ -1,39 +1,26 @@
-version: "3"
-volumes:
-  nextcloud-data:
-  nextcloud-db:
-
-networks:
-  frontend:
-    # add this if the network is already existing!
-    # external: true
-  backend:
+version: '3.8'
 
 services:
-  nextcloud-app:
-    image: nextcloud
+  nextcloud-aio-mastercontainer:
+    image: nextcloud/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
     restart: always
-    volumes:
-      - nextcloud-data:/var/www/html
+    init: true
+    ports:
+      - "8008:80"
+      - "8002:8080"
+      - "8443:8443"
     environment:
-      - MYSQL_PASSWORD=replace-with-secure-password
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_HOST=nextcloud-db
-    networks:
-      - frontend
-      - backend
+      - SKIP_DOMAIN_VALIDATION=true
+      - APACHE_PORT=8001
+      - APACHE_IP_BINDING=0.0.0.0
+      - NEXTCLOUD_DATADIR=/nextcloud-data
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
-  nextcloud-db:
-    image: mariadb
-    restart: always
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
-    volumes:
-      - nextcloud-db:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=replace-with-secure-password
-      - MYSQL_PASSWORD=replace-with-secure-password
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-    networks:
-      - backend
+volumes:
+  nextcloud_aio_mastercontainer:
