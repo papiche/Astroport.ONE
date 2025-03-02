@@ -39,8 +39,8 @@ services:
     - 0.0.0.0:9220:9220
     restart: unless-stopped
     volumes:
-    - data:/var/lib/duniter
-    - etc:/etc/duniter
+    - ~/.zen/duniter/data:/var/lib/duniter
+    - ~/.zen/duniter/etc:/etc/duniter
 
 networks:
   private:
