@@ -599,14 +599,19 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "MULTIPASS"
 
-### SEND WELCOMING G1 (only for secret UPlanet)
-if [[ -s ~/.ipfs/swarm.key ]]; then
-    YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-    && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
-    && echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
-    && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
-fi
+### SEND INITIAL G1
+
+YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+&& ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
+&& echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+&& rm ~/.zen/tmp/${MOATS}/${MOATS}.key
+
+#####################################################################"
+### CREATE NEXTCLOUD ACCOUNT
+sudo docker exec -e OC_PASS="${PEPPER}" --user www-data -it nextcloud-aio-nextcloud \
+    php occ user:add --password-from-env --display-name="$PSEUDO" ${PLAYER}
+#####################################################################"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}

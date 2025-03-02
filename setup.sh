@@ -47,7 +47,7 @@ mkdir -p ~/.zen/tmp
 ## USED FOR SYSTEM UPGRADE
 ## USED FOR "systemctl restart ipfs"
 ## USED FOR "sudo youtube-dl -U"
-for bin in fail2ban-client mount umount apt-get apt systemctl yt-dlp; do
+for bin in fail2ban-client mount umount apt-get apt systemctl docker; do
 binpath=$(which $bin)
 [[ -x $binpath ]] \
     && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \

@@ -85,6 +85,9 @@ rm -Rf ~/.zen/game/players/${PLAYER-empty}
 echo "CLEANING NODE CACHE ~/.zen/tmp/${IPFSNODEID-empty}/*/${PLAYER-empty}*"
 rm -Rf ~/.zen/tmp/${IPFSNODEID-empty}/*/${PLAYER-empty}*
 
+##################### REMOVE NEXTCLOUD ACCOUNT
+sudo docker exec --user www-data -it nextcloud-aio-nextcloud php occ user:delete ${PLAYER}
+
 echo "CLEANING SESSION CACHE"
 rm -Rf ~/.zen/tmp/${MOATS}
 
