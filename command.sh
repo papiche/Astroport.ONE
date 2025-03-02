@@ -109,9 +109,12 @@ select fav in "${players[@]}"; do
         echo "'Longitude ?'"
         read LON
         [[ ${LON} == "" ]] && LON="0.00"
+        echo "'NPUB (NOSTR Card) ?'"
+        read NPUB
+        [[ ${NPUB} != "" ]] && HEX=$(${MY_PATH}/tools/nostr2hex.py $NPUB)
 
-        echo "${MY_PATH}/RUNTIME/VISA.new.sh" "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}"
-        ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}"
+        echo "${MY_PATH}/RUNTIME/VISA.new.sh" "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}" "${HEX}"
+        ${MY_PATH}/RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "fr" "${LAT}" "${LON}" "${HEX}"
         fav=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null) && rm ~/.zen/tmp/PSEUDO
         echo "Astronaute $fav bienvenue sur UPlanet..."
         exit
