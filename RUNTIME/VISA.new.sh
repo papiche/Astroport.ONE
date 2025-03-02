@@ -612,7 +612,7 @@ ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPL
 SALT_PART=$(echo "$SALT" | awk '{print toupper(substr($1,1,1)) substr($1,2)}')
 PEPPER_PART=$(echo "$PEPPER" | awk '{print toupper(substr($1,1,1)) substr($1,2)}')
 sudo docker exec -e OC_PASS="${PASS}${SALT_PART}${PEPPER_PART}" --user www-data -it nextcloud-aio-nextcloud \
-    php occ user:add --password-from-env --display-name="$PSEUDO" ${PLAYER}
+    php occ user:add --password-from-env --display-name="$PSEUDO" --email ${PLAYER} ${YOUSER}
 #####################################################################"
 
 ## CLEANING CACHE
