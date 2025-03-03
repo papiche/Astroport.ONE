@@ -84,12 +84,14 @@ fi
 [[ ! $PLAYER ]] && echo "(╥☁╥ ) No player. Please Login" && exit 1
 
 # NOT CURRENT PLAYER (CHECK FOR TW & KEY)
-[[ $(ipfs key list -l | grep -w $G1PUB) ]] \
-&& echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"  \
-&& ASTRONS=$($MY_PATH/g1_to_ipfs.py "$G1PUB") \
-&& $MY_PATH/TW.cache.sh ${ASTRONS} ${MOATS} \
-|| echo "(╥☁╥ ) I cannot help you"
-
+if [[ $(ipfs key list -l | grep -w $G1PUB) ]]; then
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    echo "(ᵔ◡◡ᵔ) INVITATION $G1PUB"
+    ASTRONS=$($MY_PATH/g1_to_ipfs.py "$G1PUB")
+    $MY_PATH/TW.cache.sh ${ASTRONS} ${MOATS}
+else
+    echo "(╥☁╥ ) I cannot help you"
+fi
 ########################################################################
 ## Indicate IPFSNODEID copying
 mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}
@@ -347,8 +349,6 @@ then
 ]
 ' >> ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
-echo "~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json copy into Station Balise"
-
 #############################################################################
 ## ARCHIVE FOR IPFSNODEID CACHE SHARING (APPNAME=KEY)
 #~ mkdir -p "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/"
@@ -384,6 +384,9 @@ echo "########################################################################"
 
 
 [[ ! $3 ]] && zenity --warning --width 300 --text "Votre MEDIA a rejoint ASTROPORT en `expr $end - $start` secondes"
+
+## last line catching
+echo "~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json"
 
 exit 0
 

@@ -16,55 +16,57 @@ start=$(date +%s)
 if [[ ${IPFSNODEID} == "" ]]; then
     IPFSNODEID=$(ipfs --timeout 12s id -f='<id>\n')
 fi
-            ## GETTING LAST TW via IPFS
-            echo "${ME} : IPFS : ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS}"\
-            && ipfs --timeout 360s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html
 
-             ## GETTING LAST TW via HTTP
-            #~ [[ ! -s ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ]] \
-            #~ && echo "${ME} : WWW : $myTUBE/ipns/${ASTRONAUTENS}" \
-            #~ && curl -m 60 -so ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html "$myTUBE/ipns/${ASTRONAUTENS}" \
-            #~ || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$myTUBE/ipns/${ASTRONAUTENS}" ## Ask caching
+## GETTING LAST TW via IPFS
+echo "${ME} : IPFS : ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS}"\
+&& ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html
 
-        ### GOT TW !!
-        if [[ -s ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ]]; then
-            echo "${ME} : GOT TW !!"
+    ## GETTING LAST TW via HTTP
+    #~ [[ ! -s ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ]] \
+    #~ && echo "${ME} : WWW : $myTUBE/ipns/${ASTRONAUTENS}" \
+    #~ && curl -m 60 -so ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html "$myTUBE/ipns/${ASTRONAUTENS}" \
+    #~ || curl -m 1 -so ~/.zen/tmp/${MOATS}.html "$myTUBE/ipns/${ASTRONAUTENS}" ## Ask caching
 
-            tiddlywiki --load ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' ${MOATS}'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
-            [[ ! -s ~/.zen/tmp/${MOATS}MadeInZion.json ]] && echo "${ME} : BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && exit 1
+### GOT TW !!
+if [[ -s ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ]]; then
+    echo "${ME} : GOT TW !!"
 
-            PLAYER=$(cat ~/.zen/tmp/${MOATS}MadeInZion.json | jq -r .[].player)
+    tiddlywiki --load ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' ${MOATS}'MadeInZion.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'MadeInZion'
+    [[ ! -s ~/.zen/tmp/${MOATS}MadeInZion.json ]] && echo "${ME} : BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && exit 1
 
-            ## EMAIL STYLE
-            if [[ "${PLAYER}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-                echo "${ME} : VALID PLAYER (✜‿‿✜) $PLAYER "
+    PLAYER=$(cat ~/.zen/tmp/${MOATS}MadeInZion.json | jq -r .[].player)
 
-                tiddlywiki --load ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' ${MOATS}'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-                [[ ! -s ~/.zen/tmp/${MOATS}Astroport.json ]] && echo "${ME} : BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && exit 1
+    ## EMAIL STYLE
+    if [[ "${PLAYER}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        echo "${ME} : VALID PLAYER (✜‿‿✜) $PLAYER "
 
-                ## EXPORT PLAYER VALUE TO CALLING SCRIPT
-                export PLAYER=$PLAYER
+        tiddlywiki --load ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html  --output ~/.zen/tmp --render '.' ${MOATS}'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+        [[ ! -s ~/.zen/tmp/${MOATS}Astroport.json ]] && echo "${ME} : BAD TW (☓‿‿☓) Execution time was "`expr $(date +%s) - $start` seconds. && exit 1
 
-            else
-                echo "${ME} : BAD PLAYER"
-                echo "${ME} : KO ${PLAYER} : (#__#) '" && exit 1
-            fi
+        ## EXPORT PLAYER VALUE TO CALLING SCRIPT
+        export PLAYER=$PLAYER
 
-            ## IN CACHE
-            echo "${ME} : CACHING ~/.zen/tmp/${IPFSNODEID}/$PLAYER/"
-            mkdir -p ~/.zen/tmp/${IPFSNODEID}/$PLAYER/
-            cp -f ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ~/.zen/tmp/${IPFSNODEID}/$PLAYER/index.html \
-            && rm ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html
+    else
+        echo "${ME} : BAD PLAYER"
+        echo "${ME} : KO ${PLAYER} : (#__#) '" && exit 1
+    fi
 
-        ### NO TW !!
-        else
+    ## IN CACHE
+    echo "${ME} : CACHING ~/.zen/tmp/${IPFSNODEID}/$PLAYER/"
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/$PLAYER/
+    cp -f ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html ~/.zen/tmp/${IPFSNODEID}/$PLAYER/index.html \
+    && rm ~/.zen/tmp/${MOATS}/${MOATS}.astroindex.html
 
-            echo "${ME} : (-__-) NOTHING (-__-)"
+### NO TW !!
+else
 
-        fi
+    echo "${ME} : (-__-) NOTHING (-__-)"
+
+fi
 
 dur=`expr $(date +%s) - $start`
-[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && espeak "$dur seconds for $(cat ~/.zen/tmp/${MOATS}Astroport.json | jq -r .[].pseudo) TW caching"
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] \
+    && espeak "$dur seconds for $(cat ~/.zen/tmp/${MOATS}Astroport.json | jq -r .[].pseudo) TW caching"
 
 echo "${ME} : (0‿‿0) Execution time was $dur seconds."
 exit 0

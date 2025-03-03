@@ -267,7 +267,7 @@ echo $LINE
 YID=$(echo "$LINE" | cut -d '&' -f 1)
 TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
 
-/usr/local/bin/youtube-dl -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
+        yt-dlp -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
             --no-playlist \
             $BROWSER --verbose \
             --download-archive $HOME/.zen/.yt-dlp.list \
@@ -280,7 +280,9 @@ TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
         if [[ -z $DFILE ]]; then
             ## SECOND TRY
             espeak "first download failed... trying again"
-            /usr/local/bin/youtube-dl --no-playlist $BROWSER --download-archive $HOME/.zen/.yt-dlp.list -S res,ext:mp4:m4a --no-mtime --embed-thumbnail --add-metadata -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
+            yt-dlp --no-playlist $BROWSER \
+                    -S res,ext:mp4:m4a --no-mtime --embed-thumbnail \
+                    --add-metadata -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
         fi
 
         DFILE=$(ls ${YTEMP}/*.mp4)
@@ -796,6 +798,7 @@ if [[ ! -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]];
     ## CREATE BASH SCRIPT
 
     echo "MEDIAKEY=${MEDIAKEY}" > ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
+    echo 'exec 2>&1 >> ~/.zen/tmp/ajouter_media.log' >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
 
     ## ACTIVATE h265 conversion .?
     #[[ $CHOICE == "TMDB" ]] && echo "echo \"Encoder ${FILE_NAME} en h265 avant import ? Tapez sur ENTER.. Sinon saisissez qqch avant...\"
@@ -855,7 +858,7 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
         && ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/astronaut_TW.html
     #~ [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/astronaut_TW.html "$LIBRA/ipns/${ASTRONAUTENS}"
     [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
-    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] &&  espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
+    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] && espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
     ## TODO : CHECK CACHE LAST MODIFIED
     echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
 
@@ -865,36 +868,34 @@ if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; t
     || espeak "USING LOCAL COPY"
     ###############################
 
-    echo "Nouveau MEDIAKEY dans TW $PSEUDO / ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
+    echo "Adding ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
+    To TW $PSEUDO / ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
     tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-                    --import ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
-                    --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
+                --import ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
+                --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
 
     if [[ -s ~/.zen/tmp/newindex.html ]]; then
 
-            NEWTW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
-            ################################################
-            ## UPDATE TW CHAIN WITH PREVIOUSLY RECORDED CHAIN
-            tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-                --output ~/.zen/tmp/${MOATS} \
-                --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-            ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-            CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
-            [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
-            echo "CURCHAIN=$CURCHAIN"
+        NEWTW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
+        ################################################
+        ## UPDATE TW CHAIN WITH PREVIOUSLY RECORDED CHAIN
+        tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
+            --output ~/.zen/tmp/${MOATS} \
+            --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
+        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
+        CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
+        [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
+        echo "CURCHAIN=$CURCHAIN"
 
-            echo "$MOATS" > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-            cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-                ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
-            echo "$NEWTW" > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+        echo "$MOATS" > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+        cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
+            ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
+        echo "$NEWTW" > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
 
-            echo "# CHAIN : $CURCHAIN -> $NEWTW"
-            sed -i "s~$CURCHAIN~$NEWTW~g" ~/.zen/tmp/newindex.html
-            ################################################
-            cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-        mv ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json \
-            ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MOATS}.dragdrop.json
+        echo "# CHAIN : $CURCHAIN -> $NEWTW"
+        sed -i "s~$CURCHAIN~$NEWTW~g" ~/.zen/tmp/newindex.html
+        ################################################
+        cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
         espeak "I P N S Publishing. Please wait..."
         ipfs name publish --key=${PLAYER} /ipfs/$NEWTW
