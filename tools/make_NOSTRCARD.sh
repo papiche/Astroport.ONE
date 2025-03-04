@@ -61,8 +61,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
+    [[ "${IMAGE}" =~ ^[a-z]{2}$ ]] && LANG="${IMAGE}" || LANG="fr" ## Contains IMAGE or Navigator language
 
+    ##########################################################################
+    echo "${LANG}" > ${HOME}/.zen/game/nostr/${EMAIL}/LANG ## COPY LANG
     echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX ## COPY HEX
+    echo "$NPUBLIC" > ${HOME}/.zen/game/nostr/${EMAIL}/NPUB ## COPY NPUB
     ##########################################################################
     ### CRYPTO ZONE
     ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
@@ -159,7 +163,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘]" "${G1PUBNOSTR}" \
-        "NEW NOSTR Card ... waiting for Ğ1 activation ..." \
+        "⏰ NOSTR Card ... 🪙 ..." \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \

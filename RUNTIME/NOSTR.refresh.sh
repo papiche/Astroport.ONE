@@ -251,9 +251,12 @@ for PLAYER in "${NOSTR[@]}"; do
             PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
             NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
 
+            ## GET LANG FROM NOSTR CARD
+            LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+            [[ -z $LANG ]] && LANG="fr"
             ## CREATE ASTRONAUTE TW ZENCARD
             echo "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
-            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}" "$NPUB" "$HEX"
+            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
         else
 
