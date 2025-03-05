@@ -140,6 +140,7 @@ for PLAYER in "${NOSTR[@]}"; do
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
     echo "IPNS VAULT : ${myIPFS}${NOSTRNS}"
     VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
+    echo "VAULTFS : ${myIPFS}${VAULTFS}"
 
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
@@ -255,7 +256,7 @@ for PLAYER in "${NOSTR[@]}"; do
             LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
             [[ -z $LANG ]] && LANG="fr"
             ## CREATE ASTRONAUTE TW ZENCARD
-            echo "${PLAYER}" "UPlanet" "fr" "${LAT}" "${LON}"
+            echo "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}"
             ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
         else
@@ -276,7 +277,7 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "${G1PUBNOSTR}:NOSTR ${PLAYER} STORAGE: /ipns/$NOSTRNS"
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
-    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null
+    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
 
     echo "___________________________________________________"
     sleep 1
