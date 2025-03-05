@@ -303,13 +303,13 @@ while true; do
 
         # Scan IPFSNODEID cache
         ls ~/.zen/tmp/${IPFSNODEID}/
-        BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
+        BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | awk '{print $1}')
 
         ## IPFS GET LAST ONLINE IPFSNODEID MAP
         rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
         mkdir -p ~/.zen/tmp/_${IPFSNODEID}
         ipfs get --progress="false" -o ~/.zen/tmp/_${IPFSNODEID}/ /ipns/${IPFSNODEID}/
-        NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | xargs | cut -f 1)
+        NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | xargs | awk '{print $1}')
 
         ### CHECK IF SIZE DIFFERENCE ?
         ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
