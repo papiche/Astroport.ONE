@@ -249,8 +249,8 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
             echo "## MULTIPASS ZenCard creation "
             source ~/.zen/game/nostr/${PLAYER}/GPS
-            PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
-            NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+            PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+            NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
 
             ## GET LANG FROM NOSTR CARD
             LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
