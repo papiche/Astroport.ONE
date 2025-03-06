@@ -172,7 +172,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 if [[ -d ~/.zen/UPassport/pdf/${primal}/N1 ]]; then
                     cp -Rf ~/.zen/UPassport/pdf/${primal}/N1 \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-                    cp ~/.zen/UPassport/pdf/${primal}/*.pdf \
+                    cp ~/.zen/UPassport/pdf/${primal}/*.* \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
                     mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
