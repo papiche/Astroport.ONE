@@ -58,7 +58,7 @@ done
 echo "#############################################"
 echo "######### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-tk; do
+for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-tk ssss; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -182,51 +182,16 @@ cd -
 
 echo
 
-#####################
-#### ~/.bashrc
-echo "########################### ♥BOX ~/.bashrc"
-sudo ln -f -s /usr/bin/python3 /usr/bin/python
-
-while IFS= read -r line
-do
-    echo "$line" >> ~/.bashrc
-done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
-
-## EXTEND PATH
-echo '#############################################################
-export PATH=$HOME/.local/bin:/usr/games:$PATH
-
-## Activate python env
-. $HOME/.astro/bin/activate
-. $HOME/.zen/Astroport.ONE/tools/my.sh
-
-echo "IPFSNODEID=$IPFSNODEID"
-cowsay $(hostname) on UPLANET ${UPLANETG1PUB:0:8}
-echo "CAPTAIN: $CAPTAINEMAIL"' >> ~/.bashrc
-
-source ~/.bashrc
-
-echo "<<< UPDATED>>> PATH=$PATH"
-
-echo
-echo "#############################################"
-echo "######### SYSTEM SETUP  #########################"
-echo "#############################################"
-
-echo "=== SETUP IPFS"
-~/.zen/Astroport.ONE/tools/ipfs_setup.sh
-echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
-
-echo "=== SETUP ASTROPORT"
-~/.zen/Astroport.ONE/setup.sh
-
 ###############################################################
 echo "##  ADDING lazydocker ================"
 ### ADD TO DOCKER GROUP
 sudo usermod -aG docker $USER
 # INSTALL lazydocker GUI
 ${MY_PATH}/install.lazydocker.sh
+
 ###############################################################
+echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
+~/.zen/Astroport.ONE/youtube-dl.sh
 
 end=`date +%s`
 echo Installation time was `expr $end - $start` seconds.
@@ -252,39 +217,8 @@ echo "* WEB : http://astroport.localhost:1234/"
 echo "* CLI : ~/.zen/Astroport.ONE/command.sh"
 echo "#############################################"
 
-##########################################################
-## ON BOARDING PLAYER
-echo "#############################################"
-# ACTIVATING ASTROPORT DAEMONS
-echo ">>> SWITHCIN ASTROPORT ON <<<
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
-
-echo "############################## ♥BOX READY ###"
-espeak "Welcome Web 3 Astronaut" 2>/dev/null
-echo ">>> Welcome Web3 Astronaut <<<"
-PS3="Select Mode ? "
-choices=("COMMAND" "TRANSMUTE")
-select fav in  "${choices[@]}"; do
-    case $fav in
-    "COMMAND")
-        ~/.zen/Astroport.ONE/command.sh
-
-        break
-        ;;
-
-    "TRANSMUTE")
-        ~/.zen/Astroport.ONE/tools/Ylevel.sh
-
-        break
-        ;;
-
-    "")
-        echo "BAD CHOICE"
-        ;;
-
-    esac
-done
+echo "=== SETUP ASTROPORT"
+~/.zen/Astroport.ONE/setup.sh
 
 
 else

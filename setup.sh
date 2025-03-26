@@ -8,6 +8,42 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+echo
+echo "#############################################"
+echo "######### IPFS SETUP  #########################"
+echo "#############################################"
+
+echo "=== SETUP IPFS"
+~/.zen/Astroport.ONE/ipfs_setup.sh
+echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
+
+#####################
+#### ~/.bashrc
+echo "########################### Updating ♥BOX ~/.bashrc"
+sudo ln -f -s /usr/bin/python3 /usr/bin/python
+
+while IFS= read -r line
+do
+    echo "$line" >> ~/.bashrc
+done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
+
+## EXTEND PATH
+echo '#############################################################
+export PATH=$HOME/.local/bin:/usr/games:$PATH
+
+## Activate python env
+. $HOME/.astro/bin/activate
+. $HOME/.zen/Astroport.ONE/tools/my.sh
+
+echo "IPFSNODEID=$IPFSNODEID"
+cowsay $(hostname) on UPLANET ${UPLANETG1PUB:0:8}
+echo "CAPTAIN: $CAPTAINEMAIL"' >> ~/.bashrc
+
+source ~/.bashrc
+
+echo "<<< UPDATED>>> PATH=$PATH"
+
+
 echo "#############################################"
 echo ">>>>>>>>>>> SYSTEM SETUP  "
 echo "#############################################"
@@ -124,12 +160,6 @@ if [[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     sudo cp /tmp/hosts /etc/hosts && rm /tmp/hosts
 fi
 
-### ADD 20h12.sh CRON ###############
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
-
-echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
-~/.zen/Astroport.ONE/youtube-dl.sh
-
 echo "... Optimizing security into /etc/ssh/sshd_config"
 # Sauvegarde du fichier original
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
@@ -143,3 +173,18 @@ sudo sed -i 's/^.*X11Forwarding .*/X11Forwarding yes/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ClientAliveInterval .*/ClientAliveInterval 60/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_config
 
+echo "####################### YLEVEL ACTIVATION "
+~/.zen/Astroport.ONE/tools/Ylevel.sh
+
+# ACTIVATING ASTROPORT CRON
+echo ">>> SWITHCIN ASTROPORT ON <<<
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
+~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
+
+echo "############################## ♥BOX READY ###"
+##########################################################
+## ON BOARDING PLAYER
+echo "############################### ON BOARDING"
+espeak "Welcome CAPTAIN" 2>/dev/null
+echo ">>> Create CAPTAIN Account <<<"
+~/.zen/Astroport.ONE/command.sh

@@ -87,13 +87,12 @@ CPUAffinity=0-1
 WantedBy=multi-user.target
 EOF
 
-    ## LAN is dhtclient only
-    [[ ! $isLAN ]] \
-        && sed -i "s/--routing=dhtclient//g" /tmp/ipfs.service
+## LAN is dhtclient only
+[[ ! $isLAN ]] \
+    && sed -i "s/--routing=dhtclient//g" /tmp/ipfs.service
 
-    sudo cp -f /tmp/ipfs.service /etc/systemd/system/
-    sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/ipfs.service
-
+sudo cp -f /tmp/ipfs.service /etc/systemd/system/
+sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/ipfs.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable ipfs

@@ -1,0 +1,630 @@
+#!/usr/bin/env python3
+# keygen-ng: Decentralized Passwordless Key Generator for 3-Tier Trust (with Duniter Twin Keys)
+
+# Copyleft 2024 [Your Name/Organization]
+# Based on keygen by Yann Autissier and contributors (Copyleft 2022)
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+import argparse
+import base58
+import base64
+import configparser
+import os
+import re
+import sys
+import warnings
+import hashlib
+import logging as log
+
+from cryptography.hazmat.primitives.asymmetric import ed25519, x25519 # For Ed25519 and Curve25519 (WireGuard)
+from cryptography.hazmat.primitives import serialization
+from jwcrypto import jwk # JWK format
+import nacl.bindings # Low-level NaCl bindings (used by duniterpy, good for seed)
+import pgpy # PGP key handling
+import pynentry # Password entry
+import bech32 # Bech32 encoding (Nostr)
+from ecdsa import SigningKey, SECP256k1 # SECP256k1 for Nostr
+import ssss # Shamir Secret Sharing Scheme
+
+__version__ = '0.2.1' # Version mise à jour
+
+class KeyGenerator:
+    def __init__(self, args):
+        self.args = args
+        self.config = self._load_config()
+        self.master_seed = None # Seed de base pour la dérivation
+        self.keys = {} # Dictionnaire pour stocker les clés générées
+        self.sss_shares = None # Parts SSS si activé
+
+    def _load_config(self):
+        config = configparser.RawConfigParser()
+        config_dir = os.path.join(os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config')), 'keygen-ng')
+        config.read([config_dir + '/keygen.conf']) # Nom de fichier de config mis à jour
+        return config
+
+    def _setup_logging(self):
+        log_format = '%(asctime)s %(levelname)s: %(message)s'
+        log_datefmt = '%Y/%m/%d %H:%M:%S'
+        log_level = log.WARNING # Default level
+        if self.args.debug:
+            log_level = log.DEBUG
+        elif self.args.quiet:
+            log_level = log.ERROR
+        elif self.args.verbose:
+            log_level = log.INFO
+        log.basicConfig(format=log_format, datefmt=log_datefmt, level=log_level)
+
+    def _get_master_seed(self):
+        """Récupère ou génère la seed de base en fonction des arguments."""
+        if self.args.input:
+            self.master_seed = self._seed_from_input_file(self.args.input, password=self.args.password)
+        elif self.args.gpg:
+            self.master_seed = self._seed_from_gpg(self.args.username, password=self.args.password)
+        elif self.args.mnemonic:
+            self.master_seed = self._seed_from_mnemonic(self.args.username)
+        elif self.args.username and self.args.password:
+            self.master_seed = self._seed_from_credentials(self.args.username, self.args.password)
+        else:
+            raise ValueError("Input source for seed not specified correctly.")
+
+        log.debug(f"Master Seed (hex): {self.master_seed.hex()}")
+
+    def _seed_from_credentials(self, username, password):
+        """Dérive la seed à partir d'un nom d'utilisateur et mot de passe (méthode Duniter)."""
+        try:
+            from duniterpy.key import SigningKey, scrypt_params # Import seulement si nécessaire
+            scrypt_params_obj = scrypt_params.ScryptParams(
+                int(self.config.get('scrypt', 'n')) if self.config.has_option('scrypt', 'n') else 4096,
+                int(self.config.get('scrypt', 'r')) if self.config.has_option('scrypt', 'r') else 16,
+                int(self.config.get('scrypt', 'p')) if self.config.has_option('scrypt', 'p') else 1,
+                int(self.config.get('scrypt', 'sl')) if self.config.has_option('scrypt', 'sl') else 32,
+            )
+            signing_key = SigningKey.from_credentials(username, password, scrypt_params_obj)
+            return signing_key.seed
+        except ImportError:
+            raise ImportError("duniterpy is required for credential-based seed derivation.")
+        except Exception as e:
+            log.error(f"Error deriving seed from credentials: {e}")
+            raise
+
+    def _seed_from_mnemonic(self, mnemonic_phrase):
+        """Dérive la seed à partir d'une phrase mnémonique (DUBP)."""
+        try:
+            from duniterpy.key import SigningKey, scrypt_params # Import seulement si nécessaire
+            scrypt_params_obj = scrypt_params.ScryptParams(
+                int(self.config.get('scrypt', 'n')) if self.config.has_option('scrypt', 'n') else 4096,
+                int(self.config.get('scrypt', 'r')) if self.config.has_option('scrypt', 'r') else 16,
+                int(self.config.get('scrypt', 'p')) if self.config.has_option('scrypt', 'p') else 1,
+                int(self.config.get('scrypt', 'sl')) if self.config.has_option('scrypt', 'sl') else 32,
+            )
+            signing_key = SigningKey.from_dubp_mnemonic(mnemonic_phrase, scrypt_params_obj)
+            return signing_key.seed
+        except ImportError:
+            raise ImportError("duniterpy is required for mnemonic-based seed derivation.")
+        except Exception as e:
+            log.error(f"Error deriving seed from mnemonic: {e}")
+            raise
+
+    def _seed_from_gpg(self, username, password=None):
+        """Extrait une seed à partir d'une clé secrète GPG."""
+        try:
+            gpg = pgpy.GPG()
+            gpg_seckeys, _ = gpg.keylist(pattern=username, secret=True)
+            if not gpg_seckeys:
+                raise ValueError(f"No secret GPG key found for username: {username}")
+            gpg_seckey = gpg_seckeys[0]
+
+            if gpg_seckey.is_protected and not password:
+                with pynentry.PynEntry() as p:
+                    p.description = f"GPG key '{gpg_seckey.fingerprint.keyid}' is password protected."
+                    p.prompt = 'Passphrase:'
+                    try:
+                        password = p.get_pin()
+                    except pynentry.PinEntryCancelled:
+                        raise Exception("GPG key unlock cancelled by user.")
+
+            with warnings.catch_warnings(): # Ignore PGPy warnings
+                warnings.simplefilter('ignore')
+                if gpg_seckey.is_protected:
+                    with gpg_seckey.unlock(password):
+                        seed_bytes = self._extract_seed_from_pgp_key(gpg_seckey)
+                else:
+                    seed_bytes = self._extract_seed_from_pgp_key(gpg_seckey)
+            return seed_bytes
+
+        except Exception as e:
+            log.error(f"Error extracting seed from GPG key: {e}")
+            raise
+
+    def _extract_seed_from_pgp_key(self, pgp_key):
+        """Extrait les seed bytes d'une clé PGP (supporte RSA, ECDSA, EdDSA, ECDH)."""
+        key_type = self._pgp_key_type(pgp_key)
+        if key_type == 'RSA':
+            return nacl.bindings.crypto_hash_sha256(str(pgp_key._key.keymaterial.p + pgp_key._key.keymaterial.q).encode()) # Hash p+q
+        elif key_type in ('ECDSA', 'EdDSA', 'ECDH'):
+            return long_to_bytes(pgp_key._key.keymaterial.s) # 's' est la private key pour EC keys
+        else:
+            raise NotImplementedError(f"Extracting seed from PGP key type '{key_type}' is not implemented.")
+
+
+    def _pgp_key_type(self, pgp_key):
+        """Détermine le type de clé PGP."""
+        if isinstance(pgp_key._key.keymaterial, pgpy.packet.fields.RSAPriv): return 'RSA'
+        elif isinstance(pgp_key._key.keymaterial, pgpy.packet.fields.DSAPriv): return 'DSA'
+        elif isinstance(pgp_key._key.keymaterial, pgpy.packet.fields.ElGPriv): return 'ElGamal'
+        elif isinstance(pgp_key._key.keymaterial, pgpy.packet.fields.ECDSAPriv): return 'ECDSA'
+        elif isinstance(pgp_key._key.keymaterial, pgpy.packet.fields.EdDSAPriv): return 'EdDSA'
+        elif isinstance(pgp_key._key.keymaterial, pgpy.packet.fields.ECDHPriv): return 'ECDH'
+        else: return 'undefined'
+
+    def _seed_from_input_file(self, input_file, password=None):
+        """Détecte le format du fichier d'entrée et extrait la seed."""
+        try:
+            with open(input_file, 'r') as f:
+                content = f.read()
+                if "BEGIN PRIVATE KEY" in content: # PEM
+                    return self._seed_from_pem(content.encode())
+                elif '"kty": "OKP"' in content and '"crv": "Ed25519"' in content: # JWK (Ed25519)
+                    return self._seed_from_jwk_json(content)
+                elif "Type: EWIF" in content: # EWIF
+                    return self._seed_from_ewif_file(input_file, password)
+                elif re.match(r"^[0-9a-fA-F]{64}$", content.strip()): # Seed (hex)
+                    return bytes.fromhex(content.strip())
+                else:
+                    raise ValueError("Unknown input file format (text-based).")
+        except UnicodeDecodeError: # Binary file formats
+            with open(input_file, 'rb') as f:
+                content_binary = f.read()
+                if content_binary.startswith(b'\x08\x01\x12@'): # Protobuf (libp2p private key)
+                    return self._seed_from_protobuf(content_binary)
+                elif content_binary.startswith(b'\x00\x00\x00\x01\x00\x00\x00\x01'): # DEWIF
+                    return self._seed_from_dewif_file(input_file, password)
+                else:
+                    raise ValueError("Unknown input file format (binary).")
+        except Exception as e:
+            log.error(f"Error reading seed from input file '{input_file}': {e}")
+            raise
+
+    def _seed_from_pem(self, pem_content):
+        """Extrait la seed à partir d'un PEM PKCS8 Ed25519."""
+        try:
+            private_key = serialization.load_pem_private_key(pem_content, password=None)
+            if not isinstance(private_key, ed25519.Ed25519PrivateKey):
+                raise ValueError("PEM file is not an Ed25519 private key.")
+            return private_key.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+        except Exception as e:
+            log.error(f"Error reading seed from PEM: {e}")
+            raise
+
+    def _seed_from_jwk_json(self, jwk_json):
+        """Extrait la seed à partir d'un JWK (JSON Web Key) Ed25519."""
+        try:
+            jwk_obj = jwk.JWK.from_json(jwk_json)
+            if jwk_obj.kty != 'OKP' or jwk_obj.crv != 'Ed25519' or not jwk_obj.has_private_key:
+                raise ValueError("JWK is not an Ed25519 private key.")
+            return jwk_obj._okp_pri().private_bytes( # Access private key bytes directly
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+        except Exception as e:
+            log.error(f"Error reading seed from JWK: {e}")
+            raise
+
+    def _seed_from_ewif_file(self, ewif_file, password=None):
+        """Extrait la seed à partir d'un fichier EWIF (Encrypted WIF - Duniter)."""
+        try:
+            from duniterpy.key import SigningKey # Import seulement si nécessaire
+            signing_key = SigningKey.from_ewif_file(ewif_file, password)
+            return signing_key.seed
+        except ImportError:
+            raise ImportError("duniterpy is required for EWIF file support.")
+        except Exception as e:
+            log.error(f"Error reading seed from EWIF file: {e}")
+            raise
+
+    def _seed_from_dewif_file(self, dewif_file, password=None):
+        """Extrait la seed à partir d'un fichier DEWIF (Duniter Encrypted WIF)."""
+        try:
+            from duniterpy.key import SigningKey # Import seulement si nécessaire
+            signing_key = SigningKey.from_dewif_file(dewif_file, password)
+            return signing_key.seed
+        except ImportError:
+            raise ImportError("duniterpy is required for DEWIF file support.")
+        except Exception as e:
+            log.error(f"Error reading seed from DEWIF file: {e}")
+            raise
+
+    def _seed_from_protobuf(self, protobuf_content):
+        """Extrait la seed à partir d'un protobuf (libp2p private key)."""
+        try:
+            return protobuf_content.lstrip(b'\x08\x01\x12@')[:32] # Remove prefix and take first 32 bytes
+        except Exception as e:
+            log.error(f"Error reading seed from Protobuf: {e}")
+            raise
+
+    def _deterministic_key_derivation(self, app_name, key_length=32):
+        """Dérivation déterministe de clé à partir de la master seed en utilisant HKDF-SHA256."""
+        salt = self.master_seed # Master seed comme salt
+        info = app_name.encode('utf-8') # Info contextuelle (nom de l'application)
+        derived_key = hashlib.pbkdf2_hmac('sha256', info, salt, 100000, dklen=key_length) # PBKDF2 pour dérivation plus robuste
+        return derived_key # Retourne les bytes de la clé dérivée
+
+    def generate_duniter_v1_key(self):
+        """Génère une clé Duniter v1."""
+        try:
+            from duniterpy.key import SigningKey, scrypt_params # Import seulement si nécessaire
+            seed = self._deterministic_key_derivation('duniter_v1')
+            self.keys['duniter_v1_seed_hex'] = seed.hex() # Store seed hex for potential later use
+            self.keys['duniter_v1_signing_key'] = SigningKey(seed) # Keep SigningKey object for various formats
+            self.keys['duniter_v1_pubkey_b58'] = self.keys['duniter_v1_signing_key'].public_key_b58() # Base58 public key
+            self.keys['duniter_v1_privkey_wif'] = self.keys['duniter_v1_signing_key'].private_key_wif() # WIF private key
+            self.keys['duniter_v1_pubsec'] = self.keys['duniter_v1_signing_key'].export_pubsec() # PubSec format
+        except ImportError:
+            raise ImportError("duniterpy is required for Duniter key generation.")
+        except Exception as e:
+            log.error(f"Error generating Duniter v1 key: {e}")
+            raise
+
+    def generate_duniter_v2s_key(self):
+        """Génère une clé Duniter v2s (Substrate/sr25519)."""
+        try:
+            from substrateinterface.keypair import Keypair # Import seulement si nécessaire
+            seed = self._deterministic_key_derivation('duniter_v2s')
+            self.keys['duniter_v2s_seed_hex'] = seed.hex() # Store seed hex
+            self.keys['duniter_v2s_keypair'] = Keypair.create_from_seed(seed.hex(), ss_format=32) # Sr25519 keypair
+            self.keys['duniter_v2s_pubkey_hex'] = self.keys['duniter_v2s_keypair'].public_key.hex() # Hex public key
+            self.keys['duniter_v2s_privkey_hex'] = self.keys['duniter_v2s_keypair'].private_key.hex() # Hex private key
+            self.keys['duniter_v2s_ss58_address'] = self.keys['duniter_v2s_keypair'].ss58_address # SS58 address
+        except ImportError:
+            raise ImportError("substrate-interface is required for Duniter v2s key generation.")
+        except Exception as e:
+            log.error(f"Error generating Duniter v2s key: {e}")
+            raise
+
+
+    def generate_ssh_key(self):
+        """Génère une clé SSH Ed25519 et ses clés jumelles Duniter."""
+        seed = self._deterministic_key_derivation('ssh')
+        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(seed)
+        public_key = private_key.public_key()
+
+        self.keys['ssh_private_pem'] = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.OpenSSH,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode()
+        self.keys['ssh_public_openssh'] = public_key.public_bytes(
+            encoding=serialization.Encoding.OpenSSH,
+            format=serialization.PublicFormat.OpenSSH
+        ).decode()
+
+        self.generate_duniter_v1_key() # Générer la clé jumelle Duniter v1
+        self.generate_duniter_v2s_key() # Générer la clé jumelle Duniter v2s
+
+
+    def generate_nostr_key(self):
+        """Génère une clé Nostr (SECP256k1) et ses clés jumelles Duniter."""
+        seed_secp256k1 = self._deterministic_key_derivation('nostr', key_length=32) # 32 bytes pour SECP256k1
+        private_key_ecdsa = SigningKey.from_string(seed_secp256k1, curve=SECP256k1)
+        private_key_hex = private_key_ecdsa.to_string().hex()
+        private_key_bytes = bytes.fromhex(private_key_hex)
+
+        self.keys['nostr_private_hex'] = private_key_hex
+        self.keys['nostr_private_nsec'] = bech32.bech32_encode('nsec', bech32.convertbits(private_key_bytes, 8, 5))
+
+        public_key_ecdsa = private_key_ecdsa.get_verifying_key()
+        public_key_bytes = public_key_ecdsa.to_string("compressed") # Compressed public key
+        self.keys['nostr_public_npub'] = bech32.bech32_encode('npub', bech32.convertbits(public_key_bytes, 8, 5))
+
+        self.generate_duniter_v1_key() # Générer la clé jumelle Duniter v1
+        self.generate_duniter_v2s_key() # Générer la clé jumelle Duniter v2s
+
+
+    def generate_ipfs_key(self):
+        """Génère une clé IPFS (Ed25519, protobuf, base58mh, b64mh) et ses clés jumelles Duniter."""
+        seed = self._deterministic_key_derivation('ipfs')
+        public_bytes, secret_bytes = nacl.bindings.crypto_sign_seed_keypair(seed)
+
+        self.keys['ipfs_private_bytes'] = secret_bytes
+        self.keys['ipfs_public_bytes'] = public_bytes
+
+        # Protobuf (libp2p format)
+        self.keys['ipfs_private_protobuf'] = b'\x08\x01\x12@' + secret_bytes
+        self.keys['ipfs_public_protobuf'] = b'\x00$\x08\x01\x12 ' + public_bytes
+
+        # Multihash (Base58 and Base64)
+        self.keys['ipfs_public_b58mh'] = base58.b58encode(self.keys['ipfs_public_protobuf']).decode('ascii')
+        self.keys['ipfs_private_b64mh'] = base64.b64encode(self.keys['ipfs_private_protobuf']).decode('ascii')
+
+        self.generate_duniter_v1_key() # Générer la clé jumelle Duniter v1
+        self.generate_duniter_v2s_key() # Générer la clé jumelle Duniter v2s
+
+
+    def generate_wireguard_key(self):
+        """Génère une clé WireGuard (Curve25519) et ses clés jumelles Duniter."""
+        seed_curve25519 = self._deterministic_key_derivation('wireguard')
+        private_key_x25519 = x25519.X25519PrivateKey.from_private_bytes(seed_curve25519)
+        public_key_x25519 = private_key_x25519.public_key()
+
+        self.keys['wireguard_private_base64'] = base64.b64encode(private_key_x25519.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption()
+        )).decode('ascii')
+        self.keys['wireguard_public_base64'] = base64.b64encode(public_key_x25519.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw
+        )).decode('ascii')
+        self.keys['wireguard_private_raw'] = private_key_x25519.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
+        self.generate_duniter_v1_key() # Générer la clé jumelle Duniter v1
+        self.generate_duniter_v2s_key() # Générer la clé jumelle Duniter v2s
+
+
+    def perform_sss(self):
+        """Effectue le partage de secret de Shamir (SSS) sur la clé privée de l'application choisie."""
+        app_type = self.args.type
+        private_key_bytes = None
+
+        if app_type == 'ssh':
+            private_key_pem = self.keys.get('ssh_private_pem')
+            if not private_key_pem: raise Exception("SSH private key not generated yet.")
+            private_key = serialization.load_pem_private_key(private_key_pem.encode(), password=None)
+            private_key_bytes = private_key.private_bytes(encoding=serialization.Encoding.Raw, format=serialization.PrivateFormat.Raw, encryption_algorithm=serialization.NoEncryption())
+        elif app_type == 'nostr':
+            private_key_hex = self.keys.get('nostr_private_hex')
+            if not private_key_hex: raise Exception("Nostr private key not generated yet.")
+            private_key_bytes = bytes.fromhex(private_key_hex)
+        elif app_type == 'ipfs':
+            private_key_bytes = self.keys.get('ipfs_private_bytes')
+            if not private_key_bytes: raise Exception("IPFS private key bytes not generated yet.")
+        elif app_type == 'wireguard':
+            private_key_bytes = self.keys.get('wireguard_private_raw')
+            if not private_key_bytes: raise Exception("WireGuard private key bytes not generated yet.")
+        else:
+            raise ValueError(f"SSS is not applicable or not implemented for type '{app_type}'.")
+
+        if private_key_bytes:
+            shares = ssss.split(2, 3, private_key_bytes) # 2-of-3 SSS
+            self.sss_shares = {
+                'user_part': shares[1], # Part 1
+                'relai_part': shares[2], # Part 2
+                'network_part': shares[3] # Part 3
+            }
+            log.info(f"Shamir Secret Sharing (2-of-3) applied to {app_type} private key.")
+        else:
+            raise Exception("Failed to retrieve private key bytes for SSS.")
+
+    def output_keys(self):
+        """Affiche les clés générées selon les options spécifiées, incluant les clés jumelles Duniter."""
+        output_format = self.args.format or 'pem' # Default format is PEM
+
+        if self.args.type == 'ssh':
+            if self.args.output:
+                try:
+                    with open(self.args.output, "w") as private_file:
+                        private_file.write(self.keys['ssh_private_pem'])
+                    with open(f"{self.args.output}.pub", "w") as public_file:
+                        public_file.write(self.keys['ssh_public_openssh'])
+                    log.info(f"SSH keys saved to '{self.args.output}' and '{self.args.output}.pub'.")
+                    os.chmod(self.args.output, 0o600) # Restrict permissions
+                except Exception as e:
+                    log.error(f"Error writing SSH keys to files: {e}")
+            else:
+                if self.args.keys or not self.args.secret:
+                    print(f"{self.args.prefix * 'SSH Public Key (OpenSSH): '} {self.keys['ssh_public_openssh']}")
+                if self.args.keys or self.args.secret:
+                    print(f"{self.args.prefix * 'SSH Private Key (PEM OpenSSH): '} {self.keys['ssh_private_pem']}")
+
+        elif self.args.type == 'nostr':
+            if self.args.output: # Output to file (not yet fully defined - format?)
+                log.warning("File output for Nostr keys not fully implemented yet.") # Placeholder
+            else:
+                if self.args.keys or not self.args.secret:
+                    print(f"{self.args.prefix * 'Nostr Public Key (npub): '} {self.keys['nostr_public_npub']}")
+                if self.args.keys or self.args.secret:
+                    print(f"{self.args.prefix * 'Nostr Private Key (nsec): '} {self.keys['nostr_private_nsec']}")
+                    if self.args.debug: # Show hex private key in debug mode
+                        print(f"DEBUG: {self.args.prefix * 'Nostr Private Key (hex): '} {self.keys['nostr_private_hex']}")
+
+        elif self.args.type == 'ipfs':
+            if self.args.output: # Output to file (format?)
+                log.warning("File output for IPFS keys not fully implemented yet.") # Placeholder
+            else:
+                if self.args.keys or not self.args.secret:
+                    if output_format == 'b58mh':
+                        print(f"{self.args.prefix * 'IPFS PeerID (Base58 Multihash): '} {self.keys['ipfs_public_b58mh']}")
+                    elif output_format == 'b64mh':
+                        print(f"{self.args.prefix * 'IPFS PeerID (Base64 Multihash): '} {self.keys['ipfs_public_b64mh']}")
+                    elif output_format == 'base58':
+                        print(f"{self.args.prefix * 'IPFS Public Key (Base58): '} {base58.b58encode(self.keys['ipfs_public_bytes']).decode('ascii')}")
+                    elif output_format == 'base64':
+                        print(f"{self.args.prefix * 'IPFS Public Key (Base64): '} {base64.b64encode(self.keys['ipfs_public_bytes']).decode('ascii')}")
+                    else: # Default to base58mh
+                        print(f"{self.args.prefix * 'IPFS PeerID (Base58 Multihash - default): '} {self.keys['ipfs_public_b58mh']}")
+
+                if self.args.keys or self.args.secret:
+                    if output_format == 'b64mh':
+                        print(f"{self.args.prefix * 'IPFS Private Key (Base64 Multihash): '} {self.keys['ipfs_private_b64mh']}")
+                    elif output_format == 'base64':
+                        print(f"{self.args.prefix * 'IPFS Private Key (Base64): '} {base64.b64encode(self.keys['ipfs_private_bytes']).decode('ascii')}")
+                    elif output_format == 'protobuf':
+                        print(f"{self.args.prefix * 'IPFS Private Key (Protobuf): '} {self.keys['ipfs_private_protobuf'].hex()}") # Show hex for protobuf
+                    else: # Default to base64mh
+                        print(f"{self.args.prefix * 'IPFS Private Key (Base64 Multihash - default): '} {self.keys['ipfs_private_b64mh']}")
+
+        elif self.args.type == 'wireguard':
+            if self.args.output: # Output to file (format?)
+                try:
+                    private_key_b64 = self.keys['wireguard_private_base64']
+                    public_key_b64 = self.keys['wireguard_public_base64']
+                    with open(self.args.output, "w") as private_file:
+                        private_file.write(f"private_key = {private_key_b64}\n") # Format WireGuard config
+                    with open(f"{self.args.output}.pub", "w") as public_file:
+                        public_file.write(f"public_key = {public_key_b64}\n") # Format WireGuard config
+                    log.info(f"WireGuard keys saved to '{self.args.output}' and '{self.args.output}.pub'.")
+                    os.chmod(self.args.output, 0o600) # Restrict permissions
+                except Exception as e:
+                    log.error(f"Error writing WireGuard keys to files: {e}")
+
+            else:
+                if self.args.keys or not self.args.secret:
+                    print(f"{self.args.prefix * 'WireGuard Public Key (Base64): '} {self.keys['wireguard_public_base64']}")
+                if self.args.keys or self.args.secret:
+                    print(f"{self.args.prefix * 'WireGuard Private Key (Base64): '} {self.keys['wireguard_private_base64']}")
+
+        # Output Duniter Twin Keys for all application types
+        if self.args.keys or not self.args.secret:
+            print(f"\n--- Duniter v1 Twin Keys ---")
+            print(f"{self.args.prefix * 'Duniter v1 Public Key (Base58): '} {self.keys['duniter_v1_pubkey_b58']}")
+            print(f"{self.args.prefix * 'Duniter v1 PubSec: '} {self.keys['duniter_v1_pubsec']}") # PubSec format
+        if self.args.keys or self.args.secret:
+            print(f"\n--- Duniter v1 Secret Keys ---")
+            print(f"{self.args.prefix * 'Duniter v1 Private Key (WIF): '} {self.keys['duniter_v1_privkey_wif']}")
+            if self.args.debug:
+                print(f"DEBUG: {self.args.prefix * 'Duniter v1 Seed (Hex): '} {self.keys['duniter_v1_seed_hex']}")
+
+
+        if self.args.keys or not self.args.secret:
+            print(f"\n--- Duniter v2s (Substrate) Twin Keys ---")
+            print(f"{self.args.prefix * 'Duniter v2s Public Key (Hex): '} {self.keys['duniter_v2s_pubkey_hex']}")
+            print(f"{self.args.prefix * 'Duniter v2s SS58 Address: '} {self.keys['duniter_v2s_ss58_address']}")
+        if self.args.keys or self.args.secret:
+            print(f"\n--- Duniter v2s (Substrate) Secret Keys ---")
+            print(f"{self.args.prefix * 'Duniter v2s Private Key (Hex): '} {self.keys['duniter_v2s_privkey_hex']}")
+            if self.args.debug:
+                print(f"DEBUG: {self.args.prefix * 'Duniter v2s Seed (Hex): '} {self.keys['duniter_v2s_seed_hex']}")
+
+
+        if self.args.sss and self.sss_shares: # Output SSS shares if generated
+            print("\n--- Shamir Secret Sharing (2-of-3) Shares ---")
+            print(f"User Part (Share 1): {self.sss_shares['user_part'].hex()}")
+            print(f"Relai Part (Share 2): {self.sss_shares['relai_part'].hex()}")
+            print(f"Network Part (Share 3): {self.sss_shares['network_part'].hex()}")
+            if self.args.output:
+                sss_output_dir = self.args.output + ".sss_shares" # Create a subdir for SSS parts
+                os.makedirs(sss_output_dir, exist_ok=True)
+                try:
+                    with open(os.path.join(sss_output_dir, "user_part.share"), "w") as f:
+                        f.write(self.sss_shares['user_part'].hex())
+                    with open(os.path.join(sss_output_dir, "relai_part.share"), "w") as f:
+                        f.write(self.sss_shares['relai_part'].hex())
+                    with open(os.path.join(sss_output_dir, "network_part.share"), "w") as f:
+                        f.write(self.sss_shares['network_part'].hex())
+                    log.info(f"SSS shares saved to directory '{sss_output_dir}'.")
+                except Exception as e:
+                    log.error(f"Error writing SSS shares to files: {e}")
+
+
+    def run(self):
+        self._setup_logging()
+        try:
+            self._get_master_seed()
+
+            app_type = self.args.type
+            if app_type == 'ssh':
+                self.generate_ssh_key()
+            elif app_type == 'nostr':
+                self.generate_nostr_key()
+            elif app_type == 'ipfs':
+                self.generate_ipfs_key()
+            elif app_type == 'wireguard':
+                self.generate_wireguard_key()
+            else:
+                raise ValueError(f"Unsupported key type: {app_type}")
+
+            if self.args.sss:
+                self.perform_sss()
+
+            self.output_keys()
+
+            log.info(f"Keys for '{app_type}' and Duniter twin keys generated successfully.")
+
+        except ValueError as ve:
+            log.error(f"Value Error: {ve}")
+            print(f"\nUsage instructions:\n{self.parser.format_help()}") # Print help on value errors
+            sys.exit(2)
+        except ImportError as ie:
+            log.error(f"Import Error: {ie}")
+            print("\nDependency missing. Please install the necessary Python libraries.")
+            sys.exit(2)
+        except Exception as e:
+            log.error(f"An error occurred: {e}")
+            if self.args.debug: # Print full traceback in debug mode
+                import traceback
+                traceback.print_exc()
+            sys.exit(1)
+
+
+def long_to_bytes(n, blocksize=0): # Utility function from original script
+    """Convert a long integer to a byte string (from PyCrypto)."""
+    s = b''
+    n = int(n)
+    pack = struct.pack
+    while n > 0:
+        s = pack('>I', n & 0xffffffff) + s
+        n = n >> 32
+    for i in range(len(s)):
+        if s[i] != b'\000'[0]:
+            break
+    else: s = b'\000'; i=0
+    s = s[i:]
+    if blocksize > 0 and len(s) % blocksize:
+        s = (blocksize - len(s) % blocksize) * b'\000' + s
+    return s
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(description="""
+    keygen-ng: Generate application keys (SSH, Nostr, IPFS, WireGuard) with 3-Tier Trust and Duniter Twin Keys.
+    Derives keys from a master seed based on GPG key, credentials, mnemonic, or input file.
+    Supports Shamir Secret Sharing (SSS) for private key distribution and generates Duniter v1/v2s twin keys.
+    """)
+
+    # Input options (seed source)
+    input_group = parser.add_mutually_exclusive_group(required=True) # Require one input method
+    input_group.add_argument("-g", "--gpg", action="store_true", help="Use GPG key (uid matched by username).")
+    input_group.add_argument("-i", "--input", dest="input", metavar='FILE', help="Read seed from FILE (auto-detect format: credentials, ewif, dewif, jwk, pem, seed, protobuf).")
+    input_group.add_argument("-m", "--mnemonic", action="store_true", help="Use username as a DUBP mnemonic passphrase.")
+    input_group.add_argument("username", nargs="?", help="Username for credential or GPG key lookup.")
+    parser.add_argument("password", nargs="?", help="Password for credentials, EWIF/DEWIF file, or GPG key.") # Password is optional in some cases
+
+    # Output options
+    parser.add_argument("-t", "--type", choices=['ssh', 'nostr', 'ipfs', 'wireguard'], default="ssh", dest="type", help="Key type to generate (default: ssh).")
+    parser.add_argument("-f", "--format", choices=['pem', 'jwk', 'b58mh', 'b64mh', 'base58', 'base64', 'protobuf'], default=None, dest="format", help="Output format (application-specific, default: pem/application default).")
+    parser.add_argument("-o", "--output", dest="output", metavar='FILE', help="Write output to FILE (application-specific format).")
+    parser.add_argument("-p", "--prefix", action="store_true", help="Prefix output text with key type.")
+    parser.add_argument("-s", "--secret", action="store_true", help="Show only secret key(s).")
+    parser.add_argument("-k", "--keys", action="store_true", help="Show both public and secret keys (default).")
+    parser.add_argument("--sss", action="store_true", help="Enable Shamir Secret Sharing (2-of-3) for private key.") # SSS flag
+
+    # Debugging and verbosity
+    parser.add_argument("-d", "--debug", action="store_true", help="Show debug information (WARNING: including SECRET KEY material).")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show more information.")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Show only errors.")
+    parser.add_argument("--version", action="store_true", help="Show version and exit.")
+
+    args = parser.parse_args(argv)
+
+    if args.version:
+        print(f"{sys.argv[0]} v{__version__}")
+        sys.exit(0)
+
+    key_generator = KeyGenerator(args)
+    key_generator.parser = parser # Attach parser to instance for help output
+    key_generator.run()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
