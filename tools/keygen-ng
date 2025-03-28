@@ -261,7 +261,7 @@ class KeyGenerator:
             seed = self._deterministic_key_derivation('duniter_v1')
             self.keys['duniter_v1_seed_hex'] = seed.hex() # Store seed hex for potential later use
             self.keys['duniter_v1_signing_key'] = SigningKey(seed) # Keep SigningKey object for various formats
-            self.keys['duniter_v1_pubkey_b58'] = self.keys['duniter_v1_signing_key'].public_key_b58() # Base58 public key
+            self.keys['duniter_v1_pubkey_b58'] = self.keys['duniter_v1_signing_key'].public_key_base58 # Base58 public key
             self.keys['duniter_v1_privkey_wif'] = self.keys['duniter_v1_signing_key'].private_key_wif() # WIF private key
             self.keys['duniter_v1_pubsec'] = self.keys['duniter_v1_signing_key'].export_pubsec() # PubSec format
         except ImportError:
