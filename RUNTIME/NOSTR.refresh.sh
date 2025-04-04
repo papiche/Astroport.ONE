@@ -49,7 +49,7 @@ destroy_nostrcard() {
     fi
 
     ## SEND EMAIL with G1PUBNOSTR.QR
-    ${MY_PATH}/../tools/mailjet.sh "${player}" "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png" "NOSTR Card DELETED"
+    ${MY_PATH}/../tools/mailjet.sh "${player}" "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png" "... INVALID NOSTR Card ..."
 
     ## REMOVE NOSTR IPNS VAULT key
     ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT ## "null" CID
@@ -126,11 +126,21 @@ for PLAYER in "${NOSTR[@]}"; do
     echo $s
 
     ########################################################################
-    #~ EMPTY WALLET or without PRIMAL ? (NOT TODATE)
+    #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
-        echo "EMPTY NOSTR CARD.............."
-        [[ ${TODATE} != $(cat ~/.zen/game/nostr/${PLAYER}/TODATE) ]] \
+        FILEDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE)
+        echo "EMPTY NOSTR CARD.............. ???"
+        [[ ${TODATE} != ${FILEDATE} && ${UPLANETNAME} != "EnfinLibre" ]] \
             && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+
+        # Calculez la différence en jours entre les deux dates
+        DIFF=$(( ( $(date -d "$TODATE" +%s) - $(date -d "$FILEDATE" +%s) ) / 86400 ))
+
+        # UPlanet ORIGIN ... max 15 jours ...
+        if [[ ${DIFF} -ge 15 && ${UPLANETNAME} == "EnfinLibre" ]]; then
+            destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+        fi
+
         continue
     fi
 
