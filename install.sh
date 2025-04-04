@@ -118,7 +118,7 @@ fi
 
 ### PYTHON ENV
 cd $HOME
-/usr/bin/python -m venv .astro
+python -m venv .astro
 . ~/.astro/bin/activate
 cd -
 
