@@ -120,8 +120,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     amzqr "${G1PUBNOSTR}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
-    ## REMOVE webcam picture
-    rm -f ${HOME}/.zen/game/nostr/${EMAIL}/picture.png
+    ## MOVE webcam picture
+    mv ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ${HOME}/.zen/game/nostr/${EMAIL}/scan_${MOATS}.png
 
     G1PUBNOSTRQR=$(ipfs --timeout 15s add -q ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
     ipfs pin rm /ipfs/${G1PUBNOSTRQR}

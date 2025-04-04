@@ -1,7 +1,7 @@
 #!/bin/bash
 # Convert SSH Ed25519 keys to WireGuard config with IPs ordered by public key fingerprint
 
-CONFIG_DIR="$HOME/.zen/game"
+CONFIG_DIR="$HOME/.zen/wireguard"
 mkdir -p "$CONFIG_DIR"
 
 # Fonction pour extraire la clé WireGuard depuis une clé SSH

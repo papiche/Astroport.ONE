@@ -151,7 +151,7 @@ fi
 echo "#############################################"
 echo "#############################################"
 LP=$(ls /dev/usb/lp* 2>/dev/null)
-[[ ! -z $LP ]]; then
+if [[ ! -z $LP ]]; then
 echo "######### $LP PRINTER ##############"
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
     ## PRINT & FONTS
