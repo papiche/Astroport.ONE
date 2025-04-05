@@ -56,7 +56,8 @@ def nostr_setup_profile(args):
 
     # Create and publish PREFERED relay list event
     relay_list = {relay: {"read": True, "write": True} for relay in args.relays}
-    relay_event = Event(kind=10002, content=json.dumps(relay_list))
+    relay_tags = [["r", relay] for relay in args.relays]  # Générer les tags 'r'
+    relay_event = Event(kind=10002, content=json.dumps(relay_list), tags=relay_tags) # Ajouter les tags à l'événement
     relay_event.sign(private_key.hex())
     print("Publishing relay list event...")
     relay_manager.publish_event(relay_event)

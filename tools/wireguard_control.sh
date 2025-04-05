@@ -58,7 +58,7 @@ add_client() {
     fi
 
     # Trouver le prochain IP
-    local NEXT_IP=$(($(grep -oP "${NETWORK%.*}\.\K\d+" "$SERVER_CONF" | sort -n | tail -1 || echo 1) + 1))
+    local NEXT_IP=$(($(sudo grep -oP "${NETWORK%.*}\.\K\d+" "$SERVER_CONF" | sort -n | tail -1 || echo 1) + 1))
 
     # Ajout au serveur
     echo -e "\n[Peer]
@@ -70,7 +70,7 @@ AllowedIPs = ${NETWORK%.*}.$NEXT_IP/32" | sudo tee -a "$SERVER_CONF" > /dev/null
     local CLIENT_CONF="$CONFIG_DIR/${CLIENT_NAME}.conf"
     cat > "$CLIENT_CONF" <<EOF
 [Interface]
-PrivateKey = $(wg genkey | tee "$CONFIG_DIR/${CLIENT_NAME}.priv")
+PrivateKey = _FROMYOURSSH_
 Address = ${NETWORK%.*}.$NEXT_IP/32
 DNS = 1.1.1.1, 2606:4700:4700::1111
 
