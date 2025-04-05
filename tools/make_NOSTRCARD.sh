@@ -71,6 +71,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## Create Bitcoin Twin Address
     BITCOIN=$(${MY_PATH}/../tools/keygen -t bitcoin "${SALT}" "${PEPPER}" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
     echo $BITCOIN > ${HOME}/.zen/game/nostr/${EMAIL}/BITCOIN
+    ## Create Monero Twin Address
+    MONERO=$(${MY_PATH}/../tools/keygen -t monero "${SALT}" "${PEPPER}" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
+    echo $MONERO > ${HOME}/.zen/game/nostr/${EMAIL}/MONERO
 
     ### CRYPTO ZONE
     ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
