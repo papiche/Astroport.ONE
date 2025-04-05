@@ -105,7 +105,7 @@ show_menu() {
             1) setup_server ;;
             2)
                 read -p "Nom du client : " name
-                echo "Collez la clé publique SSH du client (format: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5...):"
+                echo "Collez la clé publique SSH du client (format: AAAAC3NzaC1lZDI1NTE5...):"
                 read -p "> " pubkey
                 add_client "$name" "$pubkey"
                 ;;

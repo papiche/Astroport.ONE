@@ -174,7 +174,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
-        "wss://relay.copylaradio.com" "$myRELAY"
+        "wss://relay.copylaradio.com" "$myRELAY" \
+        --ipns_vault "/ipns/${NOSTRNS}"
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}

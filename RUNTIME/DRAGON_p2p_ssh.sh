@@ -106,7 +106,8 @@ if [[ -s "$SECRET_JUNE_FILE" ]]; then
         "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
         "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
         "" "$myIPFS/ipns/$IPFSNODEID" "" "" "" "" \
-        "wss://relay.copylaradio.com" "$myRELAY"
+        "wss://relay.copylaradio.com" "$myRELAY" \
+        --ipns_vault "/ipns/${IPFSNODEID}" --ipfs_gw "$myIPFS"
 
 fi
 
