@@ -62,6 +62,8 @@ destroy_nostrcard() {
 }
 
 ########################################################################
+# NOSTR Card is evolving depending PRIMAL RX source.
+# on UPLanet ORIGIN or UPlanet Zen.
 ########################################################################
 NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
@@ -88,8 +90,8 @@ for PLAYER in "${NOSTR[@]}"; do
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
     pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
 
-    #################################################################
-    ########################## DISCO DECRYPTION
+    ############################################################################
+    ###################### DISCO DECRYPTION - with Captain + UPlanet parts
     tmp_mid=$(mktemp)
     tmp_tail=$(mktemp)
     # Decrypt the middle part using CAPTAIN key
@@ -101,7 +103,8 @@ for PLAYER in "${NOSTR[@]}"; do
     ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
             -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
 
-    rm ~/.zen/game/uplanet.dunikey
+    ## Keep UPlanet Dunikey
+    # rm ~/.zen/game/uplanet.dunikey
 
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
@@ -120,6 +123,8 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
     ##################################################### DISCO DECODED
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/nostr.dunikey "${salt}" "${pepper}"
+
     ## s=/?email
     NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
@@ -127,20 +132,21 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
+    ############################################################ BLOCKING
+    ########################################################################
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         FILEDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE)
-        echo "EMPTY NOSTR CARD.............. ???"
+        echo "NOSTR G1 CARD is EMPTY .............. !!!"
         [[ ${TODATE} != ${FILEDATE} && ${UPLANETNAME} != "EnfinLibre" ]] \
             && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
 
-        # Calculez la différence en jours entre les deux dates
-        DIFF=$(( ( $(date -d "$TODATE" +%s) - $(date -d "$FILEDATE" +%s) ) / 86400 ))
-
-        # UPlanet ORIGIN ... max 15 jours ...
-        if [[ ${DIFF} -ge 15 && ${UPLANETNAME} == "EnfinLibre" ]]; then
-            destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+        # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
+        if [[ ${TODATE} != ${FILEDATE} && ${UPLANETNAME} == "EnfinLibre" ]]; then
+            ## Activate ZenCard + Zine Welcome DEMO
+            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:BRO"
         fi
 
+        rm -Rf ~/.zen/tmp/${MOATS}
         continue
     fi
 
@@ -154,16 +160,18 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
-
         mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
-        ## SCAN CESIUM/GCHANGE PRIMAL STATUS
-        ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
-        #######################################################################
-        ## COPY PRIMAL DUNITER/CESIUM METADATA (from "coucou" cache)
-        cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-        echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME
-
+        ## ONLY FOR UPlanet Zen
+        if [[ ${primal} != ${UPLANETG1PUB} ]]; then
+            ## SCAN CESIUM/GCHANGE PRIMAL STATUS
+            ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
+            #######################################################################
+            ## COPY PRIMAL DUNITER/CESIUM METADATA (from "coucou" cache)
+            cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+            echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME
+        fi
     fi
+    G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
 
     ########################################################################
     ## STATION OFFICIAL UPASSPORT ?
@@ -184,13 +192,40 @@ for PLAYER in "${NOSTR[@]}"; do
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
                     cp ~/.zen/UPassport/pdf/${primal}/*.* \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-                    mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
-                        ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 fi
+                ## INFORM UPASSPORT TRY DONE (N1 or not)
+                mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
+                    ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
+                ## SENDING TO CESIUM PROFILE
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
+
             else
                 echo "## PRIMAL UPassport already existing"
-                ## SENDING MESSAGE TO MY RELATIONS
+                ## SENDING MESSAGE TO N1 (P2P,P21,12P) RELATIONS in manifest.json
+                json_file="$HOME/.zen/game/nostr/${PLAYER}/PRIMAL/N1/manifest.json"
+                if [[ -s "$json_file" ]]; then
+                    # Parcourir chaque clé (p2p, certin, certout) et extraire les valeurs
+                    jq -r '.[][] | select(. != null) | capture("(?<G1PUB>[^.]+)\\.(?<PSEUDO>[^.]+)\\.(?<KEY>[^.]+)") | "\(.G1PUB) \(.PSEUDO) \(.KEY)"' "$json_file" | while read -r G1PUB PSEUDO KEY; do
+                        # Vérifier si le message existe déjà
+                        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
+                            # Définir le message en fonction de la clé
+                            if [[ "$KEY" == "p2p" ]]; then
+                                MESSAGE="NOSTR Card: https://u.copylaradio.com/scan + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} = BRO on UPlanet Zen ! https://www.copylaradio.com"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
+                                echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
+                                sleep 2
+                            elif [[ "$KEY" == "certin" ]]; then
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPlanet $PSEUDO 12P ?" -m "BRO Certification ? $G1PUB"
+                                sleep 1
+                            elif [[ "$KEY" == "certout" ]]; then
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PUB" -t "UPlanet $PSEUDO P21 ?" -m "BRO Certification ? $G1PRIME"
+                                sleep 1
+                            fi
+                        fi
+                    done
+                fi
+
                 #~ ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
             fi
         fi
@@ -239,7 +274,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "" "$myIPFS${NOSTRNS}" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
             --ipfs_gw "$myIPFS" \
-            --ipns_vault "${NOSTRNS}" \
+            --ipns_vault "/ipns/${NOSTRNS}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?
@@ -299,5 +334,6 @@ dur=`expr $end - $start`
 hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "============================================ NOSTR.refresh DONE."
+rm -Rf ~/.zen/tmp/${MOATS}
 
 exit 0
