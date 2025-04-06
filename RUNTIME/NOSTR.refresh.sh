@@ -143,7 +143,7 @@ for PLAYER in "${NOSTR[@]}"; do
         # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
         if [[ ${TODATE} != ${FILEDATE} && ${UPLANETNAME} == "EnfinLibre" ]]; then
             ## Activate ZenCard + Zine Welcome DEMO
-            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:BRO"
+            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:NOSTR"
         fi
 
         rm -Rf ~/.zen/tmp/${MOATS}
