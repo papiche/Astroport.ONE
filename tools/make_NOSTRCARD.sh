@@ -177,6 +177,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         "wss://relay.copylaradio.com" "$myRELAY" \
         --ipns_vault "/ipns/${NOSTRNS}"
 
+    ## CREATE CESIUM + PROFILE
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey set --name "${EMAIL} NOSTR Card" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "$myIPFS/ipns/${NOSTRNS}" -d "UPlanet NOSTR Card https://www.copylaradio.com"
+
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
     ### UNCOMMENT for DEBUG

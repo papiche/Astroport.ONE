@@ -211,7 +211,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
                             # Définir le message en fonction de la clé
                             if [[ "$KEY" == "p2p" ]]; then
-                                MESSAGE="NOSTR Card: https://u.copylaradio.com/scan + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} = BRO on UPlanet Zen ! https://www.copylaradio.com"
+                                MESSAGE="NOSTR Card: https://u.copylaradio.com/scan + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} => BRO on UPlanet Zen ? https://www.copylaradio.com"
                                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
                                 echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                                 sleep 2
