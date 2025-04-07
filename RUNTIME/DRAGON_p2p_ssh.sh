@@ -108,6 +108,12 @@ if [[ -s "$SECRET_JUNE_FILE" ]]; then
         "" "$myIPFS/ipns/$IPFSNODEID" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
         --ipns_vault "/ipns/${IPFSNODEID}" --ipfs_gw "$myIPFS"
+else
+
+ ## UPlanet ORIGIN : Captain key is used as IA relay
+ source ~/.zen/game/players/.current/secret.june
+ ${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s > $HOME/.zen/game/captain.nostr.priv
+ chmod 640 $HOME/.zen/game/captain.nostr.priv
 
 fi
 
