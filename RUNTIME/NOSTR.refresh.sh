@@ -137,13 +137,16 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         FILEDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE)
         echo "NOSTR G1 CARD is EMPTY .............. !!!"
-        [[ ${TODATE} != ${FILEDATE} && ${UPLANETNAME} != "EnfinLibre" ]] \
-            && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
 
-        # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
-        if [[ ${TODATE} != ${FILEDATE} && ${UPLANETNAME} == "EnfinLibre" ]]; then
-            ## Activate ZenCard + Zine Welcome DEMO
-            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:NOSTR"
+        if [[ ${TODATE} != ${FILEDATE} ]]; then
+            if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+                echo "UPlanet Zen : INVALID CARD"
+                destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+            else
+                # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
+                echo "UPlanet ORIGIN : Activate ZenCard + Zine Welcome DEMO"
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:NOSTR:${NPUB}"
+            fi
         fi
 
         rm -Rf ~/.zen/tmp/${MOATS}
