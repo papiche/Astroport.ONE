@@ -123,13 +123,13 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
     ##################################################### DISCO DECODED
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/nostr.dunikey "${salt}" "${pepper}"
 
     ## s=/?email
     NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey "${salt}" "${pepper}"
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
     ############################################################ BLOCKING
@@ -201,7 +201,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
 
             else
                 echo "## PRIMAL UPassport already existing"
@@ -215,14 +215,14 @@ for PLAYER in "${NOSTR[@]}"; do
                             # Définir le message en fonction de la clé
                             if [[ "$KEY" == "p2p" ]]; then
                                 MESSAGE="NOSTR Card: https://u.copylaradio.com/scan + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} => BRO on UPlanet Zen ? https://www.copylaradio.com"
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
                                 echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                                 sleep 2
                             elif [[ "$KEY" == "certin" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPlanet $PSEUDO 12P ?" -m "BRO Certification ? $G1PUB"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPlanet $PSEUDO 12P ?" -m "BRO Certification ? $G1PUB"
                                 sleep 1
                             elif [[ "$KEY" == "certout" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.dunikey -n ${myCESIUM} send -d "$G1PUB" -t "UPlanet $PSEUDO P21 ?" -m "BRO Certification ? $G1PRIME"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t "UPlanet $PSEUDO P21 ?" -m "BRO Certification ? $G1PRIME"
                                 sleep 1
                             fi
                         fi
