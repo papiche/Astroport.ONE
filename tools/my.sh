@@ -559,6 +559,10 @@ myRELAY=$(echo $myIPFS | sed 's|https://ipfs|wss://relay|') ## wss://
 [[ $myRELAY == $myIPFS ]] \
     && myRELAY=$(echo $myIPFS | sed 's~http://~ws://~' | sed 's~8080~7777~' ) ## ws://
 
+URELAY=$(echo $myIPFS | sed 's|https://ipfs|https://u|') ## u
+[[ $URELAY == $URELAY ]] \
+    && URELAY=$(echo $myIPFS | sed 's~8080~54321~' ) ## 54321
+
 ##########################
 myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY

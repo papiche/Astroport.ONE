@@ -15,6 +15,15 @@ from pynostr.filters import FiltersList, Filters
 from pynostr.encrypted_dm import EncryptedDirectMessage
 from pynostr.utils import get_timestamp
 import ollama
+import logging
+
+# Configuration du logging
+logging.basicConfig(
+    filename='nostr_bot.log',  # Nom du fichier de log
+    level=logging.INFO,       # Niveau de log (INFO, DEBUG, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logging.info("Démarrage du bot Nostr.")
 
 # Initialisation des relais
 relay_manager = RelayManager(timeout=2)
@@ -64,19 +73,20 @@ def run(nsec=None):
         exit(1)
 
     # Configuration des relais
-    env_relays = os.getenv('RELAYS', "ws://127.0.0.1:7777,wss://relay.copylaradio.com")
+    env_relays = os.getenv('RELAYS', "wss://relay.copylaradio.com")
     for relay in env_relays.split(","):
         print(f"Adding relay: {relay}")
         relay_manager.add_relay(relay)
 
     print(f"Pubkey: {private_key.public_key.bech32()}")
     print(f"Pubkey (hex): {private_key.public_key.hex()}")
+    logging.info(f"Bot Pubkey (hex): {private_key.public_key.hex()}")
 
     start_timestamp = get_timestamp()
 
     while True:
         filters = FiltersList([
-            Filters(pubkey_refs=[private_key.public_key.hex()], kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE, EventKind.TEXT_NOTE], since=start_timestamp)
+            Filters(pubkey_refs=[private_key.public_key.hex()], kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE, EventKind.TEXT_NOTE, EventKind.METADATA], since=start_timestamp) # Ajout de EventKind.METADATA
         ])
         subscription_id = uuid.uuid1().hex
         relay_manager.add_subscription_on_all_relays(subscription_id, filters)
@@ -85,6 +95,7 @@ def run(nsec=None):
         while relay_manager.message_pool.has_notices():
             notice_msg = relay_manager.message_pool.get_notice()
             print(f"Notice: {notice_msg.content}")
+            logging.info(f"Notice from relay: {notice_msg.content}") # Log des notices
 
         while relay_manager.message_pool.has_events():
             event_msg = relay_manager.message_pool.get_event()
@@ -93,10 +104,30 @@ def run(nsec=None):
 
             messages_done.add(event_msg.event.id)
             recipient_pubkey = event_msg.event.pubkey
+            event = event_msg.event # Raccourci pour event_msg.event
 
-            if event_msg.event.kind == EventKind.ENCRYPTED_DIRECT_MESSAGE:
+            if event.kind == EventKind.METADATA: # Log des events de kind 0
+                logging.info(f"Received Metadata Event - ID: {event.id}, Pubkey: {event.pubkey}, Content: {event.content}")
+
+            elif event.kind == EventKind.TEXT_NOTE: # Log des events de kind 1
+                logging.info(f"Received Text Note Event - ID: {event.id}, Pubkey: {event.pubkey}, Content: {event.content}")
+
+                content = re.sub(r'\b(nostr:)?(nprofile|npub)[0-9a-z]+[\s]*', '', event.content)
+                if len(content) < 4:
+                    continue
+
+                print(f"Received public note: {content}")
+                if recipient_pubkey != private_key.public_key.bech32():
+                    reply = Event(content=respond(content))
+                    reply.add_event_ref(event.id)
+                    reply.add_pubkey_ref(event.pubkey)
+                    reply.sign(private_key.hex())
+                    relay_manager.publish_event(reply)
+                    print("Public response sent.")
+
+            elif event.kind == EventKind.ENCRYPTED_DIRECT_MESSAGE:
                 dm = EncryptedDirectMessage()
-                dm.decrypt(private_key.hex(), event_msg.event.content, recipient_pubkey)
+                dm.decrypt(private_key.hex(), event.content, recipient_pubkey)
                 if len(dm.cleartext_content) < 4:
                     continue
 
@@ -111,20 +142,6 @@ def run(nsec=None):
                 relay_manager.publish_event(dm_event)
                 print(f"Response sent to {recipient_pubkey}")
 
-            elif event_msg.event.kind == EventKind.TEXT_NOTE:
-                content = re.sub(r'\b(nostr:)?(nprofile|npub)[0-9a-z]+[\s]*', '', event_msg.event.content)
-                if len(content) < 4:
-                    continue
-
-                print(f"Received public note: {content}")
-                if recipient_pubkey != private_key.public_key.bech32():
-                    reply = Event(content=respond(content))
-                    reply.add_event_ref(event_msg.event.id)
-                    reply.add_pubkey_ref(event_msg.event.pubkey)
-                    reply.sign(private_key.hex())
-                    relay_manager.publish_event(reply)
-                    print("Public response sent.")
-
             gc.collect()
 
         time.sleep(10)
@@ -133,8 +150,10 @@ try:
     run(nsec=os.getenv("NSEC"))
 except KeyboardInterrupt:
     print("KeyboardInterrupt")
+    logging.info("Bot arrêté par KeyboardInterrupt.")
     relay_manager.close_all_relay_connections()
 except Exception as e:
     print(f"Exception: {e}")
+    logging.error(f"Exception non gérée: {e}", exc_info=True) # Log de l'exception complète
     relay_manager.close_all_relay_connections()
     run()

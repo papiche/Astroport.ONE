@@ -34,6 +34,8 @@ ASTROFEED=$FEEDNS
 TW=$TW
 source=$source"
 
+## Is it UPlanet ORIGIN or Ẑen ?
+[[ $UPLANETNAME != "EnfinLibre" ]] && UPLANET="UPlanet Ẑen" || UPLANET="UPlanet ORIGIN"
 
 #~ echo "DEST=$mail"
 # mail=geg-la_debrouille@super.chez-moi.com
@@ -141,7 +143,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3>'${pseudo}' on <a href=\"https://qo-op.com\">UPlanet</a><br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
+            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3>'${pseudo}' on <a href=\"${URELAY}/scan\">${UPLANET}</a><br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'
