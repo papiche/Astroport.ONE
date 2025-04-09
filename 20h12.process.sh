@@ -68,6 +68,11 @@ sudo systemctl stop astroport
 [[ -s ~/.zen/UPassport/54321.py ]] \
 && cd ~/.zen/UPassport && git pull
 
+## UPDATE NIP-101
+[[ -d ~/.zen/workspace/NIP-101 ]] \
+&& cd ~/.zen/workspace/NIP-101 && git pull
+## TODO LOG ROTATE
+
 ########################################################################
 ## UPDATE Astroport.ONE code
 cd ${MY_PATH}/
