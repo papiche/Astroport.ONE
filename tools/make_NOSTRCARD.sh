@@ -153,7 +153,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${SSSSQR}~g" \
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
-            -e "s~_NSECTAIL_~${NPRIV: -15}~g" \
+            -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
             -e "s~_MYRELAY_~${myRELAY}~g" \
             -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
