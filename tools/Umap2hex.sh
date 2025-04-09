@@ -11,7 +11,7 @@
 # Dépendances:
 #   - keygen (outil personnalisé)
 #   - nostr2hex.py (script de conversion)
-########################################################################
+############################################################# Umap2hex.sh
 # Chargement des dépendances et variables
 SCRIPT_DIR="`dirname \"$0\"`"              # Chemin relatif
 SCRIPT_DIR="`( cd \"$SCRIPT_DIR\" && pwd )`"  # Chemin absolu et normalisé
