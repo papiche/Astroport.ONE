@@ -201,7 +201,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${primal}" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
 
             else
                 echo "## PRIMAL UPassport already existing"
