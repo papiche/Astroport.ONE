@@ -597,7 +597,7 @@ cat ${ZINE} \
             -e "s~_SLON_~${SLON}~g" \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "MULTIPASS"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "... MULTIPASS / Ẑen Card"
 
 ### SEND INITIAL G1
 
