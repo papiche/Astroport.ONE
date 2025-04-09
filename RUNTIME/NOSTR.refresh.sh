@@ -175,7 +175,7 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
     fi
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
-
+    [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB
     ########################################################################
     ## STATION OFFICIAL UPASSPORT ?
     if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
@@ -196,12 +196,12 @@ for PLAYER in "${NOSTR[@]}"; do
                     cp ~/.zen/UPassport/pdf/${primal}/*.* \
                         ~/.zen/game/nostr/${PLAYER}/PRIMAL/
                 fi
-                ## INFORM UPASSPORT TRY DONE (N1 or not)
+                ## INFORM UPASSPORT TRY DONE (N1 or not, then Uplanet Wallet Amount)
                 mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${primal}" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
 
             else
                 echo "## PRIMAL UPassport already existing"
