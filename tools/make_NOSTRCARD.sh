@@ -163,6 +163,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
+    ### ADD /APP - redirections APP IPFS
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP
+    echo '<meta http-equiv="refresh" content="5;url='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'">' \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/cesium.v1.html
+    echo '<meta http-equiv="refresh" content="5;url='${CORACLEIPFS}/'">' \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/coracle.html
+
     NOSTRIPFS=$(ipfs --timeout 15s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 

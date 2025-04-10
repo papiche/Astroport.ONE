@@ -273,7 +273,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "$NSEC" \
             "$title" "$g1pubnostr:$primal" \
             "$description - $city" \
-            "$myIPFS/ipfs/$zavatar" \
+            "$myIPFS/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
             "" "$myIPFS${NOSTRNS}" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
