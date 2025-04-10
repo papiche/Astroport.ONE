@@ -52,7 +52,7 @@ destroy_nostrcard() {
     ${MY_PATH}/../tools/mailjet.sh "${player}" "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png" "... INVALID NOSTR Card ..."
 
     ## REMOVE NOSTR IPNS VAULT key
-    ipfs name publish -k "${g1pubnostr}:NOSTR" /ipfs/QmU4cnyaKWgMVCZVLiuQaqu6yGXahjzi4F1Vcnq2SXBBmT ## "null" CID
+    ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
     ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
     ## Cleaning local cache
     rm ~/.zen/tmp/coucou/${g1pubnostr-null}.*
@@ -175,8 +175,11 @@ for PLAYER in "${NOSTR[@]}"; do
             echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME
         fi
     fi
+
+    ## PRIMAL RX SOURCE ?!
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
-    [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB
+    [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB ## MISSING DAY 1 PRIMAL : UPLANET ORIGIN
+
     ########################################################################
     ## STATION OFFICIAL UPASSPORT ?
     if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
@@ -234,6 +237,8 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
         fi
     else
+        #### UPASSPORT DU : Cooperative Real Member
+        #### - double PRIMO TX from G1 creator -
         echo "## OFFICIAL UPASSPORT : ${primal} is STATION co OWNER !!"
     fi
 
@@ -304,12 +309,20 @@ for PLAYER in "${NOSTR[@]}"; do
             ## GET LANG FROM NOSTR CARD
             LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
             [[ -z $LANG ]] && LANG="fr"
-            ## CREATE ASTRONAUTE TW ZENCARD
-            echo "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}"
+            #####################################
+            ## CREATE ASTRONAUTE TW ZEN CARD
+            #####################################
+            echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}"
             ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
         else
-
+            ################## FINAL STEP REACHED ###################
+            ######## USER STATE = Email
+            ### + NOSTR Card + Message (GPS 0?)
+            ### + UPassport (G1/DU?)
+            ### + Zen Card (Ẑ/€?)
+            ### = PLAYER N1/N2 UPLANET
+            #########################################################
             echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
             $(${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
             ## Inject new NOSTR EVENTS into TW
@@ -318,6 +331,8 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
     fi
 
+    ########################################################################
+    ####################################### IPFS NAME PUBLISH
     ########################################################################
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"

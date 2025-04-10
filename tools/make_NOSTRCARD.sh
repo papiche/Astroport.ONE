@@ -99,7 +99,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
         -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
 
-    VAULTNSQR=$(ipfs --timeout 15s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
+    VAULTNSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
     ## CHECK IPFS IS WORKING GOOD (sometimes stuck)
     if [[ ! $? -eq 0 ]]; then
         cat ~/.zen/UPassport/templates/wallet.html \
@@ -109,13 +109,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         echo "${MY_PATH}/tmp/${MOATS}.out.html"
         exit 0
     fi
-    ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
+    #~ ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
 
     ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE
     amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png \
         -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
 
-    SSSSQR=$(ipfs --timeout 15s add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
+    SSSSQR=$(ipfs --timeout 20s add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
     ipfs pin rm /ipfs/${SSSSQR} 2>/dev/null
 
     ## Create G1PUBNOSTR QR Code
@@ -131,7 +131,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     mv ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ${HOME}/.zen/game/nostr/${EMAIL}/scan_${MOATS}.png
 
     G1PUBNOSTRQR=$(ipfs --timeout 30s add -q ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
-    ipfs pin rm /ipfs/${G1PUBNOSTRQR}
+    # ipfs pin rm /ipfs/${G1PUBNOSTRQR}
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png.cid
 
     ##############################################################
@@ -170,7 +170,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo '<meta http-equiv="refresh" content="5;url='${CORACLEIPFS}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/coracle.html
 
-    NOSTRIPFS=$(ipfs --timeout 15s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+    NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
     ### SEND PROFILE TO NOSTR RELAYS
