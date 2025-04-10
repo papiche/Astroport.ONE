@@ -129,6 +129,7 @@ for PLAYER in "${NOSTR[@]}"; do
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
+    mkdir -p ~/.zen/tmp/${MOATS}
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey "${salt}" "${pepper}"
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
@@ -144,7 +145,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
             else
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
-                echo "UPlanet ORIGIN : Activate ZenCard + Zine Welcome DEMO"
+                echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
                 ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:NOSTR:${PLAYER}:${NPUB}"
             fi
         fi
