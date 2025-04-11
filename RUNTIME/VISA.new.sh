@@ -437,15 +437,15 @@ tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
         GIMG="${MY_PATH}/../images/moa_net.png"
         CIMG="${MY_PATH}/../images/zenticket.png"
 
-        # QRG1avatar.png
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] && amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
+        # ZENG1avatar.png
+        [[ ! -s ~/.zen/game/players/${PLAYER}/ZENG1avatar.png ]] && amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n ZENG1avatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
         # QRTWavatar.png
         [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] && amzqr "${myIPFS}/ipns/${ASTRONAUTENS}" -l H -p "$GIMG" -c -n QRTWavatar.png -d ~/.zen/game/players/${PLAYER}/ 1>/dev/null
 
     else
 
-        [[ ! -s ~/.zen/game/players/${PLAYER}/QRG1avatar.png ]] \
-        && cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/QRG1avatar.png
+        [[ ! -s ~/.zen/game/players/${PLAYER}/ZENG1avatar.png ]] \
+        && cp ~/.zen/game/players/${PLAYER}/QR.png ~/.zen/game/players/${PLAYER}/ZENG1avatar.png
 
         [[ ! -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]] \
         && cp ~/.zen/game/players/${PLAYER}/QR.ASTRONAUTENS.png ~/.zen/game/players/${PLAYER}/QRTWavatar.png
@@ -453,7 +453,7 @@ tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
     fi
 
     ## ID CARD & QRCODE
-    convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png  2>/dev/null
+    convert ~/.zen/game/players/${PLAYER}/ZENG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png  2>/dev/null
     convert ~/.zen/game/players/${PLAYER}/QRTWavatar.png -resize 240 ~/.zen/tmp/${MOATS}/TW.png 2>/dev/null
     convert ${MY_PATH}/../images/astroport.jpg  -resize 240 ~/.zen/tmp/${MOATS}/ASTROPORT.png 2>/dev/null
 

@@ -135,7 +135,7 @@ echo ">> CESIUM+ : ${CPSEUDO} - ${CDESCR} : ${G1PUB} <<"
     #~ echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=${G1PUB}"
 
     #~ ${MY_PATH}/timeout.sh -t 20 \
-    #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/QRG1avatar.png #GCHANGE+
+    #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}" -s "$LIBRA/ipns/$ASTRONAUTENS"  -A ~/.zen/game/players/${PLAYER}/ZENG1avatar.png #GCHANGE+
     #~ [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
     #~ || cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json > ~/.zen/tmp/coucou/${G1PUB}gchange.1st.json
 

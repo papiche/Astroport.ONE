@@ -48,7 +48,7 @@ else
 
     mkdir -p ~/.zen/game/players/${PLAYER}/
     CIMG="${MY_PATH}/../images/zenticket.png"
-    amzqr "${G1PUB}" -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+    amzqr "${G1PUB}:ZEN" -l H -p "$CIMG" -c -n ZENG1avatar.png -d ~/.zen/game/players/${PLAYER}/
 
 fi
 
@@ -82,7 +82,7 @@ cp ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MO
 #~ && sudo brother_ql_print ~/.zen/tmp/${MOATS}/bill.bin $LP
 #~ #############
 
-convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
+convert ~/.zen/game/players/${PLAYER}/ZENG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 260 ~/.zen/tmp/${MOATS}/astroport.jpg
 
 composite -compose Over -gravity NorthEast -geometry +42+72 ~/.zen/tmp/${MOATS}/astroport.jpg ${MY_PATH}/../images/Brother_600x400.png ~/.zen/tmp/${MOATS}/one.png

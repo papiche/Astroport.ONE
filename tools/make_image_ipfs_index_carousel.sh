@@ -91,8 +91,8 @@ if [[ ! -d $img_dir ]]; then
 
         # CREATE G1 AMZQR
         CIMG="$MY_PATH/../images/zenticket.png"
-        amzqr ${pub} -l H -p "$CIMG" -c -n QRG1avatar.png -d ~/.zen/game/players/${PLAYER}/
-        convert ~/.zen/game/players/${PLAYER}/QRG1avatar.png -resize 250 ~/.zen/tmp/QR.png
+        amzqr "${pub}:ZEN" -l H -p "$CIMG" -c -n ZENG1avatar.png -d ~/.zen/game/players/${PLAYER}/
+        convert ~/.zen/game/players/${PLAYER}/ZENG1avatar.png -resize 250 ~/.zen/tmp/QR.png
         # ADD IT
         composite -compose Over -gravity NorthEast -geometry +0+0 ~/.zen/tmp/QR.png ~/.zen/tmp/carousel/${pub}.one.png ~/.zen/tmp/one.png
 

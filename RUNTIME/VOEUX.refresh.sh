@@ -230,10 +230,10 @@ do
     IAMAP=$(ipfs add -qw ~/.zen/tmp/world.js | tail -n 1)
     echo "JSON WISH WORLD READY /ipfs/${IAMAP}/world.js"
     ##################################
-    ## PREPARE PLAYER G1 QRCODE : QRG1avatar.png
+    ## PREPARE PLAYER G1 QRCODE : ZENG1avatar.png
     [[ -s ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png ]] \
     && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/voeux/${WISHNAME}/${VOEUKEY}/voeu.png | tail -n 1)
-    [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/QRG1avatar.png | tail -n 1)
+    [[ $QRLINK == "" ]] && QRLINK=$(ipfs add -q ~/.zen/game/players/${PLAYER}/ZENG1avatar.png | tail -n 1)
 
     ### APPLY FOR ${WISHNAME} APP MODEL : make index.html
     ################################## ${WISHNAME}/index.html
