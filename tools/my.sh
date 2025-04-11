@@ -481,7 +481,7 @@ NODEG1PUB=$(cat $HOME/.zen/game/secret.dunikey 2>/dev/null | grep "pub:" | cut -
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)
 isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
 
-myDOMAIN="copylaradio.com"
+myDOMAIN="$(myDomainName)"
 
 myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
 myAPI="http://127.0.0.1:5001"
@@ -553,6 +553,10 @@ HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 if [ -s "$HOME/.astro/bin/activate" ]; then
     source $HOME/.astro/bin/activate
 fi
+
+[[ $myDOMAIN == "localhost" && -s ~/.zen/♥Box ]] \
+    && myDOMAIN=$(echo $myIPFS | rev | cut -d '.' -f -2 | rev)
+[[ $myDOMAIN == "localhost" ]] && myDOMAIN="copylaradio.com"
 
 ## NOSTR RELAY ADDRESS
 myRELAY=$(echo $myIPFS | sed 's|https://ipfs|wss://relay|') ## wss://
