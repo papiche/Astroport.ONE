@@ -62,7 +62,7 @@ echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
 fi
 ######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
 ## NOSTR ##############################################
-## CREATE ~/.zen/game/secret.nostr (YLEVEL NODES)
+## CREATE ~/.zen/game/secret.nostr (YLEVEL NODES only)
 if [[ -s ~/.zen/game/secret.june ]]; then
     source ~/.zen/game/secret.june
     npub=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
@@ -81,6 +81,11 @@ if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
     captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER" -s)
     echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
         > ~/.zen/game/players/.current/secret.nostr
+    ## Add CAPTAIN HEX to nostr WhiteList
+    mkdir -p ~/.zen/game/nostr/CAPTAIN
+    echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
+else
+    rm -Rf ~/.zen/game/nostr/CAPTAIN
 fi
 ##################################################
 
