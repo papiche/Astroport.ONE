@@ -369,6 +369,7 @@ myHtml() {
         -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
         -e "s~http://g1billet.localhost:33101~${myG1BILLET}~g" \
         -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+        -e "s~_uSPOT_~${uSPOT}~g" \
         -e "s~g1billet.localhost~${myIP}~g" \
         -e "s~_HOSTNAME_~$(hostname)~g" \
         -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
