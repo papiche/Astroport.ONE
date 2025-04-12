@@ -373,7 +373,7 @@ NODE12345="{
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
-captainNPUB
+
 ## PUBLISH ${IPFSNODEID}/12345.json
 echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
 
