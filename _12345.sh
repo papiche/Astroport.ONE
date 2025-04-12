@@ -84,6 +84,7 @@ if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
     ## Add CAPTAIN HEX to nostr WhiteList
     mkdir -p ~/.zen/game/nostr/CAPTAIN
     echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
+    echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
     ## REFRESH ZSWARM HEX
     mkdir -p ~/.zen/game/nostr/ZSWARM
     cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
