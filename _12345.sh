@@ -85,9 +85,10 @@ if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
     mkdir -p ~/.zen/game/nostr/CAPTAIN
     echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
     echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
-    ## REFRESH ZSWARM HEX
+    ## REFRESH ZSWARM & HEX_CAPTAIN
     mkdir -p ~/.zen/game/nostr/ZSWARM
     cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
+    cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX_CAPTAIN >> ~/.zen/game/nostr/ZSWARM/HEX
 else
     rm -Rf ~/.zen/game/nostr/CAPTAIN
 fi
