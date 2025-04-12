@@ -9,6 +9,7 @@ ME="${0##*/}"
 if [[ ! -f $HOME/.local/bin/yt-dlp ]]; then
         curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o $HOME/.local/bin/yt-dlp
 
+        chmod +x $HOME/.local/bin/yt-dlp
         ytdl=$(which youtube-dl) # modify old
         [[ -f ${ytdl} && ! -f ${ytdl}.old ]] \
             && cp ${ytdl} ${ytdl}.old \
