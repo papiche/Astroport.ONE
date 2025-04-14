@@ -59,19 +59,95 @@ add_client() {
 
     # Trouver le prochain IP
     local NEXT_IP=$(($(sudo grep -oP "${NETWORK%.*}\.\K\d+" "$SERVER_CONF" | sort -n | tail -1 || echo 1) + 1))
+    local CLIENT_IP="${NETWORK%.*}.$NEXT_IP"
+
+    # Demande de restrictions de ports
+    echo -e "\nPorts autorisés pour ce client (laissez vide pour tout autoriser) :"
+    echo "  - 'steamlink' pour Steam Link (TCP 27036,27037,27031,27030, UDP 27036,27037)"
+    echo "  - 'ollama' pour Ollama (TCP 11434)"
+    echo "  - 'comfyui' pour ComfyUI (TCP 8188)"
+    echo "  - 'all' pour tous les ports (équivalent à laisser vide)"
+    echo "  - Ou spécifiez une liste de ports TCP/UDP séparés par des virgules (ex: tcp/80,tcp/443,udp/53)"
+    read -p "> " allowed_ports_input
+
+    local IPTABLES_RULES=""
+    local POSTUP_RULES=""
+    local POSTDOWN_RULES=""
+
+    if [ -n "$allowed_ports_input" ] && [ "$allowed_ports_input" != "all" ]; then
+        echo "🔒 Ports restreints pour $CLIENT_NAME:"
+
+        # Fonction pour ajouter une règle iptables
+        add_iptables_rule() {
+            local proto=$1
+            local port=$2
+            IPTABLES_RULES+="# Autorisation $proto/$port pour $CLIENT_NAME ($CLIENT_IP)\n"
+            IPTABLES_RULES+="iptables -I FORWARD -i wg0 -s $CLIENT_IP -p $proto --dport $port -j ACCEPT\n"
+            POSTUP_RULES+="$IPTABLES_RULES"
+            POSTDOWN_RULES+="iptables -D FORWARD -i wg0 -s $CLIENT_IP -p $proto --dport $port -j ACCEPT\n"
+            echo "  - $proto/$port"
+        }
+
+        case "$allowed_ports_input" in
+            steamlink)
+                add_iptables_rule tcp 27036
+                add_iptables_rule tcp 27037
+                add_iptables_rule tcp 27031
+                add_iptables_rule tcp 27030
+                add_iptables_rule udp 27036
+                add_iptables_rule udp 27037
+                ;;
+            ollama)
+                add_iptables_rule tcp 11434
+                ;;
+            comfyui)
+                add_iptables_rule tcp 8188
+                ;;
+            *) # Traitement de la liste de ports personnalisée
+                IFS=',' read -ra ports_list <<< "$allowed_ports_input"
+                for port_spec in "${ports_list[@]}"; do
+                    local proto=$(echo "$port_spec" | cut -d'/' -f1)
+                    local port=$(echo "$port_spec" | cut -d'/' -f2)
+                    if [[ "$proto" == "tcp" || "$proto" == "udp" ]] && [[ "$port" =~ ^[0-9]+$ ]]; then
+                        add_iptables_rule "$proto" "$port"
+                    else
+                        echo "⚠️ Format de port invalide: $port_spec. Ignoré."
+                    fi
+                done
+                ;;
+        esac
+
+        # Règle de DROP par défaut si des ports sont spécifiés (sauf 'all' ou vide)
+        IPTABLES_RULES+="# Refus par défaut pour les autres ports pour $CLIENT_NAME ($CLIENT_IP)\n"
+        IPTABLES_RULES+="iptables -I FORWARD -i wg0 -s $CLIENT_IP -j DROP\n"
+        POSTUP_RULES+="$IPTABLES_RULES"
+        POSTDOWN_RULES+="iptables -D FORWARD -i wg0 -s $CLIENT_IP -j DROP\n"
+
+    else
+        echo "🔓 Tous les ports autorisés pour $CLIENT_NAME."
+    fi
+
 
     # Ajout au serveur
     echo -e "\n[Peer]
 # $CLIENT_NAME
 PublicKey = $CLIENT_WG_PUBKEY
-AllowedIPs = ${NETWORK%.*}.$NEXT_IP/32" | sudo tee -a "$SERVER_CONF" > /dev/null
+AllowedIPs = $CLIENT_IP/32" | sudo tee -a "$SERVER_CONF" > /dev/null
+
+    # Mise à jour PostUp et PostDown dans la section [Interface]
+    sudo sed -i "/^PostUp = iptables -A FORWARD -i %i -j ACCEPT;/a\\
+### Règles pour le client $CLIENT_NAME ($CLIENT_IP) START ###\n$POSTUP_RULES### Règles pour le client $CLIENT_NAME ($CLIENT_IP) END ###" "$SERVER_CONF"
+
+    sudo sed -i "/^PostDown = iptables -D FORWARD -i %i -j ACCEPT;/a\\
+### Suppression des règles pour le client $CLIENT_NAME ($CLIENT_IP) START ###\n$POSTDOWN_RULES### Suppression des règles pour le client $CLIENT_NAME ($CLIENT_IP) END ###" "$SERVER_CONF"
+
 
     # Génération config client
     local CLIENT_CONF="$CONFIG_DIR/${CLIENT_NAME}.conf"
     cat > "$CLIENT_CONF" <<EOF
 [Interface]
 PrivateKey = _FROMYOURSSH_
-Address = ${NETWORK%.*}.$NEXT_IP/32
+Address = $CLIENT_IP/32
 DNS = 1.1.1.1, 2606:4700:4700::1111
 
 [Peer]
@@ -114,6 +190,8 @@ show_menu() {
                 sudo wg show wg0
                 echo -e "\n📜 Fichier de configuration :"
                 sudo grep -A3 "\[Peer\]" /etc/wireguard/wg0.conf || echo "Aucun client configuré"
+                echo -e "\n🔒 Règles iptables pour les clients (section PostUp/PostDown de [Interface]):"
+                sudo grep "### Règles pour le client" /etc/wireguard/wg0.conf || echo "Aucune règle iptables spécifique aux clients."
                 ;;
             4) sudo systemctl restart wg-quick@wg0 ;;
             5) exit 0 ;;
@@ -124,7 +202,7 @@ show_menu() {
 
 # Vérification des dépendances
 check_deps() {
-    for cmd in wg curl; do
+    for cmd in wg curl iptables sed grep awk base64 systemctl tee mkdir chmod sort head tail tr command; do
         if ! command -v "$cmd" &> /dev/null; then
             echo "❌ Veuillez installer $cmd avant de continuer"
             exit 1
