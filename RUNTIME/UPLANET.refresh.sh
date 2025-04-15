@@ -563,6 +563,9 @@ for UMAP in ${unique_combined[@]}; do
             -A ${MY_PATH}/../images/extension_territoire.jpg
 
     #### PUBLISH TO NOSTR
+    echo "#####################################################################"
+    echo "########################PUBLISH TO NOSTR#############################"
+    echo "#####################################################################"
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
