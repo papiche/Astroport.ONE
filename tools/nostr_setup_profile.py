@@ -43,10 +43,12 @@ def nostr_setup_profile(args):
     # Add extra tag if provided
     if args.ipfs_gw:
         tags.append(["i", f"ipfs_gw:{args.ipfs_gw}", ""])
-    if args.tw_feed:
-        tags.append(["i", f"tw_feed:{args.tw_feed}", ""])
     if args.ipns_vault:
         tags.append(["i", f"ipns_vault:{args.ipns_vault}", ""])
+    if args.ipfs_gw:
+        tags.append(["i", f"zencard:{args.zencard}", ""])
+    if args.tw_feed:
+        tags.append(["i", f"tw_feed:{args.tw_feed}", ""])
 
     # Create and publish PROFILE + metadata event
     metadata_event = Event(kind=0, content=json.dumps(metadata), tags=tags)
@@ -87,8 +89,9 @@ if __name__ == "__main__":
     parser.add_argument("telegram", help="Telegram URL")
     parser.add_argument("relays", nargs="+", help="List of relays")
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL", default=None)
-    parser.add_argument("--tw_feed", help="TW Feed IPNS key", default=None)
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key", default=None)
+    parser.add_argument("--zencard", help="ZenCard wallet address", default=None)
+    parser.add_argument("--tw_feed", help="TW Feed IPNS key", default=None)
 
     args = parser.parse_args()
     nostr_setup_profile(args)
