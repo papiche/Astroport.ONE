@@ -272,11 +272,17 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
+        ## PRIMAL can be UPLANETG1PUB or REGULAR wallet key = NO PoH !
+        if [[ -d  ~/.zen/game/nostr/${PLAYER}/PRIMAL/N1 ]]; then
+            PoH=":$primal"
+        else
+            PoH=""
+        fi
         g1pubnostr=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
         ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
-            "$title" "$g1pubnostr:$primal" \
+            "$title" "$g1pubnostr$PoH" \
             "$description - $city" \
             "$myIPFS/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
