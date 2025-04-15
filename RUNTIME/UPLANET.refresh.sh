@@ -312,6 +312,9 @@ for UMAP in ${unique_combined[@]}; do
     ## WRITE NOSTR HEX ADDRESS USED FOR strfry whitelisting
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
     HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUB)
+    #~ mkdir -p ~/.zen/game/nostr/UMAP_${SLAT}_${SLON} # Add to nostr Whitelist # DONE by NODE.refresh.sh
+    #~ echo "$HEX" \
+        #~ > ~/.zen/game/nostr/UMAP_${SLAT}_${SLON}/HEX
     echo "$HEX" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX
     echo "$NPUB" \
