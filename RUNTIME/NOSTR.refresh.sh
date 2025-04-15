@@ -299,35 +299,39 @@ for PLAYER in "${NOSTR[@]}"; do
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
 
-        ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
-        if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
-            echo "## MULTIPASS ZenCard creation "
-            source ~/.zen/game/nostr/${PLAYER}/GPS
-            PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
-            NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+        if [[ "$UPLANETG1PUB" ! = "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
+            ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
+            if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
+                echo "## MULTIPASS ZenCard creation "
+                source ~/.zen/game/nostr/${PLAYER}/GPS
+                PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+                NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
 
-            ## GET LANG FROM NOSTR CARD
-            LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
-            [[ -z $LANG ]] && LANG="fr"
-            #####################################
-            ## CREATE ASTRONAUTE TW ZEN CARD
-            #####################################
-            echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}"
-            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
+                ## GET LANG FROM NOSTR CARD
+                LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+                [[ -z $LANG ]] && LANG="fr"
+                #####################################
+                ## CREATE ASTRONAUTE TW ZEN CARD
+                #####################################
+                echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}"
+                ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
+            else
+                ################## FINAL STEP REACHED ###################
+                ######## USER STATE = Email
+                ### + NOSTR Card + Message (GPS 0?)
+                ### + UPassport (G1/DU?)
+                ### + Zen Card (Ẑ/€?)
+                ### = PLAYER N1/N2 UPLANET
+                #########################################################
+                echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
+                $(${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
+                ## Inject new NOSTR EVENTS into TW
+
+
+            fi
         else
-            ################## FINAL STEP REACHED ###################
-            ######## USER STATE = Email
-            ### + NOSTR Card + Message (GPS 0?)
-            ### + UPassport (G1/DU?)
-            ### + Zen Card (Ẑ/€?)
-            ### = PLAYER N1/N2 UPLANET
-            #########################################################
-            echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
-            $(${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
-            ## Inject new NOSTR EVENTS into TW
-
-
+            echo "UPlanet ORIGIN NOSTR Card... NO ZenCard here"
         fi
     fi
 
