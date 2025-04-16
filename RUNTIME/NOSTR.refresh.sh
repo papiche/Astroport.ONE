@@ -305,7 +305,7 @@ for PLAYER in "${NOSTR[@]}"; do
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
 
-        if [[ "$UPLANETG1PUB" ! = "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
+        if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
             ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
             if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
                 echo "## MULTIPASS ZenCard creation "
