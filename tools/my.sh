@@ -579,6 +579,7 @@ myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
 
 CAPTAING1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
 CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
+CAPTAINHEX=$(cat $HOME/.zen/game/nostr/CAPTAIN/HEX 2>/dev/null) ## PLAYER ONE HEX
 
 UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
 [[ -z ${UPLANETG1PUB} ]] \
@@ -589,7 +590,7 @@ UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
 
-## DEV support@qo-op.com Unamed UPlanet World Keeper.
+## DEV support@qo-op.com UPlanet ORIGIN Code Maker.
 [[ ${CAPTAING1PUB} == "" ]] \
     && CAPTAING1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH" # fred@g1sms.fr G1FabLab Wallet
 
