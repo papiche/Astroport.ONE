@@ -73,6 +73,7 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     tiddlywiki --load ${INDEX} --output ~/.zen/tmp/${MOATS} --render '.' 'email.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' "${EMAIL}"
     HEX=$(cat ~/.zen/tmp/${MOATS}/email.json 2>/dev/null | jq -r .[].hex)
+    # this HEX is set if a NOSTR Card creates a Zen Card - optional -
 
     ## GET ASTRONAUTENS - field was missing in TW model Astroport Tiddler -
     ASTRONAUTENS=$(cat ~/.zen/tmp/${MOATS}/Astroport.json 2>/dev/null | jq -r .[].astronautens)
@@ -92,9 +93,10 @@ else
 
 fi
 
-#~ [[ $XDG_SESSION_TYPE == 'x11' && ${ASTRONAUTENS} != "" && ${ASTRONAUTENS} != "/ipfs/" && ${ASTRONAUTENS} != "/ipns/" ]] \
-    #~ && xdg-open http://127.0.0.1:8080${ASTRONAUTENS}
+# this NHEX is from NOSTR Card
+NHEX=$(cat ~/.zen/game/nostr/${EMAIL}/HEX)
+[[ $HEX == "" ]] && HEX=$NHEX
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX HEX=$HEX source=$source"
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX HEX=$HEX NHEX=$NHEX source=$source"
 exit 0
