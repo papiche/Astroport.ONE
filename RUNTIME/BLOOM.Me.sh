@@ -23,10 +23,12 @@ echo '
     && rm ~/.ipfs/swarm.key ~/.zen/game/MY_boostrap_nodes.txt ~/.zen/game/My_boostrap_ssh.txt && exit 0
 ## Ce Script permet à la Station de générer ou rejoindre un swarm privé
 ## Il vérifie la concordance "SSH IPFSNODEID" des noeuds
-## Au minimum 4 Stations peuvent forker un nouvel essaim par jour.
+## Il faut au minimum 4 Stations de la même REGION pour créer un nouvel essaim.
 
 echo "$ME RUNNING $(date)"
-## CHECK IF ALREADY IPFS PRIVATE SWARM
+#################################################################
+#################################################################
+## IS ALREADY IPFS PRIVATE SWARM
 if [[ -s ~/.ipfs/swarm.key ]]; then
     cat ~/.ssh/authorized_keys
     echo "
@@ -43,20 +45,25 @@ if [[ -s ~/.ipfs/swarm.key ]]; then
 _#/|##########/\#####(      )######/\##########|\#_
 |/ |#/\#/\#/\/  \#/\#/       /##/\#/  \/\#/\#/\#|
     |/  V  |/      \|        |/         |V  \|
-    DRAGON PRIVATE SWARM ${UPLANETG1PUB}
+        UPlanet ZEN : ${UPLANETG1PUB}
 ------------------------------------------------
 "
     ipfs p2p ls
+    rm -f ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
     exit 0
 fi
-#################################################################
+######################################################## TWIN KEYS ?
+############################################## SSH ! = IPFS !
 ## CHECK MY Y/Z LEVEL tools/ssh_to_g1ipfs.py
 YNODE=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py)
 [[ $YNODE != $IPFSNODEID || -z $YNODE ]] \
     && echo "$YNODE != $IPFSNODEID" \
     && echo "YLEVEL NOT READY ... SSH != IPFS ..." \
     && exit 0
+#################################################################
+#################################################################
 
+#################################################################
 ## Init SEEDS - DRAGON made it
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
     && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d ' ' \
@@ -66,18 +73,30 @@ SEEDS=$(cat ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt)
 
 totnodes=($(ls ~/.zen/tmp/swarm/*/12345.json | rev | cut -d '/' -f 2 | rev 2>/dev/null))
 
+## ME GPS REGION
+MeRlat=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lat | cut -d '.' -f 1)
+MeRlon=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lon | cut -d '.' -f 1)
+echo "ASTROPORT GPS REGION_$MeRlat_$MeRlon"
 ## CHECK OTHER ASTROPORT PUBLISHING Y LEVEL
 nodes=($(ls ~/.zen/tmp/swarm/*/y_ssh.pub | rev | cut -d '/' -f 2 | rev 2>/dev/null))
 for aport in ${nodes[@]};
 do
-    ## Test  "REAL YLEVEL" : clef publique ssh = "ipfsNodeID"
+    [[ ${aport} == ${IPFSNODEID} ]] && continue
+    ### SAME REGION FILTER
+    yRlat=$(cat ~/.zen/tmp/swarm/${aport}/GPS.json | jq -r .[].lat | cut -d '.' -f 1)
+    yRlon=$(cat ~/.zen/tmp/swarm/${aport}/GPS.json | jq -r .[].lon | cut -d '.' -f 1)
+    [[ $yRlat != $MeRlat || $yRlon != $MeRlon ]] \
+        && echo "${aport} REGION_$yRlat_$yRlon IS TOO FAR" \
+        && continue
+
+    ## CHECK "REAL YLEVEL" : ssh pub <=> "ipfsNodeID"
     ynodeid=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.zen/tmp/swarm/${aport}/y_ssh.pub)")
     [[ ${ynodeid} != ${aport} ]] \
         && echo " ${ynodeid} != ${aport} " \
         && continue
 
-    echo "${aport} : READY TO BLOOM" \
-    && OKSTATIONS=("${OKSTATIONS[@]}" "${aport}")
+    echo "${aport} : READY TO BLOOM"
+    OKSTATIONS=("${OKSTATIONS[@]}" "${aport}")
 done
 
 ## ADD MYSELF
