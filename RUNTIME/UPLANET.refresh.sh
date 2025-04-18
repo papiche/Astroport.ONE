@@ -208,6 +208,8 @@ for UMAP in ${unique_combined[@]}; do
     SECTOR="_${SLAT}_${SLON}"
     echo "SECTOR ${SECTOR}"
     ############################################################## "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
+    SECTORNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
@@ -229,6 +231,8 @@ for UMAP in ${unique_combined[@]}; do
     REGION="_${RLAT}_${RLON}"
     echo "REGION ${REGION}"
     ##############################################################
+    REGIONNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+    REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
     COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
@@ -304,8 +308,12 @@ for UMAP in ${unique_combined[@]}; do
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONNS
     echo "${UMAPG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
+    echo "${SECTORHEX}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_SECTOR
     echo "${SECTORG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
+    echo "${REGIONHEX}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_REGION
     echo "${REGIONG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
     ####################################################################################

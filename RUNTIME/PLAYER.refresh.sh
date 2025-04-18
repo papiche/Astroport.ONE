@@ -150,7 +150,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         try=$((try-1))
         echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
 
-        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "TW LOADING TIMEOUT $try"
+        $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "${PLAYER} TW LOADING TIMEOUT $try"
 
         continue
 
@@ -283,7 +283,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ### GET UMAP ENV
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
-    echo "UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+    echo "UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 
     UMAPNS=$(echo $UMAPIPNS | rev | cut -d '/' -f 1 | rev)
     #############################################
