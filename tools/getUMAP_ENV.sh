@@ -28,7 +28,8 @@ REGION="_${RLAT}_${RLON}"
 ## GET ENV
 ######################################################################
 echo "UMAP : _${LAT}_${LON}"
-UMAPHEX=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+UMAPNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+UMAPHEX=$(${MY_PATH}/../tools/nostr2hex.py $UMAPNPUB)
 echo "UMAPHEX=$UMAPHEX"
 UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 echo "UMAPG1PUB=$UMAPG1PUB"
@@ -37,7 +38,8 @@ echo "UMAPIPNS=$UMAPIPNS"
 
 ######################################################################
 echo "SECTOR : _${SLAT}_${SLON}"
-SECTORHEX=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+SECTORNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
 echo "SECTORHEX=$SECTORHEX"
 SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
 echo "SECTORG1PUB=$SECTORG1PUB"
@@ -46,7 +48,8 @@ echo "SECTORIPNS=$SECTORIPNS"
 
 ######################################################################
 echo "REGION : _${RLAT}_${RLON}"
-REGIONHEX=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+REGIONNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
 echo "REGIONHEX=$REGIONHEX"
 REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
 echo "REGIONG1PUB=$REGIONG1PUB"

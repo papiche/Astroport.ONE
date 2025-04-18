@@ -94,7 +94,7 @@ else
 fi
 
 # this NHEX is from NOSTR Card
-NHEX=$(cat ~/.zen/game/nostr/${EMAIL}/HEX)
+NHEX=$(cat ~/.zen/game/nostr/${EMAIL}/HEX 2>/dev/null)
 [[ $HEX == "" ]] && HEX=$NHEX
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
