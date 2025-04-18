@@ -13,7 +13,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 PARAM="$1"
 EMAIL="${PARAM,,}" ## lowercase
 IMAGE="$2"
-
+ZLAT="$3"
+ZLON="$4"
 
 echo "Email detected: $EMAIL"
 [[ -s "~/.zen/tmp/${MOATS}/${EMAIL}_index.html" ]] \
@@ -143,6 +144,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
+    ## ZLAT ZLON
+    echo ${ZLAT} > ${HOME}/.zen/game/nostr/${EMAIL}/ZLAT
+    echo ${ZLON} > ${HOME}/.zen/game/nostr/${EMAIL}/ZLON
 
     ##############################################################
     ### PREPARE NOSTR ZINE
