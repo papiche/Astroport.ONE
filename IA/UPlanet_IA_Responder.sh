@@ -57,6 +57,12 @@ MESSAGE="$5"
 URL="$6"
 KNAME="$7"
 
+## If No URL : Getting URL from message content
+if [ -z "$URL" ]; then
+    # Extraire le premier lien .png ou .jpg de MESSAGE
+    URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|jpg|jpeg)' | head -n 1)
+fi
+
 echo "Received parameters:"
 echo "  PUBKEY: $PUBKEY"
 echo "  EVENT: $EVENT"
@@ -67,28 +73,22 @@ echo "  URL: $URL"
 echo "  KNAME: $KNAME"
 echo ""
 
-## If No URL : Getting URL from message content
-if [ -z "$URL" ]; then
-    # Extraire le premier lien .png ou .jpg de MESSAGE
-    URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|jpg)' | head -n 1)
-fi
-
 ## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
 UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
 [[ $PUBKEY == $UMAPHEX ]] && exit 0
 
 ##################################################################""
-## Authorize UMAP to publish (nostr whitelist), Used by NOSTR.GEO.refresh.sh
-mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
-if [ "$(cat ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX 2>/dev/null)" != "$UMAPHEX" ]; then
-  echo "$UMAPHEX" > ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX
+## Indicates UMAP is publishing (nostr whitelist), Used by NOSTR.GEO.refresh.sh
+if [ ! -s ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX ]; then
+    mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
+    echo "$UMAPHEX" > ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX
 fi
 ##################################################################""
 
 ### Extract message
 message_text=$(echo "$MESSAGE" | sed 's/\n.*//')
-echo "Message text from message: '$message_text'"
+#~ echo "Message text from message: '$message_text'"
 
 #######################################################################
 if [[ ! -z $URL ]]; then
@@ -99,16 +99,12 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 ANSWER=$($MY_PATH/question.py "$DESC + MESSAGE : $message_text (reformulate or reply if any question is asked, always using the same language as MESSAGE). Sign as ASTROBOT :")
-
-if [[ -z "$ANSWER" ]]; then
-  echo "Error: Failed to get answer from question.py"
-  exit 1
-fi
-echo "Ollama answer generated."
-echo "ANSWER: $ANSWER"
+#######################################################################
+#~ echo "Ollama answer generated."
+#~ echo "ANSWER: $ANSWER"
 
 #######################################################################
-echo "Creating GEO Key NOSTR secret..."
+#~ echo "Creating GEO Key NOSTR secret..."
 UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
 
 if [[ -z "$UMAPNSEC" ]]; then
@@ -116,26 +112,25 @@ if [[ -z "$UMAPNSEC" ]]; then
   exit 1
 fi
 
-## Write nostr message
-echo "Record KNAME localisation !! "
+## Record KNAME localisation
 if [[ ! -z $KNAME ]]; then
-    echo "LAT=$LAT; LON=$LON" > ~/.zen/game/nostr/$KNAME/UMAP
+    [[ $LAT != "0.00" && $LON != "0.00" ]] \
+        && echo "LAT=$LAT; LON=$LON" > ~/.zen/game/nostr/$KNAME/UMAP
 fi
 
 #######################################################################
-echo "Converting NSEC to HEX for nostpy-cli..."
+#~ echo "Converting NSEC to HEX for nostpy-cli..."
 NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
 if [[ -z "$NPRIV_HEX" ]]; then
   echo "Error: Failed to convert NSEC to HEX."
   exit 1
 fi
-echo "NSEC converted to HEX."
 
 #######################################################################
 #######################################################################
 # SEND IA RESPONSE
 #######################################################################
-echo "Sending IA ANSWER"
+#~ echo "Sending IA ANSWER"
 
 nostpy-cli send_event \
   -privkey "$NPRIV_HEX" \
@@ -202,10 +197,12 @@ fi
 echo ""
 echo "--- Summary ---"
 echo "PUBKEY: $PUBKEY"
+echo "EVENT: $EVENT"
 echo "LAT: $LAT"
 echo "LON: $LON"
-echo "Message Text: $message_text"
-echo "Image Description: $DESC"
-echo "Ollama Answer: $ANSWER"
+echo "Message: $message_text"
+echo "Image: $DESC"
+echo "---------------"
+echo "UMAP_${LAT}_${LON} Answer: $ANSWER"
 
 exit 0
