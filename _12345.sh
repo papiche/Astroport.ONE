@@ -167,7 +167,7 @@ while true; do
         [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
         ### NOSTR refresh
-        ${MY_PATH}/RUNTIME/NOSTR.H.refresh.sh &
+        ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
 
         #####################################
         ( ##### SUB-PROCESS £

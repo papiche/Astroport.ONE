@@ -16,9 +16,7 @@ IMAGE="$2"
 ZLAT="$3"
 ZLON="$4"
 
-echo "Email detected: $EMAIL"
-[[ -s "~/.zen/tmp/${MOATS}/${EMAIL}_index.html" ]] \
-    && rm -Rf "${HOME}/.zen/game/nostr/${EMAIL-null}/" ## CLEANING OLD NOSTR
+echo "Make_NOSTRCARD.sh >>>>>>>>>> $EMAIL"
 
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}/
@@ -112,7 +110,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
     #~ ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
 
-    ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE
+    ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE (Terminal Compatible)
     amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png \
         -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ 2>/dev/null
 

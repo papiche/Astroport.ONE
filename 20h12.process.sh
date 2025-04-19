@@ -96,7 +96,7 @@ ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 
 #################### NOSTR (Notes and Other Stuff Transmitted by Relays)
-${MY_PATH}/RUNTIME/NOSTR.H.refresh.sh
+${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 ########################################################################
 
 ######################################################### UPLANET ######
