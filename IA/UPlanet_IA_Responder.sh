@@ -43,7 +43,7 @@ if [[ "$1" == "--help" ]]; then
 fi
 
 # --- Check for correct number of arguments ---
-if [[ $# -lt 6 ]]; then
+if [[ $# -lt 5 ]]; then
   echo "Error: Not enough arguments provided."
   print_help
   exit 1
@@ -117,10 +117,8 @@ if [[ -z "$UMAPNSEC" ]]; then
 fi
 
 ## Write nostr message
-echo "Sending NOSTR message... copying to IPFS Vault ! DEBUG !! "
+echo "Record KNAME localisation !! "
 if [[ ! -z $KNAME ]]; then
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N") && mkdir -p ~/.zen/game/nostr/$KNAME/MESSAGE
-    echo "$ANSWER\nASTROBOT_$LAT_$LON\n$URL" > ~/.zen/game/nostr/$KNAME/MESSAGE/$MOATS.txt ## to IPFS (with NOSTR.refresh.sh)
     echo "LAT=$LAT; LON=$LON" > ~/.zen/game/nostr/$KNAME/UMAP
 fi
 
@@ -147,7 +145,6 @@ nostpy-cli send_event \
   --relay "$myRELAY"
 
 #######################################################################
-#######################################################################
 # ADD TO FOLLOW LIST
 #######################################################################
 # Query existing event using strfry scan
@@ -167,30 +164,39 @@ if [[ -n "$EXISTING_EVENT" ]]; then # Check if STRFRY_OUTPUT is not empty
 
     # Check if existing tags are null or empty string, if so treat as empty array
     if [[ -z "$EXISTING_TAGS" ]] || [[ "$EXISTING_TAGS" == "null" ]]; then
-        NEW_TAGS="[['p', '$PUBKEY']]"
+        EXISTING_P_TAGS_ARRAY="[]"
+    else
+        # Extract existing 'p' tags as an array using jq
+        EXISTING_P_TAGS_ARRAY=$(echo "$EXISTING_TAGS" | jq -r '. | to_entries[] | select(.value[0] == "p") | .value[1]')
+    fi
+
+    # Check if PUBKEY already exists in EXISTING_P_TAGS_ARRAY
+    if echo "$EXISTING_P_TAGS_ARRAY" | grep -q -w "$PUBKEY"; then
+        NEW_TAGS="$EXISTING_TAGS" # Keep existing tags, no need to add again - effectively no change to tags
     else
         # Append the new 'p' tag to the existing tags using jq
-        NEW_TAGS=$(echo "$EXISTING_TAGS" | jq -c '. + [["p", "'"$PUBKEY"'"]]')
+        if [[ -z "$EXISTING_TAGS" ]] || [[ "$EXISTING_TAGS" == "null" ]]; then
+            NEW_TAGS="[['p', '$PUBKEY']]"
+        else
+            NEW_TAGS=$(echo "$EXISTING_TAGS" | jq -c '. + [["p", "'"$PUBKEY"'"]]')
+        fi
     fi
 else
     # If no existing event was found, create a new tags array with the new pubkey
     NEW_TAGS="[['p', '$PUBKEY']]"
 fi
 
-# Send the updated kind 3 event
-# NOTE: If strfry's send_event is intended to interact with a relay, keep --relay "$myRELAY"
-#       If strfry is only for local DB management and you need to send to a relay,
-#       you might still need nostpy-cli send_event for relay interaction.
-#       Assuming here that strfry's send_event is used to publish to relays.
+# Send the updated kind 3 event only if tags were actually modified
+if [[ "$NEW_TAGS" != "$EXISTING_TAGS" ]] || [[ -z "$EXISTING_EVENT" ]]; then
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 3 \
+        -content "" \
+        -tags "$NEW_TAGS" \
+        --relay "$myRELAY"
 
-nostpy-cli send_event \
-    -privkey "$NPRIV_HEX" \
-    -kind 3 \
-    -content "" \
-    -tags "$NEW_TAGS" \
-    --relay "$myRELAY"
-
-echo "updated follow list."
+    echo "updated follow list."
+fi
 
 #######################################################################
 echo ""
