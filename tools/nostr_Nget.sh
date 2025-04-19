@@ -7,8 +7,7 @@
 NPUB_HEX="$1"
 DEPTH="${2:-1}"  # default depth is 1 (N1)
 
-STRFRY_PATH="$HOME/.zen/strfry/strfry" # Define path to strfry executable
-STRFRY_CONF="$HOME/.zen/strfry/strfry.conf" # Define path to strfry config
+STRFRY_PATH="$HOME/.zen/strfry" # Define path to strfry executable
 
 if [ -z "$NPUB_HEX" ]; then
     echo "Usage: $0 <npub_hex> [depth]"
@@ -19,12 +18,14 @@ fi
 get_n1_follows() {
     local pubkey="$1"
     # Use strfry scan to query local DB. Relay is not used by strfry scan.
-    if [ ! -x "$STRFRY_PATH" ]; then
+    if [ ! -x "$STRFRY_PATH/strfry" ]; then
         echo "Error: strfry executable not found at $STRFRY_PATH."
         return 1
     fi
-    "$STRFRY_PATH" --config=$STRFRY_CONF scan '{"kinds":[3],"authors":["'$pubkey'"]}' |
+    cd $STRFRY_PATH
+    ./strfry scan '{"kinds":[3],"authors":["'$pubkey'"]}' |
         jq -r '.tags[] | select(.[0]=="p") | .[1]' | sort -u
+    cd -
 }
 
 # Zone N1
