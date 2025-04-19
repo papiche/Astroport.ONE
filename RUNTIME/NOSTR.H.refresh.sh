@@ -18,7 +18,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ############################################
 start=`date +%s`
 
-echo "## RUNNING NOSTR.refresh.sh
+echo "## RUNNING NOSTR.H.refresh.sh
                  _
  _ __   ___  ___| |_ _ __
 | '_ \ / _ \/ __| __| '__|

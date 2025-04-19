@@ -96,7 +96,7 @@ ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 
 #################### NOSTR (Notes and Other Stuff Transmitted by Relays)
-${MY_PATH}/RUNTIME/NOSTR.refresh.sh
+${MY_PATH}/RUNTIME/NOSTR.H.refresh.sh
 ########################################################################
 
 ######################################################### UPLANET ######
@@ -188,7 +188,7 @@ echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 ## MAIL LOG : support@qo-op.com ##
-${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "SOLAR 20H12 TIME : $(cat ~/.zen/GPS 2>/dev/null)"
+${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12 Solar Time : $(cat ~/.zen/GPS 2>/dev/null)"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
