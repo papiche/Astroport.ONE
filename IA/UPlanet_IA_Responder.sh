@@ -98,7 +98,12 @@ fi
 
 #######################################################################
 echo "Generating Ollama answer..."
-ANSWER=$($MY_PATH/question.py "$DESC + MESSAGE : $message_text (reformulate or reply if any question is asked, always using the same language as MESSAGE). Sign as ASTROBOT :")
+if [[ -n $DESC ]]; then
+    QUESTON="IMAGE: $DESC (MESSAGE: $message_text) In the same language as MESSAGE. 1) Translate IMAGE description. 2) Answer to MESSAGE."
+else
+    QUESTON="Reply to MESSAGE: $message_text. Sign as ASTROBOT."
+fi
+ANSWER=$($MY_PATH/question.py "${QUESTON}")
 #######################################################################
 #~ echo "Ollama answer generated."
 #~ echo "ANSWER: $ANSWER"
