@@ -71,6 +71,10 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 for PLAYER in "${NOSTR[@]}"; do
     echo "\m/_(>_<)_\m/ _______________________________________ ${PLAYER} "
 
+    [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null) == ${TODATE} ]] \
+        && [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/TODATE) != ${TODATE} ]] \
+            && continue # already published today & not 1st day
+
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     echo ${G1PUBNOSTR}
 
@@ -141,6 +145,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
         if [[ ${TODATE} != ${FILEDATE} ]]; then
             if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+                # UPlanet Zen : need Primo RX from WoT member
                 echo "UPlanet Zen : INVALID CARD"
                 destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
             else
@@ -165,7 +170,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
         mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
-        ## ONLY FOR UPlanet Zen
+        ## ONLY FOR UPlanet Zen (Get Cesium+ Profile)
         if [[ ${primal} != ${UPLANETG1PUB} ]]; then
             ## SCAN CESIUM/GCHANGE PRIMAL STATUS
             ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
@@ -181,7 +186,7 @@ for PLAYER in "${NOSTR[@]}"; do
     [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB ## MISSING DAY 1 PRIMAL : UPLANET ORIGIN
 
     ########################################################################
-    ## STATION OFFICIAL UPASSPORT ?
+    ## STATION OFFICIAL UPASSPORT = UPassport + 1 G1 RX (from WoT member)
     if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
         ## PRIMAL EXISTS ?
         if [[ ${primal} != "" && ${primal} != "null" ]]; then
@@ -304,7 +309,7 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "## Nostr Card PROFILE EXISTING"
         cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
-
+        ## Zen Card ONLY FOR UPlanet Zen
         if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
             ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
             if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
@@ -352,6 +357,9 @@ for PLAYER in "${NOSTR[@]}"; do
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
+
+    ## MEMORIZE TODATE PUBLISH
+    echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
 
     echo "___________________________________________________"
     sleep 1
