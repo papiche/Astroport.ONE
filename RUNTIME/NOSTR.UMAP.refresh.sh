@@ -16,7 +16,25 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 [[ ! -s $MY_PATH/../tools/my.sh ]] && echo "ERROR. Astroport.ONE is missing !!" && exit 1
 source $MY_PATH/../tools/my.sh
+#########################################################################
 
+echo '
+o               ²        ___---___                    ²
+       ²              ²--\        --²     ²     ²         ²
+                    ²/²;_²\     __/~ \²
+                   /;  / `-²  __\    ² \
+ ²        ²       / ,--²     / ²   ²;   \        |
+                 | ²|       /       __   |      -O-       ²
+                |__/    __ |  ² ;   \ | ² |      |
+                |      /  \\_    ² ;| \___|
+   ²    o       |      \  ²~\\___,--²     |           ²
+                 |     | ² ; ~~~~\_    __|
+    |             \    \   ²  ²  ; \  /_/   ²
+   -O-        ²    \   /         ² |  ~/                  ²
+    |    ²          ~\ \   ²      /  /~          o
+  ²                   ~--___ ; ___--~
+                 ²          ---         ²
+'
 #########################################################################
 #########################################################################
 #########################################################################
@@ -27,7 +45,7 @@ SECTORS=()
 for hexline in $(ls ~/.zen/game/nostr/UMAP_*_*/HEX);
 do
     #### CYCLING UMAPS
-    #~ echo $hexline
+    echo $hexline
     hex=$(cat $hexline)
     #~ echo $hex
     LAT=$(echo $hexline | cut -d '_' -f 2)
@@ -54,6 +72,7 @@ do
     SINCE=$(date -d "24 hours ago" +%s)
     cd ~/.zen/strfry
 
+    TAGS=()
     for ami in ${friends[@]}; do
         echo "----------------------------- @$ami" >> ${UMAPPATH}/NOSTR_messages
         ## 1. Récupération du profil (kind 0)
@@ -66,6 +85,7 @@ do
         ## 2. Affichage du profil
         if [[ -n "$PROFILE" ]]; then
             echo "👤 $PROFILE" >> ${UMAPPATH}/NOSTR_messages
+            TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
         else
             # filtrage (sans profil) TODO PROD
             #~ continue
@@ -86,18 +106,24 @@ do
 
     cd - 2>&1>/dev/null
 
+    cat ${UMAPPATH}/NOSTR_messages
+
     ## CREATE UMAP IDENTITY
     UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
     ## SELF FOLLOW
     UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 
-    ## Forget Today follows
+    ## Create JSON array of tags
+    TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
+    TAGS_JSON="[$TAGS_JSON]"
+
+    ## Follow Kown (relay local Profile ~= NOSTR Card)
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
         -content "" \
-        -tags "[['p', '$UMAPNPUB']]" \
+        -tags "$TAGS_JSON" \
         --relay "$myRELAY"
 
 done
@@ -114,9 +140,14 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     echo "Creating Sector ${sector} Journal"
     ## Get all messages
     message_text="$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/${sector}/*/NOSTR_messages)"
+    if [[ -z "$message_text" ]]; then
+        echo "No messages found for sector ${sector}"
+        continue
+    fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    ANSWER="$($MY_PATH/../IA/question.py "$message_text --- MAKE A JOURNAL TO PUBLISH ON UPLANET SECTOR ${sector}")"
+    QUESTION="$message_text --- 1. Produce a summary of this text, 2. Highligh the key points and their authors (answer in the language used in the text)"
+    ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     # Write JOURNAL to SECTOR
     slat=$(echo ${sector} | cut -d '_' -f 2)
@@ -142,11 +173,17 @@ UNIQUE_REGIONS=($(echo "${REGIONS[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 for region in ${UNIQUE_REGIONS[@]}; do
     echo "Creating Region ${region} Journal"
     message_text=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/${region}/*/NOSTR_journal)
+    if [[ -z "$message_text" ]]; then
+        echo "No messages found for region ${region}"
+        continue
+    fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    ANSWER="$($MY_PATH/../IA/question.py "$message_text --- MAKE A JOURNAL TO PUBLISH ON UPLANET REGION ${region}")"
+    QUESTION="$message_text --- Produce a summary of this text, highlighting the key points and their authors (use the same language as in their message)"
+    ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     regionpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/${region}"
+    mkdir -p $regionpath
     echo "$ANSWER" > $regionpath/NOSTR_journal
     ## LOG ..............
     cat $regionpath/NOSTR_journal
