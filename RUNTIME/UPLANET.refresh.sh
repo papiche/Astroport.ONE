@@ -11,6 +11,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## SEEK FOR UPLANET KEYS
 # GET & UPDATE IPNS
 ############################################
+[[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
+
 echo "############################################"
 echo "
  _________________________
@@ -24,8 +26,8 @@ echo "
 
 "
 echo "############################################"
+$MY_PATH/NOSTR.UMAP.refresh.sh
 echo "############################################"
-[[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir ~/.zen/tmp/${MOATS}
