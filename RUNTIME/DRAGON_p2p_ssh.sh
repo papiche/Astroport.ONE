@@ -91,13 +91,18 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
     source ~/.zen/game/players/.current/secret.nostr
      ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$NSEC" \
-    "UPlanet Captain $(cat ~/.zen/game/players/.current/.pseudo)" "$CAPTAING1PUB" \
-    "CopyLaRadio Captain - Dragon WoT - UPlanet ${UPLANETG1PUB:0:8} - TW : $myIPFS/ipns/$(cat ~/.zen/game/players/.current/.playerns)" \
+    "UPlanet Captain" "$CAPTAING1PUB" \
+    "UPlanet ${UPLANETG1PUB:0:8} : CopyLaRadio Captain / Dragon WoT -- TW : $myIPFS/ipns/$(cat ~/.zen/game/players/.current/.playerns)" \
     "https://ipfs.copylaradio.com/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
     "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
     "" "$myIPFS/ipns/copylaradio.com" "" "" "" "" \
     "wss://relay.copylaradio.com" "$myRELAY" \
     --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" --ipfs_gw "$myIPFS"
+
+    ## SEND FOLLOW TO EVERY NOSTR CARD
+    for nostrhex in $(cat ~/.zen/game/nostr/*@*.*/HEX); do
+        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$nostrhex"
+    done
 fi
 ##################################################################################
 
