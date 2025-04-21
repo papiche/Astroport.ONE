@@ -99,7 +99,7 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTON="IMAGE: $DESC (MESSAGE: $message_text) ANSWER USING SAME LANGUAGE AS MESSAGE. 1) Write IMAGE description. 2) Find relations with MESSAGE.  3) Tell what you undestand 4) Make a reply"
+    QUESTON="IMAGE: $DESC ([MESSAGE]: $message_text) ANSWER USING SAME LANGUAGE AS [MESSAGE]. 1) Write IMAGE description. 2) Find relations with MESSAGE.  3) Tell what you understand 4) Make a reply, sign as ASTROBOT."
 else
     QUESTON="Reply to MESSAGE: $message_text. Sign as ASTROBOT."
 fi
