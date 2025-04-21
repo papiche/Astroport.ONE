@@ -99,7 +99,7 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
     "wss://relay.copylaradio.com" "$myRELAY" \
     --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" --ipfs_gw "$myIPFS"
 
-    ## SEND FOLLOW TO EVERY NOSTR CARD
+    ## FOLLOW EVERY NOSTR CARD
     for nostrhex in $(cat ~/.zen/game/nostr/*@*.*/HEX); do
         ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$nostrhex"
     done
