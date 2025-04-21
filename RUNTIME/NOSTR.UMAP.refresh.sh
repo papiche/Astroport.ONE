@@ -154,7 +154,7 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    QUESTION="$message_text --- 1. Produce a summary of this text, 2. Highligh the key points and their authors (answer in the language used in the text)"
+    QUESTION="$message_text --- 1. Produce a summary of this text, 2. Highligh the key points and their authors (answer using same language as in provided text)"
     ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     # Write JOURNAL to SECTOR
