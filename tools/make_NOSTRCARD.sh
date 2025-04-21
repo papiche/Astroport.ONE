@@ -185,7 +185,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
     ## ZLAT ZLON
-    echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP
+    echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP # RUNTIME/NOSTR.UMAP.refresh.sh
+    echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
     ##############################################################
     ### PREPARE NOSTR ZINE

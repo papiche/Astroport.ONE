@@ -73,6 +73,17 @@ echo "  URL: $URL"
 echo "  KNAME: $KNAME"
 echo ""
 
+
+## Record KNAME localisation
+if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
+    if [[ $LAT == "0.00" && $LON == "0.00" ]]; then
+        ## source NOSTR Card LAT=?;LON=?;
+        [[ -s ${HOME}/.zen/game/nostr/${EMAIL}/GPS ]] \
+            && source ${HOME}/.zen/game/nostr/${EMAIL}/GPS
+    fi
+fi
+
+
 ## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
 UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
@@ -115,12 +126,6 @@ UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}"
 if [[ -z "$UMAPNSEC" ]]; then
   echo "Error: Failed to generate NOSTR key."
   exit 1
-fi
-
-## Record KNAME localisation
-if [[ ! -z $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
-    [[ $LAT != "0.00" && $LON != "0.00" ]] \
-        && echo "LAT=$LAT; LON=$LON" > ~/.zen/game/nostr/$KNAME/UMAP
 fi
 
 #######################################################################
