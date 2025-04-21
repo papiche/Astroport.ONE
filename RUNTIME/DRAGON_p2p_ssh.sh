@@ -81,50 +81,33 @@ echo "${YIPNS}
                              '------'      \
 
 "
-# Couleurs
-GREEN="\033[0;32m"
-RED="\033[0;31m"
-YELLOW="\033[0;33m"
-NC="\033[0m" # Pas de couleur
-############################################ CHECK NOSTR IDENTITY
-# GET
-SECRET_JUNE_FILE="$HOME/.zen/game/secret.june"
-if [[ -s "$SECRET_JUNE_FILE" ]]; then
-    echo -e "${GREEN}Mise à jour des clés et métadonnées Nostr dans credentials.json...${NC}"
+[[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+mkdir -p ~/.zen/tmp/${MOATS}
 
-    source "$SECRET_JUNE_FILE" ## STATION salt pepper
-    STATIONG1PUB=$(cat "$HOME/.zen/game/secret.dunikey" | grep 'pub:' | cut -d ' ' -f 2)
-
-    NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
-    NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
-    ###############################################################
-    ## UPDATE STATION PROFILE ON RELAYS
-    ${MY_PATH}/../tools/nostr_setup_profile.py \
-        "$NPRIV" \
-        "♥Box $(hostname)" "$STATIONG1PUB" \
-        "Astroport.ONE ♥Box Station on UPlanet ${UPLANETG1PUB:0:8}" \
-        "https://ipfs.copylaradio.com/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png" \
-        "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-        "" "$myIPFS/ipns/$IPFSNODEID" "" "" "" "" \
-        "wss://relay.copylaradio.com" "$myRELAY" \
-        --ipns_vault "/ipns/${IPFSNODEID}" --ipfs_gw "$myIPFS"
-else
-
- ## UPlanet ORIGIN : Captain key is used as IA relay
- source ~/.zen/game/players/.current/secret.june
- ${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s > $HOME/.zen/game/captain.nostr.priv
- chmod 640 $HOME/.zen/game/captain.nostr.priv
-
+##################################################################################
+############################################ SETUP CAPTAIN NOSTR PROFILE
+if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
+    echo "Setup Captain NOSTR profile"
+    source ~/.zen/game/players/.current/secret.nostr
+     ${MY_PATH}/../tools/nostr_setup_profile.py \
+    "$NSEC" \
+    "UPlanet Captain $(cat ~/.zen/game/players/.current/.pseudo)" "$CAPTAING1PUB" \
+    "CopyLaRadio Captain - Dragon WoT - UPlanet ${UPLANETG1PUB:0:8} - TW : $myIPFS/ipns/$(cat ~/.zen/game/players/.current/.playerns)" \
+    "https://ipfs.copylaradio.com/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
+    "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+    "" "$myIPFS/ipns/copylaradio.com" "" "" "" "" \
+    "wss://relay.copylaradio.com" "$myRELAY" \
+    --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" --ipfs_gw "$myIPFS"
 fi
+##################################################################################
 
-
-############################################
-## DISTRIBUTE DRAGON SSH WOT SEED
+##################################################################################
+##################################################################################
+############################################ $HOME/.zen/game/My_boostrap_ssh.txt
+## DISTRIBUTE DRAGON SSH WOT AUTHORIZED KEYS
 SSHAUTHFILE="${MY_PATH}/../A_boostrap_ssh.txt"
 [[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt"
 ############################################
-[[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-mkdir -p ~/.zen/tmp/${MOATS}
 [[ -s ~/.ssh/authorized_keys ]] \
     && cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys \
     || echo "# ASTRO # ~/.ssh/authorized_keys" > ~/.zen/tmp/${MOATS}/authorized_keys
@@ -141,10 +124,8 @@ do
         echo "ALREADY TRUSTING ${LINE}"
     fi
 done < ${SSHAUTHFILE} ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
-
 ## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub (made during PLAYER.refresh)
 cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null
-
 ### REMOVING DUPLICATION (NO ORDER CHANGING)
 awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean
 cat ~/.zen/tmp/${MOATS}/authorized_keys.clean > ~/.ssh/authorized_keys
@@ -152,7 +133,11 @@ echo "-----------------------------------------------------"
 echo "~/.ssh/authorized_keys"
 cat ~/.ssh/authorized_keys
 echo "-----------------------------------------------------"
+##################################################################################
+##################################################################################
 
+
+##################################################################################
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
