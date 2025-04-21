@@ -212,9 +212,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ### ADD /APP - redirections APP IPFS
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP
-    echo '<meta http-equiv="refresh" content="5;url='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'">' \
+    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/cesium.v1.html
-    echo '<meta http-equiv="refresh" content="5;url='${CORACLEIPFS}/'">' \
+    echo '<meta http-equiv="refresh" content="0;url='${CORACLEIPFS}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/coracle.html
 
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
