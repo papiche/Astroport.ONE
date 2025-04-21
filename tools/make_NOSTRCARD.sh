@@ -10,11 +10,49 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 
+usage() {
+  echo "Usage: Make_NOSTRCARD.sh [OPTIONS] <EMAIL> [IMAGE] [LATITUDE] [LONGITUDE] [SALT] [PEPPER]"
+  echo ""
+  echo "  Generates a NOSTR card and related cryptographic keys, stores them"
+  echo "  locally, and prepares files for a NOSTR application."
+  echo ""
+  echo "Arguments:"
+  echo "  <EMAIL>       Email address to associate with the NOSTR card."
+  echo "                Must be a valid email format."
+  echo "  [IMAGE]       Optional: Path to an image file to use as profile picture."
+  echo "                Alternatively, a two-letter language code (e.g., 'en', 'fr')"
+  echo "                to set the language. If omitted, defaults to 'fr'."
+  echo "  [LATITUDE]    Optional: UMAP Latitude for location data."
+  echo "  [LONGITUDE]   Optional: UMAP Longitude for location data."
+  echo "  [SALT]        Optional: Salt for key generation. If omitted, a random salt is generated."
+  echo "  [PEPPER]      Optional: Pepper for key generation. If omitted, a random pepper is generated."
+  echo ""
+  echo "Options:"
+  echo "  -h, --help    Display this help message and exit."
+  echo ""
+  echo "Example:"
+  echo "  make_NOSTRCARD.sh john.doe@example.com ./profile.png 48.85 2.35"
+  echo "  make_NOSTRCARD.sh jane.doe@example.com en"
+  exit 1
+}
+
+if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+  usage
+fi
+
+if [[ "$#" -lt 1 ]]; then
+  echo "Error: Missing EMAIL parameter."
+  usage
+fi
+
 PARAM="$1"
 EMAIL="${PARAM,,}" ## lowercase
 IMAGE="$2"
 ZLAT="$3"
 ZLON="$4"
+### Accept DISCO seed
+SALT="$5"
+PEPPER="$6"
 
 echo "Make_NOSTRCARD.sh >>>>>>>>>> $EMAIL"
 
@@ -24,8 +62,12 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ############################################## PREPARE SALT PEPPER
-    SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
-    PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+    if [[ -z "$SALT" ]]; then
+        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+    fi
+    if [[ -z "$PEPPER" ]]; then
+        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+    fi
     # Creating a NOSTRCARD for ${EMAIL}
     DISCO="/?${EMAIL}=${SALT}&nostr=${PEPPER}"
     #~ echo "DISCO : "$DISCO
