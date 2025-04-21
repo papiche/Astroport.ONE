@@ -117,7 +117,8 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
     if [[ ${DEG} == "0.001" ]]; then
 
         swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* 2>/dev/null | wc -l )
-        nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* 2>/dev/null | wc -l )
+        #~ nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${LAT}_${LON}/TW/* 2>/dev/null | wc -l )
+        nodenum=0 ## correct duplicate players !
         totnum=$(( swarmnum + nodenum ))
         echo " ## UMAP _${LAT}_${LON} = ${totnum} PLAYERs"
 
@@ -158,7 +159,8 @@ if [[ ! -s ~/.zen/tmp/${JSON} ]]; then
 
             echo " ## SEARCH UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*"
             swarmnum=$(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
-            nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            #~ nodenum=$(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_${ZLAT}*_${ZLON}*/TW/* 2>/dev/null | wc -l )
+            nodenum=0
             totnum=$(( swarmnum + nodenum ))
 
             [[ $totnum -gt 9 ]] && displaynum="X" || displaynum=$totnum

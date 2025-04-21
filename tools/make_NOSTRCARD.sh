@@ -143,8 +143,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
     ## ZLAT ZLON
-    echo ${ZLAT} > ${HOME}/.zen/game/nostr/${EMAIL}/ZLAT
-    echo ${ZLON} > ${HOME}/.zen/game/nostr/${EMAIL}/ZLON
+    echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP
 
     ##############################################################
     ### PREPARE NOSTR ZINE
