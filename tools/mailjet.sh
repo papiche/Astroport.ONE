@@ -53,7 +53,7 @@ title="$3"
 
 SUBJECT="[UPlanet] ${title}"
 
-MESSAGESIGN="---<br>this message is sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> your ♥BOX Ẑen Astroport Station"
+MESSAGESIGN="---<br>message sent by <a href='$(myIpfsGw)/ipns/$IPFSNODEID'>$(myHostName)</a> (Station Astroport.ONE)"
 
 echo "
 ########################################################################
@@ -143,7 +143,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3>'${pseudo}' on <a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a><br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
+            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3>/ipns/'${pseudo}' | <a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a><br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'

@@ -425,8 +425,14 @@ myAstroTube() {
 function makecoord() {
     local input="$1"
 
-    input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')  # Ensure has exactly two decimal places
+    # Vérifie si l'entrée est une coordonnée valide (nombre avec ou sans décimales)
+    if [[ ! "$input" =~ ^-?[0-9]*\.?[0-9]*$ ]]; then
+        echo ""
+        return
+    fi
 
+    # Formate à 2 décimales (comme original)
+    input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')
     if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
         input="${input}0"
     elif [[ ${input} =~ ^\.[0-9]+$ ]]; then
@@ -436,7 +442,13 @@ function makecoord() {
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then
         input="${input}.00"
     fi
-    echo "${input}"
+
+    # Si le résultat est vide ou invalide (ex: entrée ".")
+    if [[ ! "$input" =~ ^-?[0-9]+\.[0-9]{2}$ ]]; then
+        echo ""
+    else
+        echo "${input}"
+    fi
 }
 
 # Fonction pour récupérer la météo depuis l'API OpenWeatherMap
