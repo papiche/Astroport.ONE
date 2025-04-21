@@ -99,7 +99,7 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTON="IMAGE: $DESC (MESSAGE: $message_text) In the same language as MESSAGE. 1) Translate IMAGE description. 2) Answer to MESSAGE."
+    QUESTON="IMAGE: $DESC (MESSAGE: $message_text) ANSWER USING SAME LANGUAGE AS MESSAGE. 1) Write IMAGE description. 2) Find relations with MESSAGE.  3) Tell what you undestand 4) Make a reply"
 else
     QUESTON="Reply to MESSAGE: $message_text. Sign as ASTROBOT."
 fi
@@ -118,7 +118,7 @@ if [[ -z "$UMAPNSEC" ]]; then
 fi
 
 ## Record KNAME localisation
-if [[ ! -z $KNAME ]]; then
+if [[ ! -z $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
     [[ $LAT != "0.00" && $LON != "0.00" ]] \
         && echo "LAT=$LAT; LON=$LON" > ~/.zen/game/nostr/$KNAME/UMAP
 fi
@@ -146,57 +146,7 @@ nostpy-cli send_event \
 
 #######################################################################
 # ADD TO FOLLOW LIST
-#######################################################################
-# Query existing event using strfry scan
-cd $HOME/.zen/strfry
-STRFRY_OUTPUT=$(./strfry scan '{"kinds":[3],"authors":["'$UMAPHEX'"]}' | head -n 1)
-cd -
-# EXISTING_EVENT was from nostpy-cli, now using output from strfry
-EXISTING_EVENT="$STRFRY_OUTPUT"
-
-# Initialize the new tags array
-NEW_TAGS="[]"
-
-# Check if an existing event was found
-if [[ -n "$EXISTING_EVENT" ]]; then # Check if STRFRY_OUTPUT is not empty
-    # Extract the existing tags using jq
-    EXISTING_TAGS=$(echo "$EXISTING_EVENT" | jq -r '.tags')
-
-    # Check if existing tags are null or empty string, if so treat as empty array
-    if [[ -z "$EXISTING_TAGS" ]] || [[ "$EXISTING_TAGS" == "null" ]]; then
-        EXISTING_P_TAGS_ARRAY="[]"
-    else
-        # Extract existing 'p' tags as an array using jq
-        EXISTING_P_TAGS_ARRAY=$(echo "$EXISTING_TAGS" | jq -r '. | to_entries[] | select(.value[0] == "p") | .value[1]')
-    fi
-
-    # Check if PUBKEY already exists in EXISTING_P_TAGS_ARRAY
-    if echo "$EXISTING_P_TAGS_ARRAY" | grep -q -w "$PUBKEY"; then
-        NEW_TAGS="$EXISTING_TAGS" # Keep existing tags, no need to add again - effectively no change to tags
-    else
-        # Append the new 'p' tag to the existing tags using jq
-        if [[ -z "$EXISTING_TAGS" ]] || [[ "$EXISTING_TAGS" == "null" ]]; then
-            NEW_TAGS="[['p', '$PUBKEY']]"
-        else
-            NEW_TAGS=$(echo "$EXISTING_TAGS" | jq -c '. + [["p", "'"$PUBKEY"'"]]')
-        fi
-    fi
-else
-    # If no existing event was found, create a new tags array with the new pubkey
-    NEW_TAGS="[['p', '$PUBKEY']]"
-fi
-
-# Send the updated kind 3 event only if tags were actually modified
-if [[ "$NEW_TAGS" != "$EXISTING_TAGS" ]] || [[ -z "$EXISTING_EVENT" ]]; then
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 3 \
-        -content "" \
-        -tags "$NEW_TAGS" \
-        --relay "$myRELAY"
-
-    echo "updated follow list."
-fi
+${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
 
 #######################################################################
 echo ""
