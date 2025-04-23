@@ -48,8 +48,8 @@ fi
 PARAM="$1"
 EMAIL="${PARAM,,}" ## lowercase
 IMAGE="$2"
-ZLAT="$3"
-ZLON="$4"
+ZLAT=$(makecoord "$3")
+ZLON=$(makecoord "$4")
 ### Accept DISCO seed
 SALT="$5"
 PEPPER="$6"

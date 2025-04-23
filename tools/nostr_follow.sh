@@ -1,19 +1,29 @@
 #!/bin/bash
-# nostr_follow.sh <SOURCE_NSEC> <DESTINATION_HEX> [RELAY]
+# nostr_follow.sh <SOURCE_NSEC> <DESTINATION_HEX1> [DESTINATION_HEX2...] [RELAY]
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
 
 # Check for required arguments
 if [[ $# -lt 2 ]]; then
-    echo "Usage: $(basename "$0") <SOURCE_NSEC> <DESTINATION_HEX> [RELAY]"
-    echo "  Follows DESTINATION_HEX using SOURCE_NSEC key"
+    echo "Usage: $(basename "$0") <SOURCE_NSEC> <DESTINATION_HEX1> [DESTINATION_HEX2...] [RELAY]"
+    echo "  Follows one or more DESTINATION_HEX using SOURCE_NSEC key"
     exit 1
 fi
 
 SOURCE_NSEC="$1"
-DESTINATION_HEX="$2"
-RELAY="${3:-$myRELAY}"
+shift
+RELAY=""
+
+# Check if last argument is a relay URL (starts with wss://)
+for last; do true; done
+if [[ "$last" =~ ^wss:// ]]; then
+    RELAY="$last"
+    # Remove relay from arguments
+    set -- "${@:1:$(($#-1))}"
+fi
+
+RELAY="${RELAY:-$myRELAY}"
 
 # Convert NSEC to HEX
 NPRIV_HEX=$(${MY_PATH}/nostr2hex.py "$SOURCE_NSEC")
@@ -47,21 +57,30 @@ if [[ -n "$EXISTING_EVENT" ]]; then
         EXISTING_P_TAGS_ARRAY=$(echo "$EXISTING_TAGS" | jq -r '. | to_entries[] | select(.value[0] == "p") | .value[1]')
     fi
 
-    # Check if pubkey already exists
-    if echo "$EXISTING_P_TAGS_ARRAY" | grep -q -w "$DESTINATION_HEX"; then
-        echo "Already following $DESTINATION_HEX"
-        exit 0
+    # Start with existing tags or empty array
+    if [[ -z "$EXISTING_TAGS" ]] || [[ "$EXISTING_TAGS" == "null" ]]; then
+        NEW_TAGS="[]"
     else
-        # Append the new 'p' tag
-        if [[ -z "$EXISTING_TAGS" ]] || [[ "$EXISTING_TAGS" == "null" ]]; then
-            NEW_TAGS="[['p', '$DESTINATION_HEX']]"
-        else
-            NEW_TAGS=$(echo "$EXISTING_TAGS" | jq -c '. + [["p", "'"$DESTINATION_HEX"'"]]')
-        fi
+        NEW_TAGS="$EXISTING_TAGS"
     fi
+
+    # Process each destination hex
+    for DESTINATION_HEX in "$@"; do
+        # Check if pubkey already exists
+        if echo "$EXISTING_P_TAGS_ARRAY" | grep -q -w "$DESTINATION_HEX"; then
+            echo "Already following $DESTINATION_HEX"
+        else
+            # Append the new 'p' tag
+            NEW_TAGS=$(echo "$NEW_TAGS" | jq -c '. + [["p", "'"$DESTINATION_HEX"'"]]')
+            echo "Adding $DESTINATION_HEX to follow list"
+        fi
+    done
 else
-    # Create new follow list
-    NEW_TAGS="[['p', '$DESTINATION_HEX']]"
+    # Create new follow list with all provided hexes
+    NEW_TAGS="[]"
+    for DESTINATION_HEX in "$@"; do
+        NEW_TAGS=$(echo "$NEW_TAGS" | jq -c '. + [["p", "'"$DESTINATION_HEX"'"]]')
+    done
 fi
 
 # Send the updated kind 3 event
@@ -72,5 +91,5 @@ nostpy-cli send_event \
     -tags "$NEW_TAGS" \
     --relay "$RELAY"
 
-echo "Now following $DESTINATION_HEX"
+echo "Follow list updated with ${#@} new entries"
 exit 0
