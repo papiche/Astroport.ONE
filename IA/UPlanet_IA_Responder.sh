@@ -123,9 +123,9 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTON="IMAGE: $DESC ([MESSAGE]: $message_text) --- Write (in [MESSAGE] language) then IMAGE description. Answer to MESSAGE. Sign 'ASTROBOT'."
+    QUESTON="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# ReWrite (in [MESSAGE] same language) the IMAGE description # Answer to [MESSAGE] (using [IMAGE] perpective) # Sign as ASTROBOT_${LAT}_${LON}."
 else
-    QUESTON="Reply to MESSAGE: $message_text. Sign as ASTROBOT."
+    QUESTON="Answer to this message: $message_text. Sign as ASTROBOT_${LAT}_${LON}."
 fi
 ANSWER=$($MY_PATH/question.py "${QUESTON}")
 #######################################################################
