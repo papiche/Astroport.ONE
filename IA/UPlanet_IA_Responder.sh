@@ -90,11 +90,24 @@ UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
 [[ $PUBKEY == $UMAPHEX ]] && exit 0
 
 ##################################################################""
-## Indicates UMAP is publishing (nostr whitelist), Used by NOSTR.GEO.refresh.sh
+## Inform Swarm cache (UPLANET.refresh.sh)
+SLAT="${LAT::-1}"
+SLON="${LON::-1}"
+RLAT=$(echo ${LAT} | cut -d '.' -f 1)
+RLON=$(echo ${LON} | cut -d '.' -f 1)
+UMAPPATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
+if [ ! -s ${UMAPPATH}/HEX ]; then
+    mkdir -p ${UMAPPATH}
+    echo "$UMAPHEX" > ${UMAPPATH}/HEX
+fi
+
+##################################################################""
+## Indicates UMAP is publishing (nostr whitelist), Used by NOSTR.UMAP.refresh.sh
 if [ ! -s ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX ]; then
     mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
     echo "$UMAPHEX" > ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX
 fi
+
 ##################################################################""
 
 ### Extract message

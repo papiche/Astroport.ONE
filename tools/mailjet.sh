@@ -143,7 +143,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3><a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a> | /ipns/'${pseudo}' <br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
+            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3><a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a> [ /ipns/'${pseudo}' ]<br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'

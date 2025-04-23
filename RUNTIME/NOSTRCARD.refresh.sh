@@ -141,7 +141,12 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
         FILEDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE)
-        echo "NOSTR G1 CARD is EMPTY .............. !!!"
+
+        # Patch jaklis gva history error
+        [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
+            && echo "UPlanet Primal Correction" \
+            && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
+            || echo "NOSTR G1 CARD is EMPTY .............. !!!"
 
         if [[ ${TODATE} != ${FILEDATE} ]]; then
             if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
@@ -164,9 +169,9 @@ for PLAYER in "${NOSTR[@]}"; do
     echo ">>> NOSTR PRIMAL :$pcoins: $primal"
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
-    echo "IPNS VAULT : ${myIPFS}${NOSTRNS}"
+    echo "IPNS VAULT : ${myIPFS}${NOSTRNS} ... test resolve ..."
     VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
-    echo "VAULTFS : ${myIPFS}${VAULTFS}"
+    echo "VAULTFS : ${myIPFS}${VAULTFS}" ## Not USED
 
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
@@ -303,12 +308,12 @@ for PLAYER in "${NOSTR[@]}"; do
             && rm ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
 
         ## RECORD GPS (for ZenCard activation)
-        echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
+        [[ -n $LAT && -n $LON ]] && echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
     else
         echo "########################################## STEP 2"
         echo "## Nostr Card PROFILE EXISTING"
-        cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
+        #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
         ## Zen Card ONLY FOR UPlanet Zen
         if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
@@ -354,12 +359,12 @@ for PLAYER in "${NOSTR[@]}"; do
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
-    echo "${G1PUBNOSTR}:NOSTR ${PLAYER} STORAGE: /ipns/$NOSTRNS"
+    echo "${PLAYER} STORAGE: /ipns/$NOSTRNS = /ipfs/${NOSTRIPFS}"
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
 
-    ## MEMORIZE TODATE PUBLISH
+    ## MEMORIZE TODATE PUBLISH (reduce publish to once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
 
     echo "___________________________________________________"
