@@ -532,7 +532,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_SALT_~${SALT}~g" \
                 -e "s~_PEPPER_~${PEPPER}~g" \
                 -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
-                -e "s~_EARTHCID_~${EARTHCID}~g" \
+                -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
                 -e "s~_SECTOR_~${SECTOR}~g" \
                 -e "s~_SLAT_~${SLAT}~g" \
                 -e "s~_SLON_~${SLON}~g" \

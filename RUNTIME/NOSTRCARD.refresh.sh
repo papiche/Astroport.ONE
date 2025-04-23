@@ -152,6 +152,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
                 ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:NOSTR:${PLAYER}:${NPUB}"
+                echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             fi
         fi
 
@@ -210,7 +211,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS/ipns/${NOSTRNS}"
 
             else
                 echo "## PRIMAL existing : $G1PRIME"
@@ -224,7 +225,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
                             # Définir le message en fonction de la clé
                             if [[ "$KEY" == "p2p" ]]; then
-                                MESSAGE="NOSTR Card: https://qo-op.com + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} => BRO on UPlanet Zen ? https://www.copylaradio.com"
+                                MESSAGE="Votre ami viens de créer sa NOSTR Card sur Uplanet https://qo-op.com"
                                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
                                 echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                                 sleep 2

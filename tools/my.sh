@@ -545,7 +545,7 @@ fi
 
 ## https://git.p2p.legal/qo-op/OSM2IPFS
 EARTHCID="/ipfs/QmV3AAv2qEtV8MCk58BUkE2WXWXjWwky4SrmgYDipzdmnL"
-FLIPPERCID="${EARTHCID}/coinflip" ### EASTER EGG
+FLIPPERCID="/ipns/copylaradio.com/coinflip" ### EASTER EGG
 
 ###########################
 ## VISIO ROOM APP
@@ -581,7 +581,7 @@ uSPOT=$(echo $myIPFS | sed 's|https://ipfs|https://u|') ## https://u. OR :54321
     && uSPOT=$(echo $myIPFS | sed 's~8080~54321~' )
 
 ##########################
-myUPLANET="${myIPFS}${EARTHCID}" ## UPLANET ENTRANCE
+myUPLANET="${myIPFS}/ipns/copylaradio.com" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
 ##########################
 ## UPLANETNAME IS $HOME/.zen/ipfs/swarm.key OR EMPTY

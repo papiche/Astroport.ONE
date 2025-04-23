@@ -144,7 +144,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] ; then
                 -e "s~_SALT_~${SALT}~g" \
                 -e "s~_PEPPER_~${PEPPER}~g" \
                 -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
-                -e "s~_EARTHCID_~${EARTHCID}~g" \
+                -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
                 -e "s~_SECTOR_~___~g" \
                 -e "s~_SLAT_~___~g" \
                 -e "s~_SLON_~___~g" \

@@ -74,7 +74,7 @@ echo "  KNAME: $KNAME"
 echo ""
 
 
-## Record KNAME localisation
+## Getting KNAME default localisation
 if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
     if [[ $LAT == "0.00" && $LON == "0.00" ]]; then
         ## source NOSTR Card LAT=?;LON=?;

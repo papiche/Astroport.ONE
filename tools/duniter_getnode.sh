@@ -7,6 +7,8 @@
 ################################################################################
 # Checks the current block number of $DIR/duniter_nodes.txt (is run in parallel)
 # and output random (from last synchronized) node
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 BOOSTER=(g1.brussels.ovh g1.asycn.io g1.cgeek.fr g1.copylaradio.com g1.guenoel.fr duniter.econolib.re)
 
@@ -151,6 +153,9 @@ do
 
 done < $DIR/good.nodes.txt
 
+[[ -n "$result" && -n "$1" ]] \
+    && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
+    && echo "NODE=$result" >> ${MY_PATH}/../tools/jaklis/.env
 
 echo "$result" > ~/.zen/tmp/current.duniter
 
