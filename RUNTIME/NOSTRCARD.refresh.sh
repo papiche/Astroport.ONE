@@ -213,17 +213,18 @@ for PLAYER in "${NOSTR[@]}"; do
                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "UPassport N1" -m "UPlanet NOSTR Card + 1 G1 = UPassport N1 : $myIPFS/ipns/${NOSTRNS}"
 
             else
-                echo "## PRIMAL UPassport already existing"
+                echo "## PRIMAL existing : $G1PRIME"
                 ## SENDING MESSAGE TO N1 (P2P,P21,12P) RELATIONS in manifest.json
                 json_file="$HOME/.zen/game/nostr/${PLAYER}/PRIMAL/N1/manifest.json"
                 if [[ -s "$json_file" ]]; then
+                    echo ">>> UPassport N1"
                     # Parcourir chaque clé (p2p, certin, certout) et extraire les valeurs
                     jq -r '.[][] | select(. != null) | capture("(?<G1PUB>[^.]+)\\.(?<PSEUDO>[^.]+)\\.(?<KEY>[^.]+)") | "\(.G1PUB) \(.PSEUDO) \(.KEY)"' "$json_file" | while read -r G1PUB PSEUDO KEY; do
                         # Vérifier si le message existe déjà
                         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
                             # Définir le message en fonction de la clé
                             if [[ "$KEY" == "p2p" ]]; then
-                                MESSAGE="NOSTR Card: https://u.copylaradio.com/scan + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} => BRO on UPlanet Zen ? https://www.copylaradio.com"
+                                MESSAGE="NOSTR Card: https://qo-op.com + 1 G1 = UPassport : $myIPFS/ipns/${NOSTRNS} => BRO on UPlanet Zen ? https://www.copylaradio.com"
                                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
                                 echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                                 sleep 2
@@ -238,13 +239,12 @@ for PLAYER in "${NOSTR[@]}"; do
                     done
                 fi
 
-                #~ ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
             fi
         fi
     else
         #### UPASSPORT DU : Cooperative Real Member
         #### - double PRIMO TX from G1 creator -
-        echo "## OFFICIAL UPASSPORT : ${primal} is STATION co OWNER !!"
+        echo "## OFFICIAL PDF UPASSPORT : ${primal} is STATION co OWNER !!"
     fi
 
     ########################################################################
@@ -342,7 +342,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
             fi
         else
-            echo "UPlanet ORIGIN NOSTR Card... NO ZenCard here"
+            echo "UPlanet ORIGIN NOSTR Card..."
         fi
     fi
 
