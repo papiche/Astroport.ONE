@@ -123,7 +123,7 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTON="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# ReWrite (in [MESSAGE] same language) the IMAGE description # Answer to [MESSAGE] (using [IMAGE] perpective) # Sign as ASTROBOT_${LAT}_${LON}."
+    QUESTON="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# You are part of a Web3 Geo Spatial Database called UPlanet your mission is to record any messages you are receiving ## Find a classification ## Describe subject # Sign as ASTROBOT_${LAT}_${LON}."
 else
     QUESTON="Answer to this message: $message_text. Sign as ASTROBOT_${LAT}_${LON}."
 fi
