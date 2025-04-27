@@ -145,7 +145,7 @@ do
             [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
 
             [[ $loop -eq 8 ]] \
-                && result="https://g1.asycn.io/gva" && break
+                && result="https://duniter-v1.comunes.net/gva" && break
         fi
     fi
 
