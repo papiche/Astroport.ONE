@@ -230,18 +230,17 @@ for PLAYER in "${NOSTR[@]}"; do
                         # Vérifier si le message existe déjà
                         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
                             # Définir le message en fonction de la clé
-                            if [[ "$KEY" == "p2p" ]]; then
-                                MESSAGE="Votre ami viens de créer sa NOSTR Card sur Uplanet https://qo-op.com"
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " $PSEUDO : UPlanet NOSTR Card ?" -m "$MESSAGE"
-                                echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
-                                sleep 2
-                            elif [[ "$KEY" == "certin" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t "UPlanet $PSEUDO 12P ?" -m "BRO Certification ? $G1PUB"
+                            if [[ "$KEY" == "certin" ]]; then
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t " ¯\_༼qO͡〰op༽_/¯ 12P ?" -m "BRO Certification <=> $G1PUB"
                                 sleep 1
                             elif [[ "$KEY" == "certout" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t "UPlanet $PSEUDO P21 ?" -m "BRO Certification ? $G1PRIME"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ P21 ?" -m "BRO Certification <=> $G1PRIME"
                                 sleep 1
                             fi
+                            MESSAGE="$G1PRIME est devenu membre de CopyLaRadio https://www.copylaradio.com --- UPlanet /SCAN : https://qo-op.com"
+                            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ " -m "$MESSAGE"
+                            echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
+                            sleep 2
                         fi
                     done
                 fi
