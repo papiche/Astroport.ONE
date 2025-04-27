@@ -41,7 +41,7 @@ if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
         GVASERVER=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
         ## Changing GVA SERVER in tools/jaklis/.env
         [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
-            && cat ${MY_PATH}/../tools/jaklis/.env.template > tools/jaklis/.env \
+            && cat ${MY_PATH}/../tools/jaklis/.env.template > ${MY_PATH}/../tools/jaklis/.env \
             && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
             && echo "OK. NEW GVA NODE : ${GVASERVER}" \
             || echo "ERROR. BAD GVA NODE : ${GVASERVER}"
