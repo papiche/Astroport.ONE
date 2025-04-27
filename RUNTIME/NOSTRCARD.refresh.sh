@@ -118,12 +118,13 @@ for PLAYER in "${NOSTR[@]}"; do
     salt=$(urldecode ${arr[1]} | xargs)
     p=$(urldecode ${arr[2]} | xargs)
     pepper=$(urldecode ${arr[3]} | xargs)
+    ## s = email
     if [[ $s =~ ^/.*?$ ]]; then
         [[ ! -z $s ]] \
             && rm "$tmp_mid" "$tmp_tail" \
-            || { echo "DISCO DECODING ERROR"; continue; };
+            || { echo "DISCO DECODING ERROR" > ~/.zen/game/nostr/${PLAYER}/ERROR; continue; };
     else
-        echo "ERROR : BAD DISCO DECODING"
+        echo "ERROR : BAD DISCO DECODING" > ~/.zen/game/nostr/${PLAYER}/ERROR
         continue
     fi
     ##################################################### DISCO DECODED
