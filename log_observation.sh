@@ -2,6 +2,7 @@
 # display log files
 # astroport.
 journalctl -fu astroport &
+tail -f ~/.zen/tmp/IA.log &
 tail -f ~/.zen/tmp/12345.log &
 tail -f ~/.zen/tmp/_12345.log &
 # relay.

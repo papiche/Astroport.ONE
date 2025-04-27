@@ -1,11 +1,13 @@
 #!/bin/bash
+###################################################################
 # IA_UPlanet.sh "$pubkey" "$event_id" "$latitude" "$longitude" "$content" "$url"
-# Analyse du message et de l'image Uplanet reçu
-# Publie la réponse Ollama sur la GeoKey UPlanet 0.01 et 0.1
-# et sur la clef NOSTR du Capitaine ?
-
+# Analyse du message et de l'image (url) Uplanet reçu
+# Publie la réponse Ollama sur la GeoKey UPlanet UMAP 0.01
+# et depuis la clef NOSTR du Capitaine pour les visiteurs
+###################################################################
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
+exec 2>&1 >> ~/.zen/tmp/IA.log
 
 [[ ! -s ~/.zen/Astroport.ONE/tools/my.sh ]] && echo "ERROR. Astroport.ONE is missing !!" && exit 1
 source ~/.zen/Astroport.ONE/tools/my.sh ## finding UPLANETNAME
@@ -73,6 +75,50 @@ echo "  URL: $URL"
 echo "  KNAME: $KNAME"
 echo ""
 
+# Function to get an event by ID using strfry scan
+get_event_by_id() {
+    local event_id="$1"
+    cd $HOME/.zen/strfry
+    # Use strfry scan with a filter for the specific event ID
+    ./strfry scan '{"ids":["'"$event_id"'"]}' 2>/dev/null
+    cd - 1>&2>/dev/null
+}
+
+# Function to get the conversation thread :
+get_conversation_thread() {
+    local event_id="$1"
+    local current_content=""
+    local current_event=$(get_event_by_id "$event_id")
+
+    if [[ -n "$current_event" ]]; then
+        current_content=$(echo "$current_event" | jq -r '.content')
+
+        # Find the event this one is replying to
+        local reply_tags=$(echo "$current_event" | jq -c '.tags[] | select(.[0] == "e")')
+        local root_id=""
+        local reply_id=""
+
+        # Parse tags to find root and reply references (NIP-10)
+        while IFS= read -r tag; do
+            local marker=$(echo "$tag" | jq -r '.[3] // ""')
+            if [[ "$marker" == "root" ]]; then
+                root_id=$(echo "$tag" | jq -r '.[1]')
+            elif [[ "$marker" == "reply" ]]; then
+                reply_id=$(echo "$tag" | jq -r '.[1]')
+            fi
+        done <<< "$reply_tags"
+
+        if [[ -n "$reply_id" && "$reply_id" != "$root_id" ]]; then
+            local parent_content=$(get_event_by_id "$reply_id" | jq -r '.content')
+            [[ -n "$parent_content" ]] && current_content="Re: $parent_content \n---\n$current_content"
+        fi
+        if [[ -n "$root_id" ]]; then
+            local root_content=$(get_event_by_id "$root_id" | jq -r '.content')
+            [[ -n "$root_content" ]] && current_content="Thread: $root_content \n---\n$current_content"
+        fi
+    fi
+    echo -e "$current_content"
+}
 
 ## Getting KNAME default localisation
 if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then

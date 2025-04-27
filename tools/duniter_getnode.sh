@@ -93,11 +93,11 @@ do
 done
 
 # Wait a little for the first files to be created
-sleep 1s
+sleep 3s
 # Wait for all the threads to report they are done
 while [ `ls $DIR/*done|wc -l` -lt $index ]
 do
-    sleep 1s
+    sleep 2s
 done
 
 # Grab all results
