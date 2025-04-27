@@ -100,9 +100,8 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
     --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" --ipfs_gw "$myIPFS"
 
     ## FOLLOW EVERY NOSTR CARD
-    for nostrhex in $(cat ~/.zen/game/nostr/*@*.*/HEX); do
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$nostrhex"
-    done
+    nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
+    ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}"
 fi
 ##################################################################################
 
