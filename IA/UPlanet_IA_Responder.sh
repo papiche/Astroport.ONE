@@ -177,11 +177,11 @@ fi
 ## NO CONTEXT
 #~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
 ## USER CONTEXT
-ANSWER=$($MY_PATH/question.py "${QUESTION}" --pubkey ${PUBKEY})
-if [[ $LAT != "0.00" && $LON != "0.00" ]]; then
-    ## UMAP CONTEXT
+if [[ -n $KNAME ]]; then
     GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
-    ANSWER="$ANSWER //Ƹ̵̡Ӝ̵̨̄Ʒ// $GEOANSWER"
+    ANSWER=$($MY_PATH/question.py "${GEOANSWER} ${QUESTION}" --pubkey ${PUBKEY})
+else
+    ANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
 fi
 #######################################################################
 #######################################################################
