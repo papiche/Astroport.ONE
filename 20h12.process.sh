@@ -92,23 +92,25 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ## PING BOOSTRAP & SWARM NODES
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
-################################ CHECK FOR PRIVATE SWARM BLOOM #########
-${MY_PATH}/RUNTIME/BLOOM.Me.sh
-
-#################### NOSTR (Notes and Other Stuff Transmitted by Relays)
+################## NOSTR Cards (Notes and Other Stuff Transmitted by Relays)
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
-########################################################################
 
+########################################################################
+if [[ ${UPLANETG1PUB} == "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
+    #################### UPLANET ORIGIN : PRIVATE SWARM BLOOM #########
+    ${MY_PATH}/RUNTIME/BLOOM.Me.sh
+else
+    # UPlanet Zen MULTIPASS ZenCard TW mode
+    #####################################
+    ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
+    #####################################
+fi
 ######################################################### UPLANET ######
 #####################################
 # GeoKeys UMAP / SECTOR / REGION ...
 #####################################
 ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
-#####################################
-# Players TW analyse & ASTROBOT run
-#####################################
-${MY_PATH}/RUNTIME/PLAYER.refresh.sh
 #####################################
 
 ########################################################################
@@ -188,7 +190,7 @@ echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 ## MAIL LOG : support@qo-op.com ##
-${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12 Solar Time : $(cat ~/.zen/GPS 2>/dev/null)"
+${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "$(cat ~/.zen/GPS 2>/dev/null) 20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 
 espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
 
