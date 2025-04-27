@@ -33,7 +33,7 @@ print_help() {
   echo "  Ollama response, and publish it on UPlanet Geo NOSTR key."
   echo ""
   echo "Example:"
-  echo "  $(basename "$0") pubkey_hex 0.00 0.00 \"What is it\" https://ipfs.copylaradio.com/ipfs//ipfs/QmeUMJvPdyPiteR7iQXCnZy4mvKBnghNkYpMTbrpZfMGPq/pipe.jpeg"
+  echo "  $(basename "$0") pubkey_hex 0.00 0.00 \"What is it\" https://ipfs.copylaradio.com/ipfs/QmeUMJvPdyPiteR7iQXCnZy4mvKBnghNkYpMTbrpZfMGPq/pipe.jpeg"
 }
 
 # --- Handle --help option ---
@@ -139,9 +139,9 @@ if [[ $LAT != "0.00" && $LON != "0.00" ]]; then
 fi
 #######################################################################
 #######################################################################
-# MEMORIZE EVENT for UMAP / PUBKEY
+exho "# MEMORIZE EVENT for UMAP / PUBKEY"
 $MY_PATH/short_memory.py "${$EVENT}" --lat "${LAT}" --lon "${LON}"
-#######################################################################
+exho '#######################################################################'
 
 #######################################################################
 #~ echo "Creating GEO Key NOSTR secret..."
