@@ -78,7 +78,7 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     echo "$CURCOINS" > "$COINSFILE"
 
     # PREVENT DUNITER DESYNC (KEEPING ASTROPORT LAST KNOWN VALUE)
-    [[ $CURCOINS == "" || $CURCOINS == "null" ]] \
+    [[ $CURCOINS == "" ]] \
     && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
     && WASCOINS=$(cat $HOME/.zen/tmp/backup.${G1PUB}) \
     && [[ ${WASCOINS} != "" && ${WASCOINS} != "null" ]] && echo ${WASCOINS} > "$COINSFILE"
