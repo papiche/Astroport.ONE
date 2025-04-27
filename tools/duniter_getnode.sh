@@ -10,7 +10,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
-BOOSTER=(g1.brussels.ovh g1.asycn.io g1.cgeek.fr g1.copylaradio.com g1.guenoel.fr duniter.econolib.re)
+BOOSTER=(g1.brussels.ovh duniter-v1.comunes.net g1.cgeek.fr g1.duniter.fr g1.guenoel.fr duniter.econolib.re)
 
 checkonenode()
 {
