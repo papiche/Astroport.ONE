@@ -123,14 +123,25 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTON="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# You are part of a Web3 Geo Spatial Database called UPlanet your mission is to record any messages you are receiving ## Find a classification ## Describe subject # Sign as ASTROBOT_${LAT}_${LON}."
+    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# You are ASTROBOT_${LAT}_${LON}, in charge of a Geo Spatial Database called UPlanet your mission is to : ## Record any message ## Determine classification ## Analyse subject ## Make a short answer."
 else
-    QUESTON="Answer to this message: $message_text. Sign as ASTROBOT_${LAT}_${LON}."
+    QUESTION="Answer to this message: $message_text. Sign as ASTROBOT_${LAT}_${LON}."
 fi
-ANSWER=$($MY_PATH/question.py "${QUESTON}")
+
+## NO CONTEXT
+#~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
+## USER CONTEXT
+ANSWER=$($MY_PATH/question.py "${QUESTION}" --pubkey ${PUBKEY})
+if [[ $LAT != "0.00" && $LON != "0.00" ]]; then
+    ## UMAP CONTEXT
+    GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
+    ANSWER="$ANSWER //Ƹ̵̡Ӝ̵̨̄Ʒ// $GEOANSWER"
+fi
 #######################################################################
-#~ echo "Ollama answer generated."
-#~ echo "ANSWER: $ANSWER"
+#######################################################################
+# MEMORIZE EVENT for UMAP / PUBKEY
+$MY_PATH/short_memory.py "${$EVENT}" --lat "${LAT}" --lon "${LON}"
+#######################################################################
 
 #######################################################################
 #~ echo "Creating GEO Key NOSTR secret..."
