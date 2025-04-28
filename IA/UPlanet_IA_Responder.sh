@@ -169,7 +169,7 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# You are ASTROBOT_${LAT}_${LON}, in charge of a Geo Spatial Database called UPlanet your mission is to : ## Record any message ## Determine classification ## Analyse subject ## Make a short answer."
+    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# You are ASTROBOT_${LAT}_${LON}, in charge of a Geo Spatial Database called UPlanet your mission is to : ## Record any message ## Determine classification ## Analyse subject ## Make a short answer in plain text (do not use markdown)."
 else
     QUESTION="Answer to this message: $message_text. Sign as ASTROBOT_${LAT}_${LON}."
 fi
