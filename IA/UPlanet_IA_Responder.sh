@@ -174,7 +174,7 @@ fi
 
 ## NO CONTEXT
 #~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
-GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
+ANSWER=$($MY_PATH/question.py "${QUESTION}" --pubkey ${PUBKEY})
 #######################################################################
 #######################################################################
 
@@ -194,7 +194,7 @@ fi
 nostpy-cli send_event \
   -privkey "$NPRIV_HEX" \
   -kind 1 \
-  -content "$GEOANSWER" \
+  -content "$ANSWER" \
   -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
   --relay "$myRELAY"
 #######################################################################
@@ -207,13 +207,13 @@ ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
 #######################################################################
 ## KNOWN KNAME => CAPTAIN REPLY
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-    ANSWER=$($MY_PATH/question.py "${QUESTION}" --pubkey ${PUBKEY})
+    GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
     source ~/.zen/game/players/.current/secret.nostr
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
-      -content "$ANSWER" \
+      -content "$GEOANSWER" \
       -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
       --relay "$myRELAY"
     #######################################################################
