@@ -65,11 +65,11 @@ for UMAP in ${unique_combined[@]}; do
     REGION="_${RLAT}_${RLON}"
     echo "SECTOR ${SECTOR} REGION ${REGION}"
     ##############################################################
-    ## getUMAP_ENV.sh
+    ## setUMAP_ENV.sh
     ##############################################################
-    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+    $(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     #######################################################################################
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+    [[ ! -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ ]] && exit 1
 
     ####################################################################################
     ## UMAP DATA
