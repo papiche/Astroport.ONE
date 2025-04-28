@@ -167,14 +167,14 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text ---# You are ASTROBOT_${LAT}_${LON}, in charge of a Geo Spatial Database called UPlanet your mission is to : ## Record any message ## Determine classification ## Analyse subject ## Make a short answer in plain text (do not use markdown)."
+    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text --- ## Determine classification ## Analyse subject ## Make a short answer in plain text (do not use markdown)."
 else
-    QUESTION="Answer to this message: $message_text. Sign as ASTROBOT_${LAT}_${LON}."
+    QUESTION="Answer to this message: $message_text."
 fi
 
 ## NO CONTEXT
 #~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
-ANSWER=$($MY_PATH/question.py "${QUESTION}" --pubkey ${PUBKEY})
+ANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as ASTROBOT_${LAT}_${LON}." --pubkey ${PUBKEY})
 #######################################################################
 #######################################################################
 
@@ -207,7 +207,7 @@ ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
 #######################################################################
 ## KNOWN KNAME => CAPTAIN REPLY
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-    GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
+    GEOANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as $myRELAY CAPTAIN at _${LAT}_${LON}" --lat "${LAT}" --lon "${LON}")
     source ~/.zen/game/players/.current/secret.nostr
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
     nostpy-cli send_event \

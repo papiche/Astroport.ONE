@@ -8,7 +8,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
 
-[[ -z $IPFSNODEID ]] && echo "ERROR ASTROPORT BROKEN" && exit 1
+[[ -z ${IPFSNODEID} ]] && echo "ERROR ASTROPORT BROKEN" && exit 1
 ################################################################################
 ## Scan ~/.zen/game/nostr/[PLAYER]
 ## Check "G1 NOSTR" RX - ACTIVATE "NOSTRCARD"
@@ -342,13 +342,13 @@ for PLAYER in "${NOSTR[@]}"; do
                 ### = PLAYER N1/N2 UPLANET
                 #########################################################
                 echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
-                $(${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
-                ## Inject new NOSTR EVENTS into TW
-
+                ${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1
 
             fi
         else
-            echo "UPlanet ORIGIN NOSTR Card..."
+            $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh ${PLAYER} | tail -n 1)
+            echo "UPlanet ORIGIN $source NOSTR Card... $LAT $LON $HEX $EMAIL"
+
         fi
     fi
 
@@ -366,6 +366,15 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## MEMORIZE TODATE PUBLISH (reduce publish to once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
+
+    ## SWARM CACHE PUBLISHING
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
+        echo "$HEX" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX
+    fi
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS ]]; then
+        cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
+    fi
 
     echo "___________________________________________________"
     sleep 1
