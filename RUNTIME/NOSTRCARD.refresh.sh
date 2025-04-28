@@ -112,7 +112,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
-    #~ echo "DISCO = $DISCO"
+    echo "DISCO = $DISCO" ## DEBUG
     arr=(${DISCO//[=&]/ })
     s=$(urldecode ${arr[0]} | xargs)
     salt=$(urldecode ${arr[1]} | xargs)
