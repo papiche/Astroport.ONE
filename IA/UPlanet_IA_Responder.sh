@@ -62,7 +62,7 @@ KNAME="$7"
 ## If No URL : Getting URL from message content
 if [ -z "$URL" ]; then
     # Extraire le premier lien .png ou .jpg de MESSAGE
-    URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|jpg|jpeg)' | head -n 1)
+    URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
 fi
 
 echo "Received parameters:"
@@ -129,7 +129,6 @@ if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
     fi
 fi
 
-
 ## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
 UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
@@ -155,7 +154,6 @@ if [ ! -s ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX ]; then
 fi
 
 ##################################################################""
-
 ### Extract message
 message_text=$(echo "$MESSAGE" | sed 's/\n.*//')
 #~ echo "Message text from message: '$message_text'"
@@ -176,49 +174,54 @@ fi
 
 ## NO CONTEXT
 #~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
-## USER CONTEXT
-if [[ -n $KNAME ]]; then
-    GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
-    ANSWER=$($MY_PATH/question.py "${GEOANSWER} ${QUESTION}" --pubkey ${PUBKEY})
-else
-    ANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
-fi
+GEOANSWER=$($MY_PATH/question.py "${QUESTION}" --lat "${LAT}" --lon "${LON}")
 #######################################################################
 #######################################################################
 
+#######################################################################
+## SEND ANSWER from GEOKEY
 #######################################################################
 #~ echo "Creating GEO Key NOSTR secret..."
 UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-
-if [[ -z "$UMAPNSEC" ]]; then
+#~ echo "Converting NSEC to HEX for nostpy-cli..."
+NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
+if [[ -z "$UMAPNSEC" || -z "$NPRIV_HEX" ]]; then
   echo "Error: Failed to generate NOSTR key."
   exit 1
 fi
-
-#######################################################################
-#~ echo "Converting NSEC to HEX for nostpy-cli..."
-NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
-if [[ -z "$NPRIV_HEX" ]]; then
-  echo "Error: Failed to convert NSEC to HEX."
-  exit 1
-fi
-
-#######################################################################
-#######################################################################
-# SEND IA RESPONSE
 #######################################################################
 #~ echo "Sending IA ANSWER"
-
 nostpy-cli send_event \
   -privkey "$NPRIV_HEX" \
   -kind 1 \
-  -content "$ANSWER" \
+  -content "$GEOANSWER" \
   -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
   --relay "$myRELAY"
-
 #######################################################################
 # ADD TO FOLLOW LIST
 ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
+#######################################################################
+#######################################################################
+
+#######################################################################
+#######################################################################
+## KNOWN KNAME => CAPTAIN REPLY
+if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    ANSWER=$($MY_PATH/question.py "${QUESTION}" --pubkey ${PUBKEY})
+    source ~/.zen/game/players/.current/secret.nostr
+    NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
+    nostpy-cli send_event \
+      -privkey "$NPRIV_HEX" \
+      -kind 1 \
+      -content "$ANSWER" \
+      -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
+      --relay "$myRELAY"
+    #######################################################################
+    # ADD TO FOLLOW LIST
+    ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY"
+fi
+#######################################################################
+#######################################################################
 
 #######################################################################
 echo ""
