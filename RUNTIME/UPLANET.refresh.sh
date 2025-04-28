@@ -103,6 +103,10 @@ for UMAP in ${unique_combined[@]}; do
     ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
 
     UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
+    ##################################
+    ## UMAPROOT : ipfs link rolling calendar
+    echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
+    rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE}
 
     ##################################
     ### UMAP = 0.01° Planet Slice
@@ -143,7 +147,6 @@ for UMAP in ${unique_combined[@]}; do
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
 
-    rm ~/.zen/tmp/${MOATS}/*.priv
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done

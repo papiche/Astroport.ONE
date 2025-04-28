@@ -31,6 +31,10 @@ mkdir ~/.zen/tmp/${MOATS}
 ## GET ENV
 ######################################################################
 echo "UMAP : _${LAT}_${LON}"
+UMAPROOT=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${TODATE} 2>/dev/null)
+[[ -z $UMAPROOT ]] && UMAPROOT=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${TODATE} 2>/dev/null | tail -n 1)
+echo "UMAPROOT=$UMAPROOT"
+
 UMAPG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB 2>/dev/null | tail -n 1)
 [[ -z $UMAPG1PUB ]] && UMAPG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB 2>/dev/null | tail -n 1)
 
@@ -53,6 +57,10 @@ echo "UMAPIPNS=$UMAPIPNS"
 
 ######################################################################
 echo "SECTOR : _${SLAT}_${SLON}"
+SECTORROOT=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE} 2>/dev/null)
+[[ -z $SECTORROOT ]] && SECTORROOT=$(cat ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE} 2>/dev/null | tail -n 1)
+echo "SECTORROOT=$SECTORROOT"
+
 SECTORG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_*_*/SECTORG1PUB 2>/dev/null | tail -n 1)
 [[ ! $SECTORG1PUB ]] && SECTORG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_*_*/SECTORG1PUB 2>/dev/null | tail -n 1)
 if [[ ! $SECTORG1PUB ]]; then
@@ -73,6 +81,10 @@ echo "SECTORIPNS=$SECTORIPNS"
 
 ######################################################################
 echo "REGION : _${RLAT}_${RLON}"
+REGIONROOT=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} 2>/dev/null)
+[[ -z $REGIONROOT ]] && REGIONROOT=$(cat ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} 2>/dev/null | tail -n 1)
+echo "REGIONROOT=$REGIONROOT"
+
 REGIONG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_*_*/_*_*/REGIONG1PUB 2>/dev/null | tail -n 1)
 [[ ! $REGIONG1PUB ]] && REGIONG1PUB=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_*_*/_*_*/REGIONG1PUB 2>/dev/null | tail -n 1)
 if [[ ! $REGIONG1PUB ]]; then
@@ -94,5 +106,5 @@ echo "REGIONIPNS=$REGIONIPNS"
 rm -Rf ~/.zen/tmp/${MOATS}
 
 echo "## LAST LINE EXPORT ############"
-echo "export UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+echo "export UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
 exit 0
