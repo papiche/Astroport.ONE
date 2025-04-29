@@ -40,6 +40,7 @@ o               ²        ___---___                    ²
 #########################################################################
 ## TAKES CARE OF ACTIVATED UMAPS
 SECTORS=()
+STAGS=() ## contains SECTOR friends
 
 ## Find all UMAP HEX (Uplanet NOSTR keys)
 for hexline in $(ls ~/.zen/game/nostr/UMAP_*_*/HEX);
@@ -73,7 +74,7 @@ do
     ## To get conf file auto detected
     cd ~/.zen/strfry
 
-    TAGS=()
+    TAGS=() ## contains UMAP friends
     for ami in ${friends[@]}; do
         echo "----------------------------- @$ami" >> ${UMAPPATH}/NOSTR_messages
         ## 1. Récupération du profil (kind 0)
@@ -110,6 +111,11 @@ do
 
     cat ${UMAPPATH}/NOSTR_messages
 
+    ## GET ENV VARIABLES
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+
+    STAGS+=("[\"p\", \"$SECTORHEX\", \"$myRELAY\", \"$SECTOR\"]")
+
     ## CREATE UMAP IDENTITY
     UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
@@ -120,7 +126,7 @@ do
     TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
-    ## Auto Follow NOSTR Card
+    ## UMAP auto Follow UPlanet NOSTR Cards
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
@@ -135,14 +141,15 @@ done
 echo "___________________________________"
 ## Seek for NOSTR Card ZUMAP
 for umap in $(ls ~/.zen/game/nostr/*@*.*/ZUMAP); do
-    echo "NOSTR Card : $umap : $(cat $umap)"
+    echo "NOSTR Card : ZUMAP $umap : $(cat $umap)"
 done
 echo "___________________________________"
 #########################################################################
 #########################################################################
 #########################################################################
-## TAKES CARE OF ACTIVATED SECTORS
+## TAKES CARE OF ACTIVATED sector
 REGIONS=()
+RTAGS=() ## contains REGION friends
 
 UNIQUE_SECTORS=($(echo "${SECTORS[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 ## PRODUCE SECTOR JOURNAL
@@ -180,22 +187,41 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     ##### IPFS DRIVE UPDATE
     SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
     ##################################
-    ## UMAPROOT : ipfs link rolling calendar
+    ## SECROOT : ipfs link rolling calendar
     echo "${SECROOT}" > ${sectorpath}/ipfs.${DEMAINDATE} 2>/dev/null
     rm ${sectorpath}/ipfs.${YESTERDATE} 2>/dev/null
-
+    ################################################################
     ## UPDATE REGION NOSTR PROFILE
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${slat}0" "${slon}0" | tail -n 1) ## GET ENV VARIABLES
-    SECSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${sector}" "${UPLANETNAME}${sector}" -s)
+    RTAGS+=("[\"p\", \"$REGIONHEX\", \"$myRELAY\", \"$REGION\"]")
+
+    SECTORNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}" -s)
     ${MY_PATH}/../tools/nostr_setup_profile.py \
-    "$SECSEC" \
+    "$SECTORNSEC" \
     "SECTOR_${UPLANETG1PUB:0:8}${sector}" "${SECTORG1PUB}" \
     "UPlanet ${TODATE}${sector} JOURNAL" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${SECROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
+    ################################################################
+    ################################################################
+    ## FRIEND ZONE
+    ## CREATE SECTOR IDENTITY
+    NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$SECTORNSEC")
 
+    ## Create JSON array of stags
+    TAGS_JSON=$(printf '%s\n' "${STAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
+    TAGS_JSON="[$TAGS_JSON]"
+
+    ## UMAP auto Follow UPlanet NOSTR Cards
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 3 \
+        -content "" \
+        -tags "$TAGS_JSON" \
+        --relay "$myRELAY"
+    ################################################################
 done
 
 #########################################################################
@@ -241,7 +267,24 @@ for region in ${UNIQUE_REGIONS[@]}; do
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${REGROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
+    ################################################################
+    ################################################################
+    ## FRIEND ZONE
+    ## CREATE REGION IDENTITY
+    NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
 
+    ## Create JSON array of stags
+    TAGS_JSON=$(printf '%s\n' "${RTAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
+    TAGS_JSON="[$TAGS_JSON]"
+
+    ## UMAP auto Follow UPlanet NOSTR Cards
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 3 \
+        -content "" \
+        -tags "$TAGS_JSON" \
+        --relay "$myRELAY"
+    ################################################################
 done
 
 exit 0
