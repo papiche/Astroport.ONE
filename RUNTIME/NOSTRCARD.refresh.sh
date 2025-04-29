@@ -111,12 +111,11 @@ for PLAYER in "${NOSTR[@]}"; do
     # rm ~/.zen/game/uplanet.dunikey
 
     # Combine decrypted shares
-    DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
+    DISCO=$(cat "$tmp_player" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
     #~ echo "DISCO = $DISCO" ## DEBUG
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
 
-    ## s = email
-    if [[ $s =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    if [[ -n $pepper ]]; then
         rm "$tmp_mid" "$tmp_tail"
         rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
     else

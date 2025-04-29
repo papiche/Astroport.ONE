@@ -30,12 +30,10 @@ ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${G1PUB} 2>/dev/null)
 echo "COINCHECK ${G1PUB} -> TW : $myIPFS/ipns/${ASTROTOIPFS}"
 
 #######################################################
-## CLEANING DAY+1 COINS CACHE FILES
-# find ~/.zen/game/players/ -mtime +1 -type f -name "COINS" -exec rm -f '{}' \;
+## CLEANING DAY+30 COINS CACHE FILES
+find ~/.zen/tmp/coucou/ -mtime +30 -type f -name "*.COINS" -exec rm -f '{}' \;
 echo "Cleaning ${G1PUB}.COINS"
 find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB} \;
-echo "Cleaning ${G1PUB}.g1history.json"
-find ~/.zen/tmp/coucou/ -mtime +1 -type f -name "${G1PUB}.g1history.json" -exec rm '{}' \;
 #######################################################
 
 ## IDENTIFY IF "ASTROPORT" PLAYER
