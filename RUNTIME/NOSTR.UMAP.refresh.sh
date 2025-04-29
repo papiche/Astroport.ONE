@@ -70,6 +70,7 @@ do
 
     ## GET last 24h messages of UMAP friends
     SINCE=$(date -d "24 hours ago" +%s)
+    ## To get conf file auto detected
     cd ~/.zen/strfry
 
     TAGS=()
@@ -84,7 +85,7 @@ do
 
         ## 2. Affichage du profil
         if [[ -n "$PROFILE" ]]; then
-            echo "👤 $PROFILE" >> ${UMAPPATH}/NOSTR_messages
+            echo "👤 $PROFILE @$ami" >> ${UMAPPATH}/NOSTR_messages
             TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
         else
             # filtrage (sans profil) TODO PROD
@@ -100,7 +101,8 @@ do
           "since": '"$SINCE"'
         }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content}' | jq -r .content | head -n 25 >> ${UMAPPATH}/NOSTR_messages
 
-        echo "$($MY_PATH/../tools/nostr_hex2nprofile.py $ami)" >> ${UMAPPATH}/NOSTR_messages
+        ## DOES NOT WORK
+        #~ echo "$($MY_PATH/../tools/nostr_hex2nprofile.py $ami)" >> ${UMAPPATH}/NOSTR_messages
     done
     echo "---------------------------------"
 
@@ -118,7 +120,7 @@ do
     TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
-    ## Follow Kown (relay local Profile ~= NOSTR Card)
+    ## Auto Follow NOSTR Card
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
@@ -154,7 +156,11 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    QUESTION="[TEXT] $message_text [/TEXT] --- 1. Produce a summary of TEXT, 2. Highligh the key points and their authors (use markdown and emoticons). Important! Answer using same language as in refering [TEXT]."
+    QUESTION="[TEXT] $message_text [/TEXT]
+---
+# 1. Produce a short summary of TEXT
+# 2. Highlight the key points by authors (insert addresses, hastags and emoticons).
+# IMPORTANT : Answer switching to same language as each author in using in [TEXT]."
     ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     # Write JOURNAL to SECTOR
@@ -170,15 +176,36 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     echo "$ANSWER" > $sectorpath/NOSTR_journal
     ## LOG ..............
     cat $sectorpath/NOSTR_journal
+
+    ##### IPFS DRIVE UPDATE
+    SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
+    ##################################
+    ## UMAPROOT : ipfs link rolling calendar
+    echo "${SECROOT}" > ${sectorpath}/ipfs.${DEMAINDATE} 2>/dev/null
+    rm ${sectorpath}/ipfs.${YESTERDATE} 2>/dev/null
+
+    ## UPDATE REGION NOSTR PROFILE
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${slat}0" "${slon}0" | tail -n 1) ## GET ENV VARIABLES
+    SECSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${sector}" "${UPLANETNAME}${sector}" -s)
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
+    "$SECSEC" \
+    "SECTOR_${UPLANETG1PUB:0:8}${sector}" "${SECTORG1PUB}" \
+    "UPlanet ${TODATE}${sector} JOURNAL" \
+    "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
+    "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+    "" "${myIPFS}/ipfs/${SECROOT}" "" "" "" "" \
+    "$myRELAY" "wss://relay.copylaradio.com"
+
 done
 
 #########################################################################
 #########################################################################
 #########################################################################
 ## TAKES CARE OF ACTIVATED REGIONS
-
 UNIQUE_REGIONS=($(echo "${REGIONS[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 for region in ${UNIQUE_REGIONS[@]}; do
+    rlat=$(echo ${region} | cut -d '_' -f 2)
+    rlon=$(echo ${region} | cut -d '_' -f 3)
     echo "Creating Region ${region} Journal"
     message_text=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/${region}/*/NOSTR_journal)
     if [[ -z "$message_text" ]]; then
@@ -195,6 +222,26 @@ for region in ${UNIQUE_REGIONS[@]}; do
     echo "$ANSWER" > $regionpath/NOSTR_journal
     ## LOG ..............
     cat $regionpath/NOSTR_journal
+
+    ##### IPFS DRIVE UPDATE
+    REGROOT=$(ipfs add -rwHq $regionpath/* | tail -n 1)
+    ##################################
+    ## REGROOT : ipfs link rolling calendar
+    echo "${REGROOT}" > ${regionpath}/ipfs.${DEMAINDATE} 2>/dev/null
+    rm ${regionpath}/ipfs.${YESTERDATE} 2>/dev/null
+
+    ## UPDATE REGION NOSTR PROFILE
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## GET ENV VARIABLES
+    REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
+    "$REGSEC" \
+    "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
+    "UPlanet ${TODATE}${sector} JOURNAL" \
+    "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
+    "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+    "" "${myIPFS}/ipfs/${REGROOT}" "" "" "" "" \
+    "$myRELAY" "wss://relay.copylaradio.com"
+
 done
 
 exit 0
