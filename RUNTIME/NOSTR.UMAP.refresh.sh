@@ -206,12 +206,13 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$SECTORNSEC" \
     "SECTOR_${UPLANETG1PUB:0:8}${sector}" "${SECTORG1PUB}" \
-    "UPlanet ${TODATE}${sector} JOURNAL" \
+    "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${SECROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
     ################################################################
+    # https://ipfs.copylaradio.com/ipfs/QmRq6LusiEG49BA3nsUTQvBmQxUQnY3tjqNM4M66rbBEt7/?room=UPLANET&effects&record
     ################################################################
     ## FRIEND ZONE
     ## CREATE SECTOR IDENTITY
@@ -276,7 +277,7 @@ for region in ${UNIQUE_REGIONS[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$REGSEC" \
     "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
-    "UPlanet ${TODATE}${sector} JOURNAL" \
+    "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${REGROOT}" "" "" "" "" \
