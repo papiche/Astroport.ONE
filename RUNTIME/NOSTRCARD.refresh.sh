@@ -112,12 +112,9 @@ for PLAYER in "${NOSTR[@]}"; do
 
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1)
-    echo "DISCO = $DISCO" ## DEBUG
-    arr=(${DISCO//[=&]/ })
-    s=$(urldecode ${arr[0]} | xargs -0)
-    salt=$(urldecode ${arr[1]} | xargs -0)
-    p=$(urldecode ${arr[2]} | xargs -0)
-    pepper=$(urldecode ${arr[3]} | xargs -0)
+    #~ echo "DISCO = $DISCO" ## DEBUG
+    IFS='=&' read -r s salt p pepper <<< "$DISCO"
+
     ## s = email
     if [[ $s =~ ^/.*?$ ]]; then
         rm "$tmp_mid" "$tmp_tail"
