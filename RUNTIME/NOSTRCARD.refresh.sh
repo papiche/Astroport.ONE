@@ -116,7 +116,7 @@ for PLAYER in "${NOSTR[@]}"; do
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
 
     ## s = email
-    if [[ $s =~ ^/.*?$ ]]; then
+    if [[ $s =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         rm "$tmp_mid" "$tmp_tail"
         rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
     else
