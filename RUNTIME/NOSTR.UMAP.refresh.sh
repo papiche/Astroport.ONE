@@ -126,13 +126,20 @@ do
     TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
-    ## UMAP auto Follow UPlanet NOSTR Cards
+    ## UMAP auto Follow UPlanet NOSTR Cards (kind 3)
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
         --relay "$myRELAY"
+
+    ## SEND MESSAGE kind 1
+    nostpy-cli send_event \
+      -privkey "$NPRIV_HEX" \
+      -kind 1 \
+      -content "$(cat ${UMAPPATH}/NOSTR_messages) $uSPOT/scan" \
+      --relay "$myRELAY"
 
 done
 
@@ -222,6 +229,13 @@ for sector in ${UNIQUE_SECTORS[@]}; do
         -tags "$TAGS_JSON" \
         --relay "$myRELAY"
     ################################################################
+    ## SEND MESSAGE kind 1
+    nostpy-cli send_event \
+      -privkey "$NPRIV_HEX" \
+      -kind 1 \
+      -content "$(cat $sectorpath/NOSTR_journal) $uSPOT/scan" \
+      --relay "$myRELAY"
+
 done
 
 #########################################################################
@@ -285,6 +299,13 @@ for region in ${UNIQUE_REGIONS[@]}; do
         -tags "$TAGS_JSON" \
         --relay "$myRELAY"
     ################################################################
+    ## SEND MESSAGE kind 1
+    nostpy-cli send_event \
+      -privkey "$NPRIV_HEX" \
+      -kind 1 \
+      -content "$(cat $regionpath/NOSTR_journal) $uSPOT/scan" \
+      --relay "$myRELAY"
+
 done
 
 exit 0
