@@ -111,7 +111,7 @@ for PLAYER in "${NOSTR[@]}"; do
     # rm ~/.zen/game/uplanet.dunikey
 
     # Combine decrypted shares
-    DISCO=$(cat "$tmp_player" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
+    DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
     #~ echo "DISCO = $DISCO" ## DEBUG
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
 
