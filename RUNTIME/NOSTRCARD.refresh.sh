@@ -354,10 +354,10 @@ for PLAYER in "${NOSTR[@]}"; do
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
-    echo "${PLAYER} STORAGE: /ipns/$NOSTRNS = /ipfs/${NOSTRIPFS}"
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
+    echo "${PLAYER} STORAGE: /ipns/$NOSTRNS = /ipfs/${NOSTRIPFS}"
 
     ## MEMORIZE TODATE PUBLISH (reduce publish to once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
