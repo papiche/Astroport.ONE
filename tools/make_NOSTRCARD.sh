@@ -198,6 +198,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
             -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
+            -e "s~_UMAP_~_${ZLAT}_${ZLON}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
             -e "s~_SALT_~${SALT}~g" \
             -e "s~_PEPPER_~${PEPPER}~g" \

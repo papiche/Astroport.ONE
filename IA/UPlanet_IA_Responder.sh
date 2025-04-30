@@ -174,38 +174,41 @@ fi
 
 ## NO CONTEXT
 #~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
-ANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as ASTROBOT_${LAT}_${LON}." --pubkey ${PUBKEY})
-#######################################################################
-#######################################################################
+if [[ $KNAME != "CAPTAIN" ]]; then
+    ANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as ASTROBOT_${LAT}_${LON}." --pubkey ${PUBKEY})
+    #######################################################################
+    #######################################################################
 
-#######################################################################
-## SEND ANSWER from GEOKEY
-#######################################################################
-#~ echo "Creating GEO Key NOSTR secret..."
-UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-#~ echo "Converting NSEC to HEX for nostpy-cli..."
-NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
-if [[ -z "$UMAPNSEC" || -z "$NPRIV_HEX" ]]; then
-  echo "Error: Failed to generate NOSTR key."
-  exit 1
+    #######################################################################
+    ## SEND ANSWER from GEOKEY
+    #######################################################################
+    #~ echo "Creating GEO Key NOSTR secret..."
+    UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    #~ echo "Converting NSEC to HEX for nostpy-cli..."
+    NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
+    if [[ -z "$UMAPNSEC" || -z "$NPRIV_HEX" ]]; then
+      echo "Error: Failed to generate NOSTR key."
+      exit 1
+    fi
+    #######################################################################
+    #~ echo "Sending IA ANSWER"
+    nostpy-cli send_event \
+      -privkey "$NPRIV_HEX" \
+      -kind 1 \
+      -content "$ANSWER" \
+      -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
+      --relay "$myRELAY"
+
+    #######################################################################
+    # ADD TO FOLLOW LIST
+    ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
+    #######################################################################
+    #######################################################################
 fi
-#######################################################################
-#~ echo "Sending IA ANSWER"
-nostpy-cli send_event \
-  -privkey "$NPRIV_HEX" \
-  -kind 1 \
-  -content "$ANSWER" \
-  -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-  --relay "$myRELAY"
-#######################################################################
-# ADD TO FOLLOW LIST
-${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
-#######################################################################
-#######################################################################
 
 #######################################################################
 #######################################################################
-## KNOWN KNAME => CAPTAIN REPLY
+## KNOWN KNAME => CAPTAIN REPLY using UMAP prompt memory
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     GEOANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as $myRELAY CAPTAIN at _${LAT}_${LON}" --lat "${LAT}" --lon "${LON}")
     source ~/.zen/game/players/.current/secret.nostr
