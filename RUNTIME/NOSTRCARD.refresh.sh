@@ -71,8 +71,19 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 for PLAYER in "${NOSTR[@]}"; do
     echo "\m/_(>_<)_\m/ _______________________________________ ${PLAYER} "
 
+    ## SWARM CACHE PUBLISHING
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
+        echo "$HEX" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX
+    fi
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS ]]; then
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
+        cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
+    fi
+
     [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null) == ${TODATE} ]] \
         && [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/TODATE) != ${TODATE} ]] \
+            && echo $(cat ${HOME}/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null) \
             && continue # already published today & not 1st day
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
@@ -361,15 +372,6 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## MEMORIZE TODATE PUBLISH (reduce publish to once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
-
-    ## SWARM CACHE PUBLISHING
-    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
-        echo "$HEX" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX
-    fi
-    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS ]]; then
-        cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
-    fi
 
     echo "___________________________________________________"
     sleep 1
