@@ -118,7 +118,7 @@ fi
 ${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> Backup</a></h1>Respawn : <a target=u href=${uSPOT}/g1>${salt}<br>${pepper}</a></body></html>" "... ${COUNT} MULTIPASS Respawn ..."
 
 ## REMOVE NOSTR IPNS VAULT key
-ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
+#~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
 ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
 
 ## Cleaning local cache
