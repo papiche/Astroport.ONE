@@ -92,7 +92,7 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
      ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$NSEC" \
     "UPlanet ${UPLANETG1PUB:0:8} Captain" "$CAPTAING1PUB" \
-    "UPlanet ${UPLANETG1PUB:0:8} : $myRELAY : [CopyLaRadio] Dragon WoT Member -- " \
+    "UPlanet ${UPLANETG1PUB:0:8} -- $uSPOT/g1 \n [CopyLaRadio] Dragon WoT Member -- $CAPTAINEMAIL" \
     "https://ipfs.copylaradio.com/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
     "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
     "$CAPTAINEMAIL" "$myIPFS/ipns/copylaradio.com" "" "" "" "" \

@@ -225,7 +225,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘]" "${G1PUBNOSTR}" \
-        "⏰ NOSTR Card ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8}" \
+        "⏰ UPlanet MULTIPASS ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8}" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}" "" "" "" "" \
@@ -233,7 +233,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         --ipns_vault "/ipns/${NOSTRNS}"
 
     ## CREATE CESIUM + PROFILE
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey set --name "NOSTR Card" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "https://coracle.copylaradio.com" -d "NOSTR Card : $HEX : UPlanet ${UPLANETG1PUB:0:8}"
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey set --name "UPlanet MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "https://coracle.copylaradio.com" -d "UPlanet MULTIPASS : $HEX : UPlanet ${UPLANETG1PUB:0:8}"
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
