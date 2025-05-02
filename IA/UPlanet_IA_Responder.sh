@@ -175,7 +175,7 @@ fi
 ## NO CONTEXT
 #~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
 if [[ $KNAME != "CAPTAIN" ]]; then
-    ANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as ASTROBOT_${LAT}_${LON}." --pubkey ${PUBKEY})
+    ANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as ASTROBOT_${LAT}_${LON}." --lat "${LAT}" --lon "${LON}")
     #######################################################################
     #######################################################################
 
@@ -210,13 +210,13 @@ fi
 #######################################################################
 ## KNOWN KNAME => CAPTAIN REPLY using UMAP prompt memory
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-    GEOANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as $myRELAY CAPTAIN at _${LAT}_${LON}" --lat "${LAT}" --lon "${LON}")
-    source ~/.zen/game/players/.current/secret.nostr
+    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as $myRELAY CAPTAIN at _${LAT}_${LON}" --pubkey ${PUBKEY})
+    source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
-      -content "$GEOANSWER" \
+      -content "$KeyANSWER" \
       -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
       --relay "$myRELAY"
     #######################################################################
