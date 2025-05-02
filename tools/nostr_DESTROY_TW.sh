@@ -80,12 +80,9 @@ echo $s
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
-echo "NOSTR Events Backup"
 OUTPUT_DIR="~/.zen/tmp"
-hex=$(cat )
-IMPORTANT_KINDS="0,1,3,30023,1063,1985,9735,10002"
 
-echo "Exporting important kinds (${IMPORTANT_KINDS}) in fried format..."
+echo "Exporting NOSTR $hex EVENTS..."
 cd ~/.zen/strfry
 ./strfry scan '{"authors": ["'$hex'"]}' > "${OUTPUT_DIR}/nostr_export.jsonl"
 cd -
@@ -118,7 +115,7 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
-${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1><a href=${myIPFS}/ipfs/${NOSTRIFS}>UPlanet ORIGIN Backup</a> Respawn</h1><a href=${uSPOT}/g1>[ ${salt} / ${pepper} ]</a></body></html>" "... ${player} MULTIPASS Respawn ..."
+${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1><a href=${myIPFS}/ipfs/${NOSTRIFS}>UPlanet ORIGIN Backup</a> Respawn</h1><a href=${uSPOT}/g1>[ ${salt} / ${pepper} ]</a></body></html>" "... ${COUNT} MULTIPASS Respawn ..."
 
 ## REMOVE NOSTR IPNS VAULT key
 ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
