@@ -17,7 +17,7 @@ usage() {
 # Function to list available player emails and prompt user to select one
 select_player_email() {
     echo "Available player emails:"
-    player_emails=($(ls ~/.zen/game/nostr/))
+    player_emails=($(ls ~/.zen/game/nostr/*@*.*/HEX | rev | cut -d '/' -f 2 | rev))
     if [ ${#player_emails[@]} -eq 0 ]; then
         echo "No player emails found."
         exit 1
@@ -44,7 +44,7 @@ fi
 
 ################### PLAYER G1 PUB ###########################
 select_player_email
-g1pubnostr=$(cat ~/.zen/game/nostr/${player}/g1pubnostr)
+g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)
 [[ -z $g1pubnostr ]] && echo "BAD NOSTR MULTIPASS" && exit 1
 
 ##################### DISCO DECODING ########################
@@ -84,8 +84,7 @@ echo "DELETING ${player} NOSTRCARD : $pubnostr"
 $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
 
 ## 2. CASH BACK
-${MY_PATH}/tools/keygen -t duniter -o ~/.zen/tmp/nostr.dunikey "${salt}" "${pepper}"
-g1pubnostr=$(cat ~/.zen/game/nostr/${player}/g1pubnostr) ## NOSTR G1PUB READING
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/nostr.dunikey "${salt}" "${pepper}"
 AMOUNT=$(${MY_PATH}/../tools/COINScheck.sh ${g1pubnostr} | tail -n 1)
 echo "______ AMOUNT = ${AMOUNT} G1"
 ## EMPTY AMOUNT G1 to PRIMAL
