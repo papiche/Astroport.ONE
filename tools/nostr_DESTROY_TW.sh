@@ -80,9 +80,9 @@ echo $s
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
-OUTPUT_DIR="~/.zen/tmp"
+OUTPUT_DIR="$HOME/.zen/tmp"
 
-echo "Exporting NOSTR $hex EVENTS..."
+echo ./strfry scan '{"authors": ["'$hex'"]}'
 cd ~/.zen/strfry
 ./strfry scan '{"authors": ["'$hex'"]}' > "${OUTPUT_DIR}/nostr_export.jsonl"
 cd -
