@@ -84,12 +84,12 @@ OUTPUT_DIR="$HOME/.zen/tmp"
 
 echo ./strfry scan '{"authors": ["'$hex'"]}'
 cd ~/.zen/strfry
-./strfry scan '{"authors": ["'$hex'"]}' > "${OUTPUT_DIR}/nostr_export.jsonl"
+./strfry scan '{"authors": ["'$hex'"]}' > "${OUTPUT_DIR}/nostr_export.json"
 cd -
 
-COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.jsonl")
-echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.jsonl"
-NOSTRIFS=$(ipfs add -wq "${OUTPUT_DIR}/nostr_export.jsonl" | tail -n 1)
+COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.json")
+echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
+NOSTRIFS=$(ipfs add -wq "${OUTPUT_DIR}/nostr_export.json" | tail -n 1)
 ipfs pin rm ${NOSTRIFS}
 
 echo "DELETING ${player} NOSTRCARD : $pubnostr"
@@ -115,7 +115,7 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
-${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1><a href=${myIPFS}/ipfs/${NOSTRIFS}>UPlanet ORIGIN Backup</a> Respawn</h1><a href=${uSPOT}/g1>[ ${salt} / ${pepper} ]</a></body></html>" "... ${COUNT} MULTIPASS Respawn ..."
+${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> Backup</a></h1>Respawn : <a target=u href=${uSPOT}/g1>${salt}<br>${pepper}</a></body></html>" "... ${COUNT} MULTIPASS Respawn ..."
 
 ## REMOVE NOSTR IPNS VAULT key
 ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
