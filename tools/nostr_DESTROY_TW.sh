@@ -111,7 +111,7 @@ rm ~/.zen/tmp/nostr.dunikey
 ## 2. REMOVE ZEN CARD
 if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
     echo "/PLAYER.unplug : TW + ZEN CARD"
-    ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
+    ${MY_PATH}/../RUNTIME/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
