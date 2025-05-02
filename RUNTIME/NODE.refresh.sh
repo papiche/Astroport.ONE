@@ -20,8 +20,6 @@ echo "## RUNNING NODE.refresh"
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
-
-
 # UDATE STATION BALISE
 if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
@@ -62,7 +60,11 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 fi
 
 ######################################################
+echo "~/.zen/game/nostr/ 3 DAYS OLD LISTING"
+find ~/.zen/game/nostr/ -mtime +3 -type d -exec echo '{}' \;
+######################################################
 ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
+##########################################################
 echo "############################################"
 echo "REFRESH UNODEs HEX"
 rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE OLD VALUE
@@ -74,6 +76,7 @@ NODEHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/HEX 2>/dev/null))
 for nhex in ${NODEHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexnode=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
+    [[ -s  ~/.zen/game/nostr/UNODE_$hexnode/HEX ]] && continue
     echo "NOSTR UNODE $hexnode : HEX = $hex"
     mkdir -p ~/.zen/game/nostr/UNODE_$hexnode
     echo "$hex" > ~/.zen/game/nostr/UNODE_$hexnode/HEX
@@ -91,6 +94,7 @@ UMAPHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/de
 for nhex in ${UMAPHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
+    [[ -s  ~/.zen/game/nostr/UMAP$hexumap/HEX ]] && continue
     echo "NOSTR UMAP $hexumap : HEX = $hex"
     mkdir -p ~/.zen/game/nostr/UMAP$hexumap
     echo "$hex" > ~/.zen/game/nostr/UMAP$hexumap/HEX

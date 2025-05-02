@@ -46,6 +46,7 @@ fi
 select_player_email
 g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)
 [[ -z $g1pubnostr ]] && echo "BAD NOSTR MULTIPASS" && exit 1
+hex=$(cat ~/.zen/game/nostr/${player}/HEX)
 
 ##################### DISCO DECODING ########################
 tmp_mid=$(mktemp)
@@ -78,8 +79,23 @@ fi
 echo $s
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
-echo "DELETING ${player} NOSTRCARD : $pubnostr"
 
+echo "NOSTR Events Backup"
+OUTPUT_DIR="~/.zen/tmp"
+hex=$(cat )
+IMPORTANT_KINDS="0,1,3,30023,1063,1985,9735,10002"
+
+echo "Exporting important kinds (${IMPORTANT_KINDS}) in fried format..."
+cd ~/.zen/strfry
+./strfry scan '{"authors": ["'$hex'"]}' > "${OUTPUT_DIR}/nostr_export.jsonl"
+cd -
+
+COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.jsonl")
+echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.jsonl"
+NOSTRIFS=$(ipfs add -wq "${OUTPUT_DIR}/nostr_export.jsonl" | tail -n 1)
+ipfs pin rm ${NOSTRIFS}
+
+echo "DELETING ${player} NOSTRCARD : $pubnostr"
 ## 1. REMOVE NOSTR PROFILE
 $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
 
@@ -102,7 +118,7 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
-${MY_PATH}/../tools/mailjet.sh "${player}" "UPlanet ORIGIN https://qo-op.com || $uSPOT/g1 [ ${salt} / ${pepper}]" "... MULTIPASS Respawn ..."
+${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1><a href=${myIPFS}/ipfs/${NOSTRIFS}>UPlanet ORIGIN Backup</a> Respawn</h1><a href=${uSPOT}/g1>[ ${salt} / ${pepper} ]</a></body></html>" "... ${player} MULTIPASS Respawn ..."
 
 ## REMOVE NOSTR IPNS VAULT key
 ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
