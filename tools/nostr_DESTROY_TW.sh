@@ -115,7 +115,7 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
-${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> Backup</a></h1>Respawn : <a target=u href=${uSPOT}/g1>${salt}<br>${pepper}</a></body></html>" "... ${COUNT} MULTIPASS Respawn ..."
+${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> : Backup</a></h1>Respawn <br> <a target=u href=${uSPOT}/g1>${salt}<br>${pepper}</a></body></html>" "... ${COUNT} MULTIPASS RESET ..."
 
 ## REMOVE NOSTR IPNS VAULT key
 #~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
