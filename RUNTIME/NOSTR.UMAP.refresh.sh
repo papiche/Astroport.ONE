@@ -135,12 +135,13 @@ do
         --relay "$myRELAY"
 
     ## SEND MESSAGE kind 1
+    if [[ -s ${UMAPPATH}/NOSTR_messages ]]; then
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
       -content "$(cat ${UMAPPATH}/NOSTR_messages) $uSPOT/scan" \
       --relay "$myRELAY"
-
+    fi
 done
 
 #########################################################################
@@ -231,12 +232,13 @@ for sector in ${UNIQUE_SECTORS[@]}; do
         --relay "$myRELAY"
     ################################################################
     ## SEND MESSAGE kind 1
+    if [[ -s $sectorpath/NOSTR_journal ]]; then
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
       -content "$(cat $sectorpath/NOSTR_journal) $uSPOT/scan" \
       --relay "$myRELAY"
-
+    fi
 done
 
 #########################################################################
@@ -301,12 +303,13 @@ for region in ${UNIQUE_REGIONS[@]}; do
         --relay "$myRELAY"
     ################################################################
     ## SEND MESSAGE kind 1
+    if [[ -s $regionpath/NOSTR_journal ]]; then
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
       -content "$(cat $regionpath/NOSTR_journal) $uSPOT/scan" \
       --relay "$myRELAY"
-
+    fi
 done
 
 exit 0

@@ -22,7 +22,8 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
                         && source="SWARM" && source ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/GPS
     [[ -z $HEXGATE ]] && exit 1
     ## TODO ? SEARCH WITH DNSLINK
-    echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL}"
+    G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR)
+    echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR}"
     exit 0
 
 fi

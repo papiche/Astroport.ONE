@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-
+# 2b04c72d7859fc7e4cfa3fc7b28be3f1eb06632a3bc39a81da267523afc95cda
+# nostr:nprofile1qyw8wumn8ghj7un9d3shjtnrdac8jmrpwfskg6t09e3k7mf0qqszkpx894u9nlr7fnarl3aj303lr6cxvv4rhsu6s8dzvafr4ly4eksdgjmn9
 import sys
 from bech32 import bech32_encode, convertbits
 

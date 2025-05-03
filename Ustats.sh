@@ -14,22 +14,39 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     ####################################
     # search for active TWS
     ####################################
-    echo " ## SEARCH TW in UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/TW/*"
-    METW=($(ls -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/TW/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
-    SWARMTW=($(ls -d ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??/TW/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
-    combined=("${METW[@]}" "${SWARMTW[@]}")
-    unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
+    echo " ## SEARCH PLAYER in ~/.zen/game/players/*@*.*/.player"
+    METW=($(ls -d ~/.zen/game/players/*@*.*/.player 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
 
-    echo "${#unique_combined[@]} TW(S) : ${unique_combined[@]}"
+    echo "${#METW[@]} TW(S) : ${METW[@]}"
     echo "==========================================================="
     tw_array=()
-    for player in ${unique_combined[@]}; do
+    for player in ${METW[@]}; do
         $(${MY_PATH}/tools/search_for_this_email_in_players.sh "$player" | tail -n 1)
         echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED HEX=$HEX TW=$TW source=$source"
         # Construct JSON object using printf and associative array
         tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "HEX": "%s", "SOURCE": "%s"}' \
                         "${myIPFS}$ASTROPORT" "${myIPFS}$ASTROTW" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "${myIPFS}$ASTROFEED" "$HEX" "$source")
         tw_array+=("$tw_obj")
+    done
+    echo "==========================================================="
+    ####################################
+    # search for active NOSTR MULTIPASS
+    ####################################
+    echo " ## SEARCH HEX in ~/.zen/game/nostr/*@*.*/HEX"
+    MENOSTR=($(ls -d ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
+
+    echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}"
+    echo "==========================================================="
+    nostr_array=()
+    for player in ${MENOSTR[@]}; do
+        $(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)
+        echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR}"
+        [[ -z $LAT ]] && LAT="0.00"
+        [[ -z $LON ]] && LON="0.00"
+        # Construct JSON object using printf and associative array
+        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s"}' \
+                        "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR")
+        nostr_array+=("$nostr_obj")
     done
     ####################################
     # search for active UMAPS
@@ -60,9 +77,10 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
 
     #Constructing JSON string using a more robust method:
     tw_json_array=$(printf '%s,' "${tw_array[@]}"); tw_json_array="${tw_json_array%,}" #remove trailing comma
+    nostr_json_array=$(printf '%s,' "${nostr_array[@]}"); nostr_json_array="${nostr_json_array%,}" #remove trailing comma
     umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
 
-    final_json="{\"DATE\": \"$(date -u)\", \"MOATS\": \"$MOATS\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$(${MY_PATH}/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")\", \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    final_json="{\"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
 
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
