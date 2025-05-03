@@ -25,6 +25,7 @@ echo "
                 ||     ||
 
 "
+
 #################################################################
 #################################################################
 ### COLLECTING NOSTR UMAPS
@@ -158,6 +159,23 @@ for UMAP in ${unique_combined[@]}; do
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done
+
+
+####################################################################################
+####################################################################################
+## UPLANET ZEN ---> UPlanet ORIGIN
+####################################################################################
+if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+    originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
+    originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
+    ZENNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}")
+    echo "UPLANET ZEN ---> UPlanet ORIGIN : ${originhex}"
+    ${MY_PATH}/../tools/nostr_follow.sh "$ZENNSEC" "${originhex}"
+    ## UPDATE PROFILE
+else
+    echo "UPLANET ORIGIN : Seek for ẐEN followers"
+fi
+####################################################################################
 
 
 ######################################################
