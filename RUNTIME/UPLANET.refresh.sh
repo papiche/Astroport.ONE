@@ -101,7 +101,12 @@ for UMAP in ${unique_combined[@]}; do
     echo "${REGIONG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
 
-
+    ####################################################################################
+    ## COPY SECTOR & REGION IFPSROOT
+    cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTOR/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}
+        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT 2>/dev/null
+    cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGION/_${RLAT}_${RLON}/ipfs.${TODAYE}
+        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT 2>/dev/null
     ####################################################################################
     ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
 
