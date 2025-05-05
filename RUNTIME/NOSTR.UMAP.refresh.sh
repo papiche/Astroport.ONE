@@ -171,11 +171,7 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    QUESTION="[TEXT] $message_text [/TEXT]
----
-# 1. Produce a short summary of TEXT
-# 2. Highlight the key points by authors (insert addresses, hastags and emoticons).
-# IMPORTANT : Answer switching to same language as each author in using in [TEXT]."
+    QUESTION="[TEXT] $message_text [/TEXT] --- # 1. Produce a short summary of TEXT # 2. Highlight the key points by authors (insert addresses, hastags and emoticons). # IMPORTANT : Answer switching to same language as each author in using in [TEXT]."
     ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     # Write JOURNAL to SECTOR
@@ -233,11 +229,11 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     ################################################################
     ## SEND MESSAGE kind 1
     if [[ -s $sectorpath/NOSTR_journal ]]; then
-    nostpy-cli send_event \
-      -privkey "$NPRIV_HEX" \
-      -kind 1 \
-      -content "$(cat $sectorpath/NOSTR_journal) $uSPOT/scan" \
-      --relay "$myRELAY"
+        nostpy-cli send_event \
+          -privkey "$NPRIV_HEX" \
+          -kind 1 \
+          -content "$(cat $sectorpath/NOSTR_journal) $uSPOT/scan" \
+          --relay "$myRELAY"
     fi
 done
 
@@ -304,11 +300,11 @@ for region in ${UNIQUE_REGIONS[@]}; do
     ################################################################
     ## SEND MESSAGE kind 1
     if [[ -s $regionpath/NOSTR_journal ]]; then
-    nostpy-cli send_event \
-      -privkey "$NPRIV_HEX" \
-      -kind 1 \
-      -content "$(cat $regionpath/NOSTR_journal) $uSPOT/scan" \
-      --relay "$myRELAY"
+        nostpy-cli send_event \
+          -privkey "$NPRIV_HEX" \
+          -kind 1 \
+          -content "$(cat $regionpath/NOSTR_journal) $uSPOT/scan" \
+          --relay "$myRELAY"
     fi
 done
 

@@ -163,20 +163,37 @@ done
 
 ####################################################################################
 ####################################################################################
-## UPLANET ZEN ---> UPlanet ORIGIN
+## UPLANET ZEN -- follow -> UPlanet ORIGIN
 ####################################################################################
-if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-    originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
-    originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
-    ZENNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}")
-    echo "UPLANET ZEN ---> UPlanet ORIGIN : ${originhex}"
-    ${MY_PATH}/../tools/nostr_follow.sh "$ZENNSEC" "${originhex}"
-    ## UPDATE PROFILE
-else
+ZENNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" -s)
+originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
+originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
+if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
     echo "UPLANET ORIGIN : Seek for ẐEN followers"
+    ${MY_PATH}/../tools/nostr_followers.sh "${originhex}"
+else
+    ## UPLANET Ẑen ---- > follow UPlanet ORIGIN
+    originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
+    echo "UPLANET ZEN - follow -> UPlanet ORIGIN : ${originhex}"
+    ${MY_PATH}/../tools/nostr_follow.sh "$ZENNSEC" "${originhex}"
+fi
+####################################################
+## SETUP UPLANET PROFILE + UPLANET/HEX signaling
+if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
+${MY_PATH}/../tools/nostr_setup_profile.py \
+"$ZENNSEC" \
+"UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
+"UPlanet ${TODATE}" \
+"${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
+"${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+"" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
+"$myRELAY" "wss://relay.copylaradio.com" \
+            --ipfs_gw "$myIPFS" \
+            --ipns_vault "/ipns/${NOSTRNS}" \
+| tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 fi
 ####################################################################################
-
+## TODO FILTER NOSTR MESSAGES WITH IPFS 127.0.0.1
 
 ######################################################
 exit 0
