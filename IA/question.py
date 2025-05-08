@@ -39,6 +39,16 @@ def load_context(latitude=None, longitude=None, pubkey=None):
         print(f"Failed to load context from {memory_file}: {e}")
         return ""
 
+def filter_think_tags(text):
+    """
+    Remove content between <think> and </think> tags (inclusive) from the text.
+    """
+    while "<think>" in text and "</think>" in text:
+        start = text.find("<think>")
+        end = text.find("</think>") + len("</think>")
+        text = text[:start] + text[end:]
+    return text.strip()
+
 def get_ollama_answer(prompt, model_name="qwen3:8b"):
     """
     Generates an answer from Ollama based on the given prompt.
@@ -54,7 +64,8 @@ def get_ollama_answer(prompt, model_name="qwen3:8b"):
             ]
         )
         answer = ai_response['message']['content']
-        return answer
+        # Filter out <think> tags before returning
+        return filter_think_tags(answer)
     except Exception as e:
         print(f"Error during Ollama processing: {e}")
         return None
