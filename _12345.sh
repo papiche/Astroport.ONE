@@ -135,13 +135,13 @@ while true; do
     if [[ ${duree} -gt 3600000 || ${duree} == "" ]]; then
 
         ### STOP SWARM SYNC 1H BEFORE 20H12 : TODO CHECK THIS
-        if [[ -s /tmp/20h12.log ]]; then
-            current_time=$(date +%s)
-            file_modification_time=$(stat -c %Y "/tmp/20h12.log")
-            time_difference=$((current_time - file_modification_time))
-            [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
-                && echo "$(date +"%H%M") : 20H12 is running... " && continue
-        fi
+        #~ if [[ -s /tmp/20h12.log ]]; then
+            #~ current_time=$(date +%s)
+            #~ file_modification_time=$(stat -c %Y "/tmp/20h12.log")
+            #~ time_difference=$((current_time - file_modification_time))
+            #~ [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
+                #~ && echo "$(date +"%H%M") : 20H12 is running... " && continue
+        #~ fi
 
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
