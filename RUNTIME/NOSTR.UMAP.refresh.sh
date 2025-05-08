@@ -126,6 +126,7 @@ do
     TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
+    ## RESET EVERY DAY FOLLOW LIST TO ONLY REGISTRED USER
     ## UMAP auto Follow UPlanet NOSTR Cards (kind 3)
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
@@ -135,7 +136,7 @@ do
         --relay "$myRELAY"
 
     ## SEND MESSAGE kind 1
-    if [[ -s ${UMAPPATH}/NOSTR_messages ]]; then
+    if [[ $(cat ${UMAPPATH}/NOSTR_messages) != "" ]]; then
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
@@ -147,8 +148,8 @@ done
 #########################################################################
 #########################################################################
 echo "___________________________________"
-## Seek for NOSTR Card ZUMAP
-for umap in $(ls ~/.zen/game/nostr/*@*.*/ZUMAP); do
+## Seek for NOSTR Card in SWARM Memory
+for umap in $(ls ~/.zen/tmp/swarm/*/TW/*@*.*/HEX); do
     echo "NOSTR Card : ZUMAP $umap : $(cat $umap)"
 done
 echo "___________________________________"
@@ -204,7 +205,7 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     "$SECTORNSEC" \
     "SECTOR_${UPLANETG1PUB:0:8}${sector}" "${SECTORG1PUB}" \
     "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" \
-    "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
+    "${myIPFS}/ipfs/Qmeezy8CtoXzz9LqA8mWqzYDweEYMqAvjZ1JyZFDW7pLQC/LivingTV.gif" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${SECROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
@@ -276,12 +277,13 @@ for region in ${UNIQUE_REGIONS[@]}; do
     "$REGSEC" \
     "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
     "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" \
-    "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
+    "${myIPFS}/ipfs/QmRsRTZuVwL6UsjLGooVMFFTbNfeswfCaRmJHTBmk2XiqU/internet.png" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${REGROOT}" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
-    ################################################################
-    ################################################################
+    ################################################/ipfs/Qmewe23bfnY8iXo6iNmD72muRipmkFCknpcE3kYcj2TkLQ/rec.png
+    ################################################/ipfs/Qmeezy8CtoXzz9LqA8mWqzYDweEYMqAvjZ1JyZFDW7pLQC/LivingTV.gif
+    ################################################/ipfs/QmPLxcKtjx4avibH4NiyjjBr2CPhfM3WokGy4Lwh9tBGRZ/carreblanc.png
     ## FRIEND ZONE
     ## CREATE REGION IDENTITY
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")

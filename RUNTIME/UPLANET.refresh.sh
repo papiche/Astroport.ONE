@@ -93,10 +93,16 @@ for UMAP in ${unique_combined[@]}; do
     ####################################################################################
     echo "${UMAPG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
+
+    SECTORNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
     echo "${SECTORHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_SECTOR
     echo "${SECTORG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
+
+    REGIONNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
+    REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
     echo "${REGIONHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_REGION
     echo "${REGIONG1PUB}" \
@@ -180,17 +186,17 @@ fi
 ####################################################
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
-${MY_PATH}/../tools/nostr_setup_profile.py \
-"$ZENNSEC" \
-"UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
-"UPlanet ${TODATE}" \
-"${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
-"${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-"" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
-"$myRELAY" "wss://relay.copylaradio.com" \
-            --ipfs_gw "$myIPFS" \
-            --ipns_vault "/ipns/${NOSTRNS}" \
-| tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
+    "$ZENNSEC" \
+    "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
+    "UPlanet ${TODATE}" \
+    "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
+    "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+    "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
+    "$myRELAY" "wss://relay.copylaradio.com" \
+                --ipfs_gw "$myIPFS" \
+                --ipns_vault "/ipns/${NOSTRNS}" \
+    | tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 fi
 ####################################################################################
 ## TODO FILTER NOSTR MESSAGES WITH IPFS 127.0.0.1
