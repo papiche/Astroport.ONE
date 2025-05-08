@@ -55,11 +55,8 @@ def get_ollama_answer(prompt, model_name="qwen3:8b"):
         )
         answer = ai_response['message']['content']
         return answer
-    except ollama.exceptions.OllamaError as e:
-        print(f"Error during Ollama processing in question.py: {e}")
-        return None
     except Exception as e:
-        print(f"An unexpected error occurred in question.py: {e}")
+        print(f"Error during Ollama processing: {e}")
         return None
 
 if __name__ == "__main__":
