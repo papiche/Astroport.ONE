@@ -39,7 +39,7 @@ def load_context(latitude=None, longitude=None, pubkey=None):
         print(f"Failed to load context from {memory_file}: {e}")
         return ""
 
-def get_ollama_answer(prompt, model_name="qwen2.5"):
+def get_ollama_answer(prompt, model_name="qwen3:8b"):
     """
     Generates an answer from Ollama based on the given prompt.
     """
@@ -65,7 +65,7 @@ def get_ollama_answer(prompt, model_name="qwen2.5"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Answer a question using Ollama, with optional UMAP or PUBKEY context.")
     parser.add_argument("question", help="The question to ask Ollama.")
-    parser.add_argument("-m", "--model", dest="ollama_model_name", default="qwen2.5", help="The name of the Ollama model to use (default: qwen2.5).")
+    parser.add_argument("-m", "--model", dest="ollama_model_name", default="qwen3:8b", help="The name of the Ollama model to use (default: qwen3:8b).")
     parser.add_argument("--lat", type=str, help="Latitude to load UMAP memory context.")
     parser.add_argument("--lon", type=str, help="Longitude to load UMAP memory context.")
     parser.add_argument("--pubkey", type=str, help="Pubkey to load PUBKEY memory context.")
