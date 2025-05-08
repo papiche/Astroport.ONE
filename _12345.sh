@@ -162,9 +162,10 @@ while true; do
 
         ${MY_PATH}/ping_bootstrap.sh
 
-        #### UPLANET FLASHMEM UPDATES
-        GEOKEYSrunning=$(pgrep -au $USER -f 'GEOKEYS_refresh.sh' | tail -n 1 | xargs | cut -d " " -f 1)
-        [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
+        # IPNS flashmem desactivated - reactivate as needed - _UPLANET.refresh.sh TW system
+        #~ #### UPLANET FLASHMEM UPDATES
+        #~ GEOKEYSrunning=$(pgrep -au $USER -f 'GEOKEYS_refresh.sh' | tail -n 1 | xargs | cut -d " " -f 1)
+        #~ [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 
         ### NOSTR refresh
         ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
