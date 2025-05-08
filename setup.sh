@@ -173,6 +173,9 @@ sudo sed -i 's/^.*X11Forwarding .*/X11Forwarding yes/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ClientAliveInterval .*/ClientAliveInterval 60/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_config
 
+# Mailjet - UPlanet ORIGIN only -
+ipfs cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
+
 echo "####################### YLEVEL ACTIVATION "
 ~/.zen/Astroport.ONE/tools/Ylevel.sh
 
