@@ -43,9 +43,11 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
         echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR}"
         [[ -z $LAT ]] && LAT="0.00"
         [[ -z $LON ]] && LON="0.00"
+        NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
+        ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1)
         # Construct JSON object using printf and associative array
-        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s"}' \
-                        "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR")
+        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s" "ZEN": "%s"}' \
+                        "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN")
         nostr_array+=("$nostr_obj")
     done
     ####################################
@@ -80,7 +82,8 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     nostr_json_array=$(printf '%s,' "${nostr_array[@]}"); nostr_json_array="${nostr_json_array%,}" #remove trailing comma
     umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
 
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
+    COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
+    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"COINS\": \"$COINS\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
 
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
