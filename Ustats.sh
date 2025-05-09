@@ -83,8 +83,10 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
 
     COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"COINS\": \"$COINS\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
-    echo "$final_json"
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
+
+    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
+    #~ echo "$final_json"
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
 fi
