@@ -69,7 +69,8 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL NOSTR CARDS
 for PLAYER in "${NOSTR[@]}"; do
-    echo "\m/_(>_<)_\m/ _______________________________________ ${PLAYER} "
+    HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
+    echo "\m/_(>_<)_\m/ ___________________ ${PLAYER} : ${HEX}"
 
     ## SWARM CACHE PUBLISHING
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then

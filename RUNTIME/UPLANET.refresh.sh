@@ -137,13 +137,13 @@ for UMAP in ${unique_combined[@]}; do
     ################# PUBLISH UPlanet UMAP to G1PODs
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myDATA} \
-            set -n "UPlanet ${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
+            set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
             -A ${MY_PATH}/../images/extension_territoire.jpg
 
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myCESIUM} \
-            set -n "UPlanet ${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
+            set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
             -A ${MY_PATH}/../images/extension_territoire.jpg
 
@@ -175,7 +175,7 @@ ZENNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" 
 originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
 originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
 if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
-    echo "UPLANET ORIGIN : Seek for ẐEN followers"
+    echo "UPLANET ORIGIN : Seek for ${originhex} followers"
     ${MY_PATH}/../tools/nostr_followers.sh "${originhex}"
 else
     ## UPLANET Ẑen ---- > follow UPlanet ORIGIN
