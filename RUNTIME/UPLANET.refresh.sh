@@ -185,14 +185,15 @@ else
 fi
 ####################################################
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
+rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ## TODO REMOVE : chain format re-updating
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$ZENNSEC" \
     "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
-    "UPlanet ${TODATE}" \
+    "UPlanet is a #Web3 #FrameWork offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
     "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
+    "" "${myIPFS}/ipns/copylaradio.com" "" "" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com" \
                 --ipfs_gw "$myIPFS" \
                 --ipns_vault "/ipns/${NOSTRNS}" \
