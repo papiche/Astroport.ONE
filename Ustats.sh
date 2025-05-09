@@ -40,13 +40,13 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     nostr_array=()
     for player in ${MENOSTR[@]}; do
         $(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)
-        echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR}"
         [[ -z $LAT ]] && LAT="0.00"
         [[ -z $LON ]] && LON="0.00"
         NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
-        ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+        ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
+        echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}"
         # Construct JSON object using printf and associative array
-        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s" "ZEN": "%s"}' \
+        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s"}' \
                         "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN")
         nostr_array+=("$nostr_obj")
     done
@@ -84,7 +84,7 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
 
     COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
     final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"COINS\": \"$COINS\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
-
+    echo "$final_json"
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
 fi
