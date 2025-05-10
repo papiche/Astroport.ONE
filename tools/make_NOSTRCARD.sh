@@ -1,10 +1,34 @@
+#!/bin/bash
 ################################################################################
-# Author: Fred (support@qo-op.com)
-# Version: 0.1
-# License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
-################################################################################
-################################################################################
-## INITIALIZE NOSTR CARD + G1 + IPNS App Storage
+# Script: Make_NOSTRCARD.sh
+# Description: Crée une carte NOSTR complète avec système d'identité décentralisé
+#
+# Ce script génère une identité NOSTR complète comprenant :
+# - Une paire de clés NOSTR (secrète/publique)
+# - Un portefeuille cryptographique multi-blockchain (Bitcoin, Monero)
+# - Un espace de stockage IPNS personnel
+# - Des QR codes d'accès sécurisés
+# - Une intégration avec le réseau social décentralisé NOSTR
+# - Une identité Duniter/G1 compatible
+#
+# L'identité est créée à partir d'une adresse email et protégée par :
+# - Un sel (salt) et un poivre (pepper) cryptographiques
+# - Un schéma de partage de secret (SSSS) distribué
+# - Un chiffrement asymétrique avec les nœuds du réseau
+#
+# Fonctionnalités :
+# - Génération de profils NOSTR avec métadonnées
+# - Publication automatique sur les relais NOSTR
+# - Création d'un espace de stockage IPNS persistant
+# - Génération de QR codes sécurisés
+# - Intégration avec les systèmes UPlanet et G1
+#
+# Sécurité :
+# - Aucune donnée sensible n'est stockée en clair
+# - Utilisation de standards cryptographiques robustes
+# - Destruction des traces temporaires après exécution
+#
+# Usage: Voir la fonction usage() pour les détails d'utilisation
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized

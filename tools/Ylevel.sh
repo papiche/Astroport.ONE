@@ -1,8 +1,33 @@
 #!/bin/bash
 ######################################################################## Ylevel.sh
-# Author: Fred (support@qo-op.com)
+# Script de gestion des identités cryptographiques pour Astroport.ONE
+#
+# Ce script permet de :
+# 1. Synchroniser les identités SSH et IPFS d'un utilisateur
+# 2. Générer des clés cryptographiques jumelles (SSH/IPFS) à partir :
+#    - Soit automatiquement via hachage de la clé SSH existante
+#    - Soit manuellement via saisie d'un sel (salt/pepper)
+# 3. Transmuter l'identité IPFS du nœud pour correspondre à la clé SSH
+# 4. Générer des identités compatibles avec différents protocoles :
+#    - SSH (éd25519)
+#    - IPFS (PeerID)
+#    - Duniter (clé G1)
+#    - Bitcoin (adresse)
+#
+# Le processus crée une identité unifiée sécurisée pour :
+# - L'authentification SSH
+# - L'identité du nœud IPFS
+# - Le portefeuille cryptographique Duniter
+# - La sauvegarde des secrets de manière déterministe
+#
+# Sécurité :
+# - Les secrets sont stockés dans ~/.zen/game/secret.* (chmod 600)
+# - Sauvegarde automatique des anciennes clés
+# - Vérification d'intégrité à chaque étape
+#
+# Auteur: Fred (support@qo-op.com)
 # Version: 0.1
-# License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
+# Licence: AGPL-3.0
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized

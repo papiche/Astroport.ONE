@@ -1,6 +1,24 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.4
+# Script 20H12 - Système de maintenance et gestion pour Astroport.ONE
+#
+# Description:
+# Ce script effectue une série de tâches de maintenance pour un nœud Astroport.ONE,
+# incluant la gestion des services IPFS, la mise à jour des composants logiciels,
+# le rafraîchissement des données du réseau, et le monitoring du système.
+#
+# Fonctionnalités principales:
+# - Vérification et gestion du démon IPFS
+# - Mise à jour des dépôts Git (G1BILLET, UPassport, NIP-101, Astroport)
+# - Maintenance du réseau P2P et des connexions SSH (DRAGON WOT)
+# - Rafraîchissement des données UPlanet et Nostr
+# - Gestion des services système via systemd
+# - Journalisation et reporting par email
+#
+# Conçu pour s'exécuter régulièrement (par exemple via cron) avec des modes
+# de fonctionnement différents selon l'environnement (LAN/public).
+########################################################################
+# Version: 1.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
