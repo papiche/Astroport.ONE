@@ -98,6 +98,8 @@ for UMAP in ${unique_combined[@]}; do
     SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
     echo "${SECTORHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_SECTOR
+    echo "${SECTORHEX}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/HEX
     echo "${SECTORG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
 
@@ -105,20 +107,22 @@ for UMAP in ${unique_combined[@]}; do
     REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
     echo "${REGIONHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_REGION
+    echo "${REGIONHEX}" \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/HEX
     echo "${REGIONG1PUB}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
 
     ####################################################################################
     ## COPY SECTOR & REGION IFPSROOT
     cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}
-        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT 2>/dev/null
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT 2>/dev/null
     cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE}
-        ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT 2>/dev/null
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT 2>/dev/null
     ####################################################################################
     ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
 
     UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
-    ##################################
+    ######################## EASY IPFS BLOCKCHAIN
     ## UMAPROOT : ipfs link rolling calendar
     echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
     rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE}
@@ -159,7 +163,7 @@ for UMAP in ${unique_combined[@]}; do
     "UPlanet ${TODATE}${UMAP} JOURNAL" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myIPFS}/ipfs/${UMAPROOT}" "" "" "" "" \
+    "" "${myIPFS}/ipfs/${UMAPROOT}" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
 
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
@@ -193,7 +197,7 @@ if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     "UPlanet is a #Web3 #FrameWork offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
     "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myIPFS}/ipns/copylaradio.com" "" "" "" "" \
+    "" "${myIPFS}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com" \
                 --ipfs_gw "$myIPFS" \
                 --ipns_vault "/ipns/${NOSTRNS}" \

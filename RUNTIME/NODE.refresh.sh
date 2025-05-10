@@ -100,6 +100,23 @@ for nhex in ${UMAPHEXLIST[@]}; do
     echo "$hex" > ~/.zen/game/nostr/UMAP$hexumap/HEX
 done
 ##########################################################
+echo "############################################"
+echo "REFRESH REGIONS HEX"
+rm -Rf ~/.zen/game/nostr/REGION* ## REMOVE OLD VALUE
+# Récupérer la liste des fichiers HEX du swarm
+REGIONHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_*_*/_*_*/HEX 2>/dev/null))
+# Ajouter les fichiers HEX $IPFSNODEID
+REGIONHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/REGIONS/_*_*/_*_*/HEX 2>/dev/null))
+
+# Parcourir tous les fichiers HEX dans UMAPHEXLIST
+for nhex in ${REGIONHEXLIST[@]}; do
+    hex=$(cat $nhex)
+    hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
+    [[ -s  ~/.zen/game/nostr/REGION$hexumap/HEX ]] && continue
+    echo "NOSTR UMAP $hexumap : HEX = $hex"
+    mkdir -p ~/.zen/game/nostr/REGION$hexumap
+    echo "$hex" > ~/.zen/game/nostr/REGION$hexumap/HEX
+done
 
 echo "## CLEANING SWARM 3 DAYS OLD"
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
