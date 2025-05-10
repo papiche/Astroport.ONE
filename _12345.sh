@@ -102,7 +102,8 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ###############################################
-UPLANETG1PUB=$(${MY_PATH}/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
+UPLANETCOINS=$($MY_PATH/../tools/COINScheck.sh ${UPLANETG1PUB} | tail -n 1)
+UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
 ##############################
 #### UPLANET GEOKEYS_refresh
 ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
@@ -376,6 +377,8 @@ NODE12345="{
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"NODENPUB\" : \"${npub}\",
     \"NODEHEX\" : \"${hex}\",
+    \"G1\" : \"${UPLANETCOINS}\",
+    \"ZEN\" : \"${UPLANETZEN}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
 }
 "
