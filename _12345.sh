@@ -1,12 +1,35 @@
 #!/bin/bash
 ################################################################################
-# Author: Fred (support@qo-op.com)
+# Script: Astroport Swarm Node Manager
 # Version: 0.2
-# License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
-################################################################################
+# License: AGPL-3.0
+#
+# Description:
+# Ce script gère la publication et la synchronisation des cartes de stations
+# Astroport dans un réseau décentralisé basé sur IPFS (InterPlanetary File System).
+#
+# Fonctionnalités principales :
+# 1. Initialisation de l'identité du nœud (clés IPFS, Nostr et Duniter).
+# 2. Synchronisation avec les nœuds bootstrap pour maintenir une vue à jour du réseau.
+# 3. Publication périodique des métadonnées du nœud via IPNS (système de nommage IPFS).
+# 4. Service HTTP sur le port 12345 pour répondre aux requêtes des autres stations.
+#
+# Usage :
+# - Exécutez ce script en tant que démon pour maintenir la présence de votre nœud
+#   dans le réseau Astroport.
+# - Les données sont stockées dans ~/.zen/tmp/ et ~/.zen/game/.
+#
+# Dépendances :
+# - IPFS (nœud local configuré et en cours d'exécution).
+# - Outils supplémentaires dans ./tools/ (keygen, ipfs_to_g1.py, etc.).
+# - Packages : jq, netcat, curl.
+#
+# Auteur: Fred (support@qo-op.com)
+# Notes :
+# Ce script maintien la couche SWARM de l'essaim IPFS reliant les Astroport,
 # PUBLISH AND SYNC ASTROPORT STATIONS SWARM MAPS
 # This script scan Swarm API layer from official bootstraps
-#
+#################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
@@ -27,7 +50,8 @@ ncrunning=$(pgrep -au $USER -f 'nc -l -p 12345' | tail -n 1 | xargs | cut -d " "
 
 ## WHAT IS NODEG1PUB
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
-
+NODECOINS=$($MY_PATH/tools/COINScheck.sh ${NODEG1PUB} | tail -n 1)
+NODEZEN=$(echo "($NODECOINS - 1) * 10" | bc | cut -d '.' -f 1)
 ##############################################
 [[ ${IPFSNODEID} == "" || ${IPFSNODEID} == "null" ]] && echo "IPFSNODEID is empty" && exit 1
 mkdir -p ~/.zen/tmp/swarm
@@ -76,6 +100,9 @@ fi
 ## CREATE ~/.zen/game/players/.current/secret.nostr
 if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
     source ~/.zen/game/players/.current/secret.june
+    CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$SALT" "$PEPPER")
+    CAPTAINCOINS=$($MY_PATH/tools/COINScheck.sh ${CAPTAING1PUB} | tail -n 1)
+    CAPTAINZEN=$(echo "($CAPTAINCOINS - 1) * 10" | bc | cut -d '.' -f 1)
     captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
     captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
     captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER" -s)
@@ -359,7 +386,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"2.0\",
+    \"version\" : \"3.0\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -372,9 +399,11 @@ NODE12345="{
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
     \"captain\" : \"${CAPTAINEMAIL}\",
+    \"zen\" : \"${CAPTAINZEN}\",
     \"captainHEX\" : \"${captainHEX}\",
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
+    \"NODEZEN\" : \"${NODEZEN}\",
     \"NODENPUB\" : \"${npub}\",
     \"NODEHEX\" : \"${hex}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
