@@ -377,7 +377,7 @@ NODE12345="{
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"NODENPUB\" : \"${npub}\",
     \"NODEHEX\" : \"${hex}\",
-    \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\"
+    \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
     \"G1\" : \"${UPLANETCOINS}\",
     \"ZEN\" : \"${UPLANETZEN}\"
 }
