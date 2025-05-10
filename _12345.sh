@@ -102,7 +102,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ###############################################
-UPLANETCOINS=$($MY_PATH/../tools/COINScheck.sh ${UPLANETG1PUB} | tail -n 1)
+UPLANETCOINS=$($MY_PATH/tools/COINScheck.sh ${UPLANETG1PUB} | tail -n 1)
 UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
 ##############################
 #### UPLANET GEOKEYS_refresh
