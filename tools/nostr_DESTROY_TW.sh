@@ -9,7 +9,7 @@ ME="${0##*/}"
 
 # Function to display usage information
 usage() {
-    echo "Usage: $ME"
+    echo "Usage: $ME [email]"
     echo "This script will prompt you to select a player email from the available options."
     exit 1
 }
@@ -43,7 +43,8 @@ if [ "$#" -ne 0 ]; then
 fi
 
 ################### PLAYER G1 PUB ###########################
-select_player_email
+[[ -n "$1" ]] && player="$1"
+[[ -z $player ]] && select_player_email
 g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)
 [[ -z $g1pubnostr ]] && echo "BAD NOSTR MULTIPASS" && exit 1
 hex=$(cat ~/.zen/game/nostr/${player}/HEX)
