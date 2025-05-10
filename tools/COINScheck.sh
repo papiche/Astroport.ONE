@@ -35,21 +35,11 @@ find ~/.zen/tmp/coucou/ -mtime +30 -type f -name "*.COINS" -exec rm -f '{}' \;
 echo "Cleaning ${G1PUB}.COINS"
 find ~/.zen/tmp/ -mtime +1 -type f -name "${G1PUB}.COINS" -exec mv '{}' $HOME/.zen/tmp/backup.${G1PUB} \;
 #######################################################
-
-## IDENTIFY IF "ASTROPORT" PLAYER
-# echo "ASTROPATH ? "
-ASTROPATH=$(grep $G1PUB ~/.zen/game/players/*/.g1pub 2>/dev/null | cut -d ':' -f 1 | rev | cut -d '/' -f 2- | rev)
-echo $ASTROPATH
-
-if [[ -d $ASTROPATH ]]; then
-    INNERFILE=$ASTROPATH/ipfs/G1SSB/COINS
-fi
-
 mkdir -p $HOME/.zen/tmp/coucou/
 COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 #######################################################
 ## GET EXTERNAL G1 DATA
-${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB}
+${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB} &
 #######################################################
 #######################################################
 
@@ -71,19 +61,12 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
             && echo "GVA NODE=$GVA" \
             && CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
     fi
-    [[ "$CURCOINS" == "null" ]] && echo "EMPTY WALLET"
-
+    [[ "$CURCOINS" == "null" ]] && echo "" && exit 0
     echo "$CURCOINS" > "$COINSFILE"
-
-    # PREVENT DUNITER DESYNC (KEEPING ASTROPORT LAST KNOWN VALUE)
-    [[ $CURCOINS == "" ]] \
-    && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
-    && WASCOINS=$(cat $HOME/.zen/tmp/backup.${G1PUB}) \
-    && [[ ${WASCOINS} != "" && ${WASCOINS} != "null" ]] && echo ${WASCOINS} > "$COINSFILE"
-
-    [[ $INNERFILE != "" ]] && cp "$COINSFILE" "$INNERFILE" && echo "LOCAL PLAYER COINS UPDATED"
-    echo $CURCOINS
     ) &
+    [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
+    && WASCOINS=$(cat $HOME/.zen/tmp/backup.${G1PUB}) && echo ${WASCOINS}
+    exit 0
 fi
 #### tail -n 1 FUNCTION RESULT
 echo $CURCOINS
