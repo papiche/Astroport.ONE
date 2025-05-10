@@ -39,7 +39,7 @@ mkdir -p $HOME/.zen/tmp/coucou/
 COINSFILE=$HOME/.zen/tmp/coucou/${G1PUB}.COINS
 #######################################################
 ## GET EXTERNAL G1 DATA
-${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB} &
+${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB}
 #######################################################
 #######################################################
 
