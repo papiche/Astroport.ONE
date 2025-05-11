@@ -167,6 +167,8 @@ if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
         echo "### Adding ${bootnode} to new_straps.list"
         echo "${bootnode}" >> ~/.zen/tmp/${MOATS}/new_straps.list
 
+        ## TODO : CHECK IF SAME PRIMAL RX
+        ## ................
     done
 
     ## DEDOUBLAGE DE LIGNE
