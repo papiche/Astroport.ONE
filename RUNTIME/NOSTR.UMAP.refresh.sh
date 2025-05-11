@@ -207,7 +207,7 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" \
     "${myIPFS}/ipfs/Qmeezy8CtoXzz9LqA8mWqzYDweEYMqAvjZ1JyZFDW7pLQC/LivingTV.gif" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myIPFS}/ipfs/${SECROOT}" "" "" "" "" \
+    "" "${myIPFS}/ipfs/${SECROOT}" "" "$myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
     ################################################################
     # https://ipfs.copylaradio.com/ipfs/QmRq6LusiEG49BA3nsUTQvBmQxUQnY3tjqNM4M66rbBEt7/?room=UPLANET&effects&record
@@ -279,7 +279,7 @@ for region in ${UNIQUE_REGIONS[@]}; do
     "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" \
     "${myIPFS}/ipfs/QmRsRTZuVwL6UsjLGooVMFFTbNfeswfCaRmJHTBmk2XiqU/internet.png" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myIPFS}/ipfs/${REGROOT}" "" "" "" "" \
+    "" "${myIPFS}/ipfs/${REGROOT}" "" "$myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" "wss://relay.copylaradio.com"
     ################################################/ipfs/Qmewe23bfnY8iXo6iNmD72muRipmkFCknpcE3kYcj2TkLQ/rec.png
     ################################################/ipfs/Qmeezy8CtoXzz9LqA8mWqzYDweEYMqAvjZ1JyZFDW7pLQC/LivingTV.gif
