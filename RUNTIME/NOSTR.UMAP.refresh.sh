@@ -172,7 +172,7 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    QUESTION="[TEXT] $message_text [/TEXT] --- # 1. Produce a short summary of TEXT # 2. Highlight the key points by authors (insert addresses, hastags and emoticons). # IMPORTANT : Answer switching to same language as each author in using in [TEXT]."
+    QUESTION="[TEXT] $message_text [/TEXT] --- # 1. Write a summary of [TEXT] # 2. Highlight key points with their authors # 3. Add hastags and emoticons # IMPORTANT : Use the same language as mostly used in [TEXT]."
     ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     # Write JOURNAL to SECTOR
@@ -254,7 +254,7 @@ for region in ${UNIQUE_REGIONS[@]}; do
     fi
     ################################################## send to IA/question.py
     echo "Generating Ollama answer..."
-    QUESTION="$message_text --- Produce a summary of this text, highlighting the key points and their authors (use the same language as in their message)"
+    QUESTION="[TEXT] $message_text [/TEXT]--- # 1. Write a summary of [TEXT] # 2. Highlight key points with their authors # 3. Add hastags and emoticons # IMPORTANT : Use the same language as mostly used in [TEXT]."
     ANSWER="$($MY_PATH/../IA/question.py "${QUESTION}")"
     #######################################################################
     regionpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/${region}"
