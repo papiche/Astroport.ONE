@@ -122,7 +122,7 @@ echo "## CLEANING SWARM 3 DAYS OLD"
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
 rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
 
-[[ ! -s ~/.zen/MJ_APIKEY ]]; then
+if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
     # Mailjet - UPlanet ORIGIN - edit config to change provider
     ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 fi

@@ -27,8 +27,6 @@ if [[ ! -d ~/.zen/UPassport ]]; then
 cat > .env <<EOL
 myDUNITER="https://g1.cgeek.fr"
 myCESIUM="https://g1.data.e-is.pro"
-ipfsNODE="$myIPFS"
-CESIUMAPPIPFS="$CESIUMIPFS"
 OBSkey="null"
 EOL
 

@@ -190,4 +190,5 @@ echo "############################## ♥BOX READY ###"
 echo "############################### ON BOARDING"
 espeak "Welcome CAPTAIN" 2>/dev/null
 echo ">>> Now Create CAPTAIN Account <<<"
-~/.zen/Astroport.ONE/command.sh
+cd ~/.zen/Astroport.ONE/
+./command.sh
