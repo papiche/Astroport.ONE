@@ -52,7 +52,7 @@ fi
 echo 'PRESS CTRL+C or ENTER... '; read
 ## CREATE AND OR CONNECT USER
 PS3=' ____ Select  ___ ? '
-players=( "NOSTR Card" "ZEN Card" "PRINT ZENCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+players=( "ZEN Card" "PRINT ZENCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 ## MULTIPLAYER
 
 select fav in "${players[@]}"; do
@@ -79,18 +79,7 @@ select fav in "${players[@]}"; do
 
         exit
         ;;
-    "NOSTR Card")
-        echo "'Email ?'"
-        read EMAIL
-        [[ ${EMAIL} == "" ]] && break
 
-        echo "Creating NOSTR Card .........."
-        ${MY_PATH}/tools/make_NOSTRCARD.sh "${EMAIL}" "${MY_PATH}/images/TV.png"
-
-        xdg-open ~/.zen/game/nostr/${EMAIL}/.nostr.zine.html
-
-        exit
-        ;;
     "ZEN Card")
         echo "'Email ?'"
         read EMAIL

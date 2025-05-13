@@ -134,11 +134,10 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
 
 fi
 
-
 ##################################################### # NEW PLAYER ###############
 ################################################################################
 #~ echo "=============================================
-#~ ASTROPORT DIPLOMATIC PASSPORT - MadeInZion VISA -
+#~ ASTROPORT Zen CARD - MadeInZen  -
 #~ =============================================
 #~ A Cryptographic Key to control your INTERNET
 #~ Adventure & Exploration P2P Terraforming Game.
@@ -164,6 +163,11 @@ fi
 
 PLAYER=${PLAYER,,}
 
+#~ CREATE NOSTR CARD -- 1ST PLAYER = CAPTAIN ---
+## Others create NOSTR Card first, Zen Card if they become CopyLaRadio member
+if [[ ! -d ~/.zen/game/nostr/${PLAYER} ]]; then
+    ${MY_PATH}/../tools/make_NOSTRCARD.sh "${PLAYER}" "${MY_PATH}/images/TV.png" "$LAT" "$LON" "$SALT" "$PEPPER"
+fi
 # 4 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
@@ -613,13 +617,6 @@ ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPL
 && echo "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
-#####################################################################"
-### CREATE NEXTCLOUD ACCOUNT
-#~ SALT_PART=$(echo "$SALT" | awk '{print toupper(substr($1,1,1)) substr($1,2)}')
-#~ PEPPER_PART=$(echo "$PEPPER" | awk '{print toupper(substr($1,1,1)) substr($1,2)}')
-#~ sudo docker exec -e OC_PASS="${PASS}${SALT_PART}${PEPPER_PART}" --user www-data -it nextcloud-aio-nextcloud \
-    #~ php occ user:add --password-from-env --display-name="$PSEUDO" --email ${PLAYER} ${YOUSER}
-#####################################################################"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
