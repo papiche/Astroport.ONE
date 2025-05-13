@@ -656,7 +656,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     #########################################################
-    BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
+    #~ BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
     [[ -z $BIRTHDATE ]] \
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
