@@ -100,7 +100,7 @@ sudo systemctl enable ipfs
 ###########################################
 # ACTIVATE IPFS OPTIONS: #swarm0 INIT
 ###########################################
-$MY_PATH/ipfs_config.sh
+$MY_PATH/tools/ipfs_config.sh
 
 sudo systemctl restart ipfs
 
