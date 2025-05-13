@@ -158,7 +158,8 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         cat ~/.zen/game/id_ssh > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
         cat ~/.zen/game/id_ssh.pub > ~/.ssh/id_ed25519.pub \
             && chmod 644 ~/.ssh/id_ed25519.pub \
-            && rm ~/.zen/game/id_ssh && ln -s ~/.ssh/id_ed25519.pub ~/.zen/game/id_ssh.pub ## LINKING SSHPUB
+            && rm ~/.zen/game/id_ssh* \
+            && ln -s ~/.ssh/id_ed25519.pub ~/.zen/game/id_ssh.pub ## LINKING SSHPUB
 
         ## SUCCESS
         echo "YOUR PREVIOUS SSH KEY IS ~/.ssh/origin.key"
@@ -166,9 +167,10 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         echo "SECRET1=$SECRET1"
         echo "SECRET2=$SECRET2"
 
-        echo "ENTER SWARM DOMAIN ? (default 'copylaradio.com')"
+        echo "ENTER SWARM ADDRESS ([node.]domain.tld) ? (default 'copylaradio.com')"
         read MYDOMAIN
         [[ -z $MYDOMAIN ]] && MYDOMAIN="copylaradio.com"
+
         echo "#########################################
 myIPFS=https://ipfs.$MYDOMAIN
 myASTROPORT=https://astroport.$MYDOMAIN

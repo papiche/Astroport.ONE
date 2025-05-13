@@ -27,7 +27,7 @@ ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${G1PUB} 2>/dev/null)
 && echo "INVALID G1PUB : ${G1PUB}" \
 && exit 1
 
-echo "COINCHECK ${G1PUB} -> TW : $myIPFS/ipns/${ASTROTOIPFS}"
+echo "COINCHECK ${G1PUB} (/ipns/${ASTROTOIPFS})"
 
 #######################################################
 ## CLEANING DAY+30 COINS CACHE FILES
@@ -52,7 +52,7 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     (
     CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
     if [[ "$CURCOINS" == "" ]]; then
-        echo "JAKLIS ERROR - switch server ---"
+        echo "JAKLIS GVA SERVER SWITCH ---"
         ## Changing GVA SERVER in tools/jaklis/.env
         GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
         [[ ! -z $GVA ]] \
@@ -61,11 +61,14 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
             && echo "GVA NODE=$GVA" \
             && CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
     fi
-    [[ "$CURCOINS" == "null" ]] && echo "" && exit 0
     echo "$CURCOINS" > "$COINSFILE"
+    rm $HOME/.zen/tmp/backup.${G1PUB} 2>/dev/null
+    echo "$CURCOINS"
     ) &
-    [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
-    && WASCOINS=$(cat $HOME/.zen/tmp/backup.${G1PUB}) && echo ${WASCOINS}
+    ## SEND OLD VALUE
+    [[ "$CURCOINS" == "" ]] \
+    && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
+    && cat $HOME/.zen/tmp/backup.${G1PUB}
     exit 0
 fi
 #### tail -n 1 FUNCTION RESULT

@@ -120,7 +120,7 @@ for PLAYER in "${NOSTR[@]}"; do
             -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
 
     ## Keep UPlanet Dunikey
-    # rm ~/.zen/game/uplanet.dunikey
+    chmod 600 ~/.zen/game/uplanet.dunikey
 
     # Combine decrypted shares
     DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
@@ -135,7 +135,7 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
     ##################################################### DISCO DECODED
-
+    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE)
     ## s=/?email
     NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
@@ -148,7 +148,6 @@ for PLAYER in "${NOSTR[@]}"; do
     ############################################################ BLOCKING
     ########################################################################
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
-        FILEDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE)
 
         # Patch jaklis gva history error
         [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
@@ -156,7 +155,7 @@ for PLAYER in "${NOSTR[@]}"; do
             && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
             || echo "NOSTR G1 CARD is EMPTY .............. !!!"
 
-        if [[ ${TODATE} != ${FILEDATE} ]]; then
+        if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
                 # UPlanet Zen : need Primo RX from WoT member
                 echo "UPlanet Zen : INVALID CARD"
@@ -173,6 +172,26 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
 
+    ####################################################################
+    ## EVERY 28 DAYS PAY CAPTAIN
+    TODATE_SECONDS=$(date -d "$TODATE" +%s)
+    BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+    # Calculate the difference in days
+    DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+    # Check if the difference is a multiple of 28
+    if [ $((DIFF_DAYS % 28)) -eq 0 ]; then
+        if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+            ## Pay NCARD to CAPTAIN
+            [[ -z $NCARD ]] && NCARD=4
+            Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+            echo "[28 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT !!"
+            ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
+        else
+            echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
+            destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+            continue
+        fi
+    fi
     ########################################################################
     echo ">>> NOSTR PRIMAL :$pcoins: $primal"
     ## ACTIVATED NOSTR CARD

@@ -79,6 +79,7 @@ echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
     SECRET2=${IPFSNODEID}
     ipfs key rm "MySwarm_${IPFSNODEID}"
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
+    chmod 600 ~/.zen/game/myswarm_secret.june
     ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipns "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
     ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/myswarm_secret.dunikey "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
     ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipns

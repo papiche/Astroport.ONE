@@ -59,10 +59,10 @@ ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${pla
 # Decrypt the tail part using UPLANET dunikey
 if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+    chmod 600 ~/.zen/game/uplanet.dunikey
 fi
 ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/ssss.tail.uplanet.enc" \
         -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
-rm ~/.zen/game/uplanet.dunikey
 
 # Combine decrypted shares
 DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
