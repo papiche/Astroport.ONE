@@ -172,6 +172,11 @@ echo "######### UPASSPORT ##############"
 echo "INSTALL UPASSPORT : http://localhost:54321"
 ~/.zen/Astroport.ONE/install_upassport.sh
 
+## NIP-101 strfry NOSTR relay
+echo "######### NIP-101 strfry NOSTR relay ##############"
+echo "INSTALL NOSTR RELAY : wss://localhost:7777"
+bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
+
 ## G1BILLET
 echo "######### G1BILLET ##############"
 echo "INSTALL G1BILLET : http://g1billet.localhost:33101"
