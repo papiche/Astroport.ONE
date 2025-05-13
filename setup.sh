@@ -50,8 +50,6 @@ echo "=== SETUP jaklis"
 cd ~/.zen/Astroport.ONE/tools/jaklis
 ./setup.sh
 
-ln -f -s ~/.zen/Astroport.ONE/tools/jaklis ~/.local/bin/jaklis
-
 ## XBIAN fail2ban ERROR correction ##
 #[....] Starting authentication failure monitor: fail2ban No file(s) found for glob /var/log/auth.log
 [[ "$USER" == "xbian" ]] && sudo sed -i "s/auth.log/faillog/g" /etc/fail2ban/paths-common.conf
@@ -173,8 +171,10 @@ sudo sed -i 's/^.*X11Forwarding .*/X11Forwarding yes/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ClientAliveInterval .*/ClientAliveInterval 60/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_config
 
-# Mailjet - UPlanet ORIGIN only -
-ipfs cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
+# Astroport Basic Tools Linking
+ln -f -s ~/.zen/Astroport.ONE/tools/natools.py ~/.local/bin/natools
+ln -f -s ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py ~/.local/bin/jaklis
+ln -f -s ~/.zen/Astroport.ONE/tools/keygen ~/.local/bin/keygen
 
 echo "####################### YLEVEL ACTIVATION "
 ~/.zen/Astroport.ONE/tools/Ylevel.sh
