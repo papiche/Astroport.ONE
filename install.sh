@@ -117,6 +117,7 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
 fi
 
 ### PYTHON ENV
+sudo ln -f -s /usr/bin/python3 /usr/bin/python
 cd $HOME
 python -m venv .astro
 . ~/.astro/bin/activate

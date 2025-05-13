@@ -20,8 +20,6 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 #####################
 #### ~/.bashrc
 echo "########################### Updating ♥BOX ~/.bashrc"
-sudo ln -f -s /usr/bin/python3 /usr/bin/python
-
 while IFS= read -r line
 do
     echo "$line" >> ~/.bashrc
