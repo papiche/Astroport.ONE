@@ -170,7 +170,7 @@ fi
 ## UPASSPORT API
 echo "######### UPASSPORT ##############"
 echo "INSTALL UPASSPORT : http://localhost:54321"
-${MY_PATH}/install_upassport.sh
+~/.zen/Astroport.ONE/install_upassport.sh
 
 
 ## G1BILLET
