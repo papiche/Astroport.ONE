@@ -46,7 +46,7 @@ sudo apt-get update
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in git tldr ssss make cmake docker.io docker-compose docker-compose-v2 iptables fail2ban npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+for i in git tldr ssss make cmake docker.io docker-compose docker-compose-v2 iptables fail2ban openssh-server npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -119,7 +119,7 @@ fi
 ### PYTHON ENV
 sudo ln -f -s /usr/bin/python3 /usr/bin/python
 cd $HOME
-python -m venv .astro
+[[ ! -s ~/.astro/bin/activate ]] && python -m venv .astro
 . ~/.astro/bin/activate
 cd -
 

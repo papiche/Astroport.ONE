@@ -50,6 +50,8 @@ echo "=== SETUP jaklis"
 cd ~/.zen/Astroport.ONE/tools/jaklis
 ./setup.sh
 
+ln -f -s ~/.zen/Astroport.ONE/tools/jaklis ~/.local/bin/jaklis
+
 ## XBIAN fail2ban ERROR correction ##
 #[....] Starting authentication failure monitor: fail2ban No file(s) found for glob /var/log/auth.log
 [[ "$USER" == "xbian" ]] && sudo sed -i "s/auth.log/faillog/g" /etc/fail2ban/paths-common.conf
