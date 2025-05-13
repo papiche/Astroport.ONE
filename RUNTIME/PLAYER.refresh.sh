@@ -255,8 +255,8 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ######################################## LOW ZEN PLAYER UNPLUG !
-    ## UNPLUG more than 21 days & less than 2 G1 account
-    [[ "${CURRENT}" != "${PLAYER}" && $(echo "$days >= 21" | bc -l) -eq 1 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]] \
+    ## UNPLUG more than 28 days & less than 2 G1 account
+    [[ "${CURRENT}" != "${PLAYER}" && $(echo "$days >= 28" | bc -l) -eq 1 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]] \
         && echo "LOW ZEN PLAYER UNPLUG" \
         && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT" \
         && continue
@@ -621,12 +621,6 @@ for PLAYER in ${PLAYERONE[@]}; do
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ZEN ALERT"
             echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
         fi
-        if [[ ${days} -gt 29 && $(echo "$COINS <= 2" | bc -l) -eq 1 && ${PLAYER} != ${CURRENT} ]]; then
-            #################################### UNPLUG ACCOUNT
-            echo ">>>> PLAYER TW UNPLUG >>>>> ${days} days => BYE BYE ${PLAYER} ZEN=$ZEN"
-            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
-            continue
-        fi
 
     else
 
@@ -662,13 +656,30 @@ for PLAYER in ${PLAYERONE[@]}; do
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     #########################################################
-    ## TODO CREATING 30 DAYS XML RSS STREAM ???
-    ## https://talk.tiddlywiki.org/t/has-anyone-generated-an-rss-feed-from-tiddlywiki/966/26
-    # tiddlywiki.js --load my-wiki.html --render "[[$:/plugins/sq/feeds/templates/rss]]" "feed.xml" "text/plain" "$:/core/templates/wikified-tiddler"
-    ### $:/plugins/sycom/atom-feed/atom.xml
-    #~ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
-        #~ --output ~/.zen/game/players/${PLAYER}/ipfs --render '.' "${PLAYER}.rss.xml" 'text/plain' "$:/core/templates/wikified-tiddler" 'exportFilter' '[days:created[-30]!is[system]!tag[G1Voeu]]'
-
+    BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
+    [[ -z $BIRTHDATE ]] \
+        && BIRTHDATE="$TODATE" \
+        && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
+    ####################################################################
+    ## EVERY 28 DAYS PAY CAPTAIN
+    TODATE_SECONDS=$(date -d "$TODATE" +%s)
+    BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+    # Calculate the difference in days
+    DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+    [[ -z $ZCARD ]] && ZCARD=15
+    Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
+    # Check if the difference is a multiple of 28
+    if [ $((DIFF_DAYS % 28)) -eq 0 ]; then
+        if [[ $(echo "$COINS > $Gpaf" | bc -l) -eq 1 ]]; then
+            ## Pay NCARD to CAPTAIN
+            echo "[28 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
+            ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF"
+        else
+            echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
+            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
+            continue
+        fi
+    fi
 
     #################################################
     ################### COPY DATA TO UP LEVEL GRIDS

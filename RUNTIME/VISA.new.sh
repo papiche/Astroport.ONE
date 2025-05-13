@@ -168,6 +168,7 @@ PLAYER=${PLAYER,,}
 if [[ ! -d ~/.zen/game/nostr/${PLAYER} ]]; then
     ${MY_PATH}/../tools/make_NOSTRCARD.sh "${PLAYER}" "${MY_PATH}/images/TV.png" "$LAT" "$LON" "$SALT" "$PEPPER"
 fi
+
 # 4 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
