@@ -168,6 +168,10 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
         fi
 
+        ## EMAIL 2
+        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.txt" "WELCOME"
+
+
         rm -Rf ~/.zen/tmp/${MOATS}
         continue
     fi
