@@ -676,7 +676,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF"
         else
             echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
-            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
+            $MY_PATH/../tools/mailjet.sh "${PLAYER}" "PLEASE RENEW MEMBERSHIP" "MEMBERSHIP..."
+            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
             continue
         fi
     fi
