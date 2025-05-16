@@ -400,7 +400,7 @@ NODE12345="{
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
     \"captain\" : \"${CAPTAINEMAIL}\",
-    \"zen\" : \"${CAPTAINZEN}\",
+    \"captainZEN\" : \"${CAPTAINZEN}\",
     \"captainHEX\" : \"${captainHEX}\",
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
@@ -408,8 +408,8 @@ NODE12345="{
     \"NODENPUB\" : \"${npub}\",
     \"NODEHEX\" : \"${hex}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
-    \"G1\" : \"${UPLANETCOINS}\",
-    \"ZEN\" : \"${UPLANETZEN}\"
+    \"UPLANETG1\" : \"${UPLANETCOINS}\",
+    \"UPLANETZEN\" : \"${UPLANETZEN}\"
 }
 "
 
