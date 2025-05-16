@@ -67,8 +67,12 @@ else
 fi
 ## EXTRACT GCHANGE AVATAR
 if [[ -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]; then
-    cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" 2>/dev/null
-    [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png"
+    [[ ! -s "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" ]] \
+        && cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json \
+            | jq -r '._source.avatar._content' \
+            | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" 2>/dev/null
+    [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" | grep PNG) ]] \
+        && rm "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png"
 fi
 ## SCAN CESIUM +
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json ]]; then
@@ -89,7 +93,10 @@ fi
 
 ## EXTRACT CESIUM AVATAR
 if [[ -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json ]]; then
-    cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" 2>/dev/null
+    [[ ! -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]] \
+        && cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json \
+            | jq -r '._source.avatar._content' \
+            | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" 2>/dev/null
     [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png"
 fi
 
@@ -121,7 +128,10 @@ else
 fi
 ## EXTRACT CPLUS AVATAR
 if [[ -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
-    cat ~/.zen/tmp/coucou/${G1PUB}.cplus.json | jq -r '._source.avatar._content' | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" 2>/dev/null
+    [[ ! -s "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" ]] \
+        && cat ~/.zen/tmp/coucou/${G1PUB}.cplus.json \
+            | jq -r '._source.avatar._content' \
+            | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" 2>/dev/null
     [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png"
 fi
 

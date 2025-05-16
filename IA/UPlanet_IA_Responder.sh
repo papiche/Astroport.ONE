@@ -126,6 +126,10 @@ if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
         ## source NOSTR Card LAT=?;LON=?;
         [[ -s ${HOME}/.zen/game/nostr/${EMAIL}/GPS ]] \
             && source ${HOME}/.zen/game/nostr/${EMAIL}/GPS
+        ## Check SWARM account
+        isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/GPS)
+        [[ -n  ${isInSwarmGPS} ]] \
+            && source ${isInSwarmGPS}
     fi
 fi
 
@@ -167,36 +171,14 @@ fi
 #######################################################################
 echo "Generating Ollama answer..."
 if [[ -n $DESC ]]; then
-    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text --- ## Determine classification ## Analyse subject ## Make a short answer in plain text (do not use markdown)."
+    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text --- ## Determine Image classification ## Analyse subject ## Make a short answer in plain text # DO NOT USE MARKDOWN STYLE"
 else
-    QUESTION="Answer to this message: $message_text."
+    QUESTION="$message_text. # ANWSER USING THE SAME LANGUAGE"
 fi
 
-## NO CONTEXT
-#~ ONSWER=$($MY_PATH/question.py "${QUESTION}")
+## UMAP FOLLOW NOSTR CARD
 if [[ $KNAME != "CAPTAIN" ]]; then
     UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-    #~ ANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as ASTROBOT_${LAT}_${LON}." --lat "${LAT}" --lon "${LON}")
-    #######################################################################
-    #######################################################################
-    ## SEND ANSWER from GEOKEY
-    #######################################################################
-    #~ echo "Creating GEO Key NOSTR secret..."
-    #~ echo "Converting NSEC to HEX for nostpy-cli..."
-    #~ NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
-    #~ if [[ -z "$UMAPNSEC" || -z "$NPRIV_HEX" ]]; then
-      #~ echo "Error: Failed to generate NOSTR key."
-      #~ exit 1
-    #~ fi
-    #######################################################################
-    #~ echo "Sending IA ANSWER"
-    #~ nostpy-cli send_event \
-      #~ -privkey "$NPRIV_HEX" \
-      #~ -kind 1 \
-      #~ -content "$ANSWER" \
-      #~ -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-      #~ --relay "$myRELAY"
-
     #######################################################################
     # UMAP FOLLOW PUBKEY -> Used nightly to create Journal "NOSTR.UMAP.refresh.sh"
     ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
@@ -209,7 +191,7 @@ fi
 ## KNOWN KNAME => CAPTAIN REPLY
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## CAPTAIN ANSWSER USING PUBKEY MEMORY
-    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as CAPTAIN located at _${LAT}_${LON}" --pubkey ${PUBKEY})
+    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as CAPTAIN" --pubkey ${PUBKEY})
     source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
     nostpy-cli send_event \

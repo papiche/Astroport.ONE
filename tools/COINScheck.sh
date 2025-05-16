@@ -61,7 +61,7 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
             && echo "GVA NODE=$GVA" \
             && CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
     fi
-    echo "$CURCOINS" > "$COINSFILE"
+    [[ "$CURCOINS" != "null" ]] && echo "$CURCOINS" > "$COINSFILE"
     rm $HOME/.zen/tmp/backup.${G1PUB} 2>/dev/null
     echo "$CURCOINS"
     ) &
