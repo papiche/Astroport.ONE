@@ -7,19 +7,19 @@
 ## TODO : Get in swarm GPU Station
 ########################################################
 # Configuration
-LOCAL_PORT=11434
+OLLAMA_PORT=11434
 REMOTE_USER="frd"
 REMOTE_HOST="scorpio.copylaradio.com"
 REMOTE_PORT=2122
-SSH_OPTIONS="-fN -L $LOCAL_PORT:127.0.0.1:$LOCAL_PORT"
+SSH_OPTIONS="-fN -L $OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
 
 # Fonction pour vérifier si le port est ouvert
 check_port() {
-    if lsof -i :$LOCAL_PORT >/dev/null; then
-        echo "Le port $LOCAL_PORT est déjà ouvert."
+    if lsof -i :$OLLAMA_PORT >/dev/null; then
+        echo "Le port $OLLAMA_PORT est déjà ouvert."
         return 0
     else
-        echo "Le port $LOCAL_PORT n'est pas ouvert."
+        echo "Le port $OLLAMA_PORT n'est pas ouvert."
         return 1
     fi
 }
@@ -40,9 +40,9 @@ establish_tunnel() {
 close_tunnel() {
     echo "Fermeture du tunnel SSH..."
     # Trouver le processus SSH utilisant le port local
-    PID=$(lsof -t -i :$LOCAL_PORT)
+    PID=$(lsof -t -i :$OLLAMA_PORT)
     if [ -z "$PID" ]; then
-        echo "Aucun tunnel SSH trouvé sur le port $LOCAL_PORT."
+        echo "Aucun tunnel SSH trouvé sur le port $OLLAMA_PORT."
         return 1
     else
         kill $PID

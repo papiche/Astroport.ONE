@@ -7,8 +7,8 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-# API endpoint (change port if needed)
-API_URL="http://localhost:3000/api/search"
+# API endpoint (change port if needed) http://192.168.1.23:3001
+API_URL="http://localhost:3001/api/search"
 
 # Get the question from command line arguments
 QUESTION="$*"
@@ -17,16 +17,16 @@ QUESTION="$*"
 JSON_PAYLOAD=$(cat <<EOF
 {
   "chatModel": {
-    "provider": "openai",
-    "name": "gpt-4o-mini"
+    "provider": "ollama",
+    "name": "gemma3:latest"
   },
   "embeddingModel": {
-    "provider": "openai",
-    "name": "text-embedding-3-large"
+    "provider": "ollama",
+    "name": "nomic-embed-text:latest"
   },
   "optimizationMode": "balanced",
   "focusMode": "webSearch",
-  "query": "$QUESTION",
+  "query": "$QUESTION # ALWAYS RESPOND IN SAME LANGUAGE",
   "stream": false
 }
 EOF
