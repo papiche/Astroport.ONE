@@ -1,0 +1,32 @@
+
+Bonjour,
+
+Vous avez scanné votre email sur UPlanet ORIGIN (https://qo-op.com)
+
+Avez vous avez bien reçu votre "NOSTR Card"?
+Avez-vous installé l'extension "nostr connect" pour votre navigateur ?
+Y avez-vous renseigné votre clef privée "nsec" ?
+Si c'est le cas, envoyez un message sur https://coracle.copylaradio.com
+
+Cela vous permettra de rentrer en contact avec le Capitaine de votre Relai.
+
+Nos logiciels libres sont en constant développement...
+N'hésitez pas à poser vos questions, remonter vos difficultés, proposer des améliorations !
+
+---
+
+Hello,
+
+You have scanned your email on UPlanet ORIGIN (https://qo-op.com)
+
+Have you received your NOSTR Card?
+Have you installed the ‘nostr connect’ extension for your browser?
+Have you entered your ‘nsec’ private key?
+If so, send a message to https://coracle.copylaradio.com
+
+This will enable you to contact your Relay Captain.
+
+Our free software is constantly being developed...
+Don't hesitate to ask questions, report problems or suggest improvements!
+
+

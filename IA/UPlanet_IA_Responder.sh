@@ -61,7 +61,7 @@ KNAME="$7"
 
 ## If No URL : Getting URL from message content
 if [ -z "$URL" ]; then
-    # Extraire le premier lien .png ou .jpg de MESSAGE
+    # Extraire le premier lien .gif .png ou .jpg de MESSAGE
     URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
 fi
 

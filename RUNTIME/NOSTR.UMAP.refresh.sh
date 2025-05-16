@@ -140,7 +140,7 @@ do
     nostpy-cli send_event \
       -privkey "$NPRIV_HEX" \
       -kind 1 \
-      -content "$(cat ${UMAPPATH}/NOSTR_messages) $uSPOT/scan" \
+      -content "$(cat ${UMAPPATH}/NOSTR_messages) $myIPFS/ipns/copylaradio.com" \
       --relay "$myRELAY"
     fi
 done
@@ -233,7 +233,7 @@ for sector in ${UNIQUE_SECTORS[@]}; do
         nostpy-cli send_event \
           -privkey "$NPRIV_HEX" \
           -kind 1 \
-          -content "$(cat $sectorpath/NOSTR_journal) $uSPOT/scan" \
+          -content "$(cat $sectorpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
           --relay "$myRELAY"
     fi
 done
@@ -305,7 +305,7 @@ for region in ${UNIQUE_REGIONS[@]}; do
         nostpy-cli send_event \
           -privkey "$NPRIV_HEX" \
           -kind 1 \
-          -content "$(cat $regionpath/NOSTR_journal) $uSPOT/scan" \
+          -content "$(cat $regionpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
           --relay "$myRELAY"
     fi
 done
