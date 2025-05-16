@@ -46,7 +46,7 @@ YOMAIN=$(echo ${mail} | cut -d '@' -f 2)    # YOMAIN=super.chez-moi.com
 pseudo="${CLYUSER}${YOMAIN}.${myDOMAIN}"
 #~ echo "PSEUDO=$pseudo"
 
-messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGEUP
+messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
 ## add a tittle in message
 title="$3"
@@ -143,7 +143,7 @@ json_payload='{
             ],
             "Subject": "'${SUBJECT}'",
             "TextPart": "'$(myIpfsGw)/ipfs/${EMAILZ}'",
-            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3><a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a> [ /ipns/'${pseudo}' ]<br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
+            "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3>'$(cat ~/.zen/tmp/email.txt | head -n 100 | tr '\n' '<br>')'<br><a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a> [ /ipns/'${pseudo}' ]<br /><br>'${MESSAGESIGN}'<br>/ipfs/'${EMAILZ}'"
         }
     ]
 }'
