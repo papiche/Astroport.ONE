@@ -100,8 +100,6 @@ if [[ ${UPLANETNAME} != "" ]]; then
         primal=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null) ### CACHE READING
 
         ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
-        ## Can evolve to accept cross Uplanet Zen TX.
-        UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
         if [[ $UPLANETG1PUB != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
             if [[ ${UPLANETG1PUB} == "${primal}" ]]; then
                 echo "GOOD ZEN WALLET primal TX by $UPLANETG1PUB"
