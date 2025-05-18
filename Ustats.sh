@@ -98,7 +98,7 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     BILAN=$((INCOME - PAF))
 
     ########################################
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
+    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
     #~ echo "$final_json"
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
