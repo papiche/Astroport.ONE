@@ -182,15 +182,15 @@ for PLAYER in "${NOSTR[@]}"; do
     BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
     # Calculate the difference in days
     DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
-    # Check if the difference is a multiple of 28
+    # Check if the difference is a multiple of 28 // ROMAN calendar is fake !!
     if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
         if [ $((DIFF_DAYS % 28)) -eq 0 ]; then
             if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
                 ## Pay NCARD to CAPTAIN
-                    [[ -z $NCARD ]] && NCARD=4
-                    Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                    echo "[28 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT !!"
-                    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
+                [[ -z $NCARD ]] && NCARD=4
+                Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+                echo "[28 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT !!"
+                ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
             else
                 echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
                 destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
@@ -198,7 +198,7 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
         fi
     else
-        echo "CAPTAIN ACCOUNT"
+        echo "CAPTAIN ACCOUNT $COINS G1"
     fi
     ########################################################################
     echo ">>> NOSTR PRIMAL :$pcoins: $primal"
