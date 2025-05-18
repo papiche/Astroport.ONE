@@ -83,6 +83,9 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
 
+    COINS=$(cat ~/.zen/tmp/coucou/$ASTROG1.COINS)
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
+
     # cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r
     rm -Rf ~/.zen/tmp/${MOATS}
 
@@ -98,5 +101,5 @@ NHEX=$(cat ~/.zen/game/nostr/${EMAIL}/HEX 2>/dev/null)
 [[ $HEX == "" ]] && HEX=$NHEX
 
 ### RUN THIS $(SCRIPT) TO INITIALIZE PLAYER ENV
-echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX HEX=$HEX NHEX=$NHEX source=$source"
+echo "export ASTROPORT=$ASTROPORT ASTROTW=$ASTRONAUTENS ZEN=$ZEN LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$EMAIL ASTROFEED=$FEEDNS TW=$INDEX HEX=$HEX NHEX=$NHEX source=$source"
 exit 0

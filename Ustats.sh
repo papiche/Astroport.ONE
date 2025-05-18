@@ -20,13 +20,15 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     echo "${#METW[@]} TW(S) : ${METW[@]}"
     echo "==========================================================="
     tw_array=()
+    twcount=0
     for player in ${METW[@]}; do
         $(${MY_PATH}/tools/search_for_this_email_in_players.sh "$player" | tail -n 1)
-        echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED HEX=$HEX TW=$TW source=$source"
+        echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW ZEN=$ZEN LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED HEX=$HEX TW=$TW source=$source"
         # Construct JSON object using printf and associative array
-        tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "HEX": "%s", "SOURCE": "%s"}' \
-                        "${myIPFS}$ASTROPORT" "${myIPFS}$ASTROTW" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "${myIPFS}$ASTROFEED" "$HEX" "$source")
+        tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "ZEN": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "HEX": "%s", "SOURCE": "%s"}' \
+                        "${myIPFS}$ASTROPORT" "${myIPFS}$ASTROTW" "$ZEN" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "${myIPFS}$ASTROFEED" "$HEX" "$source")
         tw_array+=("$tw_obj")
+        [[ $ZEN -gt 0 ]] && twcount=$((twcount + 1))
     done
     echo "==========================================================="
     ####################################
@@ -38,6 +40,7 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}"
     echo "==========================================================="
     nostr_array=()
+    nostrcount=0
     for player in ${MENOSTR[@]}; do
         $(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)
         [[ -z $LAT ]] && LAT="0.00"
@@ -49,6 +52,7 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
         nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s"}' \
                         "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN")
         nostr_array+=("$nostr_obj")
+        [[ $ZEN -gt 0 ]] && nostrcount=$((nostrcount + 1))
     done
     ####################################
     # search for active UMAPS
@@ -82,10 +86,19 @@ if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
     nostr_json_array=$(printf '%s,' "${nostr_array[@]}"); nostr_json_array="${nostr_json_array%,}" #remove trailing comma
     umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
 
+    #######################################
+    ## BILAN ZEN ECONOMY
     COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
 
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
+    [[ -z $PAF ]] && PAF=56
+    [[ -z $NCARD ]] && NCARD=4
+    [[ -z $ZCARD ]] && ZCARD=15
+    INCOME=$((nostrcount * NCARD + twcount * ZCARD))
+    BILAN=$((INCOME - PAF))
+
+    ########################################
+    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"PLAYERs\": [$tw_json_array], \"NOSTR\": [$nostr_json_array], \"UMAPs\": [$umap_array_str]}"
     #~ echo "$final_json"
     #Print and format INLINE the JSON string.
     echo "$final_json" | jq -rc '.' > ~/.zen/tmp/Ustats.json
