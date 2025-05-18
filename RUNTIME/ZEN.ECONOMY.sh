@@ -34,6 +34,9 @@ NOSTRS=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 PLAYERS=($(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@" ))
 echo "NODE hosts NOSTR : ${#NOSTRS[@]} / ZEN : ${#PLAYERS[@]}"
 
+#######################################################################
+## UPLANET ZEN WALLET IS REPRESENTING "GLOBAL ASSET VALUE"
+#######################################################################
 ## EVERY DAY CAPTAIN PAY PAF/28
 [[ -z $PAF ]] && PAF=56
 [[ -z $NCARD ]] && NCARD=4
@@ -42,13 +45,14 @@ DAILYPAF=$(makecoord $(echo "$PAF / 28" | bc))
 echo "ZEN ECONOMY : $PAF ($DAILYPAF ZEN) :: NCARD=$NCARD // ZCARD=$ZCARD"
 DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc ))
 
-## UPLANET WALLET CONTAINS "ASSET VALUE"
+#######################################################################
 if [[ $(echo "$CAPTAINZEN > $DAILYPAF" | bc -l) -eq 1 ]]; then
-    ## CAPTAIN PAY NODE : ECONOMY +
-    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
+    ## CAPTAIN CAN PAY NODE : ECONOMY +
+    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF+"
 else
-    ## UPLANET IS PAYING NODE: ECONOMY -
-    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
+    ## UPLANET MUST PAY NODE: ECONOMY -
+    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF-"
 fi
+#######################################################################
 
 exit 0
