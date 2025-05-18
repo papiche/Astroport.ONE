@@ -8,9 +8,12 @@ ME="${0##*/}"
 ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
 [[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" && exit 0
 
+ULAT=$1
+ULON=$2
+echo "=== $ME =============================== //$ULAT//$ULON"
+
 . "${MY_PATH}/tools/my.sh"
 if [[ ! -s ~/.zen/tmp/Ustats.json ]]; then
-    echo "==========================================================="
     ####################################
     # search for active TWS
     ####################################

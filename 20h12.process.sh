@@ -118,14 +118,16 @@ if [[ ${UPLANETG1PUB} == "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
     #################### UPLANET ORIGIN : PRIVATE SWARM BLOOM #########
     ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 else
-    # UPlanet Zen MULTIPASS ZenCard TW mode
+    # UPlanet Zen MULTIPASS/ZenCard TW mode
     #####################################
     ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
     #####################################
+    [[ -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
+        && rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 fi
 ######################################################### UPLANET ######
 #####################################
-# GeoKeys UMAP / SECTOR / REGION ...
+# UPLANET : GeoKeys UMAP / SECTOR / REGION ...
 #####################################
 ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
@@ -145,13 +147,13 @@ mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
 ########################################################################
 ################################# updating ipfs bootstrap
-    espeak "bootstrap refresh" > /dev/null 2>&1
-    ipfs bootstrap rm --all > /dev/null 2>&1
-    for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # remove comments
-    do
-        ipfsnodeid=${bootnode##*/}
-        ipfs bootstrap add $bootnode
-    done
+espeak "bootstrap refresh" > /dev/null 2>&1
+ipfs bootstrap rm --all > /dev/null 2>&1
+for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # remove comments
+do
+    ipfsnodeid=${bootnode##*/}
+    ipfs bootstrap add $bootnode
+done
 
 
 ########################################################################
