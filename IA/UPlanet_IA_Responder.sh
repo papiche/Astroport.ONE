@@ -191,7 +191,7 @@ fi
 ## KNOWN KNAME => CAPTAIN REPLY
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## CAPTAIN ANSWSER USING PUBKEY MEMORY
-    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # Sign as CAPTAIN" --pubkey ${PUBKEY})
+    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # ANWSER USING THE SAME LANGUAGE # Add CAPTAIN signature" --pubkey ${PUBKEY})
     source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
     nostpy-cli send_event \
