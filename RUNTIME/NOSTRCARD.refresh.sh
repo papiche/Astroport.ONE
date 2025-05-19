@@ -169,7 +169,7 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
 
         ## EMAIL 2
-        [[ "$primal" == "" ]] \
+        [[ ${TODATE} != ${BIRTHDATE} ]] && [[ "$primal" == "" ]] \
             && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.txt" "WELCOME"
 
         rm -Rf ~/.zen/tmp/${MOATS}
