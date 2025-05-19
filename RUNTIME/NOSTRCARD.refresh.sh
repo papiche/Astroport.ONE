@@ -84,7 +84,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null) == ${TODATE} ]] \
         && [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/TODATE) != ${TODATE} ]] \
-            && echo $(cat ${HOME}/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null) \
+            && echo "BIRTHDAY=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)" \
             && continue # already published today & not 1st day
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
