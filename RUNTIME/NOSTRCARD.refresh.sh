@@ -153,11 +153,11 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
             && echo "UPlanet Primal Correction" \
             && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
-            || echo "NOSTR G1 CARD is EMPTY .............. !!!"
+            || echo "NOSTR G1 CARD is EMPTY .............. !!! ${TODATE} / ${BIRTHDATE}"
 
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-                # UPlanet Zen : need Primo RX from WoT member
+                # UPlanet Zen : need Primo RX from UPlanet or WoT member
                 echo "UPlanet Zen : INVALID CARD"
                 destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
             else
@@ -169,8 +169,8 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
 
         ## EMAIL 2
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.txt" "WELCOME"
-
+        [[ "$primal" == "" ]] \
+            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.txt" "WELCOME"
 
         rm -Rf ~/.zen/tmp/${MOATS}
         continue
