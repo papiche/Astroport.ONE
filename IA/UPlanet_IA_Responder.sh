@@ -348,25 +348,25 @@ send_nostr_reply() {
     if ! command -v nostpy-cli &> /dev/null; then
         log "Warning: nostpy-cli not found, skipping NOSTR reply"
         return 0
-    }
+    fi
     
     # Vérifier les paramètres requis
     if [[ -z "$event_id" || -z "$pubkey" || -z "$content" || -z "$nsec" ]]; then
         log "ERROR: Missing required parameters for NOSTR reply"
         return 1
-    }
+    fi
     
     # Vérifier le relay
     if [[ -z "$myRELAY" ]]; then
         log "ERROR: NOSTR relay not configured"
         return 1
-    }
+    fi
     
     local npriv_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$nsec")
     if [[ -z "$npriv_hex" ]]; then
         log "ERROR: Failed to convert NSEC to hex"
         return 1
-    }
+    fi
     
     log "Sending NOSTR reply to event $event_id..."
     if ! nostpy-cli send_event \
