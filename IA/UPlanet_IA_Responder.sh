@@ -1,9 +1,22 @@
 #!/bin/bash
 ###################################################################
-# IA_UPlanet.sh "$pubkey" "$event_id" "$latitude" "$longitude" "$content" "$url"
-# Analyse du message et de l'image (url) Uplanet reçu
-# Publie la réponse Ollama sur la GeoKey UPlanet UMAP 0.01
-# et depuis la clef NOSTR du Capitaine pour les visiteurs
+# UPlanet_IA_Responder.sh
+# Script de réponse IA pour UPlanet
+#
+# Usage: $0 "$pubkey" "$event_id" "$latitude" "$longitude" "$content" "$url"
+#
+# Fonctionnalités:
+# - Analyse des messages et médias reçus via UPlanet
+# - Détection automatique des types de médias (#audio, #video, etc.)
+# - Traitement des médias (conversion, téléchargement, stockage IPFS)
+# - Génération de réponses IA via Ollama
+# - Publication des réponses sur:
+#   * La GeoKey UPlanet UMAP correspondante
+#   * La clé NOSTR du Capitaine (pour les visiteurs)
+#
+# Tags spéciaux:
+# - #BOT : Active la réponse IA
+# - #audio/#video : Spécifie le type de média
 ###################################################################
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
@@ -59,10 +72,11 @@ MESSAGE="$5"
 URL="$6"
 KNAME="$7"
 
-## If No URL : Getting URL from message content
+## If No URL : Getting URL from message content - recognize describe_image.py
 if [ -z "$URL" ]; then
     # Extraire le premier lien .gif .png ou .jpg de MESSAGE
     URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
+    ANYURL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ])' | head -n 1)
 fi
 
 echo "Received parameters:"
@@ -72,6 +86,7 @@ echo "  LAT: $LAT"
 echo "  LON: $LON"
 echo "  MESSAGE: $MESSAGE"
 echo "  URL: $URL"
+echo "  ANYURL: $ANYURL"
 echo "  KNAME: $KNAME"
 echo ""
 
@@ -159,8 +174,27 @@ fi
 
 ##################################################################""
 ### Extract message
-message_text=$(echo "$MESSAGE" | sed 's/\n.*//')
-#~ echo "Message text from message: '$message_text'"
+message_text=$(echo "$MESSAGE" | tr '\n' ' ')
+
+# Check for #BOT tag
+if [[ ! "$message_text" =~ \#BOT ]]; then
+    echo "No #BOT tag found, skipping AI response"
+    # UMAP follow and memorize
+    if [[ $KNAME != "CAPTAIN" ]]; then
+        UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+        ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
+    fi
+
+    exit 0
+fi
+
+# Extract media type from message if present (case insensitive)
+MEDIA_TYPE=""
+if [[ "$message_text" =~ \#(mp3|MP3|mp4|MP4) ]]; then
+    # Convert to upper for consistency
+    MEDIA_TYPE=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
+    echo "Detected media type: $MEDIA_TYPE"
+fi
 
 #######################################################################
 if [[ ! -z $URL ]]; then
@@ -192,6 +226,52 @@ fi
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## CAPTAIN ANSWSER USING PUBKEY MEMORY
     KeyANSWER=$($MY_PATH/question.py "${QUESTION} # ANWSER USING THE SAME LANGUAGE # Add CAPTAIN signature" --pubkey ${PUBKEY})
+    
+    # If media type detected, process it
+    if [[ -n "$MEDIA_TYPE" && -n "$ANYURL" ]]; then
+        echo "Processing media type: $MEDIA_TYPE"
+        # Create temporary directory for media processing
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+        
+        # Get title from URL using yt-dlp
+        LINE="$(yt-dlp --print "%(id)s&%(title)s" "${ANYURL}")"
+        YID=$(echo "$LINE" | cut -d '&' -f 1)
+        MEDIA_TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
+        # If no title found, use timestamp
+        [[ -z "$MEDIA_TITLE" ]] && MEDIA_TITLE="media-$(date +%s)"
+        
+        # Download and process media based on type
+        case "$MEDIA_TYPE" in
+            AUDIO)
+                echo "Downloading and converting to MP3..."
+                yt-dlp -x --audio-format mp3 --no-mtime --embed-thumbnail --add-metadata \
+                    -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
+                ;;
+            VIDEO)
+                echo "Downloading and converting to MP4..."
+                yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
+                    --no-mtime --embed-thumbnail --add-metadata \
+                    -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
+                ;;
+        esac
+        
+        # Get the downloaded file
+        MEDIA_FILE=$(ls "$TEMP_DIR"/${MEDIA_TITLE}.* 2>/dev/null | head -n 1)
+        
+        if [[ -n "$MEDIA_FILE" ]]; then
+            # Add to IPFS
+            MEDIA_IPFS=$(ipfs add -wq "$MEDIA_FILE" 2>/dev/null | tail -n 1)
+            if [[ -n "$MEDIA_IPFS" ]]; then
+                KeyANSWER="$KeyANSWER\n\n $myIPFS/ipfs/$MEDIA_IPFS/$MEDIA_TITLE.$MEDIA_TYPE"
+            fi
+        fi
+        
+        # Cleanup
+        cd - >/dev/null
+        rm -rf "$TEMP_DIR"
+    fi
+    
     source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
     NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
     nostpy-cli send_event \
@@ -216,6 +296,7 @@ echo "LAT: $LAT"
 echo "LON: $LON"
 echo "Message: $message_text"
 echo "Image: $DESC"
+echo "Media Type: $MEDIA_TYPE"
 echo "---------------"
 echo "UMAP_${LAT}_${LON} Answer: $ANSWER"
 

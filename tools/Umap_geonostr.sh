@@ -6,11 +6,11 @@
 # Script pour générer les liens géographiques entre UMAPs adjacentes
 #
 # Usage:
-#   ./generate_geolinks.sh [latitude] [longitude]
+#   ./Umap_geonostr.sh [latitude] [longitude]
 #
 # Description:
 #   Ce script calcule les UMAPs adjacentes (nord, sud, est, ouest, etc.)
-#   et génère un fichier JSON contenant les liens IPNS vers ces UMAPs.
+#   et génère un fichier JSON contenant les liens HEX de ces UMAPs.
 #
 # Dépendances:
 #   - jq (pour la génération du JSON)
@@ -29,7 +29,6 @@ Ce script génère les liens géographiques entre UMAPs adjacentes.
 Arguments:
   latitude    Latitude de l'UMAP centrale (format décimal)
   longitude   Longitude de l'UMAP centrale (format décimal)
-  date        (Optionnel) Date de référence pour la génération des clés
 
 Exemple:
   $0 48.8566 2.3522
@@ -51,10 +50,14 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # Chemin absolu et normalisé
 # Variables principales
 ZLAT=$1
 ZLON=$2
-THEDATE=$3
-
 LAT=$(makecoord ${ZLAT})
 LON=$(makecoord ${ZLON})
+
+if [[ ! ${LAT} || ! ${LON} ]]; then
+    echo "ERREUR: Format invalide pour LAT ($LAT) ou LON ($LON)" >&2
+    exit 1
+fi
+
 UMAP="_${LAT}_${LON}"
 THEDATE=""
 
@@ -138,6 +141,7 @@ SEUMAPNS=$(generate_adjacent_umap "SOUTH EAST" "$SELAT" "$SELON")
 ##############################################################
 ## GENERATION DU FICHIER GEOJSON
 ##############################################################
+mkdir - p ~/.zen/tmp/${UMAP}/
 
 jq -n \
   --arg north "${NUMAPNS}" \
