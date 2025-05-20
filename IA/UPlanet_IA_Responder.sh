@@ -12,7 +12,7 @@
 # - Génération de réponses IA via Ollama
 # - Publication des réponses sur la clé NOSTR du Capitaine
 # Tags spéciaux:
-# - #BOT : Active la réponse IA (par défaut)
+# - #BRO : Active la réponse IA (par défaut)
 # - #search : Perplexica Search
 # - #mp3 : Convertir en MP3
 # - #mp4 : Convertir en MP4
@@ -231,8 +231,8 @@ fi
 message_text=$(echo "$MESSAGE" | tr '\n' ' ')
 #~ echo "Message text from message: '$message_text'"
 
-################################################################### #BOT
-if [[ "$message_text" =~ \#BOT ]]; then
+################################################################### #BRO
+if [[ "$message_text" =~ \#BRO ]]; then
     #######################################################################
     if [[ ! -z $URL ]]; then
         echo "Looking at the image (using ollama + llava)..."
@@ -261,8 +261,8 @@ if [[ "$message_text" =~ \#BOT ]]; then
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         if [[ "$message_text" =~ \#search ]]; then
             ################################################"
-            # remove #BOT #search tags from message_text
-            cleaned_text=$(sed 's/#BOT//g; s/#search//g' <<< "$message_text")
+            # remove #BRO #search tags from message_text
+            cleaned_text=$(sed 's/#BRO//g; s/#search//g' <<< "$message_text")
             # search = perplexica
             KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
             ################################################"
