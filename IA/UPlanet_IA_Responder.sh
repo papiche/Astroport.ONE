@@ -203,14 +203,14 @@ if [[ ! -z $URL ]]; then
 fi
 
 #######################################################################
-echo "Generating Ollama answer..."
+# QUESTION prepare with image description if present
 if [[ -n $DESC ]]; then
-    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text --- ## Determine Image classification ## Analyse subject ## Make a short answer in plain text # DO NOT USE MARKDOWN STYLE"
+    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text --- ## Comment [IMAGE] description ## Make a short answer about [MESSAGE] # ANWSER USING THE SAME LANGUAGE"
 else
     QUESTION="$message_text. # ANWSER USING THE SAME LANGUAGE"
 fi
 
-## UMAP FOLLOW NOSTR CARD
+## UMAP FOLLOW NOSTR CARD IF NOT CAPTAIN
 if [[ $KNAME != "CAPTAIN" ]]; then
     UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     #######################################################################
@@ -224,10 +224,11 @@ fi
 #######################################################################
 ## KNOWN KNAME => CAPTAIN REPLY
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-    ## CAPTAIN ANSWSER USING PUBKEY MEMORY
-    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # ANWSER USING THE SAME LANGUAGE # Add CAPTAIN signature" --pubkey ${PUBKEY})
+    ## CAPTAIN ANSWER USING PUBKEY MEMORY
+    echo "Generating Ollama answer..."
+    KeyANSWER=$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})
     
-    # If media type detected, process it
+    # If media type detected, and ANYURL is present, process it
     if [[ -n "$MEDIA_TYPE" && -n "$ANYURL" ]]; then
         echo "Processing media type: $MEDIA_TYPE"
         # Create temporary directory for media processing
