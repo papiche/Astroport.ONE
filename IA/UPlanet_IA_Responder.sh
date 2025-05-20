@@ -261,8 +261,10 @@ if [[ "$message_text" =~ \#BOT ]]; then
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         if [[ "$message_text" =~ \#search ]]; then
             ################################################"
+            # remove #BOT #search tags from message_text
+            cleaned_text=$(sed 's/#BOT//g; s/#search//g' <<< "$message_text")
             # search = perplexica
-            KeyANSWER="$($MY_PATH/perplexica_search.sh "${QUESTION}")"
+            KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
             ################################################"
         else
             ################################################"
