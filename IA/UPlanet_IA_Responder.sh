@@ -84,7 +84,7 @@ echo "  EVENT: $EVENT"
 echo "  LAT: $LAT"
 echo "  LON: $LON"
 echo "  MESSAGE: $MESSAGE"
-echo "  URL: $URL"
+echo "  IMAGE: $URL"
 echo "  ANYURL: $ANYURL"
 echo "  KNAME: $KNAME"
 echo ""
@@ -188,10 +188,10 @@ process_media() {
 }
 
 ## Getting KNAME default localisation
-if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
+if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME && $KNAME != "CAPTAIN" ]]; then
     if [[ $LAT == "0.00" && $LON == "0.00" ]]; then
         ## Check SWARM account
-        isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${KNAME}/GPS)
+        isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${KNAME}/GPS 2>/dev/null)
         [[ -n  ${isInSwarmGPS} ]] \
             && source ${isInSwarmGPS}
 
@@ -213,14 +213,14 @@ SLAT="${LAT::-1}"
 SLON="${LON::-1}"
 RLAT=$(echo ${LAT} | cut -d '.' -f 1)
 RLON=$(echo ${LON} | cut -d '.' -f 1)
-UMAPPATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
 ##################################################################""
+UMAPPATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
 ## Indicates UMAP to swarm
 if [ ! -s ${UMAPPATH}/HEX ]; then
     mkdir -p ${UMAPPATH}
     echo "$UMAPHEX" > ${UMAPPATH}/HEX
 fi
-# nostr whitelist, Used by NOSTR.UMAP.refresh.sh
+# nostr whitelist, Used by NOSTR.UMAP.refresh.sh (completed by NODE.refresh.sh)
 if [ ! -s ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX ]; then
     mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
     echo "$UMAPHEX" > ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX
@@ -241,9 +241,9 @@ if [[ "$message_text" =~ \#BRO ]]; then
     #######################################################################
     echo "Generating Ollama answer..."
     if [[ -n $DESC ]]; then
-        QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text  --- ## Comment [IMAGE] description ## Make a short answer about [MESSAGE] # ANWSER USING THE SAME LANGUAGE"
+        QUESTION="[IMAGE]: $DESC --- $message_text"
     else
-        QUESTION="$message_text. --- # ANWSER USING THE SAME LANGUAGE"
+        QUESTION="$message_text ---"
     fi
 
     ## UMAP FOLLOW NOSTR CARD
@@ -259,17 +259,18 @@ if [[ "$message_text" =~ \#BRO ]]; then
     ##################################################### ASK IA
     ## KNOWN KNAME => CAPTAIN REPLY
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        # remove #BRO #search tags from message_text
         if [[ "$message_text" =~ \#search ]]; then
             ################################################"
-            # remove #BRO #search tags from message_text
             cleaned_text=$(sed 's/#BRO//g; s/#search//g' <<< "$message_text")
             # search = perplexica
             KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
             ################################################"
         else
             ################################################"
+            cleaned_text=$(sed 's/#BRO//g; s/#search//g' <<< "$QUESTION")
             # default = ollama (with PUBKEY MEMORY)
-            KeyANSWER="$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
+            KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
             ################################################"
         fi
 
