@@ -37,7 +37,7 @@ trap 'log "ERROR: Command failed at line $LINENO"' ERR
 
 # Vérification des dépendances
 check_dependencies() {
-    local deps=("yt-dlp" "jq" "detox" "ipfs" "nostpy-cli" "ollama")
+    local deps=("yt-dlp" "jq" "detox" "ipfs")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" &> /dev/null; then
             log "ERROR: Required dependency '$dep' is not installed"
