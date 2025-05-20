@@ -17,10 +17,6 @@ API_URL="http://localhost:3001/api/search"
 # Get the question from command line arguments
 QUESTION="$*"
 
-#########################################
-echo "$QUESTION
----"
-
 # JSON payload for the API request
 JSON_PAYLOAD=$(cat <<EOF
 {
