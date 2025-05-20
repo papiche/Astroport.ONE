@@ -60,9 +60,10 @@ fi
 SOURCES=$(echo "$RESPONSE" | jq -r '.sources')
 if [ "$SOURCES" != "null" ] && [ "$SOURCES" != "[]" ]; then
     echo "$SOURCES" | jq -r '.[] | "\(.metadata.title)\n\(.metadata.url)\n"'
-else
-    # Extract and display the message
-    MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
-    echo -e "$MESSAGE"
 fi
+
+# Extract and display the message
+MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
+echo -e "$MESSAGE"
+
 exit 0
