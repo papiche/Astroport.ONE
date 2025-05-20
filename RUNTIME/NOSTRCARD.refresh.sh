@@ -88,10 +88,9 @@ for PLAYER in "${NOSTR[@]}"; do
             && continue # already published today & not 1st day
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
-    echo ${G1PUBNOSTR}
-
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
-    echo "______ AMOUNT = ${COINS} G1"
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
 
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL RX CHECK
@@ -108,22 +107,26 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ############################################################################
     ###################### DISCO DECRYPTION - with Captain + UPlanet parts
-    tmp_mid=$(mktemp)
-    tmp_tail=$(mktemp)
-    # Decrypt the middle part using CAPTAIN key
-    ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" \
-            -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.disco ]]; then
+        tmp_mid=$(mktemp)
+        tmp_tail=$(mktemp)
+        # Decrypt the middle part using CAPTAIN key
+        ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" \
+                -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
-    # Decrypt the tail part using UPLANET dunikey
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
-    ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
-            -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
+        # Decrypt the tail part using UPLANET dunikey
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+        ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
+                -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
 
-    ## Keep UPlanet Dunikey
-    chmod 600 ~/.zen/game/uplanet.dunikey
+        ## Keep UPlanet Dunikey
+        chmod 600 ~/.zen/game/uplanet.dunikey
 
-    # Combine decrypted shares
-    DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
+        # Combine decrypted shares
+        DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
+    else
+        DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
+    fi
     #~ echo "DISCO = $DISCO" ## DEBUG
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
 
@@ -131,7 +134,7 @@ for PLAYER in "${NOSTR[@]}"; do
         rm "$tmp_mid" "$tmp_tail"
         rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
     else
-        echo "ERROR : BAD DISCO DECODING" > ~/.zen/game/nostr/${PLAYER}/ERROR
+        echo "ERROR : BAD DISCO DECODING" >> ~/.zen/game/nostr/${PLAYER}/ERROR
         continue
     fi
     ##################################################### DISCO DECODED
@@ -143,7 +146,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## CACHING SECRET & DISCO to NOSTR Card (.file = no ipfs !!)
     [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]] \
-        && echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr \
+        && echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX;" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr \
         && echo "$DISCO" > ~/.zen/game/nostr/${PLAYER}/.secret.disco \
         && chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
 
@@ -158,6 +161,7 @@ for PLAYER in "${NOSTR[@]}"; do
         # Patch jaklis gva history error
         [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
             && echo "UPlanet Primal Correction" \
+            && [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]] \
             && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
             || echo "NOSTR G1 CARD is EMPTY .............. !!! ${TODATE} / ${BIRTHDATE}"
 
@@ -165,7 +169,8 @@ for PLAYER in "${NOSTR[@]}"; do
             if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
                 # UPlanet Zen : need Primo RX from UPlanet or WoT member
                 echo "UPlanet Zen : INVALID CARD"
-                destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+                [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
+                    && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
             else
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
@@ -183,7 +188,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ####################################################################
-    ## EVERY 28 DAYS PAY CAPTAIN
+    ## EVERY 28 DAYS NOSTR CARD is PAYING CAPTAIN
     TODATE_SECONDS=$(date -d "$TODATE" +%s)
     BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
     # Calculate the difference in days
@@ -195,11 +200,13 @@ for PLAYER in "${NOSTR[@]}"; do
                 ## Pay NCARD to CAPTAIN
                 [[ -z $NCARD ]] && NCARD=4
                 Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                echo "[28 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT !!"
-                ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
+                echo "[28 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT ($COINS G1) !!"
+                [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
+                    && ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
             else
-                echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
-                destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+                echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) !!"
+                [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
+                    && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
                 continue
             fi
         fi
