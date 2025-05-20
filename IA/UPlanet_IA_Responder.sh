@@ -368,18 +368,26 @@ send_nostr_reply() {
         return 1
     fi
     
-    log "Sending NOSTR reply to event $event_id..."
-    if ! nostpy-cli send_event \
+    log "Attempting to send NOSTR reply to event $event_id..."
+    
+    # Exécuter la commande et capturer la sortie d'erreur
+    local nostr_output=$(nostpy-cli send_event \
         -privkey "$npriv_hex" \
         -kind 1 \
         -content "$content" \
         -tags "[['e', '$event_id'], ['p', '$pubkey']]" \
-        --relay "$myRELAY" 2>> "$LOG_FILE"; then
-        log "ERROR: Failed to send NOSTR reply"
+        --relay "$myRELAY" 2>&1)
+    local exit_code=$?
+    
+    if [[ $exit_code -ne 0 ]]; then
+        log "ERROR: nostpy-cli command failed with exit code $exit_code"
+        log "nostpy-cli output: $nostr_output"
         return 1
     fi
     
     log "NOSTR reply sent successfully"
+    # Optionally log successful output as well
+    # log "nostpy-cli output: $nostr_output"
     return 0
 }
 
