@@ -76,7 +76,7 @@ KNAME="$7"
 if [ -z "$URL" ]; then
     # Extraire le premier lien .gif .png ou .jpg de MESSAGE
     URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
-    ANYURL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ])' | head -n 1)
+    ANYURL=$(echo "$MESSAGE" | grep -oE 'https?://[^ ]+' | head -n 1)
 fi
 
 echo "Received parameters:"
