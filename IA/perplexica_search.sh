@@ -10,7 +10,7 @@ if [ $# -eq 0 ]; then
 fi
 
 ## Activate Perplexica SSH Port Forwarding
-$MY_PATH/perplexica.me.sh
+$MY_PATH/perplexica.me.sh 2>/dev/null
 # API endpoint (change port if needed) http://192.168.1.23:3001
 API_URL="http://localhost:3001/api/search"
 
@@ -20,7 +20,7 @@ QUESTION="$*"
 #########################################
 echo "$QUESTION
 ---"
-echo
+
 # JSON payload for the API request
 JSON_PAYLOAD=$(cat <<EOF
 {
@@ -34,7 +34,7 @@ JSON_PAYLOAD=$(cat <<EOF
   },
   "optimizationMode": "balanced",
   "focusMode": "webSearch",
-  "query": "$QUESTION # ALWAYS RESPOND IN SAME LANGUAGE",
+  "query": "$QUESTION",
   "stream": false
 }
 EOF
@@ -61,7 +61,6 @@ fi
 
 # Extract and display the message
 MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
-echo -e "\nAnswer:"
 echo -e "$MESSAGE"
 
 # Extract and display sources

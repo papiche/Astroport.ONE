@@ -260,11 +260,15 @@ if [[ "$message_text" =~ \#BOT ]]; then
     ## KNOWN KNAME => CAPTAIN REPLY
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         if [[ "$message_text" =~ \#search ]]; then
+            ################################################"
             # search = perplexica
             KeyANSWER="$($MY_PATH/perplexica_search.sh "${QUESTION}")"
+            ################################################"
         else
+            ################################################"
             # default = ollama (with PUBKEY MEMORY)
             KeyANSWER="$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
+            ################################################"
         fi
 
         ## LOAD CAPTAIN KEY
@@ -296,6 +300,6 @@ echo "LON: $LON"
 echo "Message: $message_text"
 echo "Image: $DESC"
 echo "---------------"
-echo "UMAP_${LAT}_${LON} Answer: $ANSWER"
+echo "Captain Answer: $ANSWER"
 
 exit 0
