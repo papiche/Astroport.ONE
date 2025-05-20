@@ -181,7 +181,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
         ## welcome EMAIL...
         [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome ]] && [[ "$primal" == "" ]] \
-            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.html" "WELCOME" \
+            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.html" "WELCOME PLAYER" \
             && cp  "${MY_PATH}/../templates/NOSTR/welcome.html" ~/.zen/game/nostr/${PLAYER}/.welcome
 
         rm -Rf ~/.zen/tmp/${MOATS}
