@@ -141,6 +141,12 @@ for PLAYER in "${NOSTR[@]}"; do
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
+    ## CACHING SECRET & DISCO to NOSTR Card (.file = no ipfs !!)
+    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]] \
+        && echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr \
+        && echo "$DISCO" > ~/.zen/game/nostr/${PLAYER}/.secret.disco \
+        && chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
+
     mkdir -p ~/.zen/tmp/${MOATS}
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey "${salt}" "${pepper}"
     ########################################################################

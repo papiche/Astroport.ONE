@@ -55,14 +55,14 @@ if [ "$ERROR" != "null" ]; then
     exit 1
 fi
 
-# Extract and display the message
-MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
-echo -e "$MESSAGE"
 
 # Extract and display sources
 SOURCES=$(echo "$RESPONSE" | jq -r '.sources')
 if [ "$SOURCES" != "null" ] && [ "$SOURCES" != "[]" ]; then
-    echo -e "\nSources:"
     echo "$SOURCES" | jq -r '.[] | "\(.metadata.title)\n\(.metadata.url)\n"'
+else
+    # Extract and display the message
+    MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
+    echo -e "$MESSAGE"
 fi
 exit 0

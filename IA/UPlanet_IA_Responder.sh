@@ -272,7 +272,15 @@ if [[ "$message_text" =~ \#BOT ]]; then
         fi
 
         ## LOAD CAPTAIN KEY
-        source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
+        source ~/.zen/game/players/.current/secret.nostr
+
+        # ADD TO CAPTAIN FOLLOW LIST
+        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY"
+
+        ## PREFERED KNAME SELF RESPONSE
+        [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] \
+            && source ~/.zen/game/nostr/${KNAME}/.secret.nostr
+
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
 
         ## SEND REPLY MESSAGE
@@ -283,8 +291,7 @@ if [[ "$message_text" =~ \#BOT ]]; then
           -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
           --relay "$myRELAY"
         #######################################################################
-        # ADD TO CAPTAIN FOLLOW LIST
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY"
+
     fi
     #######################################################################
 fi
