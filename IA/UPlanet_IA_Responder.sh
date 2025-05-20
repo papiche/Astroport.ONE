@@ -234,41 +234,51 @@ if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         TEMP_DIR=$(mktemp -d)
         cd "$TEMP_DIR"
         
-        # Get title from URL using yt-dlp
-        LINE="$(yt-dlp --print "%(id)s&%(title)s" "${ANYURL}")"
-        YID=$(echo "$LINE" | cut -d '&' -f 1)
-        MEDIA_TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
-        # If no title found, use timestamp
-        [[ -z "$MEDIA_TITLE" ]] && MEDIA_TITLE="media-$(date +%s)"
-        
-        BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
-        [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
-        # Download and process media based on type
-        case "$MEDIA_TYPE" in
-            AUDIO)
-                echo "Downloading and converting to MP3..."
-                yt-dlp $BROWSER -x --audio-format mp3 --no-mtime --embed-thumbnail --add-metadata \
-                    -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
-                ;;
-            VIDEO)
-                echo "Downloading and converting to MP4..."
-                yt-dlp $BROWSER -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
-                    --no-mtime --embed-thumbnail --add-metadata \
-                    -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
-                ;;
-        esac
-        
-        # Get the downloaded file
-        MEDIA_FILE=$(ls "$TEMP_DIR"/${MEDIA_TITLE}.* 2>/dev/null | head -n 1)
-        
-        if [[ -n "$MEDIA_FILE" ]]; then
-            # Add to IPFS
-            MEDIA_IPFS=$(ipfs add -wq "$MEDIA_FILE" 2>/dev/null | tail -n 1)
-            if [[ -n "$MEDIA_IPFS" ]]; then
-                KeyANSWER="$KeyANSWER\n\n $myIPFS/ipfs/$MEDIA_IPFS/$MEDIA_TITLE.$MEDIA_TYPE"
+        BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1 | cut -d '_' -f 1)
+        if [[ -n "$BZER" ]]; then
+            BROWSER="--cookies-from-browser $BZER"
+        else
+            BROWSER=""
+            echo "Warning: No Browser found"
+        fi
+
+        if [[ -n $BROWSER ]]; then
+            # Get title from URL using yt-dlp
+            LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${ANYURL}" 2>/dev/null)"
+            if [[ $? -ne 0 ]]; then
+            echo "Warning: Failed to get video info, using fallback method"
+            LINE="$(yt-dlp --print "%(id)s&%(title)s" "${ANYURL}" 2>/dev/null)"
+            YID=$(echo "$LINE" | cut -d '&' -f 1)
+            MEDIA_TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
+            # If no title found, use timestamp
+            [[ -z "$MEDIA_TITLE" ]] && MEDIA_TITLE="media-$(date +%s)"
+            # Download and process media based on type
+            case "$MEDIA_TYPE" in
+                mp3)
+                    echo "Downloading and converting to MP3..."
+                    yt-dlp $BROWSER -x --audio-format mp3 --no-mtime --embed-thumbnail --add-metadata \
+                        -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
+                    ;;
+                mp4)
+                    echo "Downloading and converting to MP4..."
+                    yt-dlp $BROWSER -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
+                        --no-mtime --embed-thumbnail --add-metadata \
+                        -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
+                    ;;
+            esac
+            
+            # Get the downloaded file
+            MEDIA_FILE=$(ls "$TEMP_DIR"/${MEDIA_TITLE}.* 2>/dev/null | head -n 1)
+            
+            if [[ -n "$MEDIA_FILE" ]]; then
+                # Add to IPFS
+                MEDIA_IPFS=$(ipfs add -wq "$MEDIA_FILE" 2>/dev/null | tail -n 1)
+                if [[ -n "$MEDIA_IPFS" ]]; then
+                    KeyANSWER="$KeyANSWER\n\n $myIPFS/ipfs/$MEDIA_IPFS/$MEDIA_TITLE.$MEDIA_TYPE"
+                fi
             fi
         fi
-        
+ 
         # Cleanup
         cd - >/dev/null
         rm -rf "$TEMP_DIR"
