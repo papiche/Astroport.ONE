@@ -215,7 +215,7 @@ RLAT=$(echo ${LAT} | cut -d '.' -f 1)
 RLON=$(echo ${LON} | cut -d '.' -f 1)
 UMAPPATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
 ##################################################################""
-## Indicates UMAP to swarm 
+## Indicates UMAP to swarm
 if [ ! -s ${UMAPPATH}/HEX ]; then
     mkdir -p ${UMAPPATH}
     echo "$UMAPHEX" > ${UMAPPATH}/HEX
@@ -261,7 +261,7 @@ if [[ "$message_text" =~ \#BOT ]]; then
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         ## CAPTAIN ANSWSER USING PUBKEY MEMORY
         if [[ "$message_text" =~ \#search ]]; then
-            KeyANSWER=$($MY_PATH/perplexica_search.py "${QUESTION} # NB: REPLY IN TEXT ONLY ! DO NOT USE HTML or MARKDOWN STYLE !" --pubkey ${PUBKEY})
+            KeyANSWER=$($MY_PATH/perplexica_search.sh "${QUESTION} # NB: REPLY IN TEXT ONLY ! DO NOT USE HTML or MARKDOWN STYLE !")
         else
             KeyANSWER=$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})
         fi
