@@ -18,14 +18,53 @@
 # - #BOT : Active la réponse IA
 # - #audio/#video : Spécifie le type de média
 ###################################################################
+
+# Configuration des logs
+LOG_FILE="${HOME}/.zen/tmp/IA.log"
+LOG_DIR=$(dirname "$LOG_FILE")
+mkdir -p "$LOG_DIR"
+
+# Fonction de log
+log() {
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] $1" >> "$LOG_FILE"
+    echo "[$timestamp] $1"
+}
+
+# Gestion des erreurs
+set -e
+trap 'log "ERROR: Command failed at line $LINENO"' ERR
+
+# Vérification des dépendances
+check_dependencies() {
+    local deps=("yt-dlp" "jq" "detox" "ipfs" "nostpy-cli" "ollama")
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            log "ERROR: Required dependency '$dep' is not installed"
+            exit 1
+        fi
+    done
+}
+
+# Vérification de l'environnement
+check_environment() {
+    if [[ ! -s ~/.zen/Astroport.ONE/tools/my.sh ]]; then
+        log "ERROR: Astroport.ONE is missing!"
+        exit 1
+    fi
+}
+
+# Initialisation
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
-exec 2>&1 >> ~/.zen/tmp/IA.log
+exec 2>&1 >> "$LOG_FILE"
 
-[[ ! -s ~/.zen/Astroport.ONE/tools/my.sh ]] && echo "ERROR. Astroport.ONE is missing !!" && exit 1
-source ~/.zen/Astroport.ONE/tools/my.sh ## finding UPLANETNAME
+log "Starting UPlanet_IA_Responder.sh"
+check_dependencies
+check_environment
+source ~/.zen/Astroport.ONE/tools/my.sh
 
-## Maintain Ollama : lsof -i :11434
+## Maintain Ollama
 $MY_PATH/ollama.me.sh
 
 # --- Help function ---
@@ -45,7 +84,7 @@ print_help() {
   echo ""
   echo "Description:"
   echo "  This script analyzes a UPlanet message and image, generates"
-  echo "  Ollama response, and publish it on UPlanet Geo NOSTR key."
+  echo "  Ollama response, and publish it on Captain NOSTR key."
   echo ""
   echo "Example:"
   echo "  $(basename "$0") pubkey_hex 0.00 0.00 \"What is it\" https://ipfs.copylaradio.com/ipfs/QmeUMJvPdyPiteR7iQXCnZy4mvKBnghNkYpMTbrpZfMGPq/pipe.jpeg"
@@ -139,10 +178,10 @@ get_conversation_thread() {
 if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME ]]; then
     if [[ $LAT == "0.00" && $LON == "0.00" ]]; then
         ## source NOSTR Card LAT=?;LON=?;
-        [[ -s ${HOME}/.zen/game/nostr/${EMAIL}/GPS ]] \
-            && source ${HOME}/.zen/game/nostr/${EMAIL}/GPS
+        [[ -s ${HOME}/.zen/game/nostr/${KNAME}/GPS ]] \
+            && source ${HOME}/.zen/game/nostr/${KNAME}/GPS
         ## Check SWARM account
-        isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/GPS)
+        isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${KNAME}/GPS | head -n 1 2>/dev/null)
         [[ -n  ${isInSwarmGPS} ]] \
             && source ${isInSwarmGPS}
     fi
@@ -178,22 +217,105 @@ message_text=$(echo "$MESSAGE" | tr '\n' ' ')
 
 # Check for #BOT tag
 if [[ ! "$message_text" =~ \#BOT ]]; then
-    echo "No #BOT tag found, skipping AI response"
+    log "No #BOT tag found, skipping AI response"
     # UMAP follow and memorize
     if [[ $KNAME != "CAPTAIN" ]]; then
         UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
         ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
     fi
-
     exit 0
 fi
 
-# Extract media type from message if present (case insensitive)
-MEDIA_TYPE=""
-if [[ "$message_text" =~ \#(mp3|MP3|mp4|MP4) ]]; then
-    # Convert to upper for consistency
-    MEDIA_TYPE=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
-    echo "Detected media type: $MEDIA_TYPE"
+# Fonction pour extraire l'URL du message
+extract_url() {
+    local message="$1"
+    local url=""
+    
+    # Essayer d'abord les images
+    url=$(echo "$message" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
+    
+    # Si pas d'image, chercher n'importe quelle URL
+    if [[ -z "$url" ]]; then
+        url=$(echo "$message" | grep -oE 'https?://[^ ]+' | head -n 1)
+    fi
+    
+    echo "$url"
+}
+
+# Fonction pour détecter le type de média
+detect_media_type() {
+    local message="$1"
+    local media_type=""
+    
+    if [[ "$message" =~ \#(mp3|MP3|mp4|MP4) ]]; then
+        media_type=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
+    fi
+    
+    echo "$media_type"
+}
+
+# Fonction pour télécharger et traiter les médias
+process_media() {
+    local url="$1"
+    local media_type="$2"
+    local temp_dir="$3"
+    local browser="$4"
+    
+    local media_file=""
+    local media_ipfs=""
+    
+    # Obtenir le titre
+    local line=""
+    if [[ -n "$browser" ]]; then
+        line="$(yt-dlp $browser --print "%(id)s&%(title)s" "$url" 2>/dev/null)"
+        if [[ $? -ne 0 ]]; then
+            log "Warning: Failed to get video info with browser cookies, trying without"
+            line="$(yt-dlp --print "%(id)s&%(title)s" "$url" 2>/dev/null)"
+        fi
+    else
+        line="$(yt-dlp --print "%(id)s&%(title)s" "$url" 2>/dev/null)"
+    fi
+    
+    local yid=$(echo "$line" | cut -d '&' -f 1)
+    local media_title=$(echo "$line" | cut -d '&' -f 2- | detox --inline)
+    [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
+    
+    # Télécharger selon le type
+    case "$media_type" in
+        mp3)
+            log "Downloading and converting to MP3..."
+            yt-dlp $browser -x --audio-format mp3 --no-mtime --embed-thumbnail --add-metadata \
+                -o "${temp_dir}/${media_title}.%(ext)s" "$url"
+            ;;
+        mp4)
+            log "Downloading and converting to MP4..."
+            yt-dlp $browser -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
+                --no-mtime --embed-thumbnail --add-metadata \
+                -o "${temp_dir}/${media_title}.%(ext)s" "$url"
+            ;;
+    esac
+    
+    # Trouver le fichier téléchargé
+    media_file=$(ls "$temp_dir"/${media_title}.* 2>/dev/null | head -n 1)
+    
+    if [[ -n "$media_file" ]]; then
+        # Ajouter à IPFS
+        media_ipfs=$(ipfs add -wq "$media_file" 2>/dev/null | tail -n 1)
+        if [[ -n "$media_ipfs" ]]; then
+            echo "$myIPFS/ipfs/$media_ipfs/$media_title.$media_type"
+        fi
+    fi
+}
+
+# Extract media type and URL
+MEDIA_TYPE=$(detect_media_type "$message_text")
+if [[ -z "$URL" ]]; then
+    URL=$(extract_url "$message_text")
+    ANYURL="$URL"
+fi
+
+if [[ -n "$MEDIA_TYPE" ]]; then
+    log "Detected media type: $MEDIA_TYPE"
 fi
 
 #######################################################################
@@ -203,12 +325,45 @@ if [[ ! -z $URL ]]; then
 fi
 
 #######################################################################
+# Fonction pour préparer la question pour l'IA
+prepare_question() {
+    local message="$1"
+    local image_desc="$2"
+    
+    if [[ -n "$image_desc" ]]; then
+        echo "[IMAGE]: $image_desc + [MESSAGE]: $message --- ## Comment [IMAGE] description ## Make a short answer about [MESSAGE] # ANWSER USING THE SAME LANGUAGE"
+    else
+        echo "$message. # ANWSER USING THE SAME LANGUAGE"
+    fi
+}
+
+# Fonction pour envoyer la réponse NOSTR
+send_nostr_reply() {
+    local event_id="$1"
+    local pubkey="$2"
+    local content="$3"
+    local nsec="$4"
+    
+    local npriv_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$nsec")
+    if [[ -z "$npriv_hex" ]]; then
+        log "ERROR: Failed to convert NSEC to hex"
+        return 1
+    fi
+    
+    log "Sending NOSTR reply..."
+    nostpy-cli send_event \
+        -privkey "$npriv_hex" \
+        -kind 1 \
+        -content "$content" \
+        -tags "[['e', '$event_id'], ['p', '$pubkey']]" \
+        --relay "$myRELAY"
+    
+    return $?
+}
+
+#######################################################################
 # QUESTION prepare with image description if present
-if [[ -n $DESC ]]; then
-    QUESTION="[IMAGE]: $DESC + [MESSAGE]: $message_text --- ## Comment [IMAGE] description ## Make a short answer about [MESSAGE] # ANWSER USING THE SAME LANGUAGE"
-else
-    QUESTION="$message_text. # ANWSER USING THE SAME LANGUAGE"
-fi
+QUESTION=$(prepare_question "$message_text" "$DESC")
 
 ## UMAP FOLLOW NOSTR CARD IF NOT CAPTAIN
 if [[ $KNAME != "CAPTAIN" ]]; then
@@ -225,12 +380,17 @@ fi
 ## KNOWN KNAME => CAPTAIN REPLY
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ## CAPTAIN ANSWER USING PUBKEY MEMORY
-    echo "Generating Ollama answer..."
+    log "Generating Ollama answer..."
     KeyANSWER=$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})
+    
+    if [[ -z "$KeyANSWER" ]]; then
+        log "ERROR: Failed to generate AI response"
+        exit 1
+    fi
     
     # If media type detected, and ANYURL is present, process it
     if [[ -n "$MEDIA_TYPE" && -n "$ANYURL" ]]; then
-        echo "Processing media type: $MEDIA_TYPE"
+        log "Processing media type: $MEDIA_TYPE"
         # Create temporary directory for media processing
         TEMP_DIR=$(mktemp -d)
         cd "$TEMP_DIR"
@@ -240,59 +400,26 @@ if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             BROWSER="--cookies-from-browser $BZER"
         else
             BROWSER=""
-            echo "Warning: No Browser found"
+            log "Warning: No Browser found"
         fi
 
-        if [[ -n $BROWSER ]]; then
-            # Get title from URL using yt-dlp
-            LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${ANYURL}" 2>/dev/null)"
-            if [[ $? -ne 0 ]]; then
-            echo "Warning: Failed to get video info, using fallback method"
-            LINE="$(yt-dlp --print "%(id)s&%(title)s" "${ANYURL}" 2>/dev/null)"
-            YID=$(echo "$LINE" | cut -d '&' -f 1)
-            MEDIA_TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
-            # If no title found, use timestamp
-            [[ -z "$MEDIA_TITLE" ]] && MEDIA_TITLE="media-$(date +%s)"
-            # Download and process media based on type
-            case "$MEDIA_TYPE" in
-                mp3)
-                    echo "Downloading and converting to MP3..."
-                    yt-dlp $BROWSER -x --audio-format mp3 --no-mtime --embed-thumbnail --add-metadata \
-                        -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
-                    ;;
-                mp4)
-                    echo "Downloading and converting to MP4..."
-                    yt-dlp $BROWSER -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
-                        --no-mtime --embed-thumbnail --add-metadata \
-                        -o "${MEDIA_TITLE}.%(ext)s" "$ANYURL"
-                    ;;
-            esac
-            
-            # Get the downloaded file
-            MEDIA_FILE=$(ls "$TEMP_DIR"/${MEDIA_TITLE}.* 2>/dev/null | head -n 1)
-            
-            if [[ -n "$MEDIA_FILE" ]]; then
-                # Add to IPFS
-                MEDIA_IPFS=$(ipfs add -wq "$MEDIA_FILE" 2>/dev/null | tail -n 1)
-                if [[ -n "$MEDIA_IPFS" ]]; then
-                    KeyANSWER="$KeyANSWER\n\n $myIPFS/ipfs/$MEDIA_IPFS/$MEDIA_TITLE.$MEDIA_TYPE"
-                fi
-            fi
+        # Process media and get IPFS link
+        MEDIA_IPFS_LINK=$(process_media "$ANYURL" "$MEDIA_TYPE" "$TEMP_DIR" "$BROWSER")
+        if [[ -n "$MEDIA_IPFS_LINK" ]]; then
+            KeyANSWER="$KeyANSWER\n\n $MEDIA_IPFS_LINK"
         fi
- 
+
         # Cleanup
         cd - >/dev/null
         rm -rf "$TEMP_DIR"
     fi
     
     source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
-    NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
-    nostpy-cli send_event \
-      -privkey "$NPRIV_HEX" \
-      -kind 1 \
-      -content "$KeyANSWER" \
-      -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-      --relay "$myRELAY"
+    if ! send_nostr_reply "$EVENT" "$PUBKEY" "$KeyANSWER" "$NSEC"; then
+        log "ERROR: Failed to send NOSTR reply"
+        exit 1
+    fi
+    
     #######################################################################
     # ADD TO FOLLOW LIST
     ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY"
@@ -301,16 +428,15 @@ fi
 #######################################################################
 
 #######################################################################
-echo ""
-echo "--- Summary ---"
-echo "PUBKEY: $PUBKEY"
-echo "EVENT: $EVENT"
-echo "LAT: $LAT"
-echo "LON: $LON"
-echo "Message: $message_text"
-echo "Image: $DESC"
-echo "Media Type: $MEDIA_TYPE"
-echo "---------------"
-echo "UMAP_${LAT}_${LON} Answer: $ANSWER"
+log "--- Summary ---"
+log "PUBKEY: $PUBKEY"
+log "EVENT: $EVENT"
+log "LAT: $LAT"
+log "LON: $LON"
+log "Message: $message_text"
+log "Image: $DESC"
+log "Media Type: $MEDIA_TYPE"
+log "---------------"
+log "UMAP_${LAT}_${LON} Answer: $ANSWER"
 
 exit 0
