@@ -179,9 +179,10 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
         fi
 
-        ## EMAIL 2
-        [[ ${TODATE} != ${BIRTHDATE} ]] && [[ "$primal" == "" ]] \
-            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.html" "WELCOME"
+        ## welcome EMAIL...
+        [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome ]] && [[ "$primal" == "" ]] \
+            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.html" "WELCOME" \
+            && cp  "${MY_PATH}/../templates/NOSTR/welcome.html" ~/.zen/game/nostr/${PLAYER}/.welcome
 
         rm -Rf ~/.zen/tmp/${MOATS}
         continue
