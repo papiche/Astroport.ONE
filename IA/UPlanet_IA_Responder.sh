@@ -344,21 +344,43 @@ send_nostr_reply() {
     local content="$3"
     local nsec="$4"
     
+    # Vérifier si nostpy-cli est disponible
+    if ! command -v nostpy-cli &> /dev/null; then
+        log "Warning: nostpy-cli not found, skipping NOSTR reply"
+        return 0
+    }
+    
+    # Vérifier les paramètres requis
+    if [[ -z "$event_id" || -z "$pubkey" || -z "$content" || -z "$nsec" ]]; then
+        log "ERROR: Missing required parameters for NOSTR reply"
+        return 1
+    }
+    
+    # Vérifier le relay
+    if [[ -z "$myRELAY" ]]; then
+        log "ERROR: NOSTR relay not configured"
+        return 1
+    }
+    
     local npriv_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$nsec")
     if [[ -z "$npriv_hex" ]]; then
         log "ERROR: Failed to convert NSEC to hex"
         return 1
-    fi
+    }
     
-    log "Sending NOSTR reply..."
-    nostpy-cli send_event \
+    log "Sending NOSTR reply to event $event_id..."
+    if ! nostpy-cli send_event \
         -privkey "$npriv_hex" \
         -kind 1 \
         -content "$content" \
         -tags "[['e', '$event_id'], ['p', '$pubkey']]" \
-        --relay "$myRELAY"
+        --relay "$myRELAY" 2>> "$LOG_FILE"; then
+        log "ERROR: Failed to send NOSTR reply"
+        return 1
+    fi
     
-    return $?
+    log "NOSTR reply sent successfully"
+    return 0
 }
 
 #######################################################################
@@ -416,8 +438,7 @@ if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     
     source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
     if ! send_nostr_reply "$EVENT" "$PUBKEY" "$KeyANSWER" "$NSEC"; then
-        log "ERROR: Failed to send NOSTR reply"
-        exit 1
+        log "WARNING: Failed to send NOSTR reply, but continuing execution"
     fi
     
     #######################################################################
