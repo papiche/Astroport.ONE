@@ -18,6 +18,13 @@
 # - #BOT : Active la réponse IA
 # - #audio/#video : Spécifie le type de média
 ###################################################################
+PUBKEY="$1"
+EVENT="$2"
+LAT="$3"
+LON="$4"
+MESSAGE="$5"
+URL="$6"
+KNAME="$7"
 
 # Configuration des logs
 LOG_FILE="${HOME}/.zen/tmp/IA.log"
@@ -59,7 +66,7 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 exec 2>&1 >> "$LOG_FILE"
 
-log "Starting UPlanet_IA_Responder.sh"
+log "Starting UPlanet_IA_Responder.sh $KNAME"
 check_dependencies
 check_environment
 source ~/.zen/Astroport.ONE/tools/my.sh
@@ -103,13 +110,6 @@ if [[ $# -lt 5 ]]; then
   exit 1
 fi
 
-PUBKEY="$1"
-EVENT="$2"
-LAT="$3"
-LON="$4"
-MESSAGE="$5"
-URL="$6"
-KNAME="$7"
 
 ## If No URL : Getting URL from message content - recognize describe_image.py
 if [ -z "$URL" ]; then
@@ -344,10 +344,12 @@ send_nostr_reply() {
     local content="$3"
     local nsec="$4"
     
-    # Vérifier si nostpy-cli est disponible
-    if ! command -v nostpy-cli &> /dev/null; then
-        log "Warning: nostpy-cli not found, skipping NOSTR reply"
-        return 0
+    local NOSTPY_CLI_PATH="$HOME/.astro/bin/nostpy-cli"
+
+    # Vérifier si nostpy-cli est disponible au chemin spécifié
+    if [[ ! -x "$NOSTPY_CLI_PATH" ]]; then
+        log "ERROR: nostpy-cli not found or not executable at $NOSTPY_CLI_PATH, skipping NOSTR reply"
+        return 1
     fi
     
     # Vérifier les paramètres requis
@@ -360,7 +362,7 @@ send_nostr_reply() {
     if [[ -z "$myRELAY" ]]; then
         log "ERROR: NOSTR relay not configured"
         return 1
-    fi
+    }
     
     local npriv_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$nsec")
     if [[ -z "$npriv_hex" ]]; then
@@ -368,10 +370,10 @@ send_nostr_reply() {
         return 1
     fi
     
-    log "Attempting to send NOSTR reply to event $event_id..."
+    log "Attempting to send NOSTR reply to event $event_id using $NOSTPY_CLI_PATH..."
     
     # Exécuter la commande et capturer la sortie d'erreur
-    local nostr_output=$(nostpy-cli send_event \
+    local nostr_output=$("$NOSTPY_CLI_PATH" send_event \
         -privkey "$npriv_hex" \
         -kind 1 \
         -content "$content" \
