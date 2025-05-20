@@ -1,7 +1,6 @@
 #!/bin/bash
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
-exec 2>&1 >> ~/.zen/tmp/IA.log
 
 # Check if a question was provided
 if [ $# -eq 0 ]; then
@@ -19,7 +18,8 @@ API_URL="http://localhost:3001/api/search"
 QUESTION="$*"
 
 #########################################
-echo "$QUESTION"
+echo "$QUESTION
+---"
 echo
 # JSON payload for the API request
 JSON_PAYLOAD=$(cat <<EOF
