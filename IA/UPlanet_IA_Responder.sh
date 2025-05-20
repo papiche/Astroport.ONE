@@ -259,14 +259,19 @@ if [[ "$message_text" =~ \#BOT ]]; then
     ##################################################### ASK IA
     ## KNOWN KNAME => CAPTAIN REPLY
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        ## CAPTAIN ANSWSER USING PUBKEY MEMORY
         if [[ "$message_text" =~ \#search ]]; then
-            KeyANSWER=$($MY_PATH/perplexica_search.sh "${QUESTION} # NB: REPLY IN TEXT ONLY ! DO NOT USE HTML or MARKDOWN STYLE !")
+            # search = perplexica
+            KeyANSWER="$($MY_PATH/perplexica_search.sh "${QUESTION}")"
         else
-            KeyANSWER=$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})
+            # default = ollama (with PUBKEY MEMORY)
+            KeyANSWER="$($MY_PATH/question.py "${QUESTION} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
         fi
+
+        ## LOAD CAPTAIN KEY
         source ~/.zen/game/players/.current/secret.nostr ## SET CAPTAIN ID
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
+
+        ## SEND REPLY MESSAGE
         nostpy-cli send_event \
           -privkey "$NPRIV_HEX" \
           -kind 1 \

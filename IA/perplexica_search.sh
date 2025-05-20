@@ -18,6 +18,9 @@ API_URL="http://localhost:3001/api/search"
 # Get the question from command line arguments
 QUESTION="$*"
 
+#########################################
+echo "$QUESTION"
+echo
 # JSON payload for the API request
 JSON_PAYLOAD=$(cat <<EOF
 {
@@ -44,7 +47,7 @@ RESPONSE=$(curl -s -X POST "$API_URL" \
 
 # Check if curl command succeeded
 if [ $? -ne 0 ]; then
-    echo "Error: Failed to connect to the Perplexica API."
+    echo "Error: Failed to connect to the Search API."
     echo "Make sure the server is running at $API_URL"
     exit 1
 fi
@@ -67,3 +70,4 @@ if [ "$SOURCES" != "null" ] && [ "$SOURCES" != "[]" ]; then
     echo -e "\nSources:"
     echo "$SOURCES" | jq -r '.[] | "\(.metadata.title)\n\(.metadata.url)\n"'
 fi
+exit 0

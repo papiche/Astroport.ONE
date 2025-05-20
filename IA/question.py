@@ -49,7 +49,7 @@ def filter_think_tags(text):
         text = text[:start] + text[end:]
     return text.strip()
 
-def get_ollama_answer(prompt, model_name="gemma3"):
+def get_ollama_answer(prompt, model_name="gemma3:latest"):
     """
     Generates an answer from Ollama based on the given prompt.
     """
@@ -73,7 +73,7 @@ def get_ollama_answer(prompt, model_name="gemma3"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Answer a question using Ollama, with optional UMAP or PUBKEY context.")
     parser.add_argument("question", help="The question to ask Ollama.")
-    parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3", help="The name of the Ollama model to use (default: gemma3).")
+    parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:latest", help="The name of the Ollama model to use (default: gemma3:latest).")
     parser.add_argument("--lat", type=str, help="Latitude to load UMAP memory context.")
     parser.add_argument("--lon", type=str, help="Longitude to load UMAP memory context.")
     parser.add_argument("--pubkey", type=str, help="Pubkey to load PUBKEY memory context.")
