@@ -239,7 +239,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP
     echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/cesium.v1.html
-    echo '<meta http-equiv="refresh" content="0;url='${CORACLEIPFS}/'">' \
+    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/cesium.v2.html
+    echo '<meta http-equiv="refresh" content="0;url=https://coracle.copylaradio.com">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/coracle.html
 
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)

@@ -258,7 +258,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     ## UNPLUG more than 28 days & less than 2 G1 account
     [[ "${CURRENT}" != "${PLAYER}" && $(echo "$days >= 28" | bc -l) -eq 1 && $(echo "$COINS <= 2" | bc -l) -eq 1 ]] \
         && echo "LOW ZEN PLAYER UNPLUG" \
-        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET:${UPLANETG1PUB:0:8}:EXIT" \
+        && ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL" "UPLANET${UPLANETG1PUB:0:8}:EXIT" \
         && continue
 
 ############################################## +1 DAY REMOVE AstroID !!
@@ -673,7 +673,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         if [[ $(echo "$COINS > $Gpaf" | bc -l) -eq 1 ]]; then
             ## Pay NCARD to CAPTAIN
             echo "[28 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
-            ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF"
+            ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF"
         else
             echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
             $MY_PATH/../tools/mailjet.sh "${PLAYER}" "PLEASE RENEW MEMBERSHIP" "MEMBERSHIP..."
@@ -724,8 +724,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
                 && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
                 && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-                && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
-                && echo "UPLANET:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+                && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" \
+                && echo "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
                 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
         fi
     fi

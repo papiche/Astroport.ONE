@@ -198,8 +198,8 @@ for UMAP in ${unique_combined[@]}; do
     #~ [[ ${COINS} == "" || ${COINS} == "null" ]] \
         #~ && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         #~ && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-        #~ && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${UMAPG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:INIT:${UMAP}" \
-        #~ && echo "UPLANET:INIT:${UMAP}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ " \
+        #~ && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${UMAPG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:INIT:${UMAP}" \
+        #~ && echo "UPLANET${UPLANETG1PUB:0:8}:INIT:${UMAP}" && echo " ~~~ (ZEN‿‿ZEN) ~~ _${LAT}_${LON} ~~ (ZEN‿‿ZEN) ~~~ " \
         #~ && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
     # %%%%%%%%%% ##################################################
@@ -536,7 +536,7 @@ for UMAP in ${unique_combined[@]}; do
 ######################################################
     ## ZEN CHAINING
     # Send 1 ZEN to UPlanet SECTORG1PUB Wallet containing REGION TW HASH
-    INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
+    INTERCOM="UPLANET${UPLANETG1PUB:0:8}:${UMAP}:${TODATE}:/ipfs/${UMAPROOT}"
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN > 11 ?)"
     #~ if [[ ${ZEN} -gt 11 ]]; then
         #~ echo "---ZZZ-- UMAP 2 SECTOR ZEN CHAINING ---ZZZ------ZZZ----"

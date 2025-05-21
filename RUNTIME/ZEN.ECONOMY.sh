@@ -48,10 +48,10 @@ DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc ))
 #######################################################################
 if [[ $(echo "$CAPTAINZEN > $DAILYPAF" | bc -l) -eq 1 ]]; then
     ## CAPTAIN CAN PAY NODE : ECONOMY +
-    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF+"
+    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF+"
 else
     ## UPLANET MUST PAY NODE: ECONOMY -
-    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:PAF-"
+    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF-"
 fi
 #######################################################################
 

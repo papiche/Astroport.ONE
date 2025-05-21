@@ -4,8 +4,8 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ ZEN.UMAP.memory.sh
-#~ Search for last "UPLANET:$1:..." in UPLANETG1PUB wallet history
-#~ INTERCOM="UPLANET:${UMAP}:${TODATE}:/ipfs/${IPFSPOP}" TX COMMENT are made during UPLANET.refresh.sh
+#~ Search for last "UPLANET${UPLANETG1PUB:0:8}:$1:..." in UPLANETG1PUB wallet history
+#~ INTERCOM="UPLANET${UPLANETG1PUB:0:8}:${UMAP}:${TODATE}:/ipfs/${IPFSPOP}" TX COMMENT are made during UPLANET.refresh.sh
 #~ ~/.zen/tmp/${MOATS}/${UMAP} <=> "/ipfs/$ipfs_pop"
 ################################################################################
 ################################################################################
@@ -47,10 +47,10 @@ echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 ${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 40 -p ${SECTORG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json
 
-## SCAN FOR UPLANET:${UMAP} in TX
+## SCAN FOR UPLANET${UPLANETG1PUB:0:8}:${UMAP} in TX
 if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
 
-    intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .comment' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
+    intercom=$(jq -r '.[] | select(.comment | test("UPLANET${UPLANETG1PUB:0:8}:'"${UMAP}"'")) | .comment' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
     ipfs_pop=$(echo "$intercom" | rev | cut -d ':' -f 1 | rev)
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
     echo "SYNC ${UMAP} <= $todate (=${YESTERDATE})=> $ipfs_pop"
@@ -59,7 +59,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
 
     if [[ $ipfs_pop ]]; then
         echo "FOUND $todate MEMORY SLOT"
-        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
+        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET${UPLANETG1PUB:0:8}:'"${UMAP}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
 
         ## ADD SECURITY : check payment emitter is a "BOOSTRAP" (TODO)
@@ -73,7 +73,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json ]]; then
     fi
 
     ## REMOVE PREVIOUS PIN (in case last one was not mine)
-    antecom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${UMAP}"'")) | .comment' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 2 | head -n 1)
+    antecom=$(jq -r '.[] | select(.comment | test("UPLANET${UPLANETG1PUB:0:8}:'"${UMAP}"'")) | .comment' ~/.zen/tmp/${MOATS}/${SECTOR}.g1history.json | tail -n 2 | head -n 1)
     ipfs_b=$(echo "$antecom" | rev | cut -d ':' -f 1 | rev)
     [[ ! -z ${ipfs_b} ]] && ipfs pin rm ${ipfs_b}
 

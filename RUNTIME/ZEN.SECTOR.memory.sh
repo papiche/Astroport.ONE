@@ -4,8 +4,8 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ ZEN.SECTOR.memory.sh
-#~ Search for last "UPLANET:$1:..." in UPLANETG1PUB wallet history
-#~ INTERCOM="UPLANET:${SECTOR}:${TODATE}:/ipfs/${IPFSPOP}" TX COMMENT are made during SECTOR.refresh.sh
+#~ Search for last "UPLANET${UPLANETG1PUB:0:8}:$1:..." in UPLANETG1PUB wallet history
+#~ INTERCOM="UPLANET${UPLANETG1PUB:0:8}:${SECTOR}:${TODATE}:/ipfs/${IPFSPOP}" TX COMMENT are made during SECTOR.refresh.sh
 #~ ~/.zen/tmp/${MOATS}/${SECTOR} <=> "/ipfs/$ipfs_pop"
 ################################################################################
 ################################################################################
@@ -44,10 +44,10 @@ echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 ${MY_PATH}/../tools/timeout.sh -t 20 ${MY_PATH}/../tools/jaklis/jaklis.py history -n 40 -p ${REGIONG1PUB} -j \
     > ~/.zen/tmp/${MOATS}/${REGION}.g1history.json
 
-## SCAN FOR UPLANET:${SECTOR} in TX
+## SCAN FOR UPLANET${UPLANETG1PUB:0:8}:${SECTOR} in TX
 if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
 
-    intercom=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
+    intercom=$(jq -r '.[] | select(.comment | test("UPLANET${UPLANETG1PUB:0:8}:'"${SECTOR}"'")) | .comment' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
     ipfs_pop=$(echo "$intercom" | rev | cut -d ':' -f 1 | rev)
     todate=$(echo "$intercom" | rev | cut -d ':' -f 2 | rev)
     echo "SYNC ${SECTOR} <= $todate (=${YESTERDATE})=> $ipfs_pop"
@@ -56,7 +56,7 @@ if [[ -s ~/.zen/tmp/${MOATS}/${REGION}.g1history.json ]]; then
 
     ## TODO: SECURITY PATCH : check payment emitter is from BOOSTRAP
     if [[ $ipfs_pop ]]; then
-        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET:'"${SECTOR}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
+        g1pub=$(jq -r '.[] | select(.comment | test("UPLANET${UPLANETG1PUB:0:8}:'"${SECTOR}"'")) | .pubkey' ~/.zen/tmp/${MOATS}/${REGION}.g1history.json | tail -n 1)
         echo "INFO :: $g1pub Memory updater"
         ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/${MOATS}/${SECTOR} $ipfs_pop \
             && ipfs pin rm $ipfs_pop \

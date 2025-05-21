@@ -174,7 +174,8 @@ for PLAYER in "${NOSTR[@]}"; do
             else
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
-                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:NOSTR:${myRELAY}:${NPUB}"
+                YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:NOSTR:${YOU}:${NPUB}"
                 echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             fi
         fi

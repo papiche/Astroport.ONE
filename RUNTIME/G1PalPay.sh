@@ -124,7 +124,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
                     ## ALERT PLAYER
                     ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
                     ## SEND BACK G1
-                    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION"
+                    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET${UPLANETG1PUB:0:8}:INTRUSION"
                     ## UNPLUG PLAYER (after 3 alerts)
                     #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
                 else
@@ -278,8 +278,8 @@ while read LINE; do
         TW : $ASTROTW
         G1 : ${ASTROG1}"
 
-        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:${UPLANETG1PUB:0:8}:PALPAY"
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET:${UPLANETG1PUB:0:8}:PALPAY"
+        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY"
+        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY"
         STAMP=$?
         ## DONE STAMP IT
         [[ $STAMP == 0 ]] \
