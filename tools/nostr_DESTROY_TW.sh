@@ -53,7 +53,7 @@ hex=$(cat ~/.zen/game/nostr/${player}/HEX)
 tmp_mid=$(mktemp)
 tmp_tail=$(mktemp)
 # Decrypt the middle part using CAPTAIN key
-${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/ssss.mid.captain.enc" \
+${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" \
         -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
 # Decrypt the tail part using UPLANET dunikey

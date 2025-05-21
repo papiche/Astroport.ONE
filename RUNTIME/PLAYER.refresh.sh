@@ -4,6 +4,14 @@
 # Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
+#~ PLAYER.refresh.sh
+#~ Refresh PLAYER data & wallet
+################################################################################
+# Ce script gère le rafraîchissement des données des joueurs :
+# 1. Vérifie et met à jour les données des joueurs
+# 2. Gère les paiements des cartes ZEN
+# 3. Implémente le système de distribution des bénéfices
+################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"

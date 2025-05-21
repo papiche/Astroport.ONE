@@ -4,6 +4,14 @@
 # Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
+#~ NOSTRCARD.refresh.sh
+#~ Refresh NOSTR Card data & wallet
+################################################################################
+# Ce script gère le rafraîchissement des cartes NOSTR :
+# 1. Vérifie et met à jour les données des cartes NOSTR
+# 2. Gère les paiements des cartes NOSTR
+# 3. Implémente le système de distribution des bénéfices
+################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
@@ -111,7 +119,7 @@ for PLAYER in "${NOSTR[@]}"; do
         tmp_mid=$(mktemp)
         tmp_tail=$(mktemp)
         # Decrypt the middle part using CAPTAIN key
-        ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" \
+        ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/.ssss.mid.captain.enc" \
                 -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
         # Decrypt the tail part using UPLANET dunikey
