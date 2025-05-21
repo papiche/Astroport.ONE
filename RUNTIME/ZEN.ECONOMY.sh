@@ -41,9 +41,9 @@ echo "NODE hosts NOSTR : ${#NOSTRS[@]} / ZEN : ${#PLAYERS[@]}"
 [[ -z $PAF ]] && PAF=56
 [[ -z $NCARD ]] && NCARD=4
 [[ -z $ZCARD ]] && ZCARD=15
-DAILYPAF=$(makecoord $(echo "$PAF / 28" | bc))
+DAILYPAF=$(makecoord $(echo "$PAF / 28" | bc -l))
 echo "ZEN ECONOMY : $PAF ($DAILYPAF ZEN) :: NCARD=$NCARD // ZCARD=$ZCARD"
-DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc ))
+DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc -l))
 
 #######################################################################
 if [[ $(echo "$CAPTAINZEN > $DAILYPAF" | bc -l) -eq 1 ]]; then

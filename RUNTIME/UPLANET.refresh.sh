@@ -27,6 +27,14 @@ echo "
 "
 
 #################################################################
+echo "
+ __________ _   _   _____ ____ ___  _   _  ___  _   ___   __
+|__  / ____| \ | | | ____/ ___/ _ \| \ | |/ _ \| \ | \ \ / /
+  / /|  _| |  \| | |  _|| |  | | | |  \| | | | |  \| |\ V /
+ / /_| |___| |\  | | |__| |__| |_| | |\  | |_| | |\  | | |
+/____|_____|_| \_| |_____\____\___/|_| \_|\___/|_| \_| |_|
+
+-------------------------------------------------------------"
 ${MY_PATH}/ZEN.ECONOMY.sh
 #################################################################
 
@@ -117,18 +125,22 @@ for UMAP in ${unique_combined[@]}; do
 
     ####################################################################################
     ## COPY SECTOR & REGION IFPSROOT
-    cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT 2>/dev/null
-    cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE}
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT 2>/dev/null
-    ####################################################################################
-    ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+    ## SWARM INIT
+    cat ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}  2>/dev/null | tail -f 1 2>/dev/null \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT
 
-    UMAPROOT=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
-    ######################## EASY IPFS BLOCKCHAIN
-    ## UMAPROOT : ipfs link rolling calendar
-    echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
-    rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE}
+    cat ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} 2>/dev/null | tail -f 1 2>/dev/null \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT
+
+    ## LOCAL UPDATE
+    [[ -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE} ]] \
+        && cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE} \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT
+
+    [[ -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} ]] \
+        && cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} \
+        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT
+    ####################################################################################
 
     ##################################
     ### UMAP = 0.01° Planet Slice
@@ -138,6 +150,14 @@ for UMAP in ${unique_combined[@]}; do
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.html
+
+    ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+
+    UMAPROOT=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
+    ######################## EASY IPFS BLOCKCHAIN
+    ## UMAPROOT : ipfs link rolling calendar
+    echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
+    rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE} 2>/dev/null
 
     ######### UMAP GCHANGE & CESIUM PROFILE
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
@@ -163,7 +183,7 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "UPlanet ${TODATE}${UMAP} JOURNAL" \
+    "UPlanet ${TODATE}${UMAP} JOURNAL - VISIO : $myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
@@ -197,7 +217,7 @@ if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$ZENNSEC" \
     "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
-    "UPlanet is a #Web3 #FrameWork offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
+    "VISIO ROOM : $myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
     "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \

@@ -188,7 +188,7 @@ process_media() {
 }
 
 ## Getting KNAME default localisation
-if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME && $KNAME != "CAPTAIN" ]]; then
+if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     if [[ $LAT == "0.00" && $LON == "0.00" ]]; then
         ## Check SWARM account
         isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${KNAME}/GPS 2>/dev/null)
@@ -198,8 +198,10 @@ if [[ -n $KNAME && -d ~/.zen/game/nostr/$KNAME && $KNAME != "CAPTAIN" ]]; then
         ## source NOSTR Card LAT=?;LON=?;
         [[ -s ${HOME}/.zen/game/nostr/${KNAME}/GPS ]] \
             && source ${HOME}/.zen/game/nostr/${KNAME}/GPS
-
     fi
+    # correct empty value
+    [[ -z $LAT ]] && LAT="0.00"
+    [[ -z $LON ]] && LON="0.00"
 fi
 
 ## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
