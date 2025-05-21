@@ -12,7 +12,7 @@
 # - Génération de réponses IA via Ollama
 # - Publication des réponses sur la clé NOSTR du Capitaine
 # Tags spéciaux:
-# - #BRO : Active la réponse IA (par défaut)
+# - #BRO #BOT : Active la réponse IA (par défaut)
 # - #search : Perplexica Search
 # - #mp3 : Convertir en MP3
 # - #mp4 : Convertir en MP4
@@ -233,8 +233,8 @@ fi
 message_text=$(echo "$MESSAGE" | tr '\n' ' ')
 #~ echo "Message text from message: '$message_text'"
 
-################################################################### #BRO
-if [[ "$message_text" =~ \#BRO ]]; then
+################################################################### #BRO #BOT
+if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
     #######################################################################
     if [[ ! -z $URL ]]; then
         echo "Looking at the image (using ollama + llava)..."
@@ -243,7 +243,7 @@ if [[ "$message_text" =~ \#BRO ]]; then
     #######################################################################
     echo "Generating Ollama answer..."
     if [[ -n $DESC ]]; then
-        QUESTION="[IMAGE]: $DESC --- $message_text"
+        QUESTION="[IMAGE received]: $DESC --- $message_text"
     else
         QUESTION="$message_text ---"
     fi
@@ -264,13 +264,13 @@ if [[ "$message_text" =~ \#BRO ]]; then
         # remove #BRO #search tags from message_text
         if [[ "$message_text" =~ \#search ]]; then
             ################################################"
-            cleaned_text=$(sed 's/#BRO//g; s/#search//g' <<< "$message_text")
+            cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$message_text")
             # search = perplexica
             KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
             ################################################"
         else
             ################################################"
-            cleaned_text=$(sed 's/#BRO//g; s/#search//g' <<< "$QUESTION")
+            cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")
             # default = ollama (with PUBKEY MEMORY)
             KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
             ################################################"
