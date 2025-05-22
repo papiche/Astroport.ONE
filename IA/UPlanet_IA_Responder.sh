@@ -257,11 +257,11 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             temp_mem_file="$HOME/.zen/tmp/memory_${PUBKEY}.txt"
             
             # Extraire et formater les messages
-            echo "Historique de conversation:" > "$temp_mem_file"
-            echo "------------------------" >> "$temp_mem_file"
+            echo "📝 Historique de conversation" > "$temp_mem_file"
+            echo "========================" >> "$temp_mem_file"
             
             # Utiliser jq pour extraire et formater les messages avec date et localisation
-            jq -r '.messages[] | "Date: \(.timestamp | strptime("%Y-%m-%dT%H:%M:%S.%fZ") | strftime("%d/%m/%Y à %H:%M"))\nLocalisation: \(if .latitude == "0.00" and .longitude == "0.00" then "Inconnue" else "Lat: \(.latitude) Lon: \(.longitude)" end)\nMessage: \(.content)\n------------------------"' "$memory_file" >> "$temp_mem_file"
+            jq -r '.messages[] | select(.content | startswith("Historique de conversation") | not) | "📅 \(.timestamp | strptime("%Y-%m-%dT%H:%M:%S.%fZ") | strftime("%d/%m/%Y à %H:%M"))\n📍 \(if .latitude == "0.00" and .longitude == "0.00" then "Inconnue" else "Lat: \(.latitude) Lon: \(.longitude)" end)\n💬 \(.content)\n------------------------"' "$memory_file" >> "$temp_mem_file"
             
             # Lire le fichier formaté
             KeyANSWER=$(cat "$temp_mem_file")
