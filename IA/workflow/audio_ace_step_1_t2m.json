@@ -46,7 +46,7 @@
   },
   "17": {
     "inputs": {
-      "seconds": 30,
+      "seconds": 60,
       "batch_size": 1
     },
     "class_type": "EmptyAceStepLatentAudio",
