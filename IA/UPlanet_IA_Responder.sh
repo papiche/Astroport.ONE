@@ -261,7 +261,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             echo "========================" >> "$temp_mem_file"
             
             # Utiliser jq pour extraire et formater les messages avec date et localisation
-            jq -r '.messages[] | select(.content | startswith("Historique de conversation") | not) | "📅 \(.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y à %H:%M"))\n📍 \(if .latitude == "0.00" and .longitude == "0.00" then "Inconnue" else "Lat: \(.latitude) Lon: \(.longitude)" end)\n💬 \(.content)\n------------------------"' "$memory_file" >> "$temp_mem_file"
+            jq -r '.messages[] | select(.content | startswith("Historique de conversation") | not) | "📅 \(.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y à %H:%M"))\n📍 \(if .latitude == "0.00" and .longitude == "0.00" then "Inconnue" else "Lat: \(.latitude) Lon: \(.longitude)" end)\n💬 \(.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n------------------------"' "$memory_file" >> "$temp_mem_file"
             
             # Lire le fichier formaté
             KeyANSWER=$(cat "$temp_mem_file")
