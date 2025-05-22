@@ -15,6 +15,7 @@
 # - #BRO #BOT : Active la réponse IA (par défaut)
 # - #search : Perplexica Search
 # - #image : Générer une image avec ComfyUI
+# - #video : Générer une vidéo avec ComfyUI
 # - #reset : Effacer la mémoire de conversation
 # - #mem : Afficher le contenu de la mémoire de conversation
 ###################################################################
@@ -53,7 +54,7 @@ print_help() {
   echo ""
   echo "Description:"
   echo "  This script analyzes a UPlanet message and image, generates"
-  echo "  Ollama response, and publish it on UPlanet Captain NOSTR key."
+  echo "  Ollama response, and publish it using KNAME NOSTR key."
   echo ""
   echo "Example:"
   echo "  $(basename "$0") <pubkey_hex> <event_id> 0.00 0.00 \"What is it\" https://ipfs.copylaradio.com/ipfs/QmeUMJvPdyPiteR7iQXCnZy4mvKBnghNkYpMTbrpZfMGPq/pipe.jpeg"
@@ -317,6 +318,19 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     KeyANSWER="$IMAGE_URL"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
+                fi
+                ################################################"
+            elif [[ "$message_text" =~ \#video ]]; then
+                ################################################"
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g' <<< "$message_text")
+                # Ensure ComfyUI is available
+                $MY_PATH/comfyui_image_this.sh
+                # Generate video using Text2VideoWan2.1 workflow
+                VIDEO_URL="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
+                if [ -n "$VIDEO_URL" ]; then
+                    KeyANSWER="$VIDEO_URL"
+                else
+                    KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
                 fi
                 ################################################"
             else
