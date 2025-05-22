@@ -16,6 +16,7 @@
 # - #search : Perplexica Search
 # - #image : Générer une image avec ComfyUI
 # - #reset : Effacer la mémoire de conversation
+# - #mem : Afficher le contenu de la mémoire de conversation
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -243,6 +244,30 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             rm -f "$memory_file"
             echo "Memory reset for PUBKEY: $PUBKEY"
             KeyANSWER="Bonjour, je suis ASTROBOT votre assistant personnel IA programmable, je peux intervenir dans vos messages en utlisant les tags #search pour faire une recherche sur internet, #image pour générer une image, #reset pour reinitialiser ma mémoire."
+        else
+            echo "No memory file found for PUBKEY: $PUBKEY"
+            KeyANSWER="Pas de mémoire existante trouvée."
+        fi
+    # Check for #mem tag to return memory content
+    elif [[ "$message_text" =~ \#mem ]]; then
+        memory_file="$HOME/.zen/strfry/uplanet_memory/pubkey/$PUBKEY.json"
+        if [[ -f "$memory_file" ]]; then
+            echo "Returning memory content for PUBKEY: $PUBKEY"
+            # Créer un fichier temporaire pour le formatage
+            temp_mem_file="$HOME/.zen/tmp/memory_${PUBKEY}.txt"
+            
+            # Extraire et formater les messages
+            echo "Historique de conversation:" > "$temp_mem_file"
+            echo "------------------------" >> "$temp_mem_file"
+            
+            # Utiliser jq pour extraire et formater les messages avec date et localisation
+            jq -r '.messages[] | "Date: \(.timestamp | strptime("%Y-%m-%dT%H:%M:%S.%fZ") | strftime("%d/%m/%Y à %H:%M"))\nLocalisation: \(if .latitude == "0.00" and .longitude == "0.00" then "Inconnue" else "Lat: \(.latitude) Lon: \(.longitude)" end)\nMessage: \(.content)\n------------------------"' "$memory_file" >> "$temp_mem_file"
+            
+            # Lire le fichier formaté
+            KeyANSWER=$(cat "$temp_mem_file")
+            
+            # Nettoyer le fichier temporaire
+            rm -f "$temp_mem_file"
         else
             echo "No memory file found for PUBKEY: $PUBKEY"
             KeyANSWER="Pas de mémoire existante trouvée."
