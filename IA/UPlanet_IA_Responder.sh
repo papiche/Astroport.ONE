@@ -511,6 +511,9 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
 
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
 
+        # Clean KeyANSWER of BOT and BRO tags
+        KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
+
         ## SEND REPLY MESSAGE
         nostpy-cli send_event \
           -privkey "$NPRIV_HEX" \
