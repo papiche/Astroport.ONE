@@ -16,8 +16,10 @@
 # - #search : Perplexica Search
 # - #image : Générer une image avec ComfyUI
 # - #video : Générer une vidéo avec ComfyUI
-# - #reset : Effacer la mémoire de conversation
+# - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
+# - #youtube : Télécharger une vidéo YouTube (720p max) #mp3 pour convertir en audio (COOKIE PB !)
 # - #mem : Afficher le contenu de la mémoire de conversation
+# - #reset : Effacer la mémoire de conversation
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -375,7 +377,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             temp_mem_file="$HOME/.zen/tmp/memory_${PUBKEY}.txt"
             
             # Extraire et formater les messages
-            echo "📝 Historique (#mem)" > "$temp_mem_file" # Add #mem to avoid memory recording (NIP101 : 1.sh)
+            echo "📝 Historique (#mem)" > "$temp_mem_file" # Add #mem to bypass memory recording (NIP101 : 1.sh)
             echo "========================" >> "$temp_mem_file"
             
             # Utiliser jq pour extraire et formater les messages avec date et localisation
