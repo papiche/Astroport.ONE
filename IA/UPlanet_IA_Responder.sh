@@ -267,7 +267,8 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             KeyANSWER=$(cat "$temp_mem_file")
             
             # Nettoyer le fichier temporaire
-            rm -f "$temp_mem_file"
+            # rm -f "$temp_mem_file"
+            echo "cat $temp_mem_file" #DEBUG
         else
             echo "No memory file found for PUBKEY: $PUBKEY"
             KeyANSWER="Pas de mémoire existante trouvée."
