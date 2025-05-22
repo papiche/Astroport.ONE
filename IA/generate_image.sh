@@ -14,7 +14,8 @@ fi
 
 . "${MY_PATH}/../tools/my.sh"
 
-PROMPT="$1"
+# Escape double quotes and backslashes in the prompt
+PROMPT=$(echo "$1" | sed 's/"/\\"/g')
 
 # Créer le répertoire temporaire s'il n'existe pas
 TMP_DIR="$HOME/.zen/tmp"
@@ -57,49 +58,61 @@ check_comfyui_port() {
 update_prompt() {
   echo "Chargement du workflow JSON : ${WORKFLOW_FILE}" >&2
 
-  # Créer un fichier temporaire avec le prompt remplacé
-  sed "s/_PROMPT_/$PROMPT/g" "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
+  # Create a modified JSON with the prompt replaced
+  jq --arg prompt "$PROMPT" '(.["4"].inputs.text) = $prompt' "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
 
   echo "Prompt mis à jour dans le fichier JSON temporaire $TMP_WORKFLOW" >&2
+  
+  # Debug - show content of modified node
+  echo "Contenu du nœud modifié :" >&2
+  jq '.["4"].inputs' "$TMP_WORKFLOW" >&2
 }
 
 # Fonction pour envoyer le workflow à l'API ComfyUI
 send_workflow() {
   echo "Envoi du workflow à l'API ComfyUI..." >&2
-  local data
-  data=$(jq -c . "$TMP_WORKFLOW")
-  if [ $? -ne 0 ]; then
-    echo "Erreur lors de la lecture du workflow JSON" >&2
-    cat "$TMP_WORKFLOW" >&2
-    exit 1
-  fi
 
-  echo "Workflow JSON préparé :" >&2
-  echo "$data" >&2
+  local response_body_file
+  response_body_file="$TMP_DIR/response_body_${UNIQUE_ID}.json"
+  
+  # Create proper API payload
+  local api_payload_file="$TMP_DIR/api_payload_${UNIQUE_ID}.json"
+  jq '{prompt: .}' "$TMP_WORKFLOW" > "$api_payload_file"
+  
+  echo "Contenu de la requête API :" >&2
+  head -c 300 "$api_payload_file" >&2
+  echo >&2
 
-  local response
-  local http_code
-  # Use pipe to send JSON data to curl, avoiding eval quoting issues
-  response=$(echo "$data" | curl -s -w "%{http_code}" -X POST -H "Content-Type: application/json" -d @- "$COMFYUI_URL/prompt" 2>&1)
-  http_code=$(echo "$response" | grep -oP '^\d+' | tail -n 1)
-  response=$(echo "$response" | grep -vP '^\d+$' )
+  # Send the workflow to ComfyUI
+  local http_status
+  http_status=$(curl -s -w "%{http_code}" -o "$response_body_file" \
+                -X POST -H "Content-Type: application/json" \
+                --data-binary @"$api_payload_file" \
+                "$COMFYUI_URL/prompt")
+  
+  # Clean up API payload file
+  rm -f "$api_payload_file"
+  
+  local response_body
+  response_body=$(cat "$response_body_file")
+  rm -f "$response_body_file" # Clean up the temp response file
 
-  echo "HTTP code: $http_code" >&2
-  echo "API response: $response" >&2
+  echo "HTTP code: $http_status" >&2
+  echo "API response: $response_body" >&2
 
-  if [ "$http_code" -ne 200 ]; then
-    echo "Erreur lors de l'envoi du workflow, code HTTP : $http_code" >&2
-    echo "$response" >&2
+  if [ "$http_status" -ne 200 ]; then
+    echo "Erreur lors de l'envoi du workflow, code HTTP : $http_status" >&2
+    echo "API response (error details): $response_body" >&2
     exit 1
   fi
 
   echo "Workflow envoyé avec succès." >&2
   local prompt_id
-  prompt_id=$(echo "$response" | jq -r '.prompt_id')
+  prompt_id=$(echo "$response_body" | jq -r '.prompt_id')
   echo "Prompt ID : $prompt_id" >&2
   if [ -z "$prompt_id" ] || [ "$prompt_id" = "null" ]; then
     echo "Erreur : prompt_id non trouvé dans la réponse." >&2
-    echo "$response" >&2
+    echo "API response (error details): $response_body" >&2
     exit 1
   fi
   monitor_progress "$prompt_id"
@@ -108,44 +121,41 @@ send_workflow() {
 # Fonction pour surveiller la progression de la génération
 monitor_progress() {
   local prompt_id="$1"
-  local progress_url="$COMFYUI_URL/queue/$prompt_id"
-  local max_attempts=60  # 60 secondes maximum d'attente
+  local history_url="$COMFYUI_URL/history"
+  local max_attempts=120  # 2 minutes maximum d'attente
   local attempts=0
 
   echo "Surveillance de la progression avec l'ID : $prompt_id" >&2
 
+  # Attendre que l'image soit générée
   while [ $attempts -lt $max_attempts ]; do
-    local progress_response
-    progress_response=$(curl -s "$progress_url")
-    echo "Réponse de progression : $progress_response" >&2
-
-    if echo "$progress_response" | jq -e '. != null'; then
-      local current
-      current=$(echo "$progress_response" | jq -r '.progress.value')
-      local total
-      total=$(echo "$progress_response" | jq -r '.progress.max')
-
-      local status
-      status=$(echo "$progress_response" | jq -r '.status')
-
-      if [ "$status" = "completed" ]; then
-         echo "Génération terminée." >&2
-         get_image_result "$prompt_id"
-        return $?
-      elif [ "$status" = "error" ]; then
-         echo "Erreur lors de la génération :" >&2
-         echo "$progress_response" >&2
-         return 1
-      else
-         echo "Progression : $current/$total" >&2
-        sleep 1
-        attempts=$((attempts + 1))
-      fi
-    else
-       echo "Erreur lors de la récupération de la progression." >&2
-       echo "$progress_response" >&2
-       return 1
+    # Vérifier d'abord dans l'historique si l'image est déjà terminée
+    local history_response
+    history_response=$(curl -s "$history_url")
+    
+    # Check if prompt_id exists in history
+    if echo "$history_response" | jq -e --arg id "$prompt_id" '.[$id]' > /dev/null 2>&1; then
+      echo "Image trouvée dans l'historique de ComfyUI!" >&2
+      get_image_result "$prompt_id"
+      return $?
     fi
+    
+    # If not in history, check in queue
+    local queue_response
+    queue_response=$(curl -s "$COMFYUI_URL/prompt")
+    
+    # Check if running or queued
+    if echo "$queue_response" | jq -e --arg id "$prompt_id" '.running[$id] or .pending[$id]' > /dev/null 2>&1; then
+      echo "Image en cours de génération ou en attente..." >&2
+      sleep 2
+      attempts=$((attempts + 2))
+      continue
+    fi
+    
+    # If not in queue, wait a bit more and check history again
+    echo "En attente de traitement par ComfyUI..." >&2
+    sleep 2
+    attempts=$((attempts + 2))
   done
 
   echo "Erreur: Timeout lors de la génération d'image par ComfyUI." >&2
@@ -154,62 +164,80 @@ monitor_progress() {
 
 get_image_result() {
   local prompt_id="$1"
-  local history_url="$COMFYUI_URL/history/$prompt_id"
+  local history_url="$COMFYUI_URL/history"
 
-  echo "Récupération de l'historique pour l'ID : $prompt_id" >&2
+  echo "Récupération de l'historique..." >&2
   local history_response
   history_response=$(curl -s "$history_url")
-  echo "Réponse historique : $history_response" >&2
+  
+  # Get output data for this specific prompt
+  local prompt_data
+  prompt_data=$(echo "$history_response" | jq --arg id "$prompt_id" '.[$id]')
+  
+  if [ -z "$prompt_data" ] || [ "$prompt_data" = "null" ]; then
+    echo "Erreur: Données de prompt non trouvées dans l'historique" >&2
+    return 1
+  fi
+  
+  # Find the SaveImage node (should be node 7)
+  local save_node_outputs
+  save_node_outputs=$(echo "$prompt_data" | jq '.outputs."7".images')
+  
+  if [ -z "$save_node_outputs" ] || [ "$save_node_outputs" = "null" ]; then
+    echo "Erreur: Sorties du nœud SaveImage introuvables" >&2
+    return 1
+  fi
+  
+  # Get the image filename
+  local image_filename
+  image_filename=$(echo "$save_node_outputs" | jq -r '.[0].filename')
+  
+  if [ -z "$image_filename" ] || [ "$image_filename" = "null" ]; then
+    echo "Erreur: Nom de fichier non trouvé dans la sortie du nœud SaveImage" >&2
+    return 1
+  fi
 
-  if echo "$history_response" | jq -e '. != null'; then
-    local node_id
-    node_id=$(echo "$history_response" | jq -r 'keys[0]')
-    echo "Node ID trouvé : $node_id" >&2
+  echo "Nom du fichier image : $image_filename" >&2
 
-    local image_filename
-    image_filename=$(echo "$history_response" | jq -r "."$node_id".outputs."7"[0].filename")
-    echo "Nom du fichier image : $image_filename" >&2
-
-    if [ -z "$image_filename" ] || [ "$image_filename" = "null" ]; then
-      echo "Erreur : nom de fichier image non trouvé dans la réponse" >&2
-      echo "$history_response" >&2
-      return 1
-    fi
-
-    local image_url
-    image_url="$COMFYUI_URL/view/$image_filename"
-    echo "URL de l'image : $image_url" >&2
-
-    echo "Téléchargement de l'image..." >&2
-    curl -s -o "$TMP_IMAGE" "$image_url"
-    if [ $? -ne 0 ]; then
-      echo "Erreur lors du téléchargement de l'image" >&2
-      return 1
-    fi
-    echo "Image sauvegardée dans $TMP_IMAGE" >&2
-
-    # Vérifier que l'image a été correctement téléchargée
-    if [ ! -s "$TMP_IMAGE" ]; then
-      echo "Erreur : l'image téléchargée est vide" >&2
-      return 1
-    fi
-
-    # Ajouter à IPFS
-    echo "Ajout de l'image à IPFS..." >&2
-    local ipfs_hash
-    ipfs_hash=$(ipfs add -wq "$TMP_IMAGE" 2>/dev/null | tail -n 1)
-    if [ -n "$ipfs_hash" ]; then
-      echo "Image ajoutée à IPFS avec le hash : $ipfs_hash" >&2
-      # Seule l'URL IPFS est envoyée à stdout
-      echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_IMAGE")"
-      return 0
-    else
-      echo "Erreur lors de l'ajout à IPFS" >&2
-      return 1
-    fi
+  # Get subfolder if present
+  local image_subfolder
+  image_subfolder=$(echo "$save_node_outputs" | jq -r '.[0].subfolder')
+  
+  # Build proper URL
+  local image_url
+  if [ -z "$image_subfolder" ] || [ "$image_subfolder" = "null" ] || [ "$image_subfolder" = "" ]; then
+    image_url="$COMFYUI_URL/view?filename=$image_filename"
   else
-    echo "Erreur lors de la récupération de l'historique." >&2
-    echo "$history_response" >&2
+    image_url="$COMFYUI_URL/view?filename=$image_subfolder/$image_filename"
+  fi
+  
+  echo "URL de l'image : $image_url" >&2
+
+  echo "Téléchargement de l'image..." >&2
+  curl -s -o "$TMP_IMAGE" "$image_url"
+  if [ $? -ne 0 ]; then
+    echo "Erreur lors du téléchargement de l'image" >&2
+    return 1
+  fi
+  echo "Image sauvegardée dans $TMP_IMAGE" >&2
+
+  # Vérifier que l'image a été correctement téléchargée
+  if [ ! -s "$TMP_IMAGE" ]; then
+    echo "Erreur : l'image téléchargée est vide" >&2
+    return 1
+  fi
+
+  # Ajouter à IPFS
+  echo "Ajout de l'image à IPFS..." >&2
+  local ipfs_hash
+  ipfs_hash=$(ipfs add -wq "$TMP_IMAGE" 2>/dev/null | tail -n 1)
+  if [ -n "$ipfs_hash" ]; then
+    echo "Image ajoutée à IPFS avec le hash : $ipfs_hash" >&2
+    # Seule l'URL IPFS est envoyée à stdout
+    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_IMAGE")"
+    return 0
+  else
+    echo "Erreur lors de l'ajout à IPFS" >&2
     return 1
   fi
 }
