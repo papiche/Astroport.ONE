@@ -68,6 +68,15 @@ send_workflow() {
   echo "Envoi du workflow à l'API ComfyUI..."
   local data
   data=$(jq -c . "$TMP_WORKFLOW")
+  if [ $? -ne 0 ]; then
+    echo "Erreur lors de la lecture du workflow JSON"
+    cat "$TMP_WORKFLOW"
+    exit 1
+  fi
+
+  echo "Workflow JSON préparé :"
+  echo "$data"
+
   local response
   local http_code
   local curl_command
@@ -90,7 +99,7 @@ send_workflow() {
   local prompt_id
   prompt_id=$(echo "$response" | jq -r '.prompt_id')
   echo "Prompt ID : $prompt_id"
-  if [ -z "$prompt_id" ] ; then
+  if [ -z "$prompt_id" ] || [ "$prompt_id" = "null" ]; then
     echo "Erreur : prompt_id non trouvé dans la réponse."
     echo "$response"
     exit 1
@@ -102,12 +111,15 @@ send_workflow() {
 monitor_progress() {
   local prompt_id="$1"
   local progress_url="$COMFYUI_URL/queue/$prompt_id"
+  local max_attempts=60  # 60 secondes maximum d'attente
+  local attempts=0
 
   echo "Surveillance de la progression avec l'ID : $prompt_id"
 
-  while true; do
+  while [ $attempts -lt $max_attempts ]; do
     local progress_response
     progress_response=$(curl -s "$progress_url")
+    echo "Réponse de progression : $progress_response"
 
     if echo "$progress_response" | jq -e '. != null'; then
       local current
@@ -121,51 +133,86 @@ monitor_progress() {
       if [ "$status" = "completed" ]; then
          echo "Génération terminée."
          get_image_result "$prompt_id"
-        break
+        return 0
+      elif [ "$status" = "error" ]; then
+         echo "Erreur lors de la génération :"
+         echo "$progress_response"
+         return 1
       else
          echo "Progression : $current/$total"
         sleep 1
+        attempts=$((attempts + 1))
       fi
     else
        echo "Erreur lors de la récupération de la progression."
-      echo "$progress_response"
-       break
+       echo "$progress_response"
+       return 1
     fi
   done
+
+  echo "Timeout : la génération a pris trop de temps"
+  return 1
 }
 
 get_image_result() {
   local prompt_id="$1"
   local history_url="$COMFYUI_URL/history/$prompt_id"
 
+  echo "Récupération de l'historique pour l'ID : $prompt_id"
   local history_response
   history_response=$(curl -s "$history_url")
+  echo "Réponse historique : $history_response"
 
   if echo "$history_response" | jq -e '. != null'; then
     local node_id
     node_id=$(echo "$history_response" | jq -r 'keys[0]')
+    echo "Node ID trouvé : $node_id"
 
-     local image_filename
+    local image_filename
     image_filename=$(echo "$history_response" | jq -r ".[\"$node_id\"].outputs.\"7\"[0].filename")
+    echo "Nom du fichier image : $image_filename"
+
+    if [ -z "$image_filename" ] || [ "$image_filename" = "null" ]; then
+      echo "Erreur : nom de fichier image non trouvé dans la réponse"
+      echo "$history_response"
+      return 1
+    fi
 
     local image_url
     image_url="$COMFYUI_URL/view/$image_filename"
+    echo "URL de l'image : $image_url"
 
-    echo "Image générée : $image_url"
+    echo "Téléchargement de l'image..."
     curl -s -o "$TMP_IMAGE" "$image_url"
-    echo "Image saved in $TMP_IMAGE"
+    if [ $? -ne 0 ]; then
+      echo "Erreur lors du téléchargement de l'image"
+      return 1
+    fi
+    echo "Image sauvegardée dans $TMP_IMAGE"
+
+    # Vérifier que l'image a été correctement téléchargée
+    if [ ! -s "$TMP_IMAGE" ]; then
+      echo "Erreur : l'image téléchargée est vide"
+      return 1
+    fi
 
     # Ajouter à IPFS
+    echo "Ajout de l'image à IPFS..."
     local ipfs_hash
     ipfs_hash=$(ipfs add -wq "$TMP_IMAGE" 2>/dev/null | tail -n 1)
     if [ -n "$ipfs_hash" ]; then
+      echo "Image ajoutée à IPFS avec le hash : $ipfs_hash"
       echo "$myIPFS/ipfs/$ipfs_hash/$TMP_IMAGE"
+      return 0
+    else
+      echo "Erreur lors de l'ajout à IPFS"
+      return 1
     fi
-
   else
-      echo "Erreur lors de la récupération de l'historique."
-      echo "$history_response"
-    fi
+    echo "Erreur lors de la récupération de l'historique."
+    echo "$history_response"
+    return 1
+  fi
 }
 
 # Main script
