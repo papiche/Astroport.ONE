@@ -12,7 +12,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-. "${MY_PATH}/my.sh"
+. "${MY_PATH}/../tools/my.sh"
 
 PROMPT="$1"
 
@@ -150,7 +150,7 @@ monitor_progress() {
     fi
   done
 
-  echo "Timeout : la génération a pris trop de temps" >&2
+  echo "Erreur: Timeout lors de la génération d'image par ComfyUI." >&2
   return 1
 }
 
@@ -223,4 +223,4 @@ if [ $? -ne 0 ]; then
 fi
 
 update_prompt
-send_workflow 
+send_workflow
