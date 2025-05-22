@@ -72,8 +72,7 @@ update_prompt() {
 send_workflow() {
   echo "Envoi du workflow à l'API ComfyUI..." >&2
 
-  local response_body_file
-  response_body_file="$TMP_DIR/response_body_${UNIQUE_ID}.json"
+  local response_body_file="$TMP_DIR/response_body_${UNIQUE_ID}.json"
   
   # Create proper API payload
   local api_payload_file="$TMP_DIR/api_payload_${UNIQUE_ID}.json"
@@ -152,7 +151,7 @@ monitor_progress() {
       continue
     fi
     
-    # If not in queue, wait a bit more and check history again
+    # If not in queue or history yet, wait a bit and check again
     echo "En attente de traitement par ComfyUI..." >&2
     sleep 2
     attempts=$((attempts + 2))
@@ -162,6 +161,7 @@ monitor_progress() {
   return 1
 }
 
+# Fonction pour récupérer et traiter l'image générée
 get_image_result() {
   local prompt_id="$1"
   local history_url="$COMFYUI_URL/history"
@@ -242,11 +242,16 @@ get_image_result() {
   fi
 }
 
-# Main script
+# Main script execution
+
+# Check if ComfyUI is accessible
 check_comfyui_port
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Update the workflow with the user's prompt
 update_prompt
+
+# Send the workflow to ComfyUI for processing
 send_workflow

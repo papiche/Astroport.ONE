@@ -14,8 +14,8 @@
 # Tags spéciaux:
 # - #BRO #BOT : Active la réponse IA (par défaut)
 # - #search : Perplexica Search
-# - #mp3 : Convertir en MP3
-# - #mp4 : Convertir en MP4
+# - #image : Générer une image avec ComfyUI
+# - #reset : Effacer la mémoire de conversation
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -236,12 +236,23 @@ message_text=$(echo "$MESSAGE" | tr '\n' ' ')
 ################################################################### #BRO #BOT
 if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
     #######################################################################
-    if [[ ! -z $URL ]]; then
+    # Check for #reset tag to clear user memory
+    if [[ "$message_text" =~ \#reset ]]; then
+        memory_file="$HOME/.zen/strfry/uplanet_memory/pubkey/$PUBKEY.json"
+        if [[ -f "$memory_file" ]]; then
+            rm -f "$memory_file"
+            echo "Memory reset for PUBKEY: $PUBKEY"
+            KeyANSWER="Mémoire effacée. Conversation réinitialisée."
+        else
+            echo "No memory file found for PUBKEY: $PUBKEY"
+            KeyANSWER="Pas de mémoire existante trouvée."
+        fi
+    elif [[ ! -z $URL ]]; then
         echo "Looking at the image (using ollama + llava)..."
         DESC="IMAGE : $("$MY_PATH/describe_image.py" "$URL" --json | jq -r '.description')"
     fi
     #######################################################################
-    echo "Generating Ollama answer..."
+    echo "Preparing question for IA..."
     if [[ -n $DESC ]]; then
         QUESTION="[IMAGE received]: $DESC --- $message_text"
     else
@@ -261,32 +272,35 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
     ##################################################### ASK IA
     ## KNOWN KNAME => CAPTAIN REPLY
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        # remove #BRO #search tags from message_text
-        if [[ "$message_text" =~ \#search ]]; then
-            ################################################"
-            cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$message_text")
-            # search = perplexica
-            KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
-            ################################################"
-        elif [[ "$message_text" =~ \#image ]]; then
-            ################################################"
-            cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
-            # Ensure ComfyUI is available
-            $MY_PATH/comfyui_image_this.sh
-            # Generate image
-            IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
-            if [ -n "$IMAGE_URL" ]; then
-                KeyANSWER="Voici l'image générée : $IMAGE_URL"
+        # Only generate an answer if KeyANSWER is not already set (e.g., by #reset)
+        if [[ -z "$KeyANSWER" ]]; then
+            # remove #BRO #search tags from message_text
+            if [[ "$message_text" =~ \#search ]]; then
+                ################################################"
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$message_text")
+                # search = perplexica
+                KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
+                ################################################"
+            elif [[ "$message_text" =~ \#image ]]; then
+                ################################################"
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
+                # Ensure ComfyUI is available
+                $MY_PATH/comfyui_image_this.sh
+                # Generate image
+                IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
+                if [ -n "$IMAGE_URL" ]; then
+                    KeyANSWER="$IMAGE_URL"
+                else
+                    KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
+                fi
+                ################################################"
             else
-                KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
+                ################################################"
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")
+                # default = ollama (using PUBKEY MEMORY)
+                KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
+                ################################################"
             fi
-            ################################################"
-        else
-            ################################################"
-            cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")
-            # default = ollama (with PUBKEY MEMORY)
-            KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
-            ################################################"
         fi
 
         ## LOAD CAPTAIN KEY
