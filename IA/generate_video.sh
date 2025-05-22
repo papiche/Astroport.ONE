@@ -179,11 +179,17 @@ get_video_result() {
   
   # Find the VideoCombine node (should be node 49)
   local video_node_outputs
-  video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".videos')
+  video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".images')
   
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-    echo "Erreur: Sorties du nœud VideoCombine introuvables" >&2
-    return 1
+    # Try alternative output structure
+    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".videos')
+    if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
+      echo "Erreur: Sorties du nœud VHS_VideoCombine introuvables" >&2
+      echo "Contenu du prompt_data pour debug:" >&2
+      echo "$prompt_data" | jq '.outputs."49"' >&2
+      return 1
+    fi
   fi
   
   # Get the video filename
