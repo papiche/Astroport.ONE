@@ -81,7 +81,6 @@ send_workflow() {
   local http_code
   # Use pipe to send JSON data to curl, avoiding eval quoting issues
   response=$(echo "$data" | curl -s -w "%{http_code}" -X POST -H "Content-Type: application/json" -d @- "$COMFYUI_URL/prompt" 2>&1)
-
   http_code=$(echo "$response" | grep -oP '^\d+' | tail -n 1)
   response=$(echo "$response" | grep -vP '^\d+$' )
 
