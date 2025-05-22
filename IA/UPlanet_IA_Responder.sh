@@ -375,7 +375,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             temp_mem_file="$HOME/.zen/tmp/memory_${PUBKEY}.txt"
             
             # Extraire et formater les messages
-            echo "📝 Historique de conversation" > "$temp_mem_file"
+            echo "📝 Historique de conversation (#mem)" > "$temp_mem_file"
             echo "========================" >> "$temp_mem_file"
             
             # Utiliser jq pour extraire et formater les messages avec date et localisation
@@ -388,7 +388,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             rm -f "$temp_mem_file"
         else
             echo "No memory file found for PUBKEY: $PUBKEY"
-            KeyANSWER="Pas de mémoire existante trouvée."
+            KeyANSWER="Aucune (#mem) trouvée."
         fi
     elif [[ ! -z $URL ]]; then
         echo "Looking at the image (using ollama + llava)..."
@@ -466,7 +466,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 # Extract YouTube URL from message
                 youtube_url=$(echo "$message_text" | grep -oE 'http[s]?://(www\.)?(youtube\.com|youtu\.be)/[^ ]+')
                 if [ -z "$youtube_url" ]; then
-                    KeyANSWER="Désolé, je n'ai pas trouvé d'URL YouTube valide dans votre message."
+                    KeyANSWER="Désolé, Aucune URL YouTube valide trouvée dans votre message."
                 else
                     # Create temporary directory
                     temp_dir="$HOME/.zen/tmp/youtube_$(date +%s)"
