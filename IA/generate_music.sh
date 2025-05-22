@@ -1,0 +1,288 @@
+#!/bin/bash
+# Dependencies : jq curl
+#### generate_music.sh : transform a prompt into music using comfyui
+
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
+ME="${0##*/}"
+
+# Vérifie si le prompt est fourni en argument
+if [ -z "$1" ]; then
+  echo "Usage: $0 <prompt>" >&2
+  exit 1
+fi
+
+. "${MY_PATH}/../tools/my.sh"
+
+# Escape double quotes and backslashes in the prompt
+PROMPT=$(echo "$1" | sed 's/"/\\"/g')
+
+# Créer le répertoire temporaire s'il n'existe pas
+TMP_DIR="$HOME/.zen/tmp"
+mkdir -p "$TMP_DIR"
+
+# Générer un identifiant unique pour cette exécution
+UNIQUE_ID=$(date +%s)_$(openssl rand -hex 4)
+TMP_WORKFLOW="$TMP_DIR/workflow_${UNIQUE_ID}.json"
+TMP_AUDIO="$TMP_DIR/audio_${UNIQUE_ID}.wav"
+
+# Nettoyage des fichiers temporaires à la sortie
+cleanup() {
+    rm -f "$TMP_WORKFLOW" "$TMP_AUDIO"
+}
+trap cleanup EXIT
+
+# Chemin vers le fichier JSON du workflow
+WORKFLOW_FILE="${MY_PATH}/workflow/audio_ace_step_1_t2m.json"
+
+# Adresse de l'API ComfyUI
+COMFYUI_URL="http://127.0.0.1:8188"
+
+# Extraction de l'adresse IP et du port depuis l'URL
+COMFYUI_HOST=$(echo "$COMFYUI_URL" | sed 's#http://##' | cut -d':' -f1)
+COMFYUI_PORT=$(echo "$COMFYUI_URL" | sed 's#http://##' | cut -d':' -f2)
+
+# Fonction pour vérifier si le port ComfyUI est ouvert
+check_comfyui_port() {
+  echo "Vérification du port ComfyUI : ${COMFYUI_HOST}:${COMFYUI_PORT}" >&2
+  if nc -z "$COMFYUI_HOST" "$COMFYUI_PORT" > /dev/null 2>&1; then
+    echo "Le port ComfyUI est accessible." >&2
+    return 0
+  else
+    echo "Erreur : Le port ComfyUI n'est pas accessible." >&2
+    return 1
+  fi
+}
+
+# Fonction pour mettre à jour le prompt dans le workflow JSON
+update_prompt() {
+  echo "Chargement du workflow JSON : ${WORKFLOW_FILE}" >&2
+
+  # Extract lyrics if present in the prompt
+  local lyrics=""
+  if [[ "$PROMPT" =~ \#chant[[:space:]]+(.*) ]]; then
+    lyrics="${BASH_REMATCH[1]}"
+    # Remove the #chant part from the prompt
+    PROMPT=$(echo "$PROMPT" | sed 's/#chant.*$//')
+  fi
+
+  # Create a modified JSON with the prompt replaced
+  if [ -n "$lyrics" ]; then
+    jq --arg prompt "$PROMPT" --arg lyrics "$lyrics" \
+      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = $lyrics' \
+      "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
+  else
+    jq --arg prompt "$PROMPT" \
+      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = ""' \
+      "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
+  fi
+
+  echo "Prompt mis à jour dans le fichier JSON temporaire $TMP_WORKFLOW" >&2
+  
+  # Debug - show content of modified node
+  echo "Contenu du nœud modifié :" >&2
+  jq '.["14"].inputs' "$TMP_WORKFLOW" >&2
+}
+
+# Fonction pour envoyer le workflow à l'API ComfyUI
+send_workflow() {
+  echo "Envoi du workflow à l'API ComfyUI..." >&2
+
+  local response_body_file="$TMP_DIR/response_body_${UNIQUE_ID}.json"
+  
+  # Create proper API payload
+  local api_payload_file="$TMP_DIR/api_payload_${UNIQUE_ID}.json"
+  jq '{prompt: .}' "$TMP_WORKFLOW" > "$api_payload_file"
+  
+  echo "Contenu de la requête API :" >&2
+  head -c 300 "$api_payload_file" >&2
+  echo >&2
+
+  # Send the workflow to ComfyUI
+  local http_status
+  http_status=$(curl -s -w "%{http_code}" -o "$response_body_file" \
+                -X POST -H "Content-Type: application/json" \
+                --data-binary @"$api_payload_file" \
+                "$COMFYUI_URL/prompt")
+  
+  # Clean up API payload file
+  rm -f "$api_payload_file"
+  
+  local response_body
+  response_body=$(cat "$response_body_file")
+  rm -f "$response_body_file" # Clean up the temp response file
+
+  echo "HTTP code: $http_status" >&2
+  echo "API response: $response_body" >&2
+
+  if [ "$http_status" -ne 200 ]; then
+    echo "Erreur lors de l'envoi du workflow, code HTTP : $http_status" >&2
+    echo "API response (error details): $response_body" >&2
+    exit 1
+  fi
+
+  echo "Workflow envoyé avec succès." >&2
+  local prompt_id
+  prompt_id=$(echo "$response_body" | jq -r '.prompt_id')
+  echo "Prompt ID : $prompt_id" >&2
+  if [ -z "$prompt_id" ] || [ "$prompt_id" = "null" ]; then
+    echo "Erreur : prompt_id non trouvé dans la réponse." >&2
+    echo "API response (error details): $response_body" >&2
+    exit 1
+  fi
+  monitor_progress "$prompt_id"
+}
+
+# Fonction pour surveiller la progression de la génération
+monitor_progress() {
+  local prompt_id="$1"
+  local history_url="$COMFYUI_URL/history"
+  local max_attempts=60  # 1 minute maximum d'attente
+  local attempts=0
+  local start_time=$(date +%s)
+
+  echo "Surveillance de la progression avec l'ID : $prompt_id" >&2
+
+  # Attendre que l'audio soit généré
+  while [ $attempts -lt $max_attempts ]; do
+    # Calculer et afficher le temps écoulé
+    local current_time=$(date +%s)
+    local elapsed_time=$((current_time - start_time))
+    local minutes=$((elapsed_time / 60))
+    local seconds=$((elapsed_time % 60))
+    echo "En attente de traitement par ComfyUI... (${minutes}m ${seconds}s)" >&2
+
+    # Vérifier d'abord dans l'historique si l'audio est déjà terminé
+    local history_response
+    history_response=$(curl -s "$history_url")
+    
+    # Check if prompt_id exists in history
+    if echo "$history_response" | jq -e --arg id "$prompt_id" '.[$id]' > /dev/null 2>&1; then
+      echo "Audio trouvé dans l'historique de ComfyUI!" >&2
+      get_audio_result "$prompt_id" "$elapsed_time"
+      return $?
+    fi
+    
+    # If not in history, check in queue
+    local queue_response
+    queue_response=$(curl -s "$COMFYUI_URL/prompt")
+    
+    # Check if running or queued
+    if echo "$queue_response" | jq -e --arg id "$prompt_id" '.running[$id] or .pending[$id]' > /dev/null 2>&1; then
+      echo "Audio en cours de génération ou en attente..." >&2
+      sleep 2
+      attempts=$((attempts + 2))
+      continue
+    fi
+    
+    # If not in queue or history yet, wait a bit and check again
+    sleep 2
+    attempts=$((attempts + 2))
+  done
+
+  echo "Erreur: Timeout lors de la génération d'audio par ComfyUI." >&2
+  return 1
+}
+
+# Fonction pour récupérer et traiter l'audio généré
+get_audio_result() {
+  local prompt_id="$1"
+  local elapsed_time="$2"
+  local history_url="$COMFYUI_URL/history"
+
+  echo "Récupération de l'historique..." >&2
+  local history_response
+  history_response=$(curl -s "$history_url")
+  
+  # Get output data for this specific prompt
+  local prompt_data
+  prompt_data=$(echo "$history_response" | jq --arg id "$prompt_id" '.[$id]')
+  
+  if [ -z "$prompt_data" ] || [ "$prompt_data" = "null" ]; then
+    echo "Erreur: Données de prompt non trouvées dans l'historique" >&2
+    return 1
+  fi
+
+  # Debug: Afficher la structure complète des sorties
+  echo "Structure complète des sorties :" >&2
+  echo "$prompt_data" | jq '.outputs' >&2
+  
+  # Find the SaveAudio node (should be node 19)
+  local save_node_outputs
+  save_node_outputs=$(echo "$prompt_data" | jq '.outputs."19".audio')
+  
+  if [ -z "$save_node_outputs" ] || [ "$save_node_outputs" = "null" ]; then
+    echo "Erreur: Sorties du nœud SaveAudio introuvables" >&2
+    echo "Contenu du prompt_data pour debug:" >&2
+    echo "$prompt_data" | jq '.outputs."19"' >&2
+    return 1
+  fi
+  
+  # Get the audio filename and subfolder
+  local audio_filename
+  local audio_subfolder
+  audio_filename=$(echo "$save_node_outputs" | jq -r '.[0].filename')
+  audio_subfolder=$(echo "$save_node_outputs" | jq -r '.[0].subfolder')
+  
+  if [ -z "$audio_filename" ] || [ "$audio_filename" = "null" ]; then
+    echo "Erreur: Informations de fichier non trouvées dans la sortie du nœud SaveAudio" >&2
+    return 1
+  fi
+
+  echo "Nom du fichier audio : $audio_filename" >&2
+  
+  # Build proper URL
+  local audio_url
+  if [ -z "$audio_subfolder" ] || [ "$audio_subfolder" = "null" ] || [ "$audio_subfolder" = "" ]; then
+    audio_url="$COMFYUI_URL/view?filename=$audio_filename"
+  else
+    audio_url="$COMFYUI_URL/view?filename=$audio_subfolder/$audio_filename"
+  fi
+  
+  echo "URL de l'audio : $audio_url" >&2
+
+  # Télécharger l'audio depuis le serveur ComfyUI
+  echo "Téléchargement de l'audio..." >&2
+  curl -s -o "$TMP_AUDIO" "$audio_url"
+  if [ $? -ne 0 ]; then
+    echo "Erreur lors du téléchargement de l'audio" >&2
+    return 1
+  fi
+  echo "Audio sauvegardé dans $TMP_AUDIO" >&2
+
+  # Vérifier que l'audio a été correctement téléchargé
+  if [ ! -s "$TMP_AUDIO" ]; then
+    echo "Erreur : l'audio téléchargé est vide" >&2
+    return 1
+  fi
+
+  # Ajouter à IPFS
+  echo "Ajout de l'audio à IPFS..." >&2
+  local ipfs_hash
+  ipfs_hash=$(ipfs add -wq "$TMP_AUDIO" 2>/dev/null | tail -n 1)
+  if [ -n "$ipfs_hash" ]; then
+    echo "Audio ajouté à IPFS avec le hash : $ipfs_hash" >&2
+    # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
+    local minutes=$((elapsed_time / 60))
+    local seconds=$((elapsed_time % 60))
+    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_AUDIO") (Généré en ${minutes}m ${seconds}s)"
+    return 0
+  else
+    echo "Erreur lors de l'ajout à IPFS" >&2
+    return 1
+  fi
+}
+
+# Main script execution
+
+# Check if ComfyUI is accessible
+check_comfyui_port
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+# Update the workflow with the user's prompt
+update_prompt
+
+# Send the workflow to ComfyUI for processing
+send_workflow 

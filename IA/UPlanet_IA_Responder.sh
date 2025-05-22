@@ -338,6 +338,19 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
                 fi
                 ################################################"
+            elif [[ "$message_text" =~ \#music ]]; then
+                ################################################"
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g' <<< "$message_text")
+                # Ensure ComfyUI is available
+                $MY_PATH/comfyui_image_this.sh
+                # Generate music using audio_ace_step_1_t2m workflow
+                MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
+                if [ -n "$MUSIC_URL" ]; then
+                    KeyANSWER="$MUSIC_URL"
+                else
+                    KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
+                fi
+                ################################################"
             else
                 ################################################"
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")

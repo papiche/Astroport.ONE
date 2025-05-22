@@ -38,15 +38,23 @@ def load_context(latitude=None, longitude=None, pubkey=None):
     except Exception as e:
         print(f"Failed to load context from {memory_file}: {e}")
         return ""
-
 def filter_think_tags(text):
     """
     Remove content between <think> and </think> tags (inclusive) from the text.
+    Also removes common command tags like #BOT, #BRO, #search, #mem, #reset, #image, #video, #song, #mp3, #youtube
     """
+    # Remove think tags
     while "<think>" in text and "</think>" in text:
         start = text.find("<think>")
         end = text.find("</think>") + len("</think>")
         text = text[:start] + text[end:]
+    
+    # Remove command tags
+    text = text.replace("#BOT", "").replace("#BRO", "")
+    text = text.replace("#search", "").replace("#mem", "")
+    text = text.replace("#reset", "").replace("#image", "")
+    text = text.replace("#video", "").replace("#youtube", "")
+    text = text.replace("#mp3", "").replace("#song", "")
     return text.strip()
 
 def get_ollama_answer(prompt, model_name="gemma3:latest"):
