@@ -293,16 +293,31 @@ get_audio_result() {
     return 1
   fi
 
+  # Convertir en MP3
+  echo "Conversion en MP3..." >&2
+  local mp3_file="${TMP_AUDIO%.flac}.mp3"
+  if ! ffmpeg -i "$TMP_AUDIO" -codec:a libmp3lame -qscale:a 2 "$mp3_file" 2>/dev/null; then
+    echo "Erreur lors de la conversion en MP3" >&2
+    return 1
+  fi
+  echo "Conversion en MP3 terminée" >&2
+
+  # Vérifier que le MP3 a été correctement créé
+  if [ ! -s "$mp3_file" ]; then
+    echo "Erreur : le fichier MP3 est vide" >&2
+    return 1
+  fi
+
   # Ajouter à IPFS
   echo "Ajout de l'audio à IPFS..." >&2
   local ipfs_hash
-  ipfs_hash=$(ipfs add -wq "$TMP_AUDIO" 2>/dev/null | tail -n 1)
+  ipfs_hash=$(ipfs add -wq "$mp3_file" 2>/dev/null | tail -n 1)
   if [ -n "$ipfs_hash" ]; then
     echo "Audio ajouté à IPFS avec le hash : $ipfs_hash" >&2
     # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
     local minutes=$((elapsed_time / 60))
     local seconds=$((elapsed_time % 60))
-    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_AUDIO") (Généré en ${minutes}m ${seconds}s)"
+    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$mp3_file") (Généré en ${minutes}m ${seconds}s)"
     return 0
   else
     echo "Erreur lors de l'ajout à IPFS" >&2
