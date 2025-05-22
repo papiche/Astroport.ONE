@@ -60,10 +60,10 @@ update_prompt() {
 
   # Extract lyrics if present in the prompt
   local lyrics=""
-  if [[ "$PROMPT" =~ \#chant[[:space:]]+(.*) ]]; then
+  if [[ "$PROMPT" =~ \#parole[[:space:]]+(.*) ]]; then
     lyrics="${BASH_REMATCH[1]}"
-    # Remove the #chant part from the prompt
-    PROMPT=$(echo "$PROMPT" | sed 's/#chant.*$//')
+    # Remove the #parole part from the prompt
+    PROMPT=$(echo "$PROMPT" | sed 's/#parole.*$//')
   fi
 
   # Create a modified JSON with the prompt replaced
