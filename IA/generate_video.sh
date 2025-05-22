@@ -191,82 +191,41 @@ get_video_result() {
   
   # Find the VideoCombine node (should be node 49)
   local video_node_outputs
-  video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".images')
+  video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".gifs')
   
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-    # Try alternative output structure
-    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".videos')
-    if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-      # Try to find any output in node 49
-      echo "Tentative de trouver toute sortie dans le nœud 49 :" >&2
-      echo "$prompt_data" | jq '.outputs."49"' >&2
-      
-      # Try to find the video file in the ComfyUI output directory
-      local comfyui_output_dir="$MY_PATH/comfyui/output"
-      echo "Recherche de la vidéo dans le répertoire de sortie ComfyUI : $comfyui_output_dir" >&2
-      local video_file=$(find "$comfyui_output_dir" -type f -name "*.mp4" -mmin -5 | sort -r | head -n 1)
-      
-      if [ -n "$video_file" ]; then
-        echo "Vidéo trouvée dans le répertoire de sortie : $video_file" >&2
-        cp "$video_file" "$TMP_VIDEO"
-        
-        # Ajouter à IPFS
-        echo "Ajout de la vidéo à IPFS..." >&2
-        local ipfs_hash
-        ipfs_hash=$(ipfs add -wq "$TMP_VIDEO" 2>/dev/null | tail -n 1)
-        if [ -n "$ipfs_hash" ]; then
-          echo "Vidéo ajoutée à IPFS avec le hash : $ipfs_hash" >&2
-          # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
-          local minutes=$((elapsed_time / 60))
-          local seconds=$((elapsed_time % 60))
-          echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_VIDEO") (Généré en ${minutes}m ${seconds}s)"
-          return 0
-        fi
-      else
-        echo "Erreur: Sorties du nœud VHS_VideoCombine introuvables et aucune vidéo récente trouvée" >&2
-        echo "Contenu du prompt_data pour debug:" >&2
-        echo "$prompt_data" | jq '.outputs."49"' >&2
-        return 1
-      fi
-    fi
+    echo "Erreur: Sorties du nœud VHS_VideoCombine introuvables" >&2
+    echo "Contenu du prompt_data pour debug:" >&2
+    echo "$prompt_data" | jq '.outputs."49"' >&2
+    return 1
   fi
   
-  # Get the video filename
+  # Get the video filename and fullpath
   local video_filename
+  local video_fullpath
   video_filename=$(echo "$video_node_outputs" | jq -r '.[0].filename')
+  video_fullpath=$(echo "$video_node_outputs" | jq -r '.[0].fullpath')
   
-  if [ -z "$video_filename" ] || [ "$video_filename" = "null" ]; then
-    echo "Erreur: Nom de fichier non trouvé dans la sortie du nœud VideoCombine" >&2
+  if [ -z "$video_filename" ] || [ "$video_filename" = "null" ] || [ -z "$video_fullpath" ] || [ "$video_fullpath" = "null" ]; then
+    echo "Erreur: Informations de fichier non trouvées dans la sortie du nœud VHS_VideoCombine" >&2
     return 1
   fi
 
   echo "Nom du fichier vidéo : $video_filename" >&2
+  echo "Chemin complet : $video_fullpath" >&2
 
-  # Get subfolder if present
-  local video_subfolder
-  video_subfolder=$(echo "$video_node_outputs" | jq -r '.[0].subfolder')
-  
-  # Build proper URL
-  local video_url
-  if [ -z "$video_subfolder" ] || [ "$video_subfolder" = "null" ] || [ "$video_subfolder" = "" ]; then
-    video_url="$COMFYUI_URL/view?filename=$video_filename"
-  else
-    video_url="$COMFYUI_URL/view?filename=$video_subfolder/$video_filename"
-  fi
-  
-  echo "URL de la vidéo : $video_url" >&2
-
-  echo "Téléchargement de la vidéo..." >&2
-  curl -s -o "$TMP_VIDEO" "$video_url"
+  # Copier le fichier depuis son emplacement
+  echo "Copie de la vidéo..." >&2
+  cp "$video_fullpath" "$TMP_VIDEO"
   if [ $? -ne 0 ]; then
-    echo "Erreur lors du téléchargement de la vidéo" >&2
+    echo "Erreur lors de la copie de la vidéo" >&2
     return 1
   fi
-  echo "Vidéo sauvegardée dans $TMP_VIDEO" >&2
+  echo "Vidéo copiée dans $TMP_VIDEO" >&2
 
-  # Vérifier que la vidéo a été correctement téléchargée
+  # Vérifier que la vidéo a été correctement copiée
   if [ ! -s "$TMP_VIDEO" ]; then
-    echo "Erreur : la vidéo téléchargée est vide" >&2
+    echo "Erreur : la vidéo copiée est vide" >&2
     return 1
   fi
 
