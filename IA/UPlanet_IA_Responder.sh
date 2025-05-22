@@ -150,6 +150,16 @@ process_youtube() {
     local media_file=""
     local media_ipfs=""
 
+    # Try to get cookies from common browsers
+    local cookie_file=""
+    for browser in chrome firefox chromium brave; do
+        cookie_file="$HOME/.config/$browser/Default/Cookies"
+        if [[ -f "$cookie_file" ]]; then
+            browser="--cookies-from-browser $browser"
+            break
+        fi
+    done
+
     # Obtenir le titre et la durée
     local line=""
     if [[ -n "$browser" ]]; then
