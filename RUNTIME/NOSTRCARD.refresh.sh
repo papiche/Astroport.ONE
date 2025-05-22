@@ -316,18 +316,18 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "######################################## STEP 1"
         echo "## NOSTR PROFILE PRIMAL LINKING"
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-
+    YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
         ## EXTACT PRIMAL CESIUM PROFILE
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
         LAT=$(makecoord $zlat)
         zlon=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lon)
         LON=$(makecoord $zlon)
         title=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.title)
-        [[ -z $title ]] && title="$PLAYER"
+        [[ -z $title ]] && title="$YOU ✌(◕‿-)✌"
         city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
-        [[ -z $city ]] && city="UPlanet"
+        [[ -z $city ]] && city="UPlanet ${UPLANETG1PUB:0:8}"
         description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
-        [[ -z $description ]] && description="Nostr Card"
+        [[ -z $description ]] && description="MULTIPASS"
 
         ## GET CESIUM AVATAR
         if [[ -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]]; then
@@ -372,9 +372,10 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "## Nostr Card PROFILE EXISTING"
         #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
-        ## Zen Card ONLY FOR UPlanet Zen
+        ########################################################################
+        ## Zen Card ONLY FOR UPlanet Zen #################################################
         if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
-            ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ###########
+            ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ##
             if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
                 echo "## MULTIPASS ZenCard creation "
                 source ~/.zen/game/nostr/${PLAYER}/GPS
@@ -396,12 +397,13 @@ for PLAYER in "${NOSTR[@]}"; do
                 ### + NOSTR Card + Message (GPS 0?)
                 ### + UPassport (G1/DU?)
                 ### + Zen Card (Ẑ/€?)
-                ### = PLAYER N1/N2 UPLANET
+                ### = PLAYER N1/N2 UPLANET ZEN
                 #########################################################
                 echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
                 ${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1
 
             fi
+        ############## UPLANET ORIGIN #############################################
         else
             $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh ${PLAYER} | tail -n 1)
             echo "UPlanet ORIGIN $source NOSTR Card... $LAT $LON $HEX $EMAIL"
