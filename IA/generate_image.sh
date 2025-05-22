@@ -17,6 +17,12 @@ fi
 # Escape double quotes and backslashes in the prompt
 PROMPT=$(echo "$1" | sed 's/"/\\"/g')
 
+# Generate a random seed
+generate_random_seed() {
+  # Generate a random number between 0 and 2^53-1 (max safe integer in JavaScript)
+  echo $((RANDOM * RANDOM * RANDOM))
+}
+
 # Créer le répertoire temporaire s'il n'existe pas
 TMP_DIR="$HOME/.zen/tmp"
 mkdir -p "$TMP_DIR"
@@ -54,18 +60,24 @@ check_comfyui_port() {
   fi
 }
 
-# Fonction pour mettre à jour le prompt dans le workflow JSON
+# Fonction pour mettre à jour le prompt et le seed dans le workflow JSON
 update_prompt() {
   echo "Chargement du workflow JSON : ${WORKFLOW_FILE}" >&2
 
-  # Create a modified JSON with the prompt replaced
-  jq --arg prompt "$PROMPT" '(.["4"].inputs.text) = $prompt' "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
+  # Generate a new random seed
+  local new_seed=$(generate_random_seed)
+  echo "Using random seed: $new_seed" >&2
 
-  echo "Prompt mis à jour dans le fichier JSON temporaire $TMP_WORKFLOW" >&2
+  # Create a modified JSON with the prompt and seed replaced
+  jq --arg prompt "$PROMPT" --argjson seed "$new_seed" \
+     '(.["4"].inputs.text) = $prompt | (.["1"].inputs.seed) = $seed' \
+     "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
+
+  echo "Prompt and seed updated in temporary JSON file $TMP_WORKFLOW" >&2
   
-  # Debug - show content of modified node
-  echo "Contenu du nœud modifié :" >&2
-  jq '.["4"].inputs' "$TMP_WORKFLOW" >&2
+  # Debug - show content of modified nodes
+  echo "Modified nodes content:" >&2
+  jq '.["4"].inputs, .["1"].inputs' "$TMP_WORKFLOW" >&2
 }
 
 # Fonction pour envoyer le workflow à l'API ComfyUI

@@ -17,6 +17,12 @@ fi
 # Escape double quotes and backslashes in the prompt
 PROMPT=$(echo "$1" | sed 's/"/\\"/g')
 
+# Generate a random seed
+generate_random_seed() {
+  # Generate a random number between 0 and 2^53-1 (max safe integer in JavaScript)
+  echo $((RANDOM * RANDOM * RANDOM))
+}
+
 # Créer le répertoire temporaire s'il n'existe pas
 TMP_DIR="$HOME/.zen/tmp"
 mkdir -p "$TMP_DIR"
@@ -54,9 +60,13 @@ check_comfyui_port() {
   fi
 }
 
-# Fonction pour mettre à jour le prompt dans le workflow JSON
+# Fonction pour mettre à jour le prompt et le seed dans le workflow JSON
 update_prompt() {
   echo "Chargement du workflow JSON : ${WORKFLOW_FILE}" >&2
+
+  # Generate a new random seed
+  local new_seed=$(generate_random_seed)
+  echo "Using random seed: $new_seed" >&2
 
   # Extract lyrics if present in the prompt
   local lyrics=""
@@ -66,22 +76,22 @@ update_prompt() {
     PROMPT=$(echo "$PROMPT" | sed 's/#parole.*$//')
   fi
 
-  # Create a modified JSON with the prompt replaced
+  # Create a modified JSON with the prompt, lyrics and seed replaced
   if [ -n "$lyrics" ]; then
-    jq --arg prompt "$PROMPT" --arg lyrics "$lyrics" \
-      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = $lyrics' \
+    jq --arg prompt "$PROMPT" --arg lyrics "$lyrics" --argjson seed "$new_seed" \
+      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = $lyrics | (.["3"].inputs.seed) = $seed' \
       "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
   else
-    jq --arg prompt "$PROMPT" \
-      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = ""' \
+    jq --arg prompt "$PROMPT" --argjson seed "$new_seed" \
+      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = "" | (.["3"].inputs.seed) = $seed' \
       "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
   fi
 
-  echo "Prompt mis à jour dans le fichier JSON temporaire $TMP_WORKFLOW" >&2
+  echo "Prompt, lyrics and seed updated in temporary JSON file $TMP_WORKFLOW" >&2
   
-  # Debug - show content of modified node
-  echo "Contenu du nœud modifié :" >&2
-  jq '.["14"].inputs' "$TMP_WORKFLOW" >&2
+  # Debug - show content of modified nodes
+  echo "Modified nodes content:" >&2
+  jq '.["14"].inputs, .["3"].inputs' "$TMP_WORKFLOW" >&2
 }
 
 # Fonction pour envoyer le workflow à l'API ComfyUI
