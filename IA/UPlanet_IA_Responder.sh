@@ -150,9 +150,12 @@ get_youtube_cookies() {
     local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
     local user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     
-    # Create cookie file
+    # Create cookie file with initial consent cookie
     echo "# Netscape HTTP Cookie File" > "$cookie_file"
     echo "# https://www.youtube.com" >> "$cookie_file"
+    echo ".youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+cb" >> "$cookie_file"
+    echo ".youtube.com	TRUE	/	TRUE	2147483647	VISITOR_INFO1_LIVE	$(openssl rand -hex 16)" >> "$cookie_file"
+    echo ".youtube.com	TRUE	/	TRUE	2147483647	YSC	$(openssl rand -hex 16)" >> "$cookie_file"
     
     # Get initial cookies with additional headers
     curl -s -L \
@@ -169,10 +172,11 @@ get_youtube_cookies() {
         -H "Sec-Fetch-User: ?1" \
         -H "Pragma: no-cache" \
         -H "Cache-Control: no-cache" \
+        -b "$cookie_file" \
         -c "$cookie_file" \
         "https://www.youtube.com" > /dev/null
 
-    # Try to get consent cookie
+    # Try to get additional cookies from consent page
     curl -s -L \
         -A "$user_agent" \
         -H "Accept: */*" \
@@ -189,6 +193,11 @@ get_youtube_cookies() {
         -b "$cookie_file" \
         -c "$cookie_file" \
         "https://consent.youtube.com/m?continue=https%3A%2F%2Fwww.youtube.com&gl=US&m=0&pc=yt&uxe=23983172&hl=en&src=1" > /dev/null
+
+    # Add additional required cookies
+    echo ".youtube.com	TRUE	/	TRUE	2147483647	LOGIN_INFO	$(openssl rand -hex 32)" >> "$cookie_file"
+    echo ".youtube.com	TRUE	/	TRUE	2147483647	GPS	1" >> "$cookie_file"
+    echo ".youtube.com	TRUE	/	TRUE	2147483647	PREF	f4=4000000&tz=Europe.Paris" >> "$cookie_file"
     
     # Check if we got valid cookies
     if grep -q "CONSENT" "$cookie_file"; then
