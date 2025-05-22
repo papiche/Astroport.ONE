@@ -152,14 +152,14 @@ monitor_progress() {
     # Check if running or queued
     if echo "$queue_response" | jq -e --arg id "$prompt_id" '.running[$id] or .pending[$id]' > /dev/null 2>&1; then
       echo "Vidéo en cours de génération ou en attente..." >&2
-      sleep 2
-      attempts=$((attempts + 2))
+      sleep 9
+      attempts=$((attempts + 9))
       continue
     fi
     
     # If not in queue or history yet, wait a bit and check again
-    sleep 2
-    attempts=$((attempts + 2))
+    sleep 9
+    attempts=$((attempts + 9))
   done
 
   echo "Erreur: Timeout lors de la génération de vidéo par ComfyUI." >&2
@@ -200,32 +200,41 @@ get_video_result() {
     return 1
   fi
   
-  # Get the video filename and fullpath
+  # Get the video filename and subfolder
   local video_filename
-  local video_fullpath
+  local video_subfolder
   video_filename=$(echo "$video_node_outputs" | jq -r '.[0].filename')
-  video_fullpath=$(echo "$video_node_outputs" | jq -r '.[0].fullpath')
+  video_subfolder=$(echo "$video_node_outputs" | jq -r '.[0].subfolder')
   
-  if [ -z "$video_filename" ] || [ "$video_filename" = "null" ] || [ -z "$video_fullpath" ] || [ "$video_fullpath" = "null" ]; then
+  if [ -z "$video_filename" ] || [ "$video_filename" = "null" ]; then
     echo "Erreur: Informations de fichier non trouvées dans la sortie du nœud VHS_VideoCombine" >&2
     return 1
   fi
 
   echo "Nom du fichier vidéo : $video_filename" >&2
-  echo "Chemin complet : $video_fullpath" >&2
+  
+  # Build proper URL
+  local video_url
+  if [ -z "$video_subfolder" ] || [ "$video_subfolder" = "null" ] || [ "$video_subfolder" = "" ]; then
+    video_url="$COMFYUI_URL/view?filename=$video_filename"
+  else
+    video_url="$COMFYUI_URL/view?filename=$video_subfolder/$video_filename"
+  fi
+  
+  echo "URL de la vidéo : $video_url" >&2
 
-  # Copier le fichier depuis son emplacement
-  echo "Copie de la vidéo..." >&2
-  cp "$video_fullpath" "$TMP_VIDEO"
+  # Télécharger la vidéo depuis le serveur ComfyUI
+  echo "Téléchargement de la vidéo..." >&2
+  curl -s -o "$TMP_VIDEO" "$video_url"
   if [ $? -ne 0 ]; then
-    echo "Erreur lors de la copie de la vidéo" >&2
+    echo "Erreur lors du téléchargement de la vidéo" >&2
     return 1
   fi
-  echo "Vidéo copiée dans $TMP_VIDEO" >&2
+  echo "Vidéo sauvegardée dans $TMP_VIDEO" >&2
 
-  # Vérifier que la vidéo a été correctement copiée
+  # Vérifier que la vidéo a été correctement téléchargée
   if [ ! -s "$TMP_VIDEO" ]; then
-    echo "Erreur : la vidéo copiée est vide" >&2
+    echo "Erreur : la vidéo téléchargée est vide" >&2
     return 1
   fi
 
