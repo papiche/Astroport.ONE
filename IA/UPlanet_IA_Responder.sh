@@ -335,10 +335,16 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
                 # Ensure ComfyUI is available
                 $MY_PATH/comfyui_image_this.sh
-                # Generate image
+                # Generate image and measure time
+                start_time=$(date +%s.%N)
                 IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
+                end_time=$(date +%s.%N)
+                execution_time=$(echo "$end_time - $start_time" | bc)
                 if [ -n "$IMAGE_URL" ]; then
-                    KeyANSWER="$IMAGE_URL"
+                    # Get current timestamp
+                    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+                    # Format the response with description, timestamp and execution time
+                    KeyANSWER="🖼️ $TIMESTAMP (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
                 fi
