@@ -237,7 +237,7 @@ message_text=$(echo "$MESSAGE" | tr '\n' ' ')
 if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
     #######################################################################
     # Check for #reset tag to clear user memory
-    if [[ "$message_text" =~ \#reset\ ]]; then
+    if [[ "$message_text" =~ \#reset ]]; then
         memory_file="$HOME/.zen/strfry/uplanet_memory/pubkey/$PUBKEY.json"
         if [[ -f "$memory_file" ]]; then
             rm -f "$memory_file"
