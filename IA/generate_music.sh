@@ -296,11 +296,15 @@ get_audio_result() {
   # Convertir en MP3
   echo "Conversion en MP3..." >&2
   local mp3_file="${TMP_AUDIO%.flac}.mp3"
-  if ! ffmpeg -i "$TMP_AUDIO" -codec:a libmp3lame -qscale:a 2 "$mp3_file" 2>/dev/null; then
+  # Get duration of the audio file
+  local duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$TMP_AUDIO")
+  # Calculate fade out start time (2 seconds before the end)
+  local fade_start=$(echo "$duration - 2" | bc)
+  if ! ffmpeg -i "$TMP_AUDIO" -af "afade=t=out:st=${fade_start}:d=2" -codec:a libmp3lame -qscale:a 2 "$mp3_file" 2>/dev/null; then
     echo "Erreur lors de la conversion en MP3" >&2
     return 1
   fi
-  echo "Conversion en MP3 terminée" >&2
+  echo "Conversion en MP3 avec fade out terminée" >&2
 
   # Vérifier que le MP3 a été correctement créé
   if [ ! -s "$mp3_file" ]; then
