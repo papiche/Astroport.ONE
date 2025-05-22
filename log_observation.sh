@@ -7,8 +7,8 @@ tail -f ~/.zen/tmp/12345.log &
 tail -f ~/.zen/tmp/_12345.log &
 # relay.
 journalctl -fu strfry &
-tail -f ~/.zen/strfry/uplanet_messages.log &
-tail -f ~/.zen/strfry/plugin.log &
+tail -f ~/.zen/tmp/uplanet_messages.log &
+tail -f ~/.zen/tmp/strfry.log &
 ## u.
 journalctl -fu upassport &
 tail -f ~/.zen/UPassport/tmp/54321.log &

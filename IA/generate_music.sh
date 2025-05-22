@@ -234,7 +234,7 @@ get_audio_result() {
   # Build proper URL
   local audio_url
   if [ -z "$audio_subfolder" ] || [ "$audio_subfolder" = "null" ] || [ "$audio_subfolder" = "" ]; then
-    audio_url="$COMFYUI_URL/output/$audio_filename"
+    audio_url="$COMFYUI_URL/output/audio/$audio_filename"
   else
     audio_url="$COMFYUI_URL/output/$audio_subfolder/$audio_filename"
   fi
@@ -248,14 +248,22 @@ get_audio_result() {
     echo "Tentative avec l'URL alternative..." >&2
     # Essayer avec l'URL alternative
     if [ -z "$audio_subfolder" ] || [ "$audio_subfolder" = "null" ] || [ "$audio_subfolder" = "" ]; then
-      audio_url="$COMFYUI_URL/view?filename=$audio_filename"
+      audio_url="$COMFYUI_URL/view?filename=audio/$audio_filename"
     else
       audio_url="$COMFYUI_URL/view?filename=$audio_subfolder/$audio_filename"
     fi
     echo "URL alternative : $audio_url" >&2
     if ! curl -s -I "$audio_url" | grep -q "200 OK"; then
       echo "Erreur: L'URL alternative n'est pas non plus accessible" >&2
-      return 1
+      echo "Tentative avec l'URL finale..." >&2
+      # Dernière tentative avec le chemin complet
+      audio_url="$COMFYUI_URL/output/audio/$audio_filename"
+      echo "URL finale : $audio_url" >&2
+      if ! curl -s -I "$audio_url" | grep -q "200 OK"; then
+        echo "Erreur: Aucune URL n'est accessible" >&2
+        echo "Vérifiez que le fichier existe dans le dossier ComfyUI/output/audio/" >&2
+        return 1
+      fi
     fi
   fi
 
@@ -271,6 +279,8 @@ get_audio_result() {
   # Vérifier que l'audio a été correctement téléchargé
   if [ ! -s "$TMP_AUDIO" ]; then
     echo "Erreur : l'audio téléchargé est vide" >&2
+    echo "Vérifiez que le fichier existe dans le dossier ComfyUI/output/audio/" >&2
+    echo "Vous pouvez aussi essayer de le télécharger manuellement depuis : $audio_url" >&2
     return 1
   fi
 
@@ -278,6 +288,8 @@ get_audio_result() {
   echo "Vérification du type de fichier..." >&2
   if ! file "$TMP_AUDIO" | grep -q "FLAC audio"; then
     echo "Erreur : le fichier téléchargé n'est pas un fichier FLAC valide" >&2
+    echo "Type de fichier détecté :" >&2
+    file "$TMP_AUDIO" >&2
     return 1
   fi
 
