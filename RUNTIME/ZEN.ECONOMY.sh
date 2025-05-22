@@ -80,7 +80,7 @@ if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
     fi
 else
     echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet pay 1 G1 to NODE"
-    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:INIT"
+    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$IPFSNODEID:INIT"
 fi
 #######################################################################
 

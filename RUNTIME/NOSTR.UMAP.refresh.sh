@@ -49,8 +49,8 @@ do
     echo $hexline
     hex=$(cat $hexline)
     #~ echo $hex
-    LAT=$(echo $hexline | cut -d '_' -f 2)
-    LON=$(echo $hexline | cut -d '_' -f 3 | cut -d '/' -f 1)
+    LAT=$(makecoord $(echo $hexline | cut -d '_' -f 2))
+    LON=$(makecoord $(echo $hexline | cut -d '_' -f 3 | cut -d '/' -f 1))
     ## SECTOR BANK COORD
     SLAT="${LAT::-1}"
     SLON="${LON::-1}"
