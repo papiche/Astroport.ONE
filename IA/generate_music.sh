@@ -24,7 +24,7 @@ mkdir -p "$TMP_DIR"
 # Générer un identifiant unique pour cette exécution
 UNIQUE_ID=$(date +%s)_$(openssl rand -hex 4)
 TMP_WORKFLOW="$TMP_DIR/workflow_${UNIQUE_ID}.json"
-TMP_AUDIO="$TMP_DIR/audio_${UNIQUE_ID}.wav"
+TMP_AUDIO="$TMP_DIR/audio_${UNIQUE_ID}.flac"
 
 # Nettoyage des fichiers temporaires à la sortie
 cleanup() {
@@ -241,6 +241,13 @@ get_audio_result() {
   
   echo "URL de l'audio : $audio_url" >&2
 
+  # Vérifier que l'URL est accessible
+  echo "Vérification de l'accessibilité de l'URL..." >&2
+  if ! curl -s -I "$audio_url" | grep -q "200 OK"; then
+    echo "Erreur: L'URL de l'audio n'est pas accessible" >&2
+    return 1
+  fi
+
   # Télécharger l'audio depuis le serveur ComfyUI
   echo "Téléchargement de l'audio..." >&2
   curl -s -o "$TMP_AUDIO" "$audio_url"
@@ -253,6 +260,13 @@ get_audio_result() {
   # Vérifier que l'audio a été correctement téléchargé
   if [ ! -s "$TMP_AUDIO" ]; then
     echo "Erreur : l'audio téléchargé est vide" >&2
+    return 1
+  fi
+
+  # Vérifier le type de fichier
+  echo "Vérification du type de fichier..." >&2
+  if ! file "$TMP_AUDIO" | grep -q "FLAC audio"; then
+    echo "Erreur : le fichier téléchargé n'est pas un fichier FLAC valide" >&2
     return 1
   fi
 
