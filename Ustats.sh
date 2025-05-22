@@ -29,7 +29,7 @@ if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
     if [[ $CACHE_AGE -lt 10800 ]]; then  # 10800 seconds = 3 hours
         echo "Using cached data (age: ${CACHE_AGE}s)"
-        cat ~/.zen/tmp/${CACHE_FILE}
+        echo ~/.zen/tmp/${CACHE_FILE}
         exit 0
     else
         echo "Cache expired (age: ${CACHE_AGE}s), regenerating..."
