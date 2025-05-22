@@ -150,32 +150,49 @@ process_youtube() {
     local media_file=""
     local media_ipfs=""
 
-    # Obtenir le titre
+    # Obtenir le titre et la durée
     local line=""
     if [[ -n "$browser" ]]; then
-        line="$(yt-dlp $browser --print "%(id)s&%(title)s" "$url" 2>/dev/null)"
+        line="$(yt-dlp $browser --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
         if [[ $? -ne 0 ]]; then
             log "Warning: Failed to get video info with browser cookies, trying without"
-            line="$(yt-dlp --print "%(id)s&%(title)s" "$url" 2>/dev/null)"
+            line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
         fi
     else
-        line="$(yt-dlp --print "%(id)s&%(title)s" "$url" 2>/dev/null)"
+        line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
     fi
 
     local yid=$(echo "$line" | cut -d '&' -f 1)
-    local media_title=$(echo "$line" | cut -d '&' -f 2- | detox --inline)
+    local media_title=$(echo "$line" | cut -d '&' -f 2- | sed 's/&[0-9]*$//' | detox --inline)
+    local duration=$(echo "$line" | grep -o '[0-9]*$')
     [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
+
+    # Vérifier la durée selon le type
+    case "$media_type" in
+        mp3)
+            if [ "$duration" -gt 3600 ]; then
+                log "Error: Audio duration exceeds 1 hour limit"
+                return 1
+            fi
+            ;;
+        mp4)
+            if [ "$duration" -gt 900 ]; then
+                log "Error: Video duration exceeds 15 minutes limit"
+                return 1
+            fi
+            ;;
+    esac
 
     # Télécharger selon le type
     case "$media_type" in
         mp3)
             log "Downloading and converting to MP3..."
-            yt-dlp $browser -x --audio-format mp3 --no-mtime --embed-thumbnail --add-metadata \
+            yt-dlp $browser -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 -o "${temp_dir}/${media_title}.%(ext)s" "$url"
             ;;
         mp4)
-            log "Downloading and converting to MP4..."
-            yt-dlp $browser -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
+            log "Downloading and converting to MP4 (720p max)..."
+            yt-dlp $browser -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
                 -o "${temp_dir}/${media_title}.%(ext)s" "$url"
             ;;
@@ -257,7 +274,8 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         if [[ -f "$memory_file" ]]; then
             rm -f "$memory_file"
             echo "Memory reset for PUBKEY: $PUBKEY"
-            KeyANSWER="Bonjour, je suis ASTROBOT votre assistant personnel IA programmable, je peux intervenir dans vos messages en utlisant les tags #search pour faire une recherche sur internet, #image pour générer une image, #mem pour afficher mon histoire de conversation, #reset pour reinitialiser ma mémoire."
+            KeyANSWER="Bonjour, je suis ASTROBOT votre assistant personnel IA programmable,\
+             Faites appel à moi en utlisant le tag \"BRO\" ou \"BOT\" suivi de votre question et des tags #search pour lancer une recherche sur internet, #image pour générer une image, #music pour générer une musique, #parole pour ajouter des paroles, #mem pour afficher notre conversation, #reset pour reinitialiser la mémoire."
         else
             echo "No memory file found for PUBKEY: $PUBKEY"
             KeyANSWER="Pas de mémoire existante trouvée."
@@ -349,6 +367,36 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     KeyANSWER="$MUSIC_URL"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
+                fi
+                ################################################"
+            elif [[ "$message_text" =~ \#youtube ]]; then
+                ################################################"
+                # Extract YouTube URL from message
+                youtube_url=$(echo "$message_text" | grep -oE 'http[s]?://(www\.)?(youtube\.com|youtu\.be)/[^ ]+')
+                if [ -z "$youtube_url" ]; then
+                    KeyANSWER="Désolé, je n'ai pas trouvé d'URL YouTube valide dans votre message."
+                else
+                    # Create temporary directory
+                    temp_dir="$HOME/.zen/tmp/youtube_$(date +%s)"
+                    mkdir -p "$temp_dir"
+                    
+                    # Check if #mp3 tag is present
+                    if [[ "$message_text" =~ \#mp3 ]]; then
+                        echo "Téléchargement et conversion en MP3..." >&2
+                        media_url=$(process_youtube "$youtube_url" "mp3" "$temp_dir")
+                    else
+                        echo "Téléchargement en MP4 (720p max)..." >&2
+                        media_url=$(process_youtube "$youtube_url" "mp4" "$temp_dir")
+                    fi
+                    
+                    if [ -n "$media_url" ]; then
+                        KeyANSWER="$media_url"
+                    else
+                        KeyANSWER="Désolé, je n'ai pas pu télécharger la vidéo YouTube."
+                    fi
+                    
+                    # Cleanup
+                    rm -rf "$temp_dir"
                 fi
                 ################################################"
             else
