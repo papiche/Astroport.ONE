@@ -148,14 +148,47 @@ get_conversation_thread() {
 # Function to get YouTube cookies
 get_youtube_cookies() {
     local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
-    local user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    local user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     
     # Create cookie file
     echo "# Netscape HTTP Cookie File" > "$cookie_file"
     echo "# https://www.youtube.com" >> "$cookie_file"
     
-    # Get initial cookies
-    curl -s -L -A "$user_agent" -c "$cookie_file" "https://www.youtube.com" > /dev/null
+    # Get initial cookies with additional headers
+    curl -s -L \
+        -A "$user_agent" \
+        -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
+        -H "Accept-Language: en-US,en;q=0.5" \
+        -H "Accept-Encoding: gzip, deflate, br" \
+        -H "DNT: 1" \
+        -H "Connection: keep-alive" \
+        -H "Upgrade-Insecure-Requests: 1" \
+        -H "Sec-Fetch-Dest: document" \
+        -H "Sec-Fetch-Mode: navigate" \
+        -H "Sec-Fetch-Site: none" \
+        -H "Sec-Fetch-User: ?1" \
+        -H "Pragma: no-cache" \
+        -H "Cache-Control: no-cache" \
+        -c "$cookie_file" \
+        "https://www.youtube.com" > /dev/null
+
+    # Try to get consent cookie
+    curl -s -L \
+        -A "$user_agent" \
+        -H "Accept: */*" \
+        -H "Accept-Language: en-US,en;q=0.5" \
+        -H "Accept-Encoding: gzip, deflate, br" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -H "Origin: https://www.youtube.com" \
+        -H "DNT: 1" \
+        -H "Connection: keep-alive" \
+        -H "Referer: https://www.youtube.com/" \
+        -H "Sec-Fetch-Dest: empty" \
+        -H "Sec-Fetch-Mode: cors" \
+        -H "Sec-Fetch-Site: same-origin" \
+        -b "$cookie_file" \
+        -c "$cookie_file" \
+        "https://consent.youtube.com/m?continue=https%3A%2F%2Fwww.youtube.com&gl=US&m=0&pc=yt&uxe=23983172&hl=en&src=1" > /dev/null
     
     # Check if we got valid cookies
     if grep -q "CONSENT" "$cookie_file"; then
