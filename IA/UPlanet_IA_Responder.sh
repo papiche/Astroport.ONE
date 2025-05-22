@@ -344,7 +344,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     # Get current timestamp
                     TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
                     # Format the response with description, timestamp and execution time
-                    KeyANSWER="🖼️ $TIMESTAMP (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL"
+                    KeyANSWER=$(echo -e "🖼️ $TIMESTAMP (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL")
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
                 fi
