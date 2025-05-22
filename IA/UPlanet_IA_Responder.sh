@@ -334,7 +334,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
                 # Ensure ComfyUI is available
-                $MY_PATH/comfyui_image_this.sh
+                $MY_PATH/comfyui.me.sh
                 # Generate image and measure time
                 start_time=$(date +%s.%N)
                 IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
@@ -353,11 +353,11 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g' <<< "$message_text")
                 # Ensure ComfyUI is available
-                $MY_PATH/comfyui_image_this.sh
+                $MY_PATH/comfyui.me.sh
                 # Generate video using Text2VideoWan2.1 workflow
-                VIDEO_URL="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
-                if [ -n "$VIDEO_URL" ]; then
-                    KeyANSWER="$VIDEO_URL"
+                VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
+                if [ -n "$VIDEO_AI_RETURN" ]; then
+                    KeyANSWER="$VIDEO_AI_RETURN"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
                 fi
@@ -366,7 +366,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g' <<< "$message_text")
                 # Ensure ComfyUI is available
-                $MY_PATH/comfyui_image_this.sh
+                $MY_PATH/comfyui.me.sh
                 # Generate music using audio_ace_step_1_t2m workflow
                 MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
                 if [ -n "$MUSIC_URL" ]; then

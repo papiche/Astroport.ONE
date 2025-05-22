@@ -247,7 +247,8 @@ get_video_result() {
     # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
     local minutes=$((elapsed_time / 60))
     local seconds=$((elapsed_time % 60))
-    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_VIDEO") (Généré en ${minutes}m ${seconds}s)"
+    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+    echo -e "🎬 $TIMESTAMP (⏱️ ${minutes}m ${seconds}s)\n📝 Description: $PROMPT\n🔗 $myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_VIDEO")"
     return 0
   else
     echo "Erreur lors de l'ajout à IPFS" >&2

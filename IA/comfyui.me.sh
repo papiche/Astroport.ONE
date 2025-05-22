@@ -1,6 +1,6 @@
 #!/bin/bash
 # Dependencies : jq curl
-#### comfyui_image_this.sh : transform a prompt into an image usung comfyui
+#### comfyui.me.sh : transform a prompt into an image usung comfyui
 
 ## Check for local comfyui 8188 port open
 ## Else try to open ssh port forward tunnel (could be ipfs p2p if 2122 port is not opened)
