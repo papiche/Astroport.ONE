@@ -95,6 +95,11 @@ echo "  ANYURL: $ANYURL"
 echo "  KNAME: $KNAME"
 echo ""
 
+# Define log function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+}
+
 # Function to get an event by ID using strfry scan
 get_event_by_id() {
     local event_id="$1"
@@ -140,32 +145,56 @@ get_conversation_thread() {
     echo -e "$current_content"
 }
 
+# Function to get YouTube cookies
+get_youtube_cookies() {
+    local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
+    local user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    
+    # Create cookie file
+    echo "# Netscape HTTP Cookie File" > "$cookie_file"
+    echo "# https://www.youtube.com" >> "$cookie_file"
+    
+    # Get initial cookies
+    curl -s -L -A "$user_agent" -c "$cookie_file" "https://www.youtube.com" > /dev/null
+    
+    # Check if we got valid cookies
+    if grep -q "CONSENT" "$cookie_file"; then
+        echo "--cookies $cookie_file"
+    else
+        rm -f "$cookie_file"
+        echo ""
+    fi
+}
+
 # Fonction pour télécharger et traiter les médias
 process_youtube() {
     local url="$1"
     local media_type="$2"
     local temp_dir="$3"
-    local browser="$4"
+    local browser_cookies=""
 
     local media_file=""
     local media_ipfs=""
 
-    # Try to get cookies from common browsers
-    local cookie_file=""
+    # Try to get cookies from common browsers first
     for browser in chrome firefox chromium brave; do
-        cookie_file="$HOME/.config/$browser/Default/Cookies"
-        if [[ -f "$cookie_file" ]]; then
-            browser="--cookies-from-browser $browser"
+        if [[ -f "$HOME/.config/$browser/Default/Cookies" ]]; then
+            browser_cookies="--cookies-from-browser $browser"
             break
         fi
     done
 
+    # If no browser cookies found, try to get them with curl
+    if [[ -z "$browser_cookies" ]]; then
+        browser_cookies=$(get_youtube_cookies)
+    fi
+
     # Obtenir le titre et la durée
     local line=""
-    if [[ -n "$browser" ]]; then
-        line="$(yt-dlp $browser --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
+    if [[ -n "$browser_cookies" ]]; then
+        line="$(yt-dlp $browser_cookies --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
         if [[ $? -ne 0 ]]; then
-            log "Warning: Failed to get video info with browser cookies, trying without"
+            echo "Warning: Failed to get video info with cookies, trying without"
             line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
         fi
     else
@@ -178,31 +207,33 @@ process_youtube() {
     [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
 
     # Vérifier la durée selon le type
-    case "$media_type" in
-        mp3)
-            if [ "$duration" -gt 3600 ]; then
-                log "Error: Audio duration exceeds 1 hour limit"
-                return 1
-            fi
-            ;;
-        mp4)
-            if [ "$duration" -gt 900 ]; then
-                log "Error: Video duration exceeds 15 minutes limit"
-                return 1
-            fi
-            ;;
-    esac
+    if [[ -n "$duration" ]]; then
+        case "$media_type" in
+            mp3)
+                if [ "$duration" -gt 3600 ]; then
+                    echo "Error: Audio duration exceeds 1 hour limit"
+                    return 1
+                fi
+                ;;
+            mp4)
+                if [ "$duration" -gt 900 ]; then
+                    echo "Error: Video duration exceeds 15 minutes limit"
+                    return 1
+                fi
+                ;;
+        esac
+    fi
 
     # Télécharger selon le type
     case "$media_type" in
         mp3)
-            log "Downloading and converting to MP3..."
-            yt-dlp $browser -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            echo "Downloading and converting to MP3..."
+            yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 -o "${temp_dir}/${media_title}.%(ext)s" "$url"
             ;;
         mp4)
-            log "Downloading and converting to MP4 (720p max)..."
-            yt-dlp $browser -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
+            echo "Downloading and converting to MP4 (720p max)..."
+            yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
                 -o "${temp_dir}/${media_title}.%(ext)s" "$url"
             ;;
@@ -218,6 +249,9 @@ process_youtube() {
             echo "$myIPFS/ipfs/$media_ipfs/$media_title.$media_type"
         fi
     fi
+
+    # Cleanup cookie file if it exists
+    [[ -f "$HOME/.zen/tmp/youtube_cookies.txt" ]] && rm -f "$HOME/.zen/tmp/youtube_cookies.txt"
 }
 
 ## Getting KNAME default localisation
