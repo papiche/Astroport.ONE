@@ -234,9 +234,9 @@ get_audio_result() {
   # Build proper URL
   local audio_url
   if [ -z "$audio_subfolder" ] || [ "$audio_subfolder" = "null" ] || [ "$audio_subfolder" = "" ]; then
-    audio_url="$COMFYUI_URL/view?filename=$audio_filename"
+    audio_url="$COMFYUI_URL/output/$audio_filename"
   else
-    audio_url="$COMFYUI_URL/view?filename=$audio_subfolder/$audio_filename"
+    audio_url="$COMFYUI_URL/output/$audio_subfolder/$audio_filename"
   fi
   
   echo "URL de l'audio : $audio_url" >&2
@@ -245,7 +245,18 @@ get_audio_result() {
   echo "Vérification de l'accessibilité de l'URL..." >&2
   if ! curl -s -I "$audio_url" | grep -q "200 OK"; then
     echo "Erreur: L'URL de l'audio n'est pas accessible" >&2
-    return 1
+    echo "Tentative avec l'URL alternative..." >&2
+    # Essayer avec l'URL alternative
+    if [ -z "$audio_subfolder" ] || [ "$audio_subfolder" = "null" ] || [ "$audio_subfolder" = "" ]; then
+      audio_url="$COMFYUI_URL/view?filename=$audio_filename"
+    else
+      audio_url="$COMFYUI_URL/view?filename=$audio_subfolder/$audio_filename"
+    fi
+    echo "URL alternative : $audio_url" >&2
+    if ! curl -s -I "$audio_url" | grep -q "200 OK"; then
+      echo "Erreur: L'URL alternative n'est pas non plus accessible" >&2
+      return 1
+    fi
   fi
 
   # Télécharger l'audio depuis le serveur ComfyUI

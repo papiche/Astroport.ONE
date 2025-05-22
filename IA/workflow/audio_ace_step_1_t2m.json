@@ -33,7 +33,7 @@
     "inputs": {
       "tags": "funk, pop, soul, rock, melodic, guitar, drums, bass, keyboard, percussion, 105 BPM, energetic, upbeat, groovy, vibrant, dynamic",
       "lyrics": "[Verse]\nI don't care about the view\n'Cause I exist for me and you\nI live my whole life in this planter\nI can't find my car so just call me the\nHorny gardener\n\n[Verse 2]\nMayflies land on me and tell me they just moved to town\nRemind me of my cousin Dottie she could put five hundred seeds down\nUsed to have a little guy sit beside me but he died in '22\nHmm I think that I was that little guy\nWhoa Tongue slip it wasn't mutual\n\n[Chorus]\nSticky green time in the flowery bob\nMy top shelf's looking good enough to chew\nRight now every fly in the town is talking to me and buzzing too\nDaisy Daisy can you come outside to play or else\nI'll put a garden stake through you\n\n[Verse 3]\nAll the buzzers lockin' up their stems and suckin' up their cuticles\nShe breathes my air I got her light I'm like her cute little cubical\nSome caring soul in my seat might say I'm rotting away it's pitiful\nBut she's the reason I go on and on and every single root'll crawl\n\n[Chorus]\nSticky green time in the flowery bob\nMy top shelf's looking good enough to chew\nRight now every fly in the town is talking to me and buzzing too\nDaisy Daisy can you come outside to play or else\nI'll put a garden stake through you\nOh my pot\nDon't scrape\nOh no\n\n[Verse 4]\nAh hah ahhah ahhah oohhh\nAh ahhahhahhah oh Hah\nOhhh oooh Oooh ohhh\nAh hhah Oh",
-      "lyrics_strength": 1,
+      "lyrics_strength": 1.0000000000000002,
       "clip": [
         "40",
         1
@@ -72,7 +72,7 @@
   },
   "19": {
     "inputs": {
-      "filename_prefix": "audio/ComfyUI",
+      "filename_prefix": "Music",
       "audioUI": "",
       "audio": [
         "18",
