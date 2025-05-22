@@ -12,6 +12,21 @@ ME="${0##*/}"
 
 EMAIL="$1"
 
+# Si aucun email n'est fourni, lister tous les emails trouvés
+if [ -z "$EMAIL" ]; then
+    echo "Listing all emails found in sources:"
+    echo "LOCAL _____________________________"
+    find ${HOME}/.zen/game/nostr -maxdepth 1 -type d -name "*@*" -printf "%f " 2>/dev/null
+    echo
+    echo "CACHE _____________________________"
+    find ${HOME}/.zen/tmp/${IPFSNODEID}/TW -maxdepth 1 -type d -name "*@*" -printf "%f " 2>/dev/null
+    echo
+    echo "SWARM _____________________________"
+    find ${HOME}/.zen/tmp/swarm/*/TW -maxdepth 1 -type d -name "*@*" -printf "%f " 2>/dev/null
+    echo
+    exit 0
+fi
+
 if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     HEXGATE=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/HEX 2>/dev/null) \

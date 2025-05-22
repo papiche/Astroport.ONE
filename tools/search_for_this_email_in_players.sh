@@ -14,6 +14,21 @@ EMAIL="$1"
 MOATS="$2"
 [[ -z $MOATS ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+# Si aucun email n'est fourni, lister tous les emails trouvés
+if [ -z "$EMAIL" ]; then
+    echo "Listing all emails found in sources:"
+    echo "LOCAL _____________________________"
+    find ${HOME}/.zen/game/players -maxdepth 1 -type d -name "*@*" -exec test -f {}/ipfs/moa/index.html \; -printf "%f " 2>/dev/null
+    echo
+    echo "CACHE _____________________________"
+    find ${HOME}/.zen/tmp/${IPFSNODEID}/TW -maxdepth 1 -type d -name "*@*" -exec test -f {}/index.html \; -printf "%f " 2>/dev/null
+    echo
+    echo "SWARM _____________________________"
+    find ${HOME}/.zen/tmp/swarm/*/TW -maxdepth 1 -type d -name "*@*" -exec test -f {}/index.html \; -printf "%f " 2>/dev/null
+    echo
+    exit 0
+fi
+
 # Cache configuration
 CACHE_DIR="${HOME}/.zen/tmp/players_cache"
 CACHE_FILE="${CACHE_DIR}/${EMAIL}.ustats"
