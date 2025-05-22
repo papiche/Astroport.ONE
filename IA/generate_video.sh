@@ -121,11 +121,19 @@ monitor_progress() {
   local history_url="$COMFYUI_URL/history"
   local max_attempts=300  # 5 minutes maximum d'attente (vidéo plus longue que l'image)
   local attempts=0
+  local start_time=$(date +%s)
 
   echo "Surveillance de la progression avec l'ID : $prompt_id" >&2
 
   # Attendre que la vidéo soit générée
   while [ $attempts -lt $max_attempts ]; do
+    # Calculer et afficher le temps écoulé
+    local current_time=$(date +%s)
+    local elapsed_time=$((current_time - start_time))
+    local minutes=$((elapsed_time / 60))
+    local seconds=$((elapsed_time % 60))
+    echo "En attente de traitement par ComfyUI... (${minutes}m ${seconds}s)" >&2
+
     # Vérifier d'abord dans l'historique si la vidéo est déjà terminée
     local history_response
     history_response=$(curl -s "$history_url")
@@ -133,7 +141,7 @@ monitor_progress() {
     # Check if prompt_id exists in history
     if echo "$history_response" | jq -e --arg id "$prompt_id" '.[$id]' > /dev/null 2>&1; then
       echo "Vidéo trouvée dans l'historique de ComfyUI!" >&2
-      get_video_result "$prompt_id"
+      get_video_result "$prompt_id" "$elapsed_time"
       return $?
     fi
     
@@ -150,7 +158,6 @@ monitor_progress() {
     fi
     
     # If not in queue or history yet, wait a bit and check again
-    echo "En attente de traitement par ComfyUI..." >&2
     sleep 2
     attempts=$((attempts + 2))
   done
@@ -162,6 +169,7 @@ monitor_progress() {
 # Fonction pour récupérer et traiter la vidéo générée
 get_video_result() {
   local prompt_id="$1"
+  local elapsed_time="$2"
   local history_url="$COMFYUI_URL/history"
 
   echo "Récupération de l'historique..." >&2
@@ -176,6 +184,10 @@ get_video_result() {
     echo "Erreur: Données de prompt non trouvées dans l'historique" >&2
     return 1
   fi
+
+  # Debug: Afficher la structure complète des sorties
+  echo "Structure complète des sorties :" >&2
+  echo "$prompt_data" | jq '.outputs' >&2
   
   # Find the VideoCombine node (should be node 49)
   local video_node_outputs
@@ -185,10 +197,37 @@ get_video_result() {
     # Try alternative output structure
     video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".videos')
     if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-      echo "Erreur: Sorties du nœud VHS_VideoCombine introuvables" >&2
-      echo "Contenu du prompt_data pour debug:" >&2
+      # Try to find any output in node 49
+      echo "Tentative de trouver toute sortie dans le nœud 49 :" >&2
       echo "$prompt_data" | jq '.outputs."49"' >&2
-      return 1
+      
+      # Try to find the video file in the ComfyUI output directory
+      local comfyui_output_dir="$MY_PATH/comfyui/output"
+      echo "Recherche de la vidéo dans le répertoire de sortie ComfyUI : $comfyui_output_dir" >&2
+      local video_file=$(find "$comfyui_output_dir" -type f -name "*.mp4" -mmin -5 | sort -r | head -n 1)
+      
+      if [ -n "$video_file" ]; then
+        echo "Vidéo trouvée dans le répertoire de sortie : $video_file" >&2
+        cp "$video_file" "$TMP_VIDEO"
+        
+        # Ajouter à IPFS
+        echo "Ajout de la vidéo à IPFS..." >&2
+        local ipfs_hash
+        ipfs_hash=$(ipfs add -wq "$TMP_VIDEO" 2>/dev/null | tail -n 1)
+        if [ -n "$ipfs_hash" ]; then
+          echo "Vidéo ajoutée à IPFS avec le hash : $ipfs_hash" >&2
+          # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
+          local minutes=$((elapsed_time / 60))
+          local seconds=$((elapsed_time % 60))
+          echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_VIDEO") (Généré en ${minutes}m ${seconds}s)"
+          return 0
+        fi
+      else
+        echo "Erreur: Sorties du nœud VHS_VideoCombine introuvables et aucune vidéo récente trouvée" >&2
+        echo "Contenu du prompt_data pour debug:" >&2
+        echo "$prompt_data" | jq '.outputs."49"' >&2
+        return 1
+      fi
     fi
   fi
   
@@ -237,8 +276,10 @@ get_video_result() {
   ipfs_hash=$(ipfs add -wq "$TMP_VIDEO" 2>/dev/null | tail -n 1)
   if [ -n "$ipfs_hash" ]; then
     echo "Vidéo ajoutée à IPFS avec le hash : $ipfs_hash" >&2
-    # Seule l'URL IPFS est envoyée à stdout
-    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_VIDEO")"
+    # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
+    local minutes=$((elapsed_time / 60))
+    local seconds=$((elapsed_time % 60))
+    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_VIDEO") (Généré en ${minutes}m ${seconds}s)"
     return 0
   else
     echo "Erreur lors de l'ajout à IPFS" >&2
