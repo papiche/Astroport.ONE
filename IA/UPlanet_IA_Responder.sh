@@ -35,7 +35,11 @@ exec 2>&1 >> ~/.zen/tmp/IA.log
 source ~/.zen/Astroport.ONE/tools/my.sh ## finding UPLANETNAME
 
 ## Maintain Ollama : lsof -i :11434
-$MY_PATH/ollama.me.sh
+if ! $MY_PATH/ollama.me.sh; then
+    echo "Error: Failed to maintain Ollama connection" >&2
+    exit 1
+fi
+
 
 # --- Help function ---
 print_help() {
@@ -137,7 +141,7 @@ get_conversation_thread() {
 }
 
 # Fonction pour télécharger et traiter les médias
-process_media() {
+process_youtube() {
     local url="$1"
     local media_type="$2"
     local temp_dir="$3"
@@ -206,10 +210,19 @@ if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ -z $LON ]] && LON="0.00"
 fi
 
-## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
 UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
+## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
 [[ $PUBKEY == $UMAPHEX ]] && exit 0
+
+## UMAP FOLLOW NOSTR CARD
+if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    #######################################################################
+    # UMAP FOLLOW PUBKEY -> Used nightly to create Journal "NOSTR.UMAP.refresh.sh"
+    ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY" 2>/dev/null
+    #######################################################################
+fi
 
 ##################################################################""
 ## Inform Swarm cache (UPLANET.refresh.sh)
@@ -277,6 +290,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         echo "Looking at the image (using ollama + llava)..."
         DESC="IMAGE : $("$MY_PATH/describe_image.py" "$URL" --json | jq -r '.description')"
     fi
+    
     #######################################################################
     echo "Preparing question for IA..."
     if [[ -n $DESC ]]; then
@@ -285,19 +299,10 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         QUESTION="$message_text ---"
     fi
 
-    ## UMAP FOLLOW NOSTR CARD
-    if [[ $KNAME != "CAPTAIN" ]]; then
-        UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-        #######################################################################
-        # UMAP FOLLOW PUBKEY -> Used nightly to create Journal "NOSTR.UMAP.refresh.sh"
-        ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY"
-        #######################################################################
-        #######################################################################
-    fi
 
     ##################################################### ASK IA
-    ## KNOWN KNAME => CAPTAIN REPLY
-    if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    ## KNOWN KNAME & CAPTAIN REPLY
+    if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ || $KNAME == "CAPTAIN" ]]; then
         # Only generate an answer if KeyANSWER is not already set (e.g., by #reset)
         if [[ -z "$KeyANSWER" ]]; then
             # remove #BRO #search tags from message_text
@@ -344,9 +349,8 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
 
         ## LOAD CAPTAIN KEY
         source ~/.zen/game/players/.current/secret.nostr
-
         # ADD TO CAPTAIN FOLLOW LIST
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY"
+        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
 
         ## PREFERED KNAME SELF RESPONSE
         [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] \

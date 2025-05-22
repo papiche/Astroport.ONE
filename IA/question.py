@@ -91,10 +91,19 @@ if __name__ == "__main__":
     # Construire le prompt final
     final_prompt = ""
     if context_text:
-        final_prompt += f"Here is some previous context:\n{context_text}\n\n"
+        final_prompt += f"Contexte :\n{context_text}\n\n"
     final_prompt += f"Question: {args.question}"
+    
+    # Log the final prompt to IA.log
+    with open(os.path.expanduser("~/.zen/tmp/IA.log"), "a") as log_file:
+        log_file.write(f"{final_prompt}\n")
 
+    # Get the answer from Ollama
     answer_output = get_ollama_answer(final_prompt, args.ollama_model_name)
+    
+    #Log the answer
+    with open(os.path.expanduser("~/.zen/tmp/IA.log"), "a") as log_file:
+        log_file.write(f"{answer_output}\n")
 
     if answer_output:
         if args.json:

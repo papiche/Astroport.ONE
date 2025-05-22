@@ -24,10 +24,10 @@ fi
 echo "=== $ME =============================== //$ULAT//$ULON"
 echo "Cache file: ~/.zen/tmp/${CACHE_FILE}"
 
-# Check if cache exists and is less than 1 hour old
+# Check if cache exists and is less than 3 hours old
 if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
-    if [[ $CACHE_AGE -lt 3600 ]]; then  # 3600 seconds = 1 hour
+    if [[ $CACHE_AGE -lt 10800 ]]; then  # 10800 seconds = 3 hours
         echo "Using cached data (age: ${CACHE_AGE}s)"
         cat ~/.zen/tmp/${CACHE_FILE}
         exit 0
