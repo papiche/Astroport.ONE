@@ -179,7 +179,7 @@ ln -f -s ~/.zen/Astroport.ONE/tools/keygen ~/.local/bin/keygen
 # NIP-101 strfry setup
 if [[ -d ~/.zen/strfry && -d ~/.zen/workspace/NIP-101 ]]; then
     ~/.zen/workspace/NIP-101/setup.sh
-    ~/.zen/workspace/NIP-101/systemd-setup.sh
+    ~/.zen/workspace/NIP-101/systemd.setup.sh
 fi
 
 echo "####################### YLEVEL ACTIVATION "
