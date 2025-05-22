@@ -268,6 +268,19 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             # search = perplexica
             KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
             ################################################"
+        elif [[ "$message_text" =~ \#image ]]; then
+            ################################################"
+            cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
+            # Ensure ComfyUI is available
+            $MY_PATH/comfyui_image_this.sh
+            # Generate image
+            IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
+            if [ -n "$IMAGE_URL" ]; then
+                KeyANSWER="Voici l'image générée : $IMAGE_URL"
+            else
+                KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
+            fi
+            ################################################"
         else
             ################################################"
             cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")

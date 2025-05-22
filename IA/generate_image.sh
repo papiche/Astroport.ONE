@@ -1,87 +1,10 @@
 #!/bin/bash
 # Dependencies : jq curl
-#### comfyui_image_this.sh : transform a prompt into an image usung comfyui
-
-## Check for local comfyui 8188 port open
-## Else try to open ssh port forward tunnel (could be ipfs p2p if 2122 port is not opened)
-## Will be extended to load balance GPU units to every RPi Stations
-## Spread IA to whole Swarm
-########################################################
-## TODO : Get in swarm GPU Station
-########################################################
-
-# Configuration
-COMFYUI_PORT=8188
-REMOTE_USER="frd"
-REMOTE_HOST="scorpio.copylaradio.com"
-REMOTE_PORT=2122
-SSH_OPTIONS="-fN -L $COMFYUI_PORT:127.0.0.1:$COMFYUI_PORT"
+#### generate_image.sh : transform a prompt into an image using comfyui
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-
-# Fonction pour vérifier si le port est ouvert
-check_port() {
-    if lsof -i :$COMFYUI_PORT >/dev/null; then
-        echo "Le port $COMFYUI_PORT est déjà ouvert."
-        return 0
-    else
-        echo "Le port $COMFYUI_PORT n'est pas ouvert."
-        return 1
-    fi
-}
-
-# Fonction pour établir le tunnel SSH
-establish_tunnel() {
-    echo "Tentative d'établissement du tunnel SSH..."
-    if ssh $SSH_OPTIONS $REMOTE_USER@$REMOTE_HOST -p $REMOTE_PORT; then
-        echo "Tunnel SSH établi avec succès."
-        return 0
-    else
-        echo "Échec de l'établissement du tunnel SSH."
-        return 1
-    fi
-}
-
-# Fonction pour fermer le tunnel SSH
-close_tunnel() {
-    echo "Fermeture du tunnel SSH..."
-    # Trouver le processus SSH utilisant le port local
-    PID=$(lsof -t -i :$COMFYUI_PORT)
-    if [ -z "$PID" ]; then
-        echo "Aucun tunnel SSH trouvé sur le port $COMFYUI_PORT."
-        return 1
-    else
-        kill $PID
-        if [ $? -eq 0 ]; then
-            echo "Tunnel SSH fermé avec succès."
-            return 0
-        else
-            echo "Échec de la fermeture du tunnel SSH."
-            return 1
-        fi
-    fi
-}
-
-# Vérification des arguments
-if [ "$1" == "OFF" ]; then
-    close_tunnel
-    exit $?
-fi
-
-# Vérification initiale du port
-if check_port; then
-    exit 0
-fi
-
-# Tentative d'établissement du tunnel SSH
-if establish_tunnel; then
-    exit 0
-else
-    echo "Veuillez vérifier les paramètres SSH et réessayer."
-    exit 1
-fi
 
 # Vérifie si le prompt est fourni en argument
 if [ -z "$1" ]; then
@@ -93,6 +16,21 @@ fi
 
 PROMPT="$1"
 
+# Créer le répertoire temporaire s'il n'existe pas
+TMP_DIR="$HOME/.zen/tmp"
+mkdir -p "$TMP_DIR"
+
+# Générer un identifiant unique pour cette exécution
+UNIQUE_ID=$(date +%s)_$(openssl rand -hex 4)
+TMP_WORKFLOW="$TMP_DIR/workflow_${UNIQUE_ID}.json"
+TMP_IMAGE="$TMP_DIR/image_${UNIQUE_ID}.png"
+
+# Nettoyage des fichiers temporaires à la sortie
+cleanup() {
+    rm -f "$TMP_WORKFLOW" "$TMP_IMAGE"
+}
+trap cleanup EXIT
+
 # Chemin vers le fichier JSON du workflow
 WORKFLOW_FILE="${MY_PATH}/workflow/FluxImage.json"
 
@@ -102,7 +40,6 @@ COMFYUI_URL="http://127.0.0.1:8188"
 # Extraction de l'adresse IP et du port depuis l'URL
 COMFYUI_HOST=$(echo "$COMFYUI_URL" | sed 's#http://##' | cut -d':' -f1)
 COMFYUI_PORT=$(echo "$COMFYUI_URL" | sed 's#http://##' | cut -d':' -f2)
-
 
 # Fonction pour vérifier si le port ComfyUI est ouvert
 check_comfyui_port() {
@@ -119,21 +56,18 @@ check_comfyui_port() {
 # Fonction pour mettre à jour le prompt dans le workflow JSON
 update_prompt() {
   echo "Chargement du workflow JSON : ${WORKFLOW_FILE}"
-  local prompt_json=$(jq -n --arg prompt "$PROMPT" '{text: $prompt}')
+  
+  # Créer un fichier temporaire avec le prompt remplacé
+  sed "s/_PROMPT_/$PROMPT/g" "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
 
-  # Mettre à jour le premier CLIPTextEncode
-  jq --argjson prompt_obj "$prompt_json" \
-     '.nodes[] | select(.type == "CLIPTextEncode") | .widgets_values[0] = $prompt_obj.text' \
-     "$WORKFLOW_FILE" > temp_workflow.json
-
-  echo "Prompt mis à jour dans le fichier JSON temporaire temp_workflow.json "
+  echo "Prompt mis à jour dans le fichier JSON temporaire $TMP_WORKFLOW"
 }
 
 # Fonction pour envoyer le workflow à l'API ComfyUI
 send_workflow() {
   echo "Envoi du workflow à l'API ComfyUI..."
   local data
-  data=$(jq -c . "temp_workflow.json")
+  data=$(jq -c . "$TMP_WORKFLOW")
   local response
   local http_code
   local curl_command
@@ -142,8 +76,6 @@ send_workflow() {
   response=$(eval "$curl_command" 2>&1)
   http_code=$(echo "$response" | grep -oP '^\d+' | tail -n 1)
   response=$(echo "$response" | grep -vP '^\d+$' )
-
-
 
   echo "HTTP code: $http_code"
   echo "API response: $response"
@@ -157,7 +89,7 @@ send_workflow() {
   echo "Workflow envoyé avec succès."
   local prompt_id
   prompt_id=$(echo "$response" | jq -r '.prompt_id')
-    echo "Prompt ID : $prompt_id"
+  echo "Prompt ID : $prompt_id"
   if [ -z "$prompt_id" ] ; then
     echo "Erreur : prompt_id non trouvé dans la réponse."
     echo "$response"
@@ -165,7 +97,6 @@ send_workflow() {
   fi
   monitor_progress "$prompt_id"
 }
-
 
 # Fonction pour surveiller la progression de la génération
 monitor_progress() {
@@ -221,9 +152,15 @@ get_image_result() {
     image_url="$COMFYUI_URL/view/$image_filename"
 
     echo "Image générée : $image_url"
-    local output_image="output.png"
-    curl -s -o "$output_image" "$image_url"
-     echo "Image saved in $output_image"
+    curl -s -o "$TMP_IMAGE" "$image_url"
+    echo "Image saved in $TMP_IMAGE"
+
+    # Ajouter à IPFS
+    local ipfs_hash
+    ipfs_hash=$(ipfs add -wq "$TMP_IMAGE" 2>/dev/null | tail -n 1)
+    if [ -n "$ipfs_hash" ]; then
+      echo "$myIPFS/ipfs/$ipfs_hash/$TMP_IMAGE"
+    fi
 
   else
       echo "Erreur lors de la récupération de l'historique."
@@ -238,5 +175,4 @@ if [ $? -ne 0 ]; then
 fi
 
 update_prompt
-send_workflow
-rm temp_workflow.json
+send_workflow 
