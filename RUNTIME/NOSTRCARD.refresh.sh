@@ -69,6 +69,64 @@ destroy_nostrcard() {
 
 }
 
+# Fonction pour générer une heure aléatoire de rafraîchissement
+get_random_refresh_time() {
+    local player="$1"
+    # Générer un nombre aléatoire de minutes entre 1 et 1440 (24h)
+    local random_minutes=$(( (RANDOM % 1440) + 1 ))
+    # Calculer l'heure et les minutes
+    local random_hour=$(( random_minutes / 60 ))
+    local random_minute=$(( random_minutes % 60 ))
+    # Formater l'heure avec des zéros si nécessaire
+    printf "%02d:%02d" $random_hour $random_minute
+}
+
+# Fonction pour initialiser un compte
+initialize_account() {
+    local player="$1"
+    local player_dir="${HOME}/.zen/game/nostr/${PLAYER}"
+    
+    # Créer le répertoire s'il n'existe pas
+    mkdir -p "$player_dir"
+    
+    # Initialiser l'heure de rafraîchissement
+    local random_time=$(get_random_refresh_time "${PLAYER}")
+    echo "$random_time" > "${player_dir}/.refresh_time"
+    
+    # Initialiser la date
+    echo "$TODATE" > "${player_dir}/.todate"
+    
+    # Initialiser le fichier BIRTHDATE si nécessaire
+    [[ ! -s "${player_dir}/TODATE" ]] && echo "$TODATE" > "${player_dir}/TODATE"
+    
+    echo "Account ${PLAYER} initialized with refresh time: ${random_time}"
+}
+
+# Fonction pour vérifier si le rafraîchissement est nécessaire
+should_refresh() {
+    local player="$1"
+    local player_dir="${HOME}/.zen/game/nostr/${PLAYER}"
+    local current_time=$(date '+%H:%M')
+    local refresh_time_file="${player_dir}/.refresh_time"
+    local last_refresh_file="${player_dir}/.todate"
+    
+    # Si le compte n'est pas initialisé, l'initialiser
+    if [[ ! -d "$player_dir" ]] || [[ ! -s "$refresh_time_file" ]]; then
+        initialize_account "${PLAYER}"
+        return 1
+    fi
+    
+    local refresh_time=$(cat "$refresh_time_file")
+    local last_refresh=$(cat "$last_refresh_file")
+    
+    # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée
+    if [[ "$last_refresh" != "$TODATE" ]] && [[ "$current_time" > "$refresh_time" ]]; then
+        return 0
+    fi
+    
+    return 1
+}
+
 ########################################################################
 # NOSTR Card is evolving depending PRIMAL RX source.
 # on UPLanet ORIGIN or UPlanet Zen.
@@ -90,10 +148,8 @@ for PLAYER in "${NOSTR[@]}"; do
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
 
-    [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null) == ${TODATE} ]] \
-        && [[ $(cat ${HOME}/.zen/game/nostr/${PLAYER}/TODATE) != ${TODATE} ]] \
-            && echo "BIRTHDAY=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)" \
-            && continue # already published today & not 1st day
+    # Vérifier si le rafraîchissement est nécessaire
+    should_refresh "${PLAYER}" || continue
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
@@ -278,7 +334,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
             else
                 echo "## PRIMAL existing : $G1PRIME"
-                ## SENDING MESSAGE TO N1 (P2P,P21,12P) RELATIONS in manifest.json
+                ## SENDING MESSAGE TO N1 (P2P: peer to peer, P21 : peer to one, 12P : one to peer ) RELATIONS in manifest.json
                 json_file="$HOME/.zen/game/nostr/${PLAYER}/PRIMAL/N1/manifest.json"
                 if [[ -s "$json_file" ]]; then
                     echo ">>> UPassport N1"
@@ -425,7 +481,6 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## MEMORIZE TODATE PUBLISH (reduce publish to once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
-
     echo "___________________________________________________"
     sleep 1
 
