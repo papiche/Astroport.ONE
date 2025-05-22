@@ -242,7 +242,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         if [[ -f "$memory_file" ]]; then
             rm -f "$memory_file"
             echo "Memory reset for PUBKEY: $PUBKEY"
-            KeyANSWER="Mémoire effacée. Conversation réinitialisée."
+            KeyANSWER="Bonjour, je suis ASTROBOT votre assistant personnel IA programmable, je peux intervenir dans vos messages en utlisant les tags #search pour faire une recherche sur internet, #image pour générer une image, #reset pour reinitialiser ma mémoire."
         else
             echo "No memory file found for PUBKEY: $PUBKEY"
             KeyANSWER="Pas de mémoire existante trouvée."
