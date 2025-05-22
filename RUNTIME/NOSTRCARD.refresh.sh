@@ -39,36 +39,6 @@ echo "## RUNNING NOSTRCARD.refresh.sh
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
-# Fonction pour détruire une NOSTRCARD
-destroy_nostrcard() {
-    local player="$1"
-    local g1pubnostr="$2"
-    local secnostr="$3"
-    local pubnostr="$4"
-    echo "DELETING ${player} NOSTRCARD : $pubnostr"
-
-    ## 1. REMOVE NOSTR PROFILE
-    $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com"
-
-    ## 2. REMOVE MULTIPASS
-    if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
-        echo "/PLAYER.unplug MULTIPASS"
-        ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
-    fi
-
-    ## SEND EMAIL with G1PUBNOSTR.QR
-    ${MY_PATH}/../tools/mailjet.sh "${player}" "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png" "... INVALID NOSTR Card ..."
-
-    ## REMOVE NOSTR IPNS VAULT key
-    ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
-    ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
-    ## Cleaning local cache
-    rm ~/.zen/tmp/coucou/${g1pubnostr-null}.*
-    rm -Rf ~/.zen/game/nostr/${player-null}
-    echo "NOSTRCARD for ${player} DELETED."
-
-}
-
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
     local player="$1"
@@ -234,7 +204,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 # UPlanet Zen : need Primo RX from UPlanet or WoT member
                 echo "UPlanet Zen : INVALID CARD"
                 [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
-                    && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+                    && ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
             else
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
@@ -272,7 +242,7 @@ for PLAYER in "${NOSTR[@]}"; do
             else
                 echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) !!"
                 [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
-                    && destroy_nostrcard "${PLAYER}" "${G1PUBNOSTR}" "${NSEC}" "${NPUB}"
+                    && ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
                 continue
             fi
         fi
@@ -372,7 +342,7 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "######################################## STEP 1"
         echo "## NOSTR PROFILE PRIMAL LINKING"
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-    YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+        YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
         ## EXTACT PRIMAL CESIUM PROFILE
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
         LAT=$(makecoord $zlat)
@@ -470,6 +440,13 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     ####################################### IPFS NAME PUBLISH
     ########################################################################
+    ## UPDATE NOSTR PROFILE METADATA
+    echo "Updating NOSTR profile metadata..."
+    ${MY_PATH}/../tools/nostr_update_profile.py "${NSEC}" "wss://relay.copylaradio.com" "$myRELAY" \
+        --g1pub "$g1pubnostr$PoH" \
+        --ipfs_gw "$myIPFS" \
+        --ipns_vault "/ipns/${NOSTRNS}"
+
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
