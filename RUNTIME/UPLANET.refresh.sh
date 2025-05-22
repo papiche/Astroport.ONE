@@ -109,6 +109,7 @@ for UMAP in ${unique_combined[@]}; do
     SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
     echo "${SECTORHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_SECTOR
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}
     echo "${SECTORHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/HEX
     echo "${SECTORG1PUB}" \
@@ -118,6 +119,7 @@ for UMAP in ${unique_combined[@]}; do
     REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
     echo "${REGIONHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_REGION
+    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}
     echo "${REGIONHEX}" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/HEX
     echo "${REGIONG1PUB}" \
@@ -212,7 +214,6 @@ else
 fi
 ####################################################
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
-rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ## TODO REMOVE : chain format re-updating
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$ZENNSEC" \

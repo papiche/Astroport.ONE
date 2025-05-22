@@ -103,7 +103,7 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
 
     ## FOLLOW EVERY NOSTR CARD
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
-    ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}"
+    ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}" 2>/dev/null
 fi
 ##################################################################################
 
