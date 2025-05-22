@@ -225,13 +225,13 @@ process_youtube() {
     # Obtenir le titre et la durée
     local line=""
     if [[ -n "$browser_cookies" ]]; then
-        line="$(yt-dlp $browser_cookies --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
+        line="$(yt-dlp $browser_cookies --print "%(id)s&%(title)s&%(duration)s" "$url" 2>> ~/.zen/tmp/IA.log)"
         if [[ $? -ne 0 ]]; then
             echo "Warning: Failed to get video info with cookies, trying without"
-            line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
+            line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>> ~/.zen/tmp/IA.log)"
         fi
     else
-        line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>/dev/null)"
+        line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>> ~/.zen/tmp/IA.log)"
     fi
 
     local yid=$(echo "$line" | cut -d '&' -f 1)
@@ -262,13 +262,13 @@ process_youtube() {
         mp3)
             echo "Downloading and converting to MP3..."
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                -o "${temp_dir}/${media_title}.%(ext)s" "$url"
+                -o "${temp_dir}/${media_title}.%(ext)s" "$url" 2>> ~/.zen/tmp/IA.log
             ;;
         mp4)
             echo "Downloading and converting to MP4 (720p max)..."
             yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
-                -o "${temp_dir}/${media_title}.%(ext)s" "$url"
+                -o "${temp_dir}/${media_title}.%(ext)s" "$url" 2>> ~/.zen/tmp/IA.log
             ;;
     esac
 
