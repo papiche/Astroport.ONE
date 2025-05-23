@@ -37,8 +37,8 @@ SOURCE_HEX=$(${MY_PATH}/nostr_nsec2npub2hex.py "$SOURCE_NSEC")
 
 # Query existing follow list using strfry scan
 cd $HOME/.zen/strfry
-STRFRY_OUTPUT=$(./strfry scan '{"kinds":[3],"authors":["'$SOURCE_HEX'"]}' | head -n 1)
-cd -
+STRFRY_OUTPUT=$(./strfry scan '{"kinds":[3],"authors":["'$SOURCE_HEX'"]}' 2>/dev/null | head -n 1)
+cd - 2>&1>/dev/null
 EXISTING_EVENT="$STRFRY_OUTPUT"
 
 # Initialize the new tags array

@@ -12,7 +12,7 @@ if [ -z "$NPUB_HEX" ]; then
 fi
 
 cd $HOME/.zen/strfry
-./strfry scan '{"kinds":[3],"authors":["'$NPUB_HEX'"]}' |
+./strfry scan '{"kinds":[3],"authors":["'$NPUB_HEX'"]}' 2>/dev/null |
         jq -r '.tags[] | select(.[0]=="p") | .[1]' | sort -u
 cd - 2>&1>/dev/null
 
