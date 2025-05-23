@@ -362,8 +362,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         if [[ -f "$memory_file" ]]; then
             rm -f "$memory_file"
             echo "Memory reset for PUBKEY: $PUBKEY"
-            KeyANSWER="Bonjour, je suis ASTROBOT votre assistant personnel IA programmable,\
-             Faites appel à moi en utlisant le tag \"BRO\" ou \"BOT\" suivi de votre question et des tags #search pour lancer une recherche sur internet, #image pour générer une image, #music pour générer une musique, #parole pour ajouter des paroles, #mem pour afficher notre conversation, #reset pour reinitialiser la mémoire."
+            KeyANSWER="Bonjour, je suis ASTROBOT votre assistant personnel IA programmable. Faites appel à moi en utlisant le tag \"BRO\" ou \"BOT\" suivi de votre question et des tags : #search pour lancer une recherche sur internet, #image pour générer une image, #music pour générer une musique, #parole pour ajouter des paroles, #mem pour afficher notre conversation, #reset pour reinitialiser la mémoire."
         else
             echo "No memory file found for PUBKEY: $PUBKEY"
             KeyANSWER="Pas de mémoire existante trouvée."
@@ -411,15 +410,16 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ || $KNAME == "CAPTAIN" ]]; then
         # Only generate an answer if KeyANSWER is not already set (e.g., by #reset)
         if [[ -z "$KeyANSWER" ]]; then
-            # remove #BRO #search tags from message_text
             if [[ "$message_text" =~ \#search ]]; then
                 ################################################"
+                # remove #BRO #search tags from message_text
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$message_text")
                 # search = perplexica
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
                 ################################################"
             elif [[ "$message_text" =~ \#image ]]; then
-                ################################################"
+                ################################################
+                # remove #BRO #image tags from message_text
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
                 # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
@@ -497,7 +497,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")
                 # default = ollama (using PUBKEY MEMORY)
-                KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: REPLY IN TEXT ONLY = DO NOT USE MARKDOWN STYLE !" --pubkey ${PUBKEY})"
+                KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: Do NOT use markdown ! Use emojis to make your message more readable." --pubkey ${PUBKEY})"
                 ################################################"
             fi
         fi

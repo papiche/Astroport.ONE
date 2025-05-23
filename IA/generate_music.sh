@@ -92,6 +92,9 @@ update_prompt() {
   # Debug - show content of modified nodes
   echo "Modified nodes content:" >&2
   jq '.["14"].inputs, .["3"].inputs' "$TMP_WORKFLOW" >&2
+
+  # Return lyrics for later use
+  echo "$lyrics"
 }
 
 # Fonction pour envoyer le workflow à l'API ComfyUI
@@ -169,7 +172,7 @@ monitor_progress() {
     # Check if prompt_id exists in history
     if echo "$history_response" | jq -e --arg id "$prompt_id" '.[$id]' > /dev/null 2>&1; then
       echo "Audio trouvé dans l'historique de ComfyUI!" >&2
-      get_audio_result "$prompt_id" "$elapsed_time"
+      get_audio_result "$prompt_id" "$elapsed_time" "$lyrics"
       return $?
     fi
     
@@ -198,6 +201,7 @@ monitor_progress() {
 get_audio_result() {
   local prompt_id="$1"
   local elapsed_time="$2"
+  local lyrics="$3"
   local history_url="$COMFYUI_URL/history"
 
   echo "Récupération de l'historique..." >&2
@@ -331,7 +335,19 @@ get_audio_result() {
     # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
     local minutes=$((elapsed_time / 60))
     local seconds=$((elapsed_time % 60))
-    echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$mp3_file") (Généré en ${minutes}m ${seconds}s)"
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    local execution_time=$((minutes * 60 + seconds))
+    local music_url="$myIPFS/ipfs/$ipfs_hash/$(basename "$mp3_file")"
+    
+    # Build the output with field values
+    local output="🎵 $timestamp (⏱️ ${execution_time} s)\n"
+    output+="🎼 Style : $PROMPT\n"
+    if [ -n "$lyrics" ]; then
+        output+="📜 Paroles : $lyrics\n"
+    fi
+    output+="🔗 $music_url"
+    
+    echo -e "$output"
     return 0
   else
     echo "Erreur lors de l'ajout à IPFS" >&2
@@ -347,8 +363,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Update the workflow with the user's prompt
-update_prompt
+# Update the workflow with the user's prompt and get lyrics
+lyrics=$(update_prompt)
 
 # Send the workflow to ComfyUI for processing
 send_workflow 
