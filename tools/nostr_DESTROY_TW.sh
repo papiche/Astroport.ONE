@@ -36,12 +36,6 @@ select_player_email() {
     player="${player_emails[$selection]}"
 }
 
-# Check if the correct number of parameters is provided
-if [ "$#" -ne 0 ]; then
-    echo "Error: This script does not accept parameters."
-    usage
-fi
-
 ################### PLAYER G1 PUB ###########################
 [[ -n "$1" ]] && player="$1"
 [[ -z $player ]] && select_player_email
