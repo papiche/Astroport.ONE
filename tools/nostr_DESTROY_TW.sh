@@ -79,8 +79,8 @@ OUTPUT_DIR="$HOME/.zen/tmp"
 
 echo ./strfry scan '{"authors": ["'$hex'"]}'
 cd ~/.zen/strfry
-./strfry scan '{"authors": ["'$hex'"]}' > "${OUTPUT_DIR}/nostr_export.json"
-cd -
+./strfry scan '{"authors": ["'$hex'"]}' 2> /dev/null > "${OUTPUT_DIR}/nostr_export.json"
+cd - > /dev/null 2>&1
 
 COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.json")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
