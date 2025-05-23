@@ -92,12 +92,14 @@ for UMAP in ${unique_combined[@]}; do
     echo "WRITE DATA ${UMAPPATH}"
     ######################################################################################
     ########################################################## COPY OPENSTREET MAPS
-    UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-    USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-    ## Capture screenshots of map views
-    echo "Capturing map screenshots..."
-    python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ${UMAPPATH}/Umap.jpg 900 900
-    python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ${UMAPPATH}/Usat.jpg 900 900
+    if [[ ! -s ${UMAPPATH}/Umap.jpg ]] || [[ ! -s ${UMAPPATH}/Usat.jpg ]]; then
+        ## Capture screenshots of map views
+        echo "Capturing map screenshots..."
+        UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+        USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ${UMAPPATH}/Umap.jpg 900 900
+        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ${UMAPPATH}/Usat.jpg 900 900
+    fi
     ######################################################################################
     ####################################################################################
     ## WRITE NOSTR HEX ADDRESS USED FOR strfry whitelisting

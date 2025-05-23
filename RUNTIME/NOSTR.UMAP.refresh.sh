@@ -86,7 +86,8 @@ do
 
         ## 2. Affichage du profil
         if [[ -n "$PROFILE" ]]; then
-            echo "👤 $PROFILE @$ami" >> ${UMAPPATH}/NOSTR_messages
+            profile=$($MY_PATH/../tools/nostr_hex2nprofile.py $ami 2>/dev/null)
+            echo "👤 $profile nostr:$profile" >> ${UMAPPATH}/NOSTR_messages
             TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
         else
             # filtrage (sans profil) TODO PROD
