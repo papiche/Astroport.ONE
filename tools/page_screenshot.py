@@ -5,18 +5,37 @@ from pyppeteer import launch
 async def take_screenshot(url, output_file, width, height):
     browser = await launch(
         headless=True,
-        args=['--disable-gpu']  # Add this line to disable GPU
+        args=['--disable-gpu', '--no-sandbox', '--disable-setuid-sandbox']
     )
     page = await browser.newPage()
 
     try:
-        await page.setViewport({'width': width, 'height': height})  # Set the viewport size
-        await page.goto(url, waitUntil='networkidle2')
-        await page.screenshot({'path': output_file})
+        # Set viewport size
+        await page.setViewport({'width': width, 'height': height})
+        
+        # Navigate to URL and wait for network idle
+        await page.goto(url, waitUntil='networkidle0')
+        
+        # Additional wait for map tiles to load
+        await page.waitForFunction('''
+            () => {
+                const tiles = document.querySelectorAll('.leaflet-tile-loaded');
+                return tiles.length > 0;
+            }
+        ''', timeout=10000)
+        
+        # Take screenshot
+        await page.screenshot({
+            'path': output_file,
+            'fullPage': False
+        })
+        
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error taking screenshot: {e}")
+        return False
     finally:
         await browser.close()
+    return True
 
 def main():
     if len(sys.argv) != 5:
@@ -32,9 +51,17 @@ def main():
     asyncio.set_event_loop(loop)
 
     try:
-        loop.run_until_complete(asyncio.wait_for(take_screenshot(url, output_file, width, height), timeout=30))
+        success = loop.run_until_complete(
+            asyncio.wait_for(
+                take_screenshot(url, output_file, width, height),
+                timeout=30
+            )
+        )
+        if not success:
+            sys.exit(1)
     except asyncio.TimeoutError:
-        print("Timeout: The operation took too long to complete and has been terminated.")
+        print("Timeout: The operation took too long to complete.")
+        sys.exit(1)
     finally:
         loop.close()
 
