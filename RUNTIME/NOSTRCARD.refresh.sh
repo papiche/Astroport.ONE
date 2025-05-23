@@ -106,7 +106,6 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 ## RUNING FOR ALL LOCAL NOSTR CARDS
 for PLAYER in "${NOSTR[@]}"; do
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
-    echo "\m/_(>_<)_\m/ ___________________ ${PLAYER} : ${HEX}"
 
     ## SWARM CACHE PUBLISHING
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then
@@ -117,6 +116,8 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
+
+    echo "\m/_(>_<)_\m/ ________ $(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time) ___ ${PLAYER} : ${HEX}"
 
     # Vérifier si le rafraîchissement est nécessaire
     should_refresh "${PLAYER}" || continue

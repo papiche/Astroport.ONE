@@ -15,19 +15,18 @@ ULON=$2
 DEG=$3
 
 # Create cache filename based on parameters
-if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then
+if [[ -n "$ULAT" && -n "$ULON" ]]; then
     CACHE_FILE="Ustats_${ULAT}_${ULON}_${DEG}.json"
 else
     CACHE_FILE="Ustats.json"
 fi
 
 echo "=== $ME =============================== //$ULAT//$ULON"
-echo "Cache file: ~/.zen/tmp/${CACHE_FILE}"
 
 # Check if cache exists and is less than 3 hours old
 if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
-    if [[ $CACHE_AGE -lt 10800 ]]; then  # 10800 seconds = 3 hours
+    if [[ $CACHE_AGE -lt 43200 ]]; then  # 43200 seconds = 12 hours
         echo "Using cached data (age: ${CACHE_AGE}s)"
         echo ~/.zen/tmp/${CACHE_FILE}
         exit 0
