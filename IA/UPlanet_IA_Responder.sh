@@ -497,7 +497,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")
                 # default = ollama (using PUBKEY MEMORY)
-                KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: Do NOT use markdown ! Use emojis to make your message more readable." --pubkey ${PUBKEY})"
+                KeyANSWER="$($MY_PATH/question.py "${cleaned_text} # NB: Do NOT use markdown ! Use emojis to make your message more readable. IMPORTANT: Use the same language as the message." --pubkey ${PUBKEY})"
                 ################################################"
             fi
         fi
