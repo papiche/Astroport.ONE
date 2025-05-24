@@ -31,6 +31,7 @@ JSON_PAYLOAD=$(cat <<EOF
   "optimizationMode": "balanced",
   "focusMode": "webSearch",
   "query": "$QUESTION",
+  "systemInstructions": "# INSTRUCTIONS: ## 1. Reply in the same language as the message. ## 2. Do NOT use any markdown : i.e. NO **bold** format ! ## 3. Use emojis to make your message more readable.",
   "stream": false
 }
 EOF
