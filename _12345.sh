@@ -390,8 +390,15 @@ while true; do
 
     fi
 
+    #######################################
+    ## ZEN ECONOMY
+    [[ -z $PAF ]] && PAF=56
+    [[ -z $NCARD ]] && NCARD=4
+    [[ -z $ZCARD ]] && ZCARD=15
+    BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
+
 NODE12345="{
-    \"version\" : \"3.0\",
+    \"version\" : \"3.1\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -413,7 +420,11 @@ NODE12345="{
     \"NODEHEX\" : \"${hex}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
     \"UPLANETG1\" : \"${UPLANETCOINS}\",
-    \"UPLANETZEN\" : \"${UPLANETZEN}\"
+    \"UPLANETZEN\" : \"${UPLANETZEN}\",
+    \"PAF\" : \"${PAF}\",
+    \"NCARD\" : \"${NCARD}\",
+    \"ZCARD\" : \"${ZCARD}\",
+    \"BILAN\" : \"${BILAN}\"
 }
 "
 
