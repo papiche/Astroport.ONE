@@ -15,7 +15,7 @@ COMFYUI_PORT=8188
 REMOTE_USER="frd"
 REMOTE_HOST="scorpio.copylaradio.com"
 REMOTE_PORT=2122
-SSH_OPTIONS="-fN -L $COMFYUI_PORT:127.0.0.1:$COMFYUI_PORT"
+SSH_OPTIONS="-fN -L 127.0.0.1:$COMFYUI_PORT:127.0.0.1:$COMFYUI_PORT"
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized

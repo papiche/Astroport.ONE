@@ -11,7 +11,7 @@ OLLAMA_PORT=11434
 REMOTE_USER="frd"
 REMOTE_HOST="scorpio.copylaradio.com"
 REMOTE_PORT=2122
-SSH_OPTIONS="-fN -L $OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
+SSH_OPTIONS="-fN -L 127.0.0.1:$OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
 
 # Fonction pour vérifier si le port est ouvert
 check_port() {
