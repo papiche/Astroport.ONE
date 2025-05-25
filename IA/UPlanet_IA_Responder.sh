@@ -411,6 +411,8 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         # Only generate an answer if KeyANSWER is not already set (e.g., by #reset)
         if [[ -z "$KeyANSWER" ]]; then
             if [[ "$message_text" =~ \#search ]]; then
+                # Ensure Perplexica is available
+                $MY_PATH/perplexica.me.sh
                 ################################################"
                 # remove #BRO #search tags from message_text
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$message_text")

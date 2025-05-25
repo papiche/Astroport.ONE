@@ -9,9 +9,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-## Activate Perplexica SSH Port Forwarding
-$MY_PATH/perplexica.me.sh 2>/dev/null
-# API endpoint (change port if needed) http://192.168.1.23:3001
+# API endpoint
 API_URL="http://localhost:3001/api/search"
 
 # Get the question from command line arguments
