@@ -447,7 +447,11 @@ for PLAYER in "${NOSTR[@]}"; do
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
     ${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 30 -j \
         > $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json
-        
+    [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json ]] \
+        && cat $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json | jq -rc '.[]' \
+             > $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json
+
+    if [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json ]]; then
     # Process each transaction
     while read LINE; do
         JSON=${LINE}
@@ -511,7 +515,10 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "GOOD NOSTR WALLET primal TX by $UPLANETG1PUB"
             echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
         fi
-    done < $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json
+        done < $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json
+    else
+        echo "NO STR WALLET HISTORY FOR $PLAYER"
+    fi
 
     ########################################################################
     ####################################### IPFS NAME PUBLISH
