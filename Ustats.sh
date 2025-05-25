@@ -220,8 +220,8 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         "GENERATION_TIME": $duration
     }')
     
-    #Print and format INLINE the JSON string.
-    echo "$final_json" | jq -rc '.' > ~/.zen/tmp/${CACHE_FILE}
+    # Print and format the JSON string with pretty printing
+    echo "$final_json" | jq '.' > ~/.zen/tmp/${CACHE_FILE}
 fi
 echo "$HOME/.zen/tmp/${CACHE_FILE}"
 exit 0
