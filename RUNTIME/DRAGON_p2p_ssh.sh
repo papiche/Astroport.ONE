@@ -96,11 +96,12 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
     "$NSEC" \
     "$YOUSER [♥️BOX Captain]" "$CAPTAING1PUB" \
     "UPlanet ${UPLANETG1PUB:0:8} -- $uSPOT/g1 [CopyLaRadio] Dragon WoT Member" \
-    "https://ipfs.copylaradio.com/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
-    "https://ipfs.copylaradio.com/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+    "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
+    "${myIPFS}/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
     "$CAPTAINEMAIL" "$myIPFS/ipns/copylaradio.com" "" "" "" "" \
-    "wss://relay.copylaradio.com" "$myRELAY" \
-    --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" --ipfs_gw "$myIPFS"
+    "$myRELAY" \
+    --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" \
+    --ipfs_gw "$myIPFS"
 
     ## FOLLOW EVERY NOSTR CARD
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
@@ -179,11 +180,11 @@ echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ## REMOTE ACCESS COMMAND FROM DRAGONS
 ############################################
 if [[ ! -z $(pgrep ollama) ]]; then
+    PORT=11434
     echo "Launching OLLAMA SHARE ACCESS /x/ollama-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
+        && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
-    PORT=11434
     echo '#!/bin/bash
     if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
         ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
@@ -209,11 +210,11 @@ fi
 ## REMOTE ACCESS COMMAND FROM DRAGONS
 ############################################
 if [[ ! -z $(lsof -i :8188 | grep LISTEN) ]]; then
+    PORT=8188
     echo "Launching comfyui SHARE ACCESS /x/comfyui-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/8188
+        && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
-    PORT=8188
     echo '#!/bin/bash
     if [[ ! $(ipfs p2p ls | grep x/comfyui-'${IPFSNODEID}') ]]; then
         ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
@@ -226,9 +227,37 @@ if [[ ! -z $(lsof -i :8188 | grep LISTEN) ]]; then
             echo "ipfs p2p close -p /x/comfyui-'${IPFSNODEID}'"
     fi
     ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
-    #~ cat ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_comfyui.sh | bash"
+
+fi
+
+
+############################################
+## PREPARE x_perplexica.sh
+## REMOTE ACCESS COMMAND FROM DRAGONS
+############################################
+if [[ ! -z $(lsof -i :3001 | grep LISTEN) ]]; then
+    PORT=3001
+
+    echo "Launching Perplexica SHARE ACCESS /x/perplexica-${IPFSNODEID}"
+    [[ ! $(ipfs p2p ls | grep "/x/perplexica-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/perplexica-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
+
+    echo '#!/bin/bash
+    if [[ ! $(ipfs p2p ls | grep x/perplexica-'${IPFSNODEID}') ]]; then
+        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+        [[ $? == 0 ]] \
+            && ipfs p2p forward /x/perplexica-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+            && echo "xdg-open http://127.0.0.1:'${PORT}'" \
+            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    else
+            echo "Tunnel /x/perplexica '${PORT}' already active..."
+            echo "ipfs p2p close -p /x/perplexica-'${IPFSNODEID}'"
+    fi
+    ' > ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_perplexica.sh | bash"
 
 fi
 
