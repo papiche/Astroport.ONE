@@ -63,14 +63,15 @@ if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
     fi
     [[ "$CURCOINS" != "null" ]] && echo "$CURCOINS" > "$COINSFILE"
     rm $HOME/.zen/tmp/backup.${G1PUB} 2>/dev/null
-    echo "$CURCOINS"
     ) &
+
     ## SEND OLD VALUE
     [[ "$CURCOINS" == "" ]] \
     && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
-    && cat $HOME/.zen/tmp/backup.${G1PUB}
+    && cat $HOME/.zen/tmp/backup.${G1PUB} \
+    || echo "$CURCOINS"
     exit 0
 fi
-#### tail -n 1 FUNCTION RESULT
+#### grab with tail -n 1 = FUNCTION RESULT
 echo $CURCOINS
 exit 0

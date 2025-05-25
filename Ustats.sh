@@ -22,6 +22,9 @@ else
 fi
 
 echo "=== $ME =============================== //$ULAT//$ULON"
+########################################
+# Get start time for generation duration
+GENERATION_START=$(date +%s)
 
 # Check if cache exists and is less than 12 hours old
 if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
@@ -162,23 +165,34 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         echo
     done
 
-
     #########################################################
     # search for other active ASTROPORTs in UPlanet swarm
     #########################################################
     echo " ## SEARCH ASTROPORTs in ~/.zen/tmp/swarm/*/12345.json"
-    MASTROPORT=($(ls -d ~/.zen/tmp/swarm/*/12345.json 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+    MASTROPORT=($(ls ~/.zen/tmp/swarm/*/12345.json 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
 
     echo "${#MASTROPORT[@]} ASTROPORT(S) : ${MASTROPORT[@]}"
     echo "==========================================================="
 
+    # Array to store SWARM data
+    swarm_array=()
+    for astroport in "${MASTROPORT[@]}"; do
+        # Get the directory containing the 12345.json file
+        astroport_dir=$(ls -d ~/.zen/tmp/swarm/*/12345.json | grep "$astroport" | xargs dirname)
+        echo "astroport_dir=$astroport_dir"
+        # Read the 12345.json file
+        if [[ -s "$astroport_dir/12345.json" ]]; then
+            echo "adding $astroport_dir/12345.json"
+            swarm_data=$(cat "$astroport_dir/12345.json")
+            swarm_array+=("$swarm_data")
+        fi
+    done
 
-
-
-    #Constructing JSON string using a more robust method:
+    # Constructing JSON string using a more robust method:
     tw_json_array=$(printf '%s,' "${tw_array[@]}"); tw_json_array="${tw_json_array%,}" #remove trailing comma
     nostr_json_array=$(printf '%s,' "${nostr_array[@]}"); nostr_json_array="${nostr_json_array%,}" #remove trailing comma
     umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
+    swarm_json_array=$(printf '%s,' "${swarm_array[@]}"); swarm_json_array="${swarm_json_array%,}" #remove trailing comma
 
     #######################################
     ## BILAN ZEN ECONOMY
@@ -191,11 +205,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     INCOME=$((nostrcount * NCARD + twcount * ZCARD))
     BILAN=$((INCOME - PAF))
 
-    ########################################
-    # Get start time for generation duration
-    GENERATION_START=$(date +%s)
-    
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
     
     # Calculate generation duration
     GENERATION_DURATION=$(($(date +%s) - GENERATION_START))

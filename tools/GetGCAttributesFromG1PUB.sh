@@ -53,7 +53,7 @@ fi
 ## SCAN GCHANGE +
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]; then
     ${MY_PATH}/timeout.sh -t 5 curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json
-    GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '.found')
+    GFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '.found' 2>/dev/null)
 
     if [[ ! $GFOUND || $GFOUND == "false" ]]; then
         echo "-- NO GCHANGE "
@@ -69,7 +69,7 @@ fi
 if [[ -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]; then
     [[ ! -s "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" ]] \
         && cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json \
-            | jq -r '._source.avatar._content' \
+            | jq -r '._source.avatar._content' 2>/dev/null \
             | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" 2>/dev/null
     [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png" | grep PNG) ]] \
         && rm "$HOME/.zen/tmp/coucou/${G1PUB}.gchange.avatar.png"
@@ -78,7 +78,7 @@ fi
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json ]]; then
 
     ${MY_PATH}/timeout.sh -t 5 curl -s ${myCESIUM}/user/profile/${G1PUB} > ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null
-    GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null | jq -r '.found')
+    GCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cesium.json 2>/dev/null | jq -r '.found' 2>/dev/null)
 
     if [[ ! $GCFOUND || $GCFOUND == "false" ]]; then
         echo "-- NO CESIUM"
@@ -95,14 +95,14 @@ fi
 if [[ -s ~/.zen/tmp/coucou/${G1PUB}.cesium.json ]]; then
     [[ ! -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]] \
         && cat ~/.zen/tmp/coucou/${G1PUB}.cesium.json \
-            | jq -r '._source.avatar._content' \
+            | jq -r '._source.avatar._content' 2>/dev/null \
             | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" 2>/dev/null
     [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png"
 fi
 
 ## CHECK IF GCHANGE IS LINKED TO "A DECLARED CESIUM"
 if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
-    CPLUS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '._source.pubkey')
+    CPLUS=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.gchange.json 2>/dev/null | jq -r '._source.pubkey' 2>/dev/null)
     echo "CPLUS=$CPLUS"
     ## SCAN GPUB CESIUM +
 
@@ -112,7 +112,7 @@ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
         echo "SCAN GPLUS CESIUM + ACCOUNT"
         ${MY_PATH}/timeout.sh -t 5 curl -s ${myCESIUM}/user/profile/${CPLUS} > ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json 2>/dev/null
 
-        CCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json | jq -r '.found')
+        CCFOUND=$(cat ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json | jq -r '.found' 2>/dev/null)
 
         if [[ $CCFOUND == "false" ]]; then
             echo "AUCUN CCPLUS : NO MEMBER LINK"
@@ -130,7 +130,7 @@ fi
 if [[ -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
     [[ ! -s "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" ]] \
         && cat ~/.zen/tmp/coucou/${G1PUB}.cplus.json \
-            | jq -r '._source.avatar._content' \
+            | jq -r '._source.avatar._content' 2>/dev/null \
             | base64 -d > "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" 2>/dev/null
     [[ ! $(file -b "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png" | grep PNG) ]] && rm "$HOME/.zen/tmp/coucou/${G1PUB}.cplus.avatar.png"
 fi
