@@ -447,74 +447,75 @@ for PLAYER in "${NOSTR[@]}"; do
     ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
     ${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 30 -j \
         > $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json
+    # Convert JSON to inline format
     [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json ]] \
         && cat $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json | jq -rc '.[]' \
              > $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json
 
     if [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json ]]; then
     # Process each transaction
-    while read LINE; do
-        JSON=${LINE}
-        TXIDATE=$(echo $JSON | jq -r .date)
-        TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
-        TXIAMOUNT=$(echo $JSON | jq -r .amount)
-        
-        # Skip if transaction is too old
-        lastTXdate=$(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check 2>/dev/null)
-        [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-        [[ $(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check) -ge $TXIDATE ]] && continue
-        
-        # Skip outgoing transactions
-        [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-            && echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check \
-            && continue
+        while read LINE; do
+            JSON=${LINE}
+            TXIDATE=$(echo $JSON | jq -r .date)
+            TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
+            TXIAMOUNT=$(echo $JSON | jq -r .amount)
             
-        # Check primal transaction
-        echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
-        if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
-            milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
-            g1prime=$(echo $milletxzero | jq -r .pubkey)
-            [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
-        fi
-        TXIPRIMAL=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null)
-        
-        # Verify if transaction is from a valid UPLANET initialized wallet
-        if [[ ${UPLANETG1PUB} != "${TXIPRIMAL}" ]]; then
-            echo "NOSTR WALLET INTRUSION ALERT for $PLAYER"
+            # Skip if transaction is too old
+            lastTXdate=$(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check 2>/dev/null)
+            [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/nostr/${PLAYER}/.nostr.check
+            [[ $(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check) -ge $TXIDATE ]] && continue
             
-            # Create alert message
-            LANG=$(cat ~/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
-            [[ -z $LANG ]] && LANG="en"
+            # Skip outgoing transactions
+            [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
+                && echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check \
+                && continue
+                
+            # Check primal transaction
+            echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
+            if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
+                milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
+                g1prime=$(echo $milletxzero | jq -r .pubkey)
+                [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
+            fi
+            TXIPRIMAL=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null)
             
-            # Use the appropriate template based on language
-            TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.${LANG}.html"
-            [[ ! -s "$TEMPLATE" ]] && TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.en.html"
-            
-            # Replace placeholders in template
-            sed -e "s/{PLAYER}/$PLAYER/g" \
-                -e "s/{UPLANETG1PUB}/${UPLANETG1PUB:0:8}/g" \
-                -e "s/{TXIAMOUNT}/$TXIAMOUNT/g" \
-                -e "s/{TXIPUBKEY}/$TXIPUBKEY/g" \
-                -e "s|{myIPFS}|$myIPFS|g" \
-                "$TEMPLATE" > ~/.zen/tmp/palpay.bro
-            
-            # Send alert
-            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "NOSTR WALLET ALERT"
+            # Verify if transaction is from a valid UPLANET initialized wallet
+            if [[ ${UPLANETG1PUB} != "${TXIPRIMAL}" ]]; then
+                echo "NOSTR WALLET INTRUSION ALERT for $PLAYER"
+                
+                # Create alert message
+                LANG=$(cat ~/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+                [[ -z $LANG ]] && LANG="en"
+                
+                # Use the appropriate template based on language
+                TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.${LANG}.html"
+                [[ ! -s "$TEMPLATE" ]] && TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.en.html"
+                
+                # Replace placeholders in template
+                sed -e "s/{PLAYER}/$PLAYER/g" \
+                    -e "s/{UPLANETG1PUB}/${UPLANETG1PUB:0:8}/g" \
+                    -e "s/{TXIAMOUNT}/$TXIAMOUNT/g" \
+                    -e "s/{TXIPUBKEY}/$TXIPUBKEY/g" \
+                    -e "s|{myIPFS}|$myIPFS|g" \
+                    "$TEMPLATE" > ~/.zen/tmp/palpay.bro
+                
+                # Send alert
+                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "MULTIPASS ALERT"
 
-            # Get DISCO from PLAYER
-            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
-                DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
-                IFS='=&' read -r s salt p pepper <<< "$DISCO"
-                # Create secret.dunikey from DISCO
-                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
-            fi 
-            # Refund the transaction
-            ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "NOSTR${G1PUBNOSTR:0:8}:INTRUSION"
-            [[ $? == 0 ]] && echo $TXIDATE > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-        else
-            echo "GOOD NOSTR WALLET primal TX by $UPLANETG1PUB"
-            echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-        fi
+                # Get DISCO from PLAYER
+                if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
+                    DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
+                    IFS='=&' read -r s salt p pepper <<< "$DISCO"
+                    # Create secret.dunikey from DISCO
+                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
+                fi 
+                # Refund the transaction
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "NOSTR${G1PUBNOSTR:0:8}:INTRUSION"
+                [[ $? == 0 ]] && echo $TXIDATE > ~/.zen/game/nostr/${PLAYER}/.nostr.check
+            else
+                echo "GOOD NOSTR WALLET primal TX by $UPLANETG1PUB"
+                echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
+            fi
         done < $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json
     else
         echo "NO STR WALLET HISTORY FOR $PLAYER"
