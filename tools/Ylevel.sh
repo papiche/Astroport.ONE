@@ -43,7 +43,7 @@ mkdir -p ~/.zen/game
 ## Convert SSH key into IPFS key (Node ID) & USER NEW SSH ASTROPORT KEY
 
 if [[ -s ~/.ssh/id_ed25519 ]]; then
-    echo ‎"(/.__.)/  $(cat ~/.ssh/id_ed25519.pub)  \(.__.\)"
+    echo "(/.__.)/  $(cat ~/.ssh/id_ed25519.pub)  \(.__.\)"
     if [[ -s ~/.zen/game/id_ssh.pub ]]; then
         echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
         echo "Astroport SSH Key Transmutation Already Done/"
