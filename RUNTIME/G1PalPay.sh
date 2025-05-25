@@ -119,12 +119,14 @@ if [[ ${UPLANETNAME} != "" ]]; then
 
                     echo "<h1>$PLAYER<h1>
                     ZEN WALLET INTRUSION ALERT ... <br>
-                    <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... NOT A ZEN WALLET FROM $UPLANETG1PUB !!
+                    <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... NOT A ZEN WALLET FROM UPLANET${UPLANETG1PUB:0:8} !!
                     </body></html>" >> ~/.zen/tmp/palpay.bro
                     ## ALERT PLAYER
                     ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
                     ## SEND BACK G1
                     ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET${UPLANETG1PUB:0:8}:INTRUSION"
+                    [[ $? == 0 ]] && echo $TXIDATE > ~/.zen/game/players/${PLAYER}/.uplanet.check
+                    
                     ## UNPLUG PLAYER (after 3 alerts)
                     #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
                 else

@@ -58,7 +58,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
     echo "<(''<)  <( ' SSH TRANSMUTATION ' )>  (> '')>"
     PS3="Select KEY creation type ? "
     choices=("AUTOMATIC" "MANUAL")
-    select fav in  "${choices[@]}"; do
+    select fav in "${choices[@]}"; do
         case $fav in
         "AUTOMATIC")
             ### GET SHA512 SSH PRIVATE KEY AS SEED FOR SECRETS SPLIT
