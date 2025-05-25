@@ -23,6 +23,7 @@ if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop" ]]; then
     ipfs p2p close --all
     rm ~/.zen/tmp/${IPFSNODEID}/x_*.sh 2>/dev/null
     rm ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub 2>/dev/null
+    rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub 2>/dev/null
     echo "STOP" && exit 0
 fi
 
@@ -91,7 +92,7 @@ if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
 
     echo "Setup Captain NOSTR profile"
     source ~/.zen/game/players/.current/secret.nostr
-     ${MY_PATH}/../tools/nostr_setup_profile.py \
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$NSEC" \
     "$YOUSER [♥️BOX Captain]" "$CAPTAING1PUB" \
     "UPlanet ${UPLANETG1PUB:0:8} -- $uSPOT/g1 [CopyLaRadio] Dragon WoT Member" \

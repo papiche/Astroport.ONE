@@ -200,7 +200,7 @@ for UMAP in ${unique_combined[@]}; do
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
-    "$myRELAY" "wss://relay.copylaradio.com"
+    "$myRELAY"
 
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
@@ -233,9 +233,7 @@ if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
-    "$myRELAY" "wss://relay.copylaradio.com" \
-                --ipfs_gw "$myIPFS" \
-                --ipns_vault "/ipns/${NOSTRNS}" \
+    "$myRELAY" \
     | tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 fi
 ####################################################################################
