@@ -483,20 +483,20 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "NOSTR WALLET INTRUSION ALERT for $PLAYER"
             
             # Create alert message
-            echo "<html><head><meta charset='UTF-8'>
-            <style>
-                body {
-                    font-family: 'Courier New', monospace;
-                }
-                pre {
-                    white-space: pre-wrap;
-                }
-            </style></head><body>" > ~/.zen/tmp/palpay.bro
+            LANG=$(cat ~/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+            [[ -z $LANG ]] && LANG="en"
             
-            echo "<h1>$PLAYER<h1>
-            NOSTR WALLET INTRUSION ALERT ... <br>
-            <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... NOT FROM UPLANET${UPLANETG1PUB:0:8} !!
-            </body></html>" >> ~/.zen/tmp/palpay.bro
+            # Use the appropriate template based on language
+            TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.${LANG}.html"
+            [[ ! -s "$TEMPLATE" ]] && TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.en.html"
+            
+            # Replace placeholders in template
+            sed -e "s/{PLAYER}/$PLAYER/g" \
+                -e "s/{UPLANETG1PUB}/${UPLANETG1PUB:0:8}/g" \
+                -e "s/{TXIAMOUNT}/$TXIAMOUNT/g" \
+                -e "s/{TXIPUBKEY}/$TXIPUBKEY/g" \
+                -e "s|{myIPFS}|$myIPFS|g" \
+                "$TEMPLATE" > ~/.zen/tmp/palpay.bro
             
             # Send alert
             ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "NOSTR WALLET ALERT"
