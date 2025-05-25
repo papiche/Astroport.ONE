@@ -179,12 +179,17 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     for astroport in "${MASTROPORT[@]}"; do
         # Get the directory containing the 12345.json file
         astroport_dir=$(ls -d ~/.zen/tmp/swarm/*/12345.json | grep "$astroport" | xargs dirname)
-        echo "astroport_dir=$astroport_dir"
+        # echo "astroport_dir=$astroport_dir"
         # Read the 12345.json file
         if [[ -s "$astroport_dir/12345.json" ]]; then
-            echo "adding $astroport_dir/12345.json"
             swarm_data=$(cat "$astroport_dir/12345.json")
-            swarm_array+=("$swarm_data")
+            # Only include if it's not our own node
+            if [[ $(echo "$swarm_data" | jq -r '.ipfsnodeid') != "$IPFSNODEID" ]]; then
+                echo "adding $astroport_dir/12345.json"
+                swarm_array+=("$swarm_data")
+            else
+                echo "skipping $astroport_dir/12345.json"
+            fi
         fi
     done
 
