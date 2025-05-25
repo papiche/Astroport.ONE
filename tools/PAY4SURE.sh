@@ -141,7 +141,13 @@ else
 
     #~ ## MAKE PAYMENT OPERATION AGAIN
     ${MY_PATH}/jaklis/jaklis.py -k ${PENDINGDIR}/${MOATS}.key pay -a ${AMOUNT} -p ${G1PUB} -c "${COMMENT}" -m 2>&1> ${PENDINGDIR}/${MOATS}.result.html
-
+    ISOK=$?
+    CHK1=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 1 )
+    CHK2=$(cat ${PENDINGDIR}/${MOATS}.result.html | head -n 2 )
+    if [[ ${ISOK} == 0 || $(echo "${CHK2}" | grep 'succès') || $(echo "${CHK1}" | grep 'conforme') ]]; then
+        echo "TRANSACTION SENT"
+        echo "SENT" > ${PENDINGFILE} ## TODO : MONITOR POTENTIAL CHAIN REJECTION (FORK/MERGE WINDOW)
+    fi
 
     #~ rm ${PENDINGFILE}
     #~ echo "<html><h2>BLOCKCHAIN CONNEXION ERROR</h2>
@@ -165,14 +171,9 @@ else
     #~ exit 0
    #~ ) &
 
-
 fi
 
 ## REMOVE IF YOU WANT TO MONITOR "SENT" WINDOW INCERTITUDE
-rm ${PENDINGDIR}/${MOATS}.key
-rm ${PENDINGDIR}/${MOATS}_replay.sh
-rm ${PENDINGDIR}/${MOATS}.result.html
-rm ${PENDINGFILE}
+rm -Rf ${PENDINGDIR}
 
-
-exit 0
+[[ ${ISOK} == 0 ]] && exit 0 || exit 1
