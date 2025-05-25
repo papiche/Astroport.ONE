@@ -237,7 +237,7 @@ fi
 ## PREPARE x_perplexica.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
 ############################################
-if [[ ! -z $(lsof -i :3001 | grep LISTEN) ]]; then
+if [[ ! -z $(docker ps | grep perplexica) ]]; then
     PORT=3001
 
     echo "Launching Perplexica SHARE ACCESS /x/perplexica-${IPFSNODEID}"
