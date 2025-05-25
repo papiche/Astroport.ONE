@@ -23,7 +23,7 @@ fi
 
 echo "=== $ME =============================== //$ULAT//$ULON"
 
-# Check if cache exists and is less than 3 hours old
+# Check if cache exists and is less than 12 hours old
 if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
     if [[ $CACHE_AGE -lt 43200 ]]; then  # 43200 seconds = 12 hours
@@ -37,7 +37,7 @@ fi
 
 if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
-    # search for active TWS
+    # search for active Zen Cards
     ####################################
     echo " ## SEARCH PLAYER in ~/.zen/game/players/*@*.*/.player"
     METW=($(ls -d ~/.zen/game/players/*@*.*/.player 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
@@ -161,6 +161,19 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         umap_array+=("$umap_obj")
         echo
     done
+
+
+    #########################################################
+    # search for other active ASTROPORTs in UPlanet swarm
+    #########################################################
+    echo " ## SEARCH ASTROPORTs in ~/.zen/tmp/swarm/*/12345.json"
+    MASTROPORT=($(ls -d ~/.zen/tmp/swarm/*/12345.json 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
+
+    echo "${#MASTROPORT[@]} ASTROPORT(S) : ${MASTROPORT[@]}"
+    echo "==========================================================="
+
+
+
 
     #Constructing JSON string using a more robust method:
     tw_json_array=$(printf '%s,' "${tw_array[@]}"); tw_json_array="${tw_json_array%,}" #remove trailing comma

@@ -74,20 +74,23 @@ CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 #######################################################
 ## CREATE MySwarm KEYS ?
 if [[ ${CHAN} == "" || ${CHAN} == "null" || ! -s ~/.zen/game/myswarm_secret.june ]]; then
-echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
+######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
+    echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
     SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
     SECRET2=${IPFSNODEID}
     ipfs key rm "MySwarm_${IPFSNODEID}"
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
     chmod 600 ~/.zen/game/myswarm_secret.june
     ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipns "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
+    chmod 600 ~/.zen/game/myswarm_secret.ipns
     ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/myswarm_secret.dunikey "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
+    chmod 600 ~/.zen/game/myswarm_secret.dunikey
     ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipns
     CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
 fi
-######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
+
 ## NOSTR ##############################################
-## CREATE ~/.zen/game/secret.nostr (YLEVEL NODES only)
+## CREATE ~/.zen/game/secret.nostr (for YLEVEL NODES only)
 if [[ -s ~/.zen/game/secret.june ]]; then
     source ~/.zen/game/secret.june
     npub=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
@@ -97,7 +100,8 @@ if [[ -s ~/.zen/game/secret.june ]]; then
     chmod 600 ~/.zen/game/secret.nostr
     echo $hex > ~/.zen/tmp/${IPFSNODEID}/HEX
 fi
-#####################################################
+
+######################################### CAPTAIN RELATED
 ## CREATE ~/.zen/game/players/.current/secret.nostr
 if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
     source ~/.zen/game/players/.current/secret.june
@@ -109,20 +113,27 @@ if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
     captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER" -s)
     echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
         > ~/.zen/game/players/.current/secret.nostr
+    chmod 600 ~/.zen/game/players/.current/secret.nostr
+
     ## Add CAPTAIN HEX to nostr WhiteList
     mkdir -p ~/.zen/game/nostr/CAPTAIN
     echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
     echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
+
     ## REFRESH ZSWARM & HEX_CAPTAIN
     mkdir -p ~/.zen/game/nostr/ZSWARM
     cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
     cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
+
 else
+
     rm -Rf ~/.zen/game/nostr/CAPTAIN
+
 fi
 ##################################################
 
-## PUBLISH CHANNEL IPNS
+###########################################################""
+## PUBLISH CHANNEL IPNS LINK
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
 
 ############################################################
@@ -132,9 +143,11 @@ echo 0 > ~/.zen/tmp/random.sleep
 ###############################################
 UPLANETCOINS=$($MY_PATH/tools/COINScheck.sh ${UPLANETG1PUB} | tail -n 1)
 UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
-##############################
-#### UPLANET GEOKEYS_refresh
-${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
+###############################################
+#### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
+if [[ $UPLANETNAME != "EnfinLibre" ]]; then
+    ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
+fi
 
 ###################################################################
 ## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
@@ -163,15 +176,6 @@ while true; do
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
     if [[ ${duree} -gt 3600000 || ${duree} == "" ]]; then
 
-        ### STOP SWARM SYNC 1H BEFORE 20H12 : TODO CHECK THIS
-        #~ if [[ -s /tmp/20h12.log ]]; then
-            #~ current_time=$(date +%s)
-            #~ file_modification_time=$(stat -c %Y "/tmp/20h12.log")
-            #~ time_difference=$((current_time - file_modification_time))
-            #~ [ "$time_difference" -ge $(( 23 * 60 * 60 )) ] \
-                #~ && echo "$(date +"%H%M") : 20H12 is running... " && continue
-        #~ fi
-
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
         ## NOT Y LEVEL STATIONS
@@ -186,7 +190,6 @@ while true; do
         if [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]]; then
             echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----"
             [[ $(sudo systemctl status ipfs | grep disabled) == "" ]] && sudo systemctl restart ipfs
-            # sleep 60
         fi
 
         ${MY_PATH}/ping_bootstrap.sh
@@ -367,7 +370,8 @@ while true; do
                 echo "IPFSNODEID BALISE NOT COMPLETLY FORMED YET..."
             fi
        fi
-
+       # remove cache
+        rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
         end=`date +%s`
         echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. '$(date)
 
