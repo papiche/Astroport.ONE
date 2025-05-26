@@ -15,9 +15,9 @@ BOOSTER=(g1.brussels.ovh duniter-v1.comunes.net g1.cgeek.fr g1.duniter.fr g1.gue
 checkonenode()
 {
     # Timeout in seconds for https nodes
-    httpsTimeout=1
+    httpsTimeout=2
     # Timeout in seconds for http nodes
-    httpTimeout=1
+    httpTimeout=2
 
     node=$1
     watched=$2
@@ -65,8 +65,8 @@ mkdir -p $DIR/chains
 #~ find ~/.zen/tmp/ -mmin +5 -type f -name "current.duniter" -exec rm -f '{}' \;
 #~ [[ -f ~/.zen/tmp/current.duniter ]] && cat ~/.zen/tmp/current.duniter && exit 0
 
-##### $DIR/duniter_nodes.txt REFRESH after 20 minutes #####
-find $DIR/ -mmin +20 -type f -name "duniter_*" -exec rm -f '{}' \;
+##### $DIR/duniter_nodes.txt REFRESH after 30 minutes #####
+find $DIR/ -mmin +30 -type f -name "duniter_*" -exec rm -f '{}' \;
 if [[ ! -f  $DIR/duniter_nodes.txt ]]; then
     # Get New BMAS known Nodes list from shuffle one $DIR/good.nodes.txt
     [[ -f $DIR/good.nodes.txt ]] && DUNITER=$(shuf -n 1 $DIR/good.nodes.txt) || DUNITER="${BOOSTER[$((RANDOM % ${#BOOSTER[@]}))]}:443"
@@ -93,11 +93,11 @@ do
 done
 
 # Wait a little for the first files to be created
-sleep 3s
+sleep 5s
 # Wait for all the threads to report they are done
 while [ `ls $DIR/*done|wc -l` -lt $index ]
 do
-    sleep 2s
+    sleep 3s
 done
 
 # Grab all results
@@ -157,6 +157,6 @@ done < $DIR/good.nodes.txt
     && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
     && echo "NODE=$result" >> ${MY_PATH}/../tools/jaklis/.env
 
-echo "$result" > ~/.zen/tmp/current.duniter
+[[ -n "$result" ]] && echo "$result" > ~/.zen/tmp/current.duniter
 
 echo $result
