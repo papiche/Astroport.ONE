@@ -189,7 +189,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         && FDQR=${HOME}/.zen/game/nostr/${EMAIL}/picture.png \
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
-    amzqr "${G1PUBNOSTR}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
+    amzqr "${G1PUBNOSTR}:ZEN" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
     ## MOVE webcam picture
