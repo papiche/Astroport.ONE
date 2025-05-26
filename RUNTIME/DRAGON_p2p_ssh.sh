@@ -179,6 +179,7 @@ echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 ## PREPARE x_ollama.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
 ############################################
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh 2>/dev/null
 if [[ ! -z $(pgrep ollama) ]]; then
     PORT=11434
     echo "Launching OLLAMA SHARE ACCESS /x/ollama-${IPFSNODEID}"
@@ -209,7 +210,8 @@ fi
 ## PREPARE x_comfyui.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
 ############################################
-if [[ ! -z $(lsof -i :8188 | grep LISTEN) ]]; then
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh 2>/dev/null
+if [[ ! -z $(systemctl status comfyui.service 2>/dev/null | grep "active (running)") ]]; then
     PORT=8188
     echo "Launching comfyui SHARE ACCESS /x/comfyui-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
@@ -237,6 +239,7 @@ fi
 ## PREPARE x_perplexica.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
 ############################################
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh 2>/dev/null
 if [[ ! -z $(docker ps | grep perplexica) ]]; then
     PORT=3001
 
