@@ -10,7 +10,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
-BOOSTER=(g1.brussels.ovh duniter-v1.comunes.net g1.cgeek.fr g1.duniter.fr g1.guenoel.fr duniter.econolib.re)
+BOOSTER=(g1.brussels.ovh duniter-v1.comunes.net g1.cgeek.fr g1.duniter.fr g1.astroport.com g1.guenoel.fr duniter.econolib.re)
 
 checkonenode()
 {
@@ -93,11 +93,11 @@ do
 done
 
 # Wait a little for the first files to be created
-sleep 5s
+sleep 3s
 # Wait for all the threads to report they are done
 while [ `ls $DIR/*done|wc -l` -lt $index ]
 do
-    sleep 3s
+    sleep 2s
 done
 
 # Grab all results
@@ -140,7 +140,7 @@ do
         else
             gvaserver=$(echo $lastresult | sed "s~:443~/gva~g" )
             echo "jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
-            IDtest=$(jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH 2>/dev/null)
+            IDtest=$(jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH 2>/dev/null | jq -r .balance)
             echo $IDtest
             [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
 
