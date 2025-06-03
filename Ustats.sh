@@ -158,11 +158,13 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         echo "$lat $lon"
         $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
         echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
-        # Construct JSON object using printf and associative array
+        # Construct JSON object using printf and associative array, filter out UMAPs with no root
+        if [[ -n $UMAPROOT ]]; then
         umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPROOT": "%s", "UMAPHEX": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORROOT": "%s", "SECTORHEX": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONROOT": "%s", "REGIONHEX": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s"}' \
                             "$lat" "$lon" "${UMAPROOT}" "${UMAPHEX}" "${UMAPG1PUB}" "${myIPFS}${UMAPIPNS}" "${SECTORROOT}" "${SECTORHEX}" "${SECTORG1PUB}" "${myIPFS}${SECTORIPNS}" "${REGIONROOT}" "${REGIONHEX}" "${REGIONG1PUB}" "${myIPFS}${REGIONIPNS}")
-        umap_array+=("$umap_obj")
-        echo
+            umap_array+=("$umap_obj")
+            echo
+        fi
     done
 
     #########################################################
@@ -210,7 +212,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     INCOME=$((nostrcount * NCARD + twcount * ZCARD))
     BILAN=$((INCOME - PAF))
 
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
     
     # Calculate generation duration
     GENERATION_DURATION=$(($(date +%s) - GENERATION_START))
