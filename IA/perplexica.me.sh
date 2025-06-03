@@ -16,7 +16,7 @@ SSH_OPTIONS="-fN -L 127.0.0.1:$PERPLEXICA_PORT:127.0.0.1:$PERPLEXICA_PORT"
 
 # Function to check if port is open
 check_port() {
-    if lsof -i :$PERPLEXICA_PORT >/dev/null; then
+    if netstat -tulnp 2>/dev/null | grep $PERPLEXICA_PORT; then
         echo "Perplexica API port $PERPLEXICA_PORT is already open."
         return 0
     else

@@ -23,7 +23,7 @@ ME="${0##*/}"
 
 # Fonction pour vérifier si le port est ouvert
 check_port() {
-    if lsof -i :$COMFYUI_PORT >/dev/null; then
+    if netstat -tulnp 2>/dev/null | grep $COMFYUI_PORT; then
         echo "Le port $COMFYUI_PORT est déjà ouvert."
         return 0
     else

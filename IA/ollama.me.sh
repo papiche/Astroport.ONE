@@ -13,9 +13,9 @@ REMOTE_HOST="scorpio.copylaradio.com"
 REMOTE_PORT=2122
 SSH_OPTIONS="-fN -L 127.0.0.1:$OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
 
-# Fonction pour vérifier si le port est ouvert
+# Fonction pour vérifier si le port est ouvert 
 check_port() {
-    if lsof -i :$OLLAMA_PORT >/dev/null; then
+    if netstat -tulnp 2>/dev/null | grep $OLLAMA_PORT; then
         echo "Le port $OLLAMA_PORT est déjà ouvert."
         return 0
     else
