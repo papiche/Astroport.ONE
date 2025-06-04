@@ -31,7 +31,49 @@ get_umap_dir() {
     # Create UMAP directory path
     local UMAP_DIR="$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/__/${REGION}/${SECTOR}/_${LAT}_${LON}"
     mkdir -p "$UMAP_DIR"
-    echo "$UMAP_DIR"
+}
+
+# List all stalls and their products
+get_stalls() {
+    local UMAP_DIR="$1"
+    local STALLS_DIR="$UMAP_DIR/stalls"
+    if [ -d "$STALLS_DIR" ]; then
+        echo "{\"umap_dir\": \"$UMAP_DIR\", \"stalls\": ["
+        local first=true
+        for STALL_DIR in "$STALLS_DIR"/*/; do
+            if [ -d "$STALL_DIR" ]; then
+                local STALL_ID=$(basename "$STALL_DIR")
+                if [ "$first" = true ]; then
+                    first=false
+                else
+                    echo ","
+                fi
+                echo "  {"
+                echo "    \"stall_id\": \"$STALL_ID\","
+                if [ -f "$STALL_DIR/public/indexer_id" ]; then
+                    echo "    \"indexer_id\": \"$(cat "$STALL_DIR/public/indexer_id")\","
+                fi
+                if [ -f "$STALL_DIR/public/url" ]; then
+                    echo "    \"url\": \"$(cat "$STALL_DIR/public/url")\","
+                fi
+                if [ -f "$STALL_DIR/public/lat" ]; then
+                    echo "    \"lat\": \"$(cat "$STALL_DIR/public/lat")\","
+                fi
+                if [ -f "$STALL_DIR/public/lon" ]; then
+                    echo "    \"lon\": \"$(cat "$STALL_DIR/public/lon")\","
+                fi
+                if [ -f "$STALL_DIR/public/products.json" ]; then
+                    echo "    \"products\": $(cat "$STALL_DIR/public/products.json")"
+                else
+                    echo "    \"products\": []"
+                fi
+                echo "  }"
+            fi
+        done
+        echo "]}"
+    else
+        echo "{\"umap_dir\": \"$UMAP_DIR\", \"stalls\": []}"
+    fi
 }
 
 # Main script logic
@@ -165,25 +207,18 @@ case "$1" in
         echo "{\"status\": \"UNKNOWN\"}"
         ;;
         
-    "get_umap_dir")
-        # Get UMAP directory for a G1 pubkey
-        # Usage: ./diagonalley.sh get_umap_dir <g1pub>
-        G1PUB="$2"
-        
-        # Extract coordinates from G1 pubkey
-        # Format: <nostr_g1pub>:<source_g1pub>
-        NOSTR_G1PUB=$(echo "$G1PUB" | cut -d':' -f1)
-        SOURCE_G1PUB=$(echo "$G1PUB" | cut -d':' -f2)
-        
-        # Get coordinates from source G1 pubkey
-        # This is a placeholder - you'll need to implement the actual coordinate extraction
-        # For now, we'll use a default location
-        LAT="48.8566"
-        LON="2.3522"
+    "get_stalls")
+        # Get stalls for coordinates
+        # Usage: ./diagonalley.sh get_stalls <lat> <lon>
+        LAT="$2"
+        LON="$3"
         
         # Get UMAP directory
         UMAP_DIR=$(get_umap_dir "$LAT" "$LON")
-        echo "$UMAP_DIR"
+        
+        # Get stalls information
+        STALLS_INFO=$(get_stalls "$UMAP_DIR")
+        echo "$STALLS_INFO"
         ;;
         
     *)
@@ -193,7 +228,14 @@ case "$1" in
         echo "  products <stall_id> <indexer_id> <lat> <lon>"
         echo "  order <stall_id> <order_data> <lat> <lon>"
         echo "  status <checking_id> <lat> <lon>"
-        echo "  get_umap_dir <g1pub>"
+        echo "  get_stalls <lat> <lon>"
+        echo ""
+        echo "Description:"
+        echo "  register  : Register a new stall with given coordinates"
+        echo "  products  : Get products list for a specific stall"
+        echo "  order     : Place an order for a stall"
+        echo "  status    : Check status of an order"
+        echo "  get_stalls : List all stalls and their products for given coordinates"
         exit 1
         ;;
 esac 
