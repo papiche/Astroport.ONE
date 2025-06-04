@@ -101,6 +101,14 @@ for UMAP in ${unique_combined[@]}; do
         python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ${UMAPPATH}/Usat.jpg 900 900
     fi
     ######################################################################################
+    if [[ ! -s ${UMAPPATH}/zUmap.jpg ]] || [[ ! -s ${UMAPPATH}/zUsat.jpg ]]; then
+        ## Capture screenshots of map views
+        echo "Capturing map screenshots..."
+        UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
+        USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
+        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ${UMAPPATH}/zUmap.jpg 900 900
+        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ${UMAPPATH}/zUsat.jpg 900 900
+    fi
     ####################################################################################
     ## WRITE NOSTR HEX ADDRESS USED FOR strfry whitelisting
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
