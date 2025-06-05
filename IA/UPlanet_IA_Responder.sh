@@ -151,14 +151,14 @@ get_conversation_thread() {
 get_youtube_cookies() {
     local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
     local user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    
+
     # Create cookie file with initial consent cookie
     echo "# Netscape HTTP Cookie File" > "$cookie_file"
     echo "# https://www.youtube.com" >> "$cookie_file"
-    echo ".youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+cb" >> "$cookie_file"
-    echo ".youtube.com	TRUE	/	TRUE	2147483647	VISITOR_INFO1_LIVE	$(openssl rand -hex 16)" >> "$cookie_file"
-    echo ".youtube.com	TRUE	/	TRUE	2147483647	YSC	$(openssl rand -hex 16)" >> "$cookie_file"
-    
+    echo ".youtube.com  TRUE    /   TRUE    2147483647  CONSENT YES+cb" >> "$cookie_file"
+    echo ".youtube.com  TRUE    /   TRUE    2147483647  VISITOR_INFO1_LIVE  $(openssl rand -hex 16)" >> "$cookie_file"
+    echo ".youtube.com  TRUE    /   TRUE    2147483647  YSC $(openssl rand -hex 16)" >> "$cookie_file"
+
     # Get initial cookies with additional headers
     curl -s -L \
         -A "$user_agent" \
@@ -197,10 +197,10 @@ get_youtube_cookies() {
         "https://consent.youtube.com/m?continue=https%3A%2F%2Fwww.youtube.com&gl=US&m=0&pc=yt&uxe=23983172&hl=en&src=1" > /dev/null
 
     # Add additional required cookies
-    echo ".youtube.com	TRUE	/	TRUE	2147483647	LOGIN_INFO	$(openssl rand -hex 32)" >> "$cookie_file"
-    echo ".youtube.com	TRUE	/	TRUE	2147483647	GPS	1" >> "$cookie_file"
-    echo ".youtube.com	TRUE	/	TRUE	2147483647	PREF	f4=4000000&tz=Europe.Paris" >> "$cookie_file"
-    
+    echo ".youtube.com  TRUE    /   TRUE    2147483647  LOGIN_INFO  $(openssl rand -hex 32)" >> "$cookie_file"
+    echo ".youtube.com  TRUE    /   TRUE    2147483647  GPS 1" >> "$cookie_file"
+    echo ".youtube.com  TRUE    /   TRUE    2147483647  PREF    f4=4000000&tz=Europe.Paris" >> "$cookie_file"
+
     # Check if we got valid cookies
     if grep -q "CONSENT" "$cookie_file"; then
         echo "--cookies $cookie_file"
@@ -315,9 +315,11 @@ if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ -z $LON ]] && LON="0.00"
 fi
 
+echo "UMAP : ${LAT} ${LON}"
+
 UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
-## CHECK if $UMAPNPUB = $PUBKEY Then DO not reply
+## Do not reply to UPLanet UMAP message
 [[ $PUBKEY == $UMAPHEX ]] && exit 0
 
 ## UMAP FOLLOW NOSTR CARD
@@ -337,11 +339,12 @@ RLAT=$(echo ${LAT} | cut -d '.' -f 1)
 RLON=$(echo ${LON} | cut -d '.' -f 1)
 ##################################################################""
 UMAPPATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
-## Indicates UMAP to swarm
+## Indicates UMAP HEX to swarm
 if [ ! -s ${UMAPPATH}/HEX ]; then
     mkdir -p ${UMAPPATH}
     echo "$UMAPHEX" > ${UMAPPATH}/HEX
 fi
+
 # nostr whitelist, Used by NOSTR.UMAP.refresh.sh (completed by NODE.refresh.sh)
 if [ ! -s ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX ]; then
     mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
@@ -374,17 +377,17 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             echo "Returning memory content for PUBKEY: $PUBKEY"
             # Créer un fichier temporaire pour le formatage
             temp_mem_file="$HOME/.zen/tmp/memory_${PUBKEY}.txt"
-            
+
             # Extraire et formater les messages
             echo "📝 Historique (#mem)" > "$temp_mem_file" # Add #mem to bypass memory recording (NIP101 : 1.sh)
             echo "========================" >> "$temp_mem_file"
-            
+
             # Utiliser jq pour extraire et formater les messages avec date et localisation
             jq -r '.messages | to_entries | .[-30:] | .[] | "📅 \(.value.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y %H:%M"))\n💬 \(.value.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n---"' "$memory_file" >> "$temp_mem_file"
-            
+
             # Lire le fichier formaté
             KeyANSWER=$(cat "$temp_mem_file")
-            
+
             # Nettoyer le fichier temporaire
             rm -f "$temp_mem_file"
         else
@@ -395,7 +398,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         echo "Looking at the image (using ollama + llava)..."
         DESC="IMAGE : $("$MY_PATH/describe_image.py" "$URL" --json | jq -r '.description')"
     fi
-    
+
     #######################################################################
     echo "Preparing question for IA..."
     if [[ -n $DESC ]]; then
@@ -475,7 +478,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     # Create temporary directory
                     temp_dir="$HOME/.zen/tmp/youtube_$(date +%s)"
                     mkdir -p "$temp_dir"
-                    
+
                     # Check if #mp3 tag is present
                     if [[ "$message_text" =~ \#mp3 ]]; then
                         echo "Téléchargement et conversion en MP3..." >&2
@@ -484,13 +487,13 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                         echo "Téléchargement en MP4 (720p max)..." >&2
                         media_url=$(process_youtube "$youtube_url" "mp4" "$temp_dir")
                     fi
-                    
+
                     if [ -n "$media_url" ]; then
                         KeyANSWER="$media_url"
                     else
                         KeyANSWER="Désolé, je n'ai pas pu télécharger la vidéo YouTube."
                     fi
-                    
+
                     # Cleanup
                     rm -rf "$temp_dir"
                 fi
