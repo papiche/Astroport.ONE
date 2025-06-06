@@ -47,6 +47,7 @@ hex=$(cat ~/.zen/game/nostr/${player}/HEX)
 tmp_mid=$(mktemp)
 tmp_tail=$(mktemp)
 # Decrypt the middle part using CAPTAIN key
+mv "$HOME/.zen/game/nostr/${player}/ssss.mid.captain.enc" "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" 2>/dev/null ## old format patch (TODO REMOVE)
 ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" \
         -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 

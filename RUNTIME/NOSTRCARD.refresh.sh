@@ -525,6 +525,10 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "NO STR WALLET HISTORY FOR $PLAYER"
     fi
 
+    # PATCH for old key naming (TODO REMOVE)
+    mv "$HOME/.zen/game/nostr/${PLAYER}/ssss.head.player.enc" "$HOME/.zen/game/nostr/${PLAYER}/.ssss.head.player.enc" 2>/dev/null
+    mv "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" "$HOME/.zen/game/nostr/${PLAYER}/.ssss.mid.captain.enc" 2>/dev/null
+
     ########################################################################
     ####################################### IPFS NAME PUBLISH
     ########################################################################
