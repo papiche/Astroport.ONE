@@ -522,14 +522,14 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 $MY_PATH/perplexica.me.sh
                 ################################################"
                 # remove #BRO #search tags from message_text
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$message_text")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 # search = perplexica
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
                 ################################################"
             elif [[ "$message_text" =~ \#image ]]; then
                 ################################################
                 # remove #BRO #image tags from message_text
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g' <<< "$message_text")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
                 # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
                 # Generate image and measure time
@@ -548,7 +548,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
             elif [[ "$message_text" =~ \#video ]]; then
                 ################################################"
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g' <<< "$message_text")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/"//g' <<< "$message_text")
                 # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
                 # Generate video using Text2VideoWan2.1 workflow
@@ -561,7 +561,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
             elif [[ "$message_text" =~ \#music ]]; then
                 ################################################"
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g' <<< "$message_text")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g; s/"//g' <<< "$message_text")
                 # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
                 # Generate music using audio_ace_step_1_t2m workflow
