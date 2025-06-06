@@ -664,7 +664,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
     #########################################################
-    #~ BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
+    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
     [[ -z $BIRTHDATE ]] \
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
@@ -685,7 +685,8 @@ for PLAYER in ${PLAYERONE[@]}; do
         else
             echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
             $MY_PATH/../tools/mailjet.sh "${PLAYER}" "PLEASE RENEW MEMBERSHIP" "MEMBERSHIP..."
-            ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
+            [[ ${PLAYER} != ${CAPTAINEMAIL} ]] \
+                && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
             continue
         fi
     fi
