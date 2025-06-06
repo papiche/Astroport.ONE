@@ -234,6 +234,36 @@ if [[ ! -z $(systemctl status comfyui.service 2>/dev/null | grep "active (runnin
 
 fi
 
+############################################
+## PREPARE x_orpheus.sh
+## https://chaton.g1sms.fr/fr/blog/orpheus-fastapi-tts
+## REMOTE ACCESS COMMAND FROM DRAGONS
+############################################
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh 2>/dev/null
+if [[ ! -z $(docker ps | grep orpheus) ]]; then
+    PORT=5005
+
+    echo "Launching Orpheus SHARE ACCESS /x/orpheus-${IPFSNODEID}"
+    [[ ! $(ipfs p2p ls | grep "/x/orpheus-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/orpheus-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
+
+    echo '#!/bin/bash
+    if [[ ! $(ipfs p2p ls | grep x/orpheus-'${IPFSNODEID}') ]]; then
+        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+        [[ $? == 0 ]] \
+            && ipfs p2p forward /x/orpheus-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+            && echo "xdg-open http://127.0.0.1:'${PORT}'" \
+            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    else
+            echo "Tunnel /x/orpheus '${PORT}' already active..."
+            echo "ipfs p2p close -p /x/orpheus-'${IPFSNODEID}'"
+    fi
+    ' > ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_orpheus.sh | bash"
+
+fi
+
 
 ############################################
 ## PREPARE x_perplexica.sh

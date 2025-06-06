@@ -20,6 +20,8 @@
 # - #youtube : Télécharger une vidéo YouTube (720p max) #mp3 pour convertir en audio (COOKIE PB !)
 # - #mem : Afficher le contenu de la mémoire de conversation
 # - #reset : Effacer la mémoire de conversation
+# - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
+# - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -86,16 +88,16 @@ if [ -z "$URL" ]; then
     ANYURL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+' | head -n 1)
 fi
 
-echo "Received parameters:"
-echo "  PUBKEY: $PUBKEY"
-echo "  EVENT: $EVENT"
-echo "  LAT: $LAT"
-echo "  LON: $LON"
-echo "  MESSAGE: $MESSAGE"
-echo "  IMAGE: $URL"
-echo "  ANYURL: $ANYURL"
-echo "  KNAME: $KNAME"
-echo ""
+echo "Received parameters:" >&2
+echo "  PUBKEY: $PUBKEY" >&2
+echo "  EVENT: $EVENT" >&2
+echo "  LAT: $LAT" >&2
+echo "  LON: $LON" >&2
+echo "  MESSAGE: $MESSAGE" >&2
+echo "  IMAGE: $URL" >&2
+echo "  ANYURL: $ANYURL" >&2
+echo "  KNAME: $KNAME" >&2
+echo "" >&2
 
 # Define log function
 log() {
@@ -152,59 +154,62 @@ get_youtube_cookies() {
     local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
     local user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
+    echo "Attempting to generate YouTube cookies..." >&2
+    
+    # Create directory if it doesn't exist
+    mkdir -p "$(dirname "$cookie_file")"
+    
     # Create cookie file with initial consent cookie
-    echo "# Netscape HTTP Cookie File" > "$cookie_file"
-    echo "# https://www.youtube.com" >> "$cookie_file"
-    echo ".youtube.com  TRUE    /   TRUE    2147483647  CONSENT YES+cb" >> "$cookie_file"
-    echo ".youtube.com  TRUE    /   TRUE    2147483647  VISITOR_INFO1_LIVE  $(openssl rand -hex 16)" >> "$cookie_file"
-    echo ".youtube.com  TRUE    /   TRUE    2147483647  YSC $(openssl rand -hex 16)" >> "$cookie_file"
+    cat > "$cookie_file" << EOF
+# Netscape HTTP Cookie File
+# https://www.youtube.com
+.youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+cb.$(date +%Y%m%d)-14-p0.en+FX+$(openssl rand -hex 8)
+.youtube.com	TRUE	/	TRUE	2147483647	VISITOR_INFO1_LIVE	$(openssl rand -hex 16)
+.youtube.com	TRUE	/	TRUE	2147483647	YSC	$(openssl rand -hex 16)
+.youtube.com	TRUE	/	FALSE	2147483647	PREF	f4=4000000&tz=Europe.Paris&f5=30000&f6=8
+.youtube.com	TRUE	/	TRUE	2147483647	GPS	1
+EOF
 
-    # Get initial cookies with additional headers
-    curl -s -L \
-        -A "$user_agent" \
-        -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
-        -H "Accept-Language: en-US,en;q=0.5" \
-        -H "Accept-Encoding: gzip, deflate, br" \
-        -H "DNT: 1" \
-        -H "Connection: keep-alive" \
-        -H "Upgrade-Insecure-Requests: 1" \
-        -H "Sec-Fetch-Dest: document" \
-        -H "Sec-Fetch-Mode: navigate" \
-        -H "Sec-Fetch-Site: none" \
-        -H "Sec-Fetch-User: ?1" \
-        -H "Pragma: no-cache" \
-        -H "Cache-Control: no-cache" \
-        -b "$cookie_file" \
-        -c "$cookie_file" \
-        "https://www.youtube.com" > /dev/null
+    # Try to get additional cookies with multiple strategies
+    local strategies=(
+        "https://www.youtube.com/"
+        "https://consent.youtube.com/"
+        "https://www.youtube.com/robots.txt"
+    )
+    
+    for strategy_url in "${strategies[@]}"; do
+        echo "Trying cookie strategy: $strategy_url" >&2
+        curl -s -L --max-time 10 \
+            -A "$user_agent" \
+            -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
+            -H "Accept-Language: en-US,en;q=0.5" \
+            -H "Accept-Encoding: gzip, deflate, br" \
+            -H "DNT: 1" \
+            -H "Connection: keep-alive" \
+            -H "Upgrade-Insecure-Requests: 1" \
+            -H "Sec-Fetch-Dest: document" \
+            -H "Sec-Fetch-Mode: navigate" \
+            -H "Sec-Fetch-Site: none" \
+            -H "Sec-Fetch-User: ?1" \
+            -H "Pragma: no-cache" \
+            -H "Cache-Control: no-cache" \
+            -b "$cookie_file" \
+            -c "$cookie_file" \
+            "$strategy_url" > /dev/null 2>&1
+        
+        # Check if we got valid cookies
+        if grep -q "CONSENT" "$cookie_file" && [[ $(wc -l < "$cookie_file") -gt 5 ]]; then
+            echo "Successfully obtained cookies from: $strategy_url" >&2
+            break
+        fi
+    done
 
-    # Try to get additional cookies from consent page
-    curl -s -L \
-        -A "$user_agent" \
-        -H "Accept: */*" \
-        -H "Accept-Language: en-US,en;q=0.5" \
-        -H "Accept-Encoding: gzip, deflate, br" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -H "Origin: https://www.youtube.com" \
-        -H "DNT: 1" \
-        -H "Connection: keep-alive" \
-        -H "Referer: https://www.youtube.com/" \
-        -H "Sec-Fetch-Dest: empty" \
-        -H "Sec-Fetch-Mode: cors" \
-        -H "Sec-Fetch-Site: same-origin" \
-        -b "$cookie_file" \
-        -c "$cookie_file" \
-        "https://consent.youtube.com/m?continue=https%3A%2F%2Fwww.youtube.com&gl=US&m=0&pc=yt&uxe=23983172&hl=en&src=1" > /dev/null
-
-    # Add additional required cookies
-    echo ".youtube.com  TRUE    /   TRUE    2147483647  LOGIN_INFO  $(openssl rand -hex 32)" >> "$cookie_file"
-    echo ".youtube.com  TRUE    /   TRUE    2147483647  GPS 1" >> "$cookie_file"
-    echo ".youtube.com  TRUE    /   TRUE    2147483647  PREF    f4=4000000&tz=Europe.Paris" >> "$cookie_file"
-
-    # Check if we got valid cookies
-    if grep -q "CONSENT" "$cookie_file"; then
+    # Verify cookie file validity
+    if [[ -f "$cookie_file" ]] && grep -q "CONSENT" "$cookie_file"; then
+        echo "Cookie file created successfully: $cookie_file" >&2
         echo "--cookies $cookie_file"
     else
+        echo "Failed to create valid cookie file" >&2
         rm -f "$cookie_file"
         echo ""
     fi
@@ -220,17 +225,68 @@ process_youtube() {
     local media_file=""
     local media_ipfs=""
 
-    # Try to get cookies from common browsers first
-    for browser in chrome firefox chromium brave; do
-        if [[ -f "$HOME/.config/$browser/Default/Cookies" ]]; then
-            browser_cookies="--cookies-from-browser $browser"
+    # Try to get cookies from common browsers with correct paths
+    echo "Searching for browser cookies..." >&2
+    
+    # Chrome/Chromium paths
+    for chrome_path in \
+        "$HOME/.config/google-chrome/Default/Cookies" \
+        "$HOME/.config/chromium/Default/Cookies" \
+        "$HOME/snap/chromium/common/chromium/Default/Cookies" \
+        "$HOME/.var/app/com.google.Chrome/config/google-chrome/Default/Cookies"; do
+        if [[ -f "$chrome_path" ]]; then
+            browser_cookies="--cookies-from-browser chrome"
+            echo "Found Chrome/Chromium cookies: $chrome_path" >&2
             break
         fi
     done
+    
+    # Firefox paths (if Chrome not found)
+    if [[ -z "$browser_cookies" ]]; then
+        for firefox_path in \
+            "$HOME/.mozilla/firefox/"*/cookies.sqlite \
+            "$HOME/snap/firefox/common/.mozilla/firefox/"*/cookies.sqlite \
+            "$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/"*/cookies.sqlite; do
+            if [[ -f "$firefox_path" ]]; then
+                browser_cookies="--cookies-from-browser firefox"
+                echo "Found Firefox cookies: $firefox_path" >&2
+                break
+            fi
+        done
+    fi
+    
+    # Brave paths (if others not found)
+    if [[ -z "$browser_cookies" ]]; then
+        for brave_path in \
+            "$HOME/.config/BraveSoftware/Brave-Browser/Default/Cookies" \
+            "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/Default/Cookies"; do
+            if [[ -f "$brave_path" ]]; then
+                browser_cookies="--cookies-from-browser brave"
+                echo "Found Brave cookies: $brave_path" >&2
+                break
+            fi
+        done
+    fi
+    
+    # Edge paths (if others not found)
+    if [[ -z "$browser_cookies" ]]; then
+        for edge_path in \
+            "$HOME/.config/microsoft-edge/Default/Cookies" \
+            "$HOME/.var/app/com.microsoft.Edge/config/microsoft-edge/Default/Cookies"; do
+            if [[ -f "$edge_path" ]]; then
+                browser_cookies="--cookies-from-browser edge"
+                echo "Found Edge cookies: $edge_path" >&2
+                break
+            fi
+        done
+    fi
 
     # If no browser cookies found, try to get them with curl
     if [[ -z "$browser_cookies" ]]; then
+        echo "No browser cookies found, trying to generate cookies with curl..." >&2
         browser_cookies=$(get_youtube_cookies)
+    else
+        echo "Using browser cookies: $browser_cookies" >&2
     fi
 
     # Obtenir le titre et la durée
@@ -296,6 +352,54 @@ process_youtube() {
 
     # Cleanup cookie file if it exists
     [[ -f "$HOME/.zen/tmp/youtube_cookies.txt" ]] && rm -f "$HOME/.zen/tmp/youtube_cookies.txt"
+}
+
+# Function to generate speech with Orpheus TTS
+generate_speech() {
+    local text="$1"
+    local voice="$2"
+    local temp_dir="$3"
+    
+    # Ensure Orpheus is available
+    if ! $MY_PATH/orpheus.me.sh; then
+        echo "Error: Failed to connect to Orpheus TTS" >&2
+        return 1
+    fi
+    
+    # Create filename with timestamp
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local audio_file="${temp_dir}/speech_${voice}_${timestamp}.wav"
+    
+    echo "Generating speech with voice: $voice" >&2
+    
+    # Call Orpheus API
+    local response=$(curl -s -w "%{http_code}" -o "$audio_file" \
+        http://localhost:5005/v1/audio/speech \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"model\": \"orpheus\",
+            \"input\": \"$text\",
+            \"voice\": \"$voice\",
+            \"response_format\": \"wav\",
+            \"speed\": 1.0
+        }")
+    
+    local http_code="${response: -3}"
+    
+    if [[ "$http_code" == "200" && -f "$audio_file" && -s "$audio_file" ]]; then
+        # Add to IPFS
+        local audio_ipfs=$(ipfs add -wq "$audio_file" 2>/dev/null | tail -n 1)
+        if [[ -n "$audio_ipfs" ]]; then
+            local filename=$(basename "$audio_file")
+            echo "$myIPFS/ipfs/$audio_ipfs/$filename"
+        else
+            echo "Error: Failed to add audio to IPFS" >&2
+            return 1
+        fi
+    else
+        echo "Error: Orpheus TTS failed (HTTP: $http_code)" >&2
+        return 1
+    fi
 }
 
 ## Getting KNAME default localisation
@@ -497,6 +601,39 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     # Cleanup
                     rm -rf "$temp_dir"
                 fi
+                ################################################"
+            elif [[ "$message_text" =~ \#pierre || "$message_text" =~ \#amelie ]]; then
+                ################################################"
+                # Determine voice based on tag
+                local voice="amelie"
+                if [[ "$message_text" =~ \#pierre ]]; then
+                    voice="pierre"
+                fi
+                
+                # Remove tags from message text
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#pierre//g; s/#amelie//g' <<< "$message_text")
+                
+                # Create temporary directory
+                temp_dir="$HOME/.zen/tmp/tts_$(date +%s)"
+                mkdir -p "$temp_dir"
+                
+                echo "Génération de synthèse vocale avec la voix: $voice" >&2
+                start_time=$(date +%s.%N)
+                audio_url=$(generate_speech "$cleaned_text" "$voice" "$temp_dir")
+                end_time=$(date +%s.%N)
+                execution_time=$(echo "$end_time - $start_time" | bc)
+                
+                if [ -n "$audio_url" ]; then
+                    # Get current timestamp
+                    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+                    # Format the response with description, timestamp and execution time
+                    KeyANSWER=$(echo -e "🔊 $TIMESTAMP (⏱️ ${execution_time%.*} s)\n👤 Voix: $voice\n📝 Texte: $cleaned_text\n🔗 $audio_url")
+                else
+                    KeyANSWER="Désolé, je n'ai pas pu générer la synthèse vocale demandée."
+                fi
+                
+                # Cleanup
+                rm -rf "$temp_dir"
                 ################################################"
             else
                 ################################################"
