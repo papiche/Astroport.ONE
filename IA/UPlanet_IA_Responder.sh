@@ -608,9 +608,10 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             elif [[ "$message_text" =~ \#pierre || "$message_text" =~ \#amelie ]]; then
                 ################################################"
                 # Determine voice based on tag
-                local voice="amelie"
                 if [[ "$message_text" =~ \#pierre ]]; then
                     voice="pierre"
+                elif [[ "$message_text" =~ \#amelie ]]; then
+                    voice="amelie"
                 fi
                 
                 # Remove tags from message text
