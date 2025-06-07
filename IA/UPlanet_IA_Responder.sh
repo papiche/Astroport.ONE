@@ -498,7 +498,10 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             echo "No memory file found for PUBKEY: $PUBKEY"
             KeyANSWER="Aucune (#mem) trouvée."
         fi
-    elif [[ ! -z $URL ]]; then
+    fi
+
+    #######################################################################
+    if [[ ! -z $URL ]]; then
         echo "Looking at the image (using ollama + llava)..."
         DESC="IMAGE : $("$MY_PATH/describe_image.py" "$URL" --json | jq -r '.description')"
     fi
@@ -611,7 +614,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 fi
                 
                 # Remove tags from message text
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#pierre//g; s/#amelie//g' <<< "$message_text")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#pierre//g; s/#amelie//g; s/"//g' <<< "$message_text")
                 
                 # Create temporary directory
                 temp_dir="$HOME/.zen/tmp/tts_$(date +%s)"
@@ -637,7 +640,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 ################################################"
             else
                 ################################################"
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g' <<< "$QUESTION")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$QUESTION")
                 # default = ollama (using PUBKEY MEMORY)
                 KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --pubkey ${PUBKEY})"
                 ################################################"
