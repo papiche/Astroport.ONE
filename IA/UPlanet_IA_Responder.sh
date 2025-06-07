@@ -361,7 +361,7 @@ generate_speech() {
     local temp_dir="$3"
     
     # Ensure Orpheus is available
-    if ! $MY_PATH/orpheus.me.sh; then
+    if ! $MY_PATH/orpheus.me.sh >&2; then
         echo "Error: Failed to connect to Orpheus TTS" >&2
         return 1
     fi
