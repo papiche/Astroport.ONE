@@ -55,20 +55,20 @@ get_random_refresh_time() {
 initialize_account() {
     local player="$1"
     local player_dir="${HOME}/.zen/game/nostr/${PLAYER}"
-    
+
     # Créer le répertoire s'il n'existe pas
     mkdir -p "$player_dir"
-    
+
     # Initialiser l'heure de rafraîchissement
     local random_time=$(get_random_refresh_time "${PLAYER}")
     echo "$random_time" > "${player_dir}/.refresh_time"
-    
+
     # Initialiser la date
     echo "$TODATE" > "${player_dir}/.todate"
-    
+
     # Initialiser le fichier BIRTHDATE si nécessaire
     [[ ! -s "${player_dir}/TODATE" ]] && echo "$TODATE" > "${player_dir}/TODATE"
-    
+
     echo "Account ${PLAYER} initialized with refresh time: ${random_time}"
 }
 
@@ -79,21 +79,35 @@ should_refresh() {
     local current_time=$(date '+%H:%M')
     local refresh_time_file="${player_dir}/.refresh_time"
     local last_refresh_file="${player_dir}/.todate"
-    
+    local last_udrive_file="${player_dir}/.udrive"
+
     # Si le compte n'est pas initialisé, l'initialiser
     if [[ ! -d "$player_dir" ]] || [[ ! -s "$refresh_time_file" ]]; then
         initialize_account "${PLAYER}"
         return 1
     fi
-    
+
     local refresh_time=$(cat "$refresh_time_file")
     local last_refresh=$(cat "$last_refresh_file")
-    
-    # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée
+    local last_udrive=$(cat "$last_udrive_file")
+
+    # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée ## 24 H spreading
     if [[ "$last_refresh" != "$TODATE" ]] && [[ "$current_time" > "$refresh_time" ]]; then
         return 0
     fi
-    
+
+    ## Check for IPFS DRIVE change
+    if [[ -s ${player_dir}/APP/generate_ipfs_structure.sh ]]; then
+        cd ${player_dir}/APP/
+        UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
+        cd -
+
+        if [[ "$UDRIVE" != "$last_udrive" ]]; then
+            echo $UDRIVE > "${player_dir}/.udrive"
+            return 0
+        fi
+    fi
+
     return 1
 }
 
@@ -459,17 +473,17 @@ for PLAYER in "${NOSTR[@]}"; do
             TXIDATE=$(echo $JSON | jq -r .date)
             TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
             TXIAMOUNT=$(echo $JSON | jq -r .amount)
-            
+
             # Skip if transaction is too old
             lastTXdate=$(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check 2>/dev/null)
             [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/nostr/${PLAYER}/.nostr.check
             [[ $(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check) -ge $TXIDATE ]] && continue
-            
+
             # Skip outgoing transactions
             [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
                 && echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check \
                 && continue
-                
+
             # Check primal transaction
             echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
             if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
@@ -479,7 +493,7 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
 
             TXIPRIMAL=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null)
-            
+
             # Verify if transaction is from a valid UPLANET initialized wallet
             if [[ ${UPLANETG1PUB} != "${TXIPRIMAL}" && ${TXIPRIMAL} != "" ]]; then
                 echo "NOSTR WALLET INTRUSION ALERT for $PLAYER"
@@ -500,11 +514,11 @@ for PLAYER in "${NOSTR[@]}"; do
                     # Create alert message
                     LANG=$(cat ~/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
                     [[ -z $LANG ]] && LANG="en"
-                    
+
                     # Use the appropriate template based on language
                     TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.${LANG}.html"
                     [[ ! -s "$TEMPLATE" ]] && TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.en.html"
-                    
+
                     # Replace placeholders in template
                     sed -e "s/{PLAYER}/$PLAYER/g" \
                         -e "s/{UPLANETG1PUB}/${UPLANETG1PUB:0:8}/g" \
@@ -512,7 +526,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         -e "s/{TXIPUBKEY}/$TXIPUBKEY/g" \
                         -e "s|{myIPFS}|$myIPFS|g" \
                         "$TEMPLATE" > ~/.zen/tmp/palpay.bro
-                    
+
                     # Send alert
                     ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "MULTIPASS ALERT"
                 fi
@@ -535,6 +549,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## UPDATE NOSTR PROFILE METADATA
     echo "Updating NOSTR profile metadata..."
     ${MY_PATH}/../tools/nostr_update_profile.py "${NSEC}" "wss://relay.copylaradio.com" "$myRELAY" \
+        --website "$myIPFS/ipfs/${UDRIVE}"
         --g1pub "$g1pubnostr$PoH" \
         --ipfs_gw "$myIPFS" \
         --ipns_vault "/ipns/${NOSTRNS}"
@@ -548,7 +563,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
     echo "${PLAYER} STORAGE: /ipns/$NOSTRNS = /ipfs/${NOSTRIPFS}"
 
-    ## MEMORIZE TODATE PUBLISH (reduce publish to once a day)
+    ## MEMORIZE TODATE PUBLISH (reduce publish if APP was modified or once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
     echo "___________________________________________________"
     sleep 1

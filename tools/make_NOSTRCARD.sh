@@ -160,6 +160,15 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
 
+
+    ## Create uSPOT/scan QR Code
+    ## /ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/$uSPOT_QR_ipfs
+    amzqr "${uSPOT}/scan" -l H -p ${MY_PATH}/../templates/img/key.png \
+        -c -n uSPOT.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
+
+    uSPOT_QR_ipfs=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/uSPOT.QR.png)
+
+
     ## QR CODE accès NOSTR VAULTNSQR
     amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
         -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
@@ -221,6 +230,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${SSSSQR}~g" \
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
+            -e "s~/ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/${uSPOT_QR_ipfs}~g" \
             -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
             -e "s~_UMAP_~_${ZLAT}_${ZLON}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
@@ -240,13 +250,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## Add generate_ipfs_structure.sh to APP
     cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ${HOME}/.zen/game/nostr/${EMAIL}/APP/
-    ${HOME}/.zen/game/nostr/${EMAIL}/APP/generate_ipfs_structure.sh --log .
+    cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/
+    ./generate_ipfs_structure.sh --log .
 
     ## Add Web3 App Links
     echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/Apps/CESIUM.v1.html
-    echo '<meta http-equiv="refresh" content="0;url=https://coracle.copylaradio.com">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/CoracleZ.html
 
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &

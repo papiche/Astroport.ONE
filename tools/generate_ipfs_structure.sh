@@ -122,8 +122,10 @@ if [ ! -d "$SOURCE_DIR/Music" || ! -d "$SOURCE_DIR/Documents" || ! -d "$SOURCE_D
     mkdir -p "$SOURCE_DIR/Videos"
     #ajouter le répertoire Audio
     mkdir -p "$SOURCE_DIR/Music"
-    # ecire un coucou dans le fichier COUCOU.md
-    echo "coucou" > "$SOURCE_DIR/COUCOU.md"
+    # ecire un coucou dans le fichier README.md
+    if [ ! -f "$SOURCE_DIR/Documents/README.md" ]; then
+        touch "$SOURCE_DIR/Documents/README.md"
+    fi
 fi
 
 log_message "🚀 Génération de la structure IPFS..."
