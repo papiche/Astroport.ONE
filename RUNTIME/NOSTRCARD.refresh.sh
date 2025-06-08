@@ -103,6 +103,7 @@ should_refresh() {
         cd -
 
         if [[ "$UDRIVE" != "$last_udrive" ]]; then
+            ipfs --timeout 20s pin rm $last_udrive ## remove old pin
             echo $UDRIVE > "${player_dir}/.udrive"
             return 0
         fi

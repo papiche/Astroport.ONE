@@ -374,6 +374,60 @@ get_existing_final_cid() {
     fi
 }
 
+# Fonction pour extraire le hash d'un lien IPFS et le dépinner
+unpin_ipfs_hash() {
+    local ipfs_link="$1"
+    local description="$2"
+    
+    if [ -z "$ipfs_link" ] || [ "$ipfs_link" = "null" ] || [ "$ipfs_link" = "" ]; then
+        return 0
+    fi
+    
+    # Extraire le hash du lien IPFS (format: hash/filename)
+    local hash=$(echo "$ipfs_link" | cut -d'/' -f1)
+    
+    if [ -n "$hash" ] && [ "$hash" != "$ipfs_link" ]; then
+        log_message "      🗑️  Dépinnage de l'ancien hash: $hash ($description)"
+        
+        # Essayer de dépinner avec un timeout
+        if ipfs --timeout 10s pin rm "$hash" >/dev/null 2>&1; then
+            log_message "      ✅ Hash $hash dépinné avec succès"
+        else
+            log_message "      ⚠️  Échec du dépinnage de $hash (peut-être déjà dépinné)"
+        fi
+    fi
+}
+
+# Fonction pour dépinner les hashes des fichiers supprimés
+unpin_deleted_files() {
+    local deleted_count="$1"
+    local manifest_file="$SOURCE_DIR/manifest.json"
+    local deleted_files_list="/tmp/deleted_files_$$"
+
+    if [ "$deleted_count" -eq 0 ] || [ ! -f "$deleted_files_list" ]; then
+        return 0
+    fi
+
+    log_message "🗑️  Dépinnage des hashes des fichiers supprimés..."
+
+    # Pour chaque fichier supprimé, récupérer son ancien lien IPFS et le dépinner
+    while IFS= read -r deleted_path; do
+        if [ -n "$deleted_path" ]; then
+            # Récupérer l'ancien lien IPFS depuis le manifest
+            local old_ipfs_link=""
+            if [ -f "$manifest_file" ] && command -v jq >/dev/null 2>&1; then
+                old_ipfs_link=$(jq -r --arg path "$deleted_path" '
+                    .files[]? | select(.path == $path) | .ipfs_link // ""
+                ' "$manifest_file" 2>/dev/null)
+            fi
+
+            if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "null" ]; then
+                unpin_ipfs_hash "$old_ipfs_link" "fichier supprimé: $deleted_path"
+            fi
+        fi
+    done < "$deleted_files_list"
+}
+
 # Fonction pour créer un fichier temporaire avec la liste des fichiers actuels
 create_current_files_list() {
     local temp_file="$1"
@@ -509,6 +563,9 @@ fi
 
 # Détecter les fichiers supprimés avant le traitement
 deleted_count=$(detect_deleted_files)
+
+# Dépinner les hashes des fichiers supprimés
+unpin_deleted_files "$deleted_count"
 
 # Variables pour collecter les données
 directories_json=""
@@ -648,6 +705,9 @@ while IFS= read -r -d '' file; do
     # Vérifier si le fichier a été modifié ou est nouveau
     ipfs_link=""
     if file_needs_update "$file" "$relative_path"; then
+        # Récupérer l'ancien lien IPFS avant de le remplacer
+        old_ipfs_link=$(get_existing_ipfs_link "$relative_path")
+        
         # Fichier nouveau ou modifié - ajouter à IPFS
         log_message "      🚀 Ajout du fichier à IPFS..."
         log_message "         🔗 Ajout IPFS: $relative_path"
@@ -658,6 +718,11 @@ while IFS= read -r -d '' file; do
             updated_count=$((updated_count + 1))
             log_message "         ✅ Hash IPFS obtenu: $ipfs_hash"
             log_message "      ✅ Fichier ajouté avec succès - Link: $ipfs_link"
+            
+            # Dépinner l'ancien hash si il existait et qu'il est différent du nouveau
+            if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "$ipfs_link" ]; then
+                unpin_ipfs_hash "$old_ipfs_link" "fichier modifié: $relative_path"
+            fi
         else
             log_message "      ❌ Échec de l'ajout IPFS"
         fi
