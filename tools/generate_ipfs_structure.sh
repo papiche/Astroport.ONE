@@ -3628,7 +3628,7 @@ if [ "$CREATE_INDEX" = true ]; then
     cat > "$SOURCE_DIR/index.html" << REDIRECT_EOF
 <!DOCTYPE html>
 <html>
-<!-- $MARKER -->
+$MARKER
 <head>
     <meta charset="utf-8">
     <title>UPlanet IPFS Explorer</title>
