@@ -236,13 +236,17 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
     ### ADD /APP - redirections APP IPFS
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/Apps
+
+    ## Add generate_ipfs_structure.sh to APP
+    cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ${HOME}/.zen/game/nostr/${EMAIL}/APP/
+    ${HOME}/.zen/game/nostr/${EMAIL}/APP/generate_ipfs_structure.sh --log .
+
+    ## Add Web3 App Links
     echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/cesium.v1.html
-    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/cesium.v2.html
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/Apps/CESIUM.v1.html
     echo '<meta http-equiv="refresh" content="0;url=https://coracle.copylaradio.com">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/coracle.html
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/CoracleZ.html
 
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &

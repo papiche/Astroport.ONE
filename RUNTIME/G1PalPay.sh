@@ -66,7 +66,7 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 ########################################################################################
 echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
-if [[ ${UPLANETNAME} != "" ]]; then
+if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
     echo "CONTROL UPLANET ORIGIN"
 
     while read LINE; do
@@ -126,7 +126,7 @@ if [[ ${UPLANETNAME} != "" ]]; then
                     ## SEND BACK G1
                     ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET${UPLANETG1PUB:0:8}:INTRUSION"
                     [[ $? == 0 ]] && echo $TXIDATE > ~/.zen/game/players/${PLAYER}/.uplanet.check
-                    
+
                     ## UNPLUG PLAYER (after 3 alerts)
                     #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
                 else
