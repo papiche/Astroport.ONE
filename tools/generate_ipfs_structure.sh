@@ -2142,6 +2142,23 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         .connect-btn-special i {
             font-size: 1em;
         }
+
+        /* Markdown Editor Styles */
+        .markdown-editor {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #1a1a2e;
+        }
+
+        .modal-content.markdown-modal {
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
+            margin: 0;
+            border-radius: 0;
+        }
     </style>
 </head>
 <body>
@@ -2224,9 +2241,6 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     </button>
                     <button class="modal-btn" id="nextFile" title="Next File">
                         <i class="fas fa-chevron-right"></i>
-                    </button>
-                    <button class="modal-btn" id="downloadFile" title="Download File">
-                        <i class="fas fa-download"></i>
                     </button>
                     <button class="modal-btn" id="closeModal" title="Close">
                         <i class="fas fa-times"></i>
@@ -2733,10 +2747,28 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             // Keyboard navigation
             $(document).keydown(function(e) {
                 if ($('#fileModal').is(':visible')) {
+                    // Vérifier si on est dans l'éditeur Markdown
+                    const isMarkdownEditor = $('#fileModal .modal-content').hasClass('markdown-modal');
+                    const isInTextarea = $(e.target).is('#markdown-textarea');
+                    
+                    // Si on est dans l'éditeur Markdown et dans la zone de texte, ignorer la navigation
+                    if (isMarkdownEditor && isInTextarea) {
+                        // Permettre seulement Escape pour fermer
+                        if (e.key === 'Escape') {
+                            closeModal();
+                        }
+                        return; // Ignorer les autres touches
+                    }
+                    
+                    // Navigation normale pour les autres cas
                     switch(e.key) {
                         case 'Escape': closeModal(); break;
-                        case 'ArrowLeft': navigateFile(-1); break;
-                        case 'ArrowRight': navigateFile(1); break;
+                        case 'ArrowLeft': 
+                            if (!isMarkdownEditor) navigateFile(-1); 
+                            break;
+                        case 'ArrowRight': 
+                            if (!isMarkdownEditor) navigateFile(1); 
+                            break;
                     }
                 }
                 if ($('#uploadModal').is(':visible')) {
@@ -3033,10 +3065,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                             <button class="markdown-btn" id="preview-btn" data-mode="preview">
                                 <i class="fas fa-eye"></i> Preview
                             </button>
-                            <button class="markdown-btn active" id="split-btn" data-mode="split">
+                            <button class="markdown-btn" id="split-btn" data-mode="split">
                                 <i class="fas fa-columns"></i> Split
                             </button>
-                            <button class="markdown-btn" id="edit-btn" data-mode="edit">
+                            <button class="markdown-btn active" id="edit-btn" data-mode="edit">
                                 <i class="fas fa-edit"></i> Edit Only
                             </button>
                         </div>
@@ -3110,6 +3142,9 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     saveMarkdownFile();
                 }
             });
+            
+            // Démarrer en mode édition plein écran
+            setMarkdownViewMode('edit');
         }
 
         function updateMarkdownPreview() {
