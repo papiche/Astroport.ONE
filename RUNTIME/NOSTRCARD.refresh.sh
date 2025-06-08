@@ -100,11 +100,11 @@ should_refresh() {
     if [[ -s ${player_dir}/APP/generate_ipfs_structure.sh ]]; then
         cd ${player_dir}/APP/
         UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
-        cd -
+        cd - 2>&1 >/dev/null
 
         if [[ "$UDRIVE" != "$last_udrive" ]]; then
-            ipfs --timeout 20s pin rm $last_udrive ## remove old pin
-            echo $UDRIVE > "${player_dir}/.udrive"
+            [[ -n $last_udrive ]] && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
+            [[ -n $UDRIVE ]] && echo $UDRIVE > "${player_dir}/.udrive"
             return 0
         fi
     fi
@@ -132,7 +132,7 @@ for PLAYER in "${NOSTR[@]}"; do
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
 
-    echo "\m/_(>_<)_\m/ ________ $(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time) ___ ${PLAYER} : ${HEX}"
+    echo "\m/_(>_<)_\m/ ____ $(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time) ___ ${PLAYER} : ${HEX} DRIVE : /ipfs/$(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
 
     # Vérifier si le rafraîchissement est nécessaire
     should_refresh "${PLAYER}" || continue
@@ -550,7 +550,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## UPDATE NOSTR PROFILE METADATA
     echo "Updating NOSTR profile metadata..."
     ${MY_PATH}/../tools/nostr_update_profile.py "${NSEC}" "wss://relay.copylaradio.com" "$myRELAY" \
-        --website "$myIPFS/ipfs/${UDRIVE}"
+        --website "$myIPFS/ipfs/${UDRIVE}" \
         --g1pub "$g1pubnostr$PoH" \
         --ipfs_gw "$myIPFS" \
         --ipns_vault "/ipns/${NOSTRNS}"
