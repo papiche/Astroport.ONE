@@ -625,10 +625,7 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 #####################################
 
 ########################################################################
-## SAUVEGARDER LES LOGS AVANT DEUXIEME NETTOYAGE
-echo "📝 Sauvegarde des logs avant deuxième nettoyage..."
-save_logs_to_archive "DEUXIEME_NETTOYAGE"
-
+## DEUXIEME NETTOYAGE
 ## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
 mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
 mv ~/.zen/tmp/swarm ~/.zen/swarm
