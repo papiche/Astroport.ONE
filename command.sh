@@ -161,7 +161,7 @@ echo "Activation Réseau P2P Astroport !"
 
 echo
 PS3="$PLAYER choose : __ "
-choices=("PRINT VISA" "UNPLUG PLAYER" "QUIT")
+choices=("PRINT VISA" "UNPLUG PLAYER" "SWARM Services" "Dashboard SWARM" "QUIT")
 select fav in  "${choices[@]}"; do
     case $fav in
     "PRINT VISA")
@@ -176,6 +176,16 @@ select fav in  "${choices[@]}"; do
         ${MY_PATH}/RUNTIME/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}"
 
         break
+        ;;
+
+    "SWARM Services")
+        echo "🌐 DÉCOUVERTE DES SERVICES SWARM (Niveau Y requis)"
+        ${MY_PATH}/RUNTIME/SWARM.services.sh
+        ;;
+
+    "Dashboard SWARM")
+        echo "📊 TABLEAU DE BORD SWARM (Niveau Y requis)"
+        ${MY_PATH}/tools/SWARM.dashboard.sh
         ;;
 
     #~ "AJOUTER VLOG")

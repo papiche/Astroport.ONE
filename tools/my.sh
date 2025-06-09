@@ -496,7 +496,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 myDOMAIN="$(myDomainName)"
 
 myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
-myAPI="http://127.0.0.1:5001"
+myAPI="http://127.0.0.1:54321"
 myDATA="https://data.gchange.fr"
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro"
@@ -512,7 +512,7 @@ myASTROTUBE="https://$(myAstroTube)"
 ## WAN STATION
 [ -z "$isLAN" ] \
  && myASTROPORT="https://astroport.$(myDomainName)" \
- && myAPI="https://ipfs.$(myHostName)/5001" \
+ && myAPI="https://u.$(myHostName)" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
  && myG1BILLET="https://libra.${myDOMAIN}" \
@@ -522,7 +522,7 @@ myASTROTUBE="https://$(myAstroTube)"
 ## zIP :: PUT YOUR Internet Box IP IN $HOME/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45782 )
 [ -n "$(zIp)" ] \
  && myASTROPORT="http://$(zIp):1234" \
- && myAPI="http://$(zIp):5001" \
+ && myAPI="http://$(zIp):54321" \
  && myIPFS="http://$(zIp):8080" \
  && myHOST="$(zIp)" \
  && myG1BILLET="http://$(zIp):33101" \
