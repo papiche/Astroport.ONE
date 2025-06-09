@@ -80,6 +80,7 @@ should_refresh() {
     local refresh_time_file="${player_dir}/.refresh_time"
     local last_refresh_file="${player_dir}/.todate"
     local last_udrive_file="${player_dir}/.udrive"
+    UDRIVE=""
 
     # Si le compte n'est pas initialisé, l'initialiser
     if [[ ! -d "$player_dir" ]] || [[ ! -s "$refresh_time_file" ]]; then
@@ -103,8 +104,10 @@ should_refresh() {
         cd - 2>&1 >/dev/null
 
         if [[ "$UDRIVE" != "$last_udrive" ]]; then
-            [[ -n $last_udrive ]] && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
-            [[ -n $UDRIVE ]] && echo $UDRIVE > "${player_dir}/.udrive"
+            [[ -n $last_udrive ]] \
+                && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
+            [[ -n $UDRIVE ]] \
+                && echo $UDRIVE > "${last_udrive_file}"
             return 0
         fi
     fi
@@ -132,15 +135,16 @@ for PLAYER in "${NOSTR[@]}"; do
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
 
-    echo "\m/_(>_<)_\m/ ____ $(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time) ___ ${PLAYER} : ${HEX} DRIVE : /ipfs/$(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
-
-    # Vérifier si le rafraîchissement est nécessaire
-    should_refresh "${PLAYER}" || continue
-
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
+
+    refreshtime=$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)
+    echo "\m/_(>_<)_\m/ ($refreshtime) : ${PLAYER} $COINS G1 -> ${ZEN} ZEN : ${HEX} UDRIVE : $(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
+
+    # Vérifier si le rafraîchissement est nécessaire
+    should_refresh "${PLAYER}" || continue
 
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL RX CHECK
