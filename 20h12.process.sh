@@ -619,11 +619,13 @@ fi
 ######################################################### UPLANET ######
 #####################################
 # UPLANET : GeoKeys UMAP / SECTOR / REGION ...
-#####################################
+##################################### UPLANET ORIGIN
 ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
-#####################################
-#####################################
-
+##################################### UPLANET ZEN MULTIPASS/ZenCard TW mode
+if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+    ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh ## TW ACTIVATED
+fi
+########### N1+N2 SOCIAL NETWORKING + CIVILIZATION NORMALIZATION #########
 ########################################################################
 ## DEUXIEME NETTOYAGE
 ## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
