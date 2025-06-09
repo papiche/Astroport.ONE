@@ -1,152 +1,155 @@
-# Astroport.ONE: Your Decentralized Portal to a New Digital Frontier
+# Astroport.ONE: Your Personal Gateway to the UPlanet Ecosystem
 
 [FR](README.fr.md) - [ES](README.es.md)
 
-**Welcome to Astroport.ONE!** Imagine a digital world where you are in control, where data is secure, payments are seamless, and community thrives beyond borders. Astroport.ONE is building this future, and you are invited to be a part of it.
+**Welcome to Astroport.ONE!** Step into a revolutionary digital ecosystem where you control your data, payments flow seamlessly through decentralized networks, and communities thrive in harmony with natural solar rhythms. Astroport.ONE is not just software—it's your personal **♥️BOX** (Heartbox), a complete digital embassy powering the UPlanet decentralized civilization.
 
-**What is Astroport.ONE?**
+## 🌍 **What is UPlanet & Astroport.ONE?**
 
-Astroport.ONE is a revolutionary platform designed to empower individuals and communities in the Web3 era. It's more than just software; it's a toolkit for creating your own decentralized digital embassy - a **Station** - where you can manage your digital identity, participate in a decentralized economy using the Ğ1 (June) cryptocurrency, and contribute to a global network of interconnected stations.
+**UPlanet** is a decentralized civilization synchronized with Earth's natural rhythms, where every node operates in harmony with solar time. **Astroport.ONE** is your personal gateway—a complete **Station** that serves as:
 
-**Think of Astroport.ONE as:**
+*   **🏰 Your Digital Embassy**: A sovereign node in the UPlanet network with your own domain and services
+*   **🔐 Quantum-Resistant Identity System**: Built on SSH/GPG cryptography with Y-Level and Z-Level security
+*   **💰 Commission-Free Economy**: Native Ğ1 (June) cryptocurrency integration with automated payment flows
+*   **🌐 P2P Service Mesh**: Share and access AI, storage, and computing resources across the Dragon WOT (Web of Trust)
+*   **⏰ Solar Time Synchronization**: All maintenance and network activities synchronized to natural 20h12 solar time
 
-*   **Your Personal Data Haven:** Store and manage your data securely thanks to the InterPlanetary File System (IPFS), ensuring it is censorship-resistant and always accessible.
-*   **A Commission-Free Payment System:** Use the Ğ1 (June) cryptocurrency for peer-to-peer transactions without intermediaries or fees, fostering a fair and equitable economy.
-*   **A Digital Community Builder:** Connect with other Astroport.ONE Stations and users worldwide, sharing information, resources, and building trust-based networks.
-*   **A "Construction Guide" for the Decentralized Web:** Leverage our open-source tools and software to create and deploy your own Web3 applications and services.
+## ✨ **Revolutionary Features**
 
-## Essential Features: The Power of Astroport.ONE
+### **🎯 ZenCard & AstroID: Your Universal Keys**
+- **ZenCard**: QR-code based payment system integrating Ğ1 cryptocurrency
+- **AstroID**: Your cryptographic identity, quantum-resistant and completely under your control
+- **UPassport**: Cross-platform identity verification system
 
-*   **ZenCard and AstroID: Your Access Keys**
+### **🗃️ Decentralized Data Sovereignty**
+- **IPFS Core Storage**: Censorship-resistant, distributed file system
+- **TiddlyWiki Organization**: Personal knowledge base with MBR allocation tables
+- **FlashMem Cache**: Geographic keys (GEOKEYS) for spatial data distribution
+- **Swarm Intelligence**: Node discovery and service sharing protocols
 
-    *   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes.
-    *   **AstroID**: Your digital identity, inviolable and under your complete control.
+### **🤖 AstroBot & Vœux System**
+- **Vœux Keywords**: Define custom keywords in your TiddlyWiki to trigger automated BASH smart contracts
+- **AstroBot Intelligence**: Responds to blockchain events and Vœux to automate your digital life
+- **G1PalPay.sh**: Real-time Ğ1 blockchain monitor executing commands from transaction comments
 
-*   **Decentralized and Organized Storage**
+### **🔗 Dragon WOT: Decentralized Service Network**
+The **Dragon Web of Trust** enables secure P2P tunneling of services through IPFS:
 
-    *   **IPFS at its Core**: Benefit from distributed storage, resistant to censorship and centralized failures.
-    *   **MBR and Allocation Table**: A Tiddlywiki data organization optimized for performance and reliability.
+- **SSH Access**: Secure shell access via `/x/ssh-{NodeID}` tunnels
+- **AI Services**: Share Ollama, ComfyUI, Perplexica AI models
+- **Text-to-Speech**: Orpheus TTS service sharing
+- **Y-Level Nodes**: SSH key verification through cryptographic proof
+- **Z-Level Security**: GPG-based authentication for enhanced trust
 
-*   **Vœux: The Keywords that Animate AstroBot**
+### **⏰ Solar Time Synchronization**
+Every UPlanet node operates on **solar time** for natural harmony:
+- **Automatic GPS Calibration**: Your geographic position determines your solar 20h12
+- **cron_VRFY.sh**: Calculates local solar time using GPS coordinates
+- **solar_time.sh**: Equation of time correction for precise solar alignment
+- **Global Synchronization**: All nodes execute maintenance at the same solar moment worldwide
 
-    *   **Vœux System**: More than just wishes, "Vœux" (Vows) are keywords that *you* define in your TiddlyWiki to trigger **AstroBot**, the automated heart of Astroport.ONE. These keywords activate BASH programs, rudimentary smart contracts, that allow you to automate actions, synchronize data, or perform specific tasks within your station. While Vœux can be supported by donations in the Ğ1 free currency, their primary function is to orchestrate automation via AstroBOT, not collaborative funding.
+### **♥️BOX System Analysis**
+Your Astroport.ONE station continuously monitors:
+- **Hardware Resources**: CPU, GPU, RAM utilization
+- **Storage Capacity**: Automatic calculation of ZenCard (128GB) and NOSTR Card (10GB) slots
+- **IPFS Health**: Garbage collection proximity, peer connectivity
+- **NextCloud Integration**: Personal cloud storage with port monitoring (8001/8002)
+- **Cache Systems**: Swarm discovery, Coucou profiles, FlashMem geokeys
 
-*   **Synchronization and P2P Communication**
+## 🚀 **Installation & Setup**
 
-    *   **Astroport.ONE Stations**: Your station communicates and synchronizes with a network of digital embassies, ensuring maximum data consistency and availability.
-    *   **AstroBot: Intelligence Serving Your Data**: A system of smart contracts in BASH, reacting to events on the Ğ1 network and to "Vœux" to automate and optimize your experience.
-    *   **G1PalPay.sh: The Ğ1 Transaction Monitor**: A crucial script that monitors the Ğ1 blockchain in real-time. It allows Astroport.ONE to react to transactions, execute commands based on transaction comments, and manage financial flows within the ecosystem.
-
-## **Who is Astroport.ONE For?**
-
-*   **Individuals seeking digital sovereignty:** Take back control of your data and your online presence.
-*   **Communities building decentralized solutions:** Create and manage shared resources and collaborative projects.
-*   **Developers and innovators:** Explore the potential of Web3 and build decentralized applications on a robust platform.
-*   **Users of the Ğ1 (June) cryptocurrency:** Enhance your Ğ1 experience with secure payments and a thriving ecosystem.
-*   **Anyone interested in a freer, safer, and more interconnected digital world.**
-
-## **Get Started with Astroport.ONE:**
-
-**Installation (Linux - Debian/Ubuntu/Mint):**
-
-Setting up your Astroport.ONE Station is easy thanks to our automated installation script:
+**Automated Installation (Linux - Debian/Ubuntu/Mint):**
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
 ```
 
-### Running Processes
+### **Initial Captain Setup**
+Your first account becomes the **Captain** of your ♥️BOX:
+- **GPS Collection**: Your location is automatically collected for solar time calibration
+- **Y-Level Verification**: SSH keys verified through cryptographic transformation
+- **NOSTR Profile**: Automatic captain profile creation on decentralized social networks
+- **Dragon WOT**: Integration into the Web of Trust for P2P service sharing
 
-After installation, you should find the following processes running:
-
-```
-/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
-/bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
-/bin/bash /home/fred/.zen/Astroport.ONE/12345.sh
-/bin/bash /home/fred/.zen/Astroport.ONE/_12345.sh
-```
-
-## Usage
-
-### Creating a Player
-
-To create a player, define the following parameters: email, salt, pepper, lat, lon and PASS.
-
+### **Running Processes**
+After installation, core services include:
 ```bash
-~/.zen/Astroport.ONE/command.sh
+/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
+/bin/bash ~/.zen/G1BILLET/G1BILLETS.sh daemon
+/bin/bash ~/.zen/Astroport.ONE/12345.sh
+/bin/bash ~/.zen/Astroport.ONE/_12345.sh
 ```
 
-### BASH API
+## 🔧 **API & Integration**
 
-Once your Astroport station is started, the following ports are activated:
+### **Core APIs**
+- **Port 1234**: Station API v1 (responses: 45780, 45781, 45782)
+- **Port 12345**: Network station map and node discovery
+- **Port 33101**: G1BILLET creation (:33102 for retrieval)
+- **Port 54321**: UPassport API v2 for identity management
+- **IPFS Ports**: 8080 (gateway), 4001 (swarm), 5001 (API)
 
-- **Port 1234**: Publishes API v1 (/45780, /45781 and /45782 are the response ports)
-- **Port 12345**: Publishes the station map.
-- **Port 33101**: Commands the creation of G1BILLETS (:33102 allows their retrieval)
-- **Ports 8080, 4001 and 5001**: IPFS gateway ports.
-- **Port 54321**: Publishes API v2 ([UPassport](https://github.com/papiche/UPassport/)).
-
-### Examples of API Usage
-
-#### Create a Player
+### **UPlanet Geospatial API**
+Dedicated to OSM2IPFS and UPlanet client applications:
 
 ```http
-GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
+GET /?uplanet=captain@domain.com&zlat=48.85&zlon=2.35&g1pub=fr
 ```
 
-#### Read GChange Database Messaging
+| Parameter | Type      | Description                                    |
+|-----------|-----------|------------------------------------------------|
+| `uplanet` | `email`   | **Required**. Player's email                  |
+| `zlat`    | `decimal` | **Required**. Latitude (2 decimal precision)  |
+| `zlon`    | `decimal` | **Required**. Longitude (2 decimal precision) |
+| `g1pub`   | `string`  | **Optional**. Language/origin code            |
 
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
-```
+### **Swarm Network API**
+- **Node Discovery**: Automatic detection of services in your swarm
+- **Payment Integration**: PAF (Participation Aux Frais) for inter-node subscriptions
+- **Service Tunneling**: Access remote AI, storage, and computing resources
 
-#### Trigger a Ğ1 Payment
+## 🎯 **Who is Astroport.ONE For?**
 
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
-```
+*   **🏛️ Digital Sovereigns**: Individuals seeking complete control over their digital existence
+*   **🤝 Decentralized Communities**: Groups building cooperative digital societies
+*   **🧠 AI Developers**: Access to distributed AI model sharing and computing resources
+*   **💱 Ğ1 Ecosystem**: Native integration with the June/Ğ1 free currency
+*   **🌱 Solar Rhythm Enthusiasts**: Those seeking harmony with natural time cycles
+*   **🔬 Web3 Pioneers**: Developers building the next generation of decentralized applications
 
-### UPLANET API Usage
+## 🏗️ **Advanced Features**
 
-The `UPLANET.sh` API is dedicated to OSM2IPFS and UPlanet Client App applications. It manages UPLANET landings and the creation of ZenCards and AstroIDs.
+### **Inter-Node Economy**
+- **ZenCard Subscriptions**: 128GB storage slots for premium users
+- **NOSTR Cards**: 10GB lightweight social media integration
+- **Captain Reserves**: Automatic 8-slot reservation for node operators
+- **Automated Payments**: Daily PAF processing for seamless resource sharing
 
-#### Required Parameters
+### **AI Service Integration**
+- **Ollama**: Local LLM deployment and sharing
+- **ComfyUI**: Advanced image generation workflows
+- **Perplexica**: Enhanced web search with AI assistance
+- **Orpheus TTS**: Text-to-speech service sharing
 
-- `uplanet`: Player's email.
-- `zlat`: Latitude with 2 decimal places.
-- `zlon`: Longitude with 2 decimal places.
-- `g1pub`: (Optional) Origin language (fr, en, ...)
+### **Geographic Distribution**
+- **GEOKEYS**: Spatial data keys for geographic content distribution
+- **UMAP Integration**: OpenStreetMap data integration
+- **Sector Management**: Regional data organization and caching
+- **TiddlyWiki Mapping**: Personal knowledge bases with geographic context
 
-#### Example Request
+## 📚 **Documentation & Community**
 
-```http
-GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=fr
-```
+**Complete Documentation**: https://astroport-1.gitbook.io/astroport.one/
 
-| Parameter | Type     | Description                       |
-| :-------- | :------- | :-------------------------------- |
-| `uplanet` | `email`  | **Required**. Player's email       |
-| `zlat`    | `decimal`| **Required**. Latitude with 2 decimal places |
-| `zlon`    | `decimal`| **Required**. Longitude with 2 decimal places |
-| `g1pub`   | `string` | **Optional**. Origin language (fr, en, ...) |
+**Contribution**: This project combines the most valuable free and open-source software. Contributions welcome at [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
 
-## DOCUMENTATION
-
-https://astroport-1.gitbook.io/astroport.one/
-
-## Contribution
-
-This project is [a selection](https://github.com/papiche/Astroport.solo) of some of the most valuable free and open-source software.
-
-Contributions are welcome on [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
-
-## Stargazers over time
+## 🌟 **Stargazers over time**
 
 [![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
 
-## Credits
+## 🙏 **Credits**
 
-Thank you to everyone who has contributed to making this software available to all. Do you know [Ğ1](https://monnaie-libre.fr)?
+Thank you to everyone who has contributed to making this software available to all. 
 
-The best cryptocurrency you could dream of.
+**Discover [Ğ1](https://monnaie-libre.fr)** - The best cryptocurrency you could dream of: free, decentralized, and designed for universal basic income through natural economic harmony.
 
