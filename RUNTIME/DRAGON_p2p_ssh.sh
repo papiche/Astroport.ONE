@@ -158,54 +158,7 @@ echo "Launching SSH SHARE ACCESS /x/ssh-${IPFSNODEID}"
 ############################################
 PORT=22000
 PORT=$((PORT+${RANDOM:0:3}))
-
-# Vérifier les abonnements SWARM actifs
-check_swarm_access() {
-    local requesting_nodeid=$1
-    local service_type=$2
-    
-    # Vérifier si le node a un accès valide
-    local access_file=""
-    case $service_type in
-        "ssh"|"ollama"|"comfyui"|"perplexica"|"orpheus")
-            access_file="~/.zen/game/swarm_access/${requesting_nodeid}.multipass"
-            [[ ! -s $access_file ]] && access_file="~/.zen/game/swarm_access/${requesting_nodeid}.zencard"
-            ;;
-    esac
-    
-    if [[ -s $access_file ]]; then
-        source $access_file
-        local today=$(date -u +"%Y%m%d")
-        
-        if [[ "$STATUS" == "ACTIVE" && "$EXPIRY" >= "$today" ]]; then
-            echo "ACCESS_GRANTED"
-            return 0
-        else
-            echo "ACCESS_EXPIRED"
-            return 1
-        fi
-    else
-        echo "ACCESS_DENIED"
-        return 1
-    fi
-}
-
 echo '#!/bin/bash
-REQUESTING_NODE="$1"
-[[ -z "$REQUESTING_NODE" ]] && REQUESTING_NODE="'${IPFSNODEID}'"
-
-# Vérification accès SWARM (si ce n'\''est pas le node local)
-if [[ "$REQUESTING_NODE" != "'${IPFSNODEID}'" ]]; then
-    ACCESS_CHECK=$(check_swarm_access "$REQUESTING_NODE" "ssh")
-    if [[ "$ACCESS_CHECK" != "ACCESS_GRANTED" ]]; then
-        echo "❌ ACCÈS SSH REFUSÉ pour $REQUESTING_NODE"
-        echo "Raison: $ACCESS_CHECK"
-        echo "💳 Abonnez-vous via: ipfs cat /ipns/'${IPFSNODEID}'/12345.json"
-        exit 1
-    fi
-    echo "✅ Accès SSH autorisé pour $REQUESTING_NODE"
-fi
-
 if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
     ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
     [[ $? == 0 ]] \

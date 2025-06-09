@@ -83,6 +83,10 @@ else
     echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet pay 1 G1 to NODE"
     ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$IPFSNODEID:INIT"
 fi
+
 #######################################################################
+
+## AFTER PAF PAYMENT: CHECK SWARM SUBSCRIPTIONS
+${MY_PATH}/ZEN.SWARM.payments.sh
 
 exit 0
