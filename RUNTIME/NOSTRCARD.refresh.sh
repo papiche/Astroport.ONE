@@ -563,12 +563,12 @@ for PLAYER in "${NOSTR[@]}"; do
     ####################################### IPFS NAME PUBLISH
     ########################################################################
     ## UPDATE NOSTR PROFILE METADATA
-    echo "Updating NOSTR profile metadata..."
-    ${MY_PATH}/../tools/nostr_update_profile.py "${NSEC}" "wss://relay.copylaradio.com" "$myRELAY" \
-        --website "$myIPFS/ipfs/${UDRIVE}" \
-        --g1pub "$g1pubnostr$PoH" \
-        --ipfs_gw "$myIPFS" \
-        --ipns_vault "/ipns/${NOSTRNS}"
+    #~ echo "Updating NOSTR profile metadata..." ## KEEPING IPNS REFRESH METHOD
+    #~ ${MY_PATH}/../tools/nostr_update_profile.py "${NSEC}" "wss://relay.copylaradio.com" "$myRELAY" \
+        #~ --website "$myIPFS/ipfs/${UDRIVE}" \
+        #~ --g1pub "$g1pubnostr$PoH" \
+        #~ --ipfs_gw "$myIPFS" \
+        #~ --ipns_vault "/ipns/${NOSTRNS}"
 
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
