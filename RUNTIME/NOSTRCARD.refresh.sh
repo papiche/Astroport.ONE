@@ -140,7 +140,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
 
-    refreshtime=$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)
+    refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"
     echo "\m/_(>_<)_\m/ ($refreshtime) : ${PLAYER} $COINS G1 -> ${ZEN} ZEN : ${HEX} UDRIVE : $(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
 
     # Vérifier si le rafraîchissement est nécessaire

@@ -12,6 +12,9 @@ MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 . "${MY_PATH}/my.sh"
 
+# Forcer la locale numérique pour éviter les problèmes de virgule/point
+export LC_NUMERIC=C
+
 # Configuration des couleurs
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -24,7 +27,312 @@ NC='\033[0m' # No Color
 
 # Configuration globale
 HEARTBOX_DIR="$HOME/.zen/heartbox"
-mkdir -p "$HEARTBOX_DIR"
+HEARTBOX_CACHE_DIR="$HOME/.zen/tmp/heartbox_cache"
+mkdir -p "$HEARTBOX_DIR" "$HEARTBOX_CACHE_DIR"
+
+# Cache sudo pour éviter les demandes répétées
+SUDO_CACHE_FILE="$HEARTBOX_CACHE_DIR/sudo_check.cache"
+SUDO_CACHE_TIMEOUT=300  # 5 minutes
+
+#######################################################################
+# Utilitaires système
+#######################################################################
+
+# Vérification sudo avec cache
+check_sudo_cached() {
+    if [[ -f "$SUDO_CACHE_FILE" ]]; then
+        local cache_age=$(( $(date +%s) - $(stat -c %Y "$SUDO_CACHE_FILE" 2>/dev/null || echo 0) ))
+        if [[ $cache_age -lt $SUDO_CACHE_TIMEOUT ]]; then
+            return 0  # Sudo OK récemment
+        fi
+    fi
+    
+    # Test silencieux de sudo
+    if sudo -n true 2>/dev/null; then
+        touch "$SUDO_CACHE_FILE"
+        return 0
+    else
+        return 1
+    fi
+}
+
+#######################################################################
+# Fonctions de cache et optimisation (CORRIGÉES)
+#######################################################################
+
+# Initialiser le cache
+init_cache() {
+    mkdir -p "$HEARTBOX_CACHE_DIR"
+    echo "$(date +%s)" > "$HEARTBOX_CACHE_DIR/.cache_init"
+}
+
+# Vérifier si le cache est valide (expire après X secondes)
+is_cache_valid() {
+    local cache_file="$1"
+    local max_age="${2:-300}"  # 5 minutes par défaut
+    
+    if [[ ! -f "$cache_file" ]]; then
+        return 1
+    fi
+    
+    local file_age=$(( $(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0) ))
+    [[ $file_age -lt $max_age ]]
+}
+
+# Fonction pour échapper les caractères spéciaux dans les valeurs de cache
+escape_cache_value() {
+    local value="$1"
+    # Échapper les caractères problématiques pour bash
+    echo "$value" | sed 's/[()]/\\&/g' | sed "s/'/\\\\'/g"
+}
+
+# Cache des informations système (CORRIGÉ)
+get_cached_system_info() {
+    local cache_file="$HEARTBOX_CACHE_DIR/system_info.cache"
+    
+    if ! is_cache_valid "$cache_file" 900; then  # Cache valide 15 minutes
+        local cpu_model_raw=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
+        local cpu_model=$(escape_cache_value "$cpu_model_raw")
+        local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo "0")
+        local cpu_freq_raw=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
+        local cpu_freq=$(escape_cache_value "$cpu_freq_raw")
+        local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
+        local mem_total_gb=$((mem_total / 1024 / 1024))
+        
+        {
+            echo "CPU_MODEL='$cpu_model'"
+            echo "CPU_CORES='$cpu_cores'" 
+            echo "CPU_FREQ='$cpu_freq'"
+            echo "MEM_TOTAL_GB='$mem_total_gb'"
+        } > "$cache_file"
+    fi
+    
+    if [[ -f "$cache_file" ]]; then
+        source "$cache_file" 2>/dev/null || {
+            # Si le sourcing échoue, régénérer le cache
+            rm -f "$cache_file"
+            get_cached_system_info
+        }
+    fi
+}
+
+# Cache des capacités de stockage (AMÉLIORÉ)
+get_cached_capacities() {
+    local cache_file="$HEARTBOX_CACHE_DIR/capacities.cache"
+    
+    # Forcer le recalcul à chaque fois car l'espace disque peut changer rapidement
+    local disk_info=$(df -h / 2>/dev/null | tail -1)
+    local disk_total=$(echo "$disk_info" | awk '{print $2}')
+    local disk_used=$(echo "$disk_info" | awk '{print $3}')
+    local disk_available=$(echo "$disk_info" | awk '{print $4}')
+    local disk_usage_percent=$(echo "$disk_info" | awk '{print $5}')
+    
+    # Conversion plus robuste en GB
+    local available_gb=0
+    if [[ "$disk_available" =~ ([0-9]+\.?[0-9]*)([KMGT]) ]]; then
+        local number="${BASH_REMATCH[1]}"
+        local unit="${BASH_REMATCH[2]}"
+        case "$unit" in
+            "K") available_gb=$(echo "scale=0; $number / 1024 / 1024" | bc -l 2>/dev/null || echo "0") ;;
+            "M") available_gb=$(echo "scale=0; $number / 1024" | bc -l 2>/dev/null || echo "0") ;;
+            "G") available_gb=$(echo "scale=0; $number" | bc -l 2>/dev/null || echo "0") ;;
+            "T") available_gb=$(echo "scale=0; $number * 1024" | bc -l 2>/dev/null || echo "0") ;;
+        esac
+    fi
+    
+    local zencard_parts=0
+    local nostr_parts=0
+    if [[ $available_gb -gt 0 ]]; then
+        zencard_parts=$(echo "scale=0; ($available_gb - 8*128) / 128" | bc -l 2>/dev/null || echo "0")
+        nostr_parts=$(echo "scale=0; ($available_gb - 8*10) / 10" | bc -l 2>/dev/null || echo "0")
+        [[ $zencard_parts -lt 0 ]] && zencard_parts=0
+        [[ $nostr_parts -lt 0 ]] && nostr_parts=0
+    fi
+    
+    {
+        echo "DISK_TOTAL='$disk_total'"
+        echo "DISK_USED='$disk_used'"
+        echo "DISK_AVAILABLE='$disk_available'"
+        echo "DISK_USAGE_PERCENT='$disk_usage_percent'"
+        echo "ZENCARD_PARTS='$zencard_parts'"
+        echo "NOSTR_PARTS='$nostr_parts'"
+        echo "AVAILABLE_GB='$available_gb'"
+    } > "$cache_file"
+    
+    source "$cache_file" 2>/dev/null
+}
+
+# Cache des informations matérielles (CORRIGÉ)
+get_cached_hardware() {
+    local cache_file="$HEARTBOX_CACHE_DIR/hardware.cache"
+    
+    if ! is_cache_valid "$cache_file" 3600; then  # Cache valide 1 heure
+        local cpu_model_raw=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
+        local cpu_model=$(escape_cache_value "$cpu_model_raw")
+        local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo "0")
+        local cpu_freq_raw=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
+        local cpu_freq=$(escape_cache_value "$cpu_freq_raw")
+        
+        local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
+        local mem_total_gb=$((mem_total / 1024 / 1024))
+        
+        {
+            echo "CPU_MODEL='$cpu_model'"
+            echo "CPU_CORES='$cpu_cores'"
+            echo "CPU_FREQ='$cpu_freq'"
+            echo "MEM_TOTAL_GB='$mem_total_gb'"
+        } > "$cache_file"
+    fi
+    
+    if [[ -f "$cache_file" ]]; then
+        source "$cache_file" 2>/dev/null || {
+            # Si le sourcing échoue, régénérer le cache
+            rm -f "$cache_file"
+            get_cached_hardware
+        }
+    fi
+}
+
+# Fonction pour recalculer l'état des services (toujours à jour)
+update_services_status() {
+    local cache_file="$HEARTBOX_CACHE_DIR/services_status.json"
+    local timestamp=$(date +%s)
+    
+    # Services à vérifier
+    local ipfs_status="inactive"
+    local ipfs_size="N/A"
+    local ipfs_peers="0"
+    if pgrep ipfs >/dev/null; then
+        ipfs_status="active"
+        ipfs_size=$(du -sh ~/.ipfs 2>/dev/null | cut -f1 || echo "N/A")
+        ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
+    fi
+    
+    local astroport_status="inactive"
+    if pgrep -f "12345" >/dev/null; then
+        astroport_status="active"
+    fi
+    
+    local nextcloud_status="inactive"
+    local nc_containers=""
+    if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
+        nextcloud_status="active"
+        nc_containers=$(docker ps --filter "name=nextcloud" --format "{{.Status}}" 2>/dev/null | head -1)
+    fi
+    
+    local wireguard_status="inactive"
+    local wg_peers="0"
+    if check_sudo_cached && sudo -n wg show wg0 >/dev/null 2>&1; then
+        wireguard_status="active"
+        wg_peers=$(sudo -n wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
+    else
+        # Vérification alternative sans sudo si possible
+        if systemctl is-active --quiet wg-quick@wg0 2>/dev/null; then
+            wireguard_status="active"
+            wg_peers=$(sudo -n wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
+        else
+            wireguard_status="inactive"
+        fi
+    fi
+    
+    local g1billet_status="inactive"
+    if pgrep -f "G1BILLETS" >/dev/null; then
+        g1billet_status="active"
+    fi
+    
+    # Sauvegarder le cache JSON des services
+    cat > "$cache_file" << EOF
+{
+    "timestamp": $timestamp,
+    "services": {
+        "ipfs": {
+            "status": "$ipfs_status",
+            "size": "$ipfs_size", 
+            "peers": $ipfs_peers
+        },
+        "astroport": {
+            "status": "$astroport_status"
+        },
+        "nextcloud": {
+            "status": "$nextcloud_status",
+            "containers": "$nc_containers"
+        },
+        "wireguard": {
+            "status": "$wireguard_status",
+            "peers": $wg_peers
+        },
+        "g1billet": {
+            "status": "$g1billet_status"
+        }
+    }
+}
+EOF
+    
+    echo "🔄 Services mis à jour: $(date '+%H:%M:%S')" > "$HEARTBOX_CACHE_DIR/.last_services_update"
+}
+
+# Afficher l'état des services depuis le cache
+display_services_status() {
+    print_section "🔧 ÉTAT DES SERVICES"
+    
+    local cache_file="$HEARTBOX_CACHE_DIR/services_status.json"
+    
+    if [[ -f "$cache_file" ]]; then
+        local last_update=""
+        if [[ -f "$HEARTBOX_CACHE_DIR/.last_services_update" ]]; then
+            last_update=" $(cat "$HEARTBOX_CACHE_DIR/.last_services_update")"
+        fi
+        
+        echo -e "${CYAN}$last_update${NC}"
+        
+        # IPFS
+        local ipfs_status=$(jq -r '.services.ipfs.status' "$cache_file" 2>/dev/null)
+        local ipfs_size=$(jq -r '.services.ipfs.size' "$cache_file" 2>/dev/null)
+        local ipfs_peers=$(jq -r '.services.ipfs.peers' "$cache_file" 2>/dev/null)
+        
+        if [[ "$ipfs_status" == "active" ]]; then
+            print_status "IPFS" "ACTIVE" "($ipfs_size, $ipfs_peers peers)"
+        else
+            print_status "IPFS" "INACTIVE" ""
+        fi
+        
+        # Astroport
+        local astroport_status=$(jq -r '.services.astroport.status' "$cache_file" 2>/dev/null)
+        if [[ "$astroport_status" == "active" ]]; then
+            print_status "Astroport" "ACTIVE" "(API: http://localhost:12345)"
+        else
+            print_status "Astroport" "INACTIVE" ""
+        fi
+        
+        # NextCloud
+        local nextcloud_status=$(jq -r '.services.nextcloud.status' "$cache_file" 2>/dev/null)
+        local nc_containers=$(jq -r '.services.nextcloud.containers' "$cache_file" 2>/dev/null)
+        if [[ "$nextcloud_status" == "active" ]]; then
+            print_status "NextCloud" "ACTIVE" "($nc_containers)"
+        else
+            print_status "NextCloud" "INACTIVE" "(Docker ou conteneurs non démarrés)"
+        fi
+        
+        # WireGuard
+        local wireguard_status=$(jq -r '.services.wireguard.status' "$cache_file" 2>/dev/null)
+        local wg_peers=$(jq -r '.services.wireguard.peers' "$cache_file" 2>/dev/null)
+        if [[ "$wireguard_status" == "active" ]]; then
+            print_status "WireGuard" "ACTIVE" "($wg_peers clients connectés)"
+        else
+            print_status "WireGuard" "INACTIVE" ""
+        fi
+        
+        # G1Billet
+        local g1billet_status=$(jq -r '.services.g1billet.status' "$cache_file" 2>/dev/null)
+        if [[ "$g1billet_status" == "active" ]]; then
+            print_status "G1Billet" "ACTIVE" ""
+        else
+            print_status "G1Billet" "INACTIVE" ""
+        fi
+    else
+        echo -e "${RED}❌ Cache des services non disponible${NC}"
+    fi
+}
 
 #######################################################################
 # Fonctions utilitaires d'affichage
@@ -69,15 +377,14 @@ print_status() {
 #######################################################################
 
 get_system_info() {
-    local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
-    local cpu_cores=$(grep "processor" /proc/cpuinfo | wc -l 2>/dev/null || echo "0")
-    local cpu_freq=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
-    local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | xargs)
+    # Charger les informations système depuis le cache
+    get_cached_system_info
     
-    local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
+    # Informations dynamiques (charge CPU et RAM)
+    local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | xargs)
     local mem_available=$(grep "MemAvailable" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
+    local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
     local mem_used=$((mem_total - mem_available))
-    local mem_total_gb=$((mem_total / 1024 / 1024))
     local mem_used_gb=$((mem_used / 1024 / 1024))
     local mem_usage_percent=$((mem_used * 100 / mem_total))
     
@@ -87,11 +394,11 @@ get_system_info() {
     local disk_available=$(echo "$disk_info" | awk '{print $4}')
     local disk_usage_percent=$(echo "$disk_info" | awk '{print $5}')
     
-    echo -e "${WHITE}Processeur:${NC} $cpu_model"
-    echo -e "${WHITE}Cœurs:${NC} $cpu_cores threads @ ${cpu_freq} MHz"
+    echo -e "${WHITE}Processeur:${NC} $CPU_MODEL"
+    echo -e "${WHITE}Cœurs:${NC} $CPU_CORES threads @ ${CPU_FREQ} MHz"
     echo -e "${WHITE}Charge CPU:${NC} $cpu_load"
     echo ""
-    echo -e "${WHITE}Mémoire:${NC} ${mem_used_gb}GB / ${mem_total_gb}GB (${mem_usage_percent}%)"
+    echo -e "${WHITE}Mémoire:${NC} ${mem_used_gb}GB / ${MEM_TOTAL_GB}GB (${mem_usage_percent}%)"
     echo -e "${WHITE}Disque:${NC} $disk_used / $disk_total ($disk_usage_percent utilisé)"
     echo -e "${WHITE}Libre:${NC} $disk_available"
     
@@ -105,26 +412,17 @@ get_system_info() {
 }
 
 #######################################################################
-# Calcul des capacités d'abonnement
+# Calcul des capacités d'abonnement (CORRIGÉ pour utiliser le cache)
 #######################################################################
 
 calculate_subscription_capacity() {
-    local disk_info=$(df -h / | tail -1)
-    local disk_available_str=$(echo "$disk_info" | awk '{print $4}')
+    # Utiliser le cache des capacités
+    get_cached_capacities
     
-    # Conversion en GB
-    local available_gb=$(echo "$disk_available_str" | sed 's/G//' | sed 's/T/*1024/' | bc 2>/dev/null || echo "0")
-    
-    if [[ $(echo "$available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
-        local zencard_parts=$(echo "($available_gb - 8*128) / 128" | bc 2>/dev/null || echo "0")
-        local nostr_parts=$(echo "($available_gb - 8*10) / 10" | bc 2>/dev/null || echo "0")
-        
-        [[ $(echo "$zencard_parts < 0" | bc 2>/dev/null) -eq 1 ]] && zencard_parts=0
-        [[ $(echo "$nostr_parts < 0" | bc 2>/dev/null) -eq 1 ]] && nostr_parts=0
-        
+    if [[ "${AVAILABLE_GB:-0}" -gt 0 ]]; then
         echo -e "${WHITE}Capacités d'abonnement:${NC}"
-        echo "  🎫 ZenCards (128 GB/slot): $zencard_parts slots"
-        echo "  📻 NOSTR Cards (10 GB/slot): $nostr_parts slots"
+        echo "  🎫 ZenCards (128 GB/slot): ${ZENCARD_PARTS:-0} slots"
+        echo "  📻 NOSTR Cards (10 GB/slot): ${NOSTR_PARTS:-0} slots"
         echo "  👨‍✈️  Réservé capitaine: 8 slots (1024 GB)"
     else
         echo -e "${RED}❌ Impossible de calculer les capacités${NC}"
@@ -132,50 +430,13 @@ calculate_subscription_capacity() {
 }
 
 #######################################################################
-# État des services
+# État des services (REMPLACÉ par display_services_status)
 #######################################################################
 
 check_services_status() {
-    print_section "🔧 ÉTAT DES SERVICES"
-    
-    # IPFS
-    if pgrep ipfs >/dev/null; then
-        local ipfs_size=$(du -sh ~/.ipfs 2>/dev/null | cut -f1 || echo "N/A")
-        local ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
-        print_status "IPFS" "ACTIVE" "($ipfs_size, $ipfs_peers peers)"
-    else
-        print_status "IPFS" "INACTIVE" ""
-    fi
-    
-    # Astroport
-    if pgrep -f "12345" >/dev/null; then
-        print_status "Astroport" "ACTIVE" "(API: http://localhost:12345)"
-    else
-        print_status "Astroport" "INACTIVE" ""
-    fi
-    
-    # NextCloud
-    if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
-        local nc_status=$(docker ps --filter "name=nextcloud" --format "{{.Status}}" 2>/dev/null | head -1)
-        print_status "NextCloud" "ACTIVE" "($nc_status)"
-    else
-        print_status "NextCloud" "INACTIVE" "(Docker ou conteneurs non démarrés)"
-    fi
-    
-    # WireGuard
-    if sudo wg show wg0 >/dev/null 2>&1; then
-        local wg_peers=$(sudo wg show wg0 | grep -c "peer:" || echo "0")
-        print_status "WireGuard" "ACTIVE" "($wg_peers clients connectés)"
-    else
-        print_status "WireGuard" "INACTIVE" ""
-    fi
-    
-    # G1Billet
-    if pgrep -f "G1BILLETS" >/dev/null; then
-        print_status "G1Billet" "ACTIVE" ""
-    else
-        print_status "G1Billet" "INACTIVE" ""
-    fi
+    # Cette fonction est maintenant remplacée par display_services_status
+    # qui utilise le cache mis à jour par update_services_status
+    display_services_status
 }
 
 #######################################################################
@@ -232,6 +493,13 @@ analyze_swarm() {
 
 show_main_menu() {
     clear
+    
+    # Initialiser le cache si nécessaire
+    init_cache
+    
+    # Recalculer l'état des services à chaque affichage du menu
+    update_services_status
+    
     print_header "♥️BOX CONTROL - Pilotage UPlanet"
     
     echo -e "${WHITE}Node ID:${NC} $IPFSNODEID"
@@ -276,7 +544,7 @@ show_detailed_monitoring() {
     echo ""
     
     # Utilisation réseau
-    print_section "🌐 RÉSEAU")
+    print_section "🌐 RÉSEAU"
     echo "Connexions IPFS:"
     netstat -tan | grep ":5001\|:4001\|:8080" | head -5
     echo ""
@@ -285,13 +553,13 @@ show_detailed_monitoring() {
     echo ""
     
     # Utilisation disque détaillée
-    print_section "💾 UTILISATION DISQUE")
+    print_section "💾 UTILISATION DISQUE"
     echo "Répertoires principaux:"
     du -sh ~/.zen ~/.ipfs /nextcloud-data 2>/dev/null | sort -hr
     echo ""
     
     # Logs récents
-    print_section "📝 LOGS RÉCENTS")
+    print_section "📝 LOGS RÉCENTS"
     echo "Dernières activités:"
     tail -5 ~/.zen/tmp/12345.log 2>/dev/null || echo "Aucun log 12345"
     echo ""
@@ -303,43 +571,183 @@ show_detailed_monitoring() {
 }
 
 #######################################################################
-# Gestion WireGuard
+# Gestion WireGuard (AMÉLIORÉE)
 #######################################################################
 
+# Import des fonctions WireGuard si disponibles
+if [[ -f "${MY_PATH}/wireguard_control.sh" ]]; then
+    # Sourcer uniquement les fonctions utilitaires
+    source <(grep -A20 "^ssh_to_wg\|^convert_ssh_keys\|^setup_server\|^add_client" "${MY_PATH}/wireguard_control.sh" | grep -v "^show_menu\|^check_deps")
+    WG_FUNCTIONS_AVAILABLE=true
+else
+    WG_FUNCTIONS_AVAILABLE=false
+fi
+
+# Fonction pour vérifier l'état WireGuard
+check_wireguard_status() {
+    if systemctl is-active --quiet wg-quick@wg0; then
+        local peers=$(sudo wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
+        local endpoint=$(sudo wg show wg0 2>/dev/null | grep "endpoint:" | head -1 | awk '{print $2}' || echo "Non configuré")
+        echo -e "${GREEN}✅ WireGuard actif${NC} - $peers clients connectés"
+        echo -e "${WHITE}Endpoint:${NC} $endpoint"
+        return 0
+    else
+        echo -e "${RED}❌ WireGuard inactif${NC}"
+        return 1
+    fi
+}
+
+# Fonction pour lister les clients configurés
+list_wireguard_clients() {
+    if [[ -f /etc/wireguard/wg0.conf ]]; then
+        echo -e "${CYAN}📋 Clients configurés:${NC}"
+        sudo grep -A2 "^# " /etc/wireguard/wg0.conf | while read -r line; do
+            if [[ "$line" =~ ^#[[:space:]]+(.+) ]]; then
+                local client_name="${BASH_REMATCH[1]}"
+                echo "  🔐 $client_name"
+            fi
+        done
+    else
+        echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée${NC}"
+    fi
+}
+
+# Interface WireGuard améliorée
 manage_wireguard() {
     clear
-    print_header "🌐 GESTION WIREGUARD")
+    print_header "🌐 GESTION WIREGUARD"
     
-    echo "1. 🚀 Initialiser serveur WireGuard"
-    echo "2. 👥 Ajouter un client"
-    echo "3. 📋 Afficher configuration"
-    echo "4. 🔄 Redémarrer service"
-    echo "5. 🛠️  Client setup (ce node)"
-    echo "0. ⬅️  Retour"
+    # Affichage du statut actuel
+    check_wireguard_status
+    echo ""
+    list_wireguard_clients
+    echo ""
+    
+    if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
+        echo "1. 🚀 Initialiser serveur WireGuard (depuis clés SSH)"
+        echo "2. 👥 Ajouter un client avec restrictions"
+        echo "3. 🔓 Ajouter un client (accès complet)"
+        echo "4. 📋 Afficher configuration détaillée"
+        echo "5. 🔄 Redémarrer service"
+        echo "6. 🛠️  Configuration client (ce node)"
+        echo "7. 📤 Générer QR Code client"
+        echo "0. ⬅️  Retour"
+    else
+        echo -e "${RED}❌ Scripts WireGuard non disponibles${NC}"
+        echo "3. 📋 Afficher configuration"
+        echo "4. 🔄 Redémarrer service"
+        echo "0. ⬅️  Retour"
+    fi
     echo ""
     read -p "Choix: " wg_choice
     
     case $wg_choice in
         1) 
-            echo "🚀 Initialisation du serveur WireGuard..."
-            sudo "${MY_PATH}/wireguard_control.sh"
+            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
+                echo "🚀 Initialisation du serveur WireGuard..."
+                if [[ -f ~/.ssh/id_ed25519 ]]; then
+                    echo "🔑 Conversion des clés SSH existantes..."
+                    setup_server
+                    echo -e "${GREEN}✅ Serveur initialisé avec succès${NC}"
+                else
+                    echo -e "${RED}❌ Aucune clé SSH ED25519 trouvée${NC}"
+                    echo "Générez d'abord vos clés SSH avec : ssh-keygen -t ed25519"
+                fi
+            fi
             ;;
         2)
-            read -p "Nom du client: " client_name
-            echo "Collez la clé SSH publique du client:"
-            read -p "> " client_pubkey
-            echo "$client_name|$client_pubkey" | sudo "${MY_PATH}/wireguard_control.sh"
+            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
+                echo "👥 Ajout d'un client avec restrictions de ports"
+                read -p "Nom du client: " client_name
+                echo ""
+                echo "Collez la clé SSH publique du client:"
+                echo -e "${CYAN}Format attendu: ssh-ed25519 AAAAC3Nz... user@host${NC}"
+                read -p "> " client_ssh_key
+                
+                if [[ "$client_ssh_key" =~ ssh-ed25519[[:space:]]+([A-Za-z0-9+/=]+) ]]; then
+                    local ssh_pubkey="${BASH_REMATCH[1]}"
+                    echo ""
+                    add_client "$client_name" "$ssh_pubkey"
+                else
+                    echo -e "${RED}❌ Format de clé SSH invalide${NC}"
+                fi
+            fi
             ;;
         3)
-            echo "📋 Configuration WireGuard:"
-            sudo wg show wg0 2>/dev/null || echo "❌ WireGuard non configuré"
+            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
+                echo "🔓 Ajout d'un client (accès complet)"
+                read -p "Nom du client: " client_name
+                echo "Collez la clé SSH publique du client:"
+                read -p "> " client_ssh_key
+                
+                if [[ "$client_ssh_key" =~ ssh-ed25519[[:space:]]+([A-Za-z0-9+/=]+) ]]; then
+                    local ssh_pubkey="${BASH_REMATCH[1]}"
+                    # Simulation d'input "all" pour accès complet
+                    echo "all" | add_client "$client_name" "$ssh_pubkey"
+                else
+                    echo -e "${RED}❌ Format de clé SSH invalide${NC}"
+                fi
+            else
+                echo "📋 Configuration WireGuard:"
+                sudo wg show wg0 2>/dev/null || echo "❌ WireGuard non configuré"
+            fi
             ;;
         4)
-            echo "🔄 Redémarrage WireGuard..."
-            sudo systemctl restart wg-quick@wg0
+            echo "📋 Configuration WireGuard détaillée:"
+            echo ""
+            echo -e "${CYAN}=== Interface ===${NC}"
+            sudo wg show wg0 2>/dev/null || echo "❌ WireGuard non configuré"
+            echo ""
+            echo -e "${CYAN}=== Configuration complète ===${NC}"
+            if [[ -f /etc/wireguard/wg0.conf ]]; then
+                sudo cat /etc/wireguard/wg0.conf | grep -v "PrivateKey"
+            else
+                echo "❌ Fichier de configuration non trouvé"
+            fi
+            echo ""
+            echo -e "${CYAN}=== Règles iptables ===${NC}"
+            sudo iptables -L FORWARD | grep -E "wg0|10\.99\.99" || echo "Aucune règle spécifique"
             ;;
         5)
-            "${MY_PATH}/wg-client-setup.sh"
+            echo "🔄 Redémarrage WireGuard..."
+            sudo systemctl restart wg-quick@wg0 2>/dev/null
+            if systemctl is-active --quiet wg-quick@wg0; then
+                echo -e "${GREEN}✅ Service redémarré avec succès${NC}"
+            else
+                echo -e "${RED}❌ Erreur lors du redémarrage${NC}"
+            fi
+            ;;
+        6)
+            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" && -x "${MY_PATH}/wg-client-setup.sh" ]]; then
+                echo "🛠️  Configuration client (ce node)..."
+                "${MY_PATH}/wg-client-setup.sh"
+            else
+                echo -e "${RED}❌ Script wg-client-setup.sh non disponible${NC}"
+            fi
+            ;;
+        7)
+            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
+                echo "📤 Génération QR Code pour client"
+                read -p "Nom du client: " client_name
+                local client_conf="$HOME/.zen/wireguard/${client_name}.conf"
+                if [[ -f "$client_conf" ]]; then
+                    if command -v qrencode >/dev/null; then
+                        qrencode -t ansiutf8 < "$client_conf"
+                        echo ""
+                        echo -e "${GREEN}✅ QR Code généré pour $client_name${NC}"
+                        echo "Configuration également disponible dans: $client_conf"
+                    else
+                        echo -e "${YELLOW}⚠️ qrencode non installé. Installation recommandée:${NC}"
+                        echo "sudo apt install qrencode"
+                        echo ""
+                        echo "Configuration manuelle disponible dans: $client_conf"
+                    fi
+                else
+                    echo -e "${RED}❌ Configuration client '$client_name' non trouvée${NC}"
+                    echo "Clients disponibles:"
+                    ls "$HOME/.zen/wireguard/"*.conf 2>/dev/null | xargs -n1 basename | sed 's/.conf$//' | sed 's/^/  - /' || echo "  Aucun"
+                fi
+            fi
             ;;
     esac
     
@@ -352,7 +760,7 @@ manage_wireguard() {
 
 manage_swarm() {
     clear
-    print_header "🔗 GESTION SWARM UPLANET")
+    print_header "🔗 GESTION SWARM UPLANET"
     
     echo "1. 🔍 Découvrir l'essaim"
     echo "2. 📊 Statut des abonnements"
@@ -387,7 +795,7 @@ manage_swarm() {
 
 manage_visa() {
     clear
-    print_header "🎫 IMPRESSION VISA/ZENCARD")
+    print_header "🎫 IMPRESSION VISA/ZENCARD"
     
     local current_player=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
     
@@ -437,7 +845,7 @@ manage_visa() {
 
 manage_services() {
     clear
-    print_header "🛠️  GESTION DES SERVICES")
+    print_header "🛠️  GESTION DES SERVICES"
     
     echo "1. 🔄 Redémarrer IPFS"
     echo "2. 🔄 Redémarrer Astroport"
@@ -488,7 +896,7 @@ manage_services() {
 
 manage_nextcloud() {
     clear
-    print_header "📱 NEXTCLOUD DOCKER")
+    print_header "📱 NEXTCLOUD DOCKER"
     
     local compose_file="$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml"
     
@@ -545,7 +953,7 @@ manage_nextcloud() {
 
 show_logs() {
     clear
-    print_header "📋 LOGS ET DIAGNOSTICS")
+    print_header "📋 LOGS ET DIAGNOSTICS"
     
     echo "1. 📊 Observer logs en temps réel"
     echo "2. 📝 Logs Astroport"
@@ -584,7 +992,7 @@ show_logs() {
 
 manage_config() {
     clear
-    print_header "⚙️  CONFIGURATION")
+    print_header "⚙️  CONFIGURATION"
     
     echo "1. 🔧 Configuration IPFS"
     echo "2. 🌐 Configuration réseau"
