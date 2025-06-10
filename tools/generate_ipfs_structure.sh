@@ -2633,6 +2633,11 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         }
         updateUIBasedOnOwnership();
         filterAndDisplayItems(currentFilter, $('#search-input').val().toLowerCase());
+        
+        // NEW: Refresh Capsule Information to show updated connection status
+        if (currentManifest) { // Only refresh if manifest is already loaded
+            displayDirectoryInfo(currentManifest);
+        }
     } 
 
         function disconnectFromNostr() {
@@ -3512,6 +3517,14 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 `<code style="font-size:0.8em;"><i class="fas fa-fingerprint"></i> ${currentHash}</code>` :
                 '<span style="color: #ffa500; font-size:0.8em;"><i class="fas fa-clock"></i> Not published to IPFS</span>';
 
+            // Add Nostr Connected Key display
+            let connectedKeyDisplay = '';
+            if (userPublicKey) {
+                connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><code>${userPublicKey.substring(0, 10)}...${userPublicKey.substring(userPublicKey.length - 10)}</code></div>`;
+            } else {
+                connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><span style="color: #ffa500; font-size:0.8em;">Not Connected</span></div>`;
+            }
+
             const html = `
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 0.85em;">
                     <div><strong><i class="fas fa-fingerprint"></i> Hash:</strong><br>${hashDisplay}</div>
@@ -3520,6 +3533,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     <div><strong><i class="fas fa-file"></i> Files:</strong> ${manifest.total_files}</div>
                     <div><strong><i class="fas fa-weight-hanging"></i> Size:</strong> ${manifest.formatted_total_size}</div>
                     <div><strong><i class="fas fa-clock"></i> Generated:</strong><br><span style="font-size:0.8em;">${generatedDate}</span></div>
+                    ${connectedKeyDisplay}
                 </div>
             `;
             $('#info-content').html(html);
