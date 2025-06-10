@@ -7,6 +7,16 @@ import websockets
 import time
 import hashlib
 from typing import Optional, Dict, Any
+import os
+from pathlib import Path
+
+# Importer les fonctions de conversion depuis le script existant
+sys.path.append(str(Path(__file__).parent))
+try:
+    from nostr_nsec2npub2hex import nsec_to_hex, hex_to_npub, nsec_to_npub
+    HAS_CONVERSION_TOOLS = True
+except ImportError:
+    HAS_CONVERSION_TOOLS = False
 
 try:
     import secp256k1
@@ -47,25 +57,60 @@ def sign_event(event_dict: dict, private_key_hex: str) -> dict:
     
     return event_dict
 
-def nsec_to_hex(nsec: str) -> str:
-    """Convertir une clé privée nsec en hexadécimal"""
-    # Pour cette implémentation simplifiée, on suppose que c'est déjà en hex
-    # Dans un vrai cas, il faudrait décoder le bech32
-    if nsec.startswith('nsec1'):
-        # Décoder bech32 (implémentation simplifiée)
-        # Pour le moment, on retourne une erreur
-        raise ValueError("Décodage bech32 non implémenté dans cette version simplifiée")
+def convert_private_key(private_key_input: str) -> tuple[str, str]:
+    """Convertir une clé privée (nsec ou hex) et retourner (hex_privkey, hex_pubkey)"""
+    
+    if private_key_input.startswith('nsec1'):
+        # C'est une nsec, la convertir
+        if not HAS_CONVERSION_TOOLS:
+            raise ValueError("❌ Module de conversion bech32 non disponible. Impossible de traiter nsec.")
+        
+        hex_privkey = nsec_to_hex(private_key_input)
+        if not hex_privkey:
+            raise ValueError("❌ Erreur lors de la conversion nsec vers hex")
+        
+        print(f"✅ nsec convertie vers hex")
+        
+        # Obtenir la clé publique en utilisant les outils de conversion
+        npub = nsec_to_npub(private_key_input)
+        if not npub:
+            raise ValueError("❌ Erreur lors de la dérivation de la clé publique")
+        
+        # Convertir npub vers hex
+        from bech32 import bech32_decode, convertbits
+        hrp, data = bech32_decode(npub)
+        if hrp != 'npub' or not data:
+            raise ValueError("❌ Erreur lors du décodage npub")
+        
+        hex_pubkey = bytes(convertbits(data, 5, 8, False)).hex()
+        print(f"✅ Clé publique dérivée: {hex_pubkey}")
+        
+        return hex_privkey, hex_pubkey
+        
     else:
         # Supposer que c'est déjà en hex
-        return nsec
+        hex_privkey = private_key_input
+        
+        # D'abord essayer d'extraire depuis les fichiers utilisateur
+        hex_pubkey = extract_pubkey_from_nsec_file(hex_privkey)
+        if hex_pubkey:
+            print(f"🔑 Clé publique trouvée dans les fichiers utilisateur")
+            return hex_privkey, hex_pubkey
+        
+        # Sinon utiliser secp256k1 pour dériver
+        if HAS_SECP256K1:
+            private_key = secp256k1.PrivateKey(bytes.fromhex(hex_privkey))
+            public_key = private_key.pubkey.serialize(compressed=False)[1:]  # Enlever le préfixe 0x04
+            hex_pubkey = public_key.hex()
+            print(f"✅ Clé publique dérivée avec secp256k1")
+            return hex_privkey, hex_pubkey
+        else:
+            raise ValueError("❌ secp256k1 non disponible et clé publique non trouvée dans les fichiers")
 
 def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
     """Extraire la clé publique depuis les fichiers utilisateur"""
-    import os
-    import pathlib
-    
     # Chercher dans tous les dossiers utilisateur
-    nostr_base = pathlib.Path.home() / ".zen" / "game" / "nostr"
+    nostr_base = Path.home() / ".zen" / "game" / "nostr"
     
     if not nostr_base.exists():
         return None
@@ -79,15 +124,13 @@ def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
                         content = f.read().strip()
                     
                     # Parser le contenu
-                    nsec_val = None
                     hex_val = None
                     
                     for line in content.split(';'):
                         line = line.strip()
-                        if line.startswith('NSEC='):
-                            nsec_val = line.replace('NSEC=', '').strip()
-                        elif line.startswith('HEX='):
+                        if line.startswith('HEX='):
                             hex_val = line.replace('HEX=', '').strip()
+                            break
                     
                     # Vérifier si la clé privée correspond
                     if private_key_hex.lower() == hex_val.lower() if hex_val else False:
@@ -101,24 +144,6 @@ def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
                     continue
     
     return None
-
-def hex_to_pubkey(private_key_hex: str) -> str:
-    """Convertir une clé privée hex en clé publique hex"""
-    # D'abord essayer d'extraire depuis les fichiers utilisateur
-    pubkey = extract_pubkey_from_nsec_file(private_key_hex)
-    if pubkey:
-        print(f"🔑 Clé publique trouvée dans les fichiers utilisateur")
-        return pubkey
-    
-    if HAS_SECP256K1:
-        private_key = secp256k1.PrivateKey(bytes.fromhex(private_key_hex))
-        public_key = private_key.pubkey.serialize(compressed=False)[1:]  # Enlever le préfixe 0x04
-        return public_key.hex()
-    else:
-        # Fallback - demander à l'utilisateur de fournir la clé publique
-        print("⚠️ secp256k1 non disponible et clé publique non trouvée dans les fichiers")
-        print("   Veuillez installer python3-secp256k1 ou vérifier les fichiers utilisateur")
-        raise ValueError("Impossible de déterminer la clé publique")
 
 async def fetch_current_profile(relay_url: str, pubkey: str) -> Optional[Dict[str, Any]]:
     """Récupérer le profil actuel depuis strfry via WebSocket"""
@@ -229,12 +254,12 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
                 metadata.pop(field, None)  # Supprimer le champ si vide
             else:
                 metadata[field] = val
-    
+
     metadata["bot"] = False
-    
+
     # Gérer les tags 'i' (identités externes)
     tag_map = {}
-    
+
     # Récupérer les tags existants
     for tag in existing_tags:
         if len(tag) >= 2 and tag[0] == "i" and ":" in tag[1]:
@@ -252,17 +277,17 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
                 tag_map.pop(field, None)  # Supprimer si vide
             else:
                 tag_map[field] = val
-    
+
     # Ajouter les champs dynamiques depuis unknown_args
     for i in range(0, len(unknown_args), 2):
         if i + 1 < len(unknown_args):
-            key = unknown_args[i].lstrip("-")
+        key = unknown_args[i].lstrip("-")
             val = unknown_args[i + 1]
             if val == "":
                 tag_map.pop(key, None)
             else:
                 tag_map[key] = val
-    
+
     # Reconstruire les tags
     new_tags = [["i", f"{k}:{v}", ""] for k, v in tag_map.items()]
     
@@ -273,19 +298,14 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     
     return metadata, new_tags
 
-async def update_nostr_profile(private_key_nsec: str, relays: list, args: argparse.Namespace, unknown_args: list):
+async def update_nostr_profile(private_key_input: str, relays: list, args: argparse.Namespace, unknown_args: list):
     """Mettre à jour le profil NOSTR en préservant les données existantes"""
     try:
-        # Convertir la clé privée
-        if private_key_nsec.startswith('nsec1'):
-            print("❌ Décodage bech32 nsec non implémenté dans cette version")
-            print("   Veuillez fournir la clé privée en format hexadécimal")
-            return False
+        # Convertir la clé privée et obtenir la clé publique
+        print(f"🔐 Traitement de la clé privée...")
+        hex_privkey, hex_pubkey = convert_private_key(private_key_input)
         
-        private_key_hex = private_key_nsec
-        public_key_hex = hex_to_pubkey(private_key_hex)
-        
-        print(f"🔑 Clé publique: {public_key_hex}")
+        print(f"🔑 Clé publique: {hex_pubkey}")
         
         # Utiliser le premier relai pour récupérer le profil existant
         relay_url = relays[0] if relays else "ws://127.0.0.1:7777"
@@ -293,7 +313,7 @@ async def update_nostr_profile(private_key_nsec: str, relays: list, args: argpar
         
         # Récupérer le profil existant
         print("📥 Récupération du profil existant...")
-        existing_event = await fetch_current_profile(relay_url, public_key_hex)
+        existing_event = await fetch_current_profile(relay_url, hex_pubkey)
         
         if existing_event:
             print(f"✅ Profil existant trouvé, mise à jour...")
@@ -305,7 +325,7 @@ async def update_nostr_profile(private_key_nsec: str, relays: list, args: argpar
         
         # Créer le nouvel événement
         new_event = {
-            "pubkey": public_key_hex,
+            "pubkey": hex_pubkey,
             "created_at": int(time.time()),
             "kind": 0,
             "tags": tags,
@@ -313,7 +333,7 @@ async def update_nostr_profile(private_key_nsec: str, relays: list, args: argpar
         }
         
         # Signer l'événement
-        signed_event = sign_event(new_event, private_key_hex)
+        signed_event = sign_event(new_event, hex_privkey)
         
         print(f"📤 Publication du profil mis à jour...")
         print(f"   Métadonnées: {len(metadata)} champs")
@@ -339,7 +359,7 @@ async def update_nostr_profile(private_key_nsec: str, relays: list, args: argpar
 
 async def main():
     parser = argparse.ArgumentParser(description="Update Nostr profile metadata (préserve les données existantes)", allow_abbrev=False)
-    parser.add_argument("private_key", help="Private key (hex format)")
+    parser.add_argument("private_key", help="Private key (nsec1... or hex format)")
     parser.add_argument("relays", nargs="+", help="List of relays")
 
     # Champs connus
