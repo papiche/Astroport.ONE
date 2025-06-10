@@ -101,14 +101,11 @@ should_refresh() {
     [[ ! -d ${player_dir}/APP ]] \
         && mkdir -p ${player_dir}/APP/
 
-    [[ ! -s ${player_dir}/APP/generate_ipfs_structure.sh ]] \
-        && cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh \
-            ${player_dir}/APP/
-    # APP code update
-    [[ $(diff ${player_dir}/APP/generate_ipfs_structure.sh ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh) ]] \
-        && echo "APP STRUCTURE UPDATED" \
-        && cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh \
-            ${player_dir}/APP/
+    ## Verify Link
+    [[ ! -L "${player_dir}/APP/generate_ipfs_structure.sh" ]] && \
+        cd "${player_dir}/APP" && \
+        rm -f "generate_ipfs_structure.sh" && \
+        ln -s "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh"
 
     ## Check for IPFS DRIVE change
     cd ${player_dir}/APP/
