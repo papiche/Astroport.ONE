@@ -281,7 +281,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     # Ajouter les champs dynamiques depuis unknown_args
     for i in range(0, len(unknown_args), 2):
         if i + 1 < len(unknown_args):
-        key = unknown_args[i].lstrip("-")
+            key = unknown_args[i].lstrip("-")
             val = unknown_args[i + 1]
             if val == "":
                 tag_map.pop(key, None)
