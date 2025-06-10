@@ -8,9 +8,33 @@ from pynostr.key import PrivateKey
 from pynostr.filters import Filters
 
 def fetch_latest_profile_event(relay_manager, public_key):
+    events = []
+    
+    def handle_event(event):
+        if event.kind == 0 and event.public_key == public_key:
+            events.append(event)
+    
+    # Ajouter le callback pour capturer les événements
+    relay_manager.add_event_handler(handle_event)
+    
+    # Créer le filtre
+    flt = Filters([{"kinds": [0], "authors": [public_key], "limit": 10}])
+    
+    # Ajouter la subscription
+    subscription_id = "profile_fetch"
+    relay_manager.add_subscription(subscription_id, flt)
+    
+    # Lancer le relay manager pour récupérer les événements
+    import time
     relay_manager.run_sync()
-    flt = Filters([{"kinds": [0], "authors": [public_key]}])
-    events = relay_manager.query_sync(flt)
+    
+    # Attendre un peu pour que les événements arrivent
+    time.sleep(2)
+    
+    # Fermer la subscription
+    relay_manager.close_subscription(subscription_id)
+    
+    # Retourner l'événement le plus récent
     if events:
         return sorted(events, key=lambda e: e.created_at)[-1]
     return None
