@@ -1,6 +1,6 @@
 #!/bin/bash
 ######################## Ustats.sh
-# analyse LOCAL & SWARM data structure 
+# analyse LOCAL & SWARM data structure
 # and cache the result for 1 hour
 ####################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -59,16 +59,16 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             ULAT_FLOAT=$(echo "$ULAT" | bc -l)
             ULON_FLOAT=$(echo "$ULON" | bc -l)
             DEG_FLOAT=$(echo "$DEG" | bc -l)
-            
+
             # Check if coordinates are within the area
             LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
             LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
-            
+
             if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
                 continue
             fi
         fi
-        
+
         echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW ZEN=$ZEN LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED HEX=$HEX TW=$TW source=$source"
         # Construct JSON object using printf and associative array
         tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "ZEN": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "HEX": "%s", "SOURCE": "%s"}' \
@@ -91,7 +91,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         $(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)
         [[ -z $LAT ]] && LAT="0.00"
         [[ -z $LON ]] && LON="0.00"
-        
+
         # Filter by geographic area if coordinates are provided
         if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then
             # Convert coordinates to float for comparison
@@ -100,16 +100,16 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             ULAT_FLOAT=$(echo "$ULAT" | bc -l)
             ULON_FLOAT=$(echo "$ULON" | bc -l)
             DEG_FLOAT=$(echo "$DEG" | bc -l)
-            
+
             # Check if coordinates are within the area
             LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
             LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
-            
+
             if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
                 continue
             fi
         fi
-        
+
         NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
         ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
         echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}"
@@ -136,7 +136,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     for umap in "${unique_combinedUMAPS[@]}"; do
         lat=$(echo "$umap" | cut -d '_' -f 2)
         lon=$(echo "$umap" | cut -d '_' -f 3)
-        
+
         # Filter by geographic area if coordinates are provided
         if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then
             # Convert coordinates to float for comparison
@@ -145,16 +145,16 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             ULAT_FLOAT=$(echo "$ULAT" | bc -l)
             ULON_FLOAT=$(echo "$ULON" | bc -l)
             DEG_FLOAT=$(echo "$DEG" | bc -l)
-            
+
             # Check if coordinates are within the area
             LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
             LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
-            
+
             if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
                 continue
             fi
         fi
-        
+
         echo "$lat $lon"
         $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
         echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
@@ -212,16 +212,16 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     INCOME=$((nostrcount * NCARD + twcount * ZCARD))
     BILAN=$((INCOME - PAF))
 
-    final_json="{\"DATE\": \"$(date -u)\", \"♥BOX\": \"$myASTROPORT/12345\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
-    
+    final_json="{\"version\" : \"1.1\", \"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+
     # Calculate generation duration
     GENERATION_DURATION=$(($(date +%s) - GENERATION_START))
-    
+
     # Add cache info to JSON
     final_json=$(echo "$final_json" | jq -c --arg date "$(date -u)" --arg duration "$GENERATION_DURATION" '. + {
         "GENERATION_TIME": $duration
     }')
-    
+
     # Print and format the JSON string with pretty printing
     echo "$final_json" | jq '.' > ~/.zen/tmp/${CACHE_FILE}
 fi

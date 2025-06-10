@@ -398,7 +398,7 @@ while true; do
     BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
 
 NODE12345="{
-    \"version\" : \"3.1\",
+    \"version\" : \"3.3\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -406,6 +406,7 @@ NODE12345="{
     \"myASTROPORT\" : \"${myASTROPORT}\",
     \"myIPFS\" : \"${myIPFS}\",
     \"myAPI\" : \"${myAPI}\",
+    \"uSPOT\" : \"${uSPOT}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
     \"astroport\" : \"http://${myIP}:1234\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
