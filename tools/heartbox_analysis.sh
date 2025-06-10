@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 1.0
+# Version: 1.1 - Ajout export JSON et aide
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 # HEARTBOX ANALYSIS - Analyse complète de la ♥️box UPlanet
@@ -11,6 +11,314 @@
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 . "${MY_PATH}/my.sh"
+
+#######################################################################
+# Fonction d'aide
+#######################################################################
+show_help() {
+    cat << EOF
+HEARTBOX ANALYSIS - Analyse complète de la ♥️box UPlanet
+========================================================
+
+UTILISATION:
+    $0 [COMMANDE] [OPTIONS]
+
+COMMANDES:
+    save [phase]        Sauvegarde logs avec analyse complète (défaut)
+                       Phase optionnelle: PREMIER_NETTOYAGE, EXECUTION_TERMINEE, etc.
+    
+    caches             Analyse des caches système uniquement
+                       - Cache Swarm (nodes, services)
+                       - Cache Coucou (profils Cesium/GChange)
+                       - Cache FlashMem (géokeys, TiddlyWikis)
+    
+    hardware           Analyse matérielle uniquement
+                       - CPU, GPU, RAM
+                       - Stockage et capacités d'abonnement
+                       - IPFS et NextCloud
+    
+    complete [file]    Analyse complète vers fichier spécifique
+                       Par défaut: /tmp/heartbox_analysis_YYYYMMDD_HHMMSS.log
+    
+    export --json      Export de toutes les données au format JSON
+                       Structure: caches, hardware, services, capacities
+    
+    --help            Affiche cette aide
+
+EXEMPLES:
+    $0                              # Sauvegarde avec analyse par défaut
+    $0 save "MAINTENANCE"           # Sauvegarde avec phase personnalisée
+    $0 caches                       # Analyse des caches seulement
+    $0 hardware                     # Analyse matérielle seulement
+    $0 complete /tmp/rapport.log    # Analyse complète vers fichier
+    $0 export --json               # Export JSON vers stdout
+    $0 export --json > data.json   # Export JSON vers fichier
+
+SORTIE JSON:
+    L'option 'export --json' génère une structure JSON complète avec:
+    - timestamp: Date/heure de l'analyse
+    - node_info: Informations sur le node (ID, capitaine, type)
+    - system: Données système (CPU, RAM, disque)
+    - caches: État des caches UPlanet
+    - services: État des services (IPFS, Astroport, NextCloud)
+    - capacities: Capacités d'abonnement calculées
+
+LICENCE: AGPL-3.0
+AUTEUR: Fred (support@qo-op.com)
+EOF
+}
+
+#######################################################################
+# Fonctions utilitaires pour JSON
+#######################################################################
+
+# Escape JSON strings et nettoyer les caractères de fin de ligne
+json_escape() {
+    echo "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr -d '\n\r' | xargs
+}
+
+# Get system info as JSON object
+get_system_info_json() {
+    local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
+    local cpu_cores=$(grep "processor" /proc/cpuinfo | wc -l 2>/dev/null || echo "0")
+    local cpu_freq=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "0")
+    local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)
+    
+    local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
+    local mem_available=$(grep "MemAvailable" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
+    local mem_used=$((mem_total - mem_available))
+    local mem_total_gb=$((mem_total / 1024 / 1024))
+    local mem_used_gb=$((mem_used / 1024 / 1024))
+    local mem_usage_percent=$((mem_used * 100 / mem_total))
+    
+    local disk_info=$(df -h / | tail -1)
+    local disk_total=$(echo "$disk_info" | awk '{print $2}' | tr -d '\n')
+    local disk_used=$(echo "$disk_info" | awk '{print $3}' | tr -d '\n')
+    local disk_available=$(echo "$disk_info" | awk '{print $4}' | tr -d '\n')
+    local disk_usage_percent=$(echo "$disk_info" | awk '{print $5}' | tr -d '\n')
+    
+    # GPU detection
+    local gpu_info="null"
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        gpu_info=$(nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d '\n')
+        if [[ -n "$gpu_info" ]]; then
+            gpu_info="\"$(json_escape "$gpu_info")\""
+        else
+            gpu_info="null"
+        fi
+    fi
+    
+    cat << EOF
+    "cpu": {
+        "model": "$(json_escape "$cpu_model")",
+        "cores": $cpu_cores,
+        "frequency_mhz": $cpu_freq,
+        "load_average": "$cpu_load"
+    },
+    "memory": {
+        "total_gb": $mem_total_gb,
+        "used_gb": $mem_used_gb,
+        "usage_percent": $mem_usage_percent
+    },
+    "storage": {
+        "total": "$(json_escape "$disk_total")",
+        "used": "$(json_escape "$disk_used")",
+        "available": "$(json_escape "$disk_available")",
+        "usage_percent": "$(json_escape "$disk_usage_percent")"
+    },
+    "gpu": $gpu_info
+EOF
+}
+
+# Get caches info as JSON
+get_caches_info_json() {
+    # Cache Swarm
+    local swarm_data="null"
+    if [[ -d ~/.zen/tmp/swarm ]]; then
+        local swarm_size=$(du -sh ~/.zen/tmp/swarm 2>/dev/null | cut -f1 | tr -d '\n')
+        local swarm_nodes=$(find ~/.zen/tmp/swarm -maxdepth 1 -type d -name "12D*" | wc -l)
+        local swarm_files=$(find ~/.zen/tmp/swarm -type f | wc -l)
+        
+        swarm_data="{
+            \"size\": \"$(json_escape "$swarm_size")\",
+            \"nodes_count\": $swarm_nodes,
+            \"files_count\": $swarm_files,
+            \"status\": \"active\"
+        }"
+    else
+        swarm_data="{\"status\": \"not_found\"}"
+    fi
+    
+    # Cache Coucou
+    local coucou_data="null"
+    if [[ -d ~/.zen/tmp/coucou ]]; then
+        local coucou_size=$(du -sh ~/.zen/tmp/coucou 2>/dev/null | cut -f1 | tr -d '\n')
+        local coucou_files=$(find ~/.zen/tmp/coucou -type f | wc -l)
+        local coins_files=$(find ~/.zen/tmp/coucou -name "*.COINS" | wc -l)
+        local gchange_files=$(find ~/.zen/tmp/coucou -name "*.gchange.json" | wc -l)
+        local cesium_files=$(find ~/.zen/tmp/coucou -name "*.cesium.json" | wc -l)
+        local avatar_files=$(find ~/.zen/tmp/coucou -name "*.avatar.png" | wc -l)
+        
+        coucou_data="{
+            \"size\": \"$(json_escape "$coucou_size")\",
+            \"total_files\": $coucou_files,
+            \"coins_files\": $coins_files,
+            \"gchange_profiles\": $gchange_files,
+            \"cesium_profiles\": $cesium_files,
+            \"avatars\": $avatar_files,
+            \"status\": \"active\"
+        }"
+    else
+        coucou_data="{\"status\": \"not_found\"}"
+    fi
+    
+    # Cache FlashMem
+    local flashmem_data="null"
+    if [[ -d ~/.zen/tmp/flashmem ]]; then
+        local flashmem_size=$(du -sh ~/.zen/tmp/flashmem 2>/dev/null | cut -f1 | tr -d '\n')
+        local geokeys_count=$(find ~/.zen/tmp/flashmem -maxdepth 1 -type d -name "k*" | wc -l)
+        local tw_count=$(find ~/.zen/tmp/flashmem -path "*/TWz/*" -type f | wc -l)
+        local uplanet_dirs=$(find ~/.zen/tmp/flashmem -name "UPLANET" -type d | wc -l)
+        
+        flashmem_data="{
+            \"size\": \"$(json_escape "$flashmem_size")\",
+            \"geokeys_count\": $geokeys_count,
+            \"tiddlywikis_count\": $tw_count,
+            \"uplanet_dirs\": $uplanet_dirs,
+            \"status\": \"active\"
+        }"
+    else
+        flashmem_data="{\"status\": \"not_found\"}"
+    fi
+    
+    # Global cache stats
+    local total_cache_size=$(du -sh ~/.zen/tmp/ 2>/dev/null | cut -f1 | tr -d '\n')
+    local total_files=$(find ~/.zen/tmp -type f | wc -l)
+    
+    cat << EOF
+    "swarm": $swarm_data,
+    "coucou": $coucou_data,
+    "flashmem": $flashmem_data,
+    "global": {
+        "total_size": "$(json_escape "$total_cache_size")",
+        "total_files": $total_files
+    }
+EOF
+}
+
+# Get services status as JSON
+get_services_status_json() {
+    # IPFS
+    local ipfs_status="false"
+    local ipfs_size="null"
+    local ipfs_peers="0"
+    if pgrep ipfs >/dev/null; then
+        ipfs_status="true"
+        ipfs_size="\"$(du -sh ~/.ipfs 2>/dev/null | cut -f1 | tr -d '\n' || echo "N/A")\""
+        ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
+    fi
+    
+    # Astroport
+    local astroport_status="false"
+    if pgrep -f "12345" >/dev/null; then
+        astroport_status="true"
+    fi
+    
+    # NextCloud
+    local nextcloud_status="false"
+    local nextcloud_containers="null"
+    if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
+        nextcloud_status="true"
+        nextcloud_containers="\"$(docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | head -1 | tr -d '\n' || echo "unknown")\""
+    fi
+    
+    # G1Billet
+    local g1billet_status="false"
+    if pgrep -f "G1BILLETS" >/dev/null; then
+        g1billet_status="true"
+    fi
+    
+    cat << EOF
+    "ipfs": {
+        "active": $ipfs_status,
+        "size": $ipfs_size,
+        "peers_connected": $ipfs_peers
+    },
+    "astroport": {
+        "active": $astroport_status
+    },
+    "nextcloud": {
+        "active": $nextcloud_status,
+        "container": $nextcloud_containers
+    },
+    "g1billet": {
+        "active": $g1billet_status
+    }
+EOF
+}
+
+# Get capacities as JSON
+get_capacities_json() {
+    local disk_info=$(df -h / | tail -1)
+    local disk_available=$(echo "$disk_info" | awk '{print $4}')
+    local available_gb=$(echo "$disk_available" | sed 's/G//' | sed 's/T/*1024/' | bc 2>/dev/null || echo "0")
+    
+    local zencard_parts=0
+    local nostr_parts=0
+    
+    if [[ $(echo "$available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
+        zencard_parts=$(echo "($available_gb - 8*128) / 128" | bc 2>/dev/null || echo "0")
+        nostr_parts=$(echo "($available_gb - 8*10) / 10" | bc 2>/dev/null || echo "0")
+        
+        [[ $(echo "$zencard_parts < 0" | bc 2>/dev/null) -eq 1 ]] && zencard_parts=0
+        [[ $(echo "$nostr_parts < 0" | bc 2>/dev/null) -eq 1 ]] && nostr_parts=0
+    fi
+    
+    cat << EOF
+    "zencard_slots": $zencard_parts,
+    "nostr_slots": $nostr_parts,
+    "reserved_captain_slots": 8,
+    "available_space_gb": $available_gb
+EOF
+}
+
+#######################################################################
+# Export JSON complet
+#######################################################################
+export_json() {
+    local timestamp=$(date -Iseconds)
+    local node_id="${IPFSNODEID:-unknown}"
+    local captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "unknown")
+    local node_type="standard"
+    if [[ -f ~/.zen/game/secret.dunikey ]]; then
+        node_type="y_level"
+    fi
+    local hostname=$(hostname -f)
+    
+    cat << EOF
+{
+    "timestamp": "$timestamp",
+    "node_info": {
+        "id": "$node_id",
+        "captain": "$captain",
+        "type": "$node_type",
+        "hostname": "$hostname"
+    },
+    "system": {
+$(get_system_info_json)
+    },
+    "caches": {
+$(get_caches_info_json)
+    },
+    "services": {
+$(get_services_status_json)
+    },
+    "capacities": {
+$(get_capacities_json)
+    }
+}
+EOF
+}
 
 #######################################################################
 # Fonction principale d'analyse et sauvegarde des logs
@@ -561,13 +869,29 @@ case "${1:-save}" in
     "complete")
         run_complete_analysis "$2"
         ;;
+    "export")
+        if [[ "$2" == "--json" ]]; then
+            export_json
+        else
+            echo "Usage: $0 export --json"
+            echo "Export toutes les données au format JSON"
+            exit 1
+        fi
+        ;;
+    "--help"|"help")
+        show_help
+        ;;
     *)
-        echo "Usage: $0 [save|caches|hardware|complete] [params...]"
+        echo "Usage: $0 [save|caches|hardware|complete|export|--help] [params...]"
         echo ""
         echo "Commandes:"
-        echo "  save [phase]     - Sauvegarde logs avec analyse (défaut)"
-        echo "  caches          - Analyse des caches uniquement"
-        echo "  hardware        - Analyse matérielle uniquement"
-        echo "  complete [file] - Analyse complète vers fichier"
+        echo "  save [phase]         - Sauvegarde logs avec analyse (défaut)"
+        echo "  caches              - Analyse des caches uniquement"
+        echo "  hardware            - Analyse matérielle uniquement"
+        echo "  complete [file]     - Analyse complète vers fichier"
+        echo "  export --json       - Export JSON de toutes les données"
+        echo "  --help              - Affiche l'aide complète"
+        echo ""
+        echo "Pour plus d'informations: $0 --help"
         ;;
 esac 
