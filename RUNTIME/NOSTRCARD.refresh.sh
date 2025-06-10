@@ -110,6 +110,9 @@ should_refresh() {
                 && echo $UDRIVE > "${last_udrive_file}"
             return 0
         fi
+    else
+        cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh
+            \ ${player_dir}/APP/
     fi
 
     return 1
