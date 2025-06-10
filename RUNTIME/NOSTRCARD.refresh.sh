@@ -97,22 +97,30 @@ should_refresh() {
         return 0
     fi
 
-    ## Check for IPFS DRIVE change
-    if [[ -s ${player_dir}/APP/generate_ipfs_structure.sh ]]; then
-        cd ${player_dir}/APP/
-        UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
-        cd - 2>&1 >/dev/null
+    ## ACTIVATE APP STRUCTURE
+    [[ ! -d ${player_dir}/APP ]] \
+        && mkdir -p ${player_dir}/APP/
 
-        if [[ "$UDRIVE" != "$last_udrive" ]]; then
-            [[ -n $last_udrive ]] \
-                && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
-            [[ -n $UDRIVE ]] \
-                && echo $UDRIVE > "${last_udrive_file}"
-            return 0
-        fi
-    else
-        cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh
-            \ ${player_dir}/APP/
+    [[ ! -s ${player_dir}/APP/generate_ipfs_structure.sh ]] \
+        && cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh \
+            ${player_dir}/APP/
+    # APP code update
+    [[ $(diff ${player_dir}/APP/generate_ipfs_structure.sh ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh) ]] \
+        && echo "APP STRUCTURE UPDATED" \
+        && cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh \
+            ${player_dir}/APP/
+
+    ## Check for IPFS DRIVE change
+    cd ${player_dir}/APP/
+    UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
+    cd - 2>&1 >/dev/null
+
+    if [[ "$UDRIVE" != "$last_udrive" ]]; then
+        [[ -n $last_udrive ]] \
+            && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
+        [[ -n $UDRIVE ]] \
+            && echo $UDRIVE > "${last_udrive_file}"
+        return 0
     fi
 
     return 1
