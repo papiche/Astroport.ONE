@@ -575,6 +575,19 @@ file_count=0
 dir_count=0
 updated_count=0
 cached_count=0
+OWNER_HEX_PUBKEY=""
+
+OWNER_PLAYER_DIR=$(dirname "$SOURCE_DIR")
+OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
+OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
+
+if [ -f "$OWNER_HEX_FILE" ]; then
+    OWNER_HEX_PUBKEY=$(cat "$OWNER_HEX_FILE" 2>/dev/null)
+    log_message "🔑 Clé publique HEX du propriétaire du Drive détectée: $OWNER_HEX_PUBKEY"
+else
+    log_message "⚠️  Fichier HEX non trouvé pour le propriétaire du Drive : $OWNER_HEX_FILE"
+fi
+# ----------------------------------------------------------------------
 
 log_message "🔍 Analyse des répertoires..."
 
@@ -780,6 +793,7 @@ cat > "$SOURCE_DIR/manifest.json" << EOF
 {
     "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
     "final_cid": "",
+    "owner_hex_pubkey": "$OWNER_HEX_PUBKEY",
     "directories": [$directories_json
     ],
     "files": [$files_json
@@ -1551,6 +1565,26 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         .light-theme {
             background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 50%, #dadada 100%);
             color: #333;
+        }
+
+        body.foreign-drive {
+            background: repeating-linear-gradient(
+                45deg,
+                #0a0a0a, /* Couleur de fond sombre principale */
+                #0a0a0a 10px, /* Fin de la première bande sombre */
+                #331a1a 10px, /* Début de la bande rouge sombre */
+                #331a1a 20px  /* Fin de la bande rouge sombre */
+            );
+        }
+
+        .light-theme body.foreign-drive {
+            background: repeating-linear-gradient(
+                45deg,
+                #f5f5f5, /* Couleur de fond claire principale */
+                #f5f5f5 10px, /* Fin de la première bande claire */
+                #ffe8e8 10px, /* Début de la bande rouge pâle */
+                #ffe8e8 20px  /* Fin de la bande rouge pâle */
+            );
         }
 
         .light-theme .header-content {
@@ -2609,6 +2643,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 connectBtn.html('<i class="fas fa-satellite-dish"></i> Connect');
                 console.log('NOSTR connection status: DISCONNECTED - isNostrConnected:', isNostrConnected);
             }
+            updateUIBasedOnOwnership();
         }
 
         function disconnectFromNostr() {
@@ -2635,11 +2670,13 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     prepareItemsData(manifest);
                     displayDirectoryInfo(manifest);
                     filterAndDisplayItems('all');
+                    updateUIBasedOnOwnership();
                 },
                 error: function(xhr, status, error) {
                     console.error('Error loading manifest:', error);
                     $('#directory-info').html('<div class="error"><i class="fas fa-exclamation-triangle"></i> Error loading directory information</div>');
                     $('#files-container').html('<div class="error"><i class="fas fa-exclamation-triangle"></i> Error loading files list</div>');
+                    updateUIBasedOnOwnership();
                 }
             });
         }
@@ -2794,6 +2831,8 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 }
             });
 
+
+
             $('#closeUploadModal').click(function() {
                 closeUploadModal();
             });
@@ -2838,6 +2877,41 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 }
             });
         }
+
+        // --- NOUVEAU CODE : Fonction pour adapter l'UI en fonction du propriétaire du Drive ---
+        function updateUIBasedOnOwnership() {
+            const uploadBtn = $('#upload-btn');
+            const connectBtn = $('#connect-btn');
+            const body = $('body');
+
+            if (currentManifest && currentManifest.owner_hex_pubkey) {
+                const driveOwnerKey = currentManifest.owner_hex_pubkey.toLowerCase();
+                // Assurez-vous que userPublicKey est bien en hex pour la comparaison
+                const connectedUserKey = userPublicKey ? userPublicKey.toLowerCase() : null;
+
+                if (connectedUserKey && driveOwnerKey !== connectedUserKey) {
+                    console.log('⚠️ Drive ownership mismatch! Drive owner:', driveOwnerKey, 'Connected user:', connectedUserKey);
+                    body.addClass('foreign-drive');
+                    uploadBtn.prop('disabled', true).css('opacity', '0.5').attr('title', 'You cannot upload to a drive that you do not own.');
+                    // connectBtn.attr('title', 'Connected to a foreign drive'); // Optionally change connect button title
+                } else {
+                    console.log('✅ Drive ownership match or no user connected. Drive owner:', driveOwnerKey, 'Connected user:', connectedUserKey);
+                    body.removeClass('foreign-drive');
+                    uploadBtn.prop('disabled', false).css('opacity', '1').attr('title', 'Upload files to your drive');
+                    // connectBtn.attr('title', 'Connect to Nostr'); // Reset connect button title
+                }
+            } else {
+                // Si le manifest n'est pas encore chargé ou si owner_hex_pubkey est absent (ex: ancien manifest)
+                // On considère que le Drive est "neutre" et l'upload est autorisé par défaut,
+                // ou si une authentification est requise par le backend, elle échouera de toute façon.
+                console.log('Manifest not fully loaded or owner_hex_pubkey missing. Assuming neutral drive.');
+                body.removeClass('foreign-drive');
+                uploadBtn.prop('disabled', false).css('opacity', '1').attr('title', 'Upload files');
+                // connectBtn.attr('title', 'Connect to Nostr');
+            }
+        }
+        // ---------------------------------------------------------------------------------
+
 
         function filterAndDisplayItems(filter, searchTerm = '') {
             filteredItems = allItems.filter(item => {
