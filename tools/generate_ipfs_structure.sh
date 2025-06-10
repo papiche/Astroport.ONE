@@ -1032,6 +1032,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             opacity: 1;
         }
 
+       .file-card:hover .sync-btn {
+            opacity: 1;
+        }
+
         .file-card:hover .delete-btn {
             opacity: 1;
         }
@@ -1045,12 +1049,11 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             gap: 4px;
             z-index: 10;
         }
-
-        .download-btn {
+        .file-action-btn { /* Nouvelle classe de base */
             position: absolute;
             top: 8px;
             right: 8px;
-            background: rgba(76, 175, 80, 0.8);
+            background: rgba(76, 175, 80, 0.8); /* Couleur par défaut */
             color: white;
             border: none;
             border-radius: 50%;
@@ -1066,34 +1069,19 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             z-index: 10;
         }
 
-        .delete-btn {
-            position: absolute;
-            top: 8px;
-            left: 8px;
+        .file-action-btn.delete-btn { /* Supprimer la règle spécifique au download-btn et la réappliquer ici */
+            left: 8px; /* Override for delete button */
+            right: auto;
             background: rgba(244, 67, 54, 0.8);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: all 0.3s ease;
-            font-size: 0.8em;
-            z-index: 10;
         }
 
-        .download-btn:hover {
+        .file-action-btn:hover {
             background: rgba(76, 175, 80, 1);
             transform: scale(1.1);
         }
 
-        .delete-btn:hover {
+        .file-action-btn.delete-btn:hover { /* Override pour le delete button */
             background: rgba(244, 67, 54, 1);
-            transform: scale(1.1);
         }
 
         .file-icon {
@@ -2628,23 +2616,24 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             }
         }
 
-        function updateConnectionStatus(connected) {
-            const connectBtn = $('#connect-btn');
-            const icon = connectBtn.find('i');
+    function updateConnectionStatus(connected) {
+        const connectBtn = $('#connect-btn');
+        const icon = connectBtn.find('i');
 
-            isNostrConnected = connected; // S'assurer que la variable globale est mise à jour
+        isNostrConnected = connected; // S'assurer que la variable globale est mise à jour
 
-            if (connected) {
-                connectBtn.addClass('connected');
-                connectBtn.html('<i class="fas fa-satellite-dish"></i> Connected');
-                console.log('NOSTR connection status: CONNECTED - isNostrConnected:', isNostrConnected);
-            } else {
-                connectBtn.removeClass('connected');
-                connectBtn.html('<i class="fas fa-satellite-dish"></i> Connect');
-                console.log('NOSTR connection status: DISCONNECTED - isNostrConnected:', isNostrConnected);
-            }
-            updateUIBasedOnOwnership();
+        if (connected) {
+            connectBtn.addClass('connected');
+            connectBtn.html('<i class="fas fa-satellite-dish"></i> Connected');
+            console.log('NOSTR connection status: CONNECTED - isNostrConnected:', isNostrConnected);
+        } else {
+            connectBtn.removeClass('connected');
+            connectBtn.html('<i class="fas fa-satellite-dish"></i> Connect');
+            console.log('NOSTR connection status: DISCONNECTED - isNostrConnected:', isNostrConnected);
         }
+        updateUIBasedOnOwnership();
+        filterAndDisplayItems(currentFilter, $('#search-input').val().toLowerCase());
+    } 
 
         function disconnectFromNostr() {
             if (nostrRelay) {
@@ -2884,30 +2873,34 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             const connectBtn = $('#connect-btn');
             const body = $('body');
 
-            if (currentManifest && currentManifest.owner_hex_pubkey) {
-                const driveOwnerKey = currentManifest.owner_hex_pubkey.toLowerCase();
-                // Assurez-vous que userPublicKey est bien en hex pour la comparaison
-                const connectedUserKey = userPublicKey ? userPublicKey.toLowerCase() : null;
+            // Determine if the drive is foreign (connected, but owner key doesn't match)
+            const isForeignDrive = currentManifest && currentManifest.owner_hex_pubkey && userPublicKey &&
+                                   currentManifest.owner_hex_pubkey.toLowerCase() !== userPublicKey.toLowerCase();
 
-                if (connectedUserKey && driveOwnerKey !== connectedUserKey) {
-                    console.log('⚠️ Drive ownership mismatch! Drive owner:', driveOwnerKey, 'Connected user:', connectedUserKey);
-                    body.addClass('foreign-drive');
-                    uploadBtn.prop('disabled', true).css('opacity', '0.5').attr('title', 'You cannot upload to a drive that you do not own.');
-                    // connectBtn.attr('title', 'Connected to a foreign drive'); // Optionally change connect button title
-                } else {
-                    console.log('✅ Drive ownership match or no user connected. Drive owner:', driveOwnerKey, 'Connected user:', connectedUserKey);
-                    body.removeClass('foreign-drive');
-                    uploadBtn.prop('disabled', false).css('opacity', '1').attr('title', 'Upload files to your drive');
-                    // connectBtn.attr('title', 'Connect to Nostr'); // Reset connect button title
+            // Determine if upload should be disabled
+            // It should be disabled if NOT connected to Nostr, OR if connected but it's a foreign drive.
+            const disableUpload = !isNostrConnected || isForeignDrive;
+
+            if (disableUpload) {
+                console.log('⚠️ Upload disabled. Connected:', isNostrConnected, 'Foreign Drive:', isForeignDrive);
+                body.addClass('foreign-drive');
+                uploadBtn.prop('disabled', true).css('opacity', '0.5');
+                if (!isNostrConnected) {
+                    uploadBtn.attr('title', 'Connect to Nostr to enable uploads.');
+                } else if (isForeignDrive) {
+                    uploadBtn.attr('title', 'You cannot upload to a drive that you do not own.');
                 }
             } else {
-                // Si le manifest n'est pas encore chargé ou si owner_hex_pubkey est absent (ex: ancien manifest)
-                // On considère que le Drive est "neutre" et l'upload est autorisé par défaut,
-                // ou si une authentification est requise par le backend, elle échouera de toute façon.
-                console.log('Manifest not fully loaded or owner_hex_pubkey missing. Assuming neutral drive.');
+                console.log('✅ Upload enabled. Connected:', isNostrConnected, 'Foreign Drive:', isForeignDrive);
                 body.removeClass('foreign-drive');
-                uploadBtn.prop('disabled', false).css('opacity', '1').attr('title', 'Upload files');
-                // connectBtn.attr('title', 'Connect to Nostr');
+                uploadBtn.prop('disabled', false).css('opacity', '1').attr('title', 'Upload files to your drive');
+            }
+
+            // Apply foreign drive styling only if it's actually foreign and connected
+            if (isForeignDrive && isNostrConnected) {
+                body.addClass('foreign-drive');
+            } else {
+                body.removeClass('foreign-drive');
             }
         }
         // ---------------------------------------------------------------------------------
@@ -2932,8 +2925,14 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         function displayItems(items) {
             if (!items || items.length === 0) {
                 $('#files-container').html('<div class="error"><i class="fas fa-search"></i> No items found</div>');
+                console.log("No items found or items array is empty. Displaying error message."); // Debug
                 return;
             }
+
+            // Déterminer si le drive est "étranger" et si l'utilisateur est connecté
+            const isForeignDrive = currentManifest && currentManifest.owner_hex_pubkey && userPublicKey &&
+                                   currentManifest.owner_hex_pubkey.toLowerCase() !== userPublicKey.toLowerCase();
+            const isConnected = !!userPublicKey; // Convertir userPublicKey en booléen
 
             const itemsHtml = items.map((item, index) => {
                 const icon = typeIcons[item.type] || typeIcons.file;
@@ -2956,7 +2955,38 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     }
                 }
 
-                return `
+                let actionButtonHtml = '';
+                let deleteButtonHtml = '';
+
+                if (isConnected && !isForeignDrive) { // Connecté et c'est VOTRE Drive
+                    actionButtonHtml = `
+                        <button class="file-action-btn download-btn" data-index="${index}" title="Download File">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    `;
+                    deleteButtonHtml = `
+                        <button class="file-action-btn delete-btn" data-index="${index}" title="Delete File">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    `;
+                } else if (isConnected && isForeignDrive) { // Connecté à un Drive ÉTRANGER
+                    actionButtonHtml = `
+                        <button class="file-action-btn sync-btn" data-index="${index}" title="Sync File to Your Drive">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    `;
+                    // Pas de bouton de suppression pour les Drives étrangers
+                } else { // Non connecté du tout (seulement téléchargement possible)
+                    actionButtonHtml = `
+                        <button class="file-action-btn download-btn" data-index="${index}" title="Download File">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    `;
+                    // Pas de bouton de suppression si non connecté
+                }
+
+                // Debugging pour voir le contenu de l'élément généré
+                const generatedCardHtml = `
                     <div class="file-card" data-index="${index}" data-type="${item.type}">
                         <div class="file-icon">
                             <i class="${icon}" style="color: ${getTypeColor(item.type)}"></i>
@@ -2969,38 +2999,45 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                             ${details}<br>
                             Path: ${item.path}
                         </div>
-                        <button class="download-btn" data-index="${index}" title="Download File">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="delete-btn" data-index="${index}" title="Delete File">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                        ${actionButtonHtml}
+                        ${deleteButtonHtml}
                     </div>
                 `;
+                return generatedCardHtml;
             }).join('');
 
+            console.log("Total generated itemsHtml length:", itemsHtml.length); // Debug
             $('#files-container').html(itemsHtml);
+            console.log("Files HTML injected into container."); // Debug
 
-            // Add click handlers
-            $('.file-card').click(function() {
-                const index = parseInt($(this).data('index'));
-                openFilePreview(index);
+            $('.file-card').off('click').on('click', function(e) {
+                // S'assurer qu'on ne clique pas sur un bouton d'action
+                if ($(e.target).closest('.file-action-btn').length === 0) {
+                    const index = parseInt($(this).data('index'));
+                    openFilePreview(index);
+                }
             });
-
-            // Add download handlers
-            $('.download-btn').click(function(e) {
-                e.stopPropagation(); // Prevent opening the modal
+            
+            // Add click handlers for download/sync/delete (using .off() to prevent multiple bindings)
+            $('.download-btn').off('click').on('click', function(e) {
+                e.stopPropagation();
                 const index = parseInt($(this).data('index'));
                 downloadCurrentFile(index);
             });
 
-            // Add delete handlers
-            $('.delete-btn').click(function(e) {
-                e.stopPropagation(); // Prevent opening the modal
+            $('.sync-btn').off('click').on('click', function(e) {
+                e.stopPropagation();
+                const index = parseInt($(this).data('index'));
+                syncFile(index);
+            });
+
+            $('.delete-btn').off('click').on('click', function(e) {
+                e.stopPropagation();
                 const index = parseInt($(this).data('index'));
                 deleteCurrentFile(index);
             });
         }
+
 
         function getTypeColor(type) {
             const colors = {
@@ -3379,6 +3416,70 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             modalHeader.removeClass('text-header');
             modalBody.removeClass('text-body');
         }
+        function syncFile(index) {
+            const item = filteredItems[index];
+            if (!item) return;
+
+            if (!userPublicKey) {
+                alert('❌ Vous devez être connecté à Nostr pour synchroniser les fichiers vers votre drive.');
+                return;
+            }
+
+            const ipfsLink = buildIPFSUrl(item); // Ceci donne l'URL complète comme /http://gateway/ipfs/QmHASH/filename.ext
+            if (!ipfsLink) {
+                alert('Fichier non disponible sur IPFS pour la synchronisation.');
+                return;
+            }
+
+            // Nous avons besoin de la partie "QmHASH/filename.ext" pour l'API
+            const parts = ipfsLink.split('/ipfs/');
+            const relativeIpfsLink = parts.length > 1 ? parts[1] : '';
+
+            if (!relativeIpfsLink) {
+                alert('Impossible de déterminer le lien IPFS pour la synchronisation.');
+                return;
+            }
+
+            console.log('Tentative de synchronisation du fichier:', item.name, 'depuis le lien IPFS:', relativeIpfsLink, 'vers le drive de l\'utilisateur connecté.');
+
+            const apiBaseUrl = getAPIBaseUrl();
+            const syncData = {
+                ipfs_link: relativeIpfsLink,
+                npub: userPublicKey
+            };
+
+            // Fournir un feedback visuel
+            const button = $(`.sync-btn[data-index="${index}"]`);
+            const originalContent = button.html();
+            button.html('<i class="fas fa-spinner fa-spin"></i> Syncing...').prop('disabled', true);
+
+            $.ajax({
+                url: `${apiBaseUrl}/api/upload_from_drive`, 
+                type: 'POST',
+                data: JSON.stringify(syncData),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log('Synchronisation réussie:', response);
+                    alert(`✅ Fichier '${item.name}' synchronisé avec succès vers votre drive.`);
+                    if (response.new_cid) {
+                        redirectToNewCid(response.new_cid);
+                    } else {
+                        button.html(originalContent).prop('disabled', false); // Restaurer le bouton
+                        loadManifest(); // Recharger le manifest si pas de redirection
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur de synchronisation:', error, xhr.responseJSON);
+                    button.html(originalContent).prop('disabled', false); // Restaurer le bouton
+                    let errorMessage = 'Échec de la synchronisation du fichier.';
+                    if (xhr.responseJSON && xhr.responseJSON.detail) {
+                        errorMessage = xhr.responseJSON.detail;
+                    }
+                    alert(`❌ Échec de la synchronisation pour '${item.name}': ${errorMessage}`);
+                }
+            });
+        }
+        // ------------------------------------
 
         function downloadCurrentFile(index) {
             const item = filteredItems[index !== undefined ? index : currentFileIndex];
