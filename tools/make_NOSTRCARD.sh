@@ -249,8 +249,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ### ADD /APP - redirections APP IPFS
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/Apps
 
-    ## Add generate_ipfs_structure.sh to APP
-    cp ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ${HOME}/.zen/game/nostr/${EMAIL}/APP/
+    ## Link generate_ipfs_structure.sh to APP
+    ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ${HOME}/.zen/game/nostr/${EMAIL}/APP/generate_ipfs_structure.sh
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/
     ./generate_ipfs_structure.sh --log .
 
