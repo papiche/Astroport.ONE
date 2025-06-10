@@ -75,7 +75,7 @@ if [[ $CPUB && $CPUB != 'null'  ]]; then
 
     [[ ${CPSEUDO} ]] \
     && echo "ZEN PARTNER ${CPSEUDO}" \
-    && echo "$CPUB" > ~/.zen/tmp/coucou/${G1PUB}G1CPUB \
+    && echo "$CPUB" > ~/.zen/tmp/coucou/${G1PUB} \
     || echo "NO CPUB CESIUM PROFILE"
 
 else
@@ -97,7 +97,7 @@ fi
 
     [[ ${CPSEUDO} ]] \
     && echo "Ğ1 WALLET " \
-    && echo "${G1PUB}" > ~/.zen/tmp/coucou/${G1PUB}G1WALLET \
+    && echo "${G1PUB}" > ~/.zen/tmp/coucou/${G1PUB} \
     || echo "NO WALLET FOR THIS PLAYER"
 
 ## KEEPING ALREADY EXISTING PROFILE DATA
@@ -130,7 +130,7 @@ echo ">> CESIUM+ : ${CPSEUDO} - ${CDESCR} : ${G1PUB} <<"
 ########################################################################
 # echo "set -n "${GPSEUDO}" -d "${GDESCR}" -v "${GVILLE}" -a "${GADRESSE}""
 ########################################################################
-#~ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}G1WALLET && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
+#~ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB} && -s ~/.zen/game/players/${PLAYER}/QRTWavatar.png ]]; then
 
     #~ echo "CREATING GCHANGE+ PROFILE https://www.gchange.fr/#/app/user?q=${G1PUB}"
 
@@ -156,7 +156,7 @@ ${MY_PATH}/timeout.sh -t 20 \
 $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} get > ~/.zen/tmp/coucou/${G1PUB}.cesium.json
 
 ########################################################################
-        # Get PLAYER wallet amount :: ~/.zen/tmp/coucou/${G1PUB}COINS
+        # Get PLAYER wallet amount :: ~/.zen/tmp/coucou/${G1PUB}
         COINS=$($MY_PATH/COINScheck.sh ${G1PUB} | tail -n 1)
         echo "+++ YOU have ${COINS} Ğ1 Coins +++"
 ########################################################################
