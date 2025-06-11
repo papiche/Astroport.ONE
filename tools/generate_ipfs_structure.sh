@@ -264,18 +264,6 @@ get_file_timestamp() {
     fi
 }
 
-# Fonction pour charger le manifest existant
-load_existing_manifest() {
-    local manifest_file="$SOURCE_DIR/manifest.json"
-    if [ -f "$manifest_file" ]; then
-        log_message "📋 Chargement du manifest existant..."
-        return 0
-    else
-        log_message "📋 Aucun manifest existant trouvé, création complète..."
-        return 1
-    fi
-}
-
 # Fonction pour ajouter un fichier à IPFS et récupérer le hash
 add_file_to_ipfs() {
     local file="$1"
@@ -576,16 +564,31 @@ dir_count=0
 updated_count=0
 cached_count=0
 OWNER_HEX_PUBKEY=""
+ORIGIN_IPFS_GATEWAY="" 
 
 OWNER_PLAYER_DIR=$(dirname "$SOURCE_DIR")
 OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
 OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
+ENV_FILE="${HOME}/.zen/Astroport.ONE/.env"
 
 if [ -f "$OWNER_HEX_FILE" ]; then
     OWNER_HEX_PUBKEY=$(cat "$OWNER_HEX_FILE" 2>/dev/null)
     log_message "🔑 Clé publique HEX du propriétaire du Drive détectée: $OWNER_HEX_PUBKEY"
 else
     log_message "⚠️  Fichier HEX non trouvé pour le propriétaire du Drive : $OWNER_HEX_FILE"
+fi
+
+# NEW: Read myIPFS from the .env file
+if [ -f "$ENV_FILE" ]; then
+    log_message "🔍 Lecture de l'adresse de la gateway IPFS d'origine depuis $ENV_FILE..."
+    ORIGIN_IPFS_GATEWAY=$(grep -E '^myIPFS=' "$ENV_FILE" | cut -d'=' -f2 | tr -d '\r') # tr -d '\r' pour les fins de ligne DOS
+    if [ -n "$ORIGIN_IPFS_GATEWAY" ]; then
+        log_message "✅ Gateway IPFS d'origine détectée: $ORIGIN_IPFS_GATEWAY"
+    else
+        log_message "⚠️  La variable 'myIPFS' n'a pas été trouvée ou est vide dans $ENV_FILE"
+    fi
+else
+    log_message "⚠️  Fichier .env non trouvé à l'emplacement $ENV_FILE. L'adresse de la gateway IPFS d'origine sera vide."
 fi
 # ----------------------------------------------------------------------
 
@@ -792,8 +795,11 @@ done < <(find "$SOURCE_DIR" -type f -print0 | sort -z)
 cat > "$SOURCE_DIR/manifest.json" << EOF
 {
     "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+    "version": "1.0.0",
     "final_cid": "",
+    "owner_email": "$OWNER_EMAIL",
     "owner_hex_pubkey": "$OWNER_HEX_PUBKEY",
+    "my_ipfs_gateway": "$ORIGIN_IPFS_GATEWAY",
     "directories": [$directories_json
     ],
     "files": [$files_json
@@ -4018,5 +4024,3 @@ log_message "  - URL IPFS: http://127.0.0.1:8080/ipfs/$FINAL_CID/"
 log_message "  - CID: $FINAL_CID"
 log_message ""
 log_message "💡 Conseil: Réexécutez ce script après modification de fichiers pour une mise à jour incrémentale automatique!"
-
-# Fonction pour obtenir la taille d'un fichier
