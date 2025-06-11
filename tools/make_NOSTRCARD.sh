@@ -249,14 +249,20 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ### ADD /APP/uDRIVE - redirections APP IPFS
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps
 
-    ## Link generate_ipfs_structure.sh to APP # Reduce IPFS DRIVE system size
+    ## Add Web3 App Links
+    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CESIUM.v1.html
+
+    ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ./generate_ipfs_structure.sh
     ./generate_ipfs_structure.sh --log .
 
-    ## Add Web3 App Links
-    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CESIUM.v1.html
+    ## Link generate_ipfs_RPG.sh to uWORLD
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
+    cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
+    ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
+    ./generate_ipfs_RPG.sh --log .
 
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
@@ -269,7 +275,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         "⏰ UPlanet MULTIPASS ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8}" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
-        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
+        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
         --ipns_vault "/ipns/${NOSTRNS}"
 
