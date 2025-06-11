@@ -845,7 +845,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/x-icon" href="/ipfs/QmPPELF7HhM9BXtAUMnNUSNsrRJgsFzLNCQ5pFhWKr9ogk/favicon.galaxy.ico">
-    <title>UPlanet MULTIPASS / IPFS Drive Explorer</title>
+    <title>RPG mode : UPLanet World Explorer</title>
     <script src="/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
     <script src="/ipfs/Qmab3sg8QLrKYw7wQGmBujEdxG3zTNsMQcsG9zoBdToAhQ/marked.min.js.js"></script>
     <script src="/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
