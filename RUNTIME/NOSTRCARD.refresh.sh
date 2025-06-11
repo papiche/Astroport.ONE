@@ -98,17 +98,18 @@ should_refresh() {
     fi
 
     ## ACTIVATE APP STRUCTURE
-    [[ ! -d ${player_dir}/APP ]] \
-        && mkdir -p ${player_dir}/APP/
+    [[ ! -d ${player_dir}/APP/uDRIVE ]] \
+        && rm -Rf ${player_dir}/APP \
+        && mkdir -p ${player_dir}/APP/uDRIVE/
 
     ## Verify Link
-    [[ ! -L "${player_dir}/APP/generate_ipfs_structure.sh" ]] && \
-        cd "${player_dir}/APP" && \
+    [[ ! -L "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" ]] && \
+        cd "${player_dir}/APP/uDRIVE" && \
         rm -f "generate_ipfs_structure.sh" && \
         ln -s "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh"
 
     ## Check for IPFS DRIVE change
-    cd ${player_dir}/APP/
+    cd ${player_dir}/APP/uDRIVE/
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
     cd - 2>&1 >/dev/null
 
