@@ -371,14 +371,14 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "######################################## STEP 1"
         echo "## NOSTR PROFILE PRIMAL LINKING"
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-        YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+        YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
         ## EXTACT PRIMAL CESIUM PROFILE
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
         LAT=$(makecoord $zlat)
         zlon=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lon)
         LON=$(makecoord $zlon)
         title=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.title)
-        [[ -z $title ]] && title="$YOU ✌(◕‿-)✌"
+        [[ -z $title ]] && title="$YOUSER"
         city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
         [[ -z $city ]] && city="UPlanet ${UPLANETG1PUB:0:8}"
         description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
@@ -405,7 +405,7 @@ for PLAYER in "${NOSTR[@]}"; do
         ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
-            "$title" "$g1pubnostr$PoH" \
+            "✌(◕‿-)✌ $title" "$g1pubnostr$PoH" \
             "$description - $city" \
             "$myIPFS/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
@@ -551,21 +551,6 @@ for PLAYER in "${NOSTR[@]}"; do
     else
         echo "NO STR WALLET HISTORY FOR $PLAYER"
     fi
-
-    # PATCH for old key naming (TODO REMOVE)
-    mv "$HOME/.zen/game/nostr/${PLAYER}/ssss.head.player.enc" "$HOME/.zen/game/nostr/${PLAYER}/.ssss.head.player.enc" 2>/dev/null
-    mv "$HOME/.zen/game/nostr/${PLAYER}/ssss.mid.captain.enc" "$HOME/.zen/game/nostr/${PLAYER}/.ssss.mid.captain.enc" 2>/dev/null
-
-    ########################################################################
-    ####################################### IPFS NAME PUBLISH
-    ########################################################################
-    ## UPDATE NOSTR PROFILE METADATA
-    #~ echo "Updating NOSTR profile metadata..." ## KEEPING IPNS REFRESH METHOD
-    #~ ${MY_PATH}/../tools/nostr_update_profile.py "${NSEC}" "wss://relay.copylaradio.com" "$myRELAY" \
-        #~ --website "$myIPFS/ipfs/${UDRIVE}" \
-        #~ --g1pub "$g1pubnostr$PoH" \
-        #~ --ipfs_gw "$myIPFS" \
-        #~ --ipns_vault "/ipns/${NOSTRNS}"
 
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"

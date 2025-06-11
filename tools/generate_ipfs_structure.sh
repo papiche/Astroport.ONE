@@ -2261,8 +2261,12 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     <button class="modal-btn" id="prevFile" title="Previous File">
                         <i class="fas fa-chevron-left"></i>
                     </button>
+                    <span id="modal-file-counter" style="color: #bbb; font-size: 0.9em; min-width: 50px; text-align: center;"></span>
                     <button class="modal-btn" id="nextFile" title="Next File">
                         <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="modal-btn" id="copyLinkBtn" title="Copy IPFS Link">
+                        <i class="fas fa-copy"></i> Copy Link
                     </button>
                     <button class="modal-btn" id="closeModal" title="Close">
                         <i class="fas fa-times"></i>
@@ -2767,6 +2771,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             $('#prevFile').click(() => navigateFile(-1));
             $('#nextFile').click(() => navigateFile(1));
             $('#downloadFile').click(downloadCurrentFile);
+            $('#copyLinkBtn').click(copyIpfsLink); // NEW: Add click handler for copy button
 
             // Close modal on background click
             $('#fileModal').click(function(e) {
@@ -3064,6 +3069,9 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             currentFileIndex = index;
             const item = filteredItems[index];
 
+            // Update file counter
+            $('#modal-file-counter').text(`${index + 1}/${filteredItems.length}`);
+
             if (!item) return;
 
             $('#modal-filename').text(item.name);
@@ -3080,7 +3088,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             if (!ipfsUrl) {
                 modalBody.html('<div class="error"><i class="fas fa-exclamation-triangle"></i> File not available on IPFS yet</div>');
                 $('#fileModal').fadeIn(300);
+                $('#copyLinkBtn').hide(); // Hide copy button if no IPFS link
                 return;
+            } else {
+                $('#copyLinkBtn').show(); // Show copy button if IPFS link is available
             }
 
             // Adapter l'affichage selon le type de fichier
@@ -3421,18 +3432,54 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             modalHeader.removeClass('text-header');
             modalBody.removeClass('text-body');
         }
+
+        // NEW: Function to copy IPFS link to clipboard
+        function copyIpfsLink() {
+            const item = filteredItems[currentFileIndex];
+            if (!item) return;
+
+            const ipfsUrl = buildIPFSUrl(item);
+            if (!ipfsUrl) {
+                // No alert needed, button is hidden if no link, or user will see no change.
+                return;
+            }
+
+            navigator.clipboard.writeText(ipfsUrl).then(() => {
+                const originalText = $('#copyLinkBtn').html();
+                $('#copyLinkBtn').html('<i class="fas fa-check"></i> Copied!');
+                setTimeout(() => {
+                    $('#copyLinkBtn').html(originalText);
+                }, 1500);
+                console.log('IPFS link copied:', ipfsUrl);
+            }).catch(err => {
+                console.error('Failed to copy IPFS link:', err);
+                // No alert, just console error for user experience
+            });
+        }
+
         function syncFile(index) {
             const item = filteredItems[index];
             if (!item) return;
 
+            const button = $(`.sync-btn[data-index="${index}"]`);
+            const originalContent = button.html(); // Save original content here
+
             if (!userPublicKey) {
-                alert('❌ Vous devez être connecté à Nostr pour synchroniser les fichiers vers votre drive.');
+                console.log('❌ User not connected to Nostr. Cannot sync file.');
+                button.html('<i class="fas fa-exclamation-triangle"></i> No Auth'); // Temporary message
+                setTimeout(() => {
+                    button.html(originalContent).prop('disabled', false); // Restore button
+                }, 2000);
                 return;
             }
 
             const ipfsLink = buildIPFSUrl(item); // Ceci donne l'URL complète comme /http://gateway/ipfs/QmHASH/filename.ext
             if (!ipfsLink) {
-                alert('Fichier non disponible sur IPFS pour la synchronisation.');
+                console.log('Fichier non disponible sur IPFS pour la synchronisation.');
+                button.html('<i class="fas fa-exclamation-triangle"></i> No IPFS'); // Temporary message
+                setTimeout(() => {
+                    button.html(originalContent).prop('disabled', false); // Restore button
+                }, 2000);
                 return;
             }
 
@@ -3441,7 +3488,11 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             const relativeIpfsLink = parts.length > 1 ? parts[1] : '';
 
             if (!relativeIpfsLink) {
-                alert('Impossible de déterminer le lien IPFS pour la synchronisation.');
+                console.log('Impossible de déterminer le lien IPFS pour la synchronisation.');
+                button.html('<i class="fas fa-exclamation-triangle"></i> Link Error'); // Temporary message
+                setTimeout(() => {
+                    button.html(originalContent).prop('disabled', false); // Restore button
+                }, 2000);
                 return;
             }
 
@@ -3454,8 +3505,6 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             };
 
             // Fournir un feedback visuel
-            const button = $(`.sync-btn[data-index="${index}"]`);
-            const originalContent = button.html();
             button.html('<i class="fas fa-spinner fa-spin"></i> Syncing...').prop('disabled', true);
 
             $.ajax({
@@ -3465,22 +3514,27 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 contentType: 'application/json',
                 success: function(response) {
                     console.log('Synchronisation réussie:', response);
-                    alert(`✅ Fichier '${item.name}' synchronisé avec succès vers votre drive.`);
                     if (response.new_cid) {
+                        button.html('<i class="fas fa-check"></i> Synced! Redirecting...'); // Temporary message before redirect
                         redirectToNewCid(response.new_cid);
                     } else {
-                        button.html(originalContent).prop('disabled', false); // Restaurer le bouton
-                        loadManifest(); // Recharger le manifest si pas de redirection
+                        button.html('<i class="fas fa-check"></i> Synced!'); // Temporary success message
+                        setTimeout(() => {
+                            button.html(originalContent).prop('disabled', false); // Restore button
+                            loadManifest(); // Recharger le manifest si pas de redirection
+                        }, 2000);
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Erreur de synchronisation:', error, xhr.responseJSON);
-                    button.html(originalContent).prop('disabled', false); // Restaurer le bouton
-                    let errorMessage = 'Échec de la synchronisation du fichier.';
+                    let errorMessage = 'Sync failed';
                     if (xhr.responseJSON && xhr.responseJSON.detail) {
                         errorMessage = xhr.responseJSON.detail;
                     }
-                    alert(`❌ Échec de la synchronisation pour '${item.name}': ${errorMessage}`);
+                    button.html('<i class="fas fa-times"></i> Failed!').prop('disabled', false); // Temporary error message
+                    setTimeout(() => {
+                        button.html(originalContent); // Restore button
+                    }, 3000);
                 }
             });
         }
@@ -3715,13 +3769,20 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             const item = filteredItems[index !== undefined ? index : currentFileIndex];
             if (!item) return;
 
+            const originalButton = $(`.delete-btn[data-index="${index}"]`);
+            const originalContent = originalButton.html(); // Save original content
+
             // Vérifier l'authentification NOSTR
             if (!userPublicKey) {
-                alert('❌ Authentification NOSTR requise pour supprimer un fichier.\nConnectez-vous d\'abord avec le bouton CONNECT.');
+                console.log('❌ Authentification NOSTR requise pour supprimer un fichier.');
+                originalButton.html('<i class="fas fa-exclamation-triangle"></i> No Auth'); // Temporary message
+                setTimeout(() => {
+                    originalButton.html(originalContent).prop('disabled', false); // Restore button
+                }, 2000);
                 return;
             }
 
-            // Demander confirmation avec détails
+            // Demander confirmation avec détails (on conserve le confirm)
             const confirmMessage = `⚠️ ATTENTION - Suppression définitive ⚠️\n\n` +
                                  `Fichier : ${item.name}\n` +
                                  `Type : ${item.type}\n` +
@@ -3747,12 +3808,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
 
             console.log('Envoi de la requête de suppression:', deleteData);
 
-            // Afficher un indicateur de progression
-            const loadingMessage = `🗑️ Suppression de ${item.name} en cours...`;
-
-            // Utiliser une alerte temporaire ou modifier l'interface
-            const originalButton = $(`.delete-btn[data-index="${index}"]`);
-            const originalContent = originalButton.html();
+            // Afficher un indicateur de progression sur le bouton
             originalButton.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
 
             $.ajax({
@@ -3762,31 +3818,30 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 contentType: 'application/json',
                 success: function(response) {
                     console.log('Suppression réussie:', response);
+                    originalButton.html('<i class="fas fa-check"></i> Deleted!'); // Temporary success message
 
                     // Rediriger vers le nouveau CID ou recharger la page
                     if (response.new_cid) {
                         redirectToNewCid(response.new_cid);
                     } else {
                         // Recharger la page si pas de nouveau CID
-                        window.location.reload();
+                        setTimeout(() => {
+                            window.location.reload(); // Reload after a short delay to show message
+                        }, 1000);
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Erreur de suppression:', error, xhr.responseJSON);
 
-                    // Restaurer le bouton
-                    originalButton.html(originalContent).prop('disabled', false);
-
-                    let errorMessage = 'Erreur lors de la suppression';
+                    let errorMessage = 'Deletion failed';
                     if (xhr.responseJSON && xhr.responseJSON.detail) {
                         errorMessage = xhr.responseJSON.detail;
                     }
 
-                    // Afficher l'erreur avec détails
-                    alert(`❌ Échec de la suppression\n\n` +
-                          `Fichier : ${item.name}\n` +
-                          `Erreur : ${errorMessage}\n\n` +
-                          `Vérifiez votre connexion NOSTR et réessayez.`);
+                    originalButton.html('<i class="fas fa-times"></i> Failed!').prop('disabled', false); // Temporary error message
+                    setTimeout(() => {
+                        originalButton.html(originalContent); // Restore button
+                    }, 3000);
                 }
             });
         }
