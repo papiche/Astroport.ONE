@@ -2274,6 +2274,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     <button class="modal-btn" id="copyLinkBtn" title="Copy IPFS Link">
                         <i class="fas fa-copy"></i> Copy Link
                     </button>
+                    <span id="modal-temp-status" style="margin-left: 10px; color: #ffeb3b; font-size: 0.8em; white-space: nowrap;"></span>
                     <button class="modal-btn" id="closeModal" title="Close">
                         <i class="fas fa-times"></i>
                     </button>
@@ -3552,7 +3553,13 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
 
             const ipfsUrl = buildIPFSUrl(item);
             if (!ipfsUrl) {
-                alert('File not available for download yet - not published to IPFS');
+                const statusSpan = $('#modal-temp-status');
+                const originalContent = statusSpan.html(); // Save original content
+                statusSpan.css('color', '#ff6b6b').text('❌ Not published to IPFS yet.');
+                setTimeout(() => {
+                    statusSpan.text(''); // Clear message
+                }, 3000);
+                console.log('File not available for download yet - not published to IPFS:', item.name);
                 return;
             }
 
@@ -3585,6 +3592,12 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><span style="color: #ffa500; font-size:0.8em;">Not Connected</span></div>`;
             }
 
+            // NEW: Add Owner Email and Origin IPFS Gateway display
+            const ownerEmailDisplay = manifest.owner_email ?
+                `<div><strong><i class="fas fa-user"></i> Owner:</strong><br><code>${manifest.owner_email}</code></div>` : '';
+            const originGatewayDisplay = manifest.my_ipfs_gateway ?
+                `<div><strong><i class="fas fa-link"></i> Origin Gateway:</strong><br><code>${manifest.my_ipfs_gateway}</code></div>` : '';
+
             const html = `
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 0.85em;">
                     <div><strong><i class="fas fa-fingerprint"></i> Hash:</strong><br>${hashDisplay}</div>
@@ -3593,6 +3606,8 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     <div><strong><i class="fas fa-file"></i> Files:</strong> ${manifest.total_files}</div>
                     <div><strong><i class="fas fa-weight-hanging"></i> Size:</strong> ${manifest.formatted_total_size}</div>
                     <div><strong><i class="fas fa-clock"></i> Generated:</strong><br><span style="font-size:0.8em;">${generatedDate}</span></div>
+                    ${ownerEmailDisplay} <!-- NEW: Owner Email -->
+                    ${originGatewayDisplay} <!-- NEW: Origin IPFS Gateway -->
                     ${connectedKeyDisplay}
                 </div>
             `;
@@ -3716,7 +3731,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                                     <strong>${file.name}</strong><br>
                                     <small>${errorMessage}</small>
                                 </div>
-                                <div class="upload-result-status error">❌ Failed</div>
+                                <div class="upload-result-status error">Failed</div>
                             </div>
                         `);
 
