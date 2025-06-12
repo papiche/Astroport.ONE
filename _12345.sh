@@ -398,7 +398,7 @@ while true; do
     BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
 
 NODE12345="{
-    \"version\" : \"3.3\",
+    \"version\" : \"3.4\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -428,6 +428,12 @@ NODE12345="{
     \"BILAN\" : \"${BILAN}\"
 }
 "
+
+## ADD HEARTBOX ANALYSIS IF EXISTS
+if [[ -s ~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json ]]; then
+    HEARTBOX=$(cat ~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json)
+    NODE12345=$(echo "$NODE12345" | sed 's/}$/,\n    \"heartbox_analysis\" : '"$HEARTBOX"'\n}/')
+fi
 
 ## PUBLISH ${IPFSNODEID}/12345.json
 echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
