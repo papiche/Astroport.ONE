@@ -1,7 +1,7 @@
 #!/usr/bin/env xdg-open
 [Desktop Entry]
-Name=Astroport
-Exec=xdg-open http://astroport.localhost:1234
+Name=UPlanet
+Exec=xdg-open http://127.0.0.1:8080/ipns/copylaradio.com
 Icon=/home/_USER_/.zen/Astroport.ONE/logo96.png
 Type=Application
 Categories=Utility
