@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ COINScheck.sh
@@ -43,35 +43,34 @@ ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB}
 #######################################################
 #######################################################
 
-# echo "ACTUAL $COINSFILE CONTAINS"
-CURCOINS=$(cat $COINSFILE 2>/dev/null)
-echo "SOLDE : $CURCOINS G1"
+# Try to get balance immediately without checking cache first
+CURCOINS=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
 
-## NO or NULL RESULT in CACHE : REFRESHING
-if [[ $CURCOINS == "" || $CURCOINS == "null" ]]; then
-    (
-    CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
-    if [[ "$CURCOINS" == "" ]]; then
-        echo "JAKLIS GVA SERVER SWITCH ---"
-        ## Changing GVA SERVER in tools/jaklis/.env
-        GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
-        [[ ! -z $GVA ]] \
-            && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
-            && echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env \
-            && echo "GVA NODE=$GVA" \
-            && CURCOINS=$(${MY_PATH}/timeout.sh -t 10 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
-    fi
-    [[ "$CURCOINS" != "null" ]] && echo "$CURCOINS" > "$COINSFILE"
+# If immediate check fails, try with a different GVA server
+if [[ "$CURCOINS" == "" ]]; then
+    echo "JAKLIS GVA SERVER SWITCH ---"
+    GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+    [[ ! -z $GVA ]] \
+        && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
+        && echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env \
+        && echo "GVA NODE=$GVA" \
+        && CURCOINS=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+fi
+
+# If we got a valid balance, save it to cache
+if [[ "$CURCOINS" != "" && "$CURCOINS" != "null" ]]; then
+    echo "$CURCOINS" > "$COINSFILE"
     rm $HOME/.zen/tmp/backup.${G1PUB} 2>/dev/null
-    ) &
-
-    ## SEND OLD VALUE
-    [[ "$CURCOINS" == "" ]] \
-    && [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]] \
-    && cat $HOME/.zen/tmp/backup.${G1PUB} \
-    || echo "$CURCOINS"
+    echo "$CURCOINS"
     exit 0
 fi
-#### grab with tail -n 1 = FUNCTION RESULT
-echo $CURCOINS
-exit 0
+
+# If we still don't have a balance, try to use cached value
+if [[ -s $HOME/.zen/tmp/backup.${G1PUB} ]]; then
+    cat $HOME/.zen/tmp/backup.${G1PUB}
+    exit 0
+fi
+
+# If all else fails, return empty
+echo ""
+exit 1
