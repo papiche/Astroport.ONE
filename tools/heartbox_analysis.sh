@@ -224,6 +224,12 @@ get_services_status_json() {
         astroport_status="true"
     fi
     
+    # uSPOT
+    local uspot_status="false"
+    if netstat -tln 2>/dev/null | grep -q ":54321 "; then
+        uspot_status="true"
+    fi
+    
     # NextCloud
     local nextcloud_status="false"
     local nextcloud_containers="null"
@@ -279,6 +285,10 @@ get_services_status_json() {
     },
     "astroport": {
         "active": $astroport_status
+    },
+    "uspot": {
+        "active": $uspot_status,
+        "port": 54321
     },
     "nextcloud": {
         "active": $nextcloud_status,
