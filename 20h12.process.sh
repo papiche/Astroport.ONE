@@ -15,7 +15,8 @@
 # - Gestion des services système via systemd
 # - Journalisation et reporting par email
 #
-# Conçu pour s'exécuter régulièrement (par exemple via cron) avec des modes
+#
+# Conçu pour s'exécuter régulièrement (via cron) avec des modes
 # de fonctionnement différents selon l'environnement (LAN/public).
 ########################################################################
 # Version: 1.2 - Analystes ♥️BOX extraites vers tools/heartbox_analysis.sh
