@@ -122,27 +122,21 @@ if [[ ${UPLANETG1PUB} == "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
     #################### UPLANET ORIGIN : PRIVATE SWARM BLOOM #########
     ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 else
-    # UPlanet Zen MULTIPASS/ZenCard TW mode
+    # UPlanet Zen MULTIPASS / real ZenCard + TW hidden mode
     #####################################
     ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
     #####################################
-    [[ -s ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt ]] \
-        && rm ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
+    ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh
 fi
 ######################################################### UPLANET ######
 #####################################
 # UPLANET : GeoKeys UMAP / SECTOR / REGION ...
 ##################################### ORIGIN
 ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
-#####################################
-if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
-    ##### UPLANET ZEN MULTIPASS/ZenCard TW mode #########
-    ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh
-fi
-################## SOCIAL NETWORKING + CIVILIZATION NORMALIZATION #########
+############### SOCIAL NETWORK + UPLANET SHARING & CARING #########
 
 ########################################################################
-## DEUXIEME NETTOYAGE ET ANALYSE
+## DEUXIEME NETTOYAGE
 ## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
 mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
 mv ~/.zen/tmp/swarm ~/.zen/swarm
