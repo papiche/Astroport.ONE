@@ -255,14 +255,20 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
+
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ./generate_ipfs_structure.sh
+    ## RUN App
     ./generate_ipfs_structure.sh --log .
 
     ## Link generate_ipfs_RPG.sh to uWORLD
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
+    cd -
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
+    ## RUN App
     ./generate_ipfs_RPG.sh --log .
+
+    cd -
 
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
