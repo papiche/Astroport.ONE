@@ -227,9 +227,42 @@ get_services_status_json() {
     # NextCloud
     local nextcloud_status="false"
     local nextcloud_containers="null"
+    local nextcloud_aio_status="false"
+    local nextcloud_cloud_status="false"
     if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
         nextcloud_status="true"
         nextcloud_containers="\"$(docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | head -1 | tr -d '\n' || echo "unknown")\""
+        
+        # Check NextCloud AIO (port 8002)
+        if netstat -tln 2>/dev/null | grep -q ":8002 "; then
+            nextcloud_aio_status="true"
+        fi
+        
+        # Check NextCloud Cloud (port 8001)
+        if netstat -tln 2>/dev/null | grep -q ":8001 "; then
+            nextcloud_cloud_status="true"
+        fi
+    fi
+    
+    # NOSTR Relay
+    local nostr_relay_status="false"
+    if netstat -tln 2>/dev/null | grep -q ":7777 "; then
+        nostr_relay_status="true"
+    fi
+    
+    # IPFS P2P Services
+    local p2p_services="[]"
+    if command -v ipfs >/dev/null 2>&1; then
+        local p2p_list=$(ipfs p2p ls 2>/dev/null)
+        if [[ -n "$p2p_list" ]]; then
+            local p2p_array=()
+            while IFS= read -r line; do
+                if [[ -n "$line" ]]; then
+                    p2p_array+=("\"$line\"")
+                fi
+            done <<< "$p2p_list"
+            p2p_services="[$(IFS=,; echo "${p2p_array[*]}")]"
+        fi
     fi
     
     # G1Billet
@@ -249,8 +282,21 @@ get_services_status_json() {
     },
     "nextcloud": {
         "active": $nextcloud_status,
-        "container": $nextcloud_containers
+        "container": $nextcloud_containers,
+        "aio_https": {
+            "active": $nextcloud_aio_status,
+            "port": 8002
+        },
+        "cloud_http": {
+            "active": $nextcloud_cloud_status,
+            "port": 8001
+        }
     },
+    "nostr_relay": {
+        "active": $nostr_relay_status,
+        "port": 7777
+    },
+    "ipfs_p2p_services": $p2p_services,
     "g1billet": {
         "active": $g1billet_status
     }
@@ -420,7 +466,7 @@ save_logs_to_archive() {
     local zone_files=($(ls ~/.zen/tmp/ZONE_* 2>/dev/null))
     if [[ ${#zone_files[@]} -gt 0 ]]; then
         echo "
---- Zones UPlanet du jour ---" >> "$archive_file"
+--- ZONES UPlanet du jour ---" >> "$archive_file"
         for zone_file in "${zone_files[@]}"; do
             echo "Zone: $(basename "$zone_file")" >> "$archive_file"
         done

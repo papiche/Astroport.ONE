@@ -397,12 +397,23 @@ while true; do
     [[ -z $ZCARD ]] && ZCARD=15
     BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
 
+    ## READ HEARTBOX ANALYSIS
+    ANALYSIS_FILE=~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
+    if [[ -s ${ANALYSIS_FILE} ]]; then
+        CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities')
+        SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services')
+    else
+        CAPACITIES="{\"reserved_captain_slots\":8}"
+        SERVICES="{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
+    fi
+
 NODE12345="{
-    \"version\" : \"3.3\",
+    \"version\" : \"3.5\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
+    \"myIPv6\" : \"$(${MY_PATH}/tools/ipv6.sh | head -n 1)\",
     \"myASTROPORT\" : \"${myASTROPORT}\",
     \"myIPFS\" : \"${myIPFS}\",
     \"myAPI\" : \"${myAPI}\",
@@ -425,7 +436,9 @@ NODE12345="{
     \"PAF\" : \"${PAF}\",
     \"NCARD\" : \"${NCARD}\",
     \"ZCARD\" : \"${ZCARD}\",
-    \"BILAN\" : \"${BILAN}\"
+    \"BILAN\" : \"${BILAN}\",
+    \"capacities\" : ${CAPACITIES},
+    \"services\" : ${SERVICES}
 }
 "
 
