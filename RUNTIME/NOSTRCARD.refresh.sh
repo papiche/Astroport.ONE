@@ -575,6 +575,14 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "NO STR WALLET HISTORY FOR $PLAYER"
     fi
 
+    ## EXPORT NOSTR EVENTS TO JSON
+    echo "Exporting NOSTR events for ${PLAYER}..."
+    cd ${HOME}/.zen/strfry/
+    ./strfry scan '{"authors": ["'$HEX'"]}' 2> /dev/null > "${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json"
+    COUNT=$(wc -l < "${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json")
+    echo "Exported ${COUNT} events to ${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json"
+    cd - 2>&1 >/dev/null
+
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
