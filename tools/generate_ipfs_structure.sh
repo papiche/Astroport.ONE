@@ -5,6 +5,9 @@
 
 set -e
 
+## LOAD ENVIRONEMENT VARIABLES
+. ${HOME}/.zen/Astroport.ONE/tools/my.sh
+
 # Fonction d'aide
 show_help() {
     cat << 'HELP_EOF'
@@ -366,17 +369,17 @@ get_existing_final_cid() {
 unpin_ipfs_hash() {
     local ipfs_link="$1"
     local description="$2"
-    
+
     if [ -z "$ipfs_link" ] || [ "$ipfs_link" = "null" ] || [ "$ipfs_link" = "" ]; then
         return 0
     fi
-    
+
     # Extraire le hash du lien IPFS (format: hash/filename)
     local hash=$(echo "$ipfs_link" | cut -d'/' -f1)
-    
+
     if [ -n "$hash" ] && [ "$hash" != "$ipfs_link" ]; then
         log_message "      🗑️  Dépinnage de l'ancien hash: $hash ($description)"
-        
+
         # Essayer de dépinner avec un timeout
         if ipfs --timeout 10s pin rm "$hash" >/dev/null 2>&1; then
             log_message "      ✅ Hash $hash dépinné avec succès"
@@ -564,12 +567,12 @@ dir_count=0
 updated_count=0
 cached_count=0
 OWNER_HEX_PUBKEY=""
-ORIGIN_IPFS_GATEWAY="" 
-
-OWNER_PLAYER_DIR=$(dirname "$SOURCE_DIR")
+ORIGIN_IPFS_GATEWAY="$myIPFS"
+##############################################################
+## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uDRIVE
+OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
 OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
 OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
-ENV_FILE="${HOME}/.zen/Astroport.ONE/.env"
 
 if [ -f "$OWNER_HEX_FILE" ]; then
     OWNER_HEX_PUBKEY=$(cat "$OWNER_HEX_FILE" 2>/dev/null)
@@ -577,20 +580,6 @@ if [ -f "$OWNER_HEX_FILE" ]; then
 else
     log_message "⚠️  Fichier HEX non trouvé pour le propriétaire du Drive : $OWNER_HEX_FILE"
 fi
-
-# NEW: Read myIPFS from the .env file
-if [ -f "$ENV_FILE" ]; then
-    log_message "🔍 Lecture de l'adresse de la gateway IPFS d'origine depuis $ENV_FILE..."
-    ORIGIN_IPFS_GATEWAY=$(grep -E '^myIPFS=' "$ENV_FILE" | cut -d'=' -f2 | tr -d '\r') # tr -d '\r' pour les fins de ligne DOS
-    if [ -n "$ORIGIN_IPFS_GATEWAY" ]; then
-        log_message "✅ Gateway IPFS d'origine détectée: $ORIGIN_IPFS_GATEWAY"
-    else
-        log_message "⚠️  La variable 'myIPFS' n'a pas été trouvée ou est vide dans $ENV_FILE"
-    fi
-else
-    log_message "⚠️  Fichier .env non trouvé à l'emplacement $ENV_FILE. L'adresse de la gateway IPFS d'origine sera vide."
-fi
-# ----------------------------------------------------------------------
 
 log_message "🔍 Analyse des répertoires..."
 
@@ -723,7 +712,7 @@ while IFS= read -r -d '' file; do
     if file_needs_update "$file" "$relative_path"; then
         # Récupérer l'ancien lien IPFS avant de le remplacer
         old_ipfs_link=$(get_existing_ipfs_link "$relative_path")
-        
+
         # Fichier nouveau ou modifié - ajouter à IPFS
         log_message "      🚀 Ajout du fichier à IPFS..."
         log_message "         🔗 Ajout IPFS: $relative_path"
@@ -734,7 +723,7 @@ while IFS= read -r -d '' file; do
             updated_count=$((updated_count + 1))
             log_message "         ✅ Hash IPFS obtenu: $ipfs_hash"
             log_message "      ✅ Fichier ajouté avec succès - Link: $ipfs_link"
-            
+
             # Dépinner l'ancien hash si il existait et qu'il est différent du nouveau
             if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "$ipfs_link" ]; then
                 unpin_ipfs_hash "$old_ipfs_link" "fichier modifié: $relative_path"
@@ -2644,12 +2633,12 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         }
         updateUIBasedOnOwnership();
         filterAndDisplayItems(currentFilter, $('#search-input').val().toLowerCase());
-        
+
         // NEW: Refresh Capsule Information to show updated connection status
         if (currentManifest) { // Only refresh if manifest is already loaded
             displayDirectoryInfo(currentManifest);
         }
-    } 
+    }
 
         function disconnectFromNostr() {
             if (nostrRelay) {
@@ -2793,7 +2782,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     // Vérifier si on est dans l'éditeur Markdown
                     const isMarkdownEditor = $('#fileModal .modal-content').hasClass('markdown-modal');
                     const isInTextarea = $(e.target).is('#markdown-textarea');
-                    
+
                     // Si on est dans l'éditeur Markdown et dans la zone de texte, ignorer la navigation
                     if (isMarkdownEditor && isInTextarea) {
                         // Permettre seulement Escape pour fermer
@@ -2802,15 +2791,15 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                         }
                         return; // Ignorer les autres touches
                     }
-                    
+
                     // Navigation normale pour les autres cas
                     switch(e.key) {
                         case 'Escape': closeModal(); break;
-                        case 'ArrowLeft': 
-                            if (!isMarkdownEditor) navigateFile(-1); 
+                        case 'ArrowLeft':
+                            if (!isMarkdownEditor) navigateFile(-1);
                             break;
-                        case 'ArrowRight': 
-                            if (!isMarkdownEditor) navigateFile(1); 
+                        case 'ArrowRight':
+                            if (!isMarkdownEditor) navigateFile(1);
                             break;
                     }
                 }
@@ -3034,7 +3023,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     openFilePreview(index);
                 }
             });
-            
+
             // Add click handlers for download/sync/delete (using .off() to prevent multiple bindings)
             $('.download-btn').off('click').on('click', function(e) {
                 e.stopPropagation();
@@ -3276,7 +3265,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     saveMarkdownFile();
                 }
             });
-            
+
             // Démarrer en mode édition plein écran
             setMarkdownViewMode('edit');
         }
@@ -3515,7 +3504,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             button.html('<i class="fas fa-spinner fa-spin"></i> Syncing...').prop('disabled', true);
 
             $.ajax({
-                url: `${apiBaseUrl}/api/upload_from_drive`, 
+                url: `${apiBaseUrl}/api/upload_from_drive`,
                 type: 'POST',
                 data: JSON.stringify(syncData),
                 contentType: 'application/json',

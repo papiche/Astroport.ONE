@@ -80,7 +80,10 @@ should_refresh() {
     local refresh_time_file="${player_dir}/.refresh_time"
     local last_refresh_file="${player_dir}/.todate"
     local last_udrive_file="${player_dir}/.udrive"
+    local last_uworld_file="${player_dir}/.uworld"
+
     UDRIVE=""
+    UWORLD=""
 
     # Si le compte n'est pas initialisé, l'initialiser
     if [[ ! -d "$player_dir" ]] || [[ ! -s "$refresh_time_file" ]]; then
@@ -91,13 +94,14 @@ should_refresh() {
     local refresh_time=$(cat "$refresh_time_file")
     local last_refresh=$(cat "$last_refresh_file")
     local last_udrive=$(cat "$last_udrive_file")
+    local last_uworld=$(cat "$last_uworld_file")
 
     # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée ## 24 H spreading
     if [[ "$last_refresh" != "$TODATE" ]] && [[ "$current_time" > "$refresh_time" ]]; then
         return 0
     fi
-
-    ## ACTIVATE APP STRUCTURE
+    ##############################################
+    ## ACTIVATE & CHECK APP STRUCTURE
     [[ ! -d ${player_dir}/APP/uDRIVE ]] \
         && rm -Rf ${player_dir}/APP \
         && mkdir -p ${player_dir}/APP/uDRIVE/
@@ -105,10 +109,9 @@ should_refresh() {
     ## Verify Link
     [[ ! -L "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" ]] && \
         cd "${player_dir}/APP/uDRIVE" && \
-        rm -f "generate_ipfs_structure.sh" && \
         ln -s "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh"
 
-    ## Check for IPFS DRIVE change
+    ## update uDRIVE APP
     cd ${player_dir}/APP/uDRIVE/
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
     cd - 2>&1 >/dev/null
@@ -118,6 +121,25 @@ should_refresh() {
             && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
         [[ -n $UDRIVE ]] \
             && echo $UDRIVE > "${last_udrive_file}"
+        return 0
+    fi
+
+    ## uWORLD Link
+    [[ ! -L "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
+        mkdir -p "${player_dir}/APP/uWORLD" && \
+        cd ${player_dir}/APP/uWORLD/ && \
+        ln -s "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh" "generate_ipfs_RPG.sh"
+
+    ## update uWORLD APP
+    cd ${player_dir}/APP/uWORLD/
+    UWORLD=$(./generate_ipfs_RPG.sh .) ## UPDATE MULTIPASS uWORLD
+    cd - 2>&1 >/dev/null
+
+    if [[ "$UWORLD" != "$last_uworld" ]]; then
+        [[ -n $last_uworld ]] \
+            && ipfs --timeout 20s pin rm $last_uworld ## remove old pin
+        [[ -n $UWORLD ]] \
+            && echo $UWORLD > "${last_uworld_file}"
         return 0
     fi
 

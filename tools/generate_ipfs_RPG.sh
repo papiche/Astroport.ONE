@@ -5,6 +5,9 @@
 
 set -e
 
+## LOAD ENVIRONEMENT VARIABLES
+. ${HOME}/.zen/Astroport.ONE/tools/my.sh
+
 # Fonction d'aide
 show_help() {
     cat << 'HELP_EOF'
@@ -361,17 +364,17 @@ get_existing_final_cid() {
 unpin_ipfs_hash() {
     local ipfs_link="$1"
     local description="$2"
-    
+
     if [ -z "$ipfs_link" ] || [ "$ipfs_link" = "null" ] || [ "$ipfs_link" = "" ]; then
         return 0
     fi
-    
+
     # Extraire le hash du lien IPFS (format: hash/filename)
     local hash=$(echo "$ipfs_link" | cut -d'/' -f1)
-    
+
     if [ -n "$hash" ] && [ "$hash" != "$ipfs_link" ]; then
         log_message "      🗑️  Dépinnage de l'ancien hash: $hash ($description)"
-        
+
         # Essayer de dépinner avec un timeout
         if ipfs --timeout 10s pin rm "$hash" >/dev/null 2>&1; then
             log_message "      ✅ Hash $hash dépinné avec succès"
@@ -560,9 +563,10 @@ dir_count=0
 updated_count=0
 cached_count=0
 OWNER_HEX_PUBKEY=""
-ORIGIN_IPFS_GATEWAY="" 
-
-OWNER_PLAYER_DIR=$(dirname "$SOURCE_DIR")
+ORIGIN_IPFS_GATEWAY="$myIPFS"
+##############################################################
+## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uWORLD
+OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
 OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
 OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
 ENV_FILE="${HOME}/.zen/Astroport.ONE/.env"
@@ -573,20 +577,6 @@ if [ -f "$OWNER_HEX_FILE" ]; then
 else
     log_message "⚠️  Fichier HEX non trouvé pour le propriétaire du Drive : $OWNER_HEX_FILE"
 fi
-
-# NEW: Read myIPFS from the .env file
-if [ -f "$ENV_FILE" ]; then
-    log_message "🔍 Lecture de l'adresse de la gateway IPFS d'origine depuis $ENV_FILE..."
-    ORIGIN_IPFS_GATEWAY=$(grep -E '^myIPFS=' "$ENV_FILE" | cut -d'=' -f2 | tr -d '\r') # tr -d '\r' pour les fins de ligne DOS
-    if [ -n "$ORIGIN_IPFS_GATEWAY" ]; then
-        log_message "✅ Gateway IPFS d'origine détectée: $ORIGIN_IPFS_GATEWAY"
-    else
-        log_message "⚠️  La variable 'myIPFS' n'a pas été trouvée ou est vide dans $ENV_FILE"
-    fi
-else
-    log_message "⚠️  Fichier .env non trouvé à l'emplacement $ENV_FILE. L'adresse de la gateway IPFS d'origine sera vide."
-fi
-# ----------------------------------------------------------------------
 
 log_message "🔍 Analyse des répertoires..."
 
@@ -722,7 +712,7 @@ while IFS= read -r -d '' file; do
     if file_needs_update "$file" "$relative_path"; then
         # Récupérer l'ancien lien IPFS avant de le remplacer
         old_ipfs_link=$(get_existing_ipfs_link "$relative_path")
-        
+
         # Fichier nouveau ou modifié - ajouter à IPFS
         log_message "      🚀 Ajout du fichier à IPFS..."
         log_message "         🔗 Ajout IPFS: $relative_path"
@@ -733,7 +723,7 @@ while IFS= read -r -d '' file; do
             updated_count=$((updated_count + 1))
             log_message "         ✅ Hash IPFS obtenu: $ipfs_hash"
             log_message "      ✅ Fichier ajouté avec succès - Link: $ipfs_link"
-            
+
             # Dépinner l'ancien hash si il existait et qu'il est différent du nouveau
             if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "$ipfs_link" ]; then
                 unpin_ipfs_hash "$old_ipfs_link" "fichier modifié: $relative_path"
@@ -983,7 +973,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         .section-header.collapsed .toggle-icon {
             transform: rotate(-90deg); /* Rotated when collapsed */
         }
-        
+
         /* New Map section styles (inspired by MULTIPASS DISCO) */
         .map-section {
             flex: 1; /* Allow map section to grow */
@@ -995,13 +985,13 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             overflow: hidden;
             background-color: #333;
         }
-        
+
         .map-header {
             background-color: #383838;
             padding: 12px; /* Reduced padding */
             border-bottom: 1px solid #555;
         }
-        
+
         .map-header h3 {
             margin: 0 0 8px 0; /* Reduced margin */
             color: #e0e0e0;
@@ -1010,21 +1000,21 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             align-items: center;
             gap: 6px;
         }
-        
+
         .map-controls {
             display: flex;
             gap: 8px; /* Reduced gap */
             align-items: center;
             flex-wrap: wrap;
         }
-        
+
         .coord-input {
             display: flex;
             align-items: center;
             gap: 4px; /* Reduced gap */
             min-width: 0;
         }
-        
+
         .coord-input label {
             font-weight: bold;
             color: #cccccc;
@@ -1032,7 +1022,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             min-width: 25px; /* Slightly smaller */
             font-size: 0.85em; /* Adjusted for overall small font-size */
         }
-        
+
         .coord-input input {
             width: 70px; /* Slightly smaller */
             padding: 5px; /* Reduced padding */
@@ -1043,12 +1033,12 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             color: #e0e0e0;
             min-width: 0;
         }
-        
+
         .coord-input input:focus {
             border-color: #4CAF50;
             outline: none;
         }
-        
+
         .map-button {
             padding: 6px 9px; /* Reduced padding */
             background-color: #4CAF50;
@@ -1061,25 +1051,25 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             white-space: nowrap;
             min-height: 28px; /* Adjusted to fit the general UI */
         }
-        
+
         .map-button:hover {
             background-color: #45a049;
         }
-        
+
         .map-button.secondary {
             background-color: #2196F3;
         }
-        
+
         .map-button.secondary:hover {
             background-color: #1976D2;
         }
-        
+
         #map {
             height: 250px;
             width: 100%;
             border-top: 1px solid #555; /* Add separator */
         }
-        
+
         .map-info {
             padding: 8px 12px; /* Reduced padding */
             background-color: #2a2a2a;
@@ -1625,11 +1615,11 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         let privateKeyHex = null; // Stored if NSEC is provided
         let publicKey = '';       // User's active public key (from NSEC or extension)
         let userProfile = null;   // User's kind 0 profile data
-        
+
         let manifestData = null;  // Loaded from manifest.json
         // OLD: let NOSTR_RELAY_WS = 'ws://127.0.0.1:7777'; // Default, updated by manifest
         // OLD: let DEFAULT_RELAYS = ['wss://relay.copylaradio.com', 'ws://127.0.0.1:7777']; // Initial list, updated by manifest
-        
+
         // NEW: Define general purpose relays and a variable for the specific Astrobot relay
         const GENERAL_PUBLIC_RELAYS = ['wss://relay.copylaradio.com']; // Public, non-restricted relays
         let LOCAL_ASTROBOT_RELAY = 'ws://127.0.0.1:7777'; // Initial default for local/restricted relay, will be updated from manifest
@@ -1685,7 +1675,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
 
             return newUrl.toString() + route;
         }
-        
+
         // --- Nostr Connection & Profile Management ---
 
         function getNostrPool() {
@@ -1856,12 +1846,12 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 // Removed: and all logic related to userRelays from kind 10002
 
                 userProfile = { ...fetchedProfileData, source: profileSource }; // Set global userProfile
-                
+
                 // allRelaysToPublish is already set in loadManifestAndInitRPG. No need to update it here.
-                
+
                 renderProfile(pubkey, userProfile); // Render profile info
                 await checkWalletBalances(userProfile); // Check wallet balances
-                
+
                 return userProfile;
 
                 } catch (e) {
@@ -1885,7 +1875,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 } else {
                     $('#g1-balance').text('N/A');
                 }
-                
+
                 if (profileData.zen_address) {
                     const response = await fetch(`/check_balance?address=${profileData.zen_address}&currency=ZEN`);
                     const data = await response.json();
@@ -2124,7 +2114,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         // --- Player Actions ---
         function promptMove(newLat, newLon) { // Simplified, expects actual coords now
             if (!isNostrConnected || !publicKey) { alert('Please connect to Nostr to move.'); return; }
-            
+
             // newLat and newLon are now directly passed from map inputs
             if (isNaN(newLat) || isNaN(newLon)) {
                 alert('Invalid coordinates. Please enter numbers.');
@@ -2163,10 +2153,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 if (window.nostr) { signedEvent = await window.nostr.signEvent(event); }
                 else if (privateKeyHex) { signedEvent = NostrTools.finishEvent(event, privateKeyHex); }
                 else { alert('No signing method available. Cannot publish.'); return; }
-                
+
                 // Publish to general relays only for user-signed events
                 const relaysForPublish = GENERAL_PUBLIC_RELAYS;
-                
+
                 if (relaysForPublish.length === 0) {
                     log("No general relays to publish user's location update.");
                     alert("No general relays configured for location updates. Please check relay configuration.");
@@ -2205,10 +2195,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 if (window.nostr) { signedEvent = await window.nostr.signEvent(event); }
                 else if (privateKeyHex) { signedEvent = NostrTools.finishEvent(event, privateKeyHex); }
                 else { alert('No signing method available. Cannot publish.'); return; }
-                
+
                 // Publish to general relays only for user-signed events
                 const relaysForPublish = GENERAL_PUBLIC_RELAYS;
-                
+
                 if (relaysForPublish.length === 0) {
                     log("No general relays to publish user's location description.");
                     alert("No general relays configured for location descriptions. Please check relay configuration.");
@@ -2246,10 +2236,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 if (window.nostr) { signedEvent = await window.nostr.signEvent(event); }
                 else if (privateKeyHex) { signedEvent = NostrTools.finishEvent(event, privateKeyHex); }
                 else { alert('No signing method available. Cannot publish.'); return; }
-                
+
                 // Publish to general relays only for user-signed events
                 const relaysForPublish = GENERAL_PUBLIC_RELAYS;
-                
+
                 if (relaysForPublish.length === 0) {
                     log("No general relays to publish user's message.");
                     alert("No general relays configured for messages. Please check relay configuration.");
@@ -2335,10 +2325,10 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     if (window.nostr) { signedEvent = await window.nostr.signEvent(event); }
                     else if (privateKeyHex) { signedEvent = NostrTools.finishEvent(event, privateKeyHex); }
                     else { addChatMessage("Astrobot: Error - No signing method available to send your message."); return; }
-                    
+
                     // Publish to general public relays
                     const relaysForPublish = GENERAL_PUBLIC_RELAYS;
-                    
+
                     if (relaysForPublish.length === 0) {
                         addChatMessage("Astrobot: No general relays available for your message. Please check relay configuration.");
                         log("No general relays to publish user's non-AstroBot message.");
@@ -2399,9 +2389,9 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         // Initialize map
         function initializeMap(lat = currentLatitude, lon = currentLongitude) { // Use currentLatitude/Longitude defaults
             if (map) { map.remove(); }
-            
+
             map = L.map('map').setView([lat, lon], 10); // Changed 'mini-map' to 'map'
-            
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
@@ -2444,7 +2434,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
         function getCurrentLocation() { // Renamed from getCurrentLocationForMap
             if (navigator.geolocation) {
                 $('#get-location-btn').text('Locating...').prop('disabled', true);
-                
+
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
                         const lat = Math.round(position.coords.latitude * 100) / 100;
@@ -2452,7 +2442,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
 
                         updateMapCoordinates(lat, lon);
                         if (map) { map.setView([lat, lon], 13); } // Use 'map'
-                        
+
                         $('#get-location-btn').text('Ma position').prop('disabled', false);
                         promptMove(lat, lon); // Also update game location with publish event
                     },
@@ -2480,7 +2470,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 success: async function(manifest) {
                     log('Manifest loaded:', manifest);
                     manifestData = manifest;
-                    
+
                     // Update LOCAL_ASTROBOT_RELAY from manifest gateway using USPOT derivation logic
                     if (manifestData.my_ipfs_gateway) {
                         const gatewayUrl = new URL(manifestData.my_ipfs_gateway);
@@ -2500,7 +2490,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     // Combine general public relays with the derived local Astrobot relay
                     allRelaysToPublish = [...new Set([...GENERAL_PUBLIC_RELAYS, LOCAL_ASTROBOT_RELAY])];
                     log('Combined allRelaysToPublish for subscription:', allRelaysToPublish);
-                    
+
                     // Initialize the map with default coordinates first
                     initializeMap(currentLatitude, currentLongitude);
 
@@ -2559,7 +2549,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
             $('#move-btn').on('click', function() { promptMove(currentLatitude, currentLongitude); }); // Use current coords
             $('#create-location-btn').on('click', createLocationDescription);
             $('#post-event-btn').on('click', postEvent);
-            
+
             // Collapsible sections
             $('.section-header').click(function() {
                 const target = $(this).data('target');
@@ -2586,7 +2576,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                 const tag = $(this).data('tag');
                 const textarea = $('#chat-input');
                 let currentText = textarea.val().trim();
-                
+
                 // Toggle the tag
                 if (currentText.includes(tag)) {
                     // Remove the tag if it exists
@@ -2598,7 +2588,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     $(this).addClass('active');
                 }
                 textarea.val(currentText);
-                
+
                 // If IA tag is removed, hide other tags
                 if (tag === '#BRO') {
                     if (!$(this).hasClass('active')) {
@@ -2616,7 +2606,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     const tag = $(this).data('tag');
                     const isActive = text.includes(tag);
                     $(this).toggleClass('active', isActive);
-                    
+
                     if (tag === '#BRO') {
                         $('.chat-sub-tags').toggleClass('show', isActive);
                     }
