@@ -261,7 +261,7 @@ EOF
 get_capacities_json() {
     local disk_info=$(df -h / | tail -1)
     local disk_available=$(echo "$disk_info" | awk '{print $4}')
-    local available_gb=$(echo "$disk_available" | sed 's/G//' | sed 's/T/*1024/' | bc 2>/dev/null || echo "0")
+    local available_gb=$(echo "$disk_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
     
     local zencard_parts=0
     local nostr_parts=0
