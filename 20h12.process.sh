@@ -33,6 +33,12 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
+# Check for jq, needed for JSON parsing
+if ! command -v jq &> /dev/null; then
+    echo "ERROR: 'jq' command not found. Please install 'jq' (e.g., sudo apt install jq) to enable full analysis and .env updates."
+    exit 1
+fi
+
 echo "PATH=$PATH"
 
 ########################################################################
@@ -65,10 +71,6 @@ echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/ZONE_* 2>/dev/null
 
 ########################################################################
-## SAUVEGARDE DES LOGS ET ANALYSE ♥️BOX (via script externe)
-echo "📝 Sauvegarde des logs et analyse ♥️BOX avant nettoyage..."
-${MY_PATH}/tools/heartbox_analysis.sh save "PREMIER_NETTOYAGE"
-
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
 mv ~/.zen/tmp/coucou ~/.zen/coucou
@@ -225,11 +227,35 @@ UPLANET: ${UPLANETG1PUB}
 STATUS: SUCCESS
 #######################################################################" >> /tmp/20h12.log
 
-# Analyse finale de l'état du système
-echo "📊 Analyse finale de l'état du système..."
-${MY_PATH}/tools/heartbox_analysis.sh save "EXECUTION_TERMINEE"
+echo "📊 Lancement de l'analyse de la ♥️BOX - Captain ${CAPTAINEMAIL}..."
+ANALYSIS_JSON=$(${MY_PATH}/tools/heartbox_analysis.sh export --json)
 
-echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
+if [[ -n "$ANALYSIS_JSON" ]]; then
+    ZENCARD_SLOTS=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.zencard_slots' 2>/dev/null)
+    NOSTR_SLOTS=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.nostr_slots' 2>/dev/null)
+    AVAILABLE_SPACE_GB=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.available_space_gb' 2>/dev/null)
+
+    echo "Capacités UPlanet détectées:"
+    echo "  ZenCard Slots (128GB/slot): $ZENCARD_SLOTS"
+    echo "  NOSTR/MULTIPASS Slots (10GB/slot): $NOSTR_SLOTS"
+    echo "  Espace disque disponible (GB): $AVAILABLE_SPACE_GB"
+
+    # Save analysis JSON to ~/.zen/tmp/$IPFSNODEID/
+    mkdir -p ~/.zen/tmp/$IPFSNODEID
+    ANALYSIS_FILE=~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json
+    echo "$ANALYSIS_JSON" > "$ANALYSIS_FILE"
+    echo "✅ Analyse JSON sauvegardée dans $ANALYSIS_FILE"
+else
+    echo "❌ Erreur: Impossible d'obtenir les données d'analyse JSON de heartbox_analysis.sh."
+fi
+
+end=`date +%s`
+dur=`expr $end - $start`
+hours=$((dur / 3600))
+minutes=$(( (dur % 3600) / 60 ))
+seconds=$((dur % 60))
+
+echo "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 ## MAIL LOG : support@qo-op.com ##
