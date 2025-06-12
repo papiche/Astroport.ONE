@@ -5,9 +5,6 @@
 
 set -e
 
-## LOAD ENVIRONEMENT VARIABLES
-. ${HOME}/.zen/Astroport.ONE/tools/my.sh
-
 # Fonction d'aide
 show_help() {
     cat << 'HELP_EOF'
