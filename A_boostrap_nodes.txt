@@ -1,13 +1,14 @@
-# UPlanet Swarm Bootstrap Stations # Adapt for your domain #
+# UPlanet Swarm Bootstrap Stations # ORIGIN DOMAIN - bloc 0.0
 # https://ipfs.copylaradio.com ipfs.copylaradio.com
 #################################################################
-# astroport.libra.copylaradio.com
+# astroport.libra.copylaradio.com # 
 /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 
-# scorpio.copylaradio.com
-/dnsaddr/scorpio.copylaradio.com/p2p/12D3KooWS8EiLNay8qVnFaULpxW1X9sGZZz4wV8E6E3QEwCRktry
+### UPLanet ORIGIN : OFFICIAL RELAY LIST #######################
+# ipfs.host.yourdomain.tld #
+
 
 #################################################################
-###### WISHING TO ADD YOUR NODE TO OFFICIAL ASTROPORT BOOSTRAP LIST ?
+###### ADD YOUR NODE TO OFFICIAL ASTROPORT BOOSTRAP LIST !!!
 ###### ===> CONTACT support@qo-op.com
 #################################################################
