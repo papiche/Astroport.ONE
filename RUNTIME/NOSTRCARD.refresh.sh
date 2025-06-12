@@ -260,16 +260,17 @@ for PLAYER in "${NOSTR[@]}"; do
             else
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
-                YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:NOSTR:${YOU}:${NPUB}"
+                YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:NOSTR:${YOUSER}:${NPUB}"
                 echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             fi
         fi
 
         ## welcome EMAIL...
-        [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome ]] && [[ "$primal" == "" ]] \
-            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${MY_PATH}/../templates/NOSTR/welcome.html" "WELCOME PLAYER" \
-            && cp  "${MY_PATH}/../templates/NOSTR/welcome.html" ~/.zen/game/nostr/${PLAYER}/.welcome
+        [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]] \
+            && cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+            && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME /ipns/$YOUSER"
 
         rm -Rf ~/.zen/tmp/${MOATS}
         continue
@@ -372,7 +373,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ P21 ?" -m "BRO Certification <=> $G1PRIME"
                                 sleep 1
                             fi
-                            MESSAGE="$G1PRIME est devenu membre de CopyLaRadio https://www.copylaradio.com --- UPlanet /SCAN : https://qo-op.com"
+                            MESSAGE="$G1PRIME est devenu membre de CopyLaRadio https://www.copylaradio.com --- UPlanet : $myIPFS/ipns/copylaradio.com"
                             $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ " -m "$MESSAGE"
                             echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                             sleep 2
@@ -388,13 +389,15 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "## OFFICIAL PDF UPASSPORT : ${primal} is STATION co OWNER !!"
     fi
 
+    YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+    
     ########################################################################
     ######### NOSTR PROFILE ACTIVE : CREATING UPASSPORT
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
         echo "######################################## STEP 1"
         echo "## NOSTR PROFILE PRIMAL LINKING"
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-        YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+        
         ## EXTACT PRIMAL CESIUM PROFILE
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
         LAT=$(makecoord $zlat)

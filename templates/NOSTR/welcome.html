@@ -3,116 +3,538 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPlanet ORIGIN - NOSTR Card</title>
+    <title>UPlanet " MULTIPASS"</title>
     <style>
+        :root {
+            --primary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #f5f5f5;
+            --container-bg: white;
+            --border-color: #e9ecef;
+            --highlight-bg: #fffde7;
+            --info-box-bg: #e8f4f8;
+            --warning-box-bg: #fff3cd;
+            --table-header-bg: #f8f9fa;
+            --table-hover-bg: #f5f5f5;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #64b5f6;
+            --text-color: #e0e0e0;
+            --bg-color: #1a1a1a;
+            --container-bg: #2d2d2d;
+            --border-color: #404040;
+            --highlight-bg: #2d2d1a;
+            --info-box-bg: #1a2d33;
+            --warning-box-bg: #332d1a;
+            --table-header-bg: #2d2d2d;
+            --table-hover-bg: #363636;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--container-bg);
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
 
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .theme-switch button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .theme-switch button:hover {
+            opacity: 0.9;
+        }
+
         h1 {
-            color: #2c3e50;
+            color: var(--primary-color);
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid var(--primary-color);
             padding-bottom: 10px;
         }
 
+        .language-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .language-tab {
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: var(--table-header-bg);
+            transition: all 0.3s ease;
+        }
+
+        .language-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .language-tab:hover {
+            background-color: var(--table-hover-bg);
+        }
+
         .language-section {
+            display: none;
             margin-bottom: 40px;
         }
 
-        .language-title {
-            font-weight: bold;
-            color: #3498db;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
+        .language-section.active {
+            display: block;
         }
 
-        .language-title:before {
-            content: "🌐";
-            margin-right: 10px;
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
         }
 
-        a {
-            color: #2980b9;
-            text-decoration: none;
-            font-weight: bold;
+        .section-title {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
         }
 
-        a:hover {
-            text-decoration: underline;
+        .info-box {
+            background-color: var(--info-box-bg);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
         }
 
-        .steps {
-            margin-left: 20px;
+        .warning-box {
+            background-color: var(--warning-box-bg);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
         }
 
-        .steps li {
-            margin-bottom: 10px;
+        .setup-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .setup-step {
+            padding: 20px;
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: transform 0.3s;
+        }
+
+        .setup-step:hover {
+            transform: translateY(-5px);
+        }
+
+        .setup-step h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .offer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .offer-table th, .offer-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .offer-table th {
+            background-color: var(--table-header-bg);
+            color: var(--primary-color);
+        }
+
+        .offer-table tr:hover {
+            background-color: var(--table-hover-bg);
+        }
+
+        .offer-features {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .offer-features li {
+            margin: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .offer-features li:before {
+            content: "✓";
+            color: #27ae60;
+            position: absolute;
+            left: 0;
+        }
+
+        .highlight {
+            background-color: var(--highlight-bg);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
         }
 
         .footer {
             margin-top: 30px;
             font-style: italic;
             text-align: center;
-            color: #7f8c8d;
-            border-top: 1px solid #ecf0f1;
+            color: var(--text-color);
+            border-top: 1px solid var(--border-color);
             padding-top: 20px;
         }
 
-        .highlight {
-            background-color: #fffde7;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-family: monospace;
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .setup-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .offer-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .language-tabs {
+                flex-wrap: wrap;
+            }
+
+            .language-tab {
+                margin-bottom: 5px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="theme-switch">
+        <button onclick="toggleTheme()">🌓</button>
+    </div>
+
+    <!-- Nouveau logo UPlanet en haut de la page -->
+    <img src="http://127.0.0.1:8080/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" 
+         alt="UPlanet Logo" 
+         style="max-width: 150px; display: block; margin: 20px auto 0 auto;">
+
     <div class="container">
-        <h1>UPlanet ORIGIN - NOSTR Card</h1>
+        <h1>UPlanet " MULTIPASS"</h1>
 
-        <div class="language-section">
-            <div class="language-title">Français</div>
-            <p>Vous avez scanné votre email sur UPlanet ORIGIN (<a href="https://qo-op.com" target="_blank">https://qo-op.com</a>)</p>
-
-            <ul class="steps">
-                <li>Avez-vous bien reçu votre <span class="highlight">"NOSTR Card"</span>?</li>
-                <li>Avez-vous installé l'extension <span class="highlight">"nostr connect"</span> pour votre navigateur ?</li>
-                <li>Y avez-vous renseigné votre clef privée <span class="highlight">"nsec"</span> ?</li>
-            </ul>
-
-            <p>Si c'est le cas, envoyez un message sur <a href="https://coracle.copylaradio.com" target="_blank">https://coracle.copylaradio.com</a></p>
-            <p>Cela vous permettra de rentrer en contact avec le Capitaine de votre Relai.</p>
+        <div class="language-tabs">
+            <div class="language-tab active" data-lang="fr">Français</div>
+            <div class="language-tab" data-lang="en">English</div>
+            <div class="language-tab" data-lang="es">Español</div>
         </div>
 
-        <div class="language-section">
+        <div class="language-section active" id="fr">
+            <div class="language-title">Français</div>
+            
+            <div class="info-box">
+                <p>Bienvenue dans l'écosystème UPlanet, votre système d'information libre, non commercial, décentralisé et résistant.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Premiers Pas</h2>
+                <div class="setup-steps">
+                    <div class="setup-step">
+                        <h3>1. Vérifiez votre MULTIPASS</h3>
+                        <p>Assurez-vous d'avoir bien reçu votre <span class="highlight">MULTIPASS</span> par email.</p>
+                    </div>
+                    <div class="setup-step">
+                        <h3>2. Installez NOSTR Connect</h3>
+                        <p>Ajoutez l'extension <span class="highlight">nostr connect</span> à votre navigateur.</p>
+                    </div>
+                    <div class="setup-step">
+                        <h3>3. Configurez votre clé</h3>
+                        <p>Importez votre clé privée <span class="highlight">nsec</span> dans l'extension.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Avantages d'uDrive</h2>
+                <ul>
+                    <li><strong>Stockage Décentralisé :</strong> Vos fichiers sont hébergés sur IPFS, un réseau de stockage peer-to-peer, garantissant sécurité et résilience.</li>
+                    <li><strong>Partage Facile :</strong> Partagez vos documents, images et vidéos avec votre réseau Nostr en un seul clic, sans passer par un serveur centralisé.</li>
+                    <li><strong>Contrôle Total :</strong> Vous restez propriétaire de vos données. uDrive vous donne la maîtrise de votre contenu et de sa publication.</li>
+                    <li><strong>Éditeur Intégré :</strong> Modifiez vos fichiers Markdown directement dans l'interface, et les changements sont automatiquement mis à jour sur IPFS.</li>
+                    <li><strong>Accessible Partout :</strong> Accédez à votre uDrive depuis n'importe quelle passerelle IPFS, garantissant une disponibilité constante.</li>
+                </ul>
+                <p>uDrive est votre solution personnelle pour un partage de fichiers libre, sûr et décentralisé sur Nostr.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Pourquoi UPlanet ?</h2>
+                <ul>
+                    <li>Un système d'information LIBRE et non commercial</li>
+                    <li>Une architecture décentralisée et résistante</li>
+                    <li>Un réseau de confiance basé sur la blockchain progressive</li>
+                    <li>Une économie transparente avec le Ẑen</li>
+                </ul>
+                <p>UPlanet est une SCIC (Société Coopérative d'Intérêt Collectif) - <a href="https://pad.p2p.legal/s/CopyLaRadio" target="_blank">Consultez nos statuts</a></p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Nos Offres Ẑen</h2>
+                <table class="offer-table">
+                    <tr>
+                        <th>MULTIPASS</th>
+                        <th>128 Go</th>
+                        <th>COOPERATIVE</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <ul class="offer-features">
+                                <li>IA personnelle</li>
+                                <li>App IPFS (10 Go)</li>
+                                <li>Accès basique</li>
+                            </ul>
+                            <p class="offer-price">1 Ẑen / semaine</p>
+                        </td>
+                        <td>
+                            <ul class="offer-features">
+                                <li>Cabine NextCloud</li>
+                                <li>Synchro Smartphone</li>
+                                <li>Stockage 128 Go</li>
+                            </ul>
+                            <p class="offer-price">19 Ẑen / 4 semaines</p>
+                        </td>
+                        <td>
+                            <ul class="offer-features">
+                                <li>Parts de ♥BOX</li>
+                                <li>Partage Ẑen 3 x 1/3</li>
+                                <li>Participation à la gouvernance</li>
+                            </ul>
+                            <p class="offer-price">50€/an <=> 195 Ẑen</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning-box">
+                <p>⚠️ Important : Votre MULTIPASS est votre clé d'accès à l'écosystème UPlanet. Gardez-la précieusement !</p>
+            </div>
+        </div>
+
+        <div class="language-section" id="en">
             <div class="language-title">English</div>
-            <p>You have scanned your email on UPlanet ORIGIN (<a href="https://qo-op.com" target="_blank">https://qo-op.com</a>)</p>
+            
+            <div class="info-box">
+                <p>Welcome to the UPlanet ecosystem, your free, non-commercial, decentralized, and resilient information system.</p>
+            </div>
 
-            <ul class="steps">
-                <li>Have you received your <span class="highlight">NOSTR Card</span>?</li>
-                <li>Have you installed the <span class="highlight">'nostr connect'</span> extension for your browser?</li>
-                <li>Have you entered your <span class="highlight">'nsec'</span> private key?</li>
-            </ul>
+            <div class="section">
+                <h2 class="section-title">Getting Started</h2>
+                <div class="setup-steps">
+                    <div class="setup-step">
+                        <h3>1. Check your MULTIPASS</h3>
+                        <p>Make sure you have received your <span class="highlight">MULTIPASS</span> by email.</p>
+                    </div>
+                    <div class="setup-step">
+                        <h3>2. Install NOSTR Connect</h3>
+                        <p>Add the <span class="highlight">nostr connect</span> extension to your browser.</p>
+                    </div>
+                    <div class="setup-step">
+                        <h3>3. Configure your key</h3>
+                        <p>Import your <span class="highlight">nsec</span> private key into the extension.</p>
+                    </div>
+                </div>
+            </div>
 
-            <p>If so, send a message to <a href="https://coracle.copylaradio.com" target="_blank">https://coracle.copylaradio.com</a></p>
-            <p>This will enable you to contact your Relay Captain.</p>
+            <div class="section">
+                <h2 class="section-title">uDrive Advantages</h2>
+                <ul>
+                    <li><strong>Decentralized Storage:</strong> Your files are hosted on IPFS, a peer-to-peer storage network, ensuring security and resilience.</li>
+                    <li><strong>Easy Sharing:</strong> Share your documents, images, and videos with your Nostr network with a single click, without relying on a centralized server.</li>
+                    <li><strong>Total Control:</strong> You remain the owner of your data. uDrive gives you mastery over your content and its publication.</li>
+                    <li><strong>Integrated Editor:</strong> Edit your Markdown files directly in the interface, and changes are automatically updated on IPFS.</li>
+                    <li><strong>Accessible Everywhere:</strong> Access your uDrive from any IPFS gateway, ensuring constant availability.</li>
+                </ul>
+                <p>uDrive is your personal solution for free, secure, and decentralized file sharing on Nostr.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Why UPlanet?</h2>
+                <ul>
+                    <li>A FREE and non-commercial information system</li>
+                    <li>A decentralized and resilient architecture</li>
+                    <li>A trust network based on progressive blockchain</li>
+                    <li>A transparent economy with Ẑen</li>
+                </ul>
+                <p>UPlanet is a SCIC (Cooperative Society of Collective Interest) - <a href="https://pad.p2p.legal/s/CopyLaRadio" target="_blank">Read our statutes</a></p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Our Ẑen Offers</h2>
+                <table class="offer-table">
+                    <tr>
+                        <th>MULTIPASS</th>
+                        <th>128 GB</th>
+                        <th>COOPERATIVE</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <ul class="offer-features">
+                                <li>Personal AI</li>
+                                <li>IPFS App (10 GB)</li>
+                                <li>Basic access</li>
+                            </ul>
+                            <p class="offer-price">1 Ẑen / week</p>
+                        </td>
+                        <td>
+                            <ul class="offer-features">
+                                <li>NextCloud Cabin</li>
+                                <li>Smartphone Sync</li>
+                                <li>128 GB Storage</li>
+                            </ul>
+                            <p class="offer-price">19 Ẑen / 4 weeks</p>
+                        </td>
+                        <td>
+                            <ul class="offer-features">
+                                <li>♥BOX Shares</li>
+                                <li>Ẑen Share 3 x 1/3</li>
+                                <li>Governance participation</li>
+                            </ul>
+                            <p class="offer-price">50€/year <=> 195 Ẑen</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning-box">
+                <p>⚠️ Important: Your MULTIPASS is your key to the UPlanet ecosystem. Keep it safe!</p>
+            </div>
+        </div>
+
+        <div class="language-section" id="es">
+            <div class="language-title">Español</div>
+            
+            <div class="info-box">
+                <p>Bienvenido al ecosistema UPlanet, su sistema de información libre, no comercial, descentralizado y resistente.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Primeros Pasos</h2>
+                <div class="setup-steps">
+                    <div class="setup-step">
+                        <h3>1. Verifique su MULTIPASS</h3>
+                        <p>Asegúrese de haber recibido su <span class="highlight">MULTIPASS</span> por correo electrónico.</p>
+                    </div>
+                    <div class="setup-step">
+                        <h3>2. Instale NOSTR Connect</h3>
+                        <p>Agregue la extensión <span class="highlight">nostr connect</span> a su navegador.</p>
+                    </div>
+                    <div class="setup-step">
+                        <h3>3. Configure su clave</h3>
+                        <p>Importe su clave privada <span class="highlight">nsec</span> en la extensión.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Ventajas de uDrive</h2>
+                <ul>
+                    <li><strong>Almacenamiento Descentralizado:</strong> Sus archivos se alojan en IPFS, una red de almacenamiento peer-to-peer, garantizando seguridad y resiliencia.</li>
+                    <li><strong>Compartir Fácil:</strong> Comparta sus documentos, imágenes y videos con su red Nostr con un solo clic, sin pasar por un servidor centralizado.</li>
+                    <li><strong>Control Total:</strong> Usted sigue siendo el propietario de sus datos. uDrive le da el control de su contenido y su publicación.</li>
+                    <li><strong>Editor Integrado:</strong> Edite sus archivos Markdown directamente en la interfaz, y los cambios se actualizan automáticamente en IPFS.</li>
+                    <li><strong>Accesible en Todas Partes:</strong> Acceda a su uDrive desde cualquier pasarela IPFS, garantizando una disponibilidad constante.</li>
+                </ul>
+                <p>uDrive es su solución personal para un intercambio de archivos libre, seguro y descentralizado en Nostr.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">¿Por qué UPlanet?</h2>
+                <ul>
+                    <li>Un sistema de información LIBRE y no comercial</li>
+                    <li>Una arquitectura descentralizada y resistente</li>
+                    <li>Una red de confianza basada en la blockchain progresiva</li>
+                    <li>Una economía transparente con el Ẑen</li>
+                </ul>
+                <p>UPlanet es una SCIC (Sociedad Cooperativa de Interés Colectivo) - <a href="https://pad.p2p.legal/s/CopyLaRadio" target="_blank">Consulte nuestros estatutos</a></p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Nuestras Ofertas Ẑen</h2>
+                <table class="offer-table">
+                    <tr>
+                        <th>MULTIPASS</th>
+                        <th>128 GB</th>
+                        <th>COOPERATIVA</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <ul class="offer-features">
+                                <li>IA personal</li>
+                                <li>App IPFS (10 GB)</li>
+                                <li>Acceso básico</li>
+                            </ul>
+                            <p class="offer-price">1 Ẑen / semana</p>
+                        </td>
+                        <td>
+                            <ul class="offer-features">
+                                <li>Cabina NextCloud</li>
+                                <li>Sincronización Smartphone</li>
+                                <li>Almacenamiento 128 GB</li>
+                            </ul>
+                            <p class="offer-price">19 Ẑen / 4 semanas</p>
+                        </td>
+                        <td>
+                            <ul class="offer-features">
+                                <li>Partes de ♥BOX</li>
+                                <li>Compartir Ẑen 3 x 1/3</li>
+                                <li>Participación en la gobernanza</li>
+                            </ul>
+                            <p class="offer-price">50€/año <=> 195 Ẑen</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning-box">
+                <p>⚠️ Importante: Su MULTIPASS es su clave de acceso al ecosistema UPlanet. ¡Guárdela con cuidado!</p>
+            </div>
         </div>
 
         <div class="footer">
@@ -121,7 +543,44 @@
 
             <p>Our free software is constantly being developed...<br>
             Don't hesitate to ask questions, report problems or suggest improvements!</p>
+            
+            <!-- Nouveau lien vers copylaradio.com -->
+            <p><a href="https://copylaradio.com" target="_blank" style="color: var(--primary-color); text-decoration: none;">Visitez CopyLaRadio.com</a></p>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Language tabs functionality
+            const tabs = document.querySelectorAll('.language-tab');
+            const sections = document.querySelectorAll('.language-section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    const lang = tab.getAttribute('data-lang');
+                    document.getElementById(lang).classList.add('active');
+                });
+            });
+        });
+
+        // Theme switcher functionality
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.setAttribute('data-theme', savedTheme);
+        }
+    </script>
 </body>
 </html>
