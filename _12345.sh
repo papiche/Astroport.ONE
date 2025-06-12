@@ -430,8 +430,8 @@ NODE12345="{
 "
 
 ## ADD HEARTBOX ANALYSIS IF EXISTS
-if [[ -s ~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json ]]; then
-    HEARTBOX=$(cat ~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json)
+if [[ -s ~/.zen/tmp/heartbox_analysis.json ]]; then
+    HEARTBOX=$(cat ~/.zen/tmp/heartbox_analysis.json)
     NODE12345=$(echo "$NODE12345" | sed 's/}$/,\n    \"heartbox_analysis\" : '"$HEARTBOX"'\n}/')
 fi
 

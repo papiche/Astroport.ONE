@@ -240,9 +240,8 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     echo "  NOSTR/MULTIPASS Slots (10GB/slot): $NOSTR_SLOTS"
     echo "  Espace disque disponible (GB): $AVAILABLE_SPACE_GB"
 
-    # Save analysis JSON to ~/.zen/tmp/$IPFSNODEID/
-    mkdir -p ~/.zen/tmp/$IPFSNODEID
-    ANALYSIS_FILE=~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json
+    # Save analysis JSON to ~/.zen/tmp
+    ANALYSIS_FILE=~/.zen/tmp/heartbox_analysis.json
     echo "$ANALYSIS_JSON" > "$ANALYSIS_FILE"
     echo "✅ Analyse JSON sauvegardée dans $ANALYSIS_FILE"
 else
