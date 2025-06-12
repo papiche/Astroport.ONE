@@ -258,7 +258,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ./generate_ipfs_structure.sh
     ## RUN App
-    ./generate_ipfs_structure.sh --log .
+    . ./generate_ipfs_structure.sh --log .
 
     ## Link generate_ipfs_RPG.sh to uWORLD
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
@@ -266,7 +266,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
     ## RUN App
-    ./generate_ipfs_RPG.sh --log .
+    . ./generate_ipfs_RPG.sh --log .
 
     cd -
 
