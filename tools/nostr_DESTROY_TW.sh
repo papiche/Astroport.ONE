@@ -73,6 +73,7 @@ fi
 ##################################################### DISCO DECODED
 ## s=/?email
 echo $s
+youser=$($MY_PATH/../tools/clyuseryomail.sh "${s}")
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
@@ -100,7 +101,7 @@ echo "______ AMOUNT = ${AMOUNT} G1"
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
 [[ -z $prime ]] && prime=${UPLANETG1PUB}
 if [[ -n ${AMOUNT} && ${AMOUNT} != "null" ]]; then
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "NOSTR:CASH BACK"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH BACK"
 fi
 rm ~/.zen/tmp/nostr.dunikey
 
@@ -111,7 +112,17 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
-${MY_PATH}/../tools/mailjet.sh "${player}" "<html><body><h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> : Backup</a></h1><h2><a target=u href=${uSPOT}/g1>Respawn </a></h2> Salt : ${salt} <br> Pepper : ${pepper}</body></html>" "... ${COUNT} MULTIPASS RESET ..."
+${MY_PATH}/../tools/mailjet.sh \
+    "${player}" \
+    "<html>
+        <body>
+            <h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> : Backup</a></h1>
+            <h2><a target=u href=${uSPOT}/g1>Respawn </a></h2>
+            Salt : ${salt} <br>
+            Pepper : ${pepper}
+        </body>
+    </html>" \
+    "... ${COUNT} MULTIPASS RESET ..."
 
 ## REMOVE NOSTR IPNS VAULT key
 #~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
