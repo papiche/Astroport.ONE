@@ -47,7 +47,7 @@ Il permet d'exporter des tiddlers spécifiques, de gérer les passes (fonctionna
 
     ```bash
     [[ ! ${PLAYER} ]] && (echo "${HTTPCORS} BAD PLAYER - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
-    ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
     [[ ! ${ASTRONAUTENS} ]] && (echo "${HTTPCORS} UNKNOWN PLAYER ${PLAYER} - EXIT" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && exit 1
     ```
 3.  **Exportation de Tiddlers** :

@@ -33,7 +33,7 @@ ZLAT=$(cat ~/.zen/game/players/${PLAYER}/GPS.json | jq -r .[].lat)
 ZLON=$(cat ~/.zen/game/players/${PLAYER}/GPS.json | jq -r .[].lon)
 
 ## REFRESH ASTRONAUTE TW
-ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
 [[ ! $ASTRONAUTENS ]] && echo "WARNING No ${PLAYER} in keystore -- EXIT" && exit 1
 [[ ! -f ~/.zen/game/players/${PLAYER}/QR.png ]] && echo "NOT MY ${PLAYER} -- EXIT" && exit 1
 

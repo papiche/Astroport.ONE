@@ -85,7 +85,7 @@ ASTRONAUTENS=$(jq -r '.[].astronautens' ${TMP_DIR}/Astroport.json)
 
 # Handle ASTRONAUTENS
 [[ ${source} == "LOCAL" && ( ${ASTRONAUTENS} == "null" || ${ASTRONAUTENS} == "" ) ]] && {
-    ASTRONAUTENS="/ipns/$(ipfs key list -l | grep -w ${ASTROG1} | cut -d ' ' -f1)"
+    ASTRONAUTENS="/ipns/$(ipfs key list -l | grep -w ${ASTROG1} | head -n1 | cut -d ' ' -f1)"
 }
 [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
 

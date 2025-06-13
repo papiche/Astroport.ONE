@@ -24,7 +24,7 @@ INDEX="$1"
 PLAYER="$2"
 [[ ! ${PLAYER} ]] && echo "ERROR - Please provide IPFS publish key" && exit 1
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
 [[ ! $ASTRONAUTENS ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1
 
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)

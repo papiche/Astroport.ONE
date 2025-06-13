@@ -19,7 +19,7 @@ PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
 [[ $G1PUB == "" ]] && G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
 [[ $G1PUB == "" ]] && espeak "ERROR G1PUB - EXIT" && exit 1
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
 
 [[ ! $ASTRONAUTENS ]] && echo "${PLAYER} CLEF IPNS INTROUVABLE - EXIT -" && exit 1
 
@@ -168,7 +168,7 @@ cat ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json | jq
 cp ~/.zen/game/players/${PLAYER}/vlog/${MEDIAKEY}.dragdrop.json ~/Astroport/${PLAYER}/video/vlog/
 
 ## Adding tiddler to PLAYER TW
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | head -n1 | cut -d ' ' -f 1)
 
 rm -f ~/.zen/tmp/newindex.html
 

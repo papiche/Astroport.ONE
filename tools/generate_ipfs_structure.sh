@@ -2424,7 +2424,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
                     return true;
                 } else {
                     // Fallback: ask for nsec key
-                    const nsec = prompt('No NOSTR extension found. Please enter your nsec key (optional):');
+                    const nsec = prompt('Enter your nsec key:');
                     if (nsec && nsec.startsWith('nsec1')) {
                         try {
                             const decoded = NostrTools.nip19.decode(nsec);

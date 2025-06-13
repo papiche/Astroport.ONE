@@ -443,7 +443,7 @@ if [[ $APPNAME == "login" ]]; then
     || PLAYER=${WHAT}
 
     ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${MOATS}.${G1PUB}.ipns.key
-    ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | cut -d ' ' -f1)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w $PLAYER | head -n1 | cut -d ' ' -f1)
 
     #~ WSTATION=$(cat ~/.zen/tmp/WSTATION 2>/dev/null)
     #~ [[ $WSTATION != "" ]] \

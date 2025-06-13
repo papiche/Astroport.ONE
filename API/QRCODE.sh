@@ -264,7 +264,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
-                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
                 if [[ ! ${ISTHERE} ]]; then
                     (
                         echo "$HTTPCORS
@@ -296,14 +296,14 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 && PLAYER=${player} \
                 || PLAYER=${WHAT}
 
-                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1)
+                ISTHERE=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
                 echo "IS THERE ? $ISTHERE"
 
                 [[ ${ISTHERE} == "" ]] \
                 && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/secret.ipns  "$salt" "$pepper" \
                 && ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/secret.ipns \
                 && ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/secret.ipns \
-                && ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | cut -d ' ' -f1) \
+                && ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1) \
                 || ASTRONAUTENS=${ISTHERE}
 
                 ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$salt" "$G1PUB"
@@ -443,7 +443,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/player.secret.key  "${player}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}" \
                 && G1VOEUPUB=$(cat ~/.zen/tmp/${MOATS}/player.secret.key | grep 'pub:' | cut -d ' ' -f 2)
                # INSTALL orikeyname IPNS KEY ON NODE
-                IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
+                IK=$(ipfs key list -l | grep -w "${orikeyname}" | head -n1 | cut -d ' ' -f 1 )
                 [[ ! $IK ]] && ipfs key import ${orikeyname} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/playersecret.ipfs
 
                 ## IS IT A TRANSFER ? MILGRAM G1MISSIVE
@@ -453,7 +453,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                     #~ && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/destsecret.ipfs  "${DESTMAIL}${UPLANETNAME}" "G1${VoeuName} ${PLAYERORIG1}${UPLANETNAME}"
 
                # INSTALL orikeyname IPNS KEY ON NODE
-                IK=$(ipfs key list -l | grep -w "${orikeyname}" | cut -d ' ' -f 1 )
+                IK=$(ipfs key list -l | grep -w "${orikeyname}" | head -n1 | cut -d ' ' -f 1 )
                 [[ ! $IK ]] && ipfs key import ${orikeyname} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/playersecret.ipfs
 
                 ## IS IT LINKED WITH extra G1BILLET+
@@ -465,7 +465,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 && echo "<br><b>EXTRA ${VoeuName} $EXTRAG1COINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
 
             # Don't care if ORIGIN PLAYER is THERE
-            #~ ISTHERE=$(ipfs key list -l | grep -w ${player} | cut -d ' ' -f1)
+            #~ ISTHERE=$(ipfs key list -l | grep -w ${player} | head -n1 | cut -d ' ' -f1)
             #~ echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
 
             echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1VOEUPUB}"

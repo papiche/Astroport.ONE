@@ -79,10 +79,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
-    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1 + 10 ZEN (= 10 €/OC) ?
+    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1
     echo "## >>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
     ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | cut -d ' ' -f1)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | head -n1 | cut -d ' ' -f1)
 
     ############### CANNOT FIND PLAYER KEY ###########
     if [[ ! ${ASTRONAUTENS} ]]; then

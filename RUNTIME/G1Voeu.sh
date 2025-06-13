@@ -28,7 +28,7 @@ echo $INDEX
 
 echo "Working on $INDEX"
 
-ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | cut -d ' ' -f 1)
+ASTRONAUTENS=$(ipfs key list -l | grep -w "${PLAYER}" | head -n1 | cut -d ' ' -f 1)
 [[ $ASTRONAUTENS == "" ]] && echo "CLEF IPNS ASTRONAUTE MANQUANTE - EXIT -" && exit 1
 
 echo "Bienvenue $PSEUDO (${PLAYER}) : $G1PUB"

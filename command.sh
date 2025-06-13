@@ -151,7 +151,7 @@ export G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cu
 echo "G1PUB Astronaute : $G1PUB"
 echo "ENTREE ACCORDEE"
 echo
-export ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | cut -d ' ' -f 1)
+export ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1)
 
 echo "$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null) TW/Moa"
 echo "$myIPFS/ipns/$ASTRONAUTENS"
