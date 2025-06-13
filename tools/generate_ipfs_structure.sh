@@ -569,8 +569,6 @@ if [ -f "$HOME/.zen/Astroport.ONE/.env" ]; then
     ORIGIN_IPFS_GATEWAY=$(grep "^myIPFS=" "$HOME/.zen/Astroport.ONE/.env" | cut -d'=' -f2)
 fi
 ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-http://127.0.0.1:8080}"
-
-
 ############################################################## MULTIPLE APP on UPLANET
 ## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uDRIVE
 OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
