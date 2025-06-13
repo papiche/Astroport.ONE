@@ -126,7 +126,7 @@ if [[ ${ISOK} != 0 ]]; then
     if [[ ! -z $GVA ]]; then
         sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
         echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
-        echo "GVA NODE=$GVA"
+        echo "New GVA NODE==========================================$GVA"
         
         # Second attempt with new server
         make_payment "${PENDINGDIR}/${MOATS}.key" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${PENDINGDIR}/${MOATS}.result.html"
