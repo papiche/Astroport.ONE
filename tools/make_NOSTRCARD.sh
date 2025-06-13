@@ -78,6 +78,7 @@ ZLON=$(makecoord "$4")
 SALT="$5"
 PEPPER="$6"
 
+YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
 echo "Make_NOSTRCARD.sh >>>>>>>>>> $EMAIL"
 
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -228,6 +229,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
             -e "s~nsec13x0643lc3al5fk92auurh7ww0993syj566eh7ta8r2jpkprs44rs33cute~${NPRIV}~g" \
             -e "s~toto@yopmail.com~${EMAIL}~g" \
+            -e "s~_YOUSER_~${YOUSER}~g" \
             -e "s~QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${SSSSQR}~g" \
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
@@ -273,11 +275,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
 
-    YOU=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
     ### SEND PROFILE TO NOSTR RELAYS
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
-        "[•͡˘㇁•͡˘] $YOU" "${G1PUBNOSTR}" \
+        "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
         "⏰ UPlanet MULTIPASS ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8}" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \

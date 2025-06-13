@@ -104,7 +104,7 @@ function make_payment() {
     local comment="$4"
     local result_file="$5"
     
-    ${MY_PATH}/jaklis/jaklis.py -k ${key_file} pay -a ${amount} -p ${dest_pub} -c "${comment}" -m 2>&1 > ${result_file}
+    ${MY_PATH}/jaklis/jaklis.py -k ${key_file} pay -a ${amount} -p ${dest_pub} -c "${comment}" -m 2>/dev/null > ${result_file}
     return $?
 }
 
