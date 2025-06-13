@@ -390,7 +390,7 @@ unpin_ipfs_hash() {
 unpin_deleted_files() {
     local deleted_count="$1"
     local manifest_file="$SOURCE_DIR/manifest.json"
-    local deleted_files_list="/tmp/deleted_files_$$"
+    local deleted_files_list="~/.zen/tmp/deleted_files_$$"
 
     if [ "$deleted_count" -eq 0 ] || [ ! -f "$deleted_files_list" ]; then
         return 0
@@ -564,8 +564,14 @@ dir_count=0
 updated_count=0
 cached_count=0
 OWNER_HEX_PUBKEY=""
-ORIGIN_IPFS_GATEWAY="$myIPFS"
-##############################################################
+# Récupérer la gateway IPFS depuis le fichier .env ou utiliser la valeur par défaut
+if [ -f "$HOME/.zen/Astroport.ONE/.env" ]; then
+    ORIGIN_IPFS_GATEWAY=$(grep "^myIPFS=" "$HOME/.zen/Astroport.ONE/.env" | cut -d'=' -f2)
+fi
+ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-http://127.0.0.1:8080}"
+
+
+############################################################## MULTIPLE APP on UPLANET
 ## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uDRIVE
 OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
 OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
