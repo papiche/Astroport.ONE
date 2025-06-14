@@ -209,9 +209,14 @@ do
         $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${ACTIVE_FRIENDS[@]}" "$myRELAY"
     fi
 
-    echo "---------------------------------"
-
+    # Create symbolic link and run generate_ipfs_structure.sh
+    mkdir -p "${UMAPPATH}/APP/uDRIVE"
+    cd "${UMAPPATH}/APP/uDRIVE"
+    ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
+    ./generate_ipfs_structure.sh --log .
     cd - 2>&1>/dev/null
+
+    echo "---------------------------------"
 
     cat ${UMAPPATH}/NOSTR_messages
 
@@ -299,6 +304,11 @@ for sector in ${UNIQUE_SECTORS[@]}; do
     ## SECROOT : ipfs link rolling calendar
     echo "${SECROOT}" > ${sectorpath}/ipfs.${DEMAINDATE} 2>/dev/null
     rm ${sectorpath}/ipfs.${YESTERDATE} 2>/dev/null
+    ## Create file for today and remove yesterday's file
+    JOUR_SEMAINE=$(LANG=fr_FR.UTF-8 date +%A)
+    HIER=$(LANG=fr_FR.UTF-8 date --date="yesterday" +%A)
+    echo '<meta http-equiv="refresh" content="0;url='${myIPFS}'/ipfs/'${SECROOT}'">' > ${sectorpath}/${JOUR_SEMAINE}.html 2>/dev/null
+    rm ${sectorpath}/${HIER}.html 2>/dev/null
     ################################################################
     ## UPDATE REGION NOSTR PROFILE
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${slat}0" "${slon}0" | tail -n 1) ## GET ENV VARIABLES
