@@ -315,18 +315,35 @@ EOF
 
 # Get capacities as JSON
 get_capacities_json() {
-    local disk_info=$(df -h / | tail -1)
-    local disk_available=$(echo "$disk_info" | awk '{print $4}')
-    local available_gb=$(echo "$disk_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+    # Obtenir l'espace disponible pour NextCloud
+    local nextcloud_info=$(df -h /nextcloud-data | tail -1)
+    local nextcloud_available=$(echo "$nextcloud_info" | awk '{print $4}')
+    local nextcloud_available_gb=$(echo "$nextcloud_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
     
+    # Obtenir l'espace disponible pour IPFS
+    local ipfs_info=$(df -h ~/.ipfs | tail -1)
+    local ipfs_available=$(echo "$ipfs_info" | awk '{print $4}')
+    local ipfs_available_gb=$(echo "$ipfs_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+    
+    # Obtenir l'espace disponible pour le disque principal
+    local root_info=$(df -h / | tail -1)
+    local root_available=$(echo "$root_info" | awk '{print $4}')
+    local root_available_gb=$(echo "$root_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+    
+    # Calculer la capacité totale disponible
+    local total_available_gb=$(echo "$nextcloud_available_gb + $ipfs_available_gb + $root_available_gb" | bc 2>/dev/null || echo "0")
+    
+    # Calculer les slots ZenCard basés sur l'espace NextCloud disponible
     local zencard_parts=0
-    local nostr_parts=0
-    
-    if [[ $(echo "$available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
-        zencard_parts=$(echo "($available_gb - 8*128) / 128" | bc 2>/dev/null || echo "0")
-        nostr_parts=$(echo "($available_gb - 8*10) / 10" | bc 2>/dev/null || echo "0")
-        
+    if [[ $(echo "$nextcloud_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
+        zencard_parts=$(echo "($nextcloud_available_gb - 8*128) / 128" | bc 2>/dev/null || echo "0")
         [[ $(echo "$zencard_parts < 0" | bc 2>/dev/null) -eq 1 ]] && zencard_parts=0
+    fi
+    
+    # Calculer les slots NOSTR basés sur l'espace IPFS disponible
+    local nostr_parts=0
+    if [[ $(echo "$ipfs_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
+        nostr_parts=$(echo "($ipfs_available_gb - 8*10) / 10" | bc 2>/dev/null || echo "0")
         [[ $(echo "$nostr_parts < 0" | bc 2>/dev/null) -eq 1 ]] && nostr_parts=0
     fi
     
@@ -334,7 +351,21 @@ get_capacities_json() {
     "zencard_slots": $zencard_parts,
     "nostr_slots": $nostr_parts,
     "reserved_captain_slots": 8,
-    "available_space_gb": $available_gb
+    "available_space_gb": $total_available_gb,
+    "storage_details": {
+        "nextcloud": {
+            "available_gb": $nextcloud_available_gb,
+            "mount_point": "/nextcloud-data"
+        },
+        "ipfs": {
+            "available_gb": $ipfs_available_gb,
+            "mount_point": "~/.ipfs"
+        },
+        "root": {
+            "available_gb": $root_available_gb,
+            "mount_point": "/"
+        }
+    }
 EOF
 }
 
@@ -403,12 +434,6 @@ save_logs_to_archive() {
         "~/.zen/tmp/nostr_likes.log"
         "~/.zen/tmp/nostpy.log"
         "~/.zen/tmp/ipfs.swarm.peers"
-        "~/.zen/tmp/DRAGON.log"
-        "~/.zen/tmp/BLOOM.log"
-        "~/.zen/tmp/PLAYER.refresh.log"
-        "~/.zen/tmp/UPLANET.refresh.log"
-        "~/.zen/tmp/NODE.refresh.log"
-        "~/.zen/tmp/NOSTRCARD.refresh.log"
     )
     
     for log_path in "${important_logs[@]}"; do
