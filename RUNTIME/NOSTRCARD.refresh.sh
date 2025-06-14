@@ -176,7 +176,7 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
         ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     else
-        ZEN=0
+        ZEN=-10
         echo "WARNING: Empty or invalid wallet state for ${PLAYER}"
     fi
     

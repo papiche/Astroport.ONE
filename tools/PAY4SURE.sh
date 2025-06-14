@@ -13,8 +13,8 @@ ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
 
-## REDIRECT OUTPUT TO "/tmp/20h12.log"
-exec 2>&1 >> /tmp/20h12.log
+## REDIRECT OUTPUT TO "~/.zen/tmp/PAY4SURE.log"
+exec 2>&1 >> ~/.zen/tmp/PAY4SURE.log
 
 # Validate required arguments
 if [[ $# -lt 3 ]]; then
