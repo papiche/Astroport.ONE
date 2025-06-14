@@ -136,6 +136,7 @@ should_refresh() {
     ## update uWORLD APP
     cd ${player_dir}/APP/uWORLD/
     UWORLD=$(./generate_ipfs_RPG.sh .) ## UPDATE MULTIPASS uWORLD
+    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
     cd - 2>&1 >/dev/null
 
     if [[ "$UWORLD" != "$last_uworld" ]]; then

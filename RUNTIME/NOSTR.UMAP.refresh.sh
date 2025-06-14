@@ -288,10 +288,10 @@ setup_ipfs_structure() {
     ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
     
     cleanup_old_files
-    ./generate_ipfs_structure.sh --log .
-    cd - 2>&1>/dev/null
+    ./generate_ipfs_structure.sh .
     ## Redirect to UDRIVE actual ipfs CID
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
+    cd - 2>&1>/dev/null
 }
 
 cleanup_old_files() {
