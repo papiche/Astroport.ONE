@@ -71,10 +71,14 @@ do
 
     ## GET last 24h messages of UMAP friends
     SINCE=$(date -d "24 hours ago" +%s)
+    ## Check for activity in the last week and month
+    WEEK_AGO=$(date -d "7 days ago" +%s)
+    MONTH_AGO=$(date -d "28 days ago" +%s)
     ## To get conf file auto detected
     cd ~/.zen/strfry
 
     TAGS=() ## contains UMAP friends
+    ACTIVE_FRIENDS=() ## contains active friends
     for ami in ${friends[@]}; do
         echo "----------------------------- @$ami" >> ${UMAPPATH}/NOSTR_messages
         ## 1. Récupération du profil (kind 0)
@@ -88,7 +92,51 @@ do
         if [[ -n "$PROFILE" ]]; then
             profile=$($MY_PATH/../tools/nostr_hex2nprofile.py $ami 2>/dev/null)
             echo "👤 $profile nostr:$profile" >> ${UMAPPATH}/NOSTR_messages
-            TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
+            
+            # Check for recent activity
+            RECENT_ACTIVITY=$(./strfry scan '{
+              "kinds": [1],
+              "authors": ["'"$ami"'"],
+              "since": '"$MONTH_AGO"',
+              "limit": 1
+            }' 2>/dev/null | jq -r 'select(.kind == 1) | .created_at')
+
+            if [[ -z "$RECENT_ACTIVITY" ]]; then
+                # No activity in the last month, remove from friends
+                echo "🚫 Removing inactive friend: $profile (no activity in 4 weeks)" >> ${UMAPPATH}/NOSTR_messages
+                # Send a goodbye message
+                GOODBYE_MSG="👋 It seems you've been inactive for a while. I'll remove you from my friends list, but you're welcome to reconnect anytime! #UPlanet #Community"
+                nostpy-cli send_event \
+                    -privkey "$NPRIV_HEX" \
+                    -kind 1 \
+                    -content "$GOODBYE_MSG" \
+                    -tags "[['p', '$ami']]" \
+                    --relay "$myRELAY"
+            else
+                # Friend is active, keep them
+                ACTIVE_FRIENDS+=("$ami")
+                TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
+                
+                # Check for activity in the last week
+                WEEK_ACTIVITY=$(./strfry scan '{
+                  "kinds": [1],
+                  "authors": ["'"$ami"'"],
+                  "since": '"$WEEK_AGO"',
+                  "limit": 1
+                }' 2>/dev/null | jq -r 'select(.kind == 1) | .created_at')
+
+                if [[ -z "$WEEK_ACTIVITY" ]]; then
+                    # No activity in the last week, send a reminder
+                    REMINDER_MSG="👋 Hey! Haven't seen you around lately. How are you doing? Feel free to share your thoughts or updates! #UPlanet #Community"
+                    nostpy-cli send_event \
+                        -privkey "$NPRIV_HEX" \
+                        -kind 1 \
+                        -content "$REMINDER_MSG" \
+                        -tags "[['p', '$ami']]" \
+                        --relay "$myRELAY"
+                    echo "📬 Sent reminder to $profile" >> ${UMAPPATH}/NOSTR_messages
+                fi
+            fi
         else
             # filtrage (sans profil) TODO PROD
             #~ continue
@@ -101,11 +149,66 @@ do
           "kinds": [1],
           "authors": ["'"$ami"'"],
           "since": '"$SINCE"'
-        }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content}' | jq -r .content | head -n 25 >> ${UMAPPATH}/NOSTR_messages
+        }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content}' | while read -r message; do
+            content=$(echo "$message" | jq -r .content)
+            message_id=$(echo "$message" | jq -r .id)
+            
+            # Create directories if they don't exist
+            mkdir -p "${UMAPPATH}/APP/uDRIVE/Images"
+            mkdir -p "${UMAPPATH}/APP/uDRIVE/Documents"
+            
+            if [[ "$content" == *"#market"* ]]; then
+                # Extract image URLs (assuming they start with http/https)
+                image_urls=$(echo "$content" | grep -o 'https\?://[^[:space:]]*\.\(jpg\|jpeg\|png\|gif\)')
+                if [[ -n "$image_urls" ]]; then
+                    # Download each image if not already present
+                    for img_url in $image_urls; do
+                        filename=$(basename "$img_url")
+                        if [[ ! -f "${UMAPPATH}/APP/uDRIVE/Images/$filename" ]]; then
+                            wget -q "$img_url" -O "${UMAPPATH}/APP/uDRIVE/Images/$filename"
+                        fi
+                    done
+                fi
+            fi
+            
+            # Create HTML version of the message
+            html_content="<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <title>Message ${message_id}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .message { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .author { color: #666; font-size: 0.9em; }
+        .content { margin-top: 10px; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class='message'>
+        <div class='author'>From: $ami</div>
+        <div class='content'>$(echo "$content" | sed 's/#market/\\n#market/g' | markdown)</div>
+    </div>
+</body>
+</html>"
+            
+            # Save HTML version
+            echo "$html_content" > "${UMAPPATH}/APP/uDRIVE/Documents/${message_id}.html"
+            
+            # Save original message
+            echo "$content" >> ${UMAPPATH}/NOSTR_messages
+        done | head -n 25
 
         ## DOES NOT WORK
         #~ echo "$($MY_PATH/../tools/nostr_hex2nprofile.py $ami)" >> ${UMAPPATH}/NOSTR_messages
     done
+
+    # Update friends list with only active friends
+    if [[ ${#ACTIVE_FRIENDS[@]} -gt 0 ]]; then
+        $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${ACTIVE_FRIENDS[@]}" "$myRELAY"
+    fi
+
     echo "---------------------------------"
 
     cd - 2>&1>/dev/null
