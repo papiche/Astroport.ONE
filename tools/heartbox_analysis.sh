@@ -260,7 +260,7 @@ get_services_status_json() {
     local p2p_services="[]"
     if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
         local p2p_array=()
-        for service in ~/.zen/tmp/${IPFSNODEID}/x_*; do
+        for service in ~/.zen/tmp/${IPFSNODEID}/x_*.sh; do
             if [[ -f "$service" ]]; then
                 local service_name=$(basename "$service")
                 p2p_array+=("\"$service_name\"")
