@@ -115,8 +115,8 @@ should_refresh() {
     cd ${player_dir}/APP/uDRIVE/
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
     echo "UDRIVE UDPATE : $myIPFS/ipfs/$UDRIVE"
+    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=$myIPFS/ipfs/$UDRIVE\"></head></html>" > index.html
     cd - 2>&1 >/dev/null
-
     if [[ "$UDRIVE" != "$last_udrive" ]]; then
         if [[ -n "$last_udrive" ]]; then
             ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
