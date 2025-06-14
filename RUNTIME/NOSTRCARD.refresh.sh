@@ -255,25 +255,26 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
 
-        # Patch jaklis gva history error
-        [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
+        # UPLANET ORIGIN : patch jaklis gva history error
+        [[ $UPLANETNAME == "EnfinLibre" && $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
             && echo "UPlanet Primal Correction" \
             && [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]] \
             && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
             || echo "NOSTR G1 CARD is EMPTY .............. !!! ${TODATE} / ${BIRTHDATE}"
 
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
-            if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-                # UPlanet Zen : need Primo RX from UPlanet or WoT member
+            if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
+                # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
+                echo "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation"
+                YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}"
+                [[ $? -eq 0 ]] \
+                    && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+            else
+                # UPlanet Zen : need Primo RX from UPlanet and WoT member
                 echo "UPlanet Zen : INVALID CARD"
                 [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
                     && ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
-            else
-                # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
-                echo "UPlanet ORIGIN : Activate Welcome BRO: ZenCard + Zine "
-                YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:NOSTR:${YOUSER}:${NPUB}"
-                echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             fi
         fi
 
@@ -318,8 +319,8 @@ for PLAYER in "${NOSTR[@]}"; do
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
     echo "IPNS VAULT : ${myIPFS}${NOSTRNS} ... test resolve ..."
-    VAULTFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
-    echo "VAULTFS : ${myIPFS}${VAULTFS}" ## Not USED
+    uDRIVEIPFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
+    echo "uDRIVEIPFS : ${myIPFS}${uDRIVEIPFS}" ## Not USED
 
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
