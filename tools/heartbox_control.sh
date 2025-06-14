@@ -142,7 +142,7 @@ get_cached_capacities() {
     
     local zencard_parts=0
     local nostr_parts=0
-    if [[ $available_gb -gt 0 ]]; then
+    if (( $(echo "$available_gb > 0" | bc -l) )); then
         zencard_parts=$(echo "scale=0; ($available_gb - 8*128) / 128" | bc -l 2>/dev/null || echo "0")
         nostr_parts=$(echo "scale=0; ($available_gb - 8*10) / 10" | bc -l 2>/dev/null || echo "0")
         [[ $zencard_parts -lt 0 ]] && zencard_parts=0
@@ -419,7 +419,7 @@ calculate_subscription_capacity() {
     # Utiliser le cache des capacités
     get_cached_capacities
     
-    if [[ "${AVAILABLE_GB:-0}" -gt 0 ]]; then
+    if (( $(echo "${AVAILABLE_GB:-0} > 0" | bc -l) )); then
         echo -e "${WHITE}Capacités d'abonnement:${NC}"
         echo "  🎫 ZenCards (128 GB/slot): ${ZENCARD_PARTS:-0} slots"
         echo "  📻 NOSTR Cards (10 GB/slot): ${NOSTR_PARTS:-0} slots"
@@ -575,7 +575,7 @@ show_main_menu() {
     
     echo -e "${WHITE}Node ID:${NC} $IPFSNODEID"
     echo -e "${WHITE}Capitaine:${NC} $(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo 'Non connecté')"
-    echo -e "${WHITE}Type:${NC} $(if [[ -f ~/.zen/game/secret.dunikey ]]; then echo "Y Level (Node autonome)"; else echo "Standard"; fi)"
+    echo -e "${WHITE}Type:${NC} $(if [[ -f ~/.zen/tmp/$IPFSNODEID/y_ssh.pub ]]; then echo "Y Level (Node autonome)"; elif [[ -f ~/.zen/tmp/$IPFSNODEID/z_ssh.pub ]]; then echo "Z Level (Node relais)"; else echo "X Level (Node standard)"; fi)"
     echo ""
     
     get_system_info
@@ -1032,7 +1032,6 @@ show_logs() {
     echo "3. 🌐 Logs IPFS"
     echo "4. 🔗 Logs Swarm"
     echo "5. 💾 Archive 20h12"
-    echo "6. 🔍 Diagnostic complet"
     echo "0. ⬅️  Retour"
     echo ""
     read -p "Choix: " log_choice
@@ -1049,10 +1048,7 @@ show_logs() {
                 echo "❌ Archive 20h12 non trouvée"
             fi
             ;;
-        6)
-            echo "🔍 Diagnostic complet en cours..."
-            "${MY_PATH}/../20h12.process.sh" 2>&1 | tail -50
-            ;;
+
     esac
     
     [[ $log_choice != "0" ]] && { echo ""; read -p "Appuyez sur ENTRÉE..."; }
