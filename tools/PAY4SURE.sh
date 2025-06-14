@@ -83,7 +83,7 @@ if ! [[ $AMOUNT =~ ^[0-9]+([.][0-9]+)?$ ]]; then
 fi
 
 # Check sufficient balance
-if [[ $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]]; then
+if [[ "$COINS" != "null" && $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]]; then
     log "ERROR : SOURCE WALLET ${ISSUERPUB} IS MISSING COINS !!! $AMOUNT > $COINS - EXIT -"
     exit 1
 fi
@@ -171,7 +171,11 @@ if [[ ${ISOK} == 0 ]]; then
     
     ## Apply TX : DECREASE SOURCE IN "coucou" CACHE
     ## SOURCE WALLET
-    echo "$COINS - $AMOUNT" | bc > ${COINSFILE}
+    if [[ "$COINS" != "null" ]]; then
+        echo "$COINS - $AMOUNT" | bc > ${COINSFILE}
+    else
+        echo "0" > ${COINSFILE}
+    fi
     
     DES=$(cat ${DESTFILE}) ## DESTINATION WALLET
     if [[ ${DES} != "" && ${DES} != "null" ]]; then

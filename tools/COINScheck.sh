@@ -69,7 +69,7 @@ check_balance() {
     
     while [[ $retries -lt $MAX_RETRIES ]]; do
         balance=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p "$g1pub")
-        if [[ "$balance" != "" && "$balance" != "null" ]]; then
+        if [[ "$balance" != "" ]]; then
             echo "$balance"
             return 0
         fi
@@ -103,7 +103,7 @@ if [[ -z "$CURCOINS" ]]; then
 fi
 
 # If we got a valid balance, save it to cache
-if [[ "$CURCOINS" != "" && "$CURCOINS" != "null" ]]; then
+if [[ "$CURCOINS" != "" ]]; then
     echo "$CURCOINS" > "$COINSFILE"
     rm -f "$BACKUP_DIR/backup.${G1PUB}" 2>/dev/null
     echo "$CURCOINS"
