@@ -135,29 +135,33 @@ if [[ ${ISOK} != 0 ]]; then
     fi
     
     # Try with different GVA server
-    log "Attempting to get alternative GVA server..."
+    log "Attempting payment with alternative GVA servers..."
     attempts=0
     while [[ $attempts -lt 3 ]]; do
         GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
         if [[ ! -z $GVA ]]; then
             sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
             echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
-            log "Switching to new GVA NODE: $GVA"
-            break
+            log "Trying payment with GVA NODE: $GVA"
+            
+            make_payment "${PENDINGDIR}/${MOATS}.key" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${PENDINGDIR}/${MOATS}.result.html"
+            ISOK=$?
+            
+            if [[ $ISOK == 0 ]]; then
+                log "Payment successful with alternative server"
+                break
+            fi
         fi
+        
         attempts=$((attempts + 1))
-        log "Failed to get GVA server, attempt $attempts of 3"
-        sleep 1
+        if [[ $attempts -lt 3 ]]; then
+            log "Payment failed, trying next server (attempt $attempts of 3)"
+            sleep 2
+        fi
     done
-    
-    if [[ -z $GVA ]]; then
-        log "ERROR: Failed to get GVA server after 3 attempts"
-    fi
-        # Second attempt with new server
-        make_payment "${PENDINGDIR}/${MOATS}.key" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${PENDINGDIR}/${MOATS}.result.html"
-        ISOK=$?
-    else
-        log "ERROR: Could not get alternative GVA server"
+
+    if [[ $ISOK != 0 ]]; then
+        log "ERROR: Payment failed with all GVA servers"
         exit 1
     fi
 fi
