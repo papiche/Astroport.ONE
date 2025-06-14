@@ -248,6 +248,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
+    ### SEND NOSTR MESSAGE WITH QR CODE LINK
+    nostpy-cli send_event \
+        -privkey "$NPRIV" \
+        -kind 1 \
+        -content "🎫 MULTIPASS Wallet: ${G1PUBNOSTR}${Z}\n ${myIPFS}/ipfs/${G1PUBNOSTRQR}" \
+        -tags "[['p', '$NPUBLIC']]" \
+        --relay "$myRELAY"
+
     ### ADD /APP/uDRIVE - redirections APP IPFS
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps
 
