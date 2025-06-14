@@ -316,9 +316,12 @@ EOF
 # Get capacities as JSON
 get_capacities_json() {
     # Obtenir l'espace disponible pour NextCloud
-    local nextcloud_info=$(df -h /nextcloud-data | tail -1)
-    local nextcloud_available=$(echo "$nextcloud_info" | awk '{print $4}')
-    local nextcloud_available_gb=$(echo "$nextcloud_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+    local nextcloud_available_gb=0
+    if [[ -d "/nextcloud-data" ]]; then
+        local nextcloud_info=$(df -h /nextcloud-data | tail -1)
+        local nextcloud_available=$(echo "$nextcloud_info" | awk '{print $4}')
+        nextcloud_available_gb=$(echo "$nextcloud_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+    fi
     
     # Obtenir l'espace disponible pour IPFS
     local ipfs_info=$(df -h ~/.ipfs | tail -1)
@@ -355,7 +358,8 @@ get_capacities_json() {
     "storage_details": {
         "nextcloud": {
             "available_gb": $nextcloud_available_gb,
-            "mount_point": "/nextcloud-data"
+            "mount_point": "/nextcloud-data",
+            "status": "$(if [[ -d "/nextcloud-data" ]]; then echo "mounted"; else echo "not_mounted"; fi)"
         },
         "ipfs": {
             "available_gb": $ipfs_available_gb,
