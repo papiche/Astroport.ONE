@@ -5,7 +5,7 @@
 # MAKE PAYMENTS ON DUNITER BLOCKCHAIN
 # VERIFY SUCCESS & RENEW IF FAILED
 ########################################################################
-set -euo pipefail  # Stricter error handling
+# set -euo pipefail  # Stricter error handling
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
