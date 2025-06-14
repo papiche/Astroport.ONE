@@ -114,13 +114,16 @@ should_refresh() {
     ## update uDRIVE APP
     cd ${player_dir}/APP/uDRIVE/
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
+    echo "UDRIVE UDPATE : $myIPFS/ipfs/$UDRIVE"
     cd - 2>&1 >/dev/null
 
     if [[ "$UDRIVE" != "$last_udrive" ]]; then
-        [[ -n $last_udrive ]] \
-            && ipfs --timeout 20s pin rm $last_udrive ## remove old pin
-        [[ -n $UDRIVE ]] \
-            && echo $UDRIVE > "${last_udrive_file}"
+        if [[ -n "$last_udrive" ]]; then
+            ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
+        fi
+        if [[ -n "$UDRIVE" ]]; then
+            echo "$UDRIVE" > "${last_udrive_file}"
+        fi
         return 0
     fi
 
@@ -168,7 +171,15 @@ for PLAYER in "${NOSTR[@]}"; do
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    
+    # Add validation for COINS value
+    if [[ -n "$COINS" && "$COINS" != "null" ]]; then
+        ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    else
+        ZEN=0
+        echo "WARNING: Empty or invalid wallet state for ${PLAYER}"
+    fi
+    
     echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
 
     refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"

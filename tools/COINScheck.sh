@@ -43,18 +43,40 @@ ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${G1PUB}
 #######################################################
 #######################################################
 
-# Try to get balance immediately without checking cache first
-CURCOINS=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+# Add retry logic for balance check
+MAX_RETRIES=3
+RETRY_COUNT=0
+CURCOINS=""
+
+while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+    CURCOINS=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+    if [[ "$CURCOINS" != "" && "$CURCOINS" != "null" ]]; then
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 1
+done
 
 # If immediate check fails, try with a different GVA server
 if [[ "$CURCOINS" == "" ]]; then
     echo "JAKLIS GVA SERVER SWITCH ---"
     GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
-    [[ ! -z $GVA ]] \
-        && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
-        && echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env \
-        && echo "GVA NODE=$GVA" \
-        && CURCOINS=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+    if [[ ! -z $GVA ]]; then
+        sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
+        echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
+        echo "GVA NODE=$GVA"
+        
+        # Retry with new server
+        RETRY_COUNT=0
+        while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+            CURCOINS=$(${MY_PATH}/timeout.sh -t 5 ${MY_PATH}/jaklis/jaklis.py balance -p ${G1PUB})
+            if [[ "$CURCOINS" != "" && "$CURCOINS" != "null" ]]; then
+                break
+            fi
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep 1
+        done
+    fi
 fi
 
 # If we got a valid balance, save it to cache
