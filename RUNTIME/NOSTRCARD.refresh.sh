@@ -192,7 +192,38 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL RX CHECK
         echo "# RX from ${G1PUBNOSTR}.... checking primal transaction..."
-        milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 1000 -j | jq '.[0]')
+        function get_primal_transaction() {
+            local g1pub="$1"
+            local attempts=0
+            local success=false
+            local result=""
+
+            while [[ $attempts -lt 3 && $success == false ]]; do
+                GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+                if [[ ! -z $GVA ]]; then
+                    sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
+                    echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
+                    echo "Trying primal check with GVA NODE: $GVA (attempt $((attempts + 1)))"
+                    
+                    result=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${g1pub} -n 1000 -j | jq '.[0]' 2>/dev/null)
+                    g1prime=$(echo $result | jq -r .pubkey 2>/dev/null)
+                    
+                    if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
+                        success=true
+                        break
+                    fi
+                fi
+                
+                attempts=$((attempts + 1))
+                if [[ $attempts -lt 3 ]]; then
+                    sleep 2
+                fi
+            done
+            
+            echo "$g1prime"
+        }
+
+        milletxzero=$(get_primal_transaction "${G1PUBNOSTR}")
         g1prime=$(echo $milletxzero | jq -r .pubkey)
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         [[ ! -z ${g1prime} && ${g1prime} != "null" ]] \
@@ -228,7 +259,7 @@ for PLAYER in "${NOSTR[@]}"; do
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
 
     if [[ -n $pepper ]]; then
-        rm "$tmp_mid" "$tmp_tail"
+        rm "$tmp_mid" "$tmp_tail" 2>/dev/null
         rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
     else
         echo "ERROR : BAD DISCO DECODING" >> ~/.zen/game/nostr/${PLAYER}/ERROR
@@ -510,10 +541,42 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################################
     echo "Checking NOSTR wallet for $PLAYER: $G1PUBNOSTR"
     # Get transaction history for this NOSTR wallet
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-    ${MY_PATH}/../tools/jaklis/jaklis.py history -p ${G1PUBNOSTR} -n 30 -j \
-        > $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json
-    # Convert JSON to inline format
+    function get_wallet_history() {
+        local g1pub="$1"
+        local output_file="$2"
+        local attempts=0
+        local success=false
+
+        while [[ $attempts -lt 3 && $success == false ]]; do
+            GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+            if [[ ! -z $GVA ]]; then
+                sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
+                echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
+                echo "Trying history with GVA NODE: $GVA (attempt $((attempts + 1)))"
+                
+                ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
+                ${MY_PATH}/../tools/jaklis/jaklis.py history -p ${g1pub} -n 30 -j \
+                    > ${output_file} 2>/dev/null
+                
+                if [[ -s ${output_file} ]]; then
+                    success=true
+                    break
+                fi
+            fi
+            
+            attempts=$((attempts + 1))
+            if [[ $attempts -lt 3 ]]; then
+                sleep 2
+            fi
+        done
+        
+        return $([[ $success == true ]])
+    }
+
+    # Get transaction history with retry mechanism
+    get_wallet_history "${G1PUBNOSTR}" "$HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json"
+    
+    # Convert JSON to inline format if history was retrieved successfully
     [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json ]] \
         && cat $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json | jq -rc '.[]' \
              > ~/.zen/game/nostr/${PLAYER}/.g1.history.json
