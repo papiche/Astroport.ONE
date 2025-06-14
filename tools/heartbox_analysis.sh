@@ -258,15 +258,15 @@ get_services_status_json() {
     
     # IPFS P2P Services
     local p2p_services="[]"
-    if command -v ipfs >/dev/null 2>&1; then
-        local p2p_list=$(ipfs p2p ls 2>/dev/null)
-        if [[ -n "$p2p_list" ]]; then
-            local p2p_array=()
-            while IFS= read -r line; do
-                if [[ -n "$line" ]]; then
-                    p2p_array+=("\"$line\"")
-                fi
-            done <<< "$p2p_list"
+    if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
+        local p2p_array=()
+        for service in ~/.zen/tmp/${IPFSNODEID}/x_*; do
+            if [[ -f "$service" ]]; then
+                local service_name=$(basename "$service")
+                p2p_array+=("\"$service_name\"")
+            fi
+        done
+        if [[ ${#p2p_array[@]} -gt 0 ]]; then
             p2p_services="[$(IFS=,; echo "${p2p_array[*]}")]"
         fi
     fi
