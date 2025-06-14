@@ -59,6 +59,16 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
 
 fi
 
+########################################################
+if [[ ! -s ~/.zen/game/secret.dunikey && -s ~/.ssh/id_ed25519 ]]; then
+    echo "Generating default X level node Duniter key..."
+    SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
+    SECRET1=$(echo "$SSHASH" | cut -c 1-64)
+    SECRET2=$(echo "$SSHASH" | cut -c 65-128)
+    ~/.zen/Astroport.ONE/tools/keygen -t duniter -o ~/.zen/game/secret.dunikey "$SECRET1" "$SECRET2"
+    chmod 600 ~/.zen/game/secret.dunikey
+fi
+
 ######################################################
 echo "~/.zen/game/nostr/ 3 DAYS OLD LISTING"
 find ~/.zen/game/nostr/ -mtime +3 -type d -exec echo '{}' \;

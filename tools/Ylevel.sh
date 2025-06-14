@@ -172,8 +172,9 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         [[ -z $MYDOMAIN ]] && MYDOMAIN="copylaradio.com"
 
         echo "#########################################
-myIPFS=https://ipfs.$MYDOMAIN
+myIPFS=$myIPFS
 myASTROPORT=https://astroport.$MYDOMAIN
+uSPOT=https://u.$MYDOMAIN
 ###################################
 " > ~/.zen/Astroport.ONE/.env
 
