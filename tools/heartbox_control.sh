@@ -488,7 +488,78 @@ analyze_swarm() {
 }
 
 #######################################################################
-# Menu principal
+# Guide interactif
+#######################################################################
+
+show_guide() {
+    clear
+    print_header "📚 GUIDE DU CAPITAINE"
+    
+    echo "1. 🚀 Premiers pas"
+    echo "2. 🔑 Gestion des clés"
+    echo "3. 🌐 Services et réseaux"
+    echo "4. 💰 Économie ZEN"
+    echo "5. 📱 Applications"
+    echo "0. ⬅️  Retour"
+    echo ""
+    read -p "Choix: " guide_choice
+    
+    case $guide_choice in
+        1)
+            echo -e "${CYAN}🚀 PREMIERS PAS${NC}"
+            echo "1. Installation d'Astroport.ONE"
+            echo "2. Création de votre ZEN Card"
+            echo "3. Configuration de base"
+            echo "4. Première connexion"
+            echo ""
+            echo "Appuyez sur ENTRÉE pour continuer..."
+            read
+            ;;
+        2)
+            echo -e "${CYAN}🔑 GESTION DES CLÉS${NC}"
+            echo "1. Clé IPFS (niveau X)"
+            echo "2. Clé SSH jumelle (niveau Y)"
+            echo "3. Clé PGP/Yubikey (niveau Z)"
+            echo "4. Clé MULTIPASS NOSTR"
+            echo ""
+            echo "Appuyez sur ENTRÉE pour continuer..."
+            read
+            ;;
+        3)
+            echo -e "${CYAN}🌐 SERVICES ET RÉSEAUX${NC}"
+            echo "1. IPFS (stockage distribué)"
+            echo "2. NOSTR relay (réseau social)"
+            echo "3. NextCloud (stockage personnel)"
+            echo "4. uSPOT (services locaux)"
+            echo ""
+            echo "Appuyez sur ENTRÉE pour continuer..."
+            read
+            ;;
+        4)
+            echo -e "${CYAN}💰 ÉCONOMIE ZEN${NC}"
+            echo "1. Portefeuille NOSTR"
+            echo "2. Récompenses (0.1 G1 par like)"
+            echo "3. uDRIVE (stockage partagé)"
+            echo "4. Règles de partage"
+            echo ""
+            echo "Appuyez sur ENTRÉE pour continuer..."
+            read
+            ;;
+        5)
+            echo -e "${CYAN}📱 APPLICATIONS${NC}"
+            echo "1. Interface web (http://astroport.localhost:1234)"
+            echo "2. CLI (command.sh)"
+            echo "3. Applications mobiles"
+            echo "4. Intégrations"
+            echo ""
+            echo "Appuyez sur ENTRÉE pour continuer..."
+            read
+            ;;
+    esac
+}
+
+#######################################################################
+# Menu principal amélioré
 #######################################################################
 
 show_main_menu() {
@@ -525,6 +596,7 @@ show_main_menu() {
     echo "  6. 📱 NextCloud Docker"
     echo "  7. 📋 Logs et diagnostics"
     echo "  8. ⚙️  Configuration"
+    echo "  9. 📚 Guide du capitaine"
     echo "  0. ❌ Quitter"
     echo ""
 }
@@ -554,7 +626,7 @@ show_detailed_monitoring() {
     
     # Utilisation disque détaillée
     print_section "💾 UTILISATION DISQUE"
-    echo "Répertoires principaux:"
+    echo "Répertoires nextcloud:"
     du -sh ~/.zen ~/.ipfs /nextcloud-data 2>/dev/null | sort -hr
     echo ""
     
@@ -1046,7 +1118,7 @@ manage_config() {
 }
 
 #######################################################################
-# Boucle principale
+# Boucle principale améliorée
 #######################################################################
 
 main_loop() {
@@ -1063,6 +1135,7 @@ main_loop() {
             6) manage_nextcloud ;;
             7) show_logs ;;
             8) manage_config ;;
+            9) show_guide ;;
             0) 
                 echo -e "${GREEN}👋 Au revoir !${NC}"
                 exit 0
