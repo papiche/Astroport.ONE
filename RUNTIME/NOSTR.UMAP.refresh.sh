@@ -164,8 +164,10 @@ do
                     # Download each image if not already present
                     for img_url in $image_urls; do
                         filename=$(basename "$img_url")
-                        if [[ ! -f "${UMAPPATH}/APP/uDRIVE/Images/$filename" ]]; then
-                            wget -q "$img_url" -O "${UMAPPATH}/APP/uDRIVE/Images/$filename"
+                        # Add UMAP identifier to filename using first 8 chars of UPLANETG1PUB
+                        umap_filename="UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${filename}"
+                        if [[ ! -f "${UMAPPATH}/APP/uDRIVE/Images/$umap_filename" ]]; then
+                            wget -q "$img_url" -O "${UMAPPATH}/APP/uDRIVE/Images/$umap_filename"
                         fi
                     done
                 fi
@@ -193,8 +195,8 @@ do
 </body>
 </html>"
             
-            # Save HTML version
-            echo "$html_content" > "${UMAPPATH}/APP/uDRIVE/Documents/${message_id}.html"
+            # Save HTML version with UMAP identifier
+            echo "$html_content" > "${UMAPPATH}/APP/uDRIVE/Documents/UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${message_id}.html"
             
             # Save original message
             echo "$content" >> ${UMAPPATH}/NOSTR_messages
