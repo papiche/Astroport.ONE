@@ -213,6 +213,44 @@ do
     mkdir -p "${UMAPPATH}/APP/uDRIVE"
     cd "${UMAPPATH}/APP/uDRIVE"
     ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
+    
+    # Cleanup old files (older than 6 months)
+    SIX_MONTHS_AGO=$(date -d "6 months ago" +%s)
+    
+    # Cleanup old documents
+    if [[ -d "Documents" ]]; then
+        find "Documents" -type f -name "*.html" -exec sh -c '
+            file_date=$(stat -c %Y "$1")
+            if [ "$file_date" -lt "'$SIX_MONTHS_AGO'" ]; then
+                # Extract message ID from filename
+                msg_id=$(basename "$1" .html)
+                # Get original author from the file content
+                author=$(grep -o "From: [^<]*" "$1" | cut -d" " -f2)
+                if [[ -n "$author" ]]; then
+                    # Send notification to original author
+                    NOTIF_MSG="📢 Votre annonce a été retirée après 6 mois. Vous pouvez la republier si elle est toujours d'actualité. #UPlanet #Community"
+                    nostpy-cli send_event \
+                        -privkey "$NPRIV_HEX" \
+                        -kind 1 \
+                        -content "$NOTIF_MSG" \
+                        -tags "[['p', '$author']]" \
+                        --relay "$myRELAY"
+                fi
+                rm "$1"
+            fi
+        ' sh {} \;
+    fi
+    
+    # Cleanup old images
+    if [[ -d "Images" ]]; then
+        find "Images" -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" -o -name "*.gif" \) -exec sh -c '
+            file_date=$(stat -c %Y "$1")
+            if [ "$file_date" -lt "'$SIX_MONTHS_AGO'" ]; then
+                rm "$1"
+            fi
+        ' sh {} \;
+    fi
+    
     ./generate_ipfs_structure.sh --log .
     cd - 2>&1>/dev/null
 
