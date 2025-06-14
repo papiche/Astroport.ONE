@@ -8,7 +8,7 @@
 # Search in ~/.zen/game/nostr/UMAP*/HEX to seek for UPlanet GEO Key
 # Geo Keys get messages from nostr users and become friend with
 # Each day we get all the messages from those friends on each UMAP
-# Then Use IA to produce SECTOR journal
+# Then Use IA to produce SECTOR journal and REGION journal
 ################################################################################
 
 # Global variables
@@ -396,12 +396,16 @@ process_sectors() {
 
 create_sector_journal() {
     local sector=$1
-    echo "Creating Sector ${sector} Journal"
-    
+    echo "Creating Sector ${sector} Journal from sub UMAPS"
+    # Get from local then swarm
     local message_text="$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/${sector}/*/NOSTR_messages)"
     if [[ -z "$message_text" ]]; then
-        echo "No messages found for sector ${sector}"
-        return
+        echo "search for sector ${sector} journal in swarm"
+        message_text="$(cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/_*_*/${sector}/*/NOSTR_messages)"
+        if [[ -z "$message_text" ]]; then
+            echo "No NOSTR_messages found for sector ${sector}"
+            return
+        fi
     fi
     
     local ANSWER=$(generate_ai_summary "$message_text")
@@ -500,7 +504,7 @@ create_region_journal() {
     local rlat=$(echo ${region} | cut -d '_' -f 2)
     local rlon=$(echo ${region} | cut -d '_' -f 3)
     
-    echo "Creating Region ${region} Journal"
+    echo "Creating Region ${region} Journal from sub SECTORS"
     local message_text=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/${region}/*/NOSTR_journal)
     
     if [[ -z "$message_text" ]]; then
