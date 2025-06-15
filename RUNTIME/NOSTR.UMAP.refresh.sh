@@ -582,6 +582,21 @@ update_region_nostr_profile() {
 # NOSTR Management Functions
 ################################################################################
 
+update_friends_list() {
+    local friends=("$@")
+    
+    # Get UMAP NSEC from environment
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    
+    # Update friends list using nostr_follow.sh
+    if [[ ${#friends[@]} -gt 0 ]]; then
+        $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY"
+        echo "Updated friends list with ${#friends[@]} active friends"
+    else
+        echo "No active friends to update"
+    fi
+}
+
 generate_ai_summary() {
     local text=$1
     local QUESTION="[TEXT] $text [/TEXT] --- # 1. Write a summary of [TEXT] # 2. Highlight key points with their authors # 3. Add hastags and emoticons # IMPORTANT : Use the same language as mostly used in [TEXT]."
