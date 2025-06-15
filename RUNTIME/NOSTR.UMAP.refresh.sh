@@ -286,9 +286,9 @@ setup_ipfs_structure() {
     mkdir -p "${UMAPPATH}/APP/uDRIVE"
     cd "${UMAPPATH}/APP/uDRIVE"
     ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
-    
+    rm index.html _index.html 2>/dev/null
     cleanup_old_files
-    ./generate_ipfs_structure.sh .
+    UDRIVE=$(./generate_ipfs_structure.sh .)
     ## Redirect to UDRIVE actual ipfs CID
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
     cd - 2>&1>/dev/null

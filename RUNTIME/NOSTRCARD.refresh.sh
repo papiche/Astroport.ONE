@@ -113,6 +113,7 @@ should_refresh() {
 
     ## update uDRIVE APP
     cd ${player_dir}/APP/uDRIVE/
+    rm index.html _index.html 2>/dev/null
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
     echo "UDRIVE UDPATE : $myIPFS/ipfs/$UDRIVE"
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
