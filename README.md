@@ -136,7 +136,7 @@ GET /?uplanet=${EMAIL}&zlat=${LATITUDE}&zlon=${LONGITUDE}&g1pub=${LANGUAGE}
 For more detailed information about the UPLANET API and its capabilities, visit the [UPassport documentation](https://github.com/papiche/UPassport/).
 
 
-## DOCUMENTATION
+## proto DOCUMENTATION
 
 https://astroport-1.gitbook.io/astroport.one/
 
@@ -145,9 +145,10 @@ https://astroport-1.gitbook.io/astroport.one/
 FOSS Powered : This project is a selection of some of the most valuable free and open-source software.
 
 By installing Astroport.ONE, you will appear on UPlanet ORIGIN swarm map.
+
 By activating Y level (SSH<->IPFS key twin) or Z level (PGP<->IPFS twins) you can join "UPlanet Ẑen"
 
-and become part of [Astroport #monnaie-libre](https://opencollective.com/monnaie-libre) DRAGON WoT
+> Become part of [Astroport #monnaie-libre](https://opencollective.com/monnaie-libre) DRAGON WoT 
 maintained by [CopyLaRadio](https://copylaradio.com) : La coopérative des auto hébergeurs Web2 et Web3 
 
 ## Stargazers over time
