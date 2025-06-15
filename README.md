@@ -94,7 +94,7 @@ Once your Astroport station is started, the following ports are activated:
 - **Ports 8080, 4001 and 5001**: IPFS gateway ports.
 - **Port 54321**: Publishes API v2 ([UPassport](https://github.com/papiche/UPassport/)).
 
-![](./OpenPORTS.png)
+![](./OpenPORTS.jpg)
 
 
 ### UPLANET API (Port 54321)
