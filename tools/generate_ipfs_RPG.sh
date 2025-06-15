@@ -567,7 +567,7 @@ fi
 ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-http://127.0.0.1:8080}"
 ##############################################################
 ## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uWORLD
-OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
+OWNER_PLAYER_DIR=$(dirname $(dirname "$(dirname "$SOURCE_DIR")"))
 OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
 OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
 
