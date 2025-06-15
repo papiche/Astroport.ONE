@@ -144,7 +144,7 @@ https://astroport-1.gitbook.io/astroport.one/
 
 FOSS Powered : This project is a selection of some of the most valuable free and open-source software.
 
-By installing Astroport.ONE, you will appear on UPlanet ORIGIN swarm map.
+By installing Astroport.ONE, you will appear on [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio) swarm map.
 
 By activating Y level (SSH<->IPFS key twin) or Z level (PGP<->IPFS twins) you can join "UPlanet Ẑen"
 
