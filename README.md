@@ -142,9 +142,13 @@ https://astroport-1.gitbook.io/astroport.one/
 
 ## Contribution
 
-This project isa selection](https://github.com/papiche/Astroport.solo) of some of the most valuable free and open-source software.
+FOSS Powered : This project is a selection of some of the most valuable free and open-source software.
 
-Contributions are welcome on [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
+By installing Astroport.ONE, you will appear on UPlanet ORIGIN swarm map.
+By activating Y level (SSH<->IPFS key twin) or Z level (PGP<->IPFS twins) you can join "UPlanet Ẑen"
+
+and become part of [Astroport #monnaie-libre](https://opencollective.com/monnaie-libre) DRAGON WoT
+maintained by [CopyLaRadio](https://copylaradio.com) : La coopérative des auto hébergeurs Web2 et Web3 
 
 ## Stargazers over time
 
