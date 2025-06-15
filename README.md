@@ -66,6 +66,14 @@ After installation, you should find the following processes running:
 /bin/bash /home/fred/.zen/Astroport.ONE/_12345.sh
 ```
 
+with directories & files in ~/.zen
+```
+$ ls ~/.zen
+Astroport.ONE  [♥Box]  G1BILLET  game  [GPS]  strfry  tmp  UPassport  workspace
+```
+♥Box contains real external IP for NATed LAN stations
+GPS contains Captain account geo location, it is used as "sun time consensus" between ♥Box giving UMAP data priority to closest official relay.
+
 ## Usage
 
 ### Creating a Player
@@ -86,41 +94,28 @@ Once your Astroport station is started, the following ports are activated:
 - **Ports 8080, 4001 and 5001**: IPFS gateway ports.
 - **Port 54321**: Publishes API v2 ([UPassport](https://github.com/papiche/UPassport/)).
 
-### Examples of API Usage
+![](./OpenPORTS.png)
 
-#### Create a Player
 
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
-```
+### UPLANET API (Port 54321)
 
-#### Read GChange Database Messaging
+The UPLANET API, provided by UPassport, is a comprehensive interface for managing digital identity and multimedia content within the Astroport.ONE ecosystem. It runs on port 54321 and offers the following endpoints:
 
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
-```
+#### Core Endpoints
 
-#### Trigger a Ğ1 Payment
+- **`/scan` or `/`**: Main terminal for QR code scanning and UPassport actions
+- **`/nostr`**: NOSTR Card management and interactions
+- **`/rec`**: OBS Studio recording control and multimedia processing
+- **`/webcam`**: Direct webcam recording and processing
+- **`/api/upload`**: File upload to IPFS with NIP authentification
+- **`/uplanet`**: UPlanet account creation and management
 
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
-```
+#### UPLANET Account Creation
 
-### UPLANET API Usage
-
-The `UPLANET.sh` API is dedicated to OSM2IPFS and UPlanet Client App applications. It manages UPLANET landings and the creation of ZenCards and AstroIDs.
-
-#### Required Parameters
-
-- `uplanet`: Player's email.
-- `zlat`: Latitude with 2 decimal places.
-- `zlon`: Longitude with 2 decimal places.
-- `g1pub`: (Optional) Origin language (fr, en, ...)
-
-#### Example Request
+To create a UPLANET account, send a GET request with the following parameters:
 
 ```http
-GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=fr
+GET /?uplanet=${EMAIL}&zlat=${LATITUDE}&zlon=${LONGITUDE}&g1pub=${LANGUAGE}
 ```
 
 | Parameter | Type     | Description                       |
@@ -130,13 +125,24 @@ GET /?uplanet=player@example.com&zlat=48.85&zlon=2.35&g1pub=fr
 | `zlon`    | `decimal`| **Required**. Longitude with 2 decimal places |
 | `g1pub`   | `string` | **Optional**. Origin language (fr, en, ...) |
 
+#### Features
+
+- **Identity Management**: Create and manage UPassports with QR code scanning
+- **Multimedia Processing**: Record and process video/audio content
+- **IPFS Integration**: Decentralized storage for all content
+- **NOSTR Integration**: Publish events and manage NOSTR Cards
+- **Ğ1 Integration**: Check balances and process transactions
+
+For more detailed information about the UPLANET API and its capabilities, visit the [UPassport documentation](https://github.com/papiche/UPassport/).
+
+
 ## DOCUMENTATION
 
 https://astroport-1.gitbook.io/astroport.one/
 
 ## Contribution
 
-This project is [a selection](https://github.com/papiche/Astroport.solo) of some of the most valuable free and open-source software.
+This project isa selection](https://github.com/papiche/Astroport.solo) of some of the most valuable free and open-source software.
 
 Contributions are welcome on [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre#category-BUDGET).
 
