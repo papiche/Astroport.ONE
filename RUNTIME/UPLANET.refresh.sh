@@ -80,7 +80,7 @@ for UMAP in ${unique_combined[@]}; do
     REGION="_${RLAT}_${RLON}"
     echo "SECTOR ${SECTOR} REGION ${REGION}"
     ##############################################################
-    ## setUMAP_ENV.sh
+    ## setUMAP_ENV.sh 
     ##############################################################
     $(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     #######################################################################################

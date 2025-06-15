@@ -15,8 +15,16 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 echo "## RUNNING NODE.refresh"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+########################################################
+echo "## CLEANING NOSTR & NODE SWARM > 3 DAYS OLD"
+find ~/.zen/game/nostr/UMAP* -mtime +3 -type d -exec rm -Rf '{}' \;
+find ~/.zen/game/nostr/SECTOR* -mtime +3 -type d -exec rm -Rf '{}' \;
+find ~/.zen/game/nostr/REGION* -mtime +3 -type d -exec rm -Rf '{}' \;
+find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
+rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
+########################################################
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
@@ -146,9 +154,6 @@ for nhex in ${REGIONHEXLIST[@]}; do
     echo "$hex" > ~/.zen/game/nostr/REGION$hexumap/HEX
 done
 
-echo "## CLEANING SWARM 3 DAYS OLD"
-find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
-rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
 
 ########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
