@@ -569,11 +569,20 @@ if [ -f "$HOME/.zen/Astroport.ONE/.env" ]; then
     ORIGIN_IPFS_GATEWAY=$(grep "^myIPFS=" "$HOME/.zen/Astroport.ONE/.env" | cut -d'=' -f2)
 fi
 ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-http://127.0.0.1:8080}"
+##############################################################
+## Get OWNER_EMAIL and OWNER_HEX_FILE
 ############################################################## MULTIPLE APP on UPLANET
-## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uDRIVE
-OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
-OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
-OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
+if [[ "$SOURCE_DIR" == *"/nostr"* ]]; then
+    ## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uDRIVE = PLAYER MULTIPASS
+    OWNER_PLAYER_DIR=$(dirname "$(dirname "$(dirname "$SOURCE_DIR")")")
+    OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
+    OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
+elif [[ "$SOURCE_DIR" == *"/UPLANET"* ]]; then
+    ## or in ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/___/0_0/0.0_0.0/0.00_0.00/APP/uDRIVE = UPLANET UMAP
+    OWNER_PLAYER_DIR=$(dirname "$SOURCE_DIR")
+    OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
+    OWNER_HEX_FILE="${SOURCE_DIR}/HEX"
+fi
 
 if [ -f "$OWNER_HEX_FILE" ]; then
     OWNER_HEX_PUBKEY=$(cat "$OWNER_HEX_FILE" 2>/dev/null)
