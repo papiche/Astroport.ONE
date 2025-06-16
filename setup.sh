@@ -8,6 +8,9 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
+### ADD USER TO ADM & DOCKER GROUP
+sudo usermod -aG adm $USER
+sudo usermod -aG docker $USER
 echo
 echo "#############################################"
 echo "######### IPFS SETUP  #########################"
@@ -80,8 +83,7 @@ mkdir -p ~/.zen/tmp
 ## USED FOR RAMDISK (video live streaming)
 ## USED FOR SYSTEM UPGRADE
 ## USED FOR "systemctl restart ipfs"
-## USED FOR "sudo youtube-dl -U"
-for bin in fail2ban-client mount umount apt-get apt systemctl docker; do
+for bin in fail2ban-client mount umount apt-get apt systemctl docker hdparm; do
 binpath=$(which $bin)
 [[ -x $binpath ]] \
     && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \
@@ -182,19 +184,22 @@ if [[ -d ~/.zen/strfry && -d ~/.zen/workspace/NIP-101 ]]; then
     ~/.zen/workspace/NIP-101/systemd.setup.sh
 fi
 
-echo "####################### YLEVEL ACTIVATION "
-~/.zen/Astroport.ONE/tools/Ylevel.sh
-
 # ACTIVATING ASTROPORT CRON
 echo ">>> SWITHCIN ASTROPORT ON <<<
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
-echo "############################## ♥BOX READY ###"
+echo "#####################################################"
+echo "#### UPLANET ORIGIN ############# ♥BOX X LEVEL ###"
+echo "#### UPlanet ẐEN ACTIVATION needs Y LEVEL "
+echo "RUN: ~/.zen/Astroport.ONE/tools/Ylevel.sh"
 ##########################################################
 ## ON BOARDING PLAYER
 echo "############################### ON BOARDING"
 espeak "Welcome CAPTAIN" 2>/dev/null
-echo ">>> Now Create CAPTAIN Account <<<"
-cd ~/.zen/Astroport.ONE/
-./command.sh
+echo ">>> Create CAPTAIN Account <<<
+http://127.0.0.1:54321/g1"
+#~ cd ~/.zen/Astroport.ONE/
+#~ ./command.sh
+
+xdg-open http://127.0.0.1:8080/ipns/copylaradio.com

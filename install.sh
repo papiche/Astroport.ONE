@@ -46,7 +46,7 @@ sudo apt-get update
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in git tldr ssss make cmake docker.io docker-compose docker-compose-v2 iptables fail2ban openssh-server npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+for i in git tldr ssss make cmake docker.io docker-compose hdparm iptables fail2ban openssh-server npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -95,7 +95,9 @@ done
 echo "#############################################"
 echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
 echo "#############################################"
-mkdir -p ~/.zen
+mkdir -p ~/.zen/workspace
+cd ~/.zen/workspace
+git clone --depth 1 https://github.com/papiche/UPlanet
 cd ~/.zen
 git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
@@ -129,7 +131,7 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv setuptools wheel termcolor amzqr pdf2docx ollama requests pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr nostpy-cli bech32; do
+for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr nostpy-cli bech32; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install  $i 2>> /tmp/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> /tmp/install.errors.log
@@ -189,8 +191,6 @@ echo
 
 ###############################################################
 echo "##  ADDING lazydocker ================"
-### ADD TO DOCKER GROUP
-sudo usermod -aG docker $USER
 # INSTALL lazydocker GUI
 ${MY_PATH}/install.lazydocker.sh
 

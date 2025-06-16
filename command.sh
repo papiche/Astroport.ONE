@@ -54,7 +54,7 @@ print_status() {
     local service="$1"
     local status="$2"
     local details="$3"
-    
+
     if [[ "$status" == "ACTIVE" ]]; then
         printf "  ✅ %-20s ${GREEN}%-10s${NC} %s\n" "$service" "$status" "$details"
     elif [[ "$status" == "INACTIVE" ]]; then
@@ -67,12 +67,12 @@ print_status() {
 show_welcome() {
     clear
     print_header "ASTROPORT.ONE - STATION ZEN"
-    
+
     echo -e "${WHITE}Node ID:${NC} $IPFSNODEID"
     echo -e "${WHITE}Capitaine:${NC} ${CURRENT:-'Non connecté'}"
     echo -e "${WHITE}UPlanet:${NC} $UPLANETG1PUB"
     echo ""
-    
+
     echo -e "${CYAN}Astroport est un moteur Web3 exécutant UPlanet sur IPFS${NC}"
     echo "Il vous permet de:"
     echo "  • Gérer votre identité numérique (ZEN Card)"
@@ -80,13 +80,13 @@ show_welcome() {
     echo "  • Stocker et partager des fichiers (uDRIVE)"
     echo "  • Gagner des récompenses (0.1 G1 par like)"
     echo ""
-    
+
     echo -e "${YELLOW}Niveaux de capitaine:${NC}"
     echo "  X: Clé IPFS standard" UPlanet ORIGIN
     echo "  Y: Clé SSH jumelle" UPlanet Ẑen
     echo "  Z: Clé PGP/Yubikey" UPlanet PGP
     echo ""
-    
+
     echo -e "${GREEN}Services disponibles:${NC}"
     print_status "IPFS" "ACTIVE" "(Stockage distribué)"
     print_status "NOSTR" "ACTIVE" "(Réseau social)"
@@ -122,35 +122,42 @@ fi
 echo 'PRESS CTRL+C or ENTER... '; read
 ## CREATE AND OR CONNECT USER
 PS3=' ____ Select  ___ ? '
-players=( "ZEN Card" "PRINT ZENCARD" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
+players=( "MULTIPASS" "ZENCARD" "DELETE" "PRINT" $(ls ~/.zen/game/players  | grep "@" 2>/dev/null))
 ## MULTIPLAYER
 
 select fav in "${players[@]}"; do
     case $fav in
-    "PRINT ZENCARD")
-        ## DIRECT VISA.print.sh
+
+    "MULTIPASS")
+        # Récupérer les informations de géolocalisation
+        GEO_INFO=$(curl -s ipinfo.io/json)
+
         echo "'Email ?'"
         read EMAIL
-        [[ ${EMAIL} == "" ]] && EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-        echo "'Secret 1 ?'"
-        read SALT
-        [[ ${SALT} == "" ]] && SALT=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
-        echo "'Secret 2?'"
-        read PEPPER
-        [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
-        echo "'PIN ?'"
-        read PASS
+        [[ ${EMAIL} == "" ]] && break
 
-        echo "${MY_PATH}/tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
-        ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
+        # Extraire la latitude et la longitude
+        echo "'Latitude ?'"
+        read LAT
+        [[ ${LAT} == "" ]] && LAT=$(makecoord $(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f1))
+        echo "'Longitude ?'"
+        read LON
+        [[ ${LON} == "" ]] && LON=$(makecoord $(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f2))
 
-        [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] \
-            && rm -Rf ~/.zen/game/players/${EMAIL}/
+        # Si la récupération échoue ou retourne vide, utiliser des valeurs par défaut
+        [[ -z "$LAT" || "$LAT" == "null" ]] && LAT="0.00"
+        echo -e "Latitude: ${LAT}"
+        [[ -z "$LON" || "$LON" == "null" ]] && LON="0.00"
+        echo -e "Longitude: ${LON}"
+
+        echo "${MY_PATH}/tools/make_NOSTRCARD.sh" "${EMAIL}" "fr" "${LAT}" "${LON}"
+        ${MY_PATH}/tools/make_NOSTRCARD.sh "${EMAIL}" "fr" "${LAT}" "${LON}"
+        echo "Astronaute $fav bienvenue sur UPlanet..."
 
         exit
         ;;
 
-    "ZEN Card")
+    "ZENCARD")
         echo "'Email ?'"
         read EMAIL
         [[ ${EMAIL} == "" ]] && break
@@ -178,6 +185,76 @@ select fav in "${players[@]}"; do
         echo "Astronaute $fav bienvenue sur UPlanet..."
         exit
         ;;
+
+    "DELETE")
+        echo "DELETE"
+        ${MY_PATH}/tools/nostr_DESTROY_TW.sh
+        exit
+        ;;
+
+    "PRINT")
+        echo "Choisissez le type de carte à imprimer:"
+        echo "1) MULTIPASS"
+        echo "2) ZENCARD"
+        read CARD_TYPE
+
+        case $CARD_TYPE in
+            "1"|"MULTIPASS")
+                ## DIRECT MULTIPASS print
+                NOSTR=$(ls ~/.zen/game/nostr  | grep "@" 2>/dev/null)
+                if [ -z "$NOSTR" ]; then
+                    echo "No MULTIPASS cards found"
+                    exit
+                fi
+
+                echo "Available MULTIPASS cards:"
+                echo "$NOSTR" | nl
+                echo "'Enter card number :'"
+                read NUM
+
+                if [ -z "$NUM" ]; then
+                    EMAIL=$(echo "$NOSTR" | head -n 1)
+                else
+                    EMAIL=$(echo "$NOSTR" | sed -n "${NUM}p")
+                fi
+
+                [[ -f ~/.zen/game/nostr/$EMAIL/.nostr.zine.html ]] \
+                    && xdg-open ~/.zen/game/nostr/$EMAIL/.nostr.zine.html \
+                    || echo "NO MULTIPASS FOUND"
+
+                exit
+                ;;
+
+            "2"|"ZENCARD")
+                ## DIRECT VISA.print.sh
+                echo "'Email ?'"
+                read EMAIL
+                [[ ${EMAIL} == "" ]] && EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+                echo "'Secret 1 ?'"
+                read SALT
+                [[ ${SALT} == "" ]] && SALT=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
+                echo "'Secret 2?'"
+                read PEPPER
+                [[ ${PEPPER} == "" ]] && PEPPER=$(${MY_PATH}/tools/diceware.sh 4 | xargs)
+                echo "'PIN ?'"
+                read PASS
+
+                echo "${MY_PATH}/tools/VISA.print.sh" "${EMAIL}"  "'"$SALT"'" "'"$PEPPER"'" "'"$PASS"'"
+                ${MY_PATH}/tools/VISA.print.sh "${EMAIL}"  "$SALT" "$PEPPER" "$PASS" ##
+
+                [[ ${EMAIL} != "" && ${EMAIL} != $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ]] \
+                    && rm -Rf ~/.zen/game/players/${EMAIL}/
+
+                exit
+                ;;
+
+            *)
+                echo "Option invalide"
+                exit
+                ;;
+        esac
+        ;;
+
     "")
         echo "Choix obligatoire. exit"
         exit
@@ -305,7 +382,7 @@ while true; do
     show_welcome
     show_main_menu
     read -p "Votre choix: " choice
-    
+
     case $choice in
         1)
             print_section "GESTION ZEN CARD"
@@ -314,7 +391,7 @@ while true; do
             echo "3. Personnaliser ZEN Card"
             echo "0. Retour"
             read -p "Choix: " card_choice
-            
+
             case $card_choice in
                 1) "${MY_PATH}/tools/VISA.print.sh" "$PLAYER" ;;
                 2)
@@ -358,7 +435,7 @@ while true; do
             echo "3. Applications mobiles"
             echo "0. Retour"
             read -p "Choix: " app_choice
-            
+
             case $app_choice in
                 1) xdg-open "http://astroport.localhost:1234" ;;
                 2) echo "Vous utilisez déjà la CLI" ;;
@@ -372,7 +449,7 @@ while true; do
             echo "3. Paramètres économiques"
             echo "0. Retour"
             read -p "Choix: " config_choice
-            
+
             case $config_choice in
                 1) echo "Configuration IPFS..." ;;
                 2) echo "Configuration réseau..." ;;
@@ -388,7 +465,7 @@ while true; do
             sleep 1
             ;;
     esac
-    
+
     [[ $choice != "0" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
 done
 

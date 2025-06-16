@@ -574,7 +574,7 @@ ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-http://127.0.0.1:8080}"
 ############################################################## MULTIPLE APP on UPLANET
 if [[ "$SOURCE_DIR" == *"/nostr"* ]]; then
     ## USED in ${HOME}/.zen/game/nostr/${OWNER_EMAIL}/APP/uDRIVE = PLAYER MULTIPASS
-    OWNER_PLAYER_DIR=$(dirname "$(dirname "$(dirname "$SOURCE_DIR")")")
+    OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
     OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
     OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
 elif [[ "$SOURCE_DIR" == *"/UPLANET"* ]]; then

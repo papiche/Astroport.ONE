@@ -96,7 +96,10 @@ sudo systemctl stop astroport
 ## UPDATE NIP-101
 [[ -d ~/.zen/workspace/NIP-101 ]] \
 && cd ~/.zen/workspace/NIP-101 && git pull
-## TODO LOG ROTATE
+
+## UPDATE UPlanet
+[[ -d ~/.zen/workspace/UPlanet ]] \
+&& cd ~/.zen/workspace/UPlanet && git pull
 
 ########################################################################
 ## UPDATE Astroport.ONE code
