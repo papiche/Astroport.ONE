@@ -177,13 +177,13 @@ for UMAP in ${unique_combined[@]}; do
     ##########################################################
     UMAPROOT=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
     ##########################################################
-    # Using ${UMAPPATH}/zUsat.jpg as profile picture
+    # profile picture
     PIC_PROFILE="${myIPFS}/ipfs/${UMAPROOT}/zUmap.jpg" # road map
     ##########################################################
-    # Using ${UMAPPATH}/Umap.jpg as profile banner
+    # profile banner
     PIC_BANNER="${myIPFS}/ipfs/${UMAPROOT}/Usat.jpg" # sat map
     
-    ## UMAPROOT : ipfs link rolling calendar
+    ## UMAPROOT : chain ipfs link in rolling calendar
     echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
     rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE} 2>/dev/null
 
