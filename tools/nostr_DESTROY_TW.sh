@@ -117,36 +117,112 @@ ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
     "<html>
         <head>
+            <title>MULTIPASS Card Deactivated | Carte MULTIPASS Désactivée</title>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
             <style>
-                body { font-family: sans-serif; max-width: 800px; margin: 2em auto; line-height: 1.6; }
-                .alert { background: #fff3cd; border: 1px solid #ffeeba; padding: 1em; border-radius: 4px; }
-                .backup { background: #d4edda; border: 1px solid #c3e6cb; padding: 1em; border-radius: 4px; margin: 1em 0; }
-                .keys { background: #e2e3e5; border: 1px solid #d6d8db; padding: 1em; border-radius: 4px; }
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    max-width: 800px;
+                    margin: 2em auto;
+                    line-height: 1.6;
+                    color: #333;
+                    padding: 0 1em;
+                }
+                .section {
+                    margin: 2em 0;
+                    padding: 1.5em;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .alert {
+                    background: #fff3cd;
+                    border-left: 4px solid #ffc107;
+                }
+                .backup {
+                    background: #d4edda;
+                    border-left: 4px solid #28a745;
+                }
+                .ai-status {
+                    background: #e2e3e5;
+                    border-left: 4px solid #6c757d;
+                }
+                .keys {
+                    background: #cce5ff;
+                    border-left: 4px solid #0d6efd;
+                }
+                .lang-section {
+                    padding: 1em 0;
+                    border-bottom: 1px solid #eee;
+                }
+                h2, h3, h4 {
+                    color: #2c3e50;
+                    margin-top: 0;
+                }
+                a {
+                    color: #0d6efd;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
             </style>
         </head>
         <body>
-            <div class='alert'>
-                <h2>⚠️ MULTIPASS Card Deactivated</h2>
-                <p>Your MULTIPASS card has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
+            <div class='section alert'>
+                <div class='lang-section'>
+                    <h2>⚠️ MULTIPASS Card Deactivated</h2>
+                    <p>Your MULTIPASS card has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
+                </div>
+                <div class='lang-section'>
+                    <h2>⚠️ Carte MULTIPASS Désactivée</h2>
+                    <p>Votre carte MULTIPASS a été désactivée en raison d'un solde Ẑen insuffisant. Ne vous inquiétez pas - toutes vos données sont en sécurité !</p>
+                </div>
             </div>
 
-            <div class='backup'>
-                <h3>📦 Your Data Backup</h3>
-                <p>We've archived all your MULTIPASS data here: <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Download Backup</a></p>
+            <div class='section backup'>
+                <div class='lang-section'>
+                    <h3>📦 Your Data Backup</h3>
+                    <p>We've archived all your MULTIPASS data here: <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Download Backup</a></p>
+                </div>
+                <div class='lang-section'>
+                    <h3>📦 Sauvegarde de vos Données</h3>
+                    <p>Nous avons archivé les données de votre MULTIPASS ici : <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Télécharger la Sauvegarde</a></p>
+                </div>
             </div>
 
-            <div>
-                <h3>🤖 #BRO AI Status</h3>
-                <p>While #BRO AI access is currently disabled, you can still connect with friends on our relay!</p>
+            <div class='section ai-status'>
+                <div class='lang-section'>
+                    <h3>🤖 #BRO AI Status</h3>
+                    <p>While #BRO AI access is currently disabled, you can still connect with friends present on our relay!</p>
+                </div>
+                <div class='lang-section'>
+                    <h3>🤖 Statut de l'IA #BRO</h3>
+                    <p>Bien que votre accès à l'IA #BRO soit actuellement désactivé, vous pouvez toujours vous connecter avec vos amis présents sur notre relais !</p>
+                </div>
             </div>
 
-            <div class='keys'>
-                <h4>🔑 Your Keys (Keep these safe!)</h4>
-                <p>Salt: ${salt}</p>
-                <p>Pepper: ${pepper}</p>
+            <div class='section keys'>
+                <div class='lang-section'>
+                    <h4>🔑 Your Keys (Keep these safe!)</h4>
+                    <p>Salt: ${salt}</p>
+                    <p>Pepper: ${pepper}</p>
+                </div>
+                <div class='lang-section'>
+                    <h4>🔑 Vos Clés (Gardez-les en sécurité !)</h4>
+                    <p>Sel : ${salt}</p>
+                    <p>Poivre : ${pepper}</p>
+                </div>
             </div>
 
-            <p>Ready to rejoin? <a target='_blank' href='${uSPOT}/g1'>Respawn your MULTIPASS</a></p>
+            <div class='section'>
+                <div class='lang-section'>
+                    <p>Ready to rejoin? <a target='_blank' href='${uSPOT}/g1'>Respawn your MULTIPASS</a></p>
+                </div>
+                <div class='lang-section'>
+                    <p>Revenez quand vous aurez des Ẑen ! <a target='_blank' href='${uSPOT}/g1'>Réactivez votre MULTIPASS</a></p>
+                </div>
+            </div>
         </body>
     </html>" \
     "${youser} : MULTIPASS #BRO access disabled."
