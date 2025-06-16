@@ -579,9 +579,9 @@ if [[ "$SOURCE_DIR" == *"/nostr"* ]]; then
     OWNER_HEX_FILE="${HOME}/.zen/game/nostr/${OWNER_EMAIL}/HEX"
 elif [[ "$SOURCE_DIR" == *"/UPLANET"* ]]; then
     ## or in ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/___/0_0/0.0_0.0/0.00_0.00/APP/uDRIVE = UPLANET UMAP
-    OWNER_PLAYER_DIR=$(dirname "$SOURCE_DIR")
+    OWNER_PLAYER_DIR=$(dirname "$(dirname "$SOURCE_DIR")")
     OWNER_EMAIL=$(basename "$OWNER_PLAYER_DIR")
-    OWNER_HEX_FILE="${SOURCE_DIR}/HEX"
+    OWNER_HEX_FILE="${OWNER_PLAYER_DIR}/HEX"
 fi
 
 if [ -f "$OWNER_HEX_FILE" ]; then
