@@ -47,7 +47,6 @@ hex=$(cat ~/.zen/game/nostr/${player}/HEX)
 tmp_mid=$(mktemp)
 tmp_tail=$(mktemp)
 # Decrypt the middle part using CAPTAIN key
-mv "$HOME/.zen/game/nostr/${player}/ssss.mid.captain.enc" "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" 2>/dev/null ## old format patch (TODO REMOVE)
 ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" \
         -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
@@ -77,7 +76,7 @@ youser=$($MY_PATH/../tools/clyuseryomail.sh "${s}")
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
-OUTPUT_DIR="$HOME/.zen/tmp"
+OUTPUT_DIR="$HOME/.zen/game/nostr/${s}"
 
 echo ./strfry scan '{"authors": ["'$hex'"]}'
 cd ~/.zen/strfry
@@ -86,7 +85,7 @@ cd - > /dev/null 2>&1
 
 COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.json")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
-NOSTRIFS=$(ipfs add -wq "${OUTPUT_DIR}/nostr_export.json" | tail -n 1)
+NOSTRIFS=$(ipfs add -rwq "${OUTPUT_DIR}/*" | tail -n 1) ## ADD ALL FILES IN OUTPUT_DIR
 ipfs pin rm ${NOSTRIFS}
 
 echo "DELETING ${player} NOSTRCARD : $pubnostr"
@@ -115,14 +114,40 @@ fi
 ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
     "<html>
+        <head>
+            <style>
+                body { font-family: sans-serif; max-width: 800px; margin: 2em auto; line-height: 1.6; }
+                .alert { background: #fff3cd; border: 1px solid #ffeeba; padding: 1em; border-radius: 4px; }
+                .backup { background: #d4edda; border: 1px solid #c3e6cb; padding: 1em; border-radius: 4px; margin: 1em 0; }
+                .keys { background: #e2e3e5; border: 1px solid #d6d8db; padding: 1em; border-radius: 4px; }
+            </style>
+        </head>
         <body>
-            <h1>UPlanet ORIGIN <a target=o href=${myIPFS}/ipfs/${NOSTRIFS}> : Backup</a></h1>
-            <h2><a target=u href=${uSPOT}/g1>Respawn </a></h2>
-            Salt : ${salt} <br>
-            Pepper : ${pepper}
+            <div class='alert'>
+                <h2>⚠️ MULTIPASS Card Deactivated</h2>
+                <p>Your MULTIPASS card has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
+            </div>
+
+            <div class='backup'>
+                <h3>📦 Your Data Backup</h3>
+                <p>We've archived all your MULTIPASS data here: <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Download Backup</a></p>
+            </div>
+
+            <div>
+                <h3>🤖 #BRO AI Status</h3>
+                <p>While #BRO AI access is currently disabled, you can still connect with friends on our relay!</p>
+            </div>
+
+            <div class='keys'>
+                <h4>🔑 Your Keys (Keep these safe!)</h4>
+                <p>Salt: ${salt}</p>
+                <p>Pepper: ${pepper}</p>
+            </div>
+
+            <p>Ready to rejoin? <a target='_blank' href='${uSPOT}/g1'>Respawn your MULTIPASS</a></p>
         </body>
     </html>" \
-    "... ${COUNT} MULTIPASS RESET ..."
+    "${youser} : MULTIPASS #BRO access disabled."
 
 ## REMOVE NOSTR IPNS VAULT key
 #~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
