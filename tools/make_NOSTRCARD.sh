@@ -48,7 +48,7 @@ usage() {
   echo "                 to set the language. If omitted, defaults to 'fr'."
   echo "  [LATITUDE]     Optional: UMAP Latitude for location data."
   echo "  [LONGITUDE]    Optional: UMAP Longitude for location data."
-  echo "  [NSEC or SALT] Optional: NSEC or Salt for key generation. If omitted, a random salt is generated."
+  echo "  [SALT]         Optional: Salt for key generation. If omitted, a random salt is generated."
   echo "  [PEPPER]       Optional: Pepper for key generation. If omitted, a random pepper is generated."
   echo ""
   echo "Options:"
