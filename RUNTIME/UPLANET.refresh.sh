@@ -215,7 +215,7 @@ for UMAP in ${unique_combined[@]}; do
     "${TODATE} JOURNAL - VISIO : $myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
-    "" "${myIPFS}/ipfs/${UMAPROOT}" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
+    "" "${myIPFS}/ipfs/${UMAPROOT}/APP" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY"
 
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
