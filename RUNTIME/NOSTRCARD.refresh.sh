@@ -137,6 +137,7 @@ should_refresh() {
 
     ## update uWORLD APP
     cd ${player_dir}/APP/uWORLD/
+    rm index.html _index.html manifest.json 2>/dev/null ## Reset uWORLD index & manifest
     UWORLD=$(./generate_ipfs_RPG.sh .) ## UPDATE MULTIPASS uWORLD
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
     cd - 2>&1 >/dev/null
