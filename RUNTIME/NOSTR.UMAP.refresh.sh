@@ -429,7 +429,7 @@ save_sector_journal() {
     mkdir -p $sectorpath
     echo "$ANSWER" > $sectorpath/NOSTR_journal
     
-    local SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
+    SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
     update_sector_calendar "$sectorpath" "$SECROOT"
 }
 
@@ -464,7 +464,7 @@ update_sector_nostr_profile() {
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$SECTORNSEC" \
         "SECTOR_${UPLANETG1PUB:0:8}${sector} ${TODATE}" "${SECTORG1PUB}" \
-        "MEETING VISIO ROOM : $myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" \
+        "VISIO ROOM : $myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" \
         "${myIPFS}/ipfs/Qmeezy8CtoXzz9LqA8mWqzYDweEYMqAvjZ1JyZFDW7pLQC/LivingTV.gif" \
         "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
         "" "${myIPFS}/ipfs/${SECROOT}" "" "$myIPFS$VDONINJA/?room=${SECTORG1PUB:0:8}&effects&record" "" "" \
@@ -527,7 +527,7 @@ save_region_journal() {
     mkdir -p $regionpath
     echo "$ANSWER" > $regionpath/NOSTR_journal
     
-    local REGROOT=$(ipfs add -rwHq $regionpath/* | tail -n 1)
+    REGROOT=$(ipfs add -rwHq $regionpath/* | tail -n 1)
     update_region_calendar "$regionpath" "$REGROOT"
 }
 
@@ -546,14 +546,14 @@ update_region_nostr_profile() {
     local rlat=$(echo ${region} | cut -d '_' -f 2)
     local rlon=$(echo ${region} | cut -d '_' -f 3)
     
-    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1)
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## Get UMAP ENV for REGION
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
     
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$REGSEC" \
         "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
-        "UPlanet ${TODATE}${sector} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" \
+        "UPlanet ${TODATE} -- VISIO ROOM : $myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" \
         "${myIPFS}/ipfs/QmRsRTZuVwL6UsjLGooVMFFTbNfeswfCaRmJHTBmk2XiqU/internet.png" \
         "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
         "" "${myIPFS}/ipfs/${REGROOT}" "" "$myIPFS$VDONINJA/?room=${REGIONG1PUB:0:8}&effects&record" "" "" \

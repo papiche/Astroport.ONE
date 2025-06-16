@@ -165,8 +165,8 @@ for UMAP in ${unique_combined[@]}; do
 
     ##################################
     ### UMAP = 0.01° Planet Slice
-    UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipfs=${UMAPROOT}"
-    USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipfs=${UMAPROOT}"
+    UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+    USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" \
         > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" \
@@ -174,8 +174,15 @@ for UMAP in ${unique_combined[@]}; do
 
     ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
 
+    ##########################################################
     UMAPROOT=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
-    ######################## EASY IPFS BLOCKCHAIN
+    ##########################################################
+    # Using ${UMAPPATH}/zUsat.jpg as profile picture
+    PIC_PROFILE="${myIPFS}/ipfs/${UMAPROOT}/zUsat.jpg"
+    ##########################################################
+    # Using ${UMAPPATH}/Umap.jpg as profile banner
+    PIC_BANNER="${myIPFS}/ipfs/${UMAPROOT}/Umap.jpg"
+    
     ## UMAPROOT : ipfs link rolling calendar
     echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
     rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE} 2>/dev/null
@@ -187,15 +194,16 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myDATA} \
             set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
-            -A ${MY_PATH}/../images/extension_territoire.jpg
+            -A ${PIC_PROFILE}
 
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myCESIUM} \
             set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
-            -A ${MY_PATH}/../images/extension_territoire.jpg
+            -A ${PIC_PROFILE}
 
     ######### UMAP NOSTR PROFILE
+
     #### PUBLISH TO NOSTR
     echo "#####################################################################"
     echo "###################### UMAP NOSTR PROFILE ##########################"
@@ -205,8 +213,8 @@ for UMAP in ${unique_combined[@]}; do
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
     "${TODATE} JOURNAL - VISIO : $myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" \
-    "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
-    "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+    "${PIC_PROFILE}" \
+    "${PIC_BANNER}" \
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY"
 
