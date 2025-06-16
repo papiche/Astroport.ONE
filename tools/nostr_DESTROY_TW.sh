@@ -117,7 +117,7 @@ ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
     "<html>
         <head>
-            <title>MULTIPASS/uDRIVE Card Deactivated | Carte MULTIPASS/uDRIVE Désactivée</title>
+            <title>MULTIPASS/uDRIVE Deactivated | MULTIPASS/uDRIVE Désactivée</title>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
             <style>
@@ -171,12 +171,12 @@ ${MY_PATH}/../tools/mailjet.sh \
         <body>
             <div class='section alert'>
                 <div class='lang-section'>
-                    <h2>⚠️ MULTIPASS/uDRIVE Card Deactivated</h2>
-                    <p>Your MULTIPASS/uDRIVE card has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
+                    <h2>⚠️ MULTIPASS/uDRIVE  Deactivated</h2>
+                    <p>Your MULTIPASS/uDRIVE has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
                 </div>
                 <div class='lang-section'>
-                    <h2>⚠️ Carte MULTIPASS/uDRIVE Désactivée</h2>
-                    <p>Votre carte MULTIPASS/uDRIVE a été désactivée en raison d'un solde Ẑen insuffisant. Ne vous inquiétez pas - toutes vos données sont en sécurité !</p>
+                    <h2>⚠️ MULTIPASS/uDRIVE Désactivée</h2>
+                    <p>Votre MULTIPASS/uDRIVE a été désactivée en raison d'un solde Ẑen insuffisant. Ne vous inquiétez pas - toutes vos données sont en sécurité !</p>
                 </div>
             </div>
 

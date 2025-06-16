@@ -352,9 +352,7 @@ for PLAYER in "${NOSTR[@]}"; do
     echo ">>> NOSTR PRIMAL :$pcoins: $primal"
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
-    echo "IPNS VAULT : ${myIPFS}${NOSTRNS} ... test resolve ..."
-    uDRIVEIPFS=$(ipfs --timeout 15s name resolve ${NOSTRNS})
-    echo "uDRIVEIPFS : ${myIPFS}${uDRIVEIPFS}" ## Not USED
+    echo "IPNS VAULT : ${myIPFS}${NOSTRNS}"
 
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL && ${primal} != "" && ${primal} != "null" ]]; then
