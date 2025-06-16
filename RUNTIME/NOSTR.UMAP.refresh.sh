@@ -286,7 +286,8 @@ setup_ipfs_structure() {
     mkdir -p "${UMAPPATH}/APP/uDRIVE"
     cd "${UMAPPATH}/APP/uDRIVE"
     ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
-    rm index.html _index.html 2>/dev/null
+    ## remove when generate_ipfs_structure.sh code is stable
+    rm index.html _index.html manifest.json 2>/dev/null ## Reset uDRIVE index & manifest 
     cleanup_old_files
     UDRIVE=$(./generate_ipfs_structure.sh .)
     ## Redirect to UDRIVE actual ipfs CID

@@ -227,7 +227,7 @@ done
 ####################################################################################
 ## UPLANET ZEN -- auto follow -> UPlanet ORIGIN
 ####################################################################################
-ZENNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" -s)
+UPLANETNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" -s)
 originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
 originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
 if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
@@ -237,7 +237,7 @@ else
     ## UPLANET Ẑen ---- > follow UPlanet ORIGIN
     originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
     echo "UPLANET ZEN - follow -> UPlanet ORIGIN : ${originhex}"
-    ${MY_PATH}/../tools/nostr_follow.sh "$ZENNSEC" "${originhex}"
+    ${MY_PATH}/../tools/nostr_follow.sh "$UPLANETNSEC" "${originhex}"
 fi
 
 ## IPFS 127.0.0.1 change to https://ipfs.copylaradio.com
@@ -248,7 +248,7 @@ fi
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
-    "$ZENNSEC" \
+    "$UPLANETNSEC" \
     "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
     "VISIO ROOM : ${myIPFS}${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
     "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
