@@ -92,7 +92,7 @@ jq -c '.subscriptions[] | select(.status == "active")' "$SUBSCRIPTIONS_FILE" | w
             PAYMENT_COMMENT="SWARM:${SUBSCRIPTION_EMAIL}:${TARGET_NODE:0:8}"
             echo "Payment comment: $PAYMENT_COMMENT"
             
-            if [[ $(echo "$DAILY_G1 > 0.0001" | bc) -eq 1 ]]; then
+            if [[ $(echo "$DAILY_G1 > 0.01" | bc) -eq 1 ]]; then
                 echo "Executing payment: $DAILY_G1 G1 to $TARGET_NODEG1PUB"
                 
                 PAYMENT_RESULT=$(${MY_PATH}/../tools/PAY4SURE.sh "$PAYMENT_KEY" "$DAILY_G1" "$TARGET_NODEG1PUB" "$PAYMENT_COMMENT" 2>&1)

@@ -301,7 +301,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation"
                 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}"
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}" 2>/dev/null
                 [[ $? -eq 0 ]] \
                     && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             else
@@ -337,7 +337,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
                 echo "[28 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT ($COINS G1) !!"
                 [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
-                    && ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF"
+                    && ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
             else
                 echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) !!"
                 [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
@@ -625,7 +625,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
                 [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]] && continue
                 # Refund the transaction
-                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "NOSTR:${G1PUBNOSTR}:INTRUSION"
+                ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "NOSTR:${G1PUBNOSTR}:INTRUSION" 2>/dev/null
                 if [[ $? == 0 ]]; then
                     echo $TXIDATE > ~/.zen/game/nostr/${PLAYER}/.nostr.check
                     # Create alert message

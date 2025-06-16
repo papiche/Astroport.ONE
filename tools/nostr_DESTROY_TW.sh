@@ -70,13 +70,15 @@ else
     exit 1
 fi
 ##################################################### DISCO DECODED
-## s=/?email
-echo $s
-youser=$($MY_PATH/../tools/clyuseryomail.sh "${s}")
+## Extract email from s parameter
+# DEBUG: s before removal (quoted): '/?youyou@yopmail.com'
+email=${s:2}  # Remove the first two characters (/, ?)
+echo "$email"
+youser=$($MY_PATH/../tools/clyuseryomail.sh "${email}")
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
-OUTPUT_DIR="$HOME/.zen/game/nostr/${s}"
+OUTPUT_DIR="$HOME/.zen/game/nostr/${email}"
 
 echo ./strfry scan '{"authors": ["'$hex'"]}'
 cd ~/.zen/strfry
@@ -85,7 +87,7 @@ cd - > /dev/null 2>&1
 
 COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.json")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
-NOSTRIFS=$(ipfs add -rwq "${OUTPUT_DIR}/*" | tail -n 1) ## ADD ALL FILES IN OUTPUT_DIR
+NOSTRIFS=$(ipfs add -rwq "${OUTPUT_DIR}"/* | tail -n 1) ## ADD ALL FILES IN OUTPUT_DIR
 ipfs pin rm ${NOSTRIFS}
 
 echo "DELETING ${player} NOSTRCARD : $pubnostr"
@@ -100,7 +102,7 @@ echo "______ AMOUNT = ${AMOUNT} G1"
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
 [[ -z $prime ]] && prime=${UPLANETG1PUB}
 if [[ -n ${AMOUNT} && ${AMOUNT} != "null" ]]; then
-    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH BACK"
+    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH BACK" 2>/dev/null
 fi
 rm ~/.zen/tmp/nostr.dunikey
 

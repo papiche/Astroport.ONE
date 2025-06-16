@@ -74,14 +74,14 @@ if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
     if [[ $(echo "$CAPTAINZEN > $DAILYPAF" | bc -l) -eq 1 ]]; then
         ## CAPTAIN CAN PAY NODE : ECONOMY +
         CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
-        ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$CAPTYOUSER:PAF"
+        ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$CAPTYOUSER:PAF" 2>/dev/null
     else
         ## UPLANET MUST PAY NODE: ECONOMY -
-        ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF"
+        ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
     fi
 else
     echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
-    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$IPFSNODEID:INIT"
+    ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$IPFSNODEID:INIT" 2>/dev/null
 fi
 
 #######################################################################
