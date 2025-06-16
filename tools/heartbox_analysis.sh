@@ -77,8 +77,90 @@ json_escape() {
     echo "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr -d '\n\r' | xargs
 }
 
+#######################################################################
+# Fonction pour mesurer la vitesse de lecture/écriture du disque
+#######################################################################
+measure_disk_speed() {
+    local mount_point="$1"
+    local device=$(df -P "$mount_point" | awk 'NR==2 {print $1}' 2>/dev/null)
+    local read_speed_mbps="0"
+    local write_speed_mbps="0"
+    local temp_file="${mount_point}/.disk_test_$(date +%s%N)"
+    local dd_test_size_mb="500" # Taille du fichier de test pour dd (en MB)
+
+    echo "  Lancement du test de performance disque pour $mount_point (device: ${device:-N/A})..."
+
+    # Test de lecture : Tente d'abord hdparm (nécessite sudo pour le périphérique brut), sinon utilise dd.
+    if [[ -n "$device" && -e "$device" ]]; then
+        # Tente d'utiliser hdparm. '|| true' évite que le script ne sorte si sudo échoue (ex: pas de mot de passe)
+        local hdparm_output=$(sudo hdparm -tT "$device" 2>&1 || true)
+        if echo "$hdparm_output" | grep -q "No such device or address\\|permission denied\\|Operation not permitted"; then
+            echo "  Avertissement: Impossible d'accéder au périphérique $device avec hdparm (erreur de permission ou périphérique). Retour au test de lecture avec dd." >&2
+            # Fallback vers dd si hdparm échoue
+            if [[ -w "$mount_point" ]]; then
+                # Crée un fichier temporaire pour le test de lecture dd
+                dd if=/dev/zero of="$temp_file" bs=1M count="$dd_test_size_mb" status=none conv=fdatasync 2>/dev/null
+                local dd_read_output=$(dd if="$temp_file" of=/dev/null bs=1M status=none iflag=direct 2>&1)
+                read_speed_mbps=$(echo "$dd_read_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s' | awk '{print int($1)}' | tr -d '\n')
+                local read_unit=$(echo "$dd_read_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s' | awk '{print $2}' | tr -d '\n')
+                if [[ "$read_unit" == "GB/s" ]]; then read_speed_mbps=$(echo "$read_speed_mbps * 1024" | bc | awk '{print int($1)}'); fi
+                rm -f "$temp_file" 2>/dev/null
+            fi
+        else
+            # Extrait la vitesse de lecture tamponnée de hdparm
+            local buffered_read_line=$(echo "$hdparm_output" | grep "buffered disk reads")
+            if [[ -n "$buffered_read_line" ]]; then
+                read_speed_mbps=$(echo "$buffered_read_line" | grep -oP '\\d+\\.?\\d* MB/sec' | awk '{print int($1)}' | tr -d '\n')
+            fi
+        fi
+    elif [[ -d "$mount_point" && -w "$mount_point" ]]; then
+        echo "  Avertissement: Le périphérique pour $mount_point n'a pas pu être déterminé. Réalisation du test de lecture avec dd à la place." >&2
+        # Fallback direct vers dd si le chemin du périphérique n'est pas trouvé
+        dd if=/dev/zero of="$temp_file" bs=1M count="$dd_test_size_mb" status=none conv=fdatasync 2>/dev/null
+        local dd_read_output=$(dd if="$temp_file" of=/dev/null bs=1M status=none iflag=direct 2>&1)
+        read_speed_mbps=$(echo "$dd_read_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s' | awk '{print int($1)}' | tr -d '\n')
+        local read_unit=$(echo "$dd_read_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s' | awk '{print $2}' | tr -d '\n')
+        if [[ "$read_unit" == "GB/s" ]]; then read_speed_mbps=$(echo "$read_speed_mbps * 1024" | bc | awk '{print int($1)}'); fi
+        rm -f "$temp_file" 2>/dev/null
+    else
+        echo "  Erreur: Le point de montage '$mount_point' n'est pas accessible ou inscriptible pour le test de lecture. Vitesse de lecture: 0." >&2
+    fi
+
+    # Test d'écriture avec dd (toujours sur le système de fichiers)
+    if [[ -d "$mount_point" && -w "$mount_point" ]]; then
+        # Crée un fichier de test temporaire. 'conv=fdatasync' assure que les données sont physiquement écrites sur le disque.
+        local dd_write_output=$(dd if=/dev/zero of="$temp_file" bs=1M count="$dd_test_size_mb" conv=fdatasync status=none 2>&1)
+        if [[ -n "$dd_write_output" ]]; then
+            local write_speed_line=$(echo "$dd_write_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s')
+            if [[ -n "$write_speed_line" ]]; then
+                local speed_value=$(echo "$write_speed_line" | awk '{print $1}')
+                local speed_unit=$(echo "$write_speed_line" | awk '{print $2}')
+
+                # Convertir en MB/s
+                if [[ "$speed_unit" == "GB/s" ]]; then
+                    write_speed_mbps=$(echo "$speed_value * 1024" | bc | awk '{print int($1)}')
+                elif [[ "$speed_unit" == "kB/s" ]]; then
+                    write_speed_mbps=$(echo "$speed_value / 1024" | bc | awk '{print int($1)}')
+                else # Supposons MB/s
+                    write_speed_mbps=$(echo "$speed_value" | awk '{print int($1)}')
+                fi
+            fi
+        fi
+        rm -f "$temp_file" 2>/dev/null
+    else
+        echo "  Erreur: Le point de montage '$mount_point' n'est pas inscriptible pour le test d'écriture. Vitesse d'écriture: 0." >&2
+    fi
+
+    echo "$read_speed_mbps $write_speed_mbps" # Retourne les valeurs séparées par un espace
+}
+
 # Get system info as JSON object
 get_system_info_json() {
+    local root_read_speed_mbps="$1"
+    local root_write_speed_mbps="$2"
+    local nextcloud_read_speed_mbps="$3"
+    local nextcloud_write_speed_mbps="$4"
+
     local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
     local cpu_cores=$(grep "processor" /proc/cpuinfo | wc -l 2>/dev/null || echo "0")
     local cpu_freq=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "0")
@@ -124,7 +206,11 @@ get_system_info_json() {
         "total": "$(json_escape "$disk_total")",
         "used": "$(json_escape "$disk_used")",
         "available": "$(json_escape "$disk_available")",
-        "usage_percent": "$(json_escape "$disk_usage_percent")"
+        "usage_percent": "$(json_escape "$disk_usage_percent")",
+        "root_disk_read_mbps": $root_read_speed_mbps,
+        "root_disk_write_mbps": $root_write_speed_mbps,
+        "nextcloud_disk_read_mbps": $nextcloud_read_speed_mbps,
+        "nextcloud_disk_write_mbps": $nextcloud_write_speed_mbps
     },
     "gpu": $gpu_info
 EOF
@@ -386,6 +472,18 @@ export_json() {
     fi
     local hostname=$(hostname -f)
     
+    # Réaliser les tests de disque et capturer les résultats
+    local root_rw_speeds=$(measure_disk_speed "/")
+    local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+    local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+
+    local nc_rw_speeds="0 0"
+    if [[ -d "/nextcloud-data" ]]; then
+        nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+    fi
+    local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+    local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+    
     cat << EOF
 {
     "timestamp": "$timestamp",
@@ -396,7 +494,7 @@ export_json() {
         "hostname": "$hostname"
     },
     "system": {
-$(get_system_info_json)
+$(get_system_info_json "$root_read_speed" "$root_write_speed" "$nc_read_speed" "$nc_write_speed")
     },
     "caches": {
 $(get_caches_info_json)
@@ -771,6 +869,24 @@ Capacité d'abonnements (après réserve capitaine):"
     
     analyze_ipfs_storage
     analyze_nextcloud_docker
+    
+    # Tests de performances disque (Lecture/Écriture)
+    echo "
+--- TESTS PERFORMANCES DISQUE (LECTURE/ÉCRITURE) ---"
+    local root_rw_speeds=$(measure_disk_speed "/")
+    local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+    local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+    echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
+
+    local nc_rw_speeds="0 0"
+    if [[ -d "/nextcloud-data" ]]; then
+        nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+        local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+        local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+        echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
+    else
+        echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
+    fi
     
     # Résumé des capacités ♥️BOX
     echo "
