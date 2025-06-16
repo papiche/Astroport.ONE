@@ -117,7 +117,7 @@ ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
     "<html>
         <head>
-            <title>MULTIPASS Card Deactivated | Carte MULTIPASS Désactivée</title>
+            <title>MULTIPASS/uDRIVE Card Deactivated | Carte MULTIPASS/uDRIVE Désactivée</title>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
             <style>
@@ -171,23 +171,23 @@ ${MY_PATH}/../tools/mailjet.sh \
         <body>
             <div class='section alert'>
                 <div class='lang-section'>
-                    <h2>⚠️ MULTIPASS Card Deactivated</h2>
-                    <p>Your MULTIPASS card has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
+                    <h2>⚠️ MULTIPASS/uDRIVE Card Deactivated</h2>
+                    <p>Your MULTIPASS/uDRIVE card has been deactivated due to missing Ẑen balance. Don't worry - all your data is safe!</p>
                 </div>
                 <div class='lang-section'>
-                    <h2>⚠️ Carte MULTIPASS Désactivée</h2>
-                    <p>Votre carte MULTIPASS a été désactivée en raison d'un solde Ẑen insuffisant. Ne vous inquiétez pas - toutes vos données sont en sécurité !</p>
+                    <h2>⚠️ Carte MULTIPASS/uDRIVE Désactivée</h2>
+                    <p>Votre carte MULTIPASS/uDRIVE a été désactivée en raison d'un solde Ẑen insuffisant. Ne vous inquiétez pas - toutes vos données sont en sécurité !</p>
                 </div>
             </div>
 
             <div class='section backup'>
                 <div class='lang-section'>
                     <h3>📦 Your Data Backup</h3>
-                    <p>We've archived all your MULTIPASS data here: <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Download Backup</a></p>
+                    <p>We've archived all your MULTIPASS data on IPFS: <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Download Backup</a></p>
                 </div>
                 <div class='lang-section'>
                     <h3>📦 Sauvegarde de vos Données</h3>
-                    <p>Nous avons archivé les données de votre MULTIPASS ici : <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Télécharger la Sauvegarde</a></p>
+                    <p>Nous avons archivé les données de votre MULTIPASS sur IPFS : <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}'>Télécharger la Sauvegarde</a></p>
                 </div>
             </div>
 
