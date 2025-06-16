@@ -400,8 +400,10 @@ while true; do
     ## READ HEARTBOX ANALYSIS
     ANALYSIS_FILE=~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
     if [[ -s ${ANALYSIS_FILE} ]]; then
-        CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities')
-        SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services')
+        TEMP_CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities')
+        TEMP_SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services')
+        CAPACITIES=${TEMP_CAPACITIES:-"{\"reserved_captain_slots\":8}"}
+        SERVICES=${TEMP_SERVICES:-"{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"}
     else
         CAPACITIES="{\"reserved_captain_slots\":8}"
         SERVICES="{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
