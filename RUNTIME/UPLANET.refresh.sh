@@ -204,7 +204,7 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "UPlanet ${TODATE}${UMAP} JOURNAL - VISIO : $myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" \
+    "${TODATE} JOURNAL - VISIO : $myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${myIPFS}/ipfs/QmXY2JY7cNTA3JnkpV7vdqcr9JjKbeXercGPne8Ge8Hkbw" \
     "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
     "" "${myIPFS}/ipfs/${UMAPROOT}" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
@@ -217,7 +217,7 @@ done
 
 ####################################################################################
 ####################################################################################
-## UPLANET ZEN -- follow -> UPlanet ORIGIN
+## UPLANET ZEN -- auto follow -> UPlanet ORIGIN
 ####################################################################################
 ZENNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" -s)
 originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
@@ -231,6 +231,11 @@ else
     echo "UPLANET ZEN - follow -> UPlanet ORIGIN : ${originhex}"
     ${MY_PATH}/../tools/nostr_follow.sh "$ZENNSEC" "${originhex}"
 fi
+
+## IPFS 127.0.0.1 change to https://ipfs.copylaradio.com
+## Must be https for VDO ninja visio room
+[[ $myIPFS == "http://127.0.0.1:8080" ]] && myIPFS="https://ipfs.copylaradio.com" 
+
 ####################################################
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
@@ -245,7 +250,6 @@ if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     | tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 fi
 ####################################################################################
-## TODO FILTER NOSTR MESSAGES WITH IPFS 127.0.0.1
 
 ######################################################
 exit 0

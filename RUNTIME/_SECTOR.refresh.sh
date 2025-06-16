@@ -383,7 +383,6 @@ for SECTOR in ${SECTORS[@]}; do
 ## EXTRACT SECTOR LAST WEEK TIDDLERS TO IPFSNODEID CACHE
     echo "(☉_☉ ) ${REGION}.week.rss.json  (☉_☉ )"
 
-    rm -Rf ~/.zen/tmp/${IPFSNODEID}/SECTORS/ ## TODO REMOVE
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}
     ## CREATING 7 DAYS JSON RSS STREAM
     tiddlywiki --load ${INDEX} \

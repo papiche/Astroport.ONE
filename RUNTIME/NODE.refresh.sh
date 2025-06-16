@@ -85,7 +85,6 @@ find ~/.zen/game/nostr/ -mtime +3 -type d -exec echo '{}' \;
 ##########################################################
 echo "############################################"
 echo "REFRESH UNODEs HEX"
-rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE OLD VALUE
 ## Get swarm NODES HEX
 NODEHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
 # Ajouter le HEX de $IPFSNODEID
