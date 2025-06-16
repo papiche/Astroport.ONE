@@ -5,10 +5,15 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 # NIP-101 related : strfry processing "UPlanet message"
-# Search in ~/.zen/game/nostr/UMAP*/HEX to seek for UPlanet GEO Key
-# Geo Keys get messages from nostr users and become friend with
-# Each day we get all the messages from those friends on each UMAP
-# Then Use IA to produce SECTOR journal and REGION journal
+# This script aggregates and manages geolocated content from Nostr.
+# It identifies UMAPs (Geo Keys) from ~/.zen/game/nostr/UMAP*/HEX.
+# Each UMAP acts as a Nostr identity, making friends with users whose messages
+# are associated with its location. Daily, it retrieves messages from these
+# friends, including processing special content like '#market' tags to download
+# associated images. It then uses AI to summarize these messages into 'SECTOR journals'
+# and 'REGION journals', which are subsequently published to Nostr and IPFS.
+# It also manages friend activity, sending reminders or removing inactive friends.
+# This script also generates a "friend of friend" list from active contacts.
 ################################################################################
 
 # Global variables
@@ -115,6 +120,15 @@ process_friend_messages() {
     
     if [[ -n "$PROFILE" ]]; then
         handle_active_friend "$ami" "$UMAPPATH" "$WEEK_AGO" "$MONTH_AGO"
+        
+        # New: Get friends of this friend and add to amisOfAmis.txt
+        local fof_list=$($MY_PATH/../tools/nostr_get_N1.sh "$ami" 2>/dev/null)
+        if [[ -n "$fof_list" ]]; then
+            for fof in $fof_list; do
+                echo "$fof" >> ~/.zen/strfry/amisOfAmis.txt
+            done
+        fi
+        
     else
         echo "👤 UNKNOWN VISITOR" >> ${UMAPPATH}/NOSTR_messages
     fi
@@ -207,7 +221,7 @@ process_recent_messages() {
       "authors": ["'"$ami"'"],
       "since": '"$SINCE"'
     }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content}' | while read -r message; do
-        process_single_message "$message" "$UMAPPATH" "$LAT" "$LON"
+        process_single_message "$message" "$UMAPPATH" "$LAT" "$LON" "$ami"
     done | head -n 25
 }
 
@@ -216,6 +230,7 @@ process_single_message() {
     local UMAPPATH=$2
     local LAT=$3
     local LON=$4
+    local ami=$5
     
     local content=$(echo "$message" | jq -r .content)
     local message_id=$(echo "$message" | jq -r .id)
@@ -227,7 +242,7 @@ process_single_message() {
         process_market_images "$content" "$UMAPPATH" "$LAT" "$LON"
     fi
     
-    create_message_html "$content" "$message_id" "$UMAPPATH" "$LAT" "$LON"
+    create_message_html "$content" "$message_id" "$UMAPPATH" "$LAT" "$LON" "$ami"
     echo "$content" >> ${UMAPPATH}/NOSTR_messages
 }
 
@@ -255,6 +270,7 @@ create_message_html() {
     local UMAPPATH=$3
     local LAT=$4
     local LON=$5
+    local ami=$6
     
     local html_content="<!DOCTYPE html>
 <html>
@@ -612,6 +628,12 @@ main() {
     check_dependencies
     display_banner
     
+    BLACKLIST_FILE="${HOME}/.zen/strfry/blacklist.txt"
+    AMISOFAMIS_FILE="${HOME}/.zen/strfry/amisOfAmis.txt"
+    
+    # New: Clear the friend-of-friend list at the start of each run
+    rm -f $AMISOFAMIS_FILE
+    
     # Process UMAPs
     for hexline in $(ls ~/.zen/game/nostr/UMAP_*_*/HEX); do
         process_umap_messages "$hexline"
@@ -622,6 +644,19 @@ main() {
     
     # Process Regions
     process_regions
+    
+    # Remove entries from blacklist.txt that are found in amisOfAmis.txt
+    if [[ -f "$BLACKLIST_FILE" && -f "$AMISOFAMIS_FILE" ]]; then
+        # Create a temporary file for the filtered blacklist
+        grep -v -f "$AMISOFAMIS_FILE" "$BLACKLIST_FILE" > "${BLACKLIST_FILE}.tmp"
+        # Overwrite the original blacklist with the filtered content
+        mv "${BLACKLIST_FILE}.tmp" "$BLACKLIST_FILE"
+        echo "Cleaned $BLACKLIST_FILE: removed entries found in $AMISOFAMIS_FILE."
+    elif [[ ! -f "$BLACKLIST_FILE" ]]; then
+        echo "Info: $BLACKLIST_FILE not found, no blacklist to clean."
+    elif [[ ! -f "$AMISOFAMIS_FILE" ]]; then
+        echo "Info: $AMISOFAMIS_FILE not found, no friends of friends list for cleaning blacklist."
+    fi
     
     exit 0
 }
