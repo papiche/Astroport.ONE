@@ -582,7 +582,7 @@ for PLAYER in "${NOSTR[@]}"; do
         && cat $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json | jq -rc '.[]' \
              > ~/.zen/game/nostr/${PLAYER}/.g1.history.json
 
-    if [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.inline.json ]]; then
+    if [[ -s $HOME/.zen/game/nostr/${PLAYER}/.g1.history.json ]]; then
     # Process each transaction
         while read LINE; do
             JSON=${LINE}
