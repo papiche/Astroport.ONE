@@ -13,9 +13,7 @@ fi
 
 cd $HOME/.zen/strfry
 # Search kind 3 events that contain the NPUB in their tags
-./strfry scan '{"kinds":[3]}' 2>/dev/null |
-    jq -r --arg npub "$NPUB_HEX" 'select(.tags[]?[0]=="p" and .tags[]?[1]==$npub) | .pubkey' |
-    sort -u
+./strfry scan "{\"kinds\":[3],\"#p\":[\"$NPUB_HEX\"]}" 2>/dev/null | jq -r '.pubkey'
 cd - 2>&1>/dev/null
 
 exit 0
