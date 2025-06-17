@@ -26,6 +26,14 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ############################################
 start=`date +%s`
 
+
+#### AVOID MULTIPLE RUN
+countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
+if [[ $countMErunning -gt 2 ]]; then
+    echo "$ME already running $countMErunning time"
+    exit 0
+fi
+
 echo "## RUNNING NOSTRCARD.refresh.sh
                  _
  _ __   ___  ___| |_ _ __
