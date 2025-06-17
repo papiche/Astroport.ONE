@@ -88,7 +88,7 @@ measure_disk_speed() {
     local temp_file="${mount_point}/.disk_test_$(date +%s%N)"
     local dd_test_size_mb="500" # Taille du fichier de test pour dd (en MB)
 
-    echo "  Lancement du test de performance disque pour $mount_point (device: ${device:-N/A})..."
+    echo "  Lancement du test de performance disque pour $mount_point (device: ${device:-N/A})..." >&2
 
     # Test de lecture : Tente d'abord hdparm (nécessite sudo pour le périphérique brut), sinon utilise dd.
     if [[ -n "$device" && -e "$device" ]]; then
@@ -99,7 +99,7 @@ measure_disk_speed() {
             # Fallback vers dd si hdparm échoue
             if [[ -w "$mount_point" ]]; then
                 # Crée un fichier temporaire pour le test de lecture dd
-                dd if=/dev/zero of="$temp_file" bs=1M count="$dd_test_size_mb" status=none conv=fdatasync 2>/dev/null
+                dd if=/dev/zero of="$temp_file" of=/dev/null bs=1M count="$dd_test_size_mb" status=none conv=fdatasync 2>/dev/null
                 local dd_read_output=$(dd if="$temp_file" of=/dev/null bs=1M status=none iflag=direct 2>&1)
                 read_speed_mbps=$(echo "$dd_read_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s' | awk '{print int($1)}' | tr -d '\n')
                 local read_unit=$(echo "$dd_read_output" | grep "copied" | grep -oP '\\d+\\.?\\d* \\w+/s' | awk '{print $2}' | tr -d '\n')
@@ -163,7 +163,8 @@ get_system_info_json() {
 
     local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
     local cpu_cores=$(grep "processor" /proc/cpuinfo | wc -l 2>/dev/null || echo "0")
-    local cpu_freq=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "0")
+    local cpu_freq_raw=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)
+    local cpu_freq="${cpu_freq_raw:-0}" # Ensure cpu_freq is "0" if empty
     local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)
     
     local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
