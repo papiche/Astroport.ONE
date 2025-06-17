@@ -611,9 +611,11 @@ for PLAYER in "${NOSTR[@]}"; do
             # Check primal transaction
             echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
             if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
-                milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
-                g1prime=$(echo $milletxzero | jq -r .pubkey)
-                [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
+                get_wallet_history "${TXIPUBKEY}" "$HOME/.zen/tmp/${MOATS}/${TXIPUBKEY}.primal.history.json"
+                if [[ -s "$HOME/.zen/tmp/${MOATS}/${TXIPUBKEY}.primal.history.json" ]]; then
+                    g1prime=$(cat "$HOME/.zen/tmp/${MOATS}/${TXIPUBKEY}.primal.history.json" | jq -r '.[0].pubkey')
+                    [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
+                fi
             fi
 
             TXIPRIMAL=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null)
