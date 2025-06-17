@@ -621,7 +621,7 @@ for PLAYER in "${NOSTR[@]}"; do
             ### CONTROL ALL WALLET ARE UPLANET ẐEN INITIALIZED (same .primal)
             # Verify if transaction is from a valid UPLANET ẐEN wallet
             if [[ ${UPLANETNAME} != "EnfinLibre" && ${UPLANETG1PUB} != "${TXIPRIMAL}" && ${TXIPRIMAL} != "" ]]; then
-                echo "MULTIPASS WALLET INTRUSION ALERT for $PLAYER from $TXIPRIMAL"
+                echo "MULTIPASS WALLET INTRUSION ALERT for $PLAYER from $TXIPUBKEY ($TXIPRIMAL)"
                 # Get DISCO from PLAYER
                 if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
                     DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
@@ -650,7 +650,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         "$TEMPLATE" > ~/.zen/tmp/palpay.bro
 
                     # Send alert
-                    ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "MULTIPASS ALERT"
+                    ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "MULTIPASS ALERT : $TXIPUBKEY"
                 fi
             else
                 echo "GOOD NOSTR WALLET primal TX by $TXIPRIMAL"

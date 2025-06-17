@@ -105,6 +105,7 @@ $MY_PATH/tools/ipfs_config.sh
 sudo systemctl restart ipfs
 
 ## Add ulimit "open files" (avoid ipfs hang)
+sudo sed -i "/$USER.*nofile/d" /etc/security/limits.conf
 echo "$USER soft nofile 100000" | sudo tee -a /etc/security/limits.conf
 echo "$USER hard nofile 100000" | sudo tee -a /etc/security/limits.conf
 
