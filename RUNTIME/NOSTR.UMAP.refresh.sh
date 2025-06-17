@@ -50,7 +50,7 @@ o               ²        ___---___                    ²
     |    ²          ~\ \   ²      /  /~          o
   ²                   ~--___ ; ___--~
                  ²          ---         ²
-'
+NOTR.UMAP.refresh.sh'
 }
 
 ################################################################################
@@ -170,7 +170,7 @@ handle_inactive_friend() {
         -kind 1 \
         -content "$GOODBYE_MSG" \
         -tags "[['p', '$ami']]" \
-        --relay "$myRELAY"
+        --relay "$myRELAY" 2>/dev/null
 }
 
 handle_active_friend_activity() {
@@ -204,7 +204,7 @@ send_reminder_message() {
         -content "$REMINDER_MSG" \
         -tags "[['p', '$ami']]" \
         --relay "$myRELAY"
-    echo "📬 Sent reminder to $profile" >> ${UMAPPATH}/NOSTR_messages
+    echo "📬 Sent reminder to $profile" 2>/dev/null >> ${UMAPPATH}/NOSTR_messages
 }
 
 process_recent_messages() {
@@ -338,7 +338,7 @@ cleanup_old_documents() {
                     -kind 1 \
                     -content "$notification" \
                     -tags "[['p', '$author']]" \
-                    --relay "$myRELAY"
+                    --relay "$myRELAY" 2>/dev/null
             fi
             
             rm "$file"
@@ -390,14 +390,14 @@ send_nostr_events() {
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
-        --relay "$myRELAY"
+        --relay "$myRELAY" 2>/dev/null
     
     if [[ $(cat ${UMAPPATH}/NOSTR_messages) != "" ]]; then
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$(cat ${UMAPPATH}/NOSTR_messages) $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY"
+            --relay "$myRELAY" 2>/dev/null
     fi
 }
 
@@ -495,14 +495,14 @@ update_sector_nostr_profile() {
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
-        --relay "$myRELAY"
+        --relay "$myRELAY" 2>/dev/null
     
     if [[ -s $sectorpath/NOSTR_journal ]]; then
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$(cat $sectorpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY"
+            --relay "$myRELAY" 2>/dev/null
     fi
 }
 
@@ -584,14 +584,14 @@ update_region_nostr_profile() {
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
-        --relay "$myRELAY"
+        --relay "$myRELAY" 2>/dev/null
     
     if [[ -s $regionpath/NOSTR_journal ]]; then
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$(cat $regionpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY"
+            --relay "$myRELAY" 2>/dev/null
     fi
 }
 
