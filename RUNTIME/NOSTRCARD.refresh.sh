@@ -175,7 +175,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
-    
+
     # Add validation for COINS value
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
         ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
@@ -183,7 +183,7 @@ for PLAYER in "${NOSTR[@]}"; do
         ZEN=-10
         echo "WARNING: Empty or invalid wallet state for ${PLAYER}"
     fi
-    
+
     echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
 
     refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"
@@ -207,22 +207,22 @@ for PLAYER in "${NOSTR[@]}"; do
                     sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
                     echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
                     echo "Trying primal check with GVA NODE: $GVA (attempt $((attempts + 1)))"
-                    
+
                     result=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${g1pub} -n 1000 -j | jq '.[0]' 2>/dev/null)
                     g1prime=$(echo $result | jq -r .pubkey 2>/dev/null)
-                    
+
                     if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
                         success=true
                         break
                     fi
                 fi
-                
+
                 attempts=$((attempts + 1))
                 if [[ $attempts -lt 3 ]]; then
                     sleep 2
                 fi
             done
-            
+
             echo "$g1prime"
         }
 
@@ -291,11 +291,11 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
 
         # UPLANET ORIGIN : patch jaklis gva history error
-        [[ $UPLANETNAME == "EnfinLibre" && $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
-            && echo "UPlanet Primal Correction" \
-            && [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]] \
-            && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
-            || echo "NOSTR G1 CARD is EMPTY .............. !!! ${TODATE} / ${BIRTHDATE}"
+        #~ [[ $UPLANETNAME == "EnfinLibre" && $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
+            #~ && echo "UPlanet Primal Correction" \
+            #~ && [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]] \
+            #~ && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
+            #~ || echo "NOSTR G1 CARD is EMPTY .............. !!! ${TODATE} / ${BIRTHDATE}"
 
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
@@ -307,7 +307,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             else
                 # UPlanet Zen : need Primo RX from UPlanet and WoT member
-                echo "UPlanet Zen : INVALID CARD"
+                echo "UPlanet Zen : ${CAPTAINEMAIL} or INVALID CARD"
                 [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
                     && ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
             fi
@@ -399,7 +399,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS/ipns/${NOSTRNS}"
-
+                ## TODO CONVERT SEND NOSTR MULTIPASS MESSAGE
             else
                 echo "## PRIMAL existing : $G1PRIME"
                 ## SENDING MESSAGE TO N1 (P2P: peer to peer, P21 : peer to one, 12P : one to peer ) RELATIONS in manifest.json
@@ -435,14 +435,14 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-    
+
     ########################################################################
     ######### NOSTR PROFILE ACTIVE : CREATING UPASSPORT
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
         echo "######################################## STEP 1"
         echo "## NOSTR PROFILE PRIMAL LINKING"
         ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-        
+
         ## EXTACT PRIMAL CESIUM PROFILE
         zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
         LAT=$(makecoord $zlat)
@@ -494,12 +494,12 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ -n $LAT && -n $LON ]] && echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
     else
-        echo "########################################## STEP 2"
+        echo "################################## PRIME : $G1PRIME"
         echo "## Nostr Card PROFILE EXISTING"
         #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
         ########################################################################
-        ## Zen Card ONLY FOR UPlanet Zen #################################################
+        ## auto ZENCARD ONLY FOR UPlanet Zen #################################################
         if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
             ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ##
             if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
@@ -514,7 +514,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 #####################################
                 ## CREATE ASTRONAUTE TW ZEN CARD
                 #####################################
-                echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}"
+                echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
                 ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
             else
@@ -554,29 +554,29 @@ for PLAYER in "${NOSTR[@]}"; do
                 sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
                 echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
                 echo "Trying history with GVA NODE: $GVA (attempt $((attempts + 1)))"
-                
+
                 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
                 ${MY_PATH}/../tools/jaklis/jaklis.py history -p ${g1pub} -n 30 -j \
                     > ${output_file} 2>/dev/null
-                
+
                 if [[ -s ${output_file} ]]; then
                     success=true
                     break
                 fi
             fi
-            
+
             attempts=$((attempts + 1))
             if [[ $attempts -lt 3 ]]; then
                 sleep 2
             fi
         done
-        
+
         return $([[ $success == true ]])
     }
 
     # Get transaction history with retry mechanism
     get_wallet_history "${G1PUBNOSTR}" "$HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json"
-    
+
     # Convert JSON to inline format if history was retrieved successfully
     [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json ]] \
         && cat $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json | jq -rc '.[]' \
