@@ -105,8 +105,8 @@ $MY_PATH/tools/ipfs_config.sh
 sudo systemctl restart ipfs
 
 ## Add ulimit "open files" (avoid ipfs hang)
-echo "$USER soft nofile 65535" | sudo tee -a /etc/security/limits.conf
-echo "$USER hard nofile 65535" | sudo tee -a /etc/security/limits.conf
+echo "$USER soft nofile 100000" | sudo tee -a /etc/security/limits.conf
+echo "$USER hard nofile 100000" | sudo tee -a /etc/security/limits.conf
 
 } # this ensures the entire script is downloaded #
 # IPFS CONFIG documentation: https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#addressesswarm
