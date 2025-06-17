@@ -674,7 +674,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
     # Calculate the difference in days
     DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
-    [[ -z $ZCARD ]] && ZCARD=15
+    [[ -z $ZCARD ]] && ZCARD=16
     Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
     # Check if the difference is a multiple of 28
     if [ $((DIFF_DAYS % 28)) -eq 0 ]; then

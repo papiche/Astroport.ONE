@@ -211,7 +211,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
 
     [[ -z $PAF ]] && PAF=56
     [[ -z $NCARD ]] && NCARD=4
-    [[ -z $ZCARD ]] && ZCARD=15
+    [[ -z $ZCARD ]] && ZCARD=16
     INCOME=$((nostrcount * NCARD + twcount * ZCARD))
     BILAN=$((INCOME - PAF))
 

@@ -44,7 +44,7 @@ echo "$CAPTAINZEN Ẑen"
 #######################################################################
 # Comptage des utilisateurs actifs
 # NOSTR : Utilisateurs avec carte NOSTR (4 Ẑen/mois)
-# PLAYERS : Utilisateurs avec carte ZEN (15 Ẑen/mois)
+# PLAYERS : Utilisateurs avec carte ZEN (16 Ẑen/mois)
 #######################################################################
 NOSTRS=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 PLAYERS=($(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@" ))
@@ -58,7 +58,7 @@ echo "NODE hosts NOSTR : ${#NOSTRS[@]} / ZEN : ${#PLAYERS[@]}"
 #######################################################################
 [[ -z $PAF ]] && PAF=56  # PAF mensuel par défaut
 [[ -z $NCARD ]] && NCARD=4  # Coût mensuel carte NOSTR
-[[ -z $ZCARD ]] && ZCARD=15  # Coût mensuel carte ZEN
+[[ -z $ZCARD ]] && ZCARD=16  # Coût mensuel carte ZEN
 
 # Calcul du PAF quotidien (PAF mensuel / 28 jours)
 DAILYPAF=$(makecoord $(echo "$PAF / 28" | bc -l))
