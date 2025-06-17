@@ -609,10 +609,11 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
 
             TXIPRIMAL=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null)
-
-            # Verify if transaction is from a valid UPLANET initialized wallet
-            if [[ ${UPLANETG1PUB} != "${TXIPRIMAL}" && ${TXIPRIMAL} != "" ]]; then
-                echo "NOSTR WALLET INTRUSION ALERT for $PLAYER"
+            ########################################################################
+            ### CONTROL ALL WALLET ARE UPLANET ẐEN INITIALIZED (same .primal)
+            # Verify if transaction is from a valid UPLANET ẐEN wallet
+            if [[ ${UPLANETNAME} != "EnfinLibre" && ${UPLANETG1PUB} != "${TXIPRIMAL}" && ${TXIPRIMAL} != "" ]]; then
+                echo "MULTIPASS WALLET INTRUSION ALERT for $PLAYER from $TXIPRIMAL"
                 # Get DISCO from PLAYER
                 if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
                     DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
@@ -628,17 +629,14 @@ for PLAYER in "${NOSTR[@]}"; do
                 if [[ $? == 0 ]]; then
                     echo $TXIDATE > ~/.zen/game/nostr/${PLAYER}/.nostr.check
                     # Create alert message
-                    LANG=$(cat ~/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
-                    [[ -z $LANG ]] && LANG="en"
-
-                    # Use the appropriate template based on language
-                    TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.${LANG}.html"
-                    [[ ! -s "$TEMPLATE" ]] && TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.en.html"
+                    # Use the multi language template
+                    TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.html"
 
                     # Replace placeholders in template
                     sed -e "s/{PLAYER}/$PLAYER/g" \
                         -e "s/{UPLANETG1PUB}/${UPLANETG1PUB:0:8}/g" \
                         -e "s/{TXIAMOUNT}/$TXIAMOUNT/g" \
+                        -e "s/{CAPITAL_VALUE}/$ZEN/g" \
                         -e "s/{TXIPUBKEY}/$TXIPUBKEY/g" \
                         -e "s|{myIPFS}|$myIPFS|g" \
                         "$TEMPLATE" > ~/.zen/tmp/palpay.bro
@@ -647,7 +645,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "MULTIPASS ALERT"
                 fi
             else
-                echo "GOOD NOSTR WALLET primal TX by $UPLANETG1PUB"
+                echo "GOOD NOSTR WALLET primal TX by $TXIPRIMAL"
                 echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
             fi
         done < $HOME/.zen/game/nostr/${PLAYER}/.g1.history.json

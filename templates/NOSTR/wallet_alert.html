@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <title data-lang-key="title">Alerte ZENCARD</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            background-color: #1a1a2e; /* Fond sombre */
+            color: #e0e0e0; /* Texte clair */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .alert-container {
+            background-color: #2e2e4e; /* Conteneur légèrement plus clair */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #4a4a6e;
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #00bcd4; /* Bleu cyan vibrant */
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+        }
+
+        .player-info {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #c0c0c0;
+        }
+        .player-info strong {
+            color: #ffe082; /* Doré pour le nom du joueur */
+        }
+        .capital-value {
+            color: #8bc34a; /* Vert pour le capital */
+            font-weight: bold;
+            font-size: 1.3em;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .warning-message {
+            background-color: #ff5252; /* Rouge vif pour l'alerte */
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            font-size: 1.1em;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+        }
+
+        .transaction-details {
+            margin-bottom: 25px;
+            line-height: 1.6;
+            color: #b0b0b0;
+        }
+        .transaction-details span {
+            color: #ffe082; /* Mettre en évidence les valeurs importantes */
+            font-weight: bold;
+        }
+
+        .call-to-action a {
+            display: inline-block;
+            background-color: #00bcd4;
+            color: #1a1a2e;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+        .call-to-action a:hover {
+            background-color: #0097a7;
+            transform: translateY(-2px);
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #707070;
+        }
+
+        .lang-switcher {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .lang-switcher button {
+            background-color: #4a4a6e;
+            color: #e0e0e0;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .lang-switcher button:hover {
+            background-color: #5e5e8e;
+            transform: translateY(-1px);
+        }
+
+        .lang-switcher button.active {
+            background-color: #00bcd4; /* Active tab color */
+            color: #1a1a2e;
+            box-shadow: 0 0 10px rgba(0, 188, 212, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-container">
+        <div class="lang-switcher">
+            <button data-lang="fr" class="active">Français</button>
+            <button data-lang="es">Español</button>
+        </div>
+
+        <h1 data-lang-key="title">Alerte ZENCARD</h1>
+        <p class="player-info" data-lang-key="greeting">Bonjour <strong>{PLAYER}</strong>,</p>
+        <p class="player-info" data-lang-key="capital_info">Votre capital actuel : <span class="capital-value">{CAPITAL_VALUE} €</span></p>
+
+        <div class="warning-message">
+            <p data-lang-key="warning_title"><strong>ATTENTION : Transaction intrusive détectée !</strong></p>
+            <p data-lang-key="warning_text">Une transaction a été repérée provenant d'un portefeuille ne faisant pas partie de la UPlanet Ẑen de votre ZENCARD.</p>
+        </div>
+
+        <p class="transaction-details" data-lang-key="transaction_info">(+‿‿+)... <span>{TXIAMOUNT} G1</span> a été remboursé à <span>{TXIPUBKEY}</span>. Le MULTIPASS doit être initialisé par le portefeuille UPLANET<span>{UPLANETG1PUB}</span>.</p>
+
+        <p class="footer-note" data-lang-key="footer_note">Ceci est un message automatique de votre ZENCARD. Pour toute question, veuillez contacter le support.</p>
+    </div>
+
+    <script>
+        const translations = {
+            fr: {
+                title: "Alerte ZENCARD",
+                greeting: "Bonjour <strong>{PLAYER}</strong>,",
+                capital_info: "Votre capital actuel : <span class=\"capital-value\">{CAPITAL_VALUE} €</span>",
+                warning_title: "<strong>ATTENTION : Transaction intrusive détectée !</strong>",
+                warning_text: "Une transaction a été repérée provenant d'un portefeuille ne faisant pas partie de la UPlanet Ẑen de votre ZENCARD.",
+                transaction_info: "(+‿‿+)... <span>{TXIAMOUNT} G1</span> a été remboursé à <span>{TXIPUBKEY}</span>. Le MULTIPASS doit être initialisé par le portefeuille UPLANET<span>{UPLANETG1PUB}</span>.",
+                footer_note: "Ceci est un message automatique de votre ZENCARD. Pour toute question, veuillez contacter le support."
+            },
+            es: {
+                title: "Alerta ZENCARD",
+                greeting: "Hola <strong>{PLAYER}</strong>,",
+                capital_info: "Su capital actual: <span class=\"capital-value\">{CAPITAL_VALUE} €</span>",
+                warning_title: "<strong>ATENCIÓN: ¡Transacción intrusiva detectada!</strong>",
+                warning_text: "Se ha detectado una transacción de una cartera que no forma parte de la UPlanet Ẑen de su ZENCARD.",
+                transaction_info: "(+‿‿+)... <span>{TXIAMOUNT} G1</span> fue reembolsado a <span>{TXIPUBKEY}</span>. El MULTIPASS debe ser inicializado por la cartera UPLANET<span>{UPLANETG1PUB}</span>.",
+                footer_note: "Este es un mensaje automático de su ZENCARD. Para cualquier pregunta, póngase en contacto con el soporte."
+            },
+            en: {
+                title: "ZENCARD Alert",
+                greeting: "Hello <strong>{PLAYER}</strong>,",
+                capital_info: "Your current capital: <span class=\"capital-value\">{CAPITAL_VALUE} €</span>",
+                warning_title: "<strong>ATTENTION: Intrusive Transaction Detected!</strong>",
+                warning_text: "A transaction has been detected from a wallet not part of your ZENCARD's UPlanet Ẑen.",
+                transaction_info: "(+‿‿+)... <span>{TXIAMOUNT} G1</span> was refunded to <span>{TXIPUBKEY}</span>. The MULTIPASS must be initialized by the UPLANET<span>{UPLANETG1PUB}</span> wallet.",
+                footer_note: "This is an automatic message from your ZENCARD. For any questions, please contact support."
+            }
+        };
+
+        function setLanguage(lang) {
+            document.querySelectorAll('[data-lang-key]').forEach(element => {
+                const key = element.getAttribute('data-lang-key');
+                if (translations[lang] && translations[lang][key]) {
+                    // For the title tag, update its text content directly
+                    if (element.tagName === 'TITLE') {
+                        element.textContent = translations[lang][key];
+                    } else {
+                        element.innerHTML = translations[lang][key];
+                    }
+                }
+            });
+
+            // Update active class for buttons
+            document.querySelectorAll('.lang-switcher button').forEach(button => {
+                if (button.getAttribute('data-lang') === lang) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+            document.documentElement.lang = lang; // Set lang attribute on html tag
+        }
+
+        // Set initial language based on browser preference or default to FR
+        document.addEventListener('DOMContentLoaded', () => {
+            const userLang = navigator.language.split('-')[0]; // e.g., 'fr-FR' -> 'fr'
+            // Default to 'fr' if userLang not supported, otherwise use userLang
+            const initialLang = ['fr', 'es', 'en'].includes(userLang) ? userLang : 'fr';
+            setLanguage(initialLang);
+
+            // Add event listeners to language buttons
+            document.querySelectorAll('.lang-switcher button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    setLanguage(event.target.getAttribute('data-lang'));
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
