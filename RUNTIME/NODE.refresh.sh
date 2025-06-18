@@ -12,6 +12,13 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # LOAD EXTRA DATA TO CACHE ~/.zen/tmp/${IPFSNODEID}/
 # PUBLISH STATION BALISE
 ############################################
+echo "
+ _   _  ___  ____  _____             __               _     
+| \ | |/ _ \|  _ \| ____|  _ __ ___ / _|_ __ ___  ___| |__  
+|  \| | | | | | | |  _|   | '__/ _ \ |_| '__/ _ \/ __| '_ \ 
+| |\  | |_| | |_| | |___  | | |  __/  _| | |  __/\__ \ | | |
+|_| \_|\___/|____/|_____| |_|  \___|_| |_|  \___||___/_| |_|
+"
 echo "## RUNNING NODE.refresh"
 [[ ${IPFSNODEID} == "" ]] && echo "IPFSNODEID is empty - EXIT -" && exit 1
 
