@@ -28,7 +28,7 @@ start=`date +%s`
 
 
 #### AVOID MULTIPLE RUN
-countMErunning=$(pgrep -au $USER -f "$ME" | wc -l)
+countMErunning=$(pgrep -au $USER -f "$0" | wc -l)
 if [[ $countMErunning -gt 2 ]]; then
     echo "$ME already running $countMErunning time"
     exit 0
