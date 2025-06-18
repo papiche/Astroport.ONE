@@ -663,7 +663,7 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "NO STR WALLET HISTORY FOR $PLAYER"
     fi
 
-    ## ADD AMIS of AMIS -- friends can use our nostr relay
+    ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay
     fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))
     printf "%s\n" "${fof_list[@]}" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
 
