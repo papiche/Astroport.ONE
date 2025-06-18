@@ -78,20 +78,20 @@ mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 sudo systemctl stop astroport
 
 ########################################################################
-## UPDATE G1BILLET code
+## UPDATE G1BILLET code # 33101
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
 && rm -Rf ~/.zen/G1BILLET/tmp/*
 
-## UPDATE UPassport
+## UPDATE UPassport # 54321 API
 [[ -s ~/.zen/UPassport/54321.py ]] \
 && cd ~/.zen/UPassport && git pull
 
-## UPDATE NIP-101
+## UPDATE NIP-101 # strfry filter rules
 [[ -d ~/.zen/workspace/NIP-101 ]] \
 && cd ~/.zen/workspace/NIP-101 && git pull
 
-## UPDATE UPlanet
+## UPDATE UPlanet (./earth CID = /ipns/copylaradio.com)
 if [[ -d ~/.zen/workspace/UPlanet ]]; then
     cd ~/.zen/workspace/UPlanet
     # Store current commit hash before pull
@@ -102,9 +102,12 @@ if [[ -d ~/.zen/workspace/UPlanet ]]; then
     # Compare hashes to detect changes
     if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
         echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH"
-        ipfs add -rw ~/.zen/workspace/UPlanet/*
-        # ./earth CID = /ipns/copylaradio.com
+        ipfs add -rw ~/.zen/workspace/UPlanet/* | grep earth
     fi
+else
+    mkdir -p ~/.zen/workspace
+    cd ~/.zen/workspace
+    git clone --depth 1 https://github.com/papiche/UPlanet
 fi
 
 ########################################################################
@@ -127,6 +130,7 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
 ################## NOSTR Cards (Notes and Other Stuff Transmitted by Relays)
+rm "${HOME}/.zen/strfry/amisOfAmis.txt" ## RESET Friends of Friends List
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
 ########################################################################
@@ -148,7 +152,6 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 ############### SOCIAL NETWORK + UPLANET SHARING & CARING #########
 
 ########################################################################
-## DEUXIEME NETTOYAGE
 ## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
 mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
 mv ~/.zen/tmp/swarm ~/.zen/swarm

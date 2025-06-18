@@ -663,6 +663,10 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "NO STR WALLET HISTORY FOR $PLAYER"
     fi
 
+    ## ADD AMIS of AMIS -- friends can use our nostr relay
+    fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))
+    printf "%s\n" "${fof_list[@]}" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+
     ## EXPORT NOSTR EVENTS TO JSON
     echo "Exporting NOSTR events for ${PLAYER}..."
     cd ${HOME}/.zen/strfry/
