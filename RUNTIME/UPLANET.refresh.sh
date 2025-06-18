@@ -84,31 +84,56 @@ for UMAP in ${unique_combined[@]}; do
     ##############################################################
     $(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     #######################################################################################
-    [[ ! -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ ]] && exit 1
+    [[ ! -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ ]] && echo "UMAPPATH not found" && exit 1
 
     ####################################################################################
     ## UMAP DATA
     UMAPPATH=$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}
-    echo "WRITE DATA ${UMAPPATH}"
+    echo "UMAPPATH : ${UMAPPATH}"
     ######################################################################################
-    ########################################################## COPY OPENSTREET MAPS
-    if [[ ! -s ${UMAPPATH}/Umap.jpg ]] || [[ ! -s ${UMAPPATH}/Usat.jpg ]]; then
-        ## Capture screenshots of map views
-        echo "Capturing map screenshots..."
+    ## Fonction pour trouver dans le swarm ou générer une image
+    find_or_generate_image() {
+        local filename="$1"       # Nom du fichier (ex: Umap.jpg, Usat.jpg)
+        local gen_url="$2"        # URL de génération (ex: "${myIPFS}${UMAPGEN}")
+        local search_pattern="$3" # Pattern de recherche (ex: "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.jpg")
+
+        # Si le fichier n'existe pas ou est vide
+        if [[ ! -s "${UMAPPATH}/${filename}" ]]; then
+            echo "Recherche de ${filename} dans le swarm..."
+            
+            # Chercher dans le swarm
+            local swarm_file=$(find "$HOME/.zen/tmp/swarm/" -path "$search_pattern" -print -quit 2>/dev/null)
+            
+            if [[ -f "$swarm_file" ]]; then
+                echo "Fichier trouvé dans le swarm : copie vers ${UMAPPATH}/${filename}"
+                cp "$swarm_file" "${UMAPPATH}/${filename}"
+            else
+                echo "Génération de ${filename} via page_screenshot.py..."
+                python "${MY_PATH}/../tools/page_screenshot.py" "$gen_url" "${UMAPPATH}/${filename}" 900 900
+            fi
+        else
+            echo "${filename} existe déjà."
+        fi
+    }
+    ## ==== PARTIE 1 : Umap.jpg et Usat.jpg (vue large) ====
+    if [[ ! -s "${UMAPPATH}/Umap.jpg" ]] || [[ ! -s "${UMAPPATH}/Usat.jpg" ]]; then
         UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
         USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ${UMAPPATH}/Umap.jpg 900 900
-        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ${UMAPPATH}/Usat.jpg 900 900
+
+        find_or_generate_image "Umap.jpg" "${myIPFS}${UMAPGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.jpg"
+        find_or_generate_image "Usat.jpg" "${myIPFS}${USATGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.jpg"
     fi
-    ######################################################################################
-    if [[ ! -s ${UMAPPATH}/zUmap.jpg ]] || [[ ! -s ${UMAPPATH}/zUsat.jpg ]]; then
-        ## Capture screenshots of map views
-        echo "Capturing map screenshots..."
-        UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
-        USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
-        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ${UMAPPATH}/zUmap.jpg 900 900
-        python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ${UMAPPATH}/zUsat.jpg 900 900
+
+    ## ==== PARTIE 2 : zUmap.jpg et zUsat.jpg (vue zoomée) ====
+    if [[ ! -s "${UMAPPATH}/zUmap.jpg" ]] || [[ ! -s "${UMAPPATH}/zUsat.jpg" ]]; then
+        UMAPGEN_ZOOM="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
+        USATGEN_ZOOM="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
+
+        find_or_generate_image "zUmap.jpg" "${myIPFS}${UMAPGEN_ZOOM}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.jpg"
+        find_or_generate_image "zUsat.jpg" "${myIPFS}${USATGEN_ZOOM}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.jpg"
     fi
+    ########################################################## COPY OPENSTREET MAPS
+
     ####################################################################################
     ## WRITE NOSTR HEX ADDRESS USED FOR strfry whitelisting
     NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
@@ -116,77 +141,70 @@ for UMAP in ${unique_combined[@]}; do
     #~ mkdir -p ~/.zen/game/nostr/UMAP_${SLAT}_${SLON} # Add to nostr Whitelist # DONE by NODE.refresh.sh
     #~ echo "$HEX" \
         #~ > ~/.zen/game/nostr/UMAP_${SLAT}_${SLON}/HEX
-    echo "$HEX" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX
-    echo "$NPUB" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/NPUB
+    echo "$HEX" > ${UMAPPATH}/HEX
+    echo "$NPUB" > ${UMAPPATH}/NPUB
     ####################################################################################
-    echo "${UMAPG1PUB}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
+    echo "${UMAPG1PUB}" > ${UMAPPATH}/G1PUB
 
     SECTORNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
-    echo "${SECTORHEX}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_SECTOR
+    echo "${SECTORHEX}" > ${UMAPPATH}/HEX_SECTOR
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}
-    echo "${SECTORHEX}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/HEX
-    echo "${SECTORG1PUB}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORG1PUB
+    echo "${SECTORHEX}" > ${UMAPPATH}/SECTORHEX
+    echo "${SECTORG1PUB}" > ${UMAPPATH}/SECTORG1PUB
 
     REGIONNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
-    echo "${REGIONHEX}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/HEX_REGION
+    echo "${REGIONHEX}" > ${UMAPPATH}/HEX_REGION
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}
-    echo "${REGIONHEX}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/HEX
-    echo "${REGIONG1PUB}" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONG1PUB
+    echo "${REGIONHEX}" > ${UMAPPATH}/HEX
+    echo "${REGIONG1PUB}" > ${UMAPPATH}/REGIONG1PUB
 
     ####################################################################################
     ## COPY SECTOR & REGION IFPSROOT
     ## SWARM INIT
     cat ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}  2>/dev/null | tail -f 1 2>/dev/null \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT
+        > ${UMAPPATH}/SECTORROOT
 
     cat ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} 2>/dev/null | tail -f 1 2>/dev/null \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT
+        > ${UMAPPATH}/REGIONROOT
 
-    ## LOCAL UPDATE
+    ## LOCAL UPDATE PRIORITY --- could be ipfs added ...
     [[ -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE} ]] \
         && cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE} \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/SECTORROOT
+        > ${UMAPPATH}/SECTORROOT
 
     [[ -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} ]] \
         && cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/REGIONROOT
+        > ${UMAPPATH}/REGIONROOT
     ####################################################################################
 
-    ##################################
-    ### UMAP = 0.01° Planet Slice
-    UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-    USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+    ##########################################################
+    ### UMAP = 0.01° UPlanet UMAP ACCESS
+    UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipfs=$(cat ${UMAPPATH}/ipfs.${TODATE} 2>/dev/null)"
+    USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipfs=$(cat ${UMAPPATH}/ipfs.${TODATE} 2>/dev/null)"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.html
+        > ${UMAPPATH}/Umap.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" \
-        > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.html
-
-    ls ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+        > ${UMAPPATH}/Usat.html
 
     ##########################################################
     UMAPROOT=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
+    echo "UMAPROOT : ${UMAPROOT}"
+    ## chain ipfs link in rolling calendar
+    echo "${UMAPROOT}" > ${UMAPPATH}/ipfs.${DEMAINDATE}
+    rm ${UMAPPATH}/ipfs.${YESTERDATE} 2>/dev/null
+    
     ##########################################################
     # profile picture
     PIC_PROFILE="${myIPFS}/ipfs/${UMAPROOT}/zUmap.jpg" # road map
     ##########################################################
     # profile banner
     PIC_BANNER="${myIPFS}/ipfs/${UMAPROOT}/Usat.jpg" # sat map
-    
-    ## UMAPROOT : chain ipfs link in rolling calendar
-    echo "${UMAPROOT}" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${DEMAINDATE}
-    rm ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${YESTERDATE} 2>/dev/null
+    echo "PIC_PROFILE : ${PIC_PROFILE}"
+    echo "PIC_BANNER : ${PIC_BANNER}"
 
+    ##########################################################
     ######### UMAP GCHANGE & CESIUM PROFILE
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
     ################# PUBLISH UPlanet UMAP to G1PODs
@@ -194,25 +212,24 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myDATA} \
             set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
-            -A ${PIC_PROFILE}
+            -A ${UMAPPATH}/zUmap.jpg
 
     ${MY_PATH}/../tools/timeout.sh -t 20 \
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myCESIUM} \
             set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
             -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT} \
-            -A ${PIC_PROFILE}
+            -A ${UMAPPATH}/zUmap.jpg
 
+    ##########################################################
     ######### UMAP NOSTR PROFILE
-
     #### PUBLISH TO NOSTR
-    echo "#####################################################################"
-    echo "###################### UMAP NOSTR PROFILE ##########################"
-    echo "#####################################################################"
+    echo "###################### PUBLISH UMAP PROFILE ##########################"
+    ##########################################################
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "${TODATE} JOURNAL - VISIO : $myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" \
+    "${TODATE} JOURNAL - VISIO : ${myIPFS}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record // UMAP : ${myIPFS}${UMAPGEN} // USAT : ${myIPFS}${USATGEN}" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
     "" "${myIPFS}/ipfs/${UMAPROOT}/APP" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
