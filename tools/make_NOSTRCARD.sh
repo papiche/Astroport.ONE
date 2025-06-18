@@ -249,11 +249,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
+    NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
+    HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
     nostpy-cli send_event \
-        -privkey "$NPRIV" \
+        -privkey "$NPRIV_HEX" \
         -kind 1 \
         -content "🎫 MULTIPASS Wallet: ${G1PUBNOSTR}${Z}\n ${myIPFS}/ipfs/${G1PUBNOSTRQR}" \
-        -tags "[['p', '$NPUBLIC']]" \
+        -tags "[['p', '$HEX_HEX']]" \
         --relay "$myRELAY"
 
     ### ADD /APP/uDRIVE - redirections APP IPFS
