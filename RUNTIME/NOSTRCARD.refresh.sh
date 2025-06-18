@@ -184,6 +184,10 @@ for PLAYER in "${NOSTR[@]}"; do
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
 
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR ]]; then
+        echo "$G1PUBNOSTR" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR
+    fi
+
     # Add validation for COINS value
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
         ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
