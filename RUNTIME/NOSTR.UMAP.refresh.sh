@@ -240,9 +240,9 @@ process_single_message() {
     
     if [[ "$content" == *"#market"* ]]; then
         process_market_images "$content" "$UMAPPATH" "$LAT" "$LON"
+        create_message_html "$content" "${message_id}" "$UMAPPATH" "$LAT" "$LON" "$ami"
     fi
     
-    create_message_html "$content" "$message_id" "$UMAPPATH" "$LAT" "$LON" "$ami"
     echo "$content" >> ${UMAPPATH}/NOSTR_messages
 }
 
@@ -293,7 +293,7 @@ create_message_html() {
 </body>
 </html>"
     
-    echo "$html_content" > "${UMAPPATH}/APP/uDRIVE/Documents/UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${message_id}.html"
+    echo "$html_content" > "${UMAPPATH}/APP/uDRIVE/Documents/UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${message_id:0:10}.html"
 }
 
 setup_ipfs_structure() {
