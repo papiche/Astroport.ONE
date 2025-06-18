@@ -229,10 +229,10 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "${TODATE} JOURNAL - VISIO : ${myIPFS}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record // UMAP : ${myIPFS}${UMAPGEN} // USAT : ${myIPFS}${USATGEN}" \
+    "${TODATE} JOURNAL - VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record // UMAP : ${myLIBRA}${UMAPGEN} // USAT : ${myLIBRA}${USATGEN}" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
-    "" "${myIPFS}/ipfs/${UMAPROOT}/APP" "" "$myIPFS$VDONINJA/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
+    "" "${myLIBRA}/ipfs/${UMAPROOT}/APP" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY"
 
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
@@ -257,20 +257,16 @@ else
     ${MY_PATH}/../tools/nostr_follow.sh "$UPLANETNSEC" "${originhex}"
 fi
 
-## IPFS 127.0.0.1 change to https://ipfs.copylaradio.com
-## Must be https for VDO ninja visio room
-[[ $myIPFS == "http://127.0.0.1:8080" ]] && myIPFS="https://ipfs.copylaradio.com" 
-
 ####################################################
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UPLANETNSEC" \
     "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
-    "VISIO ROOM : ${myIPFS}${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
-    "${myIPFS}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
-    "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myIPFS}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
+    "VISIO ROOM : ${myLIBRA}${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
+    "${myLIBRA}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
+    "${myLIBRA}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
+    "" "${myLIBRA}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" \
     | tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 fi
