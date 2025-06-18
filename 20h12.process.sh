@@ -33,12 +33,6 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
 espeak "Ding" > /dev/null 2>&1
 
-# Check for jq, needed for JSON parsing
-if ! command -v jq &> /dev/null; then
-    echo "ERROR: 'jq' command not found. Please install 'jq' (e.g., sudo apt install jq) to enable full analysis and .env updates."
-    exit 1
-fi
-
 echo "PATH=$PATH"
 
 ########################################################################
@@ -68,8 +62,8 @@ done
 ########################################################################
 # show ZONE.sh cache of the day
 echo "TODAY UPlanet landings"
-ls ~/.zen/tmp/ZONE_* 2>/dev/null
-
+ls ~/.zen/tmp/ZONE_* 2>/dev/null # API v1
+ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
 ########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
 mv ~/.zen/tmp/swarm ~/.zen/swarm
@@ -98,8 +92,20 @@ sudo systemctl stop astroport
 && cd ~/.zen/workspace/NIP-101 && git pull
 
 ## UPDATE UPlanet
-[[ -d ~/.zen/workspace/UPlanet ]] \
-&& cd ~/.zen/workspace/UPlanet && git pull
+if [[ -d ~/.zen/workspace/UPlanet ]]; then
+    cd ~/.zen/workspace/UPlanet
+    # Store current commit hash before pull
+    BEFORE_HASH=$(git rev-parse HEAD)
+    git pull
+    # Store new commit hash after pull
+    AFTER_HASH=$(git rev-parse HEAD)
+    # Compare hashes to detect changes
+    if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
+        echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH"
+        ipfs add -rw ~/.zen/workspace/UPlanet/*
+        # ./earth CID = /ipns/copylaradio.com
+    fi
+fi
 
 ########################################################################
 ## UPDATE Astroport.ONE code
