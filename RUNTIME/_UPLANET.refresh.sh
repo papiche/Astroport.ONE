@@ -16,7 +16,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 echo "############################################"
 echo "
  _________________________
-< RUNNING UPLANET.refresh >
+< ẐEN _UPLANET.refresh >
  -------------------------
         \   ^__^
          \  (oo)\_______
@@ -25,8 +25,6 @@ echo "
                 ||     ||
 
 "
-echo "############################################"
-$MY_PATH/NOSTR.UMAP.refresh.sh
 echo "############################################"
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
