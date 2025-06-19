@@ -13,6 +13,9 @@ HEX="$1"
 
 # If no HEX is provided, list all found HEXes
 if [ -z "$HEX" ]; then
+    echo "To find a G1PUBNOSTR, you need to provide a HEX"
+    echo "Listing all HEXes found in UPLANET directories:"
+
     # SWARM UMAP HEX
     echo "SWARM UMAP HEX"
     cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX 2>/dev/null
@@ -29,20 +32,24 @@ if [ -z "$HEX" ]; then
 fi
 
 # Search for the specific HEX in SWARM PLAYERs 
-echo "Searching for HEX: $HEX"
+# echo "Searching for HEX: $HEX"
 FOUND_DIR=$(find ${HOME}/.zen/tmp/swarm/*/TW/* -name "HEX" -exec grep -l "$HEX" {} \; 2>/dev/null)
+[[ -z "$FOUND_DIR" ]] && FOUND_DIR=$(find ${HOME}/.zen/tmp/${IPFSNODEID}/TW/* -name "HEX" -exec grep -l "$HEX" {} \; 2>/dev/null)
 
 if [ -n "$FOUND_DIR" ]; then
-    echo "Found HEX in directory: $FOUND_DIR"
+    # echo "Found HEX in directory: $FOUND_DIR"
     G1PUBNOSTR_FILE=$(dirname "$FOUND_DIR")/G1PUBNOSTR
     if [ -f "$G1PUBNOSTR_FILE" ]; then
-        echo "G1PUBNOSTR value:"
+        # echo "G1PUBNOSTR value:"
         cat "$G1PUBNOSTR_FILE"
+        exit 0
     else
         echo "G1PUBNOSTR file not found in the directory"
+        exit 1
     fi
 else
     echo "HEX not found in UPLANET directories"
+    exit 1
 fi
 
 exit 0
