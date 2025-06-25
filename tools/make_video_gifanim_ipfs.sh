@@ -3,7 +3,151 @@
 ## "(✜‿‿✜) GIFANIME $PROBETIME (✜‿‿✜)"
 # FORMAT MP4 max 720p
 # PHI GIFANIM CREATION
-#~ exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+
+# Help function
+show_help() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS] <path> <file>
+
+Create animated GIF from video file and upload to IPFS.
+
+OPTIONS:
+    -h, --help          Show this help message and exit
+    -v, --verbose       Enable verbose output
+    -d, --debug         Enable debug mode with detailed logging
+
+PARAMETERS:
+    path                Directory path containing the video file
+    file                Video filename to process
+
+EXAMPLES:
+    $(basename "$0") /path/to/videos/ my_video.mp4
+    $(basename "$0") -v /home/user/videos/ sample.avi
+
+DESCRIPTION:
+    This script processes video files to create animated GIFs and uploads them to IPFS.
+    It automatically converts non-MP4 videos to MP4 format and resizes videos larger than 720p.
+    The script creates a GIF animation from a 1.6-second segment starting at Phi ratio of the video duration.
+
+REQUIREMENTS:
+    - ffmpeg (for video processing)
+    - ffprobe (for video metadata)
+    - ipfs (for IPFS operations)
+    - bc (for calculations)
+
+EXIT CODES:
+    0 - Success
+    1 - File not found or invalid parameters
+    2 - Missing required tools (ffmpeg, ffprobe, ipfs)
+    3 - Processing error
+
+EOF
+}
+
+# Parse command line arguments
+VERBOSE=0
+DEBUG=0
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -v|--verbose)
+            VERBOSE=1
+            shift
+            ;;
+        -d|--debug)
+            DEBUG=1
+            VERBOSE=1
+            shift
+            ;;
+        -*)
+            echo "Error: Unknown option $1" >&2
+            echo "Use --help for usage information" >&2
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Check if we have the required number of arguments
+if [[ $# -ne 2 ]]; then
+    echo "Error: Invalid number of arguments" >&2
+    echo "Usage: $(basename "$0") [OPTIONS] <path> <file>" >&2
+    echo "Use --help for more information" >&2
+    exit 1
+fi
+
+# Check for required tools
+check_requirements() {
+    local missing_tools=()
+    
+    if ! command -v ffmpeg &> /dev/null; then
+        missing_tools+=("ffmpeg")
+    fi
+    
+    if ! command -v ffprobe &> /dev/null; then
+        missing_tools+=("ffprobe")
+    fi
+    
+    if ! command -v ipfs &> /dev/null; then
+        missing_tools+=("ipfs")
+    fi
+    
+    if ! command -v bc &> /dev/null; then
+        missing_tools+=("bc")
+    fi
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        echo "Error: Missing required tools: ${missing_tools[*]}" >&2
+        echo "Please install the missing tools and try again." >&2
+        exit 2
+    fi
+}
+
+# Validate input parameters
+validate_input() {
+    local path="$1"
+    local file="$2"
+    
+    # Check if path exists and is a directory
+    if [[ ! -d "$path" ]]; then
+        echo "Error: Path '$path' does not exist or is not a directory" >&2
+        exit 1
+    fi
+    
+    # Check if file exists in the path
+    if [[ ! -f "${path}${file}" ]]; then
+        echo "Error: File '${path}${file}' does not exist" >&2
+        exit 1
+    fi
+    
+    # Check if file is readable
+    if [[ ! -r "${path}${file}" ]]; then
+        echo "Error: File '${path}${file}' is not readable" >&2
+        exit 1
+    fi
+    
+    # Check if file has content
+    if [[ ! -s "${path}${file}" ]]; then
+        echo "Error: File '${path}${file}' is empty" >&2
+        exit 1
+    fi
+}
+
+# Check requirements and validate input
+check_requirements
+validate_input "$1" "$2"
+
+# Set up logging if debug mode is enabled
+if [[ $DEBUG -eq 1 ]]; then
+    exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+fi
+
 export HOP
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
