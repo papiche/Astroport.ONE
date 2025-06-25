@@ -163,14 +163,6 @@ fi
 
 PLAYER=${PLAYER,,}
 
-#~ CREATE NOSTR CARD -- 1ST PLAYER = CAPTAIN ---
-## Others create NOSTR Card first, Zen Card if they become CopyLaRadio member
-if [[ ! -d ~/.zen/game/nostr/${PLAYER} ]]; then
-    ${MY_PATH}/../tools/make_NOSTRCARD.sh "${PLAYER}" "${MY_PATH}/images/TV.png" "$LAT" "$LON" "$SALT" "$PEPPER"
-    HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
-    NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB)
-fi
-
 # 4 DIGIT PASS CODE TO PROTECT QRSEC
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
@@ -195,8 +187,7 @@ mv ~/.zen/tmp/${MOATS}/secret.dunikey ~/.zen/game/players/${PLAYER}/
 
 NID="${myIPFS}"
 WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
-
-[[ $isLAN ]] && WID="http://ipfs.localhost:5001"
+# [[ $isLAN ]] && WID="http://ipfs.localhost:5001" ## set in .env
 
 # Create ${PLAYER} "IPNS Key"
 ipfs key rm ${PLAYER} >/dev/null 2>&1
