@@ -142,8 +142,8 @@ handle_active_friend() {
     local WEEK_AGO=$3
     local MONTH_AGO=$4
 
-    local profile=$($MY_PATH/../tools/nostr_hex2nprofile.py $ami 2>/dev/null)
-    echo "👤 $profile nostr:$profile" >> ${UMAPPATH}/NOSTR_messages
+    local profile=$($MY_PATH/../tools/nostr_hex2nprofile.sh $ami 2>/dev/null)
+    echo "👤 $profile" >> ${UMAPPATH}/NOSTR_messages
 
     local RECENT_ACTIVITY=$(./strfry scan '{
       "kinds": [1],
@@ -164,7 +164,7 @@ handle_inactive_friend() {
     local profile=$2
 
     echo "🚫 Removing inactive friend: $profile (no activity in 4 weeks)" >> ${UMAPPATH}/NOSTR_messages
-    local GOODBYE_MSG="👋 It seems you've been inactive for a while. I'll remove you from my friends list, but you're welcome to reconnect anytime! #UPlanet #Community"
+    local GOODBYE_MSG="👋 $profile It seems you've been inactive for a while. I remove you from my GeoKey list, but you're welcome to reconnect anytime! #UPlanet #Community"
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \

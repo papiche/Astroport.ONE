@@ -582,7 +582,7 @@ uSPOT=$(echo $myIPFS | sed 's|https://ipfs|https://u|') ## https://u. OR :54321
 myUPLANET="${myIPFS}/ipns/copylaradio.com" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
 ##########################
-## UPLANETNAME IS $HOME/.zen/ipfs/swarm.key OR EMPTY
+## UPLANETNAME IS $HOME/.zen/ipfs/swarm.key OR EnfinLibre
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME="EnfinLibre"
