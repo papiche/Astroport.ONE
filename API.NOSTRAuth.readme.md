@@ -1,328 +1,425 @@
-# API NOSTR Authentication System - Astroport.ONE
+# Astroport.ONE API & UPlanet Swarm – Developer Guide
 
-## Overview
+## 🚀 Introduction
 
-L'API 54321.py d'Astroport.ONE utilise un système d'authentification basé sur le protocole NOSTR (Notes and Other Stuff Transmitted by Relays) pour sécuriser l'accès aux fonctionnalités de gestion de fichiers IPFS. Ce système garantit que seuls les utilisateurs authentifiés peuvent uploader, supprimer et gérer leurs fichiers dans leur espace personnel uDRIVE.
+Astroport.ONE est une API décentralisée pour l'écosystème UPlanet, permettant l'authentification, le stockage distribué, la découverte de services et d'utilisateurs autour d'une position géographique, sans dépendre d'un cloud centralisé.
 
-## Architecture d'Authentification
+Ce guide s'adresse aux développeurs souhaitant créer des applications web, mobiles ou IoT interopérables avec l'essaim UPlanet.
 
-### 1. Protocole NOSTR et NIP42
+---
 
-L'authentification repose sur le **NIP42** (Nostr Implementation Possibility 42), qui définit un mécanisme d'authentification pour les relais NOSTR. Le système utilise :
+## 🌐 Vue d'ensemble de l'écosystème UPlanet/Astroport
 
-- **Événements NIP42** : Événements de type `kind 22242` envoyés par les clients NOSTR
-- **Relai local** : Connexion WebSocket vers `ws://127.0.0.1:7777` (strfry)
-- **Validation temporelle** : Événements récents (moins de 24h)
+```mermaid
+graph TD
+    User[Utilisateur] --> App[Application cliente]
+    App --> API[API Astroport.ONE]
+    API --> Relay[Relais NOSTR]
+    API --> IPFS[IPFS]
+    API --> Swarm[Essaim UPlanet]
+```
 
-### 2. Flux d'Authentification
+- **Astroport.ONE** : API locale sur chaque node
+- **UPlanet Swarm** : Réseau de nodes interconnectés (swarm.key)
+- **NOSTR** : Protocole d'authentification décentralisé
+- **IPFS** : Stockage distribué
+- **UMAP/SECTOR/REGION/ZONE** : Découpage géographique hiérarchique
+
+---
+
+## 📚 Librairie JavaScript NOSTR
+
+### Installation et utilisation
+
+Astroport.ONE utilise et recommande la librairie JavaScript NOSTR hébergée sur IPFS :
+
+```html
+<!-- Inclusion de la librairie NOSTR depuis IPFS -->
+<script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+```
+
+### Fonctions principales disponibles
+
+```javascript
+// Génération de clés
+const privateKey = NostrTools.generatePrivateKey();
+const publicKey = NostrTools.getPublicKey(privateKey);
+
+// Création et signature d'événements
+const event = {
+    kind: 22242, // NIP42 - Authentification
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [
+        ['relay', 'ws://127.0.0.1:7777'],
+        ['challenge', 'your-challenge-here']
+    ],
+    content: 'Authentification pour Astroport.ONE'
+};
+
+const signedEvent = NostrTools.finishEvent(event, privateKey);
+
+// Connexion aux relais
+const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
+await relay.connect();
+await relay.publish(signedEvent);
+```
+
+### Exemple d'intégration complète
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Astroport.ONE - Authentification NOSTR</title>
+    <script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+</head>
+<body>
+    <h1>Authentification NOSTR pour Astroport.ONE</h1>
+    
+    <button onclick="generateKeys()">Générer de nouvelles clés</button>
+    <button onclick="authenticate()">S'authentifier</button>
+    
+    <div id="status"></div>
+    
+    <script>
+        let privateKey = null;
+        let publicKey = null;
+        
+        function generateKeys() {
+            privateKey = NostrTools.generatePrivateKey();
+            publicKey = NostrTools.getPublicKey(privateKey);
+            
+            document.getElementById('status').innerHTML = 
+                `<p>Clés générées :</p>
+                 <p>Public Key: ${publicKey}</p>
+                 <p>Private Key: ${privateKey}</p>`;
+        }
+        
+        async function authenticate() {
+            if (!privateKey || !publicKey) {
+                alert('Générez d\'abord des clés');
+                return;
+            }
+            
+            try {
+                // Créer l'événement d'authentification NIP42
+                const authEvent = {
+                    kind: 22242,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [
+                        ['relay', 'ws://127.0.0.1:7777'],
+                        ['challenge', 'astroport-auth-' + Date.now()]
+                    ],
+                    content: 'Authentification pour Astroport.ONE API'
+                };
+                
+                const signedEvent = NostrTools.finishEvent(authEvent, privateKey);
+                
+                // Publier sur le relais
+                const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
+                await relay.connect();
+                await relay.publish(signedEvent);
+                
+                // Tester l'authentification avec l'API
+                const response = await fetch('/api/test-nostr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `npub=${publicKey}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.auth_verified) {
+                    document.getElementById('status').innerHTML += 
+                        '<p style="color: green;">✅ Authentification réussie !</p>';
+                } else {
+                    document.getElementById('status').innerHTML += 
+                        '<p style="color: red;">❌ Authentification échouée</p>';
+                }
+                
+                relay.close();
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML += 
+                    `<p style="color: red;">❌ Erreur: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
+```
+
+### Fonctions NOSTR disponibles
+
+La librairie fournit toutes les fonctions NOSTR standards :
+
+- **Authentification** : `NostrTools.nip42`
+- **Chiffrement** : `NostrTools.nip04`, `NostrTools.nip44`
+- **Profils** : `NostrTools.nip05`
+- **Relais** : `NostrTools.relayInit`, `NostrTools.SimplePool`
+- **Validation** : `NostrTools.validateEvent`, `NostrTools.verifySignature`
+- **Utilitaires** : `NostrTools.getEventHash`, `NostrTools.finishEvent`
+
+---
+
+## 🔐 Authentification NOSTR (NIP42)
+
+### Pourquoi NOSTR ?
+- Authentification sans serveur central
+- Interopérabilité et résistance à la censure
+
+### Workflow
 
 ```mermaid
 sequenceDiagram
-    participant Client as Client NOSTR
-    participant API as API 54321.py
-    participant Relay as Relai NOSTR (strfry)
-    participant IPFS as IPFS Node
-
-    Client->>Relay: Événement NIP42 (kind 22242)
-    Client->>API: Requête avec npub
-    API->>Relay: Vérification événements récents
-    Relay->>API: Événements NIP42 de la pubkey
-    API->>API: Validation événements
-    API->>IPFS: Opération autorisée
+    participant Client as Application
+    participant API as Astroport.ONE
+    participant Relay as Relais NOSTR
+    Client->>API: POST /api/upload (avec npub)
+    API->>Relay: Vérifie événement NIP42 (kind 22242)
+    Relay->>API: Retourne événements
+    API->>Client: Succès ou erreur
 ```
 
-## Routes Protégées
-
-### Routes Requérant l'Authentification NOSTR
-
-| Route | Méthode | Description | Authentification |
-|-------|---------|-------------|------------------|
-| `/api/upload` | POST | Upload de fichiers vers uDRIVE | **Obligatoire** |
-| `/api/upload_from_drive` | POST | Synchronisation depuis IPFS | **Obligatoire** |
-| `/api/delete` | POST | Suppression de fichiers | **Obligatoire** |
-| `/api/test-nostr` | POST | Test d'authentification | **Obligatoire** |
-
-### Routes Publiques
-
-| Route | Méthode | Description |
-|-------|---------|-------------|
-| `/` | GET | Statut UPlanet |
-| `/scan` | GET | Interface de scan QR |
-| `/nostr` | GET | Interface NOSTR |
-| `/upload2ipfs` | POST | Upload IPFS legacy (NIP96) |
-
-## Mécanismes d'Authentification
-
-### 1. Conversion des Clés Publiques
+### Exemple minimal (Python)
 
 ```python
-def npub_to_hex(npub: str) -> Optional[str]:
-    """
-    Convertit une clé publique npub (bech32) en format hexadécimal.
-    Supporte aussi les clés déjà en format hex (64 caractères).
-    """
+import requests
+npub = "npub1..."
+res = requests.post("http://127.0.0.1:54321/api/test-nostr", data={"npub": npub})
+print(res.json())
 ```
 
-**Formats supportés :**
-- `npub1...` : Format bech32 standard NOSTR
-- `[64 chars hex]` : Format hexadécimal direct
+---
 
-### 2. Vérification NIP42
+## 📡 Endpoints API Astroport.ONE
 
-```python
-async def check_nip42_auth(npub: str, timeout: int = 5) -> bool:
-    """
-    Vérifie l'authentification NIP42 sur le relai local.
-    Recherche les événements kind 22242 récents (24h) de la pubkey.
-    """
+| Endpoint                | Méthode | Description                  | Authentification |
+|------------------------|---------|------------------------------|------------------|
+| `/api/upload`          | POST    | Upload vers uDRIVE           | NOSTR            |
+| `/api/upload_from_drive`| POST   | Sync depuis IPFS             | NOSTR            |
+| `/api/delete`          | POST    | Suppression fichier          | NOSTR            |
+| `/api/test-nostr`      | POST    | Test authentification        | NOSTR            |
+| `/`                    | GET     | Statut, découverte territoire| Publique         |
+
+### Exemple d'upload (JS avec librairie NOSTR)
+
+```javascript
+// Utilisation de la librairie NOSTR pour l'authentification
+async function uploadFile(file, npub) {
+    const formData = new FormData();
+    formData.append('npub', npub);
+    formData.append('file', file);
+    
+    const response = await fetch('/api/upload', { 
+        method: 'POST', 
+        body: formData 
+    });
+    
+    return await response.json();
+}
+
+// Exemple d'utilisation
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const file = document.getElementById('fileInput').files[0];
+    const npub = document.getElementById('npub').value;
+    
+    try {
+        const result = await uploadFile(file, npub);
+        console.log('Upload réussi:', result.new_cid);
+    } catch (error) {
+        console.error('Erreur upload:', error);
+    }
+});
 ```
 
-**Critères de validation :**
-- Événements de type `kind 22242`
-- Auteur correspondant à la pubkey fournie
-- Timestamp récent (moins de 24h)
-- Présence du tag `relay` (optionnel mais recommandé)
+---
 
-### 3. Validation des Événements
+## 🗺️ Découverte du territoire et services locaux
 
-```python
-def validate_nip42_event(event: Dict[str, Any], expected_relay_url: str) -> bool:
-    """
-    Valide un événement NIP42 selon les spécifications du protocole.
-    """
+### Système UMAP/SECTOR/REGION/ZONE
+
+- **ZONE** : 10° x 10° (~1111km)
+- **REGION** : 1° x 1° (~111km)
+- **SECTOR** : 0.1° x 0.1° (~11km)
+- **UMAP** : 0.01° x 0.01° (~1.1km)
+
+```mermaid
+graph TD
+    Monde --> ZONE
+    ZONE --> REGION
+    REGION --> SECTOR
+    SECTOR --> UMAP
 ```
 
-**Vérifications effectuées :**
-- Champs obligatoires présents (`id`, `pubkey`, `created_at`, `kind`, `tags`, `content`, `sig`)
-- Kind correct (22242)
-- Âge de l'événement (moins de 24h)
-- Format des tags
+### Découverte dynamique (nouveauté Ustats.sh)
 
-## Gestion des Répertoires Utilisateurs
+L'API retourne désormais les **4 UMAPs les plus proches** du centre demandé :
 
-### 1. Structure des Répertoires
-
-```
-~/.zen/game/nostr/
-├── user@example.com/
-│   ├── HEX                    # Clé publique hexadécimal
-│   ├── .secret.nostr         # Clés privées NOSTR (NSEC/NPUB)
-│   └── APP/
-│       └── uDRIVE/           # Répertoire de fichiers utilisateur
-│           ├── Documents/
-│           ├── Images/
-│           ├── Music/
-│           └── Videos/
-```
-
-### 2. Détection Automatique
-
-```python
-def find_user_directory_by_hex(hex_pubkey: str) -> Path:
-    """
-    Trouve le répertoire utilisateur correspondant à une clé publique hex.
-    Parcourt ~/.zen/game/nostr/ pour matcher la clé dans le fichier HEX.
-    """
-```
-
-### 3. Sécurisation des Accès
-
-```python
-def get_authenticated_user_directory(npub: str) -> Path:
-    """
-    Obtient le répertoire APP/uDRIVE de l'utilisateur authentifié.
-    Crée automatiquement la structure si nécessaire.
-    """
-```
-
-**Mesures de sécurité :**
-- Validation du chemin absolu
-- Vérification que le chemin est dans le répertoire autorisé
-- Création automatique de liens symboliques vers les scripts IPFS
-
-## Intégration avec IPFS
-
-### 1. Script de Génération IPFS
-
-Le script `generate_ipfs_structure.sh` est automatiquement lié dans le répertoire uDRIVE de chaque utilisateur :
+#### Exemple de requête
 
 ```bash
-# Lien symbolique créé automatiquement
-APP/uDRIVE/generate_ipfs_structure.sh -> ~/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh
+GET /?lat=48.8566&lon=2.3522&deg=0.01
 ```
 
-### 2. Détection du Propriétaire
+#### Extrait de réponse JSON
 
-Le script détecte automatiquement le propriétaire du Drive via le fichier `HEX` :
-
-```bash
-# Dans generate_ipfs_structure.sh
-OWNER_HEX_FILE="${OWNER_PLAYER_DIR}/HEX"
-if [ -f "$OWNER_HEX_FILE" ]; then
-    OWNER_HEX_PUBKEY=$(cat "$OWNER_HEX_FILE" 2>/dev/null)
-    log_message "🔑 Clé publique HEX du propriétaire du Drive détectée: $OWNER_HEX_PUBKEY"
-fi
-```
-
-### 3. Régénération IPFS
-
-Après chaque opération (upload/suppression), la structure IPFS est automatiquement régénérée :
-
-```python
-async def run_ipfs_generation_script(source_dir: Path, enable_logging: bool = False):
-    """
-    Exécute le script de génération IPFS dans le répertoire uDRIVE de l'utilisateur.
-    Retourne le nouveau CID généré.
-    """
-```
-
-## Gestion des Erreurs
-
-### 1. Erreurs d'Authentification
-
-| Code | Message | Cause |
-|------|---------|-------|
-| 401 | Authentification NOSTR échouée | Événements NIP42 manquants ou invalides |
-| 403 | Nostr authentication failed | Relai inaccessible ou clé invalide |
-| 400 | Clé publique NOSTR obligatoire | Paramètre npub manquant |
-
-### 2. Erreurs de Répertoire
-
-| Code | Message | Cause |
-|------|---------|-------|
-| 404 | Répertoire NOSTR non trouvé | Structure ~/.zen/game/nostr/ manquante |
-| 404 | Aucun répertoire utilisateur trouvé | Clé publique non enregistrée |
-
-### 3. Erreurs de Fichier
-
-| Code | Message | Cause |
-|------|---------|-------|
-| 400 | Chemin de fichier non sécurisé | Tentative de traversal directory |
-| 403 | Fichier hors répertoire autorisé | Tentative d'accès non autorisé |
-
-## Configuration
-
-### 1. Variables d'Environnement
-
-```bash
-# Clé OBS Studio (optionnelle)
-OBSkey=your_obs_key_here
-```
-
-### 2. Configuration du Relai
-
-```python
-def get_nostr_relay_url() -> str:
-    """URL du relai NOSTR local (strfry)"""
-    return "ws://127.0.0.1:7777"
-```
-
-### 3. Timeouts
-
-```python
-# Timeout pour la vérification NIP42
-DEFAULT_NIP42_TIMEOUT = 5  # secondes
-
-# Période de validité des événements
-NIP42_EVENT_MAX_AGE = 24 * 60 * 60  # 24 heures
-```
-
-## Tests et Debugging
-
-### 1. Endpoint de Test
-
-```bash
-POST /api/test-nostr
-Content-Type: application/x-www-form-urlencoded
-
-npub=npub1your_public_key_here
-```
-
-**Réponse de test :**
 ```json
 {
-    "input_key": "npub1...",
-    "input_format": "npub",
-    "hex_pubkey": "0123456789abcdef...",
-    "relay_url": "ws://127.0.0.1:7777",
-    "relay_connected": true,
-    "auth_verified": true,
-    "timestamp": "2024-01-01T12:00:00Z",
-    "checks": {
-        "key_format_valid": true,
-        "hex_conversion_success": true,
-        "relay_connection": true,
-        "nip42_events_found": true
-    },
-    "message": "✅ Authentification NOSTR réussie",
-    "status": "success"
+  "CENTER": {"LAT": "48.86", "LON": "2.35", "DEG": "0.01"},
+  "CLOSEST_UMAPs": [
+    { "LAT": "48.86", "LON": "2.35", "UMAPROOT": "...", "DISTANCE_KM": "0.0", ... },
+    ...
+  ],
+  "UMAPs": [...],
+  "PLAYERs": [...],
+  ...
 }
 ```
 
-### 2. Logs de Debug
+#### Utilisation côté client
+
+- Afficher les 4 UMAPs les plus proches sur une carte
+- Lister les services ou utilisateurs présents dans ces UMAPs
+- Proposer des interactions contextuelles (chat, partage, etc.)
+
+#### Exemple Python
 
 ```python
-# Activation des logs détaillés
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import requests
+r = requests.get('http://127.0.0.1:54321/', params={'lat': 48.8566, 'lon': 2.3522, 'deg': 0.01})
+data = r.json()
+for umap in data['CLOSEST_UMAPs']:
+    print(f"UMAP {umap['LAT']},{umap['LON']} à {umap['DISTANCE_KM']} km")
 ```
 
-**Exemples de logs :**
-```
-2024-01-01 12:00:00 - INFO - Vérification NOSTR pour: npub1...
-2024-01-01 12:00:01 - INFO - Connecté au relai NOSTR: ws://127.0.0.1:7777
-2024-01-01 12:00:02 - INFO - ✅ 1 événement(s) NIP42 valide(s) trouvé(s)
-```
+---
 
-## Sécurité
+## 📁 Structure des données et réponses
 
-### 1. Mesures Implémentées
+### Exemple de réponse complète
 
-- **Validation stricte des chemins** : Prévention des attaques de traversal directory
-- **Authentification obligatoire** : Toutes les opérations sensibles requièrent NOSTR
-- **Isolation des répertoires** : Chaque utilisateur accède uniquement à son uDRIVE
-- **Validation temporelle** : Événements NIP42 récents uniquement
-- **Sanitisation des noms de fichiers** : Prévention des caractères dangereux
-
-### 2. Bonnes Pratiques
-
-- Toujours vérifier l'authentification avant toute opération
-- Utiliser des chemins absolus et les valider
-- Logger toutes les tentatives d'accès
-- Gérer les timeouts pour éviter les blocages
-- Valider les formats de clés publiques
-
-## Intégration avec UPlanet
-
-### 1. Système de Coordonnées
-
-L'API intègre le système de coordonnées UPlanet pour la géolocalisation :
-
-```python
-@app.get("/")
-async def ustats(request: Request, lat: str = None, lon: str = None, deg: str = None):
-    """Statut UPlanet avec coordonnées géographiques"""
+```json
+{
+  "version": "1.1",
+  "DATE": "2024-01-01 12:00:00 UTC",
+  "CENTER": {"LAT": "48.86", "LON": "2.35", "DEG": "0.01"},
+  "CLOSEST_UMAPs": [ ... ],
+  "UMAPs": [ ... ],
+  "PLAYERs": [ ... ],
+  "NOSTR": [ ... ],
+  "SWARM": [ ... ],
+  "ZEN": "990",
+  "BILAN": "934",
+  ...
+}
 ```
 
-### 2. Gestion des Swarms
+### Explication des champs principaux
+- **CENTER** : Coordonnées et précision de la requête
+- **CLOSEST_UMAPs** : Les 4 UMAPs les plus proches du centre
+- **UMAPs** : Toutes les UMAPs trouvées dans la zone
+- **PLAYERs** : Utilisateurs actifs dans la zone
+- **NOSTR** : Comptes NOSTR actifs
+- **SWARM** : Autres nodes Astroport dans l'essaim
+- **ZEN/BILAN** : Indicateurs d'économie locale
 
-Support des abonnements inter-nodes avec gestion automatique des clés SSH :
+---
 
-```python
-# Détection des abonnements swarm
-is_swarm_subscription = '+' in email and '-' in email.split('@')[0]
+## 🛠️ Exemples d'intégration
 
-# Ajout automatique des clés SSH pour les Y-Level
-if is_y_level:
-    # Vérification et ajout des clés SSH du node distant
+### Web (HTML/JS avec librairie NOSTR)
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mon App Astroport.ONE</title>
+    <script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+</head>
+<body>
+    <h1>Upload vers uDRIVE avec NOSTR</h1>
+    
+    <form id="uploadForm">
+        <input type="text" id="npub" placeholder="Votre clé publique NOSTR" required>
+        <input type="file" id="fileInput" required>
+        <button type="submit">Upload</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const npub = document.getElementById('npub').value;
+            const file = document.getElementById('fileInput').files[0];
+            
+            const formData = new FormData();
+            formData.append('npub', npub);
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                document.getElementById('result').innerHTML = 
+                    `<p>✅ Upload réussi! CID: ${result.new_cid}</p>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<p>❌ Erreur: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
 ```
 
-## Conclusion
+### Mobile (React Native)
 
-Le système d'authentification NOSTR d'Astroport.ONE fournit une sécurité robuste basée sur les standards du protocole NOSTR. Il garantit que seuls les utilisateurs authentifiés peuvent accéder à leurs fichiers tout en maintenant une intégration transparente avec le système IPFS et UPlanet.
+```javascript
+// ... voir documentation précédente pour l'exemple complet
+```
 
-**Points clés :**
-- Authentification basée sur NIP42
-- Isolation complète des répertoires utilisateurs
-- Intégration automatique avec IPFS
-- Support des fonctionnalités UPlanet avancées
-- Logging et debugging complets
+### CLI (Shell)
+
+```bash
+curl -X POST http://127.0.0.1:54321/api/test-nostr -d "npub=your_npub_here"
+curl "http://127.0.0.1:54321/?lat=48.8566&lon=2.3522&deg=0.01"
+```
+
+---
+
+## 🔒 Sécurité, bonnes pratiques et gestion des erreurs
+
+- **Validation des entrées** (npub, fichiers, etc.)
+- **Gestion des erreurs API** (statuts HTTP, messages d'erreur)
+- **Conseils production** : cache, logs, monitoring
+
+---
+
+## ❓ FAQ et ressources
+
+- [Protocole NOSTR](https://github.com/nostr-protocol/nostr)
+- [NIP42 - Authentification](https://github.com/nostr-protocol/nips/blob/master/42.md)
+- [IPFS Documentation](https://docs.ipfs.io/)
+- [UPlanet Ecosystem](https://uplanet.org/)
+- **Librairie NOSTR** : [https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js](https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js)
+- Discord UPlanet, GitHub Astroport.ONE
+
+---
+
+## 📚 Annexe : Structure JSON détaillée
+
+Voir la section « Structure des données et réponses » pour un exemple complet et l'explication de chaque champ.
+
+---
+
+*Développez librement, restez décentralisé !* 🌍✨

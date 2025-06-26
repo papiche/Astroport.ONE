@@ -38,6 +38,71 @@ if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     fi
 fi
 
+# Function to calculate distance between two points (Haversine formula)
+calculate_distance() {
+    local lat1=$1
+    local lon1=$2
+    local lat2=$3
+    local lon2=$4
+    
+    # Convert to radians
+    local lat1_rad=$(echo "$lat1 * 0.0174533" | bc -l)
+    local lon1_rad=$(echo "$lon1 * 0.0174533" | bc -l)
+    local lat2_rad=$(echo "$lat2 * 0.0174533" | bc -l)
+    local lon2_rad=$(echo "$lon2 * 0.0174533" | bc -l)
+    
+    # Haversine formula
+    local dlat=$(echo "$lat2_rad - $lat1_rad" | bc -l)
+    local dlon=$(echo "$lon2_rad - $lon1_rad" | bc -l)
+    local a=$(echo "s($dlat/2)^2 + c($lat1_rad) * c($lat2_rad) * s($dlon/2)^2" | bc -l)
+    local c=$(echo "2 * a(sqrt($a))" | bc -l)
+    local distance=$(echo "6371 * $c" | bc -l)  # Earth radius in km
+    
+    echo "$distance"
+}
+
+# Function to find the 4 closest UMAPs to center coordinates
+find_closest_umaps() {
+    local center_lat=$1
+    local center_lon=$2
+    local umap_list=("${@:3}")
+    
+    echo "🔍 Finding 4 closest UMAPs to center ($center_lat, $center_lon)..."
+    
+    # Array to store distances and UMAP data
+    declare -a distances_umaps=()
+    
+    for umap in "${umap_list[@]}"; do
+        # Extract lat/lon from UMAP name (format: _lat_lon)
+        local umap_lat=$(echo "$umap" | cut -d '_' -f 2)
+        local umap_lon=$(echo "$umap" | cut -d '_' -f 3)
+        
+        # Calculate distance to center
+        local distance=$(calculate_distance "$center_lat" "$center_lon" "$umap_lat" "$umap_lon")
+        
+        # Store distance and UMAP name
+        distances_umaps+=("$distance:$umap")
+    done
+    
+    # Sort by distance and take the 4 closest
+    IFS=$'\n' sorted_umaps=($(sort -t: -k1,1n <<<"${distances_umaps[*]}"))
+    unset IFS
+    
+    # Extract the 4 closest UMAPs
+    local closest_umaps=()
+    for i in {0..3}; do
+        if [[ $i -lt ${#sorted_umaps[@]} ]]; then
+            local umap_data="${sorted_umaps[$i]}"
+            local distance=$(echo "$umap_data" | cut -d ':' -f 1)
+            local umap_name=$(echo "$umap_data" | cut -d ':' -f 2)
+            closest_umaps+=("$umap_name")
+            echo "   📍 UMAP $((i+1)): $umap_name (distance: ${distance}km)"
+        fi
+    done
+    
+    echo "${closest_umaps[@]}"
+}
+
 if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
     # search for active Zen Cards
@@ -131,7 +196,33 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     echo "${#unique_combinedUMAPS[@]} UMAP(S) : ${unique_combinedUMAPS[@]}"
     echo "==========================================================="
 
-    # Array to store UMAP data
+    # Find the 4 closest UMAPs if center coordinates are provided
+    closest_umaps_array=()
+    if [[ -n "$ULAT" && -n "$ULON" ]]; then
+        echo "🎯 Calculating 4 closest UMAPs to center ($ULAT, $ULON)..."
+        closest_umaps=($(find_closest_umaps "$ULAT" "$ULON" "${unique_combinedUMAPS[@]}"))
+        
+        # Process only the closest UMAPs
+        for umap in "${closest_umaps[@]}"; do
+            if [[ -n "$umap" ]]; then
+                lat=$(echo "$umap" | cut -d '_' -f 2)
+                lon=$(echo "$umap" | cut -d '_' -f 3)
+
+                echo "📍 Processing closest UMAP: $umap ($lat, $lon)"
+                $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
+                echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+                
+                # Construct JSON object for closest UMAP
+                if [[ -n $UMAPROOT ]]; then
+                    closest_umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPROOT": "%s", "UMAPHEX": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORROOT": "%s", "SECTORHEX": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONROOT": "%s", "REGIONHEX": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s", "DISTANCE_KM": "%s"}' \
+                                    "$lat" "$lon" "${UMAPROOT}" "${UMAPHEX}" "${UMAPG1PUB}" "${myIPFS}${UMAPIPNS}" "${SECTORROOT}" "${SECTORHEX}" "${SECTORG1PUB}" "${myIPFS}${SECTORIPNS}" "${REGIONROOT}" "${REGIONHEX}" "${REGIONG1PUB}" "${myIPFS}${REGIONIPNS}" "$(calculate_distance "$ULAT" "$ULON" "$lat" "$lon")")
+                    closest_umaps_array+=("$closest_umap_obj")
+                fi
+            fi
+        done
+    fi
+
+    # Array to store UMAP data (all UMAPs for backward compatibility)
     umap_array=()
     for umap in "${unique_combinedUMAPS[@]}"; do
         lat=$(echo "$umap" | cut -d '_' -f 2)
@@ -202,6 +293,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     tw_json_array=$(printf '%s,' "${tw_array[@]}"); tw_json_array="${tw_json_array%,}" #remove trailing comma
     nostr_json_array=$(printf '%s,' "${nostr_array[@]}"); nostr_json_array="${nostr_json_array%,}" #remove trailing comma
     umap_array_str=$(printf '%s,' "${umap_array[@]}"); umap_array_str="${umap_array_str%,}" #remove trailing comma
+    closest_umaps_json_array=$(printf '%s,' "${closest_umaps_array[@]}"); closest_umaps_json_array="${closest_umaps_json_array%,}" #remove trailing comma
     swarm_json_array=$(printf '%s,' "${swarm_array[@]}"); swarm_json_array="${swarm_json_array%,}" #remove trailing comma
 
     #######################################
@@ -215,7 +307,12 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     INCOME=$((nostrcount * NCARD + twcount * ZCARD))
     BILAN=$((INCOME - PAF))
 
-    final_json="{\"version\" : \"1.1\", \"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    # Add center coordinates and closest UMAPs to JSON if provided
+    if [[ -n "$ULAT" && -n "$ULON" ]]; then
+        final_json="{\"version\" : \"1.1\", \"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"CENTER\": {\"LAT\": \"$ULAT\", \"LON\": \"$ULON\", \"DEG\": \"$DEG\"}, \"CLOSEST_UMAPs\": [$closest_umaps_json_array], \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    else
+        final_json="{\"version\" : \"1.1\", \"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    fi
 
     # Calculate generation duration
     GENERATION_DURATION=$(($(date +%s) - GENERATION_START))
