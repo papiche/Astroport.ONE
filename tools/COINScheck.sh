@@ -15,6 +15,31 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/my.sh"
 
+# Check silkaj version and use G1check.sh if >= 0.20
+check_silkaj_version() {
+    if command -v silkaj >/dev/null 2>&1; then
+        local version=$(silkaj -v 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
+        if [[ -n "$version" ]]; then
+            local major=$(echo "$version" | cut -d. -f1)
+            local minor=$(echo "$version" | cut -d. -f2)
+            
+            # Check if version is >= 0.20
+            if [[ $major -eq 0 && $minor -ge 20 ]] || [[ $major -gt 0 ]]; then
+                echo "silkaj version $version detected, using G1check.sh"
+                return 0
+            fi
+        fi
+    fi
+    return 1
+}
+
+# If silkaj version is >= 0.20, call G1check.sh with same parameters
+if check_silkaj_version; then
+    if [[ -f "${MY_PATH}/G1check.sh" ]]; then
+        exec "${MY_PATH}/G1check.sh" "$@"
+    fi
+fi
+
 # Constants
 MAX_RETRIES=3
 CACHE_DIR="$HOME/.zen/tmp/coucou"
