@@ -95,7 +95,7 @@ jq -c '.subscriptions[] | select(.status == "active")' "$SUBSCRIPTIONS_FILE" | w
             if [[ $(echo "$DAILY_G1 > 0.01" | bc) -eq 1 ]]; then
                 echo "Executing payment: $DAILY_G1 G1 to $TARGET_NODEG1PUB"
                 
-                PAYMENT_RESULT=$(${MY_PATH}/../tools/PAY4SURE.sh "$PAYMENT_KEY" "$DAILY_G1" "$TARGET_NODEG1PUB" "$PAYMENT_COMMENT" 2>&1)
+                PAYMENT_RESULT=$(${MY_PATH}/../tools/PAYforSURE.sh "$PAYMENT_KEY" "$DAILY_G1" "$TARGET_NODEG1PUB" "$PAYMENT_COMMENT" 2>&1)
                 PAYMENT_EXIT_CODE=$?
                 
                 if [[ $PAYMENT_EXIT_CODE -eq 0 ]]; then

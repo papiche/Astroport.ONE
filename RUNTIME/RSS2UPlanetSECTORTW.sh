@@ -202,7 +202,7 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
     #~ echo "SPREAD $NSIGN G1 TO ${unique_combined[@]} SIGNATURES
     #~ to ${PLAYER} WALLET ${ASTROG1}"
     #~ echo "************************************************************"
-    #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${$G1AMOUNT}" "${ASTROG1}" "${unique_combined[@]}"
+    #~ ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${$G1AMOUNT}" "${ASTROG1}" "${unique_combined[@]}"
     #~ ################################################ GRATITUDE SENT
 
             ## AND OVER WRITE TIDDLER...
@@ -275,7 +275,7 @@ done < ~/.zen/tmp/${MOATS}/${SECTOR}/tiddlers.list
     #~ echo "GRATITUDE ${GRATITUDE} ZEN = ${G1AMOUNT} G1
     #~ to ${PLAYER} WALLET ${ASTROG1} (${gloops} Tiddlers)"
     #~ echo "************************************************************"
-    #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"
+    #~ ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/tmp/${MOATS}/sector.dunikey "${G1AMOUNT}" "${ASTROG1}" "THANKS ${gloops} GLOOPS"
     #~ ################################################ GRATITUDE SENT
 #~ fi
 

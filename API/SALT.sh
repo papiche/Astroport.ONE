@@ -349,9 +349,9 @@ if [[ $APPNAME == "pay" ]]; then
 
     if [[ $WHAT =~ ^[0-9]+$ ]]; then
 
-        echo "${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${MOATS}.secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro'"
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.secret.key" "${WHAT}" "${VAL}" "Bro"
-        echo "PAY4SURE " >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+        echo "${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/tmp/${MOATS}/${MOATS}.secret.key pay -a ${WHAT} -p ${VAL} -c 'Bro'"
+        ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.secret.key" "${WHAT}" "${VAL}" "Bro"
+        echo "PAYforSURE " >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
 
     fi
 

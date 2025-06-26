@@ -124,7 +124,7 @@ if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
                     ## ALERT PLAYER
                     ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
                     ## SEND BACK G1
-                    ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET${UPLANETG1PUB:0:8}:INTRUSION" 2>/dev/null
+                    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET${UPLANETG1PUB:0:8}:INTRUSION" 2>/dev/null
                     [[ $? == 0 ]] && echo $TXIDATE > ~/.zen/game/players/${PLAYER}/.uplanet.check
 
                     ## UNPLUG PLAYER (after 3 alerts)
@@ -280,8 +280,8 @@ while read LINE; do
         TW : $ASTROTW
         G1 : ${ASTROG1}"
 
-        echo PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY"
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY" 2>/dev/null
+        echo PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY"
+        ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY" 2>/dev/null
         STAMP=$?
         ## DONE STAMP IT
         [[ $STAMP == 0 ]] \
@@ -362,7 +362,7 @@ while read LINE; do
         ### GET PAID & GET PINNED !!
         ##############################
         ZZMAIL=$(echo "${emails[@]}" | sed "s~${ZMAIL}~~g") # remove ZMAIL from ${emails[@]} list
-        ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${nb}" "${ASTROG1}" "${ZZMAIL}:PIN:${TOPIN}" 2>/dev/null
+        ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${nb}" "${ASTROG1}" "${ZZMAIL}:PIN:${TOPIN}" 2>/dev/null
 
         echo "<html><head><meta charset='UTF-8'>
             <style>

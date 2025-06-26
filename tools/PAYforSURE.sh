@@ -14,6 +14,37 @@ ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
 
+# Check silkaj version and fallback to PAY4SURE.sh if needed
+check_silkaj_version() {
+    if command -v silkaj >/dev/null 2>&1; then
+        local version=$(silkaj -v 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
+        if [[ -n "$version" ]]; then
+            local major=$(echo "$version" | cut -d. -f1)
+            local minor=$(echo "$version" | cut -d. -f2)
+            
+            # Check if version is less than 0.20
+            if [[ $major -eq 0 && $minor -lt 20 ]]; then
+                echo "silkaj version $version detected, falling back to PAY4SURE.sh"
+                return 1
+            fi
+        fi
+    else
+        echo "silkaj not found, falling back to PAY4SURE.sh"
+        return 1
+    fi
+    return 0
+}
+
+# If silkaj version is too old, call PAY4SURE.sh with same parameters
+if ! check_silkaj_version; then
+    if [[ -f "${MY_PATH}/PAY4SURE.sh" ]]; then
+        exec "${MY_PATH}/PAY4SURE.sh" "$@"
+    else
+        echo "ERROR: PAY4SURE.sh not found in ${MY_PATH}"
+        exit 1
+    fi
+fi
+
 # Log function for better debugging
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"

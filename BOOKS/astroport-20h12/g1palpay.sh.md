@@ -30,10 +30,10 @@ Le script `G1PalPay.sh` est un outil puissant pour surveiller les transactions s
        ```
 6. **Traitement des Adresses Email** :
    * Si le commentaire contient des adresses email, le script divise le montant de la transaction par le nombre d'adresses et envoie une partie à chaque adresse.
-   *   Il utilise `PAY4SURE.sh` pour effectuer les paiements :
+   *   Il utilise `PAYforSURE.sh` pour effectuer les paiements :
 
        ```bash
-       ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY"
+       ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${SHARE}" "${ASTROG1}" "UPLANET${UPLANETG1PUB:0:8}:PALPAY"
        ```
 7. **Gestion des Tiddlers** :
    * Le script extrait les tiddlers modifiés au cours des dernières 24 heures et vérifie s'ils contiennent des adresses email dans les tags.

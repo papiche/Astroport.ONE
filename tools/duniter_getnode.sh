@@ -95,63 +95,86 @@ done
 # Wait a little for the first files to be created
 sleep 3s
 # Wait for all the threads to report they are done
-while [ `ls $DIR/*done|wc -l` -lt $index ]
+while [ `ls $DIR/*done 2>/dev/null | wc -l` -lt $index ]
 do
     sleep 2s
 done
 
-# Grab all results
-curs=`cat $DIR/*out|sort`
-# Extract all forks, excluding all errors
-chains="`echo "$curs"|grep -v ERROR|awk '{print $1}'|sort -r|uniq`"
+# Grab all results - check if files exist first
+if ls $DIR/*out 1> /dev/null 2>&1; then
+    curs=`cat $DIR/*out|sort`
+    # Extract all forks, excluding all errors
+    chains="`echo "$curs"|grep -v ERROR|awk '{print $1}'|sort -r|uniq`"
+else
+    curs=""
+    chains=""
+fi
 
 # Count the number of chains and output most recent consensus to "good.nodes.txt"
 nb=0
-for chain in $chains
-do
-    echo "$curs" | egrep "^$chain " | awk '{print $2}' >> $DIR/chains/$nb;
-    ((nb++))
-done
+if [[ -n "$chains" ]]; then
+    for chain in $chains
+    do
+        echo "$curs" | egrep "^$chain " | awk '{print $2}' >> $DIR/chains/$nb;
+        ((nb++))
+    done
 
-longchain=$(ls -S $DIR/chains/ | head -n 1)
-echo "CHAIN:$chains"
-# WRITE OUT shuffle Duniter Node Sync with longest chain
-cat $DIR/chains/$longchain | shuf > $DIR/good.nodes.txt
+    longchain=$(ls -S $DIR/chains/ | head -n 1)
+    echo "CHAIN:$chains"
+    # WRITE OUT shuffle Duniter Node Sync with longest chain
+    if [[ -f "$DIR/chains/$longchain" ]]; then
+        cat $DIR/chains/$longchain | shuf > $DIR/good.nodes.txt
+    else
+        # Fallback to booster nodes if no chains found
+        printf "%s\n" "${BOOSTER[@]}" | sed 's/$/:443/' > $DIR/good.nodes.txt
+    fi
+else
+    echo "CHAIN: No valid chains found"
+    # Fallback to booster nodes if no chains found
+    printf "%s\n" "${BOOSTER[@]}" | sed 's/$/:443/' > $DIR/good.nodes.txt
+fi
 
 ## TEST if server is really running Duniter
 Dtest=""; IDtest=""; lastresult=""; loop=0
-while read lastresult;
-do
 
-    ## CHECK if server is not too slow
-    echo "curl -s -m 2 https://$lastresult | jq -r .duniter.software"
-    Dtest=$(curl -s -m 2 https://$lastresult | jq -r .duniter.software)
-    echo "$Dtest"
+# Check if good.nodes.txt exists and has content
+if [[ ! -f "$DIR/good.nodes.txt" ]] || [[ ! -s "$DIR/good.nodes.txt" ]]; then
+    echo "No valid nodes found, using fallback"
+    [[ "$1" == "BMAS" ]] && result="g1.duniter.org" || result="https://duniter-v1.comunes.net/gva"
+else
+    while read lastresult;
+    do
 
-    if [[ "$Dtest" == "duniter" ]]; then
-        if [[ "$1" == "BMAS" ]]; then
-            echo "silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
-            IDtest=$(silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech)
-            echo $IDtest
-            [[ $IDtest != "" && $IDtest != "null" ]] && result="$lastresult" && break
+        ## CHECK if server is not too slow
+        echo "curl -s -m 2 https://$lastresult | jq -r .duniter.software"
+        Dtest=$(curl -s -m 2 https://$lastresult | jq -r .duniter.software)
+        echo "$Dtest"
 
-            [[ $loop -eq 8 ]] \
-                && result="g1.duniter.org" && break
-        else
-            gvaserver=$(echo $lastresult | sed "s~:443~/gva~g" )
-            echo "jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
-            IDtest=$(jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH 2>/dev/null | jq -r .balance)
-            echo $IDtest
-            [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
+        if [[ "$Dtest" == "duniter" ]]; then
+            if [[ "$1" == "BMAS" ]]; then
+                echo "silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
+                IDtest=$(silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech)
+                echo $IDtest
+                [[ $IDtest != "" && $IDtest != "null" ]] && result="$lastresult" && break
 
-            [[ $loop -eq 8 ]] \
-                && result="https://duniter-v1.comunes.net/gva" && break
+                [[ $loop -eq 8 ]] \
+                    && result="g1.duniter.org" && break
+            else
+                gvaserver=$(echo $lastresult | sed "s~:443~/gva~g" )
+                echo "jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH"
+                IDtest=$(jaklis -n https://$gvaserver idBalance -p 2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH 2>/dev/null | jq -r .balance)
+                echo $IDtest
+                [[ $IDtest != "" && $IDtest != "null" ]] && result="https://$gvaserver" && break
+
+                [[ $loop -eq 8 ]] \
+                    && result="https://duniter-v1.comunes.net/gva" && break
+            fi
         fi
-    fi
 
-    ((loop++))
+        ((loop++))
 
-done < $DIR/good.nodes.txt
+    done < $DIR/good.nodes.txt
+fi
 
 [[ -n "$result" && -n "$1" ]] \
     && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \

@@ -175,7 +175,7 @@ for SECTOR in ${SECTORS[@]}; do
     #~ [[ ${COINS} == "" || ${COINS} == "null" ]] \
         #~ && [[ ${ZEN} -lt 100 && ${CURRENT} != "" ]] \
         #~ && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-        #~ && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:INIT:${SECTOR}" \
+        #~ && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:INIT:${SECTOR}" \
         #~ && echo "UPLANET${UPLANETG1PUB:0:8}:INIT:${SECTOR}" && echo " ~~~ (♥‿‿♥) ~~ ${SECTOR} ~~ (♥‿‿♥) ~~~ " \
         #~ && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
@@ -353,7 +353,7 @@ for SECTOR in ${SECTORS[@]}; do
     echo "> INTERCOM ${INTERCOM} (${ZEN} ZEN)"
     #~ if [[ ${ZEN} -gt 11 ]]; then
         #~ echo "---ZZZ-- SECTOR 2 REGION ZEN CHAINING ---ZZZ------ZZZ----"
-        #~ ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
+        #~ ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey "0.1" "${REGIONG1PUB}" "${INTERCOM}"
     #~ fi
     ##############################################################
     ## PUBLISHING ${SECTOR}

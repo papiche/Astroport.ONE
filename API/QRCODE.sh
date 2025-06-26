@@ -189,7 +189,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                     ## COMMAND PAYMENT MAX : 999.99
                         if [[ ${WHAT} =~ ^-?[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then
 
-                            ${MY_PATH}/../tools/PAY4SURE.sh ~/.zen/tmp/${MOATS}/secret.key "${WHAT}" "${G1DEST}" "ZEN:${MOATS}"
+                            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/tmp/${MOATS}/secret.key "${WHAT}" "${G1DEST}" "ZEN:${MOATS}"
                             echo "<h1>OK</h1><h2>PAYMENT SENT</h2>ZEN:${MOATS}" >> ~/.zen/tmp/${MOATS}/disco
 
                         else

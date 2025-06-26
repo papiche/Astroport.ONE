@@ -607,7 +607,7 @@ $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html ".
 
 YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-&& ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" 2>/dev/null \
+&& ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" 2>/dev/null \
 && echo "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 

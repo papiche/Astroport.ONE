@@ -681,7 +681,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         if [[ $(echo "$COINS > $Gpaf" | bc -l) -eq 1 ]]; then
             ## Pay NCARD to CAPTAIN
             echo "[28 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
-            ${MY_PATH}/../tools/PAY4SURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
         else
             echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
             $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN MEMBERSHIP ENDED" "MEMBERSHIP..."
@@ -733,7 +733,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
                 && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
                 && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-                && ${MY_PATH}/../tools/PAY4SURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" 2>/dev/null \
+                && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" 2>/dev/null \
                 && echo "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
                 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
         fi
