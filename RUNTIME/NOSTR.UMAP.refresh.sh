@@ -120,12 +120,14 @@ process_friend_messages() {
 
     if [[ -n "$PROFILE" ]]; then
         handle_active_friend "$ami" "$UMAPPATH" "$WEEK_AGO" "$MONTH_AGO"
-
-        # New: Get friends of this friend and add to amisOfAmis.txt
+        # Get friends of this friend and add to amisOfAmis.txt if not already present
         local fof_list=$($MY_PATH/../tools/nostr_get_N1.sh "$ami" 2>/dev/null)
         if [[ -n "$fof_list" ]]; then
             for fof in $fof_list; do
-                echo "$fof" >> ~/.zen/strfry/amisOfAmis.txt
+                # Only append if fof not already in file
+                if ! grep -q "^${fof}$" ~/.zen/strfry/amisOfAmis.txt 2>/dev/null; then
+                    echo "$fof" >> ~/.zen/strfry/amisOfAmis.txt
+                fi
             done
         fi
 
