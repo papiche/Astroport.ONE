@@ -410,7 +410,8 @@ curl "http://127.0.0.1:54321/?lat=48.8566&lon=2.3522&deg=0.01"
 - [Protocole NOSTR](https://github.com/nostr-protocol/nostr)
 - [NIP42 - Authentification](https://github.com/nostr-protocol/nips/blob/master/42.md)
 - [IPFS Documentation](https://docs.ipfs.io/)
-- [UPlanet Ecosystem](https://uplanet.org/)
+- [CopyLaRadio](https://copylaradio.com/)
+- [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio.com)
 - **Librairie NOSTR** : [https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js](https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js)
 - Discord UPlanet, GitHub Astroport.ONE
 
