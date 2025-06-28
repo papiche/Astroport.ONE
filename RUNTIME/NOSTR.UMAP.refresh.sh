@@ -83,6 +83,10 @@ process_umap_friends() {
     local LAT=$3
     local LON=$4
 
+    # Initialize NPRIV_HEX early for this UMAP
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
+
     local friends=($($MY_PATH/../tools/nostr_get_N1.sh $hex 2>/dev/null))
     local SINCE=$(date -d "24 hours ago" +%s)
     local WEEK_AGO=$(date -d "7 days ago" +%s)
@@ -94,11 +98,11 @@ process_umap_friends() {
     local ACTIVE_FRIENDS=()
 
     for ami in ${friends[@]}; do
-        process_friend_messages "$ami" "$UMAPPATH" "$LAT" "$LON" "$SINCE" "$WEEK_AGO" "$MONTH_AGO"
+        process_friend_messages "$ami" "$UMAPPATH" "$LAT" "$LON" "$SINCE" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
     done
 
     update_friends_list "${ACTIVE_FRIENDS[@]}"
-    setup_ipfs_structure "$UMAPPATH"
+    setup_ipfs_structure "$UMAPPATH" "$NPRIV_HEX"
 }
 
 process_friend_messages() {
@@ -109,8 +113,7 @@ process_friend_messages() {
     local SINCE=$5
     local WEEK_AGO=$6
     local MONTH_AGO=$7
-
-    echo "----------------------------- @$ami" >> ${UMAPPATH}/NOSTR_messages
+    local NPRIV_HEX=$8
 
     local PROFILE=$(./strfry scan '{
       "kinds": [0],
@@ -119,7 +122,7 @@ process_friend_messages() {
     }' 2>/dev/null | jq -r 'select(.kind == 0) | .content' | jq -r '[.name, .display_name, .about] | join(" | ")')
 
     if [[ -n "$PROFILE" ]]; then
-        handle_active_friend "$ami" "$UMAPPATH" "$WEEK_AGO" "$MONTH_AGO"
+        handle_active_friend "$ami" "$UMAPPATH" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
         # Get friends of this friend and add to amisOfAmis.txt if not already present
         local fof_list=$($MY_PATH/../tools/nostr_get_N1.sh "$ami" 2>/dev/null)
         if [[ -n "$fof_list" ]]; then
@@ -143,9 +146,9 @@ handle_active_friend() {
     local UMAPPATH=$2
     local WEEK_AGO=$3
     local MONTH_AGO=$4
+    local NPRIV_HEX=$5
 
     local profile=$($MY_PATH/../tools/nostr_hex2nprofile.sh $ami 2>/dev/null)
-    echo "👤 nostr:$profile" >> ${UMAPPATH}/NOSTR_messages
 
     local RECENT_ACTIVITY=$(./strfry scan '{
       "kinds": [1],
@@ -155,17 +158,20 @@ handle_active_friend() {
     }' 2>/dev/null | jq -r 'select(.kind == 1) | .created_at')
 
     if [[ -z "$RECENT_ACTIVITY" ]]; then
-        handle_inactive_friend "$ami" "$profile"
+        handle_inactive_friend "$ami" "$profile" "$NPRIV_HEX"
     else
-        handle_active_friend_activity "$ami" "$profile" "$WEEK_AGO"
+        echo "-----------------------------" >> ${UMAPPATH}/NOSTR_messages
+        echo "👤 nostr:$profile" >> ${UMAPPATH}/NOSTR_messages
+        handle_active_friend_activity "$ami" "$profile" "$WEEK_AGO" "$NPRIV_HEX"
     fi
 }
 
 handle_inactive_friend() {
     local ami=$1
     local profile=$2
+    local NPRIV_HEX=$3
 
-    echo "🚫 Removing inactive friend: nostr:$profile (no activity in 4 weeks)" >> ${UMAPPATH}/NOSTR_messages
+    # echo "🚫 Removing inactive friend: nostr:$profile (no activity in 4 weeks)" >> ${UMAPPATH}/NOSTR_messages
     local GOODBYE_MSG="👋 nostr:$profile ! It seems you've been inactive for a while. I remove you from my GeoKey list, but you're welcome to reconnect anytime! #UPlanet #Community"
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
@@ -179,6 +185,7 @@ handle_active_friend_activity() {
     local ami=$1
     local profile=$2
     local WEEK_AGO=$3
+    local NPRIV_HEX=$4
 
     ACTIVE_FRIENDS+=("$ami")
     TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
@@ -191,13 +198,14 @@ handle_active_friend_activity() {
     }' 2>/dev/null | jq -r 'select(.kind == 1) | .created_at')
 
     if [[ -z "$WEEK_ACTIVITY" ]]; then
-        send_reminder_message "$ami" "$profile"
+        send_reminder_message "$ami" "$profile" "$NPRIV_HEX"
     fi
 }
 
 send_reminder_message() {
     local ami=$1
     local profile=$2
+    local NPRIV_HEX=$3
 
     local REMINDER_MSG="👋 nostr:$profile ! Haven't seen you around lately. How are you doing? Feel free to share your thoughts or updates! #UPlanet #Community"
     nostpy-cli send_event \
@@ -300,13 +308,14 @@ create_message_html() {
 
 setup_ipfs_structure() {
     local UMAPPATH=$1
+    local NPRIV_HEX=$2
 
     mkdir -p "${UMAPPATH}/APP/uDRIVE"
     cd "${UMAPPATH}/APP/uDRIVE"
     ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
     ## remove when generate_ipfs_structure.sh code is stable
     rm index.html _index.html manifest.json 2>/dev/null ## Reset uDRIVE index & manifest
-    cleanup_old_files
+    cleanup_old_files "$NPRIV_HEX"
     UDRIVE=$(./generate_ipfs_structure.sh .)
     ## Redirect to UDRIVE actual ipfs CID
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
@@ -316,11 +325,12 @@ setup_ipfs_structure() {
 cleanup_old_files() {
     local SIX_MONTHS_AGO=$(date -d "6 months ago" +%s)
 
-    cleanup_old_documents "$SIX_MONTHS_AGO"
+    cleanup_old_documents "$SIX_MONTHS_AGO" "$NPRIV_HEX"
     cleanup_old_images "$SIX_MONTHS_AGO"
 }
 cleanup_old_documents() {
     local SIX_MONTHS_AGO=$1
+    local NPRIV_HEX=$2
 
     if [[ ! -d "Documents" ]]; then
         return
@@ -372,13 +382,17 @@ setup_umap_identity() {
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     STAGS+=("[\"p\", \"$SECTORHEX\", \"$myRELAY\", \"$SECTOR\"]")
 
-    UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-    NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
+    # NPRIV_HEX is already initialized in process_umap_friends, so we don't need to regenerate it
+    # Just get the public key for reference
     UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 
     local TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
+    # Get NPRIV_HEX from the calling context
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
+    
     send_nostr_events "$NPRIV_HEX" "$TAGS_JSON" "$UMAPPATH"
 }
 
