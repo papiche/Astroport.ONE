@@ -115,7 +115,7 @@ if [[ -d ~/.zen/workspace/silkaj ]]; then
     cd ~/.zen/workspace/silkaj
     git pull
 else
-    git clone https://git.duniter.org/zicmama/silkaj.git
+    git clone --depth 1 https://git.duniter.org/zicmama/silkaj.git
 fi
 
 ########################################################################
