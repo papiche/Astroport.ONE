@@ -7,7 +7,7 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
-[[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" && exit 0
+[[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" >&2 && exit 0
 . "${MY_PATH}/tools/my.sh"
 
 ULAT=$1
@@ -21,7 +21,7 @@ else
     CACHE_FILE="Ustats.json"
 fi
 
-echo "=== $ME =============================== //$ULAT//$ULON"
+echo "=== $ME =============================== //$ULAT//$ULON" >&2
 ########################################
 # Get start time for generation duration
 GENERATION_START=$(date +%s)
@@ -30,11 +30,11 @@ GENERATION_START=$(date +%s)
 if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
     if [[ $CACHE_AGE -lt 43200 ]]; then  # 43200 seconds = 12 hours
-        echo "Using cached data (age: ${CACHE_AGE}s)"
+        echo "Using cached data (age: ${CACHE_AGE}s)" >&2
         echo ~/.zen/tmp/${CACHE_FILE}
         exit 0
     else
-        echo "Cache expired (age: ${CACHE_AGE}s), regenerating..."
+        echo "Cache expired (age: ${CACHE_AGE}s), regenerating..." >&2
     fi
 fi
 
@@ -67,7 +67,7 @@ find_closest_umaps() {
     local center_lon=$2
     local umap_list=("${@:3}")
     
-    echo "🔍 Finding 4 closest UMAPs to center ($center_lat, $center_lon)..."
+    echo "🔍 Finding 4 closest UMAPs to center ($center_lat, $center_lon)..." >&2
     
     # Array to store distances and UMAP data
     declare -a distances_umaps=()
@@ -96,7 +96,7 @@ find_closest_umaps() {
             local distance=$(echo "$umap_data" | cut -d ':' -f 1)
             local umap_name=$(echo "$umap_data" | cut -d ':' -f 2)
             closest_umaps+=("$umap_name")
-            echo "   📍 UMAP $((i+1)): $umap_name (distance: ${distance}km)"
+            echo "   📍 UMAP $((i+1)): $umap_name (distance: ${distance}km)" >&2
         fi
     done
     
@@ -107,11 +107,11 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
     # search for active Zen Cards
     ####################################
-    echo " ## SEARCH PLAYER in ~/.zen/game/players/*@*.*/.player"
+    echo " ## SEARCH PLAYER in ~/.zen/game/players/*@*.*/.player" >&2
     METW=($(ls -d ~/.zen/game/players/*@*.*/.player 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
 
-    echo "${#METW[@]} TW(S) : ${METW[@]}"
-    echo "==========================================================="
+    echo "${#METW[@]} TW(S) : ${METW[@]}" >&2
+    echo "===========================================================" >&2
     tw_array=()
     twcount=0
     for player in ${METW[@]}; do
@@ -134,7 +134,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             fi
         fi
 
-        echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW ZEN=$ZEN LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED HEX=$HEX TW=$TW source=$source"
+        echo "ASTROPORT=$ASTROPORT ASTROTW=$ASTROTW ZEN=$ZEN LAT=$LAT LON=$LON ASTROG1=$ASTROG1 ASTROMAIL=$ASTROMAIL ASTROFEED=$ASTROFEED HEX=$HEX TW=$TW source=$source" >&2
         # Construct JSON object using printf and associative array
         tw_obj=$(printf '{"ASTROPORT": "%s", "ASTROTW": "%s", "ZEN": "%s", "LAT": "%s", "LON": "%s", "ASTROG1": "%s", "ASTROMAIL": "%s", "ASTROFEED": "%s", "HEX": "%s", "SOURCE": "%s"}' \
                         "${myIPFS}$ASTROPORT" "${myIPFS}$ASTROTW" "$ZEN" "$LAT" "$LON" "$ASTROG1" "$ASTROMAIL" "${myIPFS}$ASTROFEED" "$HEX" "$source")
@@ -145,10 +145,10 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
     # search for active NOSTR MULTIPASS
     ####################################
-    echo " ## SEARCH HEX in ~/.zen/game/nostr/*@*.*/HEX"
+    echo " ## SEARCH HEX in ~/.zen/game/nostr/*@*.*/HEX" >&2
     MENOSTR=($(ls -d ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
 
-    echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}"
+    echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}" >&2
     echo "==========================================================="
     nostr_array=()
     nostrcount=0
@@ -177,7 +177,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
 
         NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
         ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
-        echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}"
+        echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
         # Construct JSON object using printf and associative array
         nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s"}' \
                         "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN")
@@ -187,19 +187,19 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
     # search for active UMAPS
     ####################################
-    echo " ## SEARCH UMAPS in UPLANET/__/_*_*/_*.?_*.?/*"
+    echo " ## SEARCH UMAPS in UPLANET/__/_*_*/_*.?_*.?/*" >&2
     MEMAPS=($(ls -td ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
     SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
     combinedUMAPS=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
     unique_combinedUMAPS=($(echo "${combinedUMAPS[@]}" | tr ' ' '\n' | sort -u))
 
-    echo "${#unique_combinedUMAPS[@]} UMAP(S) : ${unique_combinedUMAPS[@]}"
-    echo "==========================================================="
+    echo "${#unique_combinedUMAPS[@]} UMAP(S) : ${unique_combinedUMAPS[@]}" >&2
+    echo "===========================================================" >&2
 
     # Find the 4 closest UMAPs if center coordinates are provided
     closest_umaps_array=()
     if [[ -n "$ULAT" && -n "$ULON" ]]; then
-        echo "🎯 Calculating 4 closest UMAPs to center ($ULAT, $ULON)..."
+        echo "🎯 Calculating 4 closest UMAPs to center ($ULAT, $ULON)..." >&2
         closest_umaps=($(find_closest_umaps "$ULAT" "$ULON" "${unique_combinedUMAPS[@]}"))
         
         # Process only the closest UMAPs
@@ -208,9 +208,9 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
                 lat=$(echo "$umap" | cut -d '_' -f 2)
                 lon=$(echo "$umap" | cut -d '_' -f 3)
 
-                echo "📍 Processing closest UMAP: $umap ($lat, $lon)"
+                echo "📍 Processing closest UMAP: $umap ($lat, $lon)" >&2
                 $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
-                echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+                echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON" >&2
                 
                 # Construct JSON object for closest UMAP
                 if [[ -n $UMAPROOT ]]; then
@@ -246,9 +246,9 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             fi
         fi
 
-        echo "$lat $lon"
+        echo "$lat $lon" >&2
         $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
-        echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON"
+        echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON" >&2
         # Construct JSON object using printf and associative array, filter out UMAPs with no root
         if [[ -n $UMAPROOT ]]; then
         umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPROOT": "%s", "UMAPHEX": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORROOT": "%s", "SECTORHEX": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONROOT": "%s", "REGIONHEX": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s"}' \
@@ -261,11 +261,11 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     #########################################################
     # search for other active ASTROPORTs in UPlanet swarm
     #########################################################
-    echo " ## SEARCH ASTROPORTs in ~/.zen/tmp/swarm/*/12345.json"
+    echo " ## SEARCH ASTROPORTs in ~/.zen/tmp/swarm/*/12345.json" >&2
     MASTROPORT=($(ls ~/.zen/tmp/swarm/*/12345.json 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
 
-    echo "${#MASTROPORT[@]} ASTROPORT(S) : ${MASTROPORT[@]}"
-    echo "==========================================================="
+    echo "${#MASTROPORT[@]} ASTROPORT(S) : ${MASTROPORT[@]}" >&2
+    echo "===========================================================" >&2
 
     # Array to store SWARM data
     swarm_array=()
@@ -278,13 +278,13 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             if swarm_data=$(cat "$astroport_dir/12345.json" | jq -c '.'); then
                 # Only include if it's not our own node
                 if [[ $(echo "$swarm_data" | jq -r '.ipfsnodeid') != "$IPFSNODEID" ]]; then
-                    echo "adding $astroport_dir/12345.json"
+                    echo "adding $astroport_dir/12345.json" >&2
                     swarm_array+=("$swarm_data")
                 else
-                    echo "skipping $astroport_dir/12345.json"
+                    echo "skipping $astroport_dir/12345.json" >&2
                 fi
             else
-                echo "Skipping malformed or empty JSON file: $astroport_dir/12345.json"
+                echo "Skipping malformed or empty JSON file: $astroport_dir/12345.json" >&2
             fi
         fi
     done
@@ -325,5 +325,5 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     # Print and format the JSON string with pretty printing
     echo "$final_json" | jq '.' > ~/.zen/tmp/${CACHE_FILE}
 fi
-echo "$HOME/.zen/tmp/${CACHE_FILE}"
+echo "$HOME/.zen/tmp/${CACHE_FILE}" >&2
 exit 0

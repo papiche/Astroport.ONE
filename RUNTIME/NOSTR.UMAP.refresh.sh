@@ -244,13 +244,14 @@ process_single_message() {
 
     local content=$(echo "$message" | jq -r .content)
     local message_id=$(echo "$message" | jq -r .id)
+    local created_at=$(echo "$message" | jq -r .created_at)
 
-    mkdir -p "${UMAPPATH}/APP/uDRIVE/Images"
-    mkdir -p "${UMAPPATH}/APP/uDRIVE/Documents"
+    mkdir -p "${UMAPPATH}/APP/uMARKET/Images"
+    mkdir -p "${UMAPPATH}/APP/uMARKET/ads"
 
     if [[ "$content" == *"#market"* ]]; then
         process_market_images "$content" "$UMAPPATH" "$LAT" "$LON"
-        create_message_html "$content" "${message_id}" "$UMAPPATH" "$LAT" "$LON" "$ami"
+        create_market_ad "$content" "${message_id}" "$UMAPPATH" "$LAT" "$LON" "$ami" "$created_at"
     fi
 
     echo "$content" >> ${UMAPPATH}/NOSTR_messages
@@ -267,58 +268,78 @@ process_market_images() {
         for img_url in $image_urls; do
             local filename=$(basename "$img_url")
             local umap_filename="UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${filename}"
-            if [[ ! -f "${UMAPPATH}/APP/uDRIVE/Images/$umap_filename" ]]; then
-                wget -q "$img_url" -O "${UMAPPATH}/APP/uDRIVE/Images/$umap_filename"
+            if [[ ! -f "${UMAPPATH}/APP/uMARKET/Images/$umap_filename" ]]; then
+                wget -q "$img_url" -O "${UMAPPATH}/APP/uMARKET/Images/$umap_filename"
             fi
         done
     fi
 }
 
-create_message_html() {
+create_market_ad() {
     local content=$1
     local message_id=$2
     local UMAPPATH=$3
     local LAT=$4
     local LON=$5
     local ami=$6
+    local created_at=$7
 
-    local html_content="<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='UTF-8'>
-    <title>Message ${message_id}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .message { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .author { color: #666; font-size: 0.9em; }
-        .content { margin-top: 10px; }
-        img { max-width: 100%; height: auto; }
-    </style>
-</head>
-<body>
-    <div class='message'>
-        <div class='author'>From: $ami</div>
-        <div class='content'>$(echo "$content" | sed 's/#market/\\n#market/g' | markdown)</div>
-    </div>
-</body>
-</html>"
+    # Get author profile information
+    local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
+    
+    # Extract local image filenames
+    local local_images=()
+    if [[ -d "${UMAPPATH}/APP/uMARKET/Images" ]]; then
+        while IFS= read -r -d '' image; do
+            local_images+=("$(basename "$image")")
+        done < <(find "${UMAPPATH}/APP/uMARKET/Images" -name "UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_*" -print0)
+    fi
 
-    echo "$html_content" > "${UMAPPATH}/APP/uDRIVE/Documents/UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${message_id:0:10}.html"
+    # Create JSON advertisement
+    local ad_json=$(cat << EOF
+{
+    "id": "${message_id}",
+    "content": "${content//\"/\\\"}",
+    "author_pubkey": "${ami}",
+    "author_nprofile": "${author_nprofile}",
+    "created_at": ${created_at},
+    "location": {
+        "lat": ${LAT},
+        "lon": ${LON}
+    },
+    "local_images": $(printf '%s\n' "${local_images[@]}" | jq -R . | jq -s .),
+    "umap_id": "UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}"
+}
+EOF
+)
+
+    echo "$ad_json" > "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json"
 }
 
 setup_ipfs_structure() {
     local UMAPPATH=$1
     local NPRIV_HEX=$2
 
-    mkdir -p "${UMAPPATH}/APP/uDRIVE"
-    cd "${UMAPPATH}/APP/uDRIVE"
-    ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
-    ## remove when generate_ipfs_structure.sh code is stable
-    rm index.html _index.html manifest.json 2>/dev/null ## Reset uDRIVE index & manifest
-    cleanup_old_files "$NPRIV_HEX"
-    UDRIVE=$(./generate_ipfs_structure.sh .)
-    ## Redirect to UDRIVE actual ipfs CID
-    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
+    mkdir -p "${UMAPPATH}/APP/uMARKET"
+    cd "${UMAPPATH}/APP/uMARKET"
+    
+    # Check if there are market advertisements
+    if [[ -d "ads" && $(find "ads" -name "*.json" | wc -l) -gt 0 ]]; then
+        # Use uMARKET for market advertisements
+        ln -sf "${MY_PATH}/../tools/generate_uMARKET.sh" ./generate_uMARKET.sh
+        rm index.html _index.html manifest.json 2>/dev/null ## Reset uMARKET index & manifest
+        cleanup_old_files "$NPRIV_HEX"
+        uCID=$(./generate_uMARKET.sh .)
+    else
+        # Use standard uMARKET for non-market content
+        ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
+        rm index.html _index.html manifest.json 2>/dev/null ## Reset uMARKET index & manifest
+        cleanup_old_files "$NPRIV_HEX"
+        uCID=$(./generate_ipfs_structure.sh .)
+    fi
+    
+    ## Redirect to uCID actual ipfs CID
+    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$uCID\"></head></html>" > index.html
     cd - 2>&1>/dev/null
 }
 
@@ -332,7 +353,7 @@ cleanup_old_documents() {
     local SIX_MONTHS_AGO=$1
     local NPRIV_HEX=$2
 
-    if [[ ! -d "Documents" ]]; then
+    if [[ ! -d "ads" ]]; then
         return
     fi
 
@@ -340,10 +361,11 @@ cleanup_old_documents() {
         local file_date=$(stat -c %Y "$file")
 
         if [[ $file_date -lt $SIX_MONTHS_AGO ]]; then
-            local author=$(sed -n 's/.*From: \([^<]*\).*/\1/p' "$file")
+            # Extract author from JSON file
+            local author=$(jq -r '.author_pubkey' "$file" 2>/dev/null)
 
-            if [[ -n "$author" ]]; then
-                local notification="📢 Votre annonce a été retirée après 6 mois. Vous pouvez la republier si elle est toujours d'actualité. #UPlanet #Community"
+            if [[ -n "$author" && "$author" != "null" ]]; then
+                local notification="🛒 Votre annonce de marché a été retirée après 6 mois. Vous pouvez la republier si elle est toujours d'actualité. #UPlanet #Market #Community"
 
                 nostpy-cli send_event \
                     -privkey "$NPRIV_HEX" \
@@ -355,7 +377,7 @@ cleanup_old_documents() {
 
             rm "$file"
         fi
-    done < <(find "Documents" -type f -name "*.html" -print0)
+    done < <(find "ads" -type f -name "*.json" -print0)
 }
 
 cleanup_old_images() {
