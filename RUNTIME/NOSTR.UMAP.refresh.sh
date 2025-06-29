@@ -327,7 +327,6 @@ setup_ipfs_structure() {
     if [[ -d "ads" && $(find "ads" -name "*.json" | wc -l) -gt 0 ]]; then
         # Use uMARKET for market advertisements
         ln -sf "${MY_PATH}/../tools/generate_uMARKET.sh" ./generate_uMARKET.sh
-        rm index.html _index.html manifest.json 2>/dev/null ## Reset uMARKET index & manifest
         cleanup_old_files "$NPRIV_HEX"
         uCID=$(./generate_uMARKET.sh .)
     else
