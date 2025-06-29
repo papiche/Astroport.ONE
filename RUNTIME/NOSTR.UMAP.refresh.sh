@@ -339,6 +339,7 @@ setup_ipfs_structure() {
     
     ## Redirect to uCID actual ipfs CID
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$uCID\"></head></html>" > index.html
+    rm index.html ## DEBUG MODE (todo remove)
     cd - 2>&1>/dev/null
 }
 
