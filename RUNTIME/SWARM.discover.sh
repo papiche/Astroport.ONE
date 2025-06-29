@@ -285,7 +285,7 @@ subscribe_to_node() {
     "total_cost": $total_cost,
     "payment_source": "$payment_source",
     "subscribed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "next_payment": "$(date -u -d '+28 days' +"%Y-%m-%dT%H:%M:%SZ")",
+    "next_payment": "$(date -u -d '+7 days' +"%Y-%m-%dT%H:%M:%SZ")",
     "status": "active",
     "api_url": "$uSPOT"
 }
@@ -332,7 +332,7 @@ list_active_subscriptions() {
     echo ""
 
     jq -r '.subscriptions[] | select(.status == "active") |
-        "🎯 Node: \(.target_node)\n📧 Email: \(.subscription_email)\n💸 Coût: \(.total_cost) Ẑ/28j\n🗓️  Prochain paiement: \(.next_payment)\n"' "$subscriptions_file"
+        "🎯 Node: \(.target_node)\n📧 Email: \(.subscription_email)\n💸 Coût: \(.total_cost) Ẑ/7j\n🗓️  Prochain paiement: \(.next_payment)\n"' "$subscriptions_file"
 }
 
 #######################################################################

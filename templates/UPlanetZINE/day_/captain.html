@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>CAPTAIN - Transformez votre PC en Ẑen</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/Qma5LvAd8HqiR2GadhRxWs6tF8XvtpFHfskh2sB9a15tyL" />
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: sans-serif;
+}
+
+h1 {
+  color: #1c4587;
+  text-align: center;
+  font-style: italic;
+  font-size: 180%;
+}
+
+h2 {
+  background: #ead1dc;
+  color: #741b47;
+  font-family: monospace;
+  text-align: center;
+  font-size: 140%;
+  font-weight: normal;
+  margin: 0.2rem 0 0 0;
+  padding: 0.2rem 0 0.2rem;
+}
+
+h3 {
+  color: #1c4587;
+  font-size: 120%;
+  margin: 0.3rem 0;
+}
+
+th {
+  text-align: left;
+  background: #c9daf8;
+  color: #073763;
+}
+
+p {
+  padding: 0.2rem;
+  padding-top: 0.5rem;
+  font-size: 105%;
+}
+
+ul {
+  padding-left: 2rem;
+  list-style: none;
+}
+
+.zine-li:before {
+  content: '\21D2';
+  margin-left: -20px;
+  margin-right: 10px;
+}
+
+.zine-link {
+  font-family: monospace;
+  background: #c9daf8;
+  color: #073763;
+}
+
+.captioned-img {
+  object-fit: contain;
+  max-height: 100%;
+  max-width: 100%;
+  padding: 0 2rem 0 2rem;
+}
+
+figcaption {
+  font-family: monospace;
+  font-size: 80%;
+  font-style: italic;
+  background: #c9daf8;
+  color: #073763;
+  margin: 0 1rem 0 1rem;
+}
+
+.full-img {
+  object-fit: contain;
+  max-height: 100%;
+  max-width: 100%;
+  padding: 1rem;
+}
+
+.mini-img {
+  max-width: 10rem;
+}
+
+.glitchButton {
+  float: left;
+  padding: 1rem 0.5rem 0 0.5rem;
+}
+
+.cc-licence {
+  float: right;
+  margin: 1rem 0.5rem 0 0.5rem;
+}
+
+/* Mode écran */
+@media screen {
+  body {
+    max-width: 30rem;
+    background: #ead1dc;
+    margin: auto;
+  }
+
+  .zine {
+    background: white;
+    padding: 10px;
+    border-left: 4px solid #741b47;
+    border-bottom: 4px solid #741b47;
+  }
+
+  .zine-page {
+    margin-top: 10px;
+  }
+}
+
+/* Mode impression A4 */
+@media print {
+  body {
+    font-size: 45%;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .mini-img {
+    max-width: 4.4rem;
+  }
+
+  @page {
+    size: landscape;
+    margin: 0.7cm;
+    bleed: 0;
+  }
+
+  .zine {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    gap: 1.5px;
+    background: lightgrey;
+    grid-template-areas:
+      "page-5 page-4 page-3 page-2"
+      "page-6 page-7 page-8 page-1";
+    grid-template-columns: repeat(4, 25%);
+    grid-template-rows: repeat(2, 50%);
+  }
+
+  .zine-page {
+    background: white;
+    padding: 0.5cm;
+    overflow: hidden;
+  }
+
+  .page-5, .page-4, .page-3, .page-2 {
+    transform: rotate(180deg) translateX(-0.1px);
+  }
+
+  .page-1 { grid-area: page-1; }
+  .page-2 { grid-area: page-2; }
+  .page-3 { grid-area: page-3; }
+  .page-4 { grid-area: page-4; }
+  .page-5 { grid-area: page-5; }
+  .page-6 { grid-area: page-6; }
+  .page-7 { grid-area: page-7; }
+  .page-8 { grid-area: page-8; }
+
+  table {
+    width: 100%;
+    table-layout: fixed;
+    word-wrap: break-word;
+    font-size: 85%;
+  }
+
+  table td {
+    word-break: break-all;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    padding: 0.1rem;
+  }
+
+  h2 {
+    font-size: 120%;
+    margin: 0.1rem 0;
+    padding: 0.1rem 0;
+  }
+
+  p {
+    padding: 0.1rem;
+    font-size: 95%;
+  }
+
+  ul {
+    padding-left: 1.5rem;
+  }
+
+  .zine-li:before {
+    margin-left: -15px;
+    margin-right: 8px;
+  }
+
+  .full-img {
+    max-height: 40vh;
+    width: 100%;
+    object-fit: contain;
+  }
+
+  .half-img {
+    max-height: 35vh;
+    max-width: 48%;
+    object-fit: contain;
+  }
+
+  .captioned-img {
+    max-height: 35vh;
+    max-width: 100%;
+    object-fit: contain;
+    padding: 0.1rem;
+  }
+
+  .long-key {
+    font-family: monospace !important;
+    font-size: 45% !important;
+    word-break: break-all !important;
+    line-height: 1.1 !important;
+    padding: 0.05rem !important;
+  }
+}
+
+/* Styles spécifiques CAPTAIN */
+.captain-header {
+  background: linear-gradient(135deg, #1c4587, #741b47, #073763);
+  color: white;
+  padding: 0.5rem;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.feature-block {
+  background: #f8f0f3;
+  border: 1px solid #d1b8c5;
+  border-radius: 4px;
+  padding: 0.3rem;
+  margin: 0.2rem 0;
+}
+
+.feature-title {
+  color: #1c4587;
+  font-weight: bold;
+  font-size: 110%;
+}
+
+.feature-desc {
+  font-size: 95%;
+  color: #741b47;
+}
+
+.revenue-block {
+  background: #e8f4fd;
+  border-left: 3px solid #1c4587;
+  padding: 0.3rem;
+  margin: 0.2rem 0;
+  font-family: monospace;
+  font-size: 90%;
+}
+
+.formation-block {
+  background: #fff3e0;
+  border-left: 3px solid #f57c00;
+  padding: 0.3rem;
+  margin: 0.2rem 0;
+  font-family: monospace;
+  font-size: 90%;
+}
+
+.zen-badge {
+  background: #1c4587;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 15px;
+  font-weight: bold;
+  text-align: center;
+  display: inline-block;
+  margin: 0.2rem;
+}
+
+.formation-badge {
+  background: #f57c00;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 15px;
+  font-weight: bold;
+  text-align: center;
+  display: inline-block;
+  margin: 0.2rem;
+}
+
+.zine-page img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+}
+
+@media screen {
+  .full-img {
+    max-height: 60vh;
+  }
+  .half-img {
+    max-height: 25vh;
+  }
+}
+
+@media print {
+  .full-img {
+    max-height: 45vh;
+    width: 100%;
+  }
+  .half-img {
+    max-height: 40vh;
+    max-width: 50%;
+  }
+}
+</style>
+
+  <meta name="Description" content="CAPTAIN - Transformez la valeur de votre PC en Ẑen en rejoignant la coopérative CopyLaRadio" />
+  <meta name="theme-color" content="#1c4587" />
+</head>
+
+<main class="zine">
+
+<header class="zine-page page-1">
+    <div class="captain-header">
+        <h1>⚡ CAPTAIN</h1>
+        <h2>Transformez votre PC en Ẑen</h2>
+    </div>
+    
+    <div class="zen-badge">Rejoignez CopyLaRadio</div>
+    <div class="formation-badge">Formation 36h</div>
+    
+    <p><strong>Devenez acteur de l'économie numérique libre</strong></p>
+    
+    <img class="full-img" src='http://127.0.0.1:8080/ipfs/QmPdHdEDt5MYYapWAs7kTwQfGMvSnty95WiXe9qmuyd1ph' alt="CAPTAIN Economy">
+    
+    <p>🔄 Transformation de valeur<br>
+    📊 Répartition intelligente<br>
+    🚀 Croissance exponentielle</p>
+</header>
+
+<section class="zine-page page-2">
+    <h2>💼 MODÈLE ÉCONOMIQUE</h2>
+    
+    <div class="feature-block">
+        <div class="feature-title">Transformation de valeur</div>
+        <div class="feature-desc">Votre PC devient un nœud UPlanet</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Location d'espace</div>
+        <div class="feature-desc">Stockage et calcul pour les utilisateurs</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Revenus automatiques</div>
+        <div class="feature-desc">Paiements en Ẑen réguliers</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Croissance exponentielle</div>
+        <div class="feature-desc">Essaimage jusqu'à 150 nœuds</div>
+    </div>
+    
+    <h3>📊 Répartition intelligente</h3>
+    <ul>
+        <li class="zine-li">1/3 : Fonds de garantie (rachat de parts)</li>
+        <li class="zine-li">1/3 : Investissement immobilier (G1FabLab)</li>
+        <li class="zine-li">1/3 : R&D et développement</li>
+    </ul>
+</section>
+
+<section class="zine-page page-3">
+    <h2>🚀 SERVICES COMMERCIALISABLES</h2>
+    
+    <div class="feature-block">
+        <div class="feature-title">MULTIPASS (1 Ẑ/semaine)</div>
+        <div class="feature-desc">Réseau social NOSTR décentralisé</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Assistant IA personnel</div>
+        <div class="feature-desc">ASTROBOT avec tags #BRO</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Identité numérique sécurisée</div>
+        <div class="feature-desc">Clés cryptographiques personnelles</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Services géolocalisés</div>
+        <div class="feature-desc">Découverte et partage local</div>
+    </div>
+    
+    <h3>💳 ZENCARD (4 Ẑ/semaine)</h3>
+    <ul>
+        <li class="zine-li">NextCloud 128 Go privé</li>
+        <li class="zine-li">Désenvoutement smartphone complet</li>
+        <li class="zine-li">Formation à l'autonomie numérique</li>
+        <li class="zine-li">Support technique personnalisé</li>
+    </ul>
+</section>
+
+<section class="zine-page page-4">
+    <h2>🎓 FORMATION CAPTAIN (36h)</h2>
+    
+    <div class="formation-block">
+        <div class="feature-title">Installation suite logiciels libres</div>
+        <div class="feature-desc">Configuration complète de l'écosystème</div>
+    </div>
+    
+    <div class="formation-block">
+        <div class="feature-title">Configuration réseau pair-à-pair</div>
+        <div class="feature-desc">Mise en place de l'infrastructure</div>
+    </div>
+    
+    <div class="formation-block">
+        <div class="feature-title">Gestion locataires numériques</div>
+        <div class="feature-desc">Administration des utilisateurs</div>
+    </div>
+    
+    <div class="formation-block">
+        <div class="feature-title">Commercialisation services</div>
+        <div class="feature-desc">Stratégies de développement clientèle</div>
+    </div>
+    
+    <h3>🔄 Méthodes de formation</h3>
+    <ul>
+        <li class="zine-li">Formation sur site ou visioconférence</li>
+        <li class="zine-li">Support technique continu</li>
+        <li class="zine-li">Communauté d'entraide</li>
+        <li class="zine-li">Documentation complète</li>
+    </ul>
+    
+    <h3>📚 Contenu détaillé</h3>
+    <ul>
+        <li class="zine-li">Architecture UPlanet</li>
+        <li class="zine-li">Gestion des nœuds</li>
+        <li class="zine-li">Sécurité et maintenance</li>
+        <li class="zine-li">Développement commercial</li>
+    </ul>
+</section>
+
+<section class="zine-page page-5">
+    <h2>💰 AVANTAGES CAPTAIN</h2>
+    
+    <h3>💸 Revenus</h3>
+    <ul>
+        <li class="zine-li">Commission sur les abonnements</li>
+        <li class="zine-li">Location infrastructure</li>
+        <li class="zine-li">Services de formation</li>
+        <li class="zine-li">Support technique</li>
+    </ul>
+    
+    <h3>🌍 Impact</h3>
+    <ul>
+        <li class="zine-li">Contribution à l'économie libre</li>
+        <li class="zine-li">Développement local</li>
+        <li class="zine-li">Autonomie numérique</li>
+        <li class="zine-li">Résilience communautaire</li>
+    </ul>
+    
+    <h3>🚀 Croissance</h3>
+    <ul>
+        <li class="zine-li">Essaimage jusqu'à 150 nœuds</li>
+        <li class="zine-li">Réseau fédératif</li>
+        <li class="zine-li">Échanges Ẑen sans frais</li>
+        <li class="zine-li">Potentiel infini</li>
+    </ul>
+    
+    <div class="revenue-block">
+        <strong>Exemple de revenus :</strong><br>
+        10 utilisateurs MULTIPASS = 10 Ẑ/semaine<br>
+        5 utilisateurs ZENCARD = 20 Ẑ/semaine<br>
+        <strong>Total : 30 Ẑ/semaine</strong>
+    </div>
+</section>
+
+<section class="zine-page page-6">
+    <h2>🎯 PROFIL CAPTAIN IDÉAL</h2>
+    
+    <div class="feature-block">
+        <div class="feature-title">Technique</div>
+        <div class="feature-desc">3 ordinateurs minimum</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Engagement</div>
+        <div class="feature-desc">Participation active au réseau</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Sécurité</div>
+        <div class="feature-desc">Respect des standards UPlanet</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Commercial</div>
+        <div class="feature-desc">Développement clientèle locale</div>
+    </div>
+    
+    <h3>🔧 Infrastructure requise</h3>
+    <ul>
+        <li class="zine-li">3 ordinateurs minimum</li>
+        <li class="zine-li">Connexion internet stable</li>
+        <li class="zine-li">Espace de stockage suffisant</li>
+        <li class="zine-li">Compétences techniques de base</li>
+    </ul>
+    
+    <h3>💡 Compétences développées</h3>
+    <ul>
+        <li class="zine-li">Administration système</li>
+        <li class="zine-li">Réseaux décentralisés</li>
+        <li class="zine-li">Cryptographie</li>
+        <li class="zine-li">Développement commercial</li>
+    </ul>
+</section>
+
+<section class="zine-page page-7">
+    <h2>🌐 ÉCOSYSTÈME UPLANET</h2>
+    
+    <div class="feature-block">
+        <div class="feature-title">CopyLaRadio SCIC</div>
+        <div class="feature-desc">Coopérative des auto-hébergeurs</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Ğ1FabLab</div>
+        <div class="feature-desc">Laboratoire de la monnaie libre</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Astroport.ONE</div>
+        <div class="feature-desc">Infrastructure décentralisée</div>
+    </div>
+    
+    <h3>🔗 Intégration</h3>
+    <ul>
+        <li class="zine-li">Réseau de nœuds interconnectés</li>
+        <li class="zine-li">Partage de ressources</li>
+        <li class="zine-li">Développement collaboratif</li>
+        <li class="zine-li">Gouvernance partagée</li>
+    </ul>
+    
+    <h3>🌱 Évolution</h3>
+    <ul>
+        <li class="zine-li">Nouvelles fonctionnalités</li>
+        <li class="zine-li">Amélioration des services</li>
+        <li class="zine-li">Expansion géographique</li>
+        <li class="zine-li">Innovation continue</li>
+    </ul>
+    
+    <div class="revenue-block">
+        <strong>Potentiel d'expansion :</strong><br>
+        Chaque Captain peut former 150 nouveaux nœuds<br>
+        Croissance exponentielle du réseau<br>
+        Revenus proportionnels à l'expansion
+    </div>
+</section>
+
+<footer class="zine-page page-8">
+    <h2>🌱 REJOIGNEZ LA RÉVOLUTION</h2>
+    
+    <p><strong>Économique et numérique</strong></p>
+    
+    <div class="feature-block">
+        <div class="feature-title">100% Logiciel Libre</div>
+        <div class="feature-desc">Code source ouvert et auditable</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Modèle coopératif</div>
+        <div class="feature-desc">Partage équitable des bénéfices</div>
+    </div>
+    
+    <div class="feature-block">
+        <div class="feature-title">Innovation continue</div>
+        <div class="feature-desc">Développement communautaire</div>
+    </div>
+    
+    <h3>📞 Contact</h3>
+    <ul>
+        <li class="zine-li">support@qo-op.com</li>
+        <li class="zine-li">forum.monnaie-libre.fr</li>
+        <li class="zine-li">copylaradio.com</li>
+    </ul>
+    
+    <h3>🔗 Ressources</h3>
+    <ul>
+        <li class="zine-li">Documentation technique</li>
+        <li class="zine-li">Formation en ligne</li>
+        <li class="zine-li">Communauté d'entraide</li>
+        <li class="zine-li">Suivi des développements</li>
+    </ul>
+    
+    <p style="text-align: center; margin-top: 1rem;">
+        <strong>Transformez votre PC en Ẑen !</strong>
+    </p>
+</footer>
+
+</main>
+
+<script>
+// Script pour l'impression
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.createElement('button');
+    printButton.textContent = '🖨️ Imprimer';
+    printButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background: #1c4587; color: white; border: none; border-radius: 5px; cursor: pointer;';
+    printButton.onclick = () => window.print();
+    document.body.appendChild(printButton);
+});
+</script>
+
+</body>
+</html> 

@@ -43,8 +43,8 @@ echo "$CAPTAINZEN Ẑen"
 
 #######################################################################
 # Comptage des utilisateurs actifs
-# NOSTR : Utilisateurs avec carte NOSTR (4 Ẑen/mois)
-# PLAYERS : Utilisateurs avec carte ZEN (16 Ẑen/mois)
+# NOSTR : Utilisateurs avec carte NOSTR (1 Ẑen/semaine)
+# PLAYERS : Utilisateurs avec carte ZEN (4 Ẑen/semaine)
 #######################################################################
 NOSTRS=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 PLAYERS=($(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@" ))
@@ -53,15 +53,15 @@ echo "NODE hosts NOSTR : ${#NOSTRS[@]} / ZEN : ${#PLAYERS[@]}"
 #######################################################################
 # Configuration des paramètres économiques
 # PAF : Participation Aux Frais (coûts de fonctionnement)
-# NCARD : Coût mensuel de la carte NOSTR
-# ZCARD : Coût mensuel de la carte ZEN
+# NCARD : Coût hebdomadaire de la carte NOSTR
+# ZCARD : Coût hebdomadaire de la carte ZEN
 #######################################################################
-[[ -z $PAF ]] && PAF=56  # PAF mensuel par défaut
-[[ -z $NCARD ]] && NCARD=4  # Coût mensuel carte NOSTR
-[[ -z $ZCARD ]] && ZCARD=16  # Coût mensuel carte ZEN
+[[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut (56/4 semaines)
+[[ -z $NCARD ]] && NCARD=1  # Coût hebdomadaire carte NOSTR
+[[ -z $ZCARD ]] && ZCARD=4  # Coût hebdomadaire carte ZEN
 
-# Calcul du PAF quotidien (PAF mensuel / 28 jours)
-DAILYPAF=$(makecoord $(echo "$PAF / 28" | bc -l))
+# Calcul du PAF quotidien (PAF hebdomadaire / 7 jours)
+DAILYPAF=$(makecoord $(echo "$PAF / 7" | bc -l))
 echo "ZEN ECONOMY : $PAF ($DAILYPAF ZEN) :: NCARD=$NCARD // ZCARD=$ZCARD"
 DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc -l))
 

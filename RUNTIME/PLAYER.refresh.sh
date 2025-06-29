@@ -669,21 +669,21 @@ for PLAYER in ${PLAYERONE[@]}; do
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
     ####################################################################
-    ## EVERY 28 DAYS PAY CAPTAIN
+    ## EVERY 7 DAYS PAY CAPTAIN
     TODATE_SECONDS=$(date -d "$TODATE" +%s)
     BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
     # Calculate the difference in days
     DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
-    [[ -z $ZCARD ]] && ZCARD=16
+    [[ -z $ZCARD ]] && ZCARD=4
     Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
-    # Check if the difference is a multiple of 28
-    if [ $((DIFF_DAYS % 28)) -eq 0 ]; then
+    # Check if the difference is a multiple of 7
+    if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
         if [[ $(echo "$COINS > $Gpaf" | bc -l) -eq 1 ]]; then
-            ## Pay NCARD to CAPTAIN
-            echo "[28 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
+            ## Pay ZCARD to CAPTAIN
+            echo "[7 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
             ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
         else
-            echo "[28 DAYS CYCLE] NOSTR Card ($COINS G1) UNPLUG !!"
+            echo "[7 DAYS CYCLE] ZCARD ($COINS G1) UNPLUG !!"
             $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN MEMBERSHIP ENDED" "MEMBERSHIP..."
             [[ ${PLAYER} != ${CAPTAINEMAIL} ]] \
                 && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"

@@ -152,3 +152,30 @@ Les contributions sont les bienvenues sur [opencollective.com/monnaie-libre](htt
 Merci à tous ceux qui ont contribué à rendre ce logiciel disponible pour tous. Connaissez-vous [Ğ1](https://monnaie-libre.fr) ?
 
 La meilleure crypto-monnaie dont vous puissiez rêver.
+
+## Découvrez les 3 grands usages d'Astroport.ONE
+
+Astroport.ONE propose trois façons principales de rejoindre et de profiter de l'écosystème. Chaque usage est expliqué dans un Zine (flyer) dédié pour faciliter la découverte :
+
+### 1. [🌐 MULTIPASS](templates/UPlanetZINE/day_/multipass.html)
+**Votre identité numérique & assistant IA**
+- Accédez au réseau social décentralisé NOSTR
+- Obtenez votre identité numérique sécurisée (Carte NOSTR)
+- Profitez d'un assistant IA personnel (#BRO)
+- 1 Ẑen par semaine
+
+### 2. [☁️ ZENCARD](templates/UPlanetZINE/day_/zencard.html)
+**Libérez votre cloud & smartphone**
+- 128 Go de stockage NextCloud privé
+- Désenvoutement et dégooglisation du smartphone
+- Tous les avantages du MULTIPASS inclus
+- 4 Ẑen par semaine
+
+### 3. [⚡ CAPTAIN](templates/UPlanetZINE/day_/captain.html)
+**Devenez un nœud & gagnez des Ẑen**
+- Transformez votre PC en nœud de valeur
+- Rejoignez la coopérative CopyLaRadio
+- Gagnez des Ẑen en proposant MULTIPASS et ZENCARD
+- Formation et accompagnement complets
+
+> 📄 Cliquez sur chaque lien pour découvrir ou imprimer le flyer Zine correspondant !
