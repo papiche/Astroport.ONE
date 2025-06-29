@@ -110,6 +110,14 @@ else
     git clone --depth 1 https://github.com/papiche/UPlanet
 fi
 
+## UPDATE Silkaj JSON utilities
+if [[ -d ~/.zen/workspace/silkaj ]]; then
+    cd ~/.zen/workspace/silkaj
+    git pull
+else
+    git clone https://git.duniter.org/zicmama/silkaj.git
+fi
+
 ########################################################################
 ## UPDATE Astroport.ONE code
 cd ${MY_PATH}/
