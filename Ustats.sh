@@ -301,9 +301,9 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
 
-    [[ -z $PAF ]] && PAF=56
-    [[ -z $NCARD ]] && NCARD=4
-    [[ -z $ZCARD ]] && ZCARD=16
+    [[ -z $PAF ]] && PAF=14
+    [[ -z $NCARD ]] && NCARD=1
+    [[ -z $ZCARD ]] && ZCARD=4
     INCOME=$((nostrcount * NCARD + twcount * ZCARD))
     BILAN=$((INCOME - PAF))
 

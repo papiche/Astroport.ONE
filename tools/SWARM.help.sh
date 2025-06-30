@@ -29,7 +29,7 @@ autres nodes et recevoir des abonnements sur son propre node.
 
 📝 ABONNEMENT
 -------------
-• Coût d'un abonnement = NCARD + ZCARD (exemple: 4 + 15 = 19 Ẑ/28 jours)
+• Coût d'un abonnement = NCARD + ZCARD (exemple: 1 + 4 = 5 ẐEN/semaine)
 • Email d'inscription spécial : capitaine+nodeid-1@domain.com
 • Paiement quotidien automatique via ZEN.ECONOMY.sh
 

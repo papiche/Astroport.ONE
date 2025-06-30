@@ -392,9 +392,9 @@ while true; do
 
     #######################################
     ## ZEN ECONOMY
-    [[ -z $PAF ]] && PAF=56
-    [[ -z $NCARD ]] && NCARD=4
-    [[ -z $ZCARD ]] && ZCARD=16
+    [[ -z $PAF ]] && PAF=14
+    [[ -z $NCARD ]] && NCARD=1
+    [[ -z $ZCARD ]] && ZCARD=4
     BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
 
     ## READ HEARTBOX ANALYSIS
