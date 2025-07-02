@@ -214,14 +214,14 @@ for PLAYER in "${NOSTR[@]}"; do
             local result=""
 
             while [[ $attempts -lt 3 && $success == false ]]; do
-                GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
+                GVA=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
                 if [[ ! -z $GVA ]]; then
-                    sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
-                    echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
                     echo "Trying primal check with GVA NODE: $GVA (attempt $((attempts + 1)))"
 
-                    result=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${g1pub} -n 1000 -j | jq '.[0]' 2>/dev/null)
-                    g1prime=$(echo $result | jq -r .pubkey 2>/dev/null)
+                    # Use silkaj with BMAS endpoint if available
+                    result=$(silkaj --endpoint "$GVA" --json money history ${g1pub} 2>/dev/null | jq '.history[0]' 2>/dev/null)
+                    # Extract the issuer pubkey from the first transaction
+                    g1prime=$(echo $result | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
 
                     if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
                         success=true
@@ -561,15 +561,12 @@ for PLAYER in "${NOSTR[@]}"; do
         local success=false
 
         while [[ $attempts -lt 3 && $success == false ]]; do
-            GVA=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
-            if [[ ! -z $GVA ]]; then
-                sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env
-                echo "NODE=$GVA" >> ${MY_PATH}/../tools/jaklis/.env
-                echo "Trying history with GVA NODE: $GVA (attempt $((attempts + 1)))"
+            BMAS=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
+            if [[ ! -z $BMAS ]]; then
+                echo "Trying history with BMAS NODE: $BMAS (attempt $((attempts + 1)))"
 
                 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-                ${MY_PATH}/../tools/jaklis/jaklis.py history -p ${g1pub} -n 30 -j \
-                    > ${output_file} 2>/dev/null
+                silkaj --endpoint "$GVA" --json money history ${g1pub} 2>/dev/null | jq '.history' > ${output_file}
 
                 if [[ -s ${output_file} ]]; then
                     success=true
@@ -598,9 +595,9 @@ for PLAYER in "${NOSTR[@]}"; do
     # Process each transaction
         while read LINE; do
             JSON=${LINE}
-            TXIDATE=$(echo $JSON | jq -r .date)
-            TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
-            TXIAMOUNT=$(echo $JSON | jq -r .amount)
+            TXIDATE=$(echo $JSON | jq -r .Date)
+            TXIPUBKEY=$(echo $JSON | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
+            TXIAMOUNT=$(echo $JSON | jq -r '."Amounts Ğ1"')
 
             # Skip if transaction is too old
             lastTXdate=$(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check 2>/dev/null)
