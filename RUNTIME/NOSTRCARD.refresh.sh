@@ -180,6 +180,10 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB ]]; then
+        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
+        cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB 2>/dev/null
+    fi
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
     COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)

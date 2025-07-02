@@ -29,16 +29,32 @@ fi
 
 if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
+    # LOCAL
     HEXGATE=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/HEX 2>/dev/null) \
-                        && source="LOCAL" && source ${HOME}/.zen/game/nostr/${EMAIL}/GPS &&
+                        && source="LOCAL" && source ${HOME}/.zen/game/nostr/${EMAIL}/GPS \
+                        && G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR 2>/dev/null) \
+                        && NPUB=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/NPUB 2>/dev/null) \
+                        && RELAY=$myRELAY
+ 
+    # CACHE
     [[ -z $HEXGATE ]] && HEXGATE=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/HEX 2>/dev/null) \
-                        && source="CACHE" && source ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/GPS
-    [[ -z $HEXGATE ]] && HEXGATE=$(cat ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/HEX 2>/dev/null) \
-                        && source="SWARM" && source ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/GPS
+                        && source="CACHE" && source ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/GPS \
+                        && G1PUBNOSTR=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/G1PUBNOSTR 2>/dev/null) \
+                        && NPUB=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/NPUB 2>/dev/null) \
+                        && RELAY=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/12345.json | jq -r '.myRELAY')
+ 
+    # SWARM
+    [[ -z $HEXGATE ]] && SWARM_DIR=$(find ${HOME}/.zen/tmp/swarm -path "*/TW/${EMAIL}/HEX" -printf "%h" 2>/dev/null | head -1) \
+                        && HEXGATE=$(cat ${SWARM_DIR}/HEX 2>/dev/null) \
+                        && source="SWARM" && source ${SWARM_DIR}/GPS \
+                        && G1PUBNOSTR=$(cat ${SWARM_DIR}/G1PUBNOSTR 2>/dev/null) \
+                        && NPUB=$(cat ${SWARM_DIR}/NPUB 2>/dev/null) \
+                        && RELAY=$(cat $(dirname ${SWARM_DIR})/12345.json | jq -r '.myRELAY')
+ 
     [[ -z $HEXGATE ]] && exit 1
-    ## TODO ? SEARCH WITH DNSLINK
-    G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR)
-    echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR}"
+ 
+    ## OUTPUT
+    echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} NPUB=${NPUB}"
     exit 0
 
 fi

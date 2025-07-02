@@ -410,7 +410,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"3.5\",
+    \"version\" : \"3.6\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -419,6 +419,7 @@ NODE12345="{
     \"myASTROPORT\" : \"${myASTROPORT}\",
     \"myIPFS\" : \"${myIPFS}\",
     \"myAPI\" : \"${myAPI}\",
+    \"myRELAY\" : \"${myRELAY}\",
     \"uSPOT\" : \"${uSPOT}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
     \"astroport\" : \"http://${myIP}:1234\",

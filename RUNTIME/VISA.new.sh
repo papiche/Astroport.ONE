@@ -285,14 +285,14 @@ sed -i "s~_SSHPUB_~${SSHPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.htm
 sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+if [[ -z $HEX ]]; then
+    # Search for MULTIPASS
+    $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh "$PLAYER" | tail -n 1)
+    NPUB=$(${MY_PATH}/../tools/keygen -t nostr "$SALT" "$PEPPER")
+    HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUB")
+fi
 # NOSTR Card : keep reference of PLAYER NostrCard
 sed -i "s~_NPUB_~${NPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-#~ if [[ -z $HEX ]]; then
-    #~ # Creating Zen Card Self NOSTR
-    #~ NPUB=$(${MY_PATH}/../tools/keygen -t nostr "$SALT" "$PEPPER")
-    #~ HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUB")
-#~ fi
 sed -i "s~_HEX_~${HEX}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
 ## AstroID Tiddler UPGRADE
