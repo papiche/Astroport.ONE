@@ -105,8 +105,11 @@ for UMAP in ${unique_combined[@]}; do
             local swarm_file=$(find "$HOME/.zen/tmp/swarm/" -path "$search_pattern" -print -quit 2>/dev/null)
             
             if [[ -f "$swarm_file" ]]; then
-                echo "Fichier trouvé dans le swarm : copie vers ${UMAPPATH}/${filename}"
-                cp "$swarm_file" "${UMAPPATH}/${filename}"
+                echo "Fichier trouvé dans le swarm : ${UMAPPATH}/${filename}"
+                if [[ ! "${UMAPPATH}" =~ "${IPFSNODEID}" ]]; then
+                    rm "${UMAPPATH}/${filename}" 2>/dev/null
+                fi
+                ## cp "$swarm_file" "${UMAPPATH}/${filename}" ## REDUCE SWARM CACHE DUPLICATION
             else
                 echo "Génération de ${filename} via page_screenshot.py..."
                 python "${MY_PATH}/../tools/page_screenshot.py" "$gen_url" "${UMAPPATH}/${filename}" 900 900
