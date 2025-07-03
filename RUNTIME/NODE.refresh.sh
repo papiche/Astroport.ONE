@@ -114,11 +114,21 @@ UMAPHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/dev/nul
 # Ajouter les fichiers HEX $IPFSNODEID
 UMAPHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/__/_*_*/_*_*/_*_*/HEX 2>/dev/null))
 
-# Parcourir tous les fichiers HEX dans UMAPHEXLIST
+# Table associative HEX -> dossier UMAP (bash 4+)
+declare -A HEX_TO_UMAP
+
 for nhex in ${UMAPHEXLIST[@]}; do
-    hex=$(cat $nhex)
+    hex=$(cat "$nhex")
     hexumap=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
-    [[ -s  ~/.zen/game/nostr/UMAP$hexumap/HEX ]] && continue
+    # Si ce HEX n'a pas encore été vu, on l'associe à ce nom de dossier
+    if [[ -z "${HEX_TO_UMAP[$hex]}" ]]; then
+        HEX_TO_UMAP[$hex]="$hexumap"
+    fi
+    # Sinon, on ignore (on garde le premier nom de dossier rencontré)
+done
+
+for hex in "${!HEX_TO_UMAP[@]}"; do
+    hexumap="${HEX_TO_UMAP[$hex]}"
     echo "NOSTR UMAP $hexumap : HEX = $hex"
     mkdir -p ~/.zen/game/nostr/UMAP$hexumap
     echo "$hex" > ~/.zen/game/nostr/UMAP$hexumap/HEX
