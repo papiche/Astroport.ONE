@@ -115,7 +115,11 @@ if [[ -d ~/.zen/workspace/silkaj ]]; then
     cd ~/.zen/workspace/silkaj
     git pull
 else
+    mkdir -p ~/.zen/workspace
+    cd ~/.zen/workspace
     git clone --depth 1 https://git.duniter.org/zicmama/silkaj.git
+    cd silkaj
+    ./install_silkaj_json.sh
 fi
 
 ########################################################################

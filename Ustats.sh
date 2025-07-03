@@ -21,7 +21,7 @@ else
 fi
 
 ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
-[[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" >&2 && echo "$HOME/.zen/tmp/${CACHE_FILE}" >&2 && exit 0
+[[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" >&2 && echo "$HOME/.zen/tmp/${CACHE_FILE}" && exit 0
 
 echo "=== $ME =============================== //$ULAT//$ULON" >&2
 ########################################
@@ -33,8 +33,12 @@ if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
     if [[ $CACHE_AGE -lt 43200 ]]; then  # 43200 seconds = 12 hours
         echo "Using cached data (age: ${CACHE_AGE}s)" >&2
-        echo ~/.zen/tmp/${CACHE_FILE}
-        exit 0
+        if jq -e . ~/.zen/tmp/${CACHE_FILE} >/dev/null 2>&1; then
+            echo ~/.zen/tmp/${CACHE_FILE}
+            exit 0
+        else
+            echo "[Ustats.sh] ERROR: Cache file is not valid JSON, regenerating: ~/.zen/tmp/${CACHE_FILE}" >&2
+        fi
     else
         echo "Cache expired (age: ${CACHE_AGE}s), regenerating..." >&2
     fi
@@ -327,5 +331,10 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     # Print and format the JSON string with pretty printing
     echo "$final_json" | jq '.' > ~/.zen/tmp/${CACHE_FILE}
 fi
-echo "$HOME/.zen/tmp/${CACHE_FILE}" >&2
+if jq -e . ~/.zen/tmp/${CACHE_FILE} >/dev/null 2>&1; then
+    echo ~/.zen/tmp/${CACHE_FILE}
+else
+    echo "[Ustats.sh] ERROR: Cache file is not valid JSON after regeneration: ~/.zen/tmp/${CACHE_FILE}" >&2
+    echo '{"error": "Cache file is not valid JSON after regeneration"}'
+fi
 exit 0
