@@ -147,7 +147,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         tw_array+=("$tw_obj")
         [[ $ZEN -gt 0 ]] && twcount=$((twcount + 1))
     done
-    echo "==========================================================="
+    echo "===========================================================" >&2
     ####################################
     # search for active NOSTR MULTIPASS
     ####################################
@@ -155,7 +155,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     MENOSTR=($(ls -d ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
 
     echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}" >&2
-    echo "==========================================================="
+    echo "===========================================================" >&2
     nostr_array=()
     nostrcount=0
     for player in ${MENOSTR[@]}; do
