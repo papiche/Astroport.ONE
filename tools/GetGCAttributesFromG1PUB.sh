@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #################################################### GetGCAttributesFromG1PUB.sh
@@ -34,19 +34,39 @@ echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN ($ME)"
 ## GET G1 WALLET HISTORY
 if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
 
-    [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] \
-    && ${MY_PATH}/timeout.sh -t 5 $MY_PATH/jaklis/jaklis.py history -n 100 -p ${G1PUB} -j > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+    [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] && {
+        # Get BMAS server using duniter_getnode.sh
+        BMAS_SERVER=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
+        
+        if [[ -n "$BMAS_SERVER" && "$BMAS_SERVER" != "ERROR" ]]; then
+            # Use silkaj with specific BMAS server
+            ${MY_PATH}/timeout.sh -t 10 silkaj --endpoint "$BMAS_SERVER" --json money history ${G1PUB} 2>/dev/null | jq '.history' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+        else
+            # Use silkaj with default endpoint
+            ${MY_PATH}/timeout.sh -t 10 silkaj --json money history ${G1PUB} 2>/dev/null | jq '.history' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+        fi
+    }
 
     if [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
-        GVASERVER=$(${MY_PATH}/../tools/duniter_getnode.sh | tail -n 1)
-        ## Changing GVA SERVER in tools/jaklis/.env
-        [[ $(echo ${GVASERVER} | grep "/gva" ) ]] \
-            && cat ${MY_PATH}/../tools/jaklis/.env.template > ${MY_PATH}/../tools/jaklis/.env \
-            && echo "NODE=${GVASERVER}" >> ${MY_PATH}/../tools/jaklis/.env \
-            && echo "OK. NEW GVA NODE : ${GVASERVER}" \
-            || echo "ERROR. BAD GVA NODE : ${GVASERVER}"
-    else
+        echo "++ HISTORY FAILED - trying alternative servers..."
+        # Try alternative servers
+        attempts=0
+        while [[ $attempts -lt 3 ]]; do
+            NEW_SERVER=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
+            if [[ -n "$NEW_SERVER" && "$NEW_SERVER" != "ERROR" && "$NEW_SERVER" != "$BMAS_SERVER" ]]; then
+                echo "Trying with server: $NEW_SERVER"
+                ${MY_PATH}/timeout.sh -t 10 silkaj --endpoint "$NEW_SERVER" --json money history ${G1PUB} 2>/dev/null | jq '.history' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+                [[ -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] && break
+            fi
+            attempts=$((attempts + 1))
+            [[ $attempts -lt 3 ]] && sleep 1
+        done
+    fi
+
+    if [[ -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
         echo "++ HISTORY OK"
+    else
+        echo "-- HISTORY FAILED"
     fi
 fi
 
