@@ -105,8 +105,14 @@ should_refresh() {
     local last_uworld=$(cat "$last_uworld_file")
 
     # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée ## 24 H spreading
-    if [[ "$last_refresh" != "$TODATE" ]] && [[ "$current_time" > "$refresh_time" ]]; then
-        return 0
+    # Patch: Compare times as seconds since midnight to avoid string comparison issues
+    if [[ "$last_refresh" != "$TODATE" ]]; then
+        # Convert current_time and refresh_time (HH:MM) to seconds since midnight
+        current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
+        refresh_seconds=$((10#${refresh_time%%:*} * 3600 + 10#${refresh_time##*:} * 60))
+        if [[ $current_seconds -gt $refresh_seconds ]]; then
+            return 0
+        fi
     fi
     ##############################################
     ## ACTIVATE & CHECK APP STRUCTURE
