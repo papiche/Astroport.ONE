@@ -109,7 +109,7 @@ for UMAP in ${unique_combined[@]}; do
                 if [[ ! "${UMAPPATH}" =~ "${IPFSNODEID}" ]]; then
                     rm "${UMAPPATH}/${filename}" 2>/dev/null
                 fi
-                ## cp "$swarm_file" "${UMAPPATH}/${filename}" ## REDUCE SWARM CACHE DUPLICATION
+                ln -sf "$swarm_file" "${UMAPPATH}/${filename}" # Create symlink to reduce storage duplication
             else
                 echo "Génération de ${filename} via page_screenshot.py..."
                 python "${MY_PATH}/../tools/page_screenshot.py" "$gen_url" "${UMAPPATH}/${filename}" 900 900
