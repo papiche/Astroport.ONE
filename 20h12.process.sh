@@ -81,7 +81,7 @@ sudo systemctl stop astroport
 ## UPDATE G1BILLET code # 33101
 [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
 && cd ~/.zen/G1BILLET/ && git pull \
-&& rm -Rf ~/.zen/G1BILLET/tmp/*
+&& rm -Rf ~/.zen/G1BILLET/tmp/* ## CLEAN TMP
 
 ## UPDATE UPassport # 54321 API
 [[ -s ~/.zen/UPassport/54321.py ]] \
@@ -102,7 +102,7 @@ if [[ -d ~/.zen/workspace/UPlanet ]]; then
     # Compare hashes to detect changes
     if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
         echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH"
-        ipfs add -rw ~/.zen/workspace/UPlanet/* | grep earth
+        ipfs add -rwq ~/.zen/workspace/UPlanet/* 
     fi
 else
     mkdir -p ~/.zen/workspace
@@ -113,7 +113,16 @@ fi
 ## UPDATE Silkaj JSON utilities
 if [[ -d ~/.zen/workspace/silkaj ]]; then
     cd ~/.zen/workspace/silkaj
+    # Store current commit hash before pull
+    BEFORE_HASH=$(git rev-parse HEAD)
     git pull
+    # Store new commit hash after pull
+    AFTER_HASH=$(git rev-parse HEAD)
+    # Compare hashes to detect changes and reinstall if needed
+    if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
+        echo "Silkaj updated from $BEFORE_HASH to $AFTER_HASH - reinstalling new silkaj"
+        ./install_silkaj_json.sh
+    fi
 else
     mkdir -p ~/.zen/workspace
     cd ~/.zen/workspace
@@ -129,8 +138,8 @@ git pull
 
 ########################################################################
 ## Updating yt-dlp
-${MY_PATH}/youtube-dl.sh
-yt-dlp -U
+${MY_PATH}/youtube-dl.sh # retry install if needed
+yt-dlp -U #Update yt-dlp
 
 ########################################################################
 ## DRAGON SSH WOT
@@ -142,12 +151,12 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
 ################## NOSTR Cards (Notes and Other Stuff Transmitted by Relays)
-rm "${HOME}/.zen/strfry/amisOfAmis.txt" ## RESET Friends of Friends List
+rm "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null ## RESET Friends of Friends List
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
 ########################################################################
 if [[ ${UPLANETG1PUB} == "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
-    #################### UPLANET ORIGIN : PRIVATE SWARM BLOOM #########
+    #################### UPLANET ORIGIN : <<<<< DETECT PRIVATE SWARM BLOOM >>>>> #########
     ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 else
     # UPlanet Zen MULTIPASS / real ZenCard + TW hidden mode

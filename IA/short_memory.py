@@ -19,7 +19,7 @@ def main():
     pubkey = event_json.get('event', {}).get('pubkey', '')
 
     # Répertoire de stockage de la mémoire contextuelle
-    MEMORY_DIR = os.path.expanduser("~/.zen/strfry/uplanet_memory")
+    MEMORY_DIR = os.path.expanduser("~/.zen/tmp/flashmem/uplanet_memory")
     os.makedirs(MEMORY_DIR, exist_ok=True)
 
     # Fichier de mémoire par coordonnées
