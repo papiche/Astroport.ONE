@@ -612,11 +612,14 @@ for PLAYER in "${NOSTR[@]}"; do
             # Skip if transaction is too old
             lastTXdate=$(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check 2>/dev/null)
             [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-            [[ $(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check) -ge $TXIDATE ]] && continue
+            # Convert dates to timestamps for proper comparison
+            lastTXtimestamp=$(date -d "$lastTXdate" +%s 2>/dev/null || echo 0)
+            txTimestamp=$(date -d "$TXIDATE" +%s 2>/dev/null || echo 0)
+            [[ $lastTXtimestamp -ge $txTimestamp ]] && continue
 
             # Skip outgoing transactions
             [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-                && echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check \
+                && echo "$txTimestamp" > ~/.zen/game/nostr/${PLAYER}/.nostr.check \
                 && continue
 
             # Check primal transaction
@@ -648,7 +651,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 # Refund the transaction
                 ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "NOSTR:${G1PUBNOSTR}:INTRUSION" 2>/dev/null
                 if [[ $? == 0 ]]; then
-                    echo $TXIDATE > ~/.zen/game/nostr/${PLAYER}/.nostr.check
+                    echo $txTimestamp > ~/.zen/game/nostr/${PLAYER}/.nostr.check
                     # Create alert message
                     # Use the multi language template
                     TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.html"
@@ -667,7 +670,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
             else
                 echo "GOOD NOSTR WALLET primal TX by $TXIPRIMAL"
-                echo "$TXIDATE" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
+                echo "$txTimestamp" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
             fi
         done < $HOME/.zen/game/nostr/${PLAYER}/.g1.history.json
     else
