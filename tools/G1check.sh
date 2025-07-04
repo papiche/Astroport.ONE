@@ -84,9 +84,9 @@ check_balance() {
     while [[ $retries -lt $MAX_RETRIES ]]; do
         # Use silkaj to get balance with specific BMAS server
         if [[ -n "$server" ]]; then
-            balance=$(silkaj --endpoint "$server" money balance "$g1pub" 2>/dev/null | grep "Total balance" | sed 's/.*│ //' | sed 's/ Ğ1.*//')
+            balance=$(silkaj --json --endpoint "$server" money balance "$g1pub" 2>/dev/null | jq -r '.balances.total')
         else
-            balance=$(silkaj money balance "$g1pub" 2>/dev/null | grep "Total balance" | sed 's/.*│ //' | sed 's/ Ğ1.*//')
+            balance=$(silkaj --json money balance "$g1pub" 2>/dev/null | jq -r '.balances.total')
         fi
         
         if [[ "$balance" != "" ]]; then
@@ -94,18 +94,19 @@ check_balance() {
             return 0
         fi
         retries=$((retries + 1))
-        [[ $retries -lt $MAX_RETRIES ]] && sleep 1
+        [[ $retries -lt $MAX_RETRIES ]] && server=$(get_bmas_server)
     done
     return 1
 }
 
 # Get BMAS server
-log "Getting BMAS server from duniter_getnode.sh..."
-BMAS_SERVER=$(get_bmas_server)
+log "Getting BMAS server from cache..."
+BMAS_SERVER=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
 if [[ -n "$BMAS_SERVER" ]]; then
-    log "Using BMAS server: $BMAS_SERVER"
+    log "Using BMAS server for silkaj: $BMAS_SERVER"
 else
-    log "Failed to get BMAS server, using default silkaj endpoint"
+    BMAS_SERVER=$(get_bmas_server)
+    log "Using new BMAS server: $BMAS_SERVER"
 fi
 
 # Try to get balance with BMAS server

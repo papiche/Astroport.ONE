@@ -100,12 +100,13 @@ RETRY_COUNT=0
 COINS=""
 
 # Get BMAS server
-log "Getting BMAS server for balance check..."
-BMAS_SERVER=$(get_bmas_server)
+log "Getting BMAS server from cache..."
+BMAS_SERVER=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
 if [[ -n "$BMAS_SERVER" ]]; then
-    log "Using BMAS server for balance check: $BMAS_SERVER"
+    log "Using BMAS server for silkaj: $BMAS_SERVER"
 else
-    log "Failed to get BMAS server, using default silkaj endpoint"
+    log "Failed to get BMAS server, using new silkaj endpoint"
+    BMAS_SERVER=$(get_bmas_server)
 fi
 
 while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
@@ -113,9 +114,9 @@ while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
     
     # Use silkaj to get balance with BMAS server if available
     if [[ -n "$BMAS_SERVER" ]]; then
-        COINS=$(silkaj --endpoint "$BMAS_SERVER" --private-key $(cat ${KEYFILE} | grep "priv:" | cut -d ' ' -f 2) money balance ${ISSUERPUB} 2>/dev/null | grep "Total balance" | sed 's/.*│ //' | sed 's/ Ğ1.*//')
+        COINS=$(silkaj --json --endpoint "$BMAS_SERVER" --dunikey-file "${KEYFILE}" money balance ${ISSUERPUB} 2>/dev/null | jq -r '.balances.total')
     else
-        COINS=$(silkaj --private-key $(cat ${KEYFILE} | grep "priv:" | cut -d ' ' -f 2) money balance ${ISSUERPUB} 2>/dev/null | grep "Total balance" | sed 's/.*│ //' | sed 's/ Ğ1.*//')
+        COINS=$(silkaj --json --dunikey-file "${KEYFILE}" money balance ${ISSUERPUB} 2>/dev/null | jq -r '.balances.total')
     fi
     
     if [[ -n $COINS && "$COINS" != "null" ]]; then
@@ -123,6 +124,7 @@ while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
         break
     fi
     RETRY_COUNT=$((RETRY_COUNT + 1))
+    BMAS_SERVER=$(get_bmas_server)
     sleep 2
 done
 
@@ -177,25 +179,24 @@ function make_payment() {
     local server="$6"
     
     log "Attempting payment with silkaj: amount: $amount to: $dest_pub"
-    # Extract private key from dunikey file
-    local priv_key=$(cat ${key_file} | grep "priv:" | cut -d ' ' -f 2)
-    
-    # Use silkaj to make the payment with BMAS server if available
+    # Utiliser le fichier dunikey directement
     if [[ -n "$server" ]]; then
-        silkaj --endpoint "$server" --private-key ${priv_key} money transfer ${dest_pub} ${amount} --comment "${comment}" 2>/dev/null > ${result_file}
+        silkaj --json --endpoint "$server" --dunikey-file "${key_file}" money transfer -r ${dest_pub} -a ${amount} --reference "${comment}" 2>/dev/null | jq -r '.txid' > ${result_file}
     else
-        silkaj --private-key ${priv_key} money transfer ${dest_pub} ${amount} --comment "${comment}" 2>/dev/null > ${result_file}
+        silkaj --json --dunikey-file "${key_file}" money transfer -r ${dest_pub} -a ${amount} --reference "${comment}" 2>/dev/null | jq -r '.txid' > ${result_file}
     fi
     return $?
 }
 
 # Get fresh BMAS server for payment
 log "Getting BMAS server for payment..."
-PAYMENT_SERVER=$(get_bmas_server)
+PAYMENT_SERVER=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
 if [[ -n "$PAYMENT_SERVER" ]]; then
     log "Using BMAS server for payment: $PAYMENT_SERVER"
-else
-    log "Failed to get BMAS server for payment, using default silkaj endpoint"
+else 
+    log "Failed to get BMAS server for payment, using new silkaj endpoint"
+    PAYMENT_SERVER=$(get_bmas_server)
+    log "Using new BMAS server for payment: $PAYMENT_SERVER"
 fi
 
 # First attempt
@@ -216,10 +217,9 @@ if [[ ${ISOK} != 0 ]]; then
     attempts=0
     while [[ $attempts -lt 3 ]]; do
         # Get a new BMAS server
-        NEW_SERVER=$(get_bmas_server)
-        if [[ -n "$NEW_SERVER" && "$NEW_SERVER" != "$PAYMENT_SERVER" ]]; then
-            log "Trying payment with new BMAS server: $NEW_SERVER"
-            
+        NEW_SERVER=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
+        if [[ -n "$NEW_SERVER" ]]; then
+            log "Trying payment with BMAS server: $NEW_SERVER"
             make_payment "${PENDINGDIR}/${MOATS}.key" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${PENDINGDIR}/${MOATS}.result.html" "$NEW_SERVER"
             ISOK=$?
             
@@ -232,7 +232,7 @@ if [[ ${ISOK} != 0 ]]; then
         attempts=$((attempts + 1))
         if [[ $attempts -lt 3 ]]; then
             log "Payment failed, trying next BMAS server (attempt $attempts of 3)"
-            sleep 2
+            NEW_SERVER=$(get_bmas_server)
         fi
     done
 

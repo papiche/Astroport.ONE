@@ -224,12 +224,12 @@ for PLAYER in "${NOSTR[@]}"; do
             local result=""
 
             while [[ $attempts -lt 3 && $success == false ]]; do
-                GVA=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
-                if [[ ! -z $GVA ]]; then
-                    echo "Trying primal check with GVA NODE: $GVA (attempt $((attempts + 1)))"
+                BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
+                if [[ ! -z $BMAS_NODE ]]; then
+                    echo "Trying primal check with GVA NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
                     # Use silkaj with BMAS endpoint if available
-                    result=$(silkaj --endpoint "$GVA" --json money history ${g1pub} 2>/dev/null | jq '.history[0]' 2>/dev/null)
+                    result=$(silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub} 2>/dev/null | jq '.history[0]' 2>/dev/null)
                     # Extract the issuer pubkey from the first transaction
                     g1prime=$(echo $result | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
 
@@ -571,12 +571,12 @@ for PLAYER in "${NOSTR[@]}"; do
         local success=false
 
         while [[ $attempts -lt 3 && $success == false ]]; do
-            BMAS=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
-            if [[ ! -z $BMAS ]]; then
-                echo "Trying history with BMAS NODE: $BMAS (attempt $((attempts + 1)))"
+            BMAS_NODE=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
+            if [[ ! -z $BMAS_NODE ]]; then
+                echo "Trying history with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
                 ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-                silkaj --endpoint "$GVA" --json money history ${g1pub} 2>/dev/null | jq '.history' > ${output_file}
+                silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub} 2>/dev/null | jq '.history' > ${output_file}
 
                 if [[ -s ${output_file} ]]; then
                     success=true
@@ -586,7 +586,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
             attempts=$((attempts + 1))
             if [[ $attempts -lt 3 ]]; then
-                sleep 2
+                BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
             fi
         done
 

@@ -61,24 +61,9 @@ DIR=~/.zen/tmp/gnodewatch
 export DIR
 mkdir -p $DIR/chains
 
-# KEEP ~/.zen/tmp/current.duniter for 20  mn
-find ~/.zen/tmp/ -mmin +20 -type f -name "current.duniter" -exec rm -f '{}' \;
-find ~/.zen/tmp/ -mmin +20 -type f -name "current.duniter.bmas" -exec rm -f '{}' \;
-
-# Check cache first - if recent, use it
-if [[ "$1" == "BMAS" ]]; then
-    if [[ -f ~/.zen/tmp/current.duniter.bmas ]]; then
-        echo "Using cached BMAS server: $(cat ~/.zen/tmp/current.duniter.bmas)"
-        cat ~/.zen/tmp/current.duniter.bmas
-        exit 0
-    fi
-else
-    if [[ -f ~/.zen/tmp/current.duniter ]]; then
-        echo "Using cached GVA server: $(cat ~/.zen/tmp/current.duniter)"
-        cat ~/.zen/tmp/current.duniter
-        exit 0
-    fi
-fi
+# REMOVE CACHE
+rm -f ~/.zen/tmp/current.duniter
+rm -f ~/.zen/tmp/current.duniter.bmas
 
 ##### $DIR/duniter_nodes.txt REFRESH after 30 minutes #####
 find $DIR/ -mmin +30 -type f -name "duniter_*" -exec rm -f '{}' \;
@@ -167,10 +152,10 @@ else
 
         if [[ "$Dtest" == "duniter" ]]; then
             if [[ "$1" == "BMAS" ]]; then
-                echo "silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
-                IDtest=$(silkaj --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech)
-                echo $IDtest
-                [[ $IDtest != "" && $IDtest != "null" ]] && result="$lastresult" && break
+                echo "silkaj --json --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech"
+                IDtest=$(silkaj --json --endpoint $lastresult wot lookup DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech 2>/dev/null | jq -r '.results[0].identities[0].uid // empty')
+                echo "IDtest result: $IDtest"
+                [[ -n "$IDtest" && "$IDtest" != "null" ]] && result="$lastresult" && break
 
                 [[ $loop -eq 8 ]] \
                     && result="g1.duniter.org" && break
