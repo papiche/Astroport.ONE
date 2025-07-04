@@ -105,7 +105,7 @@ for nhex in ${NODEHEXLIST[@]}; do
     mkdir -p ~/.zen/game/nostr/UNODE_$hexnode
     echo "$hex" > ~/.zen/game/nostr/UNODE_$hexnode/HEX
 done
-##########################################################
+#################################################### strfry authorized keys
 echo "############################################"
 echo "REFRESH UMAPs HEX"
 rm -Rf ~/.zen/game/nostr/UMAP* ## REMOVE OLD VALUE
@@ -170,6 +170,8 @@ for nhex in ${REGIONHEXLIST[@]}; do
     echo "$hex" > ~/.zen/game/nostr/REGION$hexumap/HEX
 done
 
+# COPY strfry nostr blacklist.txt to ~/.zen/tmp/$IPFSNODEID/
+cp "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/blacklist.txt
 
 ########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
