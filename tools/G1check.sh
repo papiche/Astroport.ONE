@@ -89,6 +89,11 @@ check_balance() {
             balance=$(silkaj --json money balance "$g1pub" 2>/dev/null | jq -r '.balances.total')
         fi
         
+        # Convert centimes to full Ğ1 units (divide by 100)
+        if [[ "$balance" != "" && "$balance" != "null" ]]; then
+            balance=$(echo "scale=2; $balance / 100" | bc -l)
+        fi
+        
         if [[ "$balance" != "" ]]; then
             echo "$balance"
             return 0
