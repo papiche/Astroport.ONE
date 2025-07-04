@@ -35,17 +35,22 @@ echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN ($ME)"
 if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
 
     [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] && {
+        # First try with silkaj default endpoint
+        echo "Trying with silkaj default endpoint..."
+        ${MY_PATH}/timeout.sh -t 10 silkaj --json money history ${G1PUB} 2>/dev/null | jq '.history' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+    }
+
+    if [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
+        echo "++ HISTORY FAILED - trying BMAS servers..."
         # Get BMAS server using duniter_getnode.sh
         BMAS_SERVER=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
         
         if [[ -n "$BMAS_SERVER" && "$BMAS_SERVER" != "ERROR" ]]; then
+            echo "Trying with BMAS server: $BMAS_SERVER"
             # Use silkaj with specific BMAS server
             ${MY_PATH}/timeout.sh -t 10 silkaj --endpoint "$BMAS_SERVER" --json money history ${G1PUB} 2>/dev/null | jq '.history' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
-        else
-            # Use silkaj with default endpoint
-            ${MY_PATH}/timeout.sh -t 10 silkaj --json money history ${G1PUB} 2>/dev/null | jq '.history' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
         fi
-    }
+    fi
 
     if [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
         echo "++ HISTORY FAILED - trying alternative servers..."

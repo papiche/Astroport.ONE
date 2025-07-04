@@ -61,9 +61,24 @@ DIR=~/.zen/tmp/gnodewatch
 export DIR
 mkdir -p $DIR/chains
 
-# KEEP ~/.zen/tmp/current.duniter for 5 mn
-#~ find ~/.zen/tmp/ -mmin +5 -type f -name "current.duniter" -exec rm -f '{}' \;
-#~ [[ -f ~/.zen/tmp/current.duniter ]] && cat ~/.zen/tmp/current.duniter && exit 0
+# KEEP ~/.zen/tmp/current.duniter for 20  mn
+find ~/.zen/tmp/ -mmin +20 -type f -name "current.duniter" -exec rm -f '{}' \;
+find ~/.zen/tmp/ -mmin +20 -type f -name "current.duniter.bmas" -exec rm -f '{}' \;
+
+# Check cache first - if recent, use it
+if [[ "$1" == "BMAS" ]]; then
+    if [[ -f ~/.zen/tmp/current.duniter.bmas ]]; then
+        echo "Using cached BMAS server: $(cat ~/.zen/tmp/current.duniter.bmas)"
+        cat ~/.zen/tmp/current.duniter.bmas
+        exit 0
+    fi
+else
+    if [[ -f ~/.zen/tmp/current.duniter ]]; then
+        echo "Using cached GVA server: $(cat ~/.zen/tmp/current.duniter)"
+        cat ~/.zen/tmp/current.duniter
+        exit 0
+    fi
+fi
 
 ##### $DIR/duniter_nodes.txt REFRESH after 30 minutes #####
 find $DIR/ -mmin +30 -type f -name "duniter_*" -exec rm -f '{}' \;
@@ -180,6 +195,15 @@ fi
     && sed -i '/^NODE=/d' ${MY_PATH}/../tools/jaklis/.env \
     && echo "NODE=$result" >> ${MY_PATH}/../tools/jaklis/.env
 
-[[ -n "$result" ]] && echo "$result" > ~/.zen/tmp/current.duniter
+# Save result in appropriate cache file
+if [[ -n "$result" ]]; then
+    if [[ "$1" == "BMAS" ]]; then
+        echo "$result" > ~/.zen/tmp/current.duniter.bmas
+        echo "Saved BMAS server to cache: $result"
+    else
+        echo "$result" > ~/.zen/tmp/current.duniter
+        echo "Saved GVA server to cache: $result"
+    fi
+fi
 
 echo $result
