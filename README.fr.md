@@ -157,21 +157,21 @@ La meilleure crypto-monnaie dont vous puissiez rêver.
 
 Astroport.ONE propose trois façons principales de rejoindre et de profiter de l'écosystème. Chaque usage est expliqué dans un Zine (flyer) dédié pour faciliter la découverte :
 
-### 1. [🌐 MULTIPASS](templates/UPlanetZINE/day_/multipass.html)
+### 1. [🌐 MULTIPASS](https://ipfs.copylaradio.com/ipfs/QmcjpCAfSCn3pucSSWKP5i7HqQCkXnfesVo5z7m6btT5Mv/multipass.html)
 **Votre identité numérique & assistant IA**
 - Accédez au réseau social décentralisé NOSTR
 - Obtenez votre identité numérique sécurisée (Carte NOSTR)
 - Profitez d'un assistant IA personnel (#BRO)
 - 1 Ẑen par semaine
 
-### 2. [☁️ ZENCARD](templates/UPlanetZINE/day_/zencard.html)
+### 2. [☁️ ZENCARD](https://ipfs.copylaradio.com/ipfs/QmQRreMYDHhAnkg7rwgYYdS5QDhvjjeBdozE16L3h5A8ED/zencard.html)
 **Libérez votre cloud & smartphone**
 - 128 Go de stockage NextCloud privé
 - Désenvoutement et dégooglisation du smartphone
 - Tous les avantages du MULTIPASS inclus
 - 4 Ẑen par semaine
 
-### 3. [⚡ CAPTAIN](templates/UPlanetZINE/day_/captain.html)
+### 3. [⚡ CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html)
 **Devenez un nœud & gagnez des Ẑen**
 - Transformez votre PC en nœud de valeur
 - Rejoignez la coopérative CopyLaRadio
