@@ -19,6 +19,7 @@
 # - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
 # - #youtube : Télécharger une vidéo YouTube (720p max) #mp3 pour convertir en audio (COOKIE PB !)
 # - #mem : Afficher le contenu de la mémoire de conversation
+# - #rec : Enregistrer le message dans la mémoire IA (utilisateur et UMAP)
 # - #reset : Effacer la mémoire de conversation
 # - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
