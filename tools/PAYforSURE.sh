@@ -181,11 +181,13 @@ function make_payment() {
     log "Attempting payment with silkaj: amount: $amount to: $dest_pub"
     # Utiliser le fichier dunikey directement
     if [[ -n "$server" ]]; then
-        silkaj --json --endpoint "$server" --dunikey-file "${key_file}" money transfer -r ${dest_pub} -a ${amount} --reference "${comment}" 2>/dev/null | jq -r '.txid' > ${result_file}
+        silkaj --endpoint "$server" --dunikey-file "${key_file}" money transfer -r ${dest_pub} -a ${amount} --reference "${comment}" --yes 2>/dev/null > ${result_file}
+        ISOK=$?
     else
-        silkaj --json --dunikey-file "${key_file}" money transfer -r ${dest_pub} -a ${amount} --reference "${comment}" 2>/dev/null | jq -r '.txid' > ${result_file}
+        silkaj --dunikey-file "${key_file}" money transfer -r ${dest_pub} -a ${amount} --reference "${comment}" --yes 2>/dev/null > ${result_file}
+        ISOK=$?
     fi
-    return $?
+    return $ISOK
 }
 
 # Get fresh BMAS server for payment
@@ -205,19 +207,16 @@ ISOK=$?
 
 if [[ ${ISOK} != 0 ]]; then
     log "(╥☁╥ ) TRANSACTION ERROR (╥☁╥ )"
-    
-    # Check for insufficient balance
-    if grep -q "insufficient balance" "${PENDINGDIR}/${MOATS}.result.html"; then
-        log "ERROR: Insufficient balance"
-        exit 1
-    fi
+        
+    # Display silkaj result
+    cat "${PENDINGDIR}/${MOATS}.result.html"
     
     # Try with different BMAS servers
     log "Attempting payment with alternative BMAS servers..."
     attempts=0
     while [[ $attempts -lt 3 ]]; do
-        # Get a new BMAS server
-        NEW_SERVER=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
+        # Get a new BMAS server using get_bmas_server function
+        NEW_SERVER=$(get_bmas_server)
         if [[ -n "$NEW_SERVER" ]]; then
             log "Trying payment with BMAS server: $NEW_SERVER"
             make_payment "${PENDINGDIR}/${MOATS}.key" "${AMOUNT}" "${G1PUB}" "${COMMENT}" "${PENDINGDIR}/${MOATS}.result.html" "$NEW_SERVER"
@@ -232,7 +231,7 @@ if [[ ${ISOK} != 0 ]]; then
         attempts=$((attempts + 1))
         if [[ $attempts -lt 3 ]]; then
             log "Payment failed, trying next BMAS server (attempt $attempts of 3)"
-            NEW_SERVER=$(get_bmas_server)
+            sleep 2
         fi
     done
 
