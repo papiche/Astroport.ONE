@@ -217,7 +217,7 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ -z $HEXGATE ]] && exit 1
  
     ## OUTPUT
-    echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} NPUB=${NPUB}"
+    echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} NPUB=${NPUB} RELAY=${RELAY}"
     exit 0
 
 fi
