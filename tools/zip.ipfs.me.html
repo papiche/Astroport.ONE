@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download IPFS Directory</title>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 20px 0;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #progress {
+            margin: 20px 0;
+            height: 20px;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+        }
+        #progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #status {
+            margin: 10px 0;
+            font-style: italic;
+            color: #666;
+            min-height: 60px;
+        }
+        #file-list {
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        .file-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>IPFS Directory Download</h1>
+    <p>Click the button below to download and compress the entire directory.</p>
+    <button id="downloadBtn">Download as ZIP</button>
+    <div id="progress">
+        <div id="progress-bar"></div>
+    </div>
+    <div id="status">Ready to download...</div>
+    <div id="file-list">
+        <p>No files processed yet...</p>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const downloadBtn = document.getElementById('downloadBtn');
+            const progressBar = document.getElementById('progress-bar');
+            const statusEl = document.getElementById('status');
+            const fileListEl = document.getElementById('file-list');
+
+            // Get CID and gateway from current URL
+            const currentUrl = window.location.href;
+            const cidMatch = currentUrl.match(/\/ipfs\/([^/]+)/);
+            if (!cidMatch || cidMatch.length < 2) {
+                statusEl.textContent = "Error: Unable to detect IPFS CID in URL.";
+                downloadBtn.disabled = true;
+                return;
+            }
+            const cid = cidMatch[1];
+            const urlObj = new URL(currentUrl);
+            const gateway = `${urlObj.protocol}//${urlObj.host}`;
+            statusEl.textContent = `Detected CID: ${cid} | Gateway: ${gateway}`;
+            console.log('Using gateway:', gateway);
+
+            // Add file/folder to the UI list
+            function addFileToList(path, type) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.textContent = `${type === 'directory' ? '📁' : '📄'} ${path}`;
+                fileListEl.appendChild(fileItem);
+                fileListEl.scrollTop = fileListEl.scrollHeight;
+            }
+
+            // Parse directory listing HTML and extract file/folder info (robuste pour IPFS gateway)
+            function parseDirectoryListing(html) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a'));
+                const entries = [];
+                for (let i = 0; i < links.length; i++) {
+                    const link = links[i];
+                    const href = link.getAttribute('href');
+                    if (!href || !href.startsWith('/ipfs/')) continue;
+                    if (href.includes('ipfs.tech') || href.includes('docs.ipfs.tech')) continue;
+                    const parts = href.split('/');
+                    const name = decodeURIComponent(parts[parts.length - 1].split('?')[0]);
+                    if (!name || name === '' || name === doc.title) continue;
+                    // Ignore pure CIDs (like QmecXQV4zecWHEMtjc7HnW75fuHgocH2HfZZwNgjsTNMrZ)
+                    if (name.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/)) continue;
+                    // Ignore links with ?filename= (these are the CID links for files)
+                    if (href.match(/\?.*filename=/)) continue;
+                    
+                    // Heuristique : si le lien suivant contient ?filename=, alors c'est un fichier, sinon dossier
+                    let isDirectory = true;
+                    if (i + 1 < links.length) {
+                        const nextLink = links[i + 1];
+                        const nextHref = nextLink.getAttribute('href');
+                        if (nextHref && nextHref.includes('?filename=')) {
+                            isDirectory = false;
+                        }
+                    }
+                    entries.push({ name, isDirectory });
+                }
+                return entries;
+            }
+
+            // Fetch directory listing from IPFS gateway and return file/folder info
+            async function fetchDirectoryListing(cid, basePath) {
+                // Construit l'URL du dossier (root ou sous-dossier)
+                let url;
+                if (!basePath) {
+                    url = `${gateway}/ipfs/${cid}/`;
+                } else {
+                    // Attention : chaque segment doit être encodé séparément
+                    const encodedPath = basePath.split('/').map(encodeURIComponent).join('/');
+                    url = `${gateway}/ipfs/${cid}/${encodedPath}/`;
+                }
+                console.log('Fetching directory listing:', url);
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const html = await response.text();
+                return parseDirectoryListing(html);
+            }
+
+            // Recursively add files/folders to ZIP, preserving structure, with maxDepth=10
+            async function addToZip(cid, path, zipFolder, depth = 0) {
+                if (depth > 10) return;
+                const entries = await fetchDirectoryListing(cid, path);
+                for (const entry of entries) {
+                    const entryPath = path ? `${path}/${entry.name}` : entry.name;
+                    if (entry.isDirectory) {
+                        statusEl.textContent = `Processing directory: ${entryPath}`;
+                        addFileToList(entryPath, 'directory');
+                        console.log('Recursing into directory:', entryPath);
+                        const newFolder = zipFolder.folder(entry.name);
+                        await addToZip(cid, entryPath, newFolder, depth + 1);
+                    } else {
+                        statusEl.textContent = `Downloading file: ${entryPath}`;
+                        addFileToList(entryPath, 'file');
+                        try {
+                            const encodedEntryPath = encodeURIComponent(entryPath);
+                            const fileUrl = `${gateway}/ipfs/${cid}/${encodedEntryPath}`;
+                            console.log('Fetching file:', fileUrl);
+                            const response = await fetch(fileUrl);
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                            }
+                            const fileContent = await response.arrayBuffer();
+                            zipFolder.file(entry.name, fileContent);
+                        } catch (error) {
+                            console.error(`Error downloading file ${entryPath}:`, error);
+                            addFileToList(`❌ Error: ${entryPath} - ${error.message}`, 'error');
+                        }
+                    }
+                }
+            }
+
+            downloadBtn.addEventListener('click', async function() {
+                downloadBtn.disabled = true;
+                fileListEl.innerHTML = '';
+                statusEl.textContent = "Initializing...";
+                progressBar.style.width = "0%";
+                try {
+                    const zip = new JSZip();
+                    statusEl.textContent = "Fetching directory structure...";
+                    await addToZip(cid, '', zip);
+                    
+                    // Check if any files were added to the ZIP
+                    const zipFiles = Object.keys(zip.files);
+                    if (zipFiles.length === 0) {
+                        throw new Error("No files found in the IPFS directory");
+                    }
+                    
+                    statusEl.textContent = "Compressing files...";
+                    const zipContent = await zip.generateAsync({ type: 'blob' }, (metadata) => {
+                        progressBar.style.width = `${metadata.percent}%`;
+                        statusEl.textContent = `Compression: ${metadata.percent.toFixed(1)}%`;
+                    });
+                    saveAs(zipContent, `ipfs-directory-${cid}.zip`);
+                    statusEl.textContent = "Download completed!";
+                    progressBar.style.width = "100%";
+                } catch (error) {
+                    console.error("Error:", error);
+                    statusEl.textContent = `Error: ${error.message}`;
+                    const errorItem = document.createElement('div');
+                    errorItem.className = 'file-item';
+                    errorItem.style.color = 'red';
+                    errorItem.textContent = `❌ Error: ${error.message}`;
+                    fileListEl.appendChild(errorItem);
+                } finally {
+                    downloadBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
