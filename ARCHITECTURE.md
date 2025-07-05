@@ -239,16 +239,17 @@ function validate_primal_transaction() {
 
 | **Acteur** | **Rôle** | **Balance** | **Responsabilité** |
 |------------|----------|-------------|-------------------|
-| **UPlanet** | Banque centrale | `UCOIN` | Gestion coopérative |
-| **Node** | Infrastructure | `NODECOIN` | Services réseau |
-| **Captain** | Administrateur | `CAPTAINCOIN` | Paiement PAF |
+| **UPlanet** | Banque centrale | `UPLANETG1PUB` | Gestion coopérative |
+| **Node** | Infrastructure | `NODEG1PUB` | Services réseau |
+| **Captain** | Administrateur | `CAPTAING1PUB` | Paiement PAF |
+| **Multipass** | Utilisateur | `G1PUBNOSTR` | Paiement PAF |
 
 #### **Coûts Hebdomadaires**
 ```bash
-PAF=14        # Participation Aux Frais (56/4 semaines)
+PAF=14        # Participation Aux Frais NODE (par semaine)
 NCARD=1       # Coût carte NOSTR/semaine
 ZCARD=4       # Coût carte ZEN/semaine
-DAILYPAF=2    # PAF quotidien (14/7 jours)
+DAILYPAF=2    # PAF quotidien versé au NODE depuis le compte Capitaine (ou UPlanet)
 ```
 
 #### **Logique de Paiement PAF**
@@ -290,13 +291,28 @@ graph TD
 
 | **Type** | **Coût** | **Fréquence** | **Source** |
 |----------|----------|---------------|------------|
-| **Y Level** | Variable | Quotidien | Node Wallet |
-| **Standard** | Variable | Quotidien | Captain Wallet |
+| **Y Level** | Variable | Hebdomadaire | Node Wallet |
+| **Standard** | Variable | Hebdomadaire | Captain Wallet |
 
 ```bash
-# Calcul paiement quotidien
-DAILY_COST = TOTAL_COST / 28  # Coût mensuel / 28 jours
-DAILY_G1 = DAILY_COST / 10    # Conversion Ẑen → Ğ1
+# Calcul paiement hebdomadaire
+WEEKLY_COST = NCARD + ZCARD  # Exemple: 1 + 4 = 5 Ẑen/semaine
+WEEKLY_G1 = WEEKLY_COST / 10 # Conversion Ẑen → Ğ1
+NEXT_PAYMENT = CURRENT_DATE + 7 days  # Échéance suivante
+```
+
+#### **Logique de Paiement Hebdomadaire**
+```mermaid
+graph TD
+    A[ZEN.ECONOMY.sh] --> B[PAF Daily Payment]
+    B --> C[ZEN.SWARM.payments.sh]
+    C --> D{Check Subscriptions}
+    D --> E{Payment Due?}
+    E -->|Yes| F[Execute Weekly Payment]
+    E -->|No| G[Skip - Not Due]
+    F --> H[Update next_payment +7 days]
+    H --> I[Record last_payment]
+    I --> J[Next Subscription]
 ```
 
 ### 1. Système de Paiement Ğ1
@@ -615,16 +631,19 @@ graph LR
     D -->|No| F[UPlanet Pays Node]
     E --> G[ZEN.SWARM.payments.sh]
     F --> G
-    G --> H[Process Subscriptions]
-    H --> I[Daily Payments]
-    I --> J[Update Records]
+    G --> H[Check Weekly Subscriptions]
+    H --> I{Payment Due?}
+    I -->|Yes| J[Weekly Payment]
+    I -->|No| K[Skip - Not Due]
+    J --> L[Update next_payment +7 days]
+    L --> M[Record last_payment]
     
-    K[User Like] --> L[filter/7.sh]
-    L --> M{Both UPlanet?}
-    M -->|Yes| N[0.1 Ğ1 Payment]
-    M -->|No| O[No Action]
-    N --> P[PAYforSURE.sh]
-    P --> Q[Transaction Recorded]
+    N[User Like] --> O[filter/7.sh]
+    O --> P{Both UPlanet?}
+    P -->|Yes| Q[0.1 Ğ1 Payment]
+    P -->|No| R[No Action]
+    Q --> S[PAYforSURE.sh]
+    S --> T[Transaction Recorded]
 ```
 
 ### **Intégration des Composants**
