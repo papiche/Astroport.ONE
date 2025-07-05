@@ -361,17 +361,6 @@ for UMAP in ${unique_combined[@]}; do
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Umap.html
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" > ~/.zen/tmp/${MOATS}/${UMAP}/Usat.html
 
-    ## Capture screenshots of map views
-    echo "Capturing map screenshots..."
-    python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${UMAPGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg 900 900
-    python ${MY_PATH}/../tools/page_screenshot.py "${myIPFS}${USATGEN}" ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg 900 900
-
-    ## Check if screenshots were created successfully
-    if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Umap.jpg ]] || [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/Usat.jpg ]]; then
-        echo "Warning: Failed to capture map screenshots"
-    else
-        echo "Map screenshots captured successfully"
-    fi
 
     ## GEOLINKING CALCULATE SURROUNDING UMAPS  ###############################
     #~ if [[ ! -s ~/.zen/tmp/${MOATS}/${UMAP}/geolinks.json ]]; then
