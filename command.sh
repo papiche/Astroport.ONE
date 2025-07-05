@@ -597,7 +597,7 @@ show_dashboard() {
     local level_info=$(check_station_level)
     local current_level=$(echo "$level_info" | grep "LEVEL:" | cut -d':' -f2)
     local ssh_mismatch=$(echo "$level_info" | grep "MISMATCH:" | cut -d':' -f2)
-    
+
     echo -e "${YELLOW}Niveaux de capitaine:${NC}"
     if [[ "$current_level" == "Y" ]]; then
         echo -e "  X: Clé IPFS standard" UPlanet ORIGIN
@@ -620,13 +620,84 @@ show_dashboard() {
         echo -e "  • Intégration à la toile de confiance CopyLaRadio"
         echo -e "  • Hébergement pour vous et vos amis"
         echo -e "  • Identité SSH/IPFS unifiée et sécurisée"
-        echo ""
+    echo ""
         read -p "Voulez-vous en savoir plus sur le passage au niveau Y ? (oui/non): " info_choice
         
         if [[ "$info_choice" == "oui" || "$info_choice" == "o" || "$info_choice" == "y" || "$info_choice" == "yes" ]]; then
             propose_y_level_upgrade
         fi
     fi
+}
+
+# Fonction pour lister et installer les applications Docker
+list_docker_apps() {
+    print_section "APPLICATIONS DOCKER INSTALLABLES"
+    local docker_dir="$HOME/.zen/Astroport.ONE/_DOCKER"
+    local workspace_dir="$HOME/.zen/workspace"
+    local found_apps=()
+    local i=1
+    
+    # Recherche des apps avec docker-compose.yml
+    for app_path in "$docker_dir"/*; do
+        if [[ -d "$app_path" && -f "$app_path/docker-compose.yml" ]]; then
+            app_name=$(basename "$app_path")
+            found_apps+=("$app_name")
+        fi
+    done
+    
+    if [[ ${#found_apps[@]} -eq 0 ]]; then
+        print_warning "Aucune application Docker installable trouvée."
+        read -p "Appuyez sur ENTRÉE pour revenir au menu..."
+        return
+    fi
+    
+    echo "Applications détectées :"
+    for app in "${found_apps[@]}"; do
+        local install_dir="$workspace_dir/.$app"
+        if [[ -d "$install_dir" ]]; then
+            echo -e "  $i. ${GREEN}$app${NC} - Installée dans $install_dir"
+        else
+            echo -e "  $i. ${YELLOW}$app${NC} - Non installée"
+        fi
+        ((i++))
+    done
+    echo ""
+    echo "Sélectionnez le numéro de l'application à installer, ou 0 pour revenir :"
+    read -p "Votre choix: " app_choice
+    
+    if [[ "$app_choice" == "0" || -z "$app_choice" ]]; then
+        return
+    fi
+    
+    # Vérifier que le choix est valide
+    if ! [[ "$app_choice" =~ ^[0-9]+$ ]] || (( app_choice < 1 || app_choice > ${#found_apps[@]} )); then
+        print_error "Choix invalide."
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        return
+    fi
+    
+    local selected_app="${found_apps[$((app_choice-1))]}"
+    local app_src="$docker_dir/$selected_app"
+    local app_dst="$workspace_dir/.$selected_app"
+    
+    if [[ -d "$app_dst" ]]; then
+        print_success "L'application $selected_app est déjà installée dans $app_dst."
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        return
+    fi
+    
+    print_info "Installation de $selected_app dans $app_dst..."
+    mkdir -p "$app_dst"
+    cp -r "$app_src"/* "$app_dst/"
+    
+    # Lancer docker-compose up -d
+    if command -v docker-compose >/dev/null 2>&1; then
+        (cd "$app_dst" && docker-compose up -d)
+        print_success "$selected_app installé et démarré avec docker-compose."
+    else
+        print_warning "docker-compose n'est pas installé. Installez-le pour démarrer l'application."
+    fi
+    read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 
 # Fonction de menu principal
@@ -637,16 +708,18 @@ show_main_menu() {
         echo "1. 🎫 Créer/Connecter ZEN Card"
         echo "2. 📋 Lister les cartes existantes"
         echo "3. 🗑️  Supprimer une carte"
+        echo "8. 🐳 Applications Docker"
         echo "0. ❌ Quitter"
     else
-    echo "1. 🎫 Gérer ZEN Card"
-    echo "2. 🌐 Connexion Swarm"
-    echo "3. 📊 Statut Swarm"
+        echo "1. 🎫 Gérer ZEN Card"
+        echo "2. 🌐 Connexion Swarm"
+        echo "3. 📊 Statut Swarm"
         echo "4. 💫 Faire un vœu"
         echo "5. 📱 Applications"
         echo "6. ⚙️  Configuration"
         echo "7. 🔌 Déconnexion"
-    echo "0. ❌ Quitter"
+        echo "8. 🐳 Applications Docker"
+        echo "0. ❌ Quitter"
     fi
     echo ""
 }
@@ -1125,14 +1198,14 @@ main() {
     fi
     
     # Boucle principale
-    while true; do
+while true; do
         show_dashboard
-        show_main_menu
+    show_main_menu
         
-        read -p "Votre choix: " choice
-        
-        case $choice in
-            1)
+    read -p "Votre choix: " choice
+
+    case $choice in
+        1)
                 if [[ -z "$PLAYER" ]]; then
                     handle_card_creation
                 else
@@ -1205,14 +1278,17 @@ main() {
                     handle_disconnect
                 fi
                 ;;
+            8)
+                list_docker_apps
+                ;;
             0)
                 print_success "Au revoir!"
-            exit 0
-            ;;
-        *)
+                exit 0
+                ;;
+            *)
                 print_error "Choix invalide"
-            sleep 1
-            ;;
+                sleep 1
+                ;;
     esac
 done
 }

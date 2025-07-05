@@ -164,7 +164,7 @@ echo "... Optimizing security into /etc/ssh/sshd_config"
 # Sauvegarde du fichier original
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
-# Effectue les modifications en utilisant sed
+# Securisation SSH
 sudo sed -i 's/^.*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*PermitEmptyPasswords .*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*ChallengeResponseAuthentication .*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
@@ -177,6 +177,7 @@ sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_c
 ln -f -s ~/.zen/Astroport.ONE/tools/natools.py ~/.local/bin/natools
 ln -f -s ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py ~/.local/bin/jaklis
 ln -f -s ~/.zen/Astroport.ONE/tools/keygen ~/.local/bin/keygen
+ln -f -s ~/.zen/Astroport.ONE/command.sh ~/.local/bin/coeurbox
 
 # NIP-101 strfry setup
 if [[ -d ~/.zen/strfry && -d ~/.zen/workspace/NIP-101 ]]; then
@@ -197,9 +198,8 @@ echo "RUN: ~/.zen/Astroport.ONE/tools/Ylevel.sh"
 ## ON BOARDING PLAYER
 echo "############################### ON BOARDING"
 espeak "Welcome CAPTAIN" 2>/dev/null
-echo ">>> Create CAPTAIN Account <<<
+echo ">>> Create CAPTAIN MULTIPASS <<<
 http://127.0.0.1:54321/g1"
-#~ cd ~/.zen/Astroport.ONE/
-#~ ./command.sh
+echo "then use 'coeurbox' command to create ZEN Card and control your ♥BOX station as a CAPTAIN"
 
 xdg-open http://127.0.0.1:8080/ipns/copylaradio.com
