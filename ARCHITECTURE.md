@@ -483,8 +483,8 @@ BITCOIN_KEY    # Clé Bitcoin (optionnel)
 ##### **Types de Mémoire**
 | **Type** | **Localisation** | **Contenu** |
 |----------|------------------|-------------|
-| **User Memory** | `~/.zen/strfry/uplanet_memory/pubkey/{pubkey}.json` | Conversations utilisateur |
-| **UMAP Memory** | `~/.zen/strfry/uplanet_memory/{lat}_{lon}.json` | Conversations géographiques |
+| **User Memory** | `~/.zen/tmp/flashmem/uplanet_memory/pubkey/{pubkey}.json` | Conversations utilisateur |
+| **UMAP Memory** | `~/.zen/tmp/flashmem/uplanet_memory/{lat}_{lon}.json` | Conversations géographiques |
 
 ##### **Contrôle de Mémoire**
 ```bash
@@ -508,38 +508,6 @@ BITCOIN_KEY    # Clé Bitcoin (optionnel)
     }
   ]
 }
-```
-
-### **Installation et Configuration**
-
-#### **Installation Automatique**
-```bash
-# Installation UPassport
-~/.zen/Astroport.ONE/install_upassport.sh
-# Clone: https://github.com/papiche/UPassport.git
-# Port: http://localhost:54321
-
-# Installation NOSTR Relay NIP-101
-bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
-# Relay: wss://localhost:7777
-```
-
-#### **Configuration UPassport**
-```bash
-# Variables d'environnement (.env)
-myDUNITER="https://g1.cgeek.fr"
-myCESIUM="https://g1.data.e-is.pro"
-OBSkey="null"
-```
-
-#### **Configuration Relay NOSTR**
-```bash
-# strfry.conf
-name = "♥️BOX ${IPFSNODEID}"
-description = "UPlanet NOSTR Relay"
-pubkey = "${CAPTAINHEX}"
-icon = "https://astroport.localhost:1234/favicon.ico"
-writePolicy.plugin = "${HOME}/.zen/workspace/NIP-101/relay.writePolicy.plugin/all_but_blacklist.sh"
 ```
 
 ### **Sécurité et Privacy**
@@ -694,8 +662,8 @@ graph TD
 ~/.zen/tmp/uplanet_messages.log    # Messages NOSTR
 ~/.zen/tmp/nostr_likes.log         # Réactions et paiements
 ~/.zen/tmp/IA.log                  # IA interactions
-~/.zen/strfry/strfry.log           # Relay NOSTR
-~/.zen/UPassport/logs/             # UPassport API
+~/.zen/tmp/strfry.log           # Relay NOSTR
+~/.zen/tmp/54321.log             # UPassport API
 ```
 
 ---
@@ -732,4 +700,4 @@ graph TD
 
 ---
 
-*Document généré automatiquement - Astroport.ONE v3.6* 
+*Document généré automatiquement (et corrigé) - Astroport.ONE v3.6* 

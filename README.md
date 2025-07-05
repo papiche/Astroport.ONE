@@ -136,7 +136,23 @@ GET /?uplanet=${EMAIL}&zlat=${LATITUDE}&zlon=${LONGITUDE}&g1pub=${LANGUAGE}
 For more detailed information about the UPLANET API and its capabilities, visit the [UPassport documentation](https://github.com/papiche/UPassport/).
 
 
-## proto DOCUMENTATION
+## Documentation
+
+### Technical Architecture
+
+For a comprehensive understanding of Astroport.ONE's technical architecture, including system components, data flows, economic models, and integration details, please refer to our detailed architecture documentation:
+
+**[🏗️ ARCHITECTURE.md](ARCHITECTURE.md)** - Complete technical architecture with diagrams, flow charts, and implementation details
+
+This document covers:
+- System architecture and component interactions
+- Economic system (ZEN.ECONOMY.sh) and payment flows
+- NOSTR integration and filtering system (NIP-101)
+- UPassport authentication and IPFS storage
+- Swarm network and inter-node subscriptions
+- Security, privacy, and monitoring systems
+
+### User Documentation
 
 https://astroport-1.gitbook.io/astroport.one/
 
