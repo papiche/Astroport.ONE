@@ -12,6 +12,61 @@ UPlanet propose une alternative complète aux systèmes centralisés actuels, en
 
 ---
 
+## 🎫 Les Trois Niveaux d'Identité Numérique UPlanet
+
+### 1. 🌐 **MULTIPASS** - Votre Identité de Base
+
+**Prix :** 1 Ẑen/semaine (0.1 Ğ1)
+
+**Ce que vous obtenez :**
+- ✅ **Identité NOSTR** : Clé publique sécurisée pour le réseau social décentralisé
+- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (128 Go)
+- ✅ **Portefeuille UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1
+- ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches
+- ✅ **Géolocalisation UMAP** : Connexion à votre communauté locale (0.01° précision)
+- ✅ **Échanges Ẑen** : Transferts directs entre MULTIPASS
+
+**Économie :**
+- Chaque like reçu = 0.1 Ğ1 automatiquement transféré
+- Rechargeable via Cesium Ginkgo sur UPlanet ORIGIN
+- Rechargeable via Open Collective sur UPlanet ẐEN
+- Le capitaine perçoit 1 Ẑen/semaine pour l'hébergement
+
+---
+
+### 2. ☁️ **ZENCARD** - Libérez Votre Cloud et Smartphone
+
+**Prix :** 4 Ẑen/semaine (4€)
+
+**Accessible aux sociétaires :** [CopyLaRadio](https://opencollective.com/monnaie-libre)
+
+**Ce que vous obtenez :**
+- ✅ **Tout de MULTIPASS** inclus
+- ✅ **NextCloud Personnel** : 128 Go de stockage sécurisé
+- ✅ **Dégooglisation** : Libérez votre smartphone des GAFAM
+- ✅ **Synchronisation** : Tous vos appareils connectés
+- ✅ **Collaboration** : Partage sécurisé de documents
+- ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD
+
+**Recharge :** [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
+Bénévole sur UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
+
+---
+
+### 3. 🛡️ **uPASSPORT** - Votre Identité Validée
+
+**Accès :** Via transaction primaire depuis un compte membre Ğ1
+
+**Ce que vous obtenez :**
+- ✅ **Portefeuille ZEROCARD** : Utilise le DU (Dividende Universel)
+- ✅ **Validation Web of Trust** : Identité vérifiée par la communauté
+- ✅ **Accès aux services avancés** : Fonctionnalités premium
+- ✅ **Préparation N1/N2** : Base pour l'exploration des futurs niveaux
+
+Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.LeJeu#)
+
+---
+
 ## 🚀 Les Avantages d'UPlanet vs Systèmes Centralisés
 
 ### 🔒 **Souveraineté Numérique vs Dépendance**
@@ -44,58 +99,15 @@ UPlanet propose une alternative complète aux systèmes centralisés actuels, en
 | 🔴 Exploitation des créateurs | 🟢 Récompense directe (0.1 Ğ1 par like) |
 | 🔴 Isolation sociale | 🟢 Toile de confiance géolocalisée |
 
----
+### 🎓 **Validation des Compétences vs Système Éducatif Actuel**
 
-## 🎫 Les Trois Niveaux d'Identité Numérique
-
-### 1. 🌐 **MULTIPASS** - Votre Identité de Base
-
-**Prix :** 1 Ẑen/semaine (0.1 Ğ1)
-
-**Ce que vous obtenez :**
-- ✅ **Identité NOSTR** : Clé publique sécurisée pour le réseau social décentralisé
-- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (128 Go)
-- ✅ **Portefeuille UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1
-- ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches
-- ✅ **Géolocalisation UMAP** : Connexion à votre communauté locale (0.01° précision)
-- ✅ **Échanges Ẑen** : Transferts directs entre MULTIPASS
-
-**Économie :**
-- Chaque like reçu = 0.1 Ğ1 automatiquement transféré
-- Rechargeable via Open Collective
-- Le capitaine perçoit 1 Ẑen/semaine pour l'hébergement
-
----
-
-### 2. ☁️ **ZENCARD** - Libérez Votre Cloud et Smartphone
-
-**Prix :** 4 Ẑen/semaine (4€)
-
-**Accessible aux sociétaires :** [CopyLaRadio](https://opencollective.com/monnaie-libre)
-
-**Ce que vous obtenez :**
-- ✅ **Tout de MULTIPASS** inclus
-- ✅ **NextCloud Personnel** : 128 Go de stockage sécurisé
-- ✅ **Dégooglisation** : Libérez votre smartphone des GAFAM
-- ✅ **Synchronisation** : Tous vos appareils connectés
-- ✅ **Collaboration** : Partage sécurisé de documents
-- ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD
-
-**Recharge :** [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
-
----
-
-### 3. 🛡️ **uPASSPORT** - Votre Identité Validée
-
-**Accès :** Via transaction primaire depuis un compte membre Ğ1
-
-**Ce que vous obtenez :**
-- ✅ **Portefeuille ZEROCARD** : Utilise le DU (Dividende Universel)
-- ✅ **Validation Web of Trust** : Identité vérifiée par la communauté
-- ✅ **Accès aux services avancés** : Fonctionnalités premium
-- ✅ **Préparation N1/N2** : Base pour les futurs niveaux
-
-**Mode DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.LeJeu#)
+| Système Éducatif Actuel | UPlanet Futur |
+|------------------------|---------------|
+| 🔴 Diplômes centralisés et coûteux | 🟢 Validation par les pairs |
+| 🔴 Orientation par algorithmes | 🟢 Validation par ceux qui savent |
+| 🔴 Transmission séparée de la validation | 🟢 Transmission inhérente au processus |
+| 🔴 Compétences figées | 🟢 Écosystème vivant et évolutif |
+| 🔴 Dépendance aux institutions | 🟢 Autonomie et liberté |
 
 ---
 
@@ -155,6 +167,13 @@ UPlanet propose une alternative complète aux systèmes centralisés actuels, en
 2. **Innovation** : Développement continu de nouvelles fonctionnalités
 3. **Support** : Communauté active pour vous accompagner
 4. **Gouvernance** : Participation aux décisions importantes
+
+### 🎓 **Révolution Éducative**
+
+1. **Validation par les pairs** : Plus fiable que les institutions centralisées
+2. **Transmission automatique** : Le savoir se transmet en se validant
+3. **Écosystème vivant** : Les compétences évoluent avec la communauté
+4. **Autonomie** : Chacun peut valider et transmettre ses savoirs
 
 ---
 
