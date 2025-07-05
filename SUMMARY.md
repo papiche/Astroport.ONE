@@ -15,4 +15,5 @@
 * [API (v1)](BOOKS/api/README.md)
   * [PLAYER.sh](BOOKS/api/player.sh.md)
   * [QRCODE.sh](BOOKS/api/qrcode.sh.md)
+* [API (UPassport)](api-upassport.md)
 * [ARCHITECTURE](architecture.md)
