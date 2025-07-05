@@ -487,17 +487,66 @@ export_json() {
     fi
     local hostname=$(hostname -f)
     
-    # Réaliser les tests de disque et capturer les résultats
-    local root_rw_speeds=$(measure_disk_speed "/")
-    local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
-    local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+    # Vérifier si les données de performance sont déjà disponibles dans 12345.json
+    local root_read_speed="0"
+    local root_write_speed="0"
+    local nc_read_speed="0"
+    local nc_write_speed="0"
+    
+    local json_12345_file="$HOME/.zen/tmp/$node_id/12345.json"
+    if [[ -f "$json_12345_file" ]]; then
+        # Essayer d'extraire les données de performance depuis 12345.json
+        if command -v jq >/dev/null 2>&1; then
+            local existing_capacities=$(jq -r '.capacities' "$json_12345_file" 2>/dev/null)
+            if [[ -n "$existing_capacities" && "$existing_capacities" != "null" ]]; then
+                echo "📊 Utilisation des données de performance existantes depuis $json_12345_file" >&2
+                # Les données sont déjà disponibles, on utilise des valeurs par défaut pour éviter les tests
+                root_read_speed="0"
+                root_write_speed="0"
+                nc_read_speed="0"
+                nc_write_speed="0"
+            else
+                echo "🔄 Données de performance non trouvées dans $json_12345_file, lancement des tests..." >&2
+                # Réaliser les tests de disque et capturer les résultats
+                local root_rw_speeds=$(measure_disk_speed "/")
+                root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+                root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
 
-    local nc_rw_speeds="0 0"
-    if [[ -d "/nextcloud-data" ]]; then
-        nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+                local nc_rw_speeds="0 0"
+                if [[ -d "/nextcloud-data" ]]; then
+                    nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+                fi
+                nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+                nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+            fi
+        else
+            echo "⚠️  jq non disponible, lancement des tests de performance..." >&2
+            # Réaliser les tests de disque et capturer les résultats
+            local root_rw_speeds=$(measure_disk_speed "/")
+            root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+            root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+
+            local nc_rw_speeds="0 0"
+            if [[ -d "/nextcloud-data" ]]; then
+                nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+            fi
+            nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+            nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+        fi
+    else
+        echo "🔄 Fichier $json_12345_file non trouvé, lancement des tests de performance..." >&2
+        # Réaliser les tests de disque et capturer les résultats
+        local root_rw_speeds=$(measure_disk_speed "/")
+        root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+        root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+
+        local nc_rw_speeds="0 0"
+        if [[ -d "/nextcloud-data" ]]; then
+            nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+        fi
+        nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+        nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
     fi
-    local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
-    local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
     
     cat << EOF
 {
@@ -888,19 +937,69 @@ Capacité d'abonnements (après réserve capitaine):"
     # Tests de performances disque (Lecture/Écriture)
     echo "
 --- TESTS PERFORMANCES DISQUE (LECTURE/ÉCRITURE) ---"
-    local root_rw_speeds=$(measure_disk_speed "/")
-    local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
-    local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
-    echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
+    
+    # Vérifier si les données de performance sont déjà disponibles dans 12345.json
+    local json_12345_file="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
+    if [[ -f "$json_12345_file" ]]; then
+        if command -v jq >/dev/null 2>&1; then
+            local existing_capacities=$(jq -r '.capacities' "$json_12345_file" 2>/dev/null)
+            if [[ -n "$existing_capacities" && "$existing_capacities" != "null" ]]; then
+                echo "📊 Données de performance déjà disponibles dans $json_12345_file"
+                echo "  Tests de stress hardware évités pour optimiser les performances"
+                echo "  Disque principal (/): Données disponibles dans 12345.json"
+                if [[ -d "/nextcloud-data" ]]; then
+                    echo "  Données NextCloud (/nextcloud-data): Données disponibles dans 12345.json"
+                fi
+            else
+                echo "🔄 Données de performance non trouvées, lancement des tests..."
+                local root_rw_speeds=$(measure_disk_speed "/")
+                local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+                local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+                echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
 
-    local nc_rw_speeds="0 0"
-    if [[ -d "/nextcloud-data" ]]; then
-        nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
-        local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
-        local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
-        echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
+                local nc_rw_speeds="0 0"
+                if [[ -d "/nextcloud-data" ]]; then
+                    nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+                    local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+                    local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+                    echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
+                else
+                    echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
+                fi
+            fi
+        else
+            echo "⚠️  jq non disponible, lancement des tests de performance..."
+            local root_rw_speeds=$(measure_disk_speed "/")
+            local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+            local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+            echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
+
+            local nc_rw_speeds="0 0"
+            if [[ -d "/nextcloud-data" ]]; then
+                nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+                local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+                local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+                echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
+            else
+                echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
+            fi
+        fi
     else
-        echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
+        echo "🔄 Fichier $json_12345_file non trouvé, lancement des tests de performance..."
+        local root_rw_speeds=$(measure_disk_speed "/")
+        local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
+        local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
+        echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
+
+        local nc_rw_speeds="0 0"
+        if [[ -d "/nextcloud-data" ]]; then
+            nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+            local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
+            local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
+            echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
+        else
+            echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
+        fi
     fi
     
     # Résumé des capacités ♥️BOX

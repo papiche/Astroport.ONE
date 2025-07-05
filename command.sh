@@ -614,7 +614,7 @@ show_dashboard() {
     
     # Proposer le passage au niveau Y si nécessaire
     if [[ "$current_level" == "X" ]] && [[ "$ssh_mismatch" == "true" ]]; then
-        echo ""
+    echo ""
         echo -e "${CYAN}🚀 OPPORTUNITÉ D'ÉVOLUTION${NC}"
         echo -e "${YELLOW}Votre station peut passer au niveau Y pour rejoindre UPlanet Ẑen${NC}"
         echo -e "  • Intégration à la toile de confiance CopyLaRadio"
@@ -711,15 +711,15 @@ show_main_menu() {
         echo "8. 🐳 Applications Docker"
         echo "0. ❌ Quitter"
     else
-        echo "1. 🎫 Gérer ZEN Card"
-        echo "2. 🌐 Connexion Swarm"
-        echo "3. 📊 Statut Swarm"
+    echo "1. 🎫 Gérer ZEN Card"
+    echo "2. 🌐 Connexion Swarm"
+    echo "3. 📊 Statut Swarm"
         echo "4. 💫 Faire un vœu"
         echo "5. 📱 Applications"
         echo "6. ⚙️  Configuration"
         echo "7. 🔌 Déconnexion"
         echo "8. 🐳 Applications Docker"
-        echo "0. ❌ Quitter"
+    echo "0. ❌ Quitter"
     fi
     echo ""
 }
@@ -1232,9 +1232,9 @@ while true; do
                 if [[ -z "$PLAYER" ]]; then
                     list_existing_cards
                 else
-                    print_section "CONNEXION SWARM"
+            print_section "CONNEXION SWARM"
                     print_info "Découverte et connexion aux autres ♥️box..."
-                    "${MY_PATH}/RUNTIME/SWARM.discover.sh"
+            "${MY_PATH}/RUNTIME/SWARM.discover.sh"
                     read -p "Appuyez sur ENTRÉE pour continuer..."
                 fi
                 ;;
@@ -1247,18 +1247,18 @@ while true; do
                         "${MY_PATH}/tools/nostr_DESTROY_TW.sh"
                     fi
                 else
-                    print_section "STATUT SWARM"
+            print_section "STATUT SWARM"
                     print_info "Notifications et abonnements reçus..."
-                    "${MY_PATH}/tools/SWARM.notifications.sh"
+            "${MY_PATH}/tools/SWARM.notifications.sh"
                     read -p "Appuyez sur ENTRÉE pour continuer..."
                 fi
                 ;;
             4)
                 if [[ -n "$PLAYER" ]]; then
-                    print_section "FAIRE UN VŒU"
+            print_section "FAIRE UN VŒU"
                     print_info "Création d'un QR Code pour les lieux ou objets portant une Gvaleur..."
                     cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
-                    "${MY_PATH}/RUNTIME/G1Voeu.sh" "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
+            "${MY_PATH}/RUNTIME/G1Voeu.sh" "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
                     
                     # Vérifier les changements
                     DIFF=$(diff ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html)
@@ -1299,12 +1299,12 @@ while true; do
                 ;;
             0)
                 print_success "Au revoir!"
-                exit 0
-                ;;
-            *)
+            exit 0
+            ;;
+        *)
                 print_error "Choix invalide"
-                sleep 1
-                ;;
+            sleep 1
+            ;;
     esac
 done
 }
