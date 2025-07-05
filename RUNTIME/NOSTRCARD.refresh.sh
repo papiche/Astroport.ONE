@@ -229,14 +229,16 @@ for PLAYER in "${NOSTR[@]}"; do
                 if [[ ! -z $BMAS_NODE ]]; then
                     echo "Trying primal check with GVA NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
-                    # Use silkaj with BMAS endpoint if available
-                    result=$(silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub} 2>/dev/null | jq '.history[0]' 2>/dev/null)
-                    # Extract the issuer pubkey from the first transaction
-                    g1prime=$(echo $result | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
-
-                    if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
-                        success=true
-                        break
+                    silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub} 2>/dev/null)
+                    if echo "$silkaj_output" | jq empty 2>/dev/null; then
+                        result=$(echo "$silkaj_output" | jq '.history[0]')
+                        g1prime=$(echo $result | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
+                        if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
+                            success=true
+                            break
+                        fi
+                    else
+                        echo "Warning: silkaj did not return valid JSON for $g1pub"
                     fi
                 fi
 
