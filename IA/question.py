@@ -4,19 +4,38 @@ import argparse
 import json
 import os
 
-def load_context(latitude=None, longitude=None, pubkey=None):
+def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=0):
     """
-    Loads memory context from UMAP (latitude/longitude) or from PUBKEY memory.
+    Loads memory context from UMAP (latitude/longitude), from PUBKEY memory, or from user slot memory.
 
     Args:
         latitude (str, optional): Latitude coordinate.
         longitude (str, optional): Longitude coordinate.
         pubkey (str, optional): Public key.
+        user_id (str, optional): User ID (nostr email or pubkey).
+        slot (int, optional): Memory slot number (0-12).
 
     Returns:
         str: A formatted context string, or empty string if not found.
     """
-    base_memory_dir = os.path.expanduser("~/.zen/strfry/uplanet_memory")
+    # Try slot-based memory first if user_id is provided
+    if user_id and slot is not None:
+        slot_file = os.path.expanduser(f"~/.zen/tmp/flashmem/{user_id}/slot{slot}.json")
+        if os.path.isfile(slot_file):
+            try:
+                with open(slot_file, 'r') as f:
+                    memory = json.load(f)
+                    messages = memory.get('messages', [])
+                    context = "\n".join(f"- {m.get('content', '')}" for m in messages[-20:])  # Last 20 messages
+                    return context
+            except Exception as e:
+                print(f"Failed to load slot context from {slot_file}: {e}")
+
+    # Fallback to legacy memory system
+    base_memory_dir = os.path.expanduser("~/.zen/tmp/flashmem/uplanet_memory")
+    ## make dir if not exists
+    if not os.path.exists(base_memory_dir):
+        os.makedirs(base_memory_dir)
 
     if latitude and longitude:
         coord_key = f"{latitude}_{longitude}".replace(".", "_").replace("-", "m")
@@ -75,21 +94,28 @@ def get_ollama_answer(prompt, model_name="gemma3:latest"):
         return None
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Answer a question using Ollama, with optional UMAP or PUBKEY context.")
+    parser = argparse.ArgumentParser(description="Answer a question using Ollama, with optional UMAP, PUBKEY, or slot-based context.")
     parser.add_argument("question", help="The question to ask Ollama.")
     parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:latest", help="The name of the Ollama model to use (default: gemma3:latest).")
     parser.add_argument("--lat", type=str, help="Latitude to load UMAP memory context.")
     parser.add_argument("--lon", type=str, help="Longitude to load UMAP memory context.")
     parser.add_argument("--pubkey", type=str, help="Pubkey to load PUBKEY memory context.")
+    parser.add_argument("--user-id", type=str, help="User ID (nostr email or pubkey) to load slot-based memory context.")
+    parser.add_argument("--slot", type=int, default=0, help="Memory slot number (0-12, default: 0).")
     parser.add_argument("--json", action="store_true", help="Output answer in JSON format.")
 
     args = parser.parse_args()
 
-    # Charger un éventuel contexte
+    # Load context based on available parameters
     context_text = ""
-    if args.lat and args.lon:
+    if args.user_id is not None:
+        # Use slot-based memory
+        context_text = load_context(user_id=args.user_id, slot=args.slot)
+    elif args.lat and args.lon:
+        # Use UMAP memory
         context_text = load_context(latitude=args.lat, longitude=args.lon)
     elif args.pubkey:
+        # Use PUBKEY memory
         context_text = load_context(pubkey=args.pubkey)
 
     # Construire le prompt final
