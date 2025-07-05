@@ -176,15 +176,17 @@ Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.
 4. **Autonomie** : Chacun peut valider et transmettre ses savoirs
 
 ---
+## Commnent Commencer ?
 
-## 🎯 Comment Commencer ?
+Inscrivez-vous sur [UPlanet ORIGIN](https://qo-op.com) et laissez vous guider pour vous relier à un Capitaine près de chez vous.
+## 🎯 Comment aller plus loin ?
 
-### 🚀 **Étape 1 : Créer votre MULTIPASS**
+### 🚀 **Étape 1 : Installer Astroport.ONE et devenir CAPITAINE**
 ```bash
 # Installation automatique
 bash <(curl -sL https://install.astroport.com)
 
-# Création de votre identité
+# Gestion de votre Station
 ~/.zen/Astroport.ONE/command.sh
 ```
 
@@ -194,9 +196,9 @@ bash <(curl -sL https://install.astroport.com)
 - [Open Collective](https://opencollective.com/uplanet-zero) : Soutenir le projet
 
 ### 📚 **Étape 3 : Découvrir les Ressources**
-- [Documentation UPlanet](https://astroport-1.gitbook.io/astroport.one/)
-- [Guide d'utilisation](https://www.copylaradio.com/blog/blog-1/post/reinventer-la-societe-avec-la-monnaie-libre-et-la-web-of-trust-148)
-- [API et développement](../Astroport.ONE/API.NOSTRAuth.readme.md)
+- [Documentation UPlanet (help)](https://astroport-1.gitbook.io/astroport.one/)
+- [Guide d'utilisation (futur)](https://www.copylaradio.com/blog/blog-1/post/reinventer-la-societe-avec-la-monnaie-libre-et-la-web-of-trust-148)
+- [API et développement](./API.NOSTRAuth.readme.md)
 
 ---
 
@@ -215,7 +217,7 @@ bash <(curl -sL https://install.astroport.com)
 - 🌐 **Site officiel** : [copylaradio.com](https://copylaradio.com)
 - 💰 **Soutenir le projet** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
 - 🤝 **Rejoindre CopyLaRadio** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
-- 📚 **Documentation** : [astroport-1.gitbook.io](https://astroport-1.gitbook.io/astroport.one/)
+- 🌐 **Inscription** : [UPlanet ORIGIN](https://qo-op.com)
 - 💬 **Forum** : [forum.monnaie-libre.fr](https://forum.monnaie-libre.fr)
 - 📧 **Contact** : support@qo-op.com
 
