@@ -468,7 +468,21 @@ export_json() {
     local node_id="${IPFSNODEID:-unknown}"
     local captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "unknown")
     local node_type="standard"
-    if [[ -f ~/.zen/game/secret.dunikey ]]; then
+    local node_dir="$HOME/.zen/tmp/$node_id"
+    
+    # Vérifier le niveau en cherchant les fichiers x_ssh*, y_ssh*, z_ssh*
+    if [[ -d "$node_dir" ]]; then
+        if ls "$node_dir"/z_ssh* >/dev/null 2>&1; then
+            node_type="z_level"
+        elif ls "$node_dir"/y_ssh* >/dev/null 2>&1; then
+            node_type="y_level"
+        elif ls "$node_dir"/x_ssh* >/dev/null 2>&1; then
+            node_type="x_level"
+        fi
+    fi
+    
+    # Fallback vers l'ancienne méthode si aucun fichier de niveau n'est trouvé
+    if [[ "$node_type" == "standard" && -f ~/.zen/game/secret.dunikey ]]; then
         node_type="y_level"
     fi
     local hostname=$(hostname -f)
@@ -892,7 +906,33 @@ Capacité d'abonnements (après réserve capitaine):"
     # Résumé des capacités ♥️BOX
     echo "
 --- RÉSUMÉ CAPACITÉS ♥️BOX ---"
-    echo "Type de node: $(if [[ -f ~/.zen/game/secret.dunikey ]]; then echo "Y Level (Node autonome)"; else echo "Standard (avec Capitaine)"; fi)"
+    # Détecter le niveau de la station
+    local node_level="X"
+    local node_dir="$HOME/.zen/tmp/$IPFSNODEID"
+    if [[ -d "$node_dir" ]]; then
+        if ls "$node_dir"/z_ssh* >/dev/null 2>&1; then
+            node_level="Z"
+        elif ls "$node_dir"/y_ssh* >/dev/null 2>&1; then
+            node_level="Y"
+        elif ls "$node_dir"/x_ssh* >/dev/null 2>&1; then
+            node_level="X"
+        fi
+    fi
+    
+    # Fallback vers l'ancienne méthode
+    if [[ "$node_level" == "X" && -f ~/.zen/game/secret.dunikey ]]; then
+        node_level="Y"
+    fi
+    
+    local level_description=""
+    case "$node_level" in
+        "Z") level_description="Z Level (Node relais)" ;;
+        "Y") level_description="Y Level (Node autonome)" ;;
+        "X") level_description="X Level (Node standard)" ;;
+        *) level_description="Standard (avec Capitaine)" ;;
+    esac
+    
+    echo "Type de node: $level_description"
     echo "Espace total: $disk_total"
     echo "Services actifs:"
     echo "  - IPFS: $(if pgrep ipfs >/dev/null; then echo "✅ Actif ($ipfs_size)"; else echo "❌ Inactif"; fi)"

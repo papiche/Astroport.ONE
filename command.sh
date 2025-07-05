@@ -1048,23 +1048,39 @@ handle_disconnect() {
 check_station_level() {
     local current_level="X"
     local ssh_ipfs_mismatch=false
+    local node_dir="$HOME/.zen/tmp/$IPFSNODEID"
     
-    # Vérifier si on est au niveau Y (clé SSH jumelle avec IPFS)
-    if [[ -f ~/.zen/game/secret.dunikey ]]; then
-        current_level="Y"
-        # Vérifier la cohérence SSH/IPFS
-        if [[ -f ~/.zen/game/id_ssh.pub ]] && [[ -f ~/.ssh/id_ed25519.pub ]]; then
-            if [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub 2>/dev/null) ]]; then
-                ssh_ipfs_mismatch=true
-            fi
+    # Vérifier le niveau en cherchant les fichiers x_ssh*, y_ssh*, z_ssh*
+    if [[ -d "$node_dir" ]]; then
+        # Chercher les fichiers de niveau
+        if ls "$node_dir"/z_ssh* >/dev/null 2>&1; then
+            current_level="Z"
+        elif ls "$node_dir"/y_ssh* >/dev/null 2>&1; then
+            current_level="Y"
+        elif ls "$node_dir"/x_ssh* >/dev/null 2>&1; then
+            current_level="X"
         fi
-    else
-        # Niveau X : vérifier si SSH et IPFS sont différents
-        if [[ -f ~/.ssh/id_ed25519.pub ]]; then
-            local ssh_pub=$(cat ~/.ssh/id_ed25519.pub)
-            local yipns=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$ssh_pub" 2>/dev/null)
-            if [[ "$yipns" != "$IPFSNODEID" ]]; then
-                ssh_ipfs_mismatch=true
+    fi
+    
+    # Fallback: vérification par les fichiers de clés (méthode précédente)
+    if [[ "$current_level" == "X" ]]; then
+        # Vérifier si on est au niveau Y (clé SSH jumelle avec IPFS)
+        if [[ -f ~/.zen/game/secret.dunikey ]]; then
+            current_level="Y"
+            # Vérifier la cohérence SSH/IPFS
+            if [[ -f ~/.zen/game/id_ssh.pub ]] && [[ -f ~/.ssh/id_ed25519.pub ]]; then
+                if [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub 2>/dev/null) ]]; then
+                    ssh_ipfs_mismatch=true
+                fi
+            fi
+        else
+            # Niveau X : vérifier si SSH et IPFS sont différents
+            if [[ -f ~/.ssh/id_ed25519.pub ]]; then
+                local ssh_pub=$(cat ~/.ssh/id_ed25519.pub)
+                local yipns=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$ssh_pub" 2>/dev/null)
+                if [[ "$yipns" != "$IPFSNODEID" ]]; then
+                    ssh_ipfs_mismatch=true
+                fi
             fi
         fi
     fi
