@@ -295,73 +295,105 @@ EOF
 
 # Get services status as JSON
 get_services_status_json() {
-    # IPFS
-    local ipfs_status="false"
-    local ipfs_size="null"
-    local ipfs_peers="0"
-    if pgrep ipfs >/dev/null; then
-        ipfs_status="true"
-        ipfs_size="\"$(du -sh ~/.ipfs 2>/dev/null | cut -f1 | tr -d '\n' || echo "N/A")\""
-        ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
+    # Vérifier si le fichier 12345.json existe et est récent (< 24 heures)
+    local json_12345_file="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
+    local use_json_status=false
+    
+    if [[ -f "$json_12345_file" ]]; then
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$json_12345_file" 2>/dev/null || echo 0) ))
+        if [[ $file_age -lt 86400 ]]; then  # 24 heures = 86400 secondes
+            use_json_status=true
+        fi
     fi
     
-    # Astroport
-    local astroport_status="false"
-    if pgrep -f "12345" >/dev/null; then
-        astroport_status="true"
-    fi
-    
-    # uSPOT
-    local uspot_status="false"
-    if netstat -tln 2>/dev/null | grep -q ":54321 "; then
-        uspot_status="true"
-    fi
-    
-    # NextCloud
-    local nextcloud_status="false"
-    local nextcloud_containers="null"
-    local nextcloud_aio_status="false"
-    local nextcloud_cloud_status="false"
-    if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
-        nextcloud_status="true"
-        nextcloud_containers="\"$(docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | head -1 | tr -d '\n' || echo "unknown")\""
+    if [[ "$use_json_status" == "true" ]]; then
+        # Lire les statuts depuis le fichier JSON récent
+        local ipfs_status=$(jq -r '.services.ipfs.active // false' "$json_12345_file" 2>/dev/null)
+        local astroport_status=$(jq -r '.services.astroport.active // false' "$json_12345_file" 2>/dev/null)
+        local uspot_status=$(jq -r '.services.uspot.active // false' "$json_12345_file" 2>/dev/null)
+        local nextcloud_status=$(jq -r '.services.nextcloud.active // false' "$json_12345_file" 2>/dev/null)
+        local nostr_relay_status=$(jq -r '.services.nostr_relay.active // false' "$json_12345_file" 2>/dev/null)
+        local g1billet_status=$(jq -r '.services.g1billet.active // false' "$json_12345_file" 2>/dev/null)
         
-        # Check NextCloud AIO (port 8002)
+        # Récupérer les détails IPFS depuis le JSON
+        local ipfs_size=$(jq -r '.services.ipfs.size // "null"' "$json_12345_file" 2>/dev/null)
+        local ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0' "$json_12345_file" 2>/dev/null)
+        
+        # Récupérer les détails NextCloud depuis le JSON
+        local nextcloud_containers=$(jq -r '.services.nextcloud.container // "null"' "$json_12345_file" 2>/dev/null)
+        local nextcloud_aio_status=$(jq -r '.services.nextcloud.aio_https.active // false' "$json_12345_file" 2>/dev/null)
+        local nextcloud_cloud_status=$(jq -r '.services.nextcloud.cloud_http.active // false' "$json_12345_file" 2>/dev/null)
+        
+        # Récupérer les services P2P depuis le JSON
+        local p2p_services=$(jq -r '.services.ipfs_p2p_services // []' "$json_12345_file" 2>/dev/null)
+    else
+        # Vérification en temps réel
+        local ipfs_status="false"
+        local astroport_status="false"
+        local uspot_status="false"
+        local nextcloud_status="false"
+        local nostr_relay_status="false"
+        local g1billet_status="false"
+        
+        # IPFS - vérifier le processus et la connectivité
+        if pgrep ipfs >/dev/null && ipfs swarm peers 2>/dev/null | grep -q .; then
+            ipfs_status="true"
+        fi
+        
+        # Astroport - vérifier le processus principal
+        if pgrep -f "12345" >/dev/null; then
+            astroport_status="true"
+        fi
+        
+        # uSPOT - vérifier le port d'écoute
+        if netstat -tln 2>/dev/null | grep -q ":54321 "; then
+            uspot_status="true"
+        fi
+        
+        # NextCloud - vérifier les conteneurs Docker
+        if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
+            nextcloud_status="true"
+        fi
+        
+        # NOSTR Relay - vérifier le port d'écoute
+        if netstat -tln 2>/dev/null | grep -q ":7777 "; then
+            nostr_relay_status="true"
+        fi
+        
+        # G1Billet - vérifier le processus
+        if pgrep -f "G1BILLETS" >/dev/null; then
+            g1billet_status="true"
+        fi
+        
+        # Récupérer les détails en temps réel
+        local ipfs_size="\"$(du -sh ~/.ipfs 2>/dev/null | cut -f1 | tr -d '\n' || echo "N/A")\""
+        local ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
+        local nextcloud_containers="\"$(docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | head -1 | tr -d '\n' || echo "unknown")\""
+        local nextcloud_aio_status="false"
+        local nextcloud_cloud_status="false"
+        
+        # Check NextCloud ports
         if netstat -tln 2>/dev/null | grep -q ":8002 "; then
             nextcloud_aio_status="true"
         fi
-        
-        # Check NextCloud Cloud (port 8001)
         if netstat -tln 2>/dev/null | grep -q ":8001 "; then
             nextcloud_cloud_status="true"
         fi
-    fi
-    
-    # NOSTR Relay
-    local nostr_relay_status="false"
-    if netstat -tln 2>/dev/null | grep -q ":7777 "; then
-        nostr_relay_status="true"
-    fi
-    
-    # IPFS P2P Services
-    local p2p_services="[]"
-    if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
-        local p2p_array=()
-        for service in ~/.zen/tmp/${IPFSNODEID}/x_*.sh; do
-            if [[ -f "$service" ]]; then
-                local service_name=$(basename "$service")
-                p2p_array+=("\"$service_name\"")
+        
+        # IPFS P2P Services
+        local p2p_services="[]"
+        if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
+            local p2p_array=()
+            for service in ~/.zen/tmp/${IPFSNODEID}/x_*.sh; do
+                if [[ -f "$service" ]]; then
+                    local service_name=$(basename "$service")
+                    p2p_array+=("\"$service_name\"")
+                fi
+            done
+            if [[ ${#p2p_array[@]} -gt 0 ]]; then
+                p2p_services="[$(IFS=,; echo "${p2p_array[*]}")]"
             fi
-        done
-        if [[ ${#p2p_array[@]} -gt 0 ]]; then
-            p2p_services="[$(IFS=,; echo "${p2p_array[*]}")]"
         fi
-    fi
-    
-    # G1Billet
-    local g1billet_status="false"
-    if pgrep -f "G1BILLETS" >/dev/null; then
-        g1billet_status="true"
     fi
     
     cat << EOF
@@ -470,7 +502,7 @@ export_json() {
     local node_type="standard"
     local node_dir="$HOME/.zen/tmp/$node_id"
     
-    # Vérifier le niveau en cherchant les fichiers x_ssh*, y_ssh*, z_ssh*
+    # Méthode principale : vérifier les fichiers de niveau dans le répertoire du node
     if [[ -d "$node_dir" ]]; then
         if ls "$node_dir"/z_ssh* >/dev/null 2>&1; then
             node_type="z_level"
@@ -481,10 +513,7 @@ export_json() {
         fi
     fi
     
-    # Fallback vers l'ancienne méthode si aucun fichier de niveau n'est trouvé
-    if [[ "$node_type" == "standard" && -f ~/.zen/game/secret.dunikey ]]; then
-        node_type="y_level"
-    fi
+
     local hostname=$(hostname -f)
     
     # Vérifier si les données de performance sont déjà disponibles dans 12345.json
@@ -494,47 +523,30 @@ export_json() {
     local nc_write_speed="0"
     
     local json_12345_file="$HOME/.zen/tmp/$node_id/12345.json"
+    local use_cached_performance=false
+    
+    # Vérifier si le fichier 12345.json existe et est récent (< 24 heures)
     if [[ -f "$json_12345_file" ]]; then
-        # Essayer d'extraire les données de performance depuis 12345.json
-        if command -v jq >/dev/null 2>&1; then
-            local existing_capacities=$(jq -r '.capacities' "$json_12345_file" 2>/dev/null)
-            if [[ -n "$existing_capacities" && "$existing_capacities" != "null" ]]; then
-                echo "📊 Utilisation des données de performance existantes depuis $json_12345_file" >&2
-                # Les données sont déjà disponibles, on utilise des valeurs par défaut pour éviter les tests
-                root_read_speed="0"
-                root_write_speed="0"
-                nc_read_speed="0"
-                nc_write_speed="0"
-            else
-                echo "🔄 Données de performance non trouvées dans $json_12345_file, lancement des tests..." >&2
-                # Réaliser les tests de disque et capturer les résultats
-                local root_rw_speeds=$(measure_disk_speed "/")
-                root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
-                root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
-
-                local nc_rw_speeds="0 0"
-                if [[ -d "/nextcloud-data" ]]; then
-                    nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$json_12345_file" 2>/dev/null || echo 0) ))
+        if [[ $file_age -lt 86400 ]]; then  # 24 heures = 86400 secondes
+            if command -v jq >/dev/null 2>&1; then
+                local existing_capacities=$(jq -r '.capacities' "$json_12345_file" 2>/dev/null)
+                if [[ -n "$existing_capacities" && "$existing_capacities" != "null" ]]; then
+                    echo "📊 Utilisation des données de performance existantes depuis $json_12345_file" >&2
+                    use_cached_performance=true
                 fi
-                nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
-                nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
             fi
-        else
-            echo "⚠️  jq non disponible, lancement des tests de performance..." >&2
-            # Réaliser les tests de disque et capturer les résultats
-            local root_rw_speeds=$(measure_disk_speed "/")
-            root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
-            root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
-
-            local nc_rw_speeds="0 0"
-            if [[ -d "/nextcloud-data" ]]; then
-                nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
-            fi
-            nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
-            nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
         fi
+    fi
+    
+    if [[ "$use_cached_performance" == "true" ]]; then
+        # Utiliser les données en cache
+        root_read_speed="0"
+        root_write_speed="0"
+        nc_read_speed="0"
+        nc_write_speed="0"
     else
-        echo "🔄 Fichier $json_12345_file non trouvé, lancement des tests de performance..." >&2
+        echo "🔄 Lancement des tests de performance..." >&2
         # Réaliser les tests de disque et capturer les résultats
         local root_rw_speeds=$(measure_disk_speed "/")
         root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
@@ -940,52 +952,24 @@ Capacité d'abonnements (après réserve capitaine):"
     
     # Vérifier si les données de performance sont déjà disponibles dans 12345.json
     local json_12345_file="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
+    local use_cached_performance=false
+    
     if [[ -f "$json_12345_file" ]]; then
-        if command -v jq >/dev/null 2>&1; then
-            local existing_capacities=$(jq -r '.capacities' "$json_12345_file" 2>/dev/null)
-            if [[ -n "$existing_capacities" && "$existing_capacities" != "null" ]]; then
-                echo "📊 Données de performance déjà disponibles dans $json_12345_file"
-                echo "  Tests de stress hardware évités pour optimiser les performances"
-                echo "  Disque principal (/): Données disponibles dans 12345.json"
-                if [[ -d "/nextcloud-data" ]]; then
-                    echo "  Données NextCloud (/nextcloud-data): Données disponibles dans 12345.json"
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$json_12345_file" 2>/dev/null || echo 0) ))
+        if [[ $file_age -lt 86400 ]]; then  # 24 heures = 86400 secondes
+            if command -v jq >/dev/null 2>&1; then
+                local existing_capacities=$(jq -r '.capacities' "$json_12345_file" 2>/dev/null)
+                if [[ -n "$existing_capacities" && "$existing_capacities" != "null" ]]; then
+                    echo "📊 Données de performance déjà disponibles dans $json_12345_file"
+                    echo "  Tests de stress hardware évités pour optimiser les performances"
+                    use_cached_performance=true
                 fi
-            else
-                echo "🔄 Données de performance non trouvées, lancement des tests..."
-                local root_rw_speeds=$(measure_disk_speed "/")
-                local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
-                local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
-                echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
-
-                local nc_rw_speeds="0 0"
-                if [[ -d "/nextcloud-data" ]]; then
-                    nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
-                    local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
-                    local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
-                    echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
-                else
-                    echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
-                fi
-            fi
-        else
-            echo "⚠️  jq non disponible, lancement des tests de performance..."
-            local root_rw_speeds=$(measure_disk_speed "/")
-            local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
-            local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')
-            echo "  Disque principal (/): Lecture: ${root_read_speed} MB/s, Écriture: ${root_write_speed} MB/s"
-
-            local nc_rw_speeds="0 0"
-            if [[ -d "/nextcloud-data" ]]; then
-                nc_rw_speeds=$(measure_disk_speed "/nextcloud-data")
-                local nc_read_speed=$(echo "$nc_rw_speeds" | awk '{print $1}')
-                local nc_write_speed=$(echo "$nc_rw_speeds" | awk '{print $2}')
-                echo "  Données NextCloud (/nextcloud-data): Lecture: ${nc_read_speed} MB/s, Écriture: ${nc_write_speed} MB/s"
-            else
-                echo "  Données NextCloud (/nextcloud-data): Non monté ou non trouvé, tests ignorés."
             fi
         fi
-    else
-        echo "🔄 Fichier $json_12345_file non trouvé, lancement des tests de performance..."
+    fi
+    
+    if [[ "$use_cached_performance" == "false" ]]; then
+        echo "🔄 Lancement des tests de performance..."
         local root_rw_speeds=$(measure_disk_speed "/")
         local root_read_speed=$(echo "$root_rw_speeds" | awk '{print $1}')
         local root_write_speed=$(echo "$root_rw_speeds" | awk '{print $2}')

@@ -483,6 +483,21 @@ my_IPCity() {
 }
 
 IPFSNODEID="$(myIpfsPeerId)"
+# Optimisation: utiliser un cache pour éviter les appels IPFS répétés
+if [[ -z "$IPFSNODEID" ]]; then
+    # Fallback: essayer de lire depuis un cache
+    if [[ -f ~/.zen/tmp/ipfsnodeid.cache ]]; then
+        IPFSNODEID=$(cat ~/.zen/tmp/ipfsnodeid.cache 2>/dev/null)
+    fi
+    # Si toujours vide, forcer la récupération
+    if [[ -z "$IPFSNODEID" ]]; then
+        IPFSNODEID="$(myIpfsPeerId)"
+        # Sauvegarder en cache
+        mkdir -p ~/.zen/tmp
+        echo "$IPFSNODEID" > ~/.zen/tmp/ipfsnodeid.cache 2>/dev/null
+    fi
+fi
+
 isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
 

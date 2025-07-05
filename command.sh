@@ -6,7 +6,15 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+
+# Indicateur de progression
+echo -e "\033[0;36m🔄 Initialisation d'Astroport.ONE...\033[0m"
+
+# Chargement des variables d'environnement
+echo -e "\033[0;36m  📦 Chargement des variables système...\033[0m"
 . "${MY_PATH}/tools/my.sh"
+
+echo -e "\033[0;32m  ✅ Variables système chargées\033[0m"
 
 # Configuration des couleurs
 RED='\033[0;31m'
@@ -27,15 +35,30 @@ PLAYER=""
 ASTRONAUTENS=""
 G1PUB=""
 
+echo -e "\033[0;36m  🎫 Vérification du capitaine connecté...\033[0m"
+
 ### CHECK and CORRECT .current
 CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 [[ ${CURRENT} == "" ]] \
     && lastplayer=$(ls -t ~/.zen/game/players 2>/dev/null | grep "@" | head -n 1) \
     && [[ ${lastplayer} ]] \
-    && rm ~/.zen/game/players/.current \
+    && rm -f ~/.zen/game/players/.current \
     && ln -s ~/.zen/game/players/${lastplayer} ~/.zen/game/players/.current && CURRENT=${lastplayer}
 
+# Vérifier que le capitaine est bien connecté
+if [[ -n "$CURRENT" ]]; then
+    PLAYER="$CURRENT"
+    echo -e "\033[0;36m    🔑 Récupération des clés du capitaine...\033[0m"
+    G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1 2>/dev/null)
+    echo -e "\033[0;32m    ✅ Capitaine connecté: $PLAYER\033[0m"
+else
+    echo -e "\033[0;33m    ⚠️  Aucun capitaine connecté\033[0m"
+fi
+
+echo -e "\033[0;36m  🌐 Génération de la clé UPlanet...\033[0m"
 UPLANETG1PUB=$(${MY_PATH}/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
+echo -e "\033[0;32m  ✅ Clé UPlanet générée\033[0m"
 
 # Fonctions d'affichage améliorées
 print_header() {
@@ -107,33 +130,27 @@ check_services_status() {
     local services_status=()
     local nextcloud_available=false
     
-    # Vérifier si le fichier 12345.json existe
+    # Vérifier si le fichier 12345.json existe et est récent (< 24 heures)
     local status_file="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
+    local use_json_status=false
+    
     if [[ -f "$status_file" ]]; then
-        # Lire les statuts depuis le fichier JSON
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$status_file" 2>/dev/null || echo 0) ))
+        if [[ $file_age -lt 86400 ]]; then  # 24 heures = 86400 secondes
+            use_json_status=true
+        fi
+    fi
+    
+    if [[ "$use_json_status" == "true" ]]; then
+        # Lire les statuts depuis le fichier JSON récent
         local ipfs_active=$(jq -r '.services.ipfs.active // false' "$status_file" 2>/dev/null)
         local astroport_active=$(jq -r '.services.astroport.active // false' "$status_file" 2>/dev/null)
         local uspot_active=$(jq -r '.services.uspot.active // false' "$status_file" 2>/dev/null)
         local nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$status_file" 2>/dev/null)
         local nostr_relay_active=$(jq -r '.services.nostr_relay.active // false' "$status_file" 2>/dev/null)
         local g1billet_active=$(jq -r '.services.g1billet.active // false' "$status_file" 2>/dev/null)
-        
-        # Vérifier si NextCloud est disponible (fichiers de configuration présents)
-        if [[ -f "$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml" ]]; then
-            nextcloud_available=true
-        fi
-        
-        # Stocker les statuts
-        services_status=(
-            "IPFS:$ipfs_active"
-            "Astroport:$astroport_active"
-            "uSPOT/uPassport:$uspot_active"
-            "NextCloud:$nextcloud_active"
-            "NOSTR_Relay:$nostr_relay_active"
-            "G1Billet:$g1billet_active"
-        )
     else
-        # Fallback: vérification manuelle si le fichier n'existe pas
+        # Vérification en temps réel
         local ipfs_active=false
         local astroport_active=false
         local uspot_active=false
@@ -141,27 +158,51 @@ check_services_status() {
         local nostr_relay_active=false
         local g1billet_active=false
         
-        pgrep ipfs >/dev/null && ipfs_active=true
-        pgrep -f "12345" >/dev/null && astroport_active=true
-        netstat -tln 2>/dev/null | grep -q ":54321 " && uspot_active=true
-        docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud && nextcloud_active=true
-        netstat -tln 2>/dev/null | grep -q ":7777 " && nostr_relay_active=true
-        pgrep -f "G1BILLETS" >/dev/null && g1billet_active=true
-        
-        # Vérifier si NextCloud est disponible
-        if [[ -f "$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml" ]]; then
-            nextcloud_available=true
+        # IPFS - vérifier le processus et la connectivité
+        if pgrep ipfs >/dev/null && ipfs swarm peers 2>/dev/null | grep -q .; then
+            ipfs_active=true
         fi
         
-        services_status=(
-            "IPFS:$ipfs_active"
-            "Astroport:$astroport_active"
-            "uSPOT/uPassport:$uspot_active"
-            "NextCloud:$nextcloud_active"
-            "NOSTR_Relay:$nostr_relay_active"
-            "G1Billet:$g1billet_active"
-        )
+        # Astroport - vérifier le processus principal
+        if pgrep -f "12345" >/dev/null; then
+            astroport_active=true
+        fi
+        
+        # uSPOT - vérifier le port d'écoute
+        if netstat -tln 2>/dev/null | grep -q ":54321 "; then
+            uspot_active=true
+        fi
+        
+        # NextCloud - vérifier les conteneurs Docker
+        if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
+            nextcloud_active=true
+        fi
+        
+        # NOSTR Relay - vérifier le port d'écoute
+        if netstat -tln 2>/dev/null | grep -q ":7777 "; then
+            nostr_relay_active=true
+        fi
+        
+        # G1Billet - vérifier le processus
+        if pgrep -f "G1BILLETS" >/dev/null; then
+            g1billet_active=true
+        fi
     fi
+    
+    # Vérifier si NextCloud est disponible (fichiers de configuration présents)
+    if [[ -f "$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml" ]]; then
+        nextcloud_available=true
+    fi
+    
+    # Stocker les statuts
+    services_status=(
+        "IPFS:$ipfs_active"
+        "Astroport:$astroport_active"
+        "uSPOT/uPassport:$uspot_active"
+        "NextCloud:$nextcloud_active"
+        "NOSTR_Relay:$nostr_relay_active"
+        "G1Billet:$g1billet_active"
+    )
     
     # Retourner les statuts et la disponibilité de NextCloud
     echo "${services_status[@]}"
@@ -170,6 +211,7 @@ check_services_status() {
 
 # Fonction pour afficher les services avec statut réel
 show_services_status() {
+    echo -e "\033[0;36m  🔍 Vérification des services...\033[0m"
     local services_info=$(check_services_status)
     local nextcloud_available=false
     
@@ -580,8 +622,12 @@ show_dashboard() {
 
     if [[ -n "$PLAYER" ]]; then
         echo -e "${GREEN}🎫 Capitaine connecté: $PLAYER${NC}"
-        echo -e "${WHITE}G1PUB:${NC} $G1PUB"
-        echo -e "${WHITE}IPNS:${NC} $myIPFS/ipns/$ASTRONAUTENS"
+        if [[ -n "$G1PUB" ]]; then
+            echo -e "${WHITE}G1PUB:${NC} $G1PUB"
+        fi
+        if [[ -n "$ASTRONAUTENS" ]]; then
+            echo -e "${WHITE}IPNS:${NC} $myIPFS/ipns/$ASTRONAUTENS"
+        fi
         echo ""
     fi
 
@@ -627,6 +673,9 @@ show_dashboard() {
             propose_y_level_upgrade
         fi
     fi
+    
+    echo -e "\033[0;32m✅ Initialisation terminée - Prêt à utiliser\033[0m"
+    echo ""
 }
 
 # Fonction pour lister et installer les applications Docker
@@ -987,6 +1036,7 @@ handle_configuration() {
     echo "4. 🔧 Maintenance système"
     echo "5. ☁️  Installer NextCloud"
     echo "6. 🚀 Passer au niveau Y (UPlanet Ẑen)"
+    echo "7. 🐛 Debug détection"
     echo "0. ⬅️  Retour"
     echo ""
     
@@ -1014,6 +1064,9 @@ handle_configuration() {
             ;;
         6)
             propose_y_level_upgrade
+            ;;
+        7)
+            debug_detection
             ;;
         0) return ;;
         *) print_error "Choix invalide" ;;
@@ -1050,9 +1103,8 @@ check_station_level() {
     local ssh_ipfs_mismatch=false
     local node_dir="$HOME/.zen/tmp/$IPFSNODEID"
     
-    # Vérifier le niveau en cherchant les fichiers x_ssh*, y_ssh*, z_ssh*
+    # Méthode principale : vérifier les fichiers de niveau dans le répertoire du node
     if [[ -d "$node_dir" ]]; then
-        # Chercher les fichiers de niveau
         if ls "$node_dir"/z_ssh* >/dev/null 2>&1; then
             current_level="Z"
         elif ls "$node_dir"/y_ssh* >/dev/null 2>&1; then
@@ -1062,31 +1114,70 @@ check_station_level() {
         fi
     fi
     
-    # Fallback: vérification par les fichiers de clés (méthode précédente)
-    if [[ "$current_level" == "X" ]]; then
-        # Vérifier si on est au niveau Y (clé SSH jumelle avec IPFS)
-        if [[ -f ~/.zen/game/secret.dunikey ]]; then
-            current_level="Y"
-            # Vérifier la cohérence SSH/IPFS
-            if [[ -f ~/.zen/game/id_ssh.pub ]] && [[ -f ~/.ssh/id_ed25519.pub ]]; then
-                if [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub 2>/dev/null) ]]; then
-                    ssh_ipfs_mismatch=true
-                fi
-            fi
-        else
-            # Niveau X : vérifier si SSH et IPFS sont différents
-            if [[ -f ~/.ssh/id_ed25519.pub ]]; then
-                local ssh_pub=$(cat ~/.ssh/id_ed25519.pub)
-                local yipns=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$ssh_pub" 2>/dev/null)
-                if [[ "$yipns" != "$IPFSNODEID" ]]; then
-                    ssh_ipfs_mismatch=true
-                fi
+
+    
+    # Vérifier la cohérence SSH/IPFS pour les niveaux Y et Z
+    if [[ "$current_level" == "Y" || "$current_level" == "Z" ]]; then
+        if [[ -f ~/.zen/game/id_ssh.pub ]] && [[ -f ~/.ssh/id_ed25519.pub ]]; then
+            if [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub 2>/dev/null) ]]; then
+                ssh_ipfs_mismatch=true
             fi
         fi
     fi
     
     echo "LEVEL:$current_level"
     echo "MISMATCH:$ssh_ipfs_mismatch"
+}
+
+# Fonction de debug pour diagnostiquer les problèmes de détection
+debug_detection() {
+    print_section "DEBUG - DIAGNOSTIC DE DÉTECTION"
+    
+    echo -e "${CYAN}Informations système:${NC}"
+    echo "  IPFSNODEID: $IPFSNODEID"
+    echo "  CURRENT: $CURRENT"
+    echo "  PLAYER: $PLAYER"
+    echo "  G1PUB: $G1PUB"
+    echo "  ASTRONAUTENS: $ASTRONAUTENS"
+    echo ""
+    
+    echo -e "${CYAN}Vérification des fichiers de niveau:${NC}"
+    local node_dir="$HOME/.zen/tmp/$IPFSNODEID"
+    if [[ -d "$node_dir" ]]; then
+        echo "  Répertoire node: $node_dir"
+        echo "  Fichiers de niveau trouvés:"
+        ls -la "$node_dir"/[xyz]_ssh* 2>/dev/null || echo "    Aucun fichier de niveau trouvé"
+    else
+        echo "  Répertoire node non trouvé: $node_dir"
+    fi
+    echo ""
+    
+    echo -e "${CYAN}Vérification des services en temps réel:${NC}"
+    echo "  IPFS processus: $(pgrep ipfs | wc -l) processus(s)"
+    echo "  IPFS peers: $(ipfs swarm peers 2>/dev/null | wc -l) peer(s)"
+    echo "  Astroport processus: $(pgrep -f "12345" | wc -l) processus(s)"
+    echo "  Port 54321: $(netstat -tln 2>/dev/null | grep -c ":54321 ") port(s) ouvert(s)"
+    echo "  Port 7777: $(netstat -tln 2>/dev/null | grep -c ":7777 ") port(s) ouvert(s)"
+    echo "  Docker NextCloud: $(docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | wc -l) conteneur(s)"
+    echo "  G1Billet processus: $(pgrep -f "G1BILLETS" | wc -l) processus(s)"
+    echo ""
+    
+    echo -e "${CYAN}Fichier 12345.json:${NC}"
+    local json_file="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
+    if [[ -f "$json_file" ]]; then
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$json_file" 2>/dev/null || echo 0) ))
+        echo "  Présent: OUI (âge: ${file_age}s)"
+        if command -v jq >/dev/null 2>&1; then
+            echo "  Services dans JSON:"
+            jq -r '.services | to_entries[] | "    \(.key): \(.value.active)"' "$json_file" 2>/dev/null || echo "    Erreur de lecture JSON"
+        else
+            echo "  jq non disponible pour analyser le JSON"
+        fi
+    else
+        echo "  Présent: NON"
+    fi
+    
+    read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 
 # Fonction pour proposer le passage au niveau Y

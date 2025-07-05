@@ -192,14 +192,16 @@ echo ">>> SWITHCIN ASTROPORT ON <<<
 
 echo "#####################################################"
 echo "#### UPLANET ORIGIN ############# ♥BOX X LEVEL ###"
-echo "#### UPlanet ẐEN ACTIVATION needs Y LEVEL "
+echo "#### UPlanet ẐEN Activation needs Y LEVEL (SSH=IPFS)"
 echo "RUN: ~/.zen/Astroport.ONE/tools/Ylevel.sh"
 ##########################################################
 ## ON BOARDING PLAYER
-echo "############################### ON BOARDING"
+echo "##### CAPTAIN ###################### ON BOARDING"
 espeak "Welcome CAPTAIN" 2>/dev/null
+echo "Adapt ~/.zen/Astroport.ONE/.env file to your needs"
+echo "then use 'coeurbox' command to create ZEN Card and control your ♥BOX station as a CAPTAIN"
+echo "#####################################################"
 echo ">>> Create CAPTAIN MULTIPASS <<<
 http://127.0.0.1:54321/g1"
-echo "then use 'coeurbox' command to create ZEN Card and control your ♥BOX station as a CAPTAIN"
 
 xdg-open http://127.0.0.1:8080/ipns/copylaradio.com
