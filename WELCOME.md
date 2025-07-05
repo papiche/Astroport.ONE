@@ -206,8 +206,8 @@ bash <(curl -sL https://install.astroport.com)
 - 🌐 **Site Monnaie Libre** : [monnaie-libre.fr](https://monnaie-libre.fr)
 - 🌐 **Site CopyLaRadio** : [copylaradio.com](https://copylaradio.com)
 - 🌐 **MULTIPASS** : [UPlanet ORIGIN](https://qo-op.com)
-- 🤝 **Rejoindre la coopérative** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
-- 💰 **Jeton de parité € / Ẑen** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
+- 🤝 **Adhésion G1FabLab** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
+- 💰 **Jeton de parité "€ / Ẑen"** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
 - 📧 **Contact** : support@qo-op.com : '@qoop' sur le [Forum Monnaie Libre](https://forum.monnaie-libre.fr) de la Communauté Ğ1
 
 ---
