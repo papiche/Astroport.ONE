@@ -202,23 +202,13 @@ bash <(curl -sL https://install.astroport.com)
 
 ---
 
-## 🌟 **Témoignages de la Communauté**
-
-> *"UPlanet m'a permis de reprendre le contrôle de mes données tout en participant à une économie plus juste."* - Marie, utilisatrice MULTIPASS
-
-> *"La validation des compétences par les pairs est révolutionnaire. Plus besoin d'attendre les diplômes officiels !"* - Pierre, développeur ZENCARD
-
-> *"L'assistant IA personnel m'aide dans mon travail quotidien, et je gagne des Ẑen en partageant mes connaissances."* - Sophie, créatrice de contenu
-
----
-
 ## 🔗 **Liens Utiles**
 
-- 🌐 **Site officiel** : [copylaradio.com](https://copylaradio.com)
-- 💰 **Soutenir le projet** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
-- 🤝 **Rejoindre CopyLaRadio** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
-- 🌐 **Inscription** : [UPlanet ORIGIN](https://qo-op.com)
-- 💬 **Forum** : [forum.monnaie-libre.fr](https://forum.monnaie-libre.fr)
+- 🌐 **Site Monnaie Libre** : [monnaie-libre.fr](https://monnaie-libre.fr)
+- 🌐 **Site CopyLaRadio** : [copylaradio.com](https://copylaradio.com)
+- 🌐 **MULTIPASS** : [UPlanet ORIGIN](https://qo-op.com)
+- 🤝 **Rejoindre la coopérative** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
+- 💰 **Jeton de parité € / Ẑen** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
 - 📧 **Contact** : support@qo-op.com
 
 ---
