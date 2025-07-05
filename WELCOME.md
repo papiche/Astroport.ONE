@@ -191,13 +191,12 @@ bash <(curl -sL https://install.astroport.com)
 ```
 
 ### 🌐 **Étape 2 : Rejoindre la Communauté**
-- [CopyLaRadio](https://copylaradio.com) : La coopérative des auto-hébergeurs
-- [Forum Monnaie Libre](https://forum.monnaie-libre.fr) : Communauté Ğ1
-- [Open Collective](https://opencollective.com/uplanet-zero) : Soutenir le projet
+- [CopyLaRadio](https://copylaradio.com) : La coopérative des auto-hébergeurs Web3
+- [UPlanet Ẑen](https://opencollective.com/uplanet-zero) : Soutenir le projet
 
 ### 📚 **Étape 3 : Découvrir les Ressources**
-- [Documentation UPlanet (help)](https://astroport-1.gitbook.io/astroport.one/)
-- [Guide d'utilisation (futur)](https://www.copylaradio.com/blog/blog-1/post/reinventer-la-societe-avec-la-monnaie-libre-et-la-web-of-trust-148)
+- [Documentation UPlanet (en cours...)](https://astroport-1.gitbook.io/astroport.one/)
+- [Société 3.0 (futur)](https://www.copylaradio.com/blog/blog-1/post/reinventer-la-societe-avec-la-monnaie-libre-et-la-web-of-trust-148)
 - [API et développement](./API.NOSTRAuth.readme.md)
 
 ---
@@ -209,7 +208,7 @@ bash <(curl -sL https://install.astroport.com)
 - 🌐 **MULTIPASS** : [UPlanet ORIGIN](https://qo-op.com)
 - 🤝 **Rejoindre la coopérative** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
 - 💰 **Jeton de parité € / Ẑen** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
-- 📧 **Contact** : support@qo-op.com
+- 📧 **Contact** : support@qo-op.com (qoop) sur le [Forum Monnaie Libre](https://forum.monnaie-libre.fr) de la Communauté Ğ1
 
 ---
 
