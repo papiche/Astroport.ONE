@@ -176,9 +176,9 @@ Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.
 4. **Autonomie** : Chacun peut valider et transmettre ses savoirs
 
 ---
-## Commnent Commencer ?
+## ✨ Comment Commencer ?
 
-Inscrivez-vous sur [UPlanet ORIGIN](https://qo-op.com) et laissez vous guider pour vous relier à un Capitaine près de chez vous.
+Inscrivez-vous sur [UPlanet ORIGIN](https://qo-op.com) obtenez votre MULTIPASS 🛂 et laissez vous guider par un Capitaine installé près de chez vous.
 ## 🎯 Comment aller plus loin ?
 
 ### 🚀 **Étape 1 : Installer Astroport.ONE et devenir CAPITAINE**
