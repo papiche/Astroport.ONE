@@ -12,7 +12,7 @@
     * [REGION.refresh.sh](BOOKS/astroport-20h12/uplanet.refresh.sh/region.refresh.sh.md)
   * [G1PalPay.sh](BOOKS/astroport-20h12/g1palpay.sh.md)
   * [tools/Connect\_PLAYER\_To\_Gchange.sh](BOOKS/astroport-20h12/tools-connect_player_to_gchange.sh.md)
-* [API](BOOKS/api/README.md)
+* [API (v1)](BOOKS/api/README.md)
   * [PLAYER.sh](BOOKS/api/player.sh.md)
   * [QRCODE.sh](BOOKS/api/qrcode.sh.md)
 * [ARCHITECTURE](architecture.md)
