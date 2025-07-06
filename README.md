@@ -122,27 +122,39 @@ To access the advanced features and custom token valuations:
 - **DeFi Integration**: Seamless connection with existing DeFi protocols
 - **Community Autonomy**: Control your own token valuation and economic rules
 
-## Essential Features: The Power of Astroport.ONE
+## 🚀 Essential Features: The Power of Astroport.ONE
 
-*   **ZenCard and AstroID: Your Access Keys**
+### 🔐 **Digital Identity & Access Management**
 
-    *   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes.
-    *   **AstroID**: Your digital identity, inviolable and under your complete control.
+*   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes, enabling seamless Ğ1 transactions and digital payments across the UPlanet ecosystem.
 
-*   **Decentralized and Organized Storage**
+*   **AstroID**: Your sovereign digital identity, inviolable and under your complete control. Built on NOSTR protocol, it provides secure authentication and reputation management within the Web of Trust.
 
-    *   **IPFS at its Core**: Benefit from distributed storage, resistant to censorship and centralized failures.
-    *   **MBR and Allocation Table**: A Tiddlywiki data organization optimized for performance and reliability.
+### 💾 **Decentralized Storage & Data Management**
 
-*   **Vœux: The Keywords that Animate AstroBot**
+*   **IPFS at its Core**: Benefit from distributed storage, resistant to censorship and centralized failures. Your data is stored across a global network, ensuring availability and resilience.
 
-    *   **Vœux System**: More than just wishes, "Vœux" (Vows) are keywords that *you* define in your TiddlyWiki to trigger **AstroBot**, the automated heart of Astroport.ONE. These keywords activate BASH programs, rudimentary smart contracts, that allow you to automate actions, synchronize data, or perform specific tasks within your station. While Vœux can be supported by donations in the Ğ1 free currency, their primary function is to orchestrate automation via AstroBOT, not collaborative funding.
+*   **MBR and Allocation Table**: A Tiddlywiki-based data organization system optimized for performance and reliability. Your personal knowledge base is automatically synchronized and version-controlled.
 
-*   **Synchronization and P2P Communication**
+### 🤖 **AstroBot: Intelligent Automation Engine**
 
-    *   **Astroport.ONE Stations**: Your station communicates and synchronizes with a network of digital embassies, ensuring maximum data consistency and availability.
-    *   **AstroBot: Intelligence Serving Your Data**: A system of smart contracts in BASH, reacting to events on the Ğ1 network and to "Vœux" to automate and optimize your experience.
-    *   **G1PalPay.sh: The Ğ1 Transaction Monitor**: A crucial script that monitors the Ğ1 blockchain in real-time. It allows Astroport.ONE to react to transactions, execute commands based on transaction comments, and manage financial flows within the ecosystem.
+*   **Vœux System**: "Vœux" (Vows) are intelligent keywords that *you* define in your TiddlyWiki to trigger **AstroBot**, the automated heart of Astroport.ONE. These keywords activate BASH programs - rudimentary smart contracts - that automate actions, synchronize data, or perform specific tasks within your station.
+
+*   **Smart Contract Automation**: AstroBot reacts to events on the Ğ1 network and your "Vœux" to orchestrate automation and optimize your experience. While Vœux can be supported by donations in the Ğ1 free currency, their primary function is automation via AstroBOT, not collaborative funding.
+
+### 🌐 **Network Synchronization & Communication**
+
+*   **Astroport.ONE Stations Network**: Your station communicates and synchronizes with a global network of digital embassies, ensuring maximum data consistency and availability across the UPlanet ecosystem.
+
+*   **G1PalPay.sh: Real-Time Transaction Monitor**: A crucial script that monitors the Ğ1 blockchain in real-time. It allows Astroport.ONE to react to transactions, execute commands based on transaction comments, and manage financial flows within the ecosystem.
+
+### 🔄 **Cross-Platform Integration**
+
+*   **NOSTR Integration**: Seamless connection to the decentralized social network, enabling secure messaging, content sharing, and community building.
+
+*   **DeFi Compatibility**: Ready integration with existing DeFi protocols and traditional financial systems through the ZEN Economy Stable COIN system.
+
+*   **API Ecosystem**: Comprehensive REST APIs for third-party integrations, mobile applications, and custom Web3 services.
 
 ## **Who is Astroport.ONE For?**
 
