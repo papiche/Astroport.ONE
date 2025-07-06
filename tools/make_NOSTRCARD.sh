@@ -254,7 +254,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \
-        -content "🎫 MULTIPASS Wallet: ${G1PUBNOSTR}${Z}\n ${myIPFS}/ipfs/${G1PUBNOSTRQR}" \
+        -content "🎫 MULTIPASS Wallet: ${G1PUBNOSTR}${Z} ${myIPFS}/ipfs/${G1PUBNOSTRQR}" \
         -tags "[['p', '$HEX_HEX']]" \
         --relay "$myRELAY"
 
