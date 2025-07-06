@@ -201,6 +201,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
     amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ 2>/dev/null
+    
+    ## Add white margins of 120 pixels around the QR code image (for a flashable coracle profile picture)
+    convert ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png -bordercolor white -border 120x120 ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
+    
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
     ## MOVE webcam picture
@@ -290,7 +294,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet MULTIPASS ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8}" \
+        "⏰ UPlanet MULTIPASS ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8} ${uSPOT}/nostr" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP" "" "" "" "" \
