@@ -46,6 +46,149 @@ Astroport.ONE es una plataforma revolucionaria diseñada para empoderar a indivi
 *   **A usuarios de la criptomoneda Ğ1 (June):** Mejora tu experiencia Ğ1 con pagos seguros y un ecosistema floreciente.
 *   **A cualquier persona interesada en un mundo digital más libre, más seguro y más interconectado.**
 
+## 🚀 El Ecosistema UPlanet: Dos Niveles de Soberanía Digital
+
+Astroport.ONE alimenta el **ecosistema UPlanet**, que funciona en dos niveles distintos con capacidades y requisitos de seguridad diferentes:
+
+### 🌐 **UPlanet ORIGIN (EnfinLibre)**
+- **Nivel**: Acceso básico para todos los usuarios
+- **Seguridad**: Supervisión estándar de transacciones Ğ1
+- **Red**: Red pública sin restricciones de swarm key
+- **Control**: Verificación básica de transacciones primarias (cualquier fuente primaria aceptada)
+- **Objetivo**: Punto de entrada para nuevos usuarios con servicios MULTIPASS y ZENCARD
+- **Valor Token**: 1 Ẑen = 0.1 Ğ1 (tasa fija)
+
+### 🛡️ **UPlanet Ẑen (Red Privada)**
+- **Nivel**: Nivel avanzado que requiere activación Y-level (SSH<->IPFS key twin)
+- **Seguridad**: Control avanzado de transacciones primarias con detección de intrusión
+- **Red**: Red privada usando `~/.ipfs/swarm.key` personalizado para aislamiento seguro
+- **Control**: **Herramienta de capitalización de tokens en tiempo real** - control input € = output Ẑen
+- **Objetivo**: Operaciones financieras seguras y servicios avanzados
+- **Valor Token**: Personalizable según necesidades comunitarias (técnicamente siempre 0.1 Ğ1)
+
+#### **Sistema ZEN Economy Stable COIN**
+
+UPlanet Ẑen funciona como un **sistema Stable COIN** capaz de trabajar con **cualquier clase de activos** mientras mantiene una equidad de valor apropiada:
+
+| **Clase de Activos** | **Representación ZEN** | **Ejemplo de Comunidad** |
+|---------------------|----------------------|---------------------------|
+| **Monedas Fiat** | 1 Ẑen = 1€, 1$, 1¥ | Redes de Economía Local |
+| **Inmobiliario** | 1 Ẑen = 1m² terreno | Grupos de Inversión Inmobiliaria |
+| **Materias Primas** | 1 Ẑen = 1kg oro/plata | Colectivos de Metales Preciosos |
+| **Tokens DeFi** | 1 Ẑen = 1 USDC/DAI | Redes de Integración DeFi |
+| **Créditos Energéticos** | 1 Ẑen = 1 kWh | Comunidades de Energía Renovable |
+| **Créditos de Carbono** | 1 Ẑen = 1 tonelada CO2 | Grupos de Conservación Ambiental |
+
+### 🏢 **Cooperativa Made In Zen**
+
+**[Made In Zen](https://opencollective.com/made-in-zen)** es la cooperativa que federa otras cooperativas y forma personas para crear nuevas comunidades "UPlanet Ẑen". Funciona como un anfitrión fiscal y emisor de stablecoin, proporcionando:
+
+- **Propiedad de Infraestructura**: Co-propiedad de satélites Raspberry Pi 5 y la constelación PC Gamer
+- **Programas de Formación**: Formación UPlanet ẐEN para crear nuevas comunidades descentralizadas
+- **Distribución de Tokens**: Distribución de tokens Ğ1 a asociaciones y empresas
+- **Colateralización 100%**: Por cada euro recibido, 1 Ẑen se acredita en la ZenCard correspondiente
+
+**Oportunidades de Inversión**:
+- **[UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611)**: 50€/año para 128 Go en Raspberry Pi 5
+- **[Constelación Sagitario](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)**: Inversión PC Gamer con acceso IA y potencial de ingresos
+
+## 🎫 Tres Niveles de Identidad: Tu Camino hacia la Soberanía Digital
+
+### 1. 🌐 **MULTIPASS** - Tu Identidad Digital Básica
+
+**Precio**: 1 Ẑen/semana (0.1 Ğ1)
+
+**Lo que obtienes**:
+- ✅ **Identidad NOSTR**: Clave pública segura para la red social descentralizada
+- ✅ **uDRIVE IPFS**: Almacenamiento personal descentralizado (128 Go)
+- ✅ **Billetera MULTIPASS**: Sistema de contabilidad Ẑen dedicado (1 Ẑen = 0.1 Ğ1 en UPlanet ORIGIN)
+- ✅ **Asistente IA Personal**: #BRO para tus preguntas y tareas
+- ✅ **Geolocalización UMAP**: Conexión a tu comunidad local (0.01° precisión)
+- ✅ **Intercambios Ẑen**: Transferencias directas entre titulares de MULTIPASS
+
+**Economía**:
+- Cada like recibido = 0.1 Ğ1 transferido automáticamente a tu billetera MULTIPASS
+- Recargable vía Cesium Ginkgo en UPlanet ORIGIN
+- Recargable vía Open Collective en UPlanet ẐEN
+- El capitán percibe 1 Ẑen/semana por el alojamiento
+
+### 2. ☁️ **ZENCARD** - Libera tu Nube y Smartphone
+
+**Precio**: 4 Ẑen/semana (4€)
+
+**Accesible para socios**: [CopyLaRadio](https://opencollective.com/monnaie-libre)
+
+**Lo que obtienes**:
+- ✅ **Todo de MULTIPASS** incluido
+- ✅ **NextCloud Personal**: 128 Go de almacenamiento seguro
+- ✅ **Desgoogleización**: Libera tu smartphone de los GAFAM
+- ✅ **Sincronización**: Todos tus dispositivos conectados
+- ✅ **Colaboración**: Compartir documentos de forma segura
+- ✅ **Billetera ZENCARD**: Sistema de contabilidad Ẑen separado con funcionalidades avanzadas
+- ✅ **Intercambios ZENCARD**: Transferencias entre titulares de ZENCARD
+- ✅ **Acceso Made In Zen**: Conviértete en co-propietario de infraestructura vía tokens Made In Zen
+
+**Recarga**: [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
+Voluntario en UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
+
+**Inversión en Infraestructura**: Acceso a [UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611) (50€/año) y [Constelación Sagitario](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400) (inversión PC Gamer)
+
+### 💰 **Sistema de Contabilidad de Tokens**
+
+El ecosistema UPlanet usa **múltiples tipos de tokens** con diferentes sistemas de contabilidad:
+
+#### **Tokens Ẑen (MULTIPASS & ZENCARD)**
+- **UPlanet ORIGIN**: 1 Ẑen = 0.1 Ğ1 (tasa fija)
+- **UPlanet Ẑen**: 1 Ẑen = Valor personalizado (€, terreno, energía, etc.) manteniendo 0.1 Ğ1 como base técnica
+
+#### **Tokens NEẐ (uPASSPORT ZEROCARD)**
+- **Valor**: 1 NEẐ = 1 Ğ1 (equivalente Ğ1 directo)
+- **Objetivo**: Participaciones de capital en la infraestructura cooperativa Made In Zen
+- **Uso**: Inversión en UPlanet SATELLITE y Constelación Sagitario
+
+#### **Tokens Made In Zen**
+- **Objetivo**: Gobernanza cooperativa y propiedad de infraestructura
+- **Acceso**: Disponible para titulares de ZENCARD y usuarios uPASSPORT
+- **Valor**: Representa participaciones en la infraestructura física de la cooperativa
+
+Este sistema multi-tokens permite modelos económicos flexibles manteniendo Ğ1 como fundación subyacente y permitiendo estructuras de propiedad cooperativa.
+
+### 3. 🛡️ **uPASSPORT** - Tu Identidad Validada
+
+**Acceso**: Vía transacción primaria desde una cuenta miembro Ğ1
+
+**Lo que obtienes**:
+- ✅ **Billetera ZEROCARD**: Conectada a la billetera miembro creando Ğ1 al ritmo DU (Dividendo Universal) y tokens NEẐ (1 NEẐ = 1 Ğ1)
+- ✅ **Validación Web of Trust**: Identidad verificada por la comunidad
+- ✅ **Acceso a servicios avanzados**: Funcionalidades premium
+- ✅ **Preparación N1/N2**: Base para la exploración de futuros niveles
+- ✅ **Participación Made In Zen**: Acceso a la gobernanza cooperativa y programas de formación (sistema de votación DU²)
+
+Opción: **Organización 321 DU**: [El Juego del DU](https://pad.p2p.legal/s/321DU.LeJeu#)
+
+## 🚀 Progresión de UPlanet ORIGIN hacia UPlanet Ẑen
+
+### **Comenzar con UPlanet ORIGIN**
+1. **Instalar Astroport.ONE** con el script de instalación automática
+2. **Crear tu MULTIPASS** para identidad digital básica y asistente IA
+3. **Acceder a servicios públicos** con supervisión estándar de transacciones Ğ1
+4. **Unirse a la comunidad** y aprender tecnologías descentralizadas
+
+### **Evolucionar hacia UPlanet Ẑen**
+Para acceder a funcionalidades avanzadas y valoraciones personalizadas:
+
+1. **Activar Nivel Y**: Activar la funcionalidad SSH<->IPFS key twin
+2. **Crear una Red Privada**: Generar tu `~/.ipfs/swarm.key` personalizado
+3. **Unirse a Comunidades Especializadas**: Acceder a redes de tokens respaldados por activos
+4. **Participar en Servicios Avanzados**: Usar integraciones DeFi y valoraciones personalizadas
+
+### **Ventajas de la Evolución hacia UPlanet Ẑen**
+- **Seguridad Reforzada**: Detección de intrusión y sistemas de reembolso automático
+- **Valores de Tokens Personalizados**: Definir el modelo económico de tu comunidad
+- **Respaldo de Activos**: Representación de activos reales (bosque, energía, etc.)
+- **Integración DeFi**: Conexión transparente con protocolos DeFi existentes
+- **Autonomía Comunitaria**: Controlar tu propia valoración de tokens y reglas económicas
+
 ## **Comienza con Astroport.ONE:**
 
 **Instalación (Linux - Debian/Ubuntu/Mint):**
@@ -167,7 +310,8 @@ Astroport.ONE ofrece tres formas principales de unirse y beneficiarse del ecosis
 - 128 GB de almacenamiento NextCloud privado
 - Desintoxicación y desgoogleización del smartphone
 - Todos los beneficios de MULTIPASS incluidos
-- 4 Ẑen por semana
+- Acceso a la infraestructura cooperativa Made In Zen
+- 1 + 4 Ẑen por semana
 
 ### 3. [⚡ CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html)
 **Conviértete en nodo y gana Ẑen**

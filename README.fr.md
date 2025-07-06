@@ -50,6 +50,19 @@ UPlanet Ẑen fonctionne comme un **système Stable COIN** capable de travailler
 
 **En savoir plus sur le système de sécurité** : [Documentation Primal Wallet Control](tools/primal_wallet_control.README.md)
 
+### 🏢 **Coopérative Made In Zen**
+
+**[Made In Zen](https://opencollective.com/made-in-zen)** est la coopérative qui fédère les autres coopératives et forme les personnes à créer de nouvelles communautés "UPlanet Ẑen". Elle fonctionne comme un hôte fiscal et émetteur de stablecoin, fournissant :
+
+- **Propriété d'Infrastructure** : Co-propriété des satellites Raspberry Pi 5 et de la constellation PC Gamer
+- **Programmes de Formation** : Formation UPlanet ẐEN pour créer de nouvelles communautés décentralisées
+- **Distribution de Tokens** : Distribution de tokens Ğ1 aux associations et entreprises
+- **Collatéralisation 100%** : Pour chaque euro reçu, 1 Ẑen est crédité sur la ZenCard correspondante
+
+**Opportunités d'Investissement** :
+- **[UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611)** : 50€/an pour 128 Go sur Raspberry Pi 5
+- **[Constellation Sagittarius](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)** : Investissement PC Gamer avec accès IA et potentiel de revenus
+
 ## 🎫 Trois Niveaux d'Identité : Votre Parcours vers la Souveraineté Numérique
 
 ### 1. 🌐 **MULTIPASS** - Votre Identité Numérique de Base
@@ -59,13 +72,13 @@ UPlanet Ẑen fonctionne comme un **système Stable COIN** capable de travailler
 **Ce que vous obtenez :**
 - ✅ **Identité NOSTR** : Clé publique sécurisée pour le réseau social décentralisé
 - ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (128 Go)
-- ✅ **Portefeuille UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1
+- ✅ **Portefeuille MULTIPASS** : Système de comptabilité Ẑen dédié (1 Ẑen = 0.1 Ğ1 sur UPlanet ORIGIN)
 - ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches
 - ✅ **Géolocalisation UMAP** : Connexion à votre communauté locale (0.01° précision)
-- ✅ **Échanges Ẑen** : Transferts directs entre MULTIPASS
+- ✅ **Échanges Ẑen** : Transferts directs entre détenteurs de MULTIPASS
 
 **Économie :**
-- Chaque like reçu = 0.1 Ğ1 automatiquement transféré
+- Chaque like reçu = 0.1 Ğ1 automatiquement transféré vers votre portefeuille MULTIPASS
 - Rechargeable via Cesium Ginkgo sur UPlanet ORIGIN
 - Rechargeable via Open Collective sur UPlanet ẐEN
 - Le capitaine perçoit 1 Ẑen/semaine pour l'hébergement
@@ -82,20 +95,45 @@ UPlanet Ẑen fonctionne comme un **système Stable COIN** capable de travailler
 - ✅ **Dégooglisation** : Libérez votre smartphone des GAFAM
 - ✅ **Synchronisation** : Tous vos appareils connectés
 - ✅ **Collaboration** : Partage sécurisé de documents
+- ✅ **Portefeuille ZENCARD** : Système de comptabilité Ẑen séparé avec fonctionnalités avancées
 - ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD
+- ✅ **Accès Made In Zen** : Devenez co-propriétaire d'infrastructure via les tokens Made In Zen
 
 **Recharge :** [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
 Bénévole sur UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
+
+**Investissement Infrastructure** : Accès à [UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611) (50€/an) et [Constellation Sagittarius](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400) (investissement PC Gamer)
+
+### 💰 **Système de Comptabilité des Tokens**
+
+L'écosystème UPlanet utilise **plusieurs types de tokens** avec différents systèmes de comptabilité :
+
+#### **Tokens Ẑen (MULTIPASS & ZENCARD)**
+- **UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1 (taux fixe)
+- **UPlanet Ẑen** : 1 Ẑen = Valeur personnalisée (€, terrain, énergie, etc.) tout en maintenant 0.1 Ğ1 comme base technique
+
+#### **Tokens NEẐ (uPASSPORT ZEROCARD)**
+- **Valeur** : 1 NEẐ = 1 Ğ1 (équivalent Ğ1 direct)
+- **Objectif** : Parts de capital dans l'infrastructure coopérative Made In Zen
+- **Utilisation** : Investissement dans UPlanet SATELLITE et Constellation Sagittarius
+
+#### **Tokens Made In Zen**
+- **Objectif** : Gouvernance coopérative et propriété d'infrastructure
+- **Accès** : Disponible pour les détenteurs de ZENCARD et utilisateurs uPASSPORT
+- **Valeur** : Représente des parts dans l'infrastructure physique de la coopérative
+
+Ce système multi-tokens permet des modèles économiques flexibles tout en maintenant Ğ1 comme fondation sous-jacente et en permettant des structures de propriété coopérative.
 
 ### 3. 🛡️ **uPASSPORT** - Votre Identité Validée
 
 **Accès :** Via transaction primaire depuis un compte membre Ğ1
 
 **Ce que vous obtenez :**
-- ✅ **Portefeuille ZEROCARD** : Utilise le DU (Dividende Universel)
+- ✅ **Portefeuille ZEROCARD** : Connecté au portefeuille membre créant Ğ1 au taux DU (Dividende Universel) et tokens NEẐ (1 NEẐ = 1 Ğ1)
 - ✅ **Validation Web of Trust** : Identité vérifiée par la communauté
 - ✅ **Accès aux services avancés** : Fonctionnalités premium
 - ✅ **Préparation N1/N2** : Base pour l'exploration des futurs niveaux
+- ✅ **Participation Made In Zen** : Accès à la gouvernance coopérative et programmes de formation (système de vote DU²)
 
 Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.LeJeu#)
 
@@ -273,7 +311,8 @@ Astroport.ONE propose trois façons principales de rejoindre et de profiter de l
 - 128 Go de stockage NextCloud privé
 - Désenvoutement et dégooglisation du smartphone
 - Tous les avantages du MULTIPASS inclus
-- 4 Ẑen par semaine
+- Accès à l'infrastructure coopérative Made In Zen
+- 1 + 4 Ẑen par semaine
 
 ### 3. [⚡ CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html)
 **Devenez un nœud & gagnez des Ẑen**
