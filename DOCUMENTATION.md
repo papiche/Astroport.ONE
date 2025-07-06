@@ -18,7 +18,6 @@
 ### Security & Economics
 * **[🛡️ Primal Wallet Control](tools/primal_wallet_control.README.md)** - Security system for UPlanet Ẑen
 * **[🏦 ZEN Economy Stable COIN](README.md#zen-economy-stable-coin-system)** - Multi-asset token system
-* **[🏢 Made In Zen Cooperative](README.md#-made-in-zen-cooperative-system)** - Federating cooperative and infrastructure ownership
 
 ## 📖 Technical Documentation
 
@@ -77,7 +76,6 @@
 * **[CopyLaRadio](https://copylaradio.com)** - Cooperative website
 * **[Monnaie Libre](https://monnaie-libre.fr)** - Ğ1 cryptocurrency
 * **[UPlanet Ẑen](https://opencollective.com/uplanet-zero)** - UPlanet Ẑen collective
-* **[Made In Zen](https://opencollective.com/made-in-zen)** - Federating cooperative and infrastructure ownership
 
 ### Documentation
 * **[GitBook Documentation](https://astroport-1.gitbook.io/astroport.one/)** - User documentation

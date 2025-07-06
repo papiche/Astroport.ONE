@@ -50,6 +50,19 @@ UPlanet Ẑen operates as a **Stable COIN system** that can work with **any asse
 
 **Learn more about the security system**: [Primal Wallet Control Documentation](tools/primal_wallet_control.README.md)
 
+### 🏢 **Made In Zen Cooperative**
+
+**[Made In Zen](https://opencollective.com/made-in-zen)** is the cooperative that federates other cooperatives and trains people to create new "UPlanet Ẑen" communities. It operates as a fiscal host and stablecoin issuer, providing:
+
+- **Infrastructure Ownership**: Co-ownership of Raspberry Pi 5 satellites and PC Gamer constellation
+- **Training Programs**: Formation UPlanet ẐEN for creating new decentralized communities
+- **Token Distribution**: Distribution of Ğ1 tokens to associations and companies
+- **100% Collateralization**: For every euro received, 1 Ẑen is credited to the corresponding ZenCard
+
+**Investment Opportunities**:
+- **[UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611)**: 50€/year for 128 GB on Raspberry Pi 5
+- **[Sagittarius Constellation](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)**: PC Gamer investment with AI access and revenue generation potential
+
 ## 🎫 Three Identity Levels: Your Journey to Digital Sovereignty
 
 ### 1. 🌐 **MULTIPASS** - Your Basic Digital Identity
@@ -84,45 +97,43 @@ UPlanet Ẑen operates as a **Stable COIN system** that can work with **any asse
 - ✅ **Collaboration**: Secure document sharing
 - ✅ **ZENCARD Wallet**: Separate Ẑen accounting system with enhanced features
 - ✅ **ZENCARD Exchanges**: Transfers between ZENCARD holders
-- ✅ **Made In Zen Access**: Access to cooperative infrastructure and services
+- ✅ **Made In Zen Access**: Become a co-owner of infrastructure through Made In Zen tokens
 
 **Recharge**: [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
 Volunteer on UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
 
-### 💰 **Ẑen Accounting System**
+**Infrastructure Investment**: Access to [UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611) (50€/year) and [Sagittarius Constellation](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400) (PC Gamer investment)
 
-Both MULTIPASS and ZENCARD use **separate Ẑen wallets** with independent accounting systems. The Ẑen token can represent different values depending on the UPlanet level:
+### 💰 **Token Accounting System**
 
+The UPlanet ecosystem uses **multiple token types** with different accounting systems:
+
+#### **Ẑen Tokens (MULTIPASS & ZENCARD)**
 - **UPlanet ORIGIN**: 1 Ẑen = 0.1 Ğ1 (fixed rate)
 - **UPlanet Ẑen**: 1 Ẑen = Custom value (€, land, energy, etc.) while maintaining 0.1 Ğ1 technical base
 
-This dual accounting system allows for flexible economic models while maintaining Ğ1 as the underlying foundation.
+#### **NEẐ Tokens (uPASSPORT ZEROCARD)**
+- **Value**: 1 NEẐ = 1 Ğ1 (direct Ğ1 equivalent)
+- **Purpose**: Capital shares in Made In Zen cooperative infrastructure
+- **Usage**: Investment in UPlanet SATELLITE and Sagittarius Constellation
 
-### 🏢 **Made In Zen Cooperative System**
+#### **Made In Zen Tokens**
+- **Purpose**: Cooperative governance and infrastructure ownership
+- **Access**: Available to ZENCARD holders and uPASSPORT users
+- **Value**: Represents shares in the cooperative's physical infrastructure
 
-**Made In Zen** is the federating cooperative that unites cooperatives and trains people to create new "UPlanet Ẑen" communities. It operates a unique token system:
-
-- **NEẐ Token**: Technical value of 1Ğ1, representing capital shares in cooperative infrastructure
-- **Infrastructure Ownership**: RPi satellites and PC Gamer infrastructure for AI services
-- **Formation Program**: Training for creating new UPlanet Ẑen communities
-- **ZEROCARD Integration**: NEẐ tokens are managed through ZEROCARD wallets for uPASSPORT holders
-
-**Infrastructure Investment Options:**
-- **[Satellite RPi5](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611)**: 128GB storage on Raspberry Pi 5 (50€/year)
-- **[PC Gamer Constellation](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)**: High-performance AI infrastructure with capital shares
-
-**Learn more**: [Made In Zen Cooperative](https://opencollective.com/made-in-zen)
+This multi-token system allows for flexible economic models while maintaining Ğ1 as the underlying foundation and enabling cooperative ownership structures.
 
 ### 3. 🛡️ **uPASSPORT** - Your Validated Identity
 
 **Access**: Via primary transaction from a Ğ1 member account
 
 **What you get:**
-- ✅ **ZEROCARD Wallet**: Uses DU (Universal Dividend) with NEẐ token support
+- ✅ **ZEROCARD Wallet**: Connected to member wallet creating Ğ1 at DU rate (Universal Dividend) and NEẐ tokens (1 NEẐ = 1 Ğ1)
 - ✅ **Web of Trust Validation**: Community-verified identity
 - ✅ **Advanced Services Access**: Premium features
 - ✅ **N1/N2 Preparation**: Foundation for future level exploration
-- ✅ **Made In Zen Participation**: Access to cooperative governance and infrastructure ownership
+- ✅ **Made In Zen Participation**: Access to cooperative governance and training programs (DU² voting system)
 
 Option: **321 DU Organization**: [The DU Game](https://pad.p2p.legal/s/321DU.LeJeu#)
 
@@ -153,7 +164,9 @@ To access the advanced features and custom token valuations:
 
 ### 🔐 **Digital Identity & Access Management**
 
-*   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes, enabling seamless Ğ1 transactions and digital payments across the UPlanet ecosystem. This is the foundational payment technology used by all identity levels.
+*   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes, enabling seamless Ğ1 transactions and digital payments across the UPlanet ecosystem. This is the basic payment system available to all users.
+
+*   **ZENCARD**: Advanced payment system for CopyLaRadio members, providing enhanced features and access to the Made In Zen cooperative ecosystem. ZENCARD holders become co-owners of infrastructure through Made In Zen tokens.
 
 *   **AstroID**: Your sovereign digital identity, inviolable and under your complete control. Built on NOSTR protocol, it provides secure authentication and reputation management within the Web of Trust.
 
@@ -341,22 +354,16 @@ Astroport.ONE offers three main ways to join and benefit from the ecosystem. Eac
 - 128 GB private NextCloud storage
 - Smartphone "de-googling" and digital detox
 - All the benefits of MULTIPASS included
-- Made In Zen cooperative access
-- 4 Ẑen per week
+- Access to Made In Zen cooperative infrastructure
+- 1 + 4 Ẑen per week
 
 ### 3. [⚡ CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html)
 **Become a Node & Earn Ẑen**
 - Transform your PC into a value node
 - Join the CopyLaRadio cooperative
 - Earn Ẑen by offering MULTIPASS and ZENCARD to others
+- Access to Made In Zen training programs
 - Full training and support
-
-### 4. 🏢 **Made In Zen Cooperative**
-**Become a Co-Owner of Infrastructure**
-- Invest in RPi satellites or PC Gamer infrastructure
-- Receive NEẐ tokens (1Ğ1 each) representing capital shares
-- Access cooperative governance and formation programs
-- Help create new UPlanet Ẑen communities
 
 > 📄 Click each link to view or print the Zine flyer for that usage!
 
