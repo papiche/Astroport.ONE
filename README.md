@@ -4,7 +4,7 @@
 
 **Welcome to Astroport.ONE!** Imagine a digital world where you are in control, where data is secure, payments are seamless, and community thrives beyond borders. Astroport.ONE is building this future, and you are invited to be a part of it.
 
-**What is Astroport.ONE?**
+## 🌍 What is Astroport.ONE?
 
 Astroport.ONE is a revolutionary platform designed to empower individuals and communities in the Web3 era. It's more than just software; it's a toolkit for creating your own decentralized digital embassy - a **Station** - where you can manage your digital identity, participate in a decentralized economy using the Ğ1 (June) cryptocurrency, and contribute to a global network of interconnected stations.
 
@@ -14,6 +14,113 @@ Astroport.ONE is a revolutionary platform designed to empower individuals and co
 *   **A Commission-Free Payment System:** Use the Ğ1 (June) cryptocurrency for peer-to-peer transactions without intermediaries or fees, fostering a fair and equitable economy.
 *   **A Digital Community Builder:** Connect with other Astroport.ONE Stations and users worldwide, sharing information, resources, and building trust-based networks.
 *   **A "Construction Guide" for the Decentralized Web:** Leverage our open-source tools and software to create and deploy your own Web3 applications and services.
+
+## 🚀 The UPlanet Ecosystem: Two Levels of Digital Sovereignty
+
+Astroport.ONE powers the **UPlanet ecosystem**, which operates on two distinct levels with different capabilities and security requirements:
+
+### 🌐 **UPlanet ORIGIN (EnfinLibre)**
+- **Level**: Basic access level for all users
+- **Security**: Standard Ğ1 transaction monitoring
+- **Network**: Public network with no swarm key restrictions
+- **Control**: Basic primal transaction verification (any primal source accepted)
+- **Purpose**: Entry point for new users with MULTIPASS and ZENCARD services
+- **Token Value**: 1 Ẑen = 0.1 Ğ1 (fixed rate)
+
+### 🛡️ **UPlanet Ẑen (Private Network)**
+- **Level**: Advanced level requiring Y-level activation (SSH<->IPFS key twin)
+- **Security**: Enhanced primal transaction control with intrusion detection
+- **Network**: Private network using custom `~/.ipfs/swarm.key` for secure isolation
+- **Control**: **Real-time token capitalization tool** - controls input € = output Ẑen emissions
+- **Purpose**: Secure financial operations and advanced services
+- **Token Value**: Customizable based on community needs (technically still 0.1 Ğ1)
+
+#### **ZEN Economy Stable COIN System**
+
+UPlanet Ẑen operates as a **Stable COIN system** that can work with **any asset class** while maintaining proper value equity:
+
+| **Asset Class** | **ZEN Representation** | **Example Community** |
+|-----------------|----------------------|----------------------|
+| **Fiat Currencies** | 1 Ẑen = 1€, 1$, 1¥ | Local Economy Networks |
+| **Real Estate** | 1 Ẑen = 1m² land | Property Investment Groups |
+| **Commodities** | 1 Ẑen = 1kg gold/silver | Precious Metals Collectives |
+| **DeFi Tokens** | 1 Ẑen = 1 USDC/DAI | DeFi Integration Networks |
+| **Energy Credits** | 1 Ẑen = 1 kWh | Renewable Energy Communities |
+| **Carbon Credits** | 1 Ẑen = 1 ton CO2 | Environmental Conservation Groups |
+
+**Learn more about the security system**: [Primal Wallet Control Documentation](tools/primal_wallet_control.README.md)
+
+## 🎫 Three Identity Levels: Your Journey to Digital Sovereignty
+
+### 1. 🌐 **MULTIPASS** - Your Basic Digital Identity
+
+**Price**: 1 Ẑen/week (0.1 Ğ1)
+
+**What you get:**
+- ✅ **NOSTR Identity**: Secure public key for decentralized social network
+- ✅ **uDRIVE IPFS**: Personal decentralized storage (128 GB)
+- ✅ **UPlanet ORIGIN Wallet**: 1 Ẑen = 0.1 Ğ1
+- ✅ **Personal AI Assistant**: #BRO for your questions and tasks
+- ✅ **UMAP Geolocation**: Connect to your local community (0.01° precision)
+- ✅ **Ẑen Exchanges**: Direct transfers between MULTIPASS holders
+
+**Economy:**
+- Each like received = 0.1 Ğ1 automatically transferred
+- Rechargeable via Cesium Ginkgo on UPlanet ORIGIN
+- Rechargeable via Open Collective on UPlanet Ẑen
+- Captain receives 1 Ẑen/week for hosting
+
+### 2. ☁️ **ZENCARD** - Liberate Your Cloud & Smartphone
+
+**Price**: 4 Ẑen/week (4€)
+
+**Available to members**: [CopyLaRadio](https://opencollective.com/monnaie-libre)
+
+**What you get:**
+- ✅ **Everything from MULTIPASS** included
+- ✅ **Personal NextCloud**: 128 GB secure storage
+- ✅ **De-googling**: Liberate your smartphone from GAFAM
+- ✅ **Synchronization**: All your connected devices
+- ✅ **Collaboration**: Secure document sharing
+- ✅ **ZENCARD Exchanges**: Transfers between ZENCARD holders
+
+**Recharge**: [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
+Volunteer on UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
+
+### 3. 🛡️ **uPASSPORT** - Your Validated Identity
+
+**Access**: Via primary transaction from a Ğ1 member account
+
+**What you get:**
+- ✅ **ZEROCARD Wallet**: Uses DU (Universal Dividend)
+- ✅ **Web of Trust Validation**: Community-verified identity
+- ✅ **Advanced Services Access**: Premium features
+- ✅ **N1/N2 Preparation**: Foundation for future level exploration
+
+Option: **321 DU Organization**: [The DU Game](https://pad.p2p.legal/s/321DU.LeJeu#)
+
+## 🚀 Progression from UPlanet ORIGIN to UPlanet Ẑen
+
+### **Getting Started with UPlanet ORIGIN**
+1. **Install Astroport.ONE** using the automated installation script
+2. **Create your MULTIPASS** for basic digital identity and AI assistant
+3. **Access public services** with standard Ğ1 transaction monitoring
+4. **Join the community** and learn about decentralized technologies
+
+### **Advancing to UPlanet Ẑen**
+To access the advanced features and custom token valuations:
+
+1. **Activate Y-Level**: Enable SSH<->IPFS key twin functionality
+2. **Create Private Network**: Generate your custom `~/.ipfs/swarm.key`
+3. **Join Specialized Communities**: Access asset-backed token networks
+4. **Participate in Advanced Services**: Use DeFi integrations and custom valuations
+
+### **Benefits of UPlanet Ẑen Advancement**
+- **Enhanced Security**: Intrusion detection and automatic refund systems
+- **Custom Token Values**: Define your community's economic model
+- **Asset Backing**: Real-world asset representation (forest, energy, etc.)
+- **DeFi Integration**: Seamless connection with existing DeFi protocols
+- **Community Autonomy**: Control your own token valuation and economic rules
 
 ## Essential Features: The Power of Astroport.ONE
 
@@ -36,13 +143,6 @@ Astroport.ONE is a revolutionary platform designed to empower individuals and co
     *   **Astroport.ONE Stations**: Your station communicates and synchronizes with a network of digital embassies, ensuring maximum data consistency and availability.
     *   **AstroBot: Intelligence Serving Your Data**: A system of smart contracts in BASH, reacting to events on the Ğ1 network and to "Vœux" to automate and optimize your experience.
     *   **G1PalPay.sh: The Ğ1 Transaction Monitor**: A crucial script that monitors the Ğ1 blockchain in real-time. It allows Astroport.ONE to react to transactions, execute commands based on transaction comments, and manage financial flows within the ecosystem.
-
-*   **ZEN Economy: Universal Stable COIN System**
-
-    *   **Multi-Asset Support**: The ZEN token can represent any asset class - from traditional currencies to real estate, commodities, or DeFi tokens - while maintaining a stable technical value of 0.1 Ğ1.
-    *   **Community-Defined Values**: Each UPlanet Ẑen community can define its own economic model. For example, 1 Ẑen could equal 1 hectare of forest, 10€, 1 kWh of renewable energy, or any other asset.
-    *   **Real-Time Token Capitalization**: Advanced monitoring systems ensure proper value equity across different asset-backed ZEN communities, preventing arbitrage and maintaining economic stability.
-    *   **DeFi Integration**: Seamless compatibility with existing DeFi protocols while preserving the unique value proposition of each community's token model.
 
 ## **Who is Astroport.ONE For?**
 
@@ -103,7 +203,6 @@ Once your Astroport station is started, the following ports are activated:
 
 ![](./OpenPORTS.jpg)
 
-
 ### UPLANET API (Port 54321)
 
 The UPLANET API, provided by UPassport, is a comprehensive interface for managing digital identity and multimedia content within the Astroport.ONE ecosystem. It runs on port 54321 and offers the following endpoints:
@@ -142,8 +241,11 @@ GET /?uplanet=${EMAIL}&zlat=${LATITUDE}&zlon=${LONGITUDE}&g1pub=${LANGUAGE}
 
 For more detailed information about the UPLANET API and its capabilities, visit the [UPassport documentation](https://github.com/papiche/UPassport/).
 
-
 ## Documentation
+
+### 📚 Documentation Hub
+
+For complete access to all Astroport.ONE documentation, visit our **[Documentation Hub](DOCUMENTATION.md)** - your central guide to everything Astroport.ONE.
 
 ### Technical Architecture
 

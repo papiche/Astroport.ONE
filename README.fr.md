@@ -2,10 +2,9 @@
 
 [EN](README.md) - [ES](README.es.md)
 
-
 **Bienvenue sur Astroport.ONE !** Imaginez un monde numérique où vous avez le contrôle, où les données sont sécurisées, les paiements fluides et la communauté prospère au-delà des frontières. Astroport.ONE construit cet avenir, et vous êtes invité à en faire partie.
 
-**Qu'est-ce qu'Astroport.ONE ?**
+## 🌍 Qu'est-ce qu'Astroport.ONE ?
 
 Astroport.ONE est une plateforme révolutionnaire conçue pour autonomiser les individus et les communautés à l'ère du Web3. C'est plus qu'un simple logiciel ; c'est une boîte à outils pour créer votre propre ambassade numérique décentralisée - une **Station** - où vous pouvez gérer votre identité numérique, participer à une économie décentralisée en utilisant la cryptomonnaie Ğ1 (June), et contribuer à un réseau mondial de stations interconnectées.
 
@@ -16,6 +15,112 @@ Astroport.ONE est une plateforme révolutionnaire conçue pour autonomiser les i
 *   **Un Constructeur de Communauté Numérique :** Connectez-vous avec d'autres Stations Astroport.ONE et utilisateurs à travers le monde, partageant des informations, des ressources, et construisant des réseaux basés sur la confiance.
 *   **Un "Guide de Construction" pour le Web Décentralisé :** Tirez parti de nos outils et logiciels open-source pour créer et déployer vos propres applications et services Web3.
 
+## 🚀 L'Écosystème UPlanet : Deux Niveaux de Souveraineté Numérique
+
+Astroport.ONE alimente l'**écosystème UPlanet**, qui fonctionne sur deux niveaux distincts avec des capacités et des exigences de sécurité différentes :
+
+### 🌐 **UPlanet ORIGIN (EnfinLibre)**
+- **Niveau** : Accès de base pour tous les utilisateurs
+- **Sécurité** : Surveillance standard des transactions Ğ1
+- **Réseau** : Réseau public sans restrictions de swarm key
+- **Contrôle** : Vérification basique des transactions primaires (toute source primaire acceptée)
+- **Objectif** : Point d'entrée pour les nouveaux utilisateurs avec services MULTIPASS et ZENCARD
+- **Valeur Token** : 1 Ẑen = 0.1 Ğ1 (taux fixe)
+
+### 🛡️ **UPlanet Ẑen (Réseau Privé)**
+- **Niveau** : Niveau avancé nécessitant l'activation Y-level (SSH<->IPFS key twin)
+- **Sécurité** : Contrôle avancé des transactions primaires avec détection d'intrusion
+- **Réseau** : Réseau privé utilisant `~/.ipfs/swarm.key` personnalisé pour l'isolation sécurisée
+- **Contrôle** : **Outil de capitalisation de tokens en temps réel** - contrôle input € = output Ẑen
+- **Objectif** : Opérations financières sécurisées et services avancés
+- **Valeur Token** : Personnalisable selon les besoins communautaires (techniquement toujours 0.1 Ğ1)
+
+#### **Système ZEN Economy Stable COIN**
+
+UPlanet Ẑen fonctionne comme un **système Stable COIN** capable de travailler avec **n'importe quelle classe d'actifs** tout en maintenant une équité de valeur appropriée :
+
+| **Classe d'Actifs** | **Représentation ZEN** | **Exemple de Communauté** |
+|---------------------|----------------------|---------------------------|
+| **Devises Fiat** | 1 Ẑen = 1€, 1$, 1¥ | Réseaux d'Économie Locale |
+| **Immobilier** | 1 Ẑen = 1m² terrain | Groupes d'Investissement Immobilier |
+| **Matières Premières** | 1 Ẑen = 1kg or/argent | Collectifs de Métaux Précieux |
+| **Tokens DeFi** | 1 Ẑen = 1 USDC/DAI | Réseaux d'Intégration DeFi |
+| **Crédits Énergétiques** | 1 Ẑen = 1 kWh | Communautés d'Énergie Renouvelable |
+| **Crédits Carbone** | 1 Ẑen = 1 tonne CO2 | Groupes de Conservation Environnementale |
+
+**En savoir plus sur le système de sécurité** : [Documentation Primal Wallet Control](tools/primal_wallet_control.README.md)
+
+## 🎫 Trois Niveaux d'Identité : Votre Parcours vers la Souveraineté Numérique
+
+### 1. 🌐 **MULTIPASS** - Votre Identité Numérique de Base
+
+**Prix :** 1 Ẑen/semaine (0.1 Ğ1)
+
+**Ce que vous obtenez :**
+- ✅ **Identité NOSTR** : Clé publique sécurisée pour le réseau social décentralisé
+- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (128 Go)
+- ✅ **Portefeuille UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1
+- ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches
+- ✅ **Géolocalisation UMAP** : Connexion à votre communauté locale (0.01° précision)
+- ✅ **Échanges Ẑen** : Transferts directs entre MULTIPASS
+
+**Économie :**
+- Chaque like reçu = 0.1 Ğ1 automatiquement transféré
+- Rechargeable via Cesium Ginkgo sur UPlanet ORIGIN
+- Rechargeable via Open Collective sur UPlanet ẐEN
+- Le capitaine perçoit 1 Ẑen/semaine pour l'hébergement
+
+### 2. ☁️ **ZENCARD** - Libérez Votre Cloud et Smartphone
+
+**Prix :** 4 Ẑen/semaine (4€)
+
+**Accessible aux sociétaires :** [CopyLaRadio](https://opencollective.com/monnaie-libre)
+
+**Ce que vous obtenez :**
+- ✅ **Tout de MULTIPASS** inclus
+- ✅ **NextCloud Personnel** : 128 Go de stockage sécurisé
+- ✅ **Dégooglisation** : Libérez votre smartphone des GAFAM
+- ✅ **Synchronisation** : Tous vos appareils connectés
+- ✅ **Collaboration** : Partage sécurisé de documents
+- ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD
+
+**Recharge :** [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
+Bénévole sur UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
+
+### 3. 🛡️ **uPASSPORT** - Votre Identité Validée
+
+**Accès :** Via transaction primaire depuis un compte membre Ğ1
+
+**Ce que vous obtenez :**
+- ✅ **Portefeuille ZEROCARD** : Utilise le DU (Dividende Universel)
+- ✅ **Validation Web of Trust** : Identité vérifiée par la communauté
+- ✅ **Accès aux services avancés** : Fonctionnalités premium
+- ✅ **Préparation N1/N2** : Base pour l'exploration des futurs niveaux
+
+Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.LeJeu#)
+
+## 🚀 Progression d'UPlanet ORIGIN vers UPlanet Ẑen
+
+### **Commencer avec UPlanet ORIGIN**
+1. **Installer Astroport.ONE** avec le script d'installation automatique
+2. **Créer votre MULTIPASS** pour l'identité numérique de base et l'assistant IA
+3. **Accéder aux services publics** avec surveillance standard des transactions Ğ1
+4. **Rejoindre la communauté** et apprendre les technologies décentralisées
+
+### **Évoluer vers UPlanet Ẑen**
+Pour accéder aux fonctionnalités avancées et aux valuations personnalisées :
+
+1. **Activer le Niveau Y** : Activer la fonctionnalité SSH<->IPFS key twin
+2. **Créer un Réseau Privé** : Générer votre `~/.ipfs/swarm.key` personnalisé
+3. **Rejoindre des Communautés Spécialisées** : Accéder aux réseaux de tokens adossés à des actifs
+4. **Participer aux Services Avancés** : Utiliser les intégrations DeFi et valuations personnalisées
+
+### **Avantages de l'Évolution vers UPlanet Ẑen**
+- **Sécurité Renforcée** : Détection d'intrusion et systèmes de remboursement automatique
+- **Valeurs de Tokens Personnalisées** : Définir le modèle économique de votre communauté
+- **Adossement d'Actifs** : Représentation d'actifs réels (forêt, énergie, etc.)
+- **Intégration DeFi** : Connexion transparente avec les protocoles DeFi existants
+- **Autonomie Communautaire** : Contrôler votre propre valuation de tokens et règles économiques
 
 ## Fonctionnalités Essentielles : La Puissance d'Astroport.ONE
 
@@ -52,7 +157,6 @@ Astroport.ONE est une plateforme révolutionnaire conçue pour autonomiser les i
 **Installation (Linux - Debian/Ubuntu/Mint) :**
 
 Configurer votre Station Astroport.ONE est facile grâce à notre script d'installation automatisé :
-
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
