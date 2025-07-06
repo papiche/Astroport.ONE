@@ -566,82 +566,10 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "## CONTROL NOSTR WALLET PRIMAL RX"
     ########################################################################################
     echo "Checking NOSTR wallet for $PLAYER: $G1PUBNOSTR"
-    # Get transaction history for this NOSTR wallet
-    function get_wallet_history() {
-        local g1pub="$1"
-        local output_file="$2"
-        local attempts=0
-        local success=false
-
-        while [[ $attempts -lt 3 && $success == false ]]; do
-            BMAS_NODE=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
-            if [[ ! -z $BMAS_NODE ]]; then
-                echo "Trying history with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
-
-                ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-                silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub} 2>/dev/null | jq '.history' > ${output_file}
-
-                if [[ -s ${output_file} ]]; then
-                    success=true
-                    break
-                fi
-            fi
-
-            attempts=$((attempts + 1))
-            if [[ $attempts -lt 3 ]]; then
-                BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
-            fi
-        done
-
-        return $([[ $success == true ]])
-    }
-
-    # Get transaction history with retry mechanism
-    get_wallet_history "${G1PUBNOSTR}" "$HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json"
-
-    # Convert JSON to inline format if history was retrieved successfully
-    [[ -s $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json ]] \
-        && cat $HOME/.zen/tmp/${MOATS}/${PLAYER}.duniter.history.json | jq -rc '.[]' \
-             > ~/.zen/game/nostr/${PLAYER}/.g1.history.json
-
-    if [[ -s $HOME/.zen/game/nostr/${PLAYER}/.g1.history.json ]]; then
-    # Process each transaction
-        while read LINE; do
-            JSON=${LINE}
-            TXIDATE=$(echo $JSON | jq -r .Date)
-            TXIPUBKEY=$(echo $JSON | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
-            TXIAMOUNT=$(echo $JSON | jq -r '."Amounts Ğ1"')
-
-            # Skip if transaction is too old
-            lastTXdate=$(cat ~/.zen/game/nostr/${PLAYER}/.nostr.check 2>/dev/null)
-            [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-            # Convert dates to timestamps for proper comparison
-            lastTXtimestamp=$(date -d "$lastTXdate" +%s 2>/dev/null || echo 0)
-            txTimestamp=$(date -d "$TXIDATE" +%s 2>/dev/null || echo 0)
-            [[ $lastTXtimestamp -ge $txTimestamp ]] && continue
-
-            # Skip outgoing transactions
-            [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-                && echo "$txTimestamp" > ~/.zen/game/nostr/${PLAYER}/.nostr.check \
-                && continue
-
-            # Check primal transaction
-            echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
-            if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
-                get_wallet_history "${TXIPUBKEY}" "$HOME/.zen/tmp/${MOATS}/${TXIPUBKEY}.primal.history.json"
-                if [[ -s "$HOME/.zen/tmp/${MOATS}/${TXIPUBKEY}.primal.history.json" ]]; then
-                    g1prime=$(cat "$HOME/.zen/tmp/${MOATS}/${TXIPUBKEY}.primal.history.json" | jq -r '.[0].pubkey')
-                    [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
-                fi
-            fi
-
-            TXIPRIMAL=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null)
-            ########################################################################
-            ### CONTROL ALL WALLET ARE UPLANET ẐEN INITIALIZED (same .primal)
-            # Verify if transaction is from a valid UPLANET ẐEN wallet
-            if [[ ${UPLANETNAME} != "EnfinLibre" && ${UPLANETG1PUB} != "${TXIPRIMAL}" && ${TXIPRIMAL} != "" ]]; then
-                echo "MULTIPASS WALLET INTRUSION ALERT for $PLAYER from $TXIPUBKEY ($TXIPRIMAL)"
-                # Get DISCO from PLAYER
+    
+    # Use the generic primal wallet control function
+    if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+        # Get DISCO from PLAYER to create dunikey if needed
                 if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
                     DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
                     IFS='=&' read -r s salt p pepper <<< "$DISCO"
@@ -650,34 +578,15 @@ for PLAYER in "${NOSTR[@]}"; do
                         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
                     fi
                 fi
-                [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]] && continue
-                # Refund the transaction
-                ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "NOSTR:${G1PUBNOSTR}:INTRUSION" 2>/dev/null
-                if [[ $? == 0 ]]; then
-                    echo $txTimestamp > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-                    # Create alert message
-                    # Use the multi language template
-                    TEMPLATE="${MY_PATH}/../templates/NOSTR/wallet_alert.html"
-
-                    # Replace placeholders in template
-                    sed -e "s/{PLAYER}/$PLAYER/g" \
-                        -e "s/{UPLANETG1PUB}/${UPLANETG1PUB:0:8}/g" \
-                        -e "s/{TXIAMOUNT}/$TXIAMOUNT/g" \
-                        -e "s/{CAPITAL_VALUE}/$ZEN/g" \
-                        -e "s/{TXIPUBKEY}/$TXIPUBKEY/g" \
-                        -e "s|{myIPFS}|$myIPFS|g" \
-                        "$TEMPLATE" > ~/.zen/tmp/palpay.bro
-
-                    # Send alert
-                    ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/palpay.bro "MULTIPASS ALERT : $TXIPUBKEY"
-                fi
-            else
-                echo "GOOD NOSTR WALLET primal TX by $TXIPRIMAL"
-                echo "$txTimestamp" > ~/.zen/game/nostr/${PLAYER}/.nostr.check
-            fi
-        done < $HOME/.zen/game/nostr/${PLAYER}/.g1.history.json
+        
+        # Call the generic primal wallet control function
+        ${MY_PATH}/../tools/primal_wallet_control.sh \
+            "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
+            "${G1PUBNOSTR}" \
+            "${UPLANETG1PUB}" \
+            "${PLAYER}"
     else
-        echo "NO STR WALLET HISTORY FOR $PLAYER"
+        echo "UPlanet ORIGIN - No primal control needed"
     fi
 
     ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay

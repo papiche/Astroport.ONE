@@ -68,75 +68,15 @@ echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
 if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
     echo "CONTROL UPLANET ORIGIN"
-
-    while read LINE; do
-        ## MEMORIZE LAST TX DATE
-        echo "${LINE}"
-        JSON=${LINE}
-        TXIDATE=$(echo $JSON | jq -r .date)
-        TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
-        TXIAMOUNT=$(echo $JSON | jq -r .amount)
-        COMMENT=$(echo $JSON | jq -r .comment)
-
-        ## PAST TX - continue
-        lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.uplanet.check 2>/dev/null)
-        [[ -z lastTXdate ]] && lastTXdate=0 && echo 0 > ~/.zen/game/players/${PLAYER}/.uplanet.check ## INIT
-        [[ $(cat ~/.zen/game/players/${PLAYER}/.uplanet.check) -ge $TXIDATE ]] \
-            && continue
-
-        ## OUTGOING TX - continue
-        [[ $(echo "$TXIAMOUNT < 0" | bc) -eq 1 ]] \
-            && echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check \
-            && continue
-        ################################################################ PRIMAL TX CHECK
-        echo "# RX from ${TXIPUBKEY}.... checking primal transaction..."
-        ### jaklis 1000 history window
-        if [[ ! -s ~/.zen/tmp/coucou/${TXIPUBKEY}.primal ]]; then
-            milletxzero=$(${MY_PATH}/../tools/jaklis/jaklis.py history -p ${TXIPUBKEY} -n 1000 -j | jq '.[0]')
-            g1prime=$(echo $milletxzero | jq -r .pubkey)
-            ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
-            [[ ! -z ${g1prime} ]] && echo "${g1prime}" > ~/.zen/tmp/coucou/${TXIPUBKEY}.primal
-        fi
-        primal=$(cat ~/.zen/tmp/coucou/${TXIPUBKEY}.primal 2>/dev/null) ### CACHE READING
-
-        ### IS IT A SAME PRIMO-TX UPLANET WALLET ??
-        if [[ $UPLANETG1PUB != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
-            if [[ ${UPLANETG1PUB} == "${primal}" ]]; then
-                echo "GOOD ZEN WALLET primal TX by $UPLANETG1PUB"
-                echo "$TXIDATE" > ~/.zen/game/players/${PLAYER}/.uplanet.check
-            else
-                if [[ ${CURRENT} != ${PLAYER} ]]; then
-                    ## SEND ALERT
-                    echo "<html><head><meta charset='UTF-8'>
-                    <style>
-                        body {
-                            font-family: 'Courier New', monospace;
-                        }
-                        pre {
-                            white-space: pre-wrap;
-                        }
-                    </style></head><body>" > ~/.zen/tmp/palpay.bro
-
-                    echo "<h1>$PLAYER<h1>
-                    ZEN WALLET INTRUSION ALERT ... <br>
-                    <br>(+‿‿+)... ${TXIAMOUNT} G1 WAS REFUND TO ${TXIPUBKEY} ... NOT A ZEN WALLET FROM UPLANET${UPLANETG1PUB:0:8} !!
-                    </body></html>" >> ~/.zen/tmp/palpay.bro
-                    ## ALERT PLAYER
-                    ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "ZEN WALLET INTRUSION ALERT"
-                    ## SEND BACK G1
-                    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${TXIAMOUNT}" "${TXIPUBKEY}" "UPLANET${UPLANETG1PUB:0:8}:INTRUSION" 2>/dev/null
-                    [[ $? == 0 ]] && echo $TXIDATE > ~/.zen/game/players/${PLAYER}/.uplanet.check
-
-                    ## UNPLUG PLAYER (after 3 alerts)
-                    #~ ${MY_PATH}/PLAYER.unplug.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"
-                else
-                    echo "A CAPTAIN HISTORY"
-                fi
-            fi
-        else
-            echo "UPlanet ORIGIN AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z - No Control -"
-        fi
-    done < $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
+    
+    # Use the generic primal wallet control function
+    ${MY_PATH}/../tools/primal_wallet_control.sh \
+        "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
+        "${G1PUB}" \
+        "${UPLANETG1PUB}" \
+        "${EMAIL}"
+else
+    echo "UPlanet ORIGIN AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z - No Control -"
 fi
 
 ##########################################################

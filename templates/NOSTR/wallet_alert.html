@@ -1,235 +1,175 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset='UTF-8'>
-    <title data-lang-key="title">Alerte ZENCARD</title>
+    <meta charset="UTF-8">
+    <title>Wallet Intrusion Alert</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            background-color: #1a1a2e; /* Fond sombre */
-            color: #e0e0e0; /* Texte clair */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            background-color: #1a1a1a;
+            color: #ffffff;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
         }
-
-        .alert-container {
-            background-color: #2e2e4e; /* Conteneur légèrement plus clair */
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            padding: 40px;
+        .container {
             max-width: 600px;
-            width: 100%;
+            margin: 0 auto;
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #ffaa00;
+        }
+        .header {
             text-align: center;
-            border: 1px solid #4a4a6e;
-            animation: fadeIn 1s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            color: #00bcd4; /* Bleu cyan vibrant */
-            margin-bottom: 20px;
-            font-size: 2.5em;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
-        }
-
-        .player-info {
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            color: #c0c0c0;
-        }
-        .player-info strong {
-            color: #ffe082; /* Doré pour le nom du joueur */
-        }
-        .capital-value {
-            color: #8bc34a; /* Vert pour le capital */
-            font-weight: bold;
-            font-size: 1.3em;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .warning-message {
-            background-color: #ff5252; /* Rouge vif pour l'alerte */
-            color: white;
-            padding: 15px 20px;
-            border-radius: 5px;
-            margin-top: 25px;
-            margin-bottom: 25px;
-            font-weight: bold;
-            font-size: 1.1em;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
-        }
-
-        .transaction-details {
-            margin-bottom: 25px;
-            line-height: 1.6;
-            color: #b0b0b0;
-        }
-        .transaction-details span {
-            color: #ffe082; /* Mettre en évidence les valeurs importantes */
-            font-weight: bold;
-        }
-
-        .call-to-action a {
-            display: inline-block;
-            background-color: #00bcd4;
-            color: #1a1a2e;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            margin-top: 20px;
-            font-size: 1.1em;
-        }
-        .call-to-action a:hover {
-            background-color: #0097a7;
-            transform: translateY(-2px);
-        }
-
-        .footer-note {
-            margin-top: 30px;
-            font-size: 0.9em;
-            color: #707070;
-        }
-
-        .lang-switcher {
+            border-bottom: 2px solid #ffaa00;
+            padding-bottom: 20px;
             margin-bottom: 30px;
-            text-align: center;
         }
-
-        .lang-switcher button {
-            background-color: #4a4a6e;
-            color: #e0e0e0;
-            border: none;
-            padding: 10px 20px;
-            margin: 0 5px;
+        .alert-icon {
+            font-size: 48px;
+            color: #ffaa00;
+            margin-bottom: 10px;
+        }
+        .content {
+            line-height: 1.6;
+        }
+        .wallet-info {
+            background-color: #333;
+            padding: 15px;
             border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            font-size: 1em;
+            margin: 20px 0;
+            border-left: 4px solid #ffaa00;
+        }
+        .intrusion-details {
+            background-color: #442222;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ff4444;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            color: #888;
+        }
+        .highlight {
+            color: #ffaa00;
             font-weight: bold;
         }
-
-        .lang-switcher button:hover {
-            background-color: #5e5e8e;
-            transform: translateY(-1px);
+        .warning {
+            color: #ff4444;
+            font-weight: bold;
         }
-
-        .lang-switcher button.active {
-            background-color: #00bcd4; /* Active tab color */
-            color: #1a1a2e;
-            box-shadow: 0 0 10px rgba(0, 188, 212, 0.7);
+        .success {
+            color: #44ff44;
+            font-weight: bold;
+        }
+        .info-box {
+            background-color: #224422;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #44ff44;
         }
     </style>
 </head>
 <body>
-    <div class="alert-container">
-        <div class="lang-switcher">
-            <button data-lang="fr" class="active">Français</button>
-            <button data-lang="es">Español</button>
+    <div class="container">
+        <div class="header">
+            <div class="alert-icon">⚠️</div>
+            <h1>WALLET INTRUSION ALERT</h1>
         </div>
 
-        <h1 data-lang-key="title">Alerte ZENCARD</h1>
-        <p class="player-info" data-lang-key="greeting">Bonjour <strong>{PLAYER}</strong>,</p>
-        <p class="player-info" data-lang-key="capital_info">Votre capital actuel : <span class="capital-value">{CAPITAL_VALUE} Ẑ</span></p>
-
-        <div class="warning-message">
-            <p data-lang-key="warning_title"><strong>ATTENTION : Transaction intrusive détectée !</strong></p>
-            <p data-lang-key="warning_text">Une transaction a été repérée provenant d'un portefeuille ne faisant pas partie de la UPlanet Ẑen de votre ZENCARD.</p>
+        <div class="content">
+            <p>Dear <span class="highlight">{PLAYER}</span>,</p>
+            
+            <p>Your wallet has detected an <span class="warning">UNAUTHORIZED TRANSACTION</span> that has been automatically refunded.</p>
+            
+            <div class="wallet-info">
+                <strong>Wallet Details:</strong><br>
+                • Wallet ID: {WALLET_PUBKEY}<br>
+                • Master Primal: {MASTER_PRIMAL}<br>
+                • Current Intrusion Count: {INTRUSION_COUNT}/3
+            </div>
+            
+            <div class="intrusion-details">
+                <strong>Intrusion Details:</strong><br>
+                • Intruder Wallet: {INTRUSION_PUBKEY}<br>
+                • Attempted Amount: {AMOUNT} G1<br>
+                • Status: <span class="success">AUTOMATICALLY REFUNDED</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>What happened:</strong><br>
+                An incoming transaction was detected from a wallet that does not share the same primal origin as your master wallet. This violates the security policy of the UPlanet network.
+            </div>
+            
+            <p><strong>Actions Taken:</strong></p>
+            <ul>
+                <li>✅ Transaction automatically refunded to sender</li>
+                <li>✅ Intrusion count updated</li>
+                <li>✅ Security alert generated</li>
+            </ul>
+            
+            <p><strong>Security Status:</strong></p>
+            <p>Your wallet currently has <span class="warning">{INTRUSION_COUNT} intrusion(s)</span> recorded. After <span class="warning">3 intrusions</span>, your wallet will be automatically terminated for security reasons.</p>
+            
+            <p><strong>Remaining Intrusions Allowed:</strong> <span class="success">{REMAINING_INTRUSIONS}</span></p>
+            
+            <p><strong>What you should do:</strong></p>
+            <ul>
+                <li>Review your wallet's transaction history</li>
+                <li>Ensure you're only receiving transactions from authorized sources</li>
+                <li>Contact support if you believe this was a false positive</li>
+                <li>Monitor your wallet for any further unauthorized activity</li>
+            </ul>
+            
+            <p><strong>For more information about UPlanet security policies, visit:</strong><br>
+            <a href="{myIPFS}" style="color: #4CAF50;">{myIPFS}</a></p>
+            
+            <div class="info-box">
+                <strong>Security Tip:</strong><br>
+                Only accept transactions from wallets that share the same primal origin as your master wallet. This ensures the integrity of the UPlanet network.
+            </div>
         </div>
 
-        <p class="transaction-details" data-lang-key="transaction_info">(+‿‿+)... <span>{TXIAMOUNT} G1</span> a été remboursé à <span>{TXIPUBKEY}</span>. Le MULTIPASS doit être initialisé par le portefeuille UPLANET<span>{UPLANETG1PUB}</span>.</p>
-
-        <p class="footer-note" data-lang-key="footer_note">Ceci est un message automatique de votre ZENCARD. Pour toute question, veuillez contacter le support.</p>
+        <div class="footer">
+            <p>This is an automated security alert from the UPlanet network.</p>
+            <p>Generated on: <span id="timestamp"></span></p>
+            <p>If you have any questions, please contact the UPlanet support team.</p>
+        </div>
     </div>
 
     <script>
-        const translations = {
-            fr: {
-                title: "Alerte ZENCARD",
-                greeting: "Bonjour <strong>{PLAYER}</strong>,",
-                capital_info: "Votre capital actuel : <span class=\"capital-value\">{CAPITAL_VALUE} Ẑ</span>",
-                warning_title: "<strong>ATTENTION : Transaction intrusive détectée !</strong>",
-                warning_text: "Une transaction a été repérée provenant d'un portefeuille ne faisant pas partie de la UPlanet Ẑen de votre ZENCARD.",
-                transaction_info: "(+‿‿+)... <span>{TXIAMOUNT} G1</span> a été remboursé à <span>{TXIPUBKEY}</span>. Le MULTIPASS doit être initialisé par le portefeuille UPLANET<span>{UPLANETG1PUB}</span>.",
-                footer_note: "Ceci est un message automatique de votre ZENCARD. Pour toute question, veuillez contacter le support."
-            },
-            es: {
-                title: "Alerta ZENCARD",
-                greeting: "Hola <strong>{PLAYER}</strong>,",
-                capital_info: "Su capital actual: <span class=\"capital-value\">{CAPITAL_VALUE} Ẑ</span>",
-                warning_title: "<strong>ATENCIÓN: ¡Transacción intrusiva detectada!</strong>",
-                warning_text: "Se ha detectado una transacción de una cartera que no forma parte de la UPlanet Ẑen de su ZENCARD.",
-                transaction_info: "(+‿‿+)... <span>{TXIAMOUNT} G1</span> fue reembolsado a <span>{TXIPUBKEY}</span>. El MULTIPASS debe ser inicializado por la cartera UPLANET<span>{UPLANETG1PUB}</span>.",
-                footer_note: "Este es un mensaje automático de su ZENCARD. Para cualquier pregunta, póngase en contacto con el soporte."
-            },
-            en: {
-                title: "ZENCARD Alert",
-                greeting: "Hello <strong>{PLAYER}</strong>,",
-                capital_info: "Your current capital: <span class=\"capital-value\">{CAPITAL_VALUE} Ẑ</span>",
-                warning_title: "<strong>ATTENTION: Intrusive Transaction Detected!</strong>",
-                warning_text: "A transaction has been detected from a wallet not part of your ZENCARD's UPlanet Ẑen.",
-                transaction_info: "(+‿‿+)... <span>{TXIAMOUNT} G1</span> was refunded to <span>{TXIPUBKEY}</span>. The MULTIPASS must be initialized by the UPLANET<span>{UPLANETG1PUB}</span> wallet.",
-                footer_note: "This is an automatic message from your ZENCARD. For any questions, please contact support."
-            }
-        };
-
-        function setLanguage(lang) {
-            document.querySelectorAll('[data-lang-key]').forEach(element => {
-                const key = element.getAttribute('data-lang-key');
-                if (translations[lang] && translations[lang][key]) {
-                    // For the title tag, update its text content directly
-                    if (element.tagName === 'TITLE') {
-                        element.textContent = translations[lang][key];
-                    } else {
-                        element.innerHTML = translations[lang][key];
-                    }
-                }
-            });
-
-            // Update active class for buttons
-            document.querySelectorAll('.lang-switcher button').forEach(button => {
-                if (button.getAttribute('data-lang') === lang) {
-                    button.classList.add('active');
-                } else {
-                    button.classList.remove('active');
-                }
-            });
-            document.documentElement.lang = lang; // Set lang attribute on html tag
+        // Calculate remaining intrusions
+        const intrusionCount = parseInt('{INTRUSION_COUNT}') || 0;
+        const maxIntrusions = 3;
+        const remaining = Math.max(0, maxIntrusions - intrusionCount);
+        
+        // Update the remaining intrusions display
+        const remainingElement = document.querySelector('.success');
+        if (remainingElement && remainingElement.textContent.includes('{REMAINING_INTRUSIONS}')) {
+            remainingElement.textContent = remainingElement.textContent.replace('{REMAINING_INTRUSIONS}', remaining);
         }
-
-        // Set initial language based on browser preference or default to FR
-        document.addEventListener('DOMContentLoaded', () => {
-            const userLang = navigator.language.split('-')[0]; // e.g., 'fr-FR' -> 'fr'
-            // Default to 'fr' if userLang not supported, otherwise use userLang
-            const initialLang = ['fr', 'es', 'en'].includes(userLang) ? userLang : 'fr';
-            setLanguage(initialLang);
-
-            // Add event listeners to language buttons
-            document.querySelectorAll('.lang-switcher button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    setLanguage(event.target.getAttribute('data-lang'));
-                });
-            });
-        });
+        
+        // Set timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        // Add visual warning if close to termination
+        if (intrusionCount >= 2) {
+            const container = document.querySelector('.container');
+            container.style.borderColor = '#ff4444';
+            container.style.borderWidth = '3px';
+            
+            const header = document.querySelector('.header');
+            header.style.borderBottomColor = '#ff4444';
+            
+            const alertIcon = document.querySelector('.alert-icon');
+            alertIcon.style.color = '#ff4444';
+            alertIcon.textContent = '🚨';
+        }
     </script>
 </body>
 </html> 
