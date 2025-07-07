@@ -12,6 +12,8 @@
 8. [APIs et Services](#-apis-et-services)
 9. [Maintenance et Monitoring](#-maintenance-et-monitoring)
 10. [Déploiement](#-déploiement)
+11. [Intégration NOSTR](#-intégration-nostr)
+12. [Système UPassport](#-système-upassport)
 
 ---
 
@@ -25,6 +27,23 @@ Astroport.ONE est une plateforme décentralisée qui combine **monnaie libre (Ğ
 - **Économie Libre** : Transactions sans intermédiaires via Ğ1
 - **Identité Décentralisée** : Gestion d'identité basée sur NOSTR et IPFS
 - **Résilience** : Architecture distribuée sans point de défaillance unique
+- **Automatisation Intelligente** : Système AstroBot avec Vœux
+
+### 🌍 Écosystème UPlanet
+
+Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveaux :
+
+#### 🌐 **UPlanet ORIGIN (Niveau X)**
+- **Accès public** pour tous les utilisateurs
+- **Sécurité standard** avec surveillance Ğ1
+- **Token fixe** : 1 Ẑen = 0.1 Ğ1
+- **Services** : MULTIPASS, ZENCARD de base
+
+#### 🛡️ **UPlanet Ẑen (Niveau Y/Z)**
+- **Réseau privé** avec clés SSH<->IPFS jumelles
+- **Sécurité avancée** avec détection d'intrusion
+- **Tokens personnalisables** : 1 Ẑen = valeur d'actif (€, m², kWh, etc.)
+- **Services avancés** : DeFi, actifs réels, coopératives
 
 ---
 
@@ -198,506 +217,331 @@ flowchart TD
 ```bash
 # Vérification des transactions primaires
 function validate_primal_transaction() {
-    local g1pub="$1"
-    local cache_file="~/.zen/tmp/coucou/${g1pub}.primal"
+    local transaction="$1"
+    local primal_source="$2"
     
-    if [[ ! -s "$cache_file" ]]; then
-        # Récupération de l'historique
-        silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub})
-        g1prime=$(echo "$silkaj_output" | jq -r '.history[0].pubkey')
-        
-        # Cache du résultat
-        [[ ! -z ${g1prime} ]] && echo "${g1prime}" > "$cache_file"
+    # Vérification de la source primaire
+    if [[ "$primal_source" == "UPlanet_ORIGIN" ]]; then
+        # Accepte toute source primaire
+        return 0
+    elif [[ "$primal_source" == "UPlanet_ZEN" ]]; then
+        # Vérification stricte avec détection d'intrusion
+        check_intrusion_detection "$transaction"
+        return $?
     fi
-    
-    return $(cat "$cache_file")
 }
 ```
 
-### 3. Contrôle d'Intrusion
+### 3. Système de Chiffrement
 
-| Type d'Attaque | Détection | Action |
-|----------------|-----------|--------|
-| **Transaction Non-Autorisée** | Vérification primal | Remboursement automatique |
-| **Portefeuille Intrus** | Validation source | Alerte email + destruction |
-| **Données Corrompues** | Checksum IPFS | Régénération depuis backup |
-| **Relai Malveillant** | Validation NOSTR | Blacklist automatique |
+- **Clés Géographiques** : Génération basée sur coordonnées GPS
+- **Stargates** : Distribution sécurisée des clés de chiffrement
+- **Communs Cryptographiques** : Partage de ressources cryptographiques
 
 ---
 
 ## 💰 Économie et Paiements
 
-### **Système Économique ZEN**
+### 1. Système Multi-Tokens
 
-#### **Composants Économiques**
-- **UPlanet** : "Banque centrale" coopérative
-- **Node** : Serveur physique (PC Gamer ou RPi5)
-- **Captain** : Gestionnaire du Node
-- **Players** : Utilisateurs avec cartes NOSTR/ZEN
+#### **Tokens Ẑen (MULTIPASS & ZENCARD)**
+- **UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1 (taux fixe)
+- **UPlanet Ẑen** : 1 Ẑen = valeur personnalisable (€, terrain, énergie, etc.)
 
-#### **Architecture Économique ZEN.ECONOMY.sh**
+#### **Tokens NEẐ (uPASSPORT ZEROCARD)**
+- **Valeur** : 1 NEẐ = 1 Ğ1 (équivalent direct Ğ1)
+- **Usage** : Actions dans l'infrastructure coopérative
 
-| **Acteur** | **Rôle** | **Balance** | **Responsabilité** |
-|------------|----------|-------------|-------------------|
-| **UPlanet** | Banque centrale | `UPLANETG1PUB` | Gestion coopérative |
-| **Node** | Infrastructure | `NODEG1PUB` | Services réseau |
-| **Captain** | Administrateur | `CAPTAING1PUB` | Paiement PAF |
-| **Multipass** | Utilisateur | `G1PUBNOSTR` | Paiement PAF |
+#### **Made In Zen Tokens**
+- **Usage** : Gouvernance coopérative et propriété d'infrastructure
+- **Accès** : Disponible aux détenteurs de ZENCARD et utilisateurs uPASSPORT
 
-#### **Coûts Hebdomadaires**
-```bash
-PAF=14        # Participation Aux Frais NODE (par semaine)
-NCARD=1       # Coût carte NOSTR/semaine
-ZCARD=4       # Coût carte ZEN/semaine
-DAILYPAF=2    # PAF quotidien versé au NODE depuis le compte Capitaine (ou UPlanet)
-```
-
-#### **Logique de Paiement PAF**
-```mermaid
-graph TD
-    A[Vérification Soldes] --> B{Captain > PAF?}
-    B -->|Oui| C[Captain paie Node]
-    B -->|Non| D[UPlanet paie Node]
-    C --> E[Économie Positive]
-    D --> F[Économie Négative]
-    E --> G[ZEN.SWARM.payments.sh]
-    F --> G
-```
-
-#### **Système de Réactions et Micro-paiements**
-
-##### **Filtre Kind 7 (filter/7.sh)**
-```bash
-# Types de réactions
-LIKE: "+", "👍", "❤️", "♥️"     # Paiement 0.1 Ğ1
-DISLIKE: "-", "👎", "💔"        # Pas de paiement
-CUSTOM: Autres emojis          # Pas de paiement
-```
-
-##### **Flux de Paiement Automatique**
-```mermaid
-graph TD
-    A[User A Like] --> B[filter/7.sh]
-    B --> C{User A UPlanet?}
-    C -->|Non| D[Rejet]
-    C -->|Oui| E{User B UPlanet?}
-    E -->|Non| F[Pas de paiement]
-    E -->|Oui| G[Paiement 0.1 Ğ1]
-    G --> H[PAYforSURE.sh]
-    H --> I[Transaction Ğ1]
-```
-
-#### **Abonnements Inter-nodes (ZEN.SWARM.payments.sh)**
-
-| **Type** | **Coût** | **Fréquence** | **Source** |
-|----------|----------|---------------|------------|
-| **Y Level** | Variable | Hebdomadaire | Node Wallet |
-| **Standard** | Variable | Hebdomadaire | Captain Wallet |
+### 2. G1PalPay.sh - Surveillance Temps Réel
 
 ```bash
-# Calcul paiement hebdomadaire
-WEEKLY_COST = NCARD + ZCARD  # Exemple: 1 + 4 = 5 Ẑen/semaine
-WEEKLY_G1 = WEEKLY_COST / 10 # Conversion Ẑen → Ğ1
-NEXT_PAYMENT = CURRENT_DATE + 7 days  # Échéance suivante
-```
-
-#### **Logique de Paiement Hebdomadaire**
-```mermaid
-graph TD
-    A[ZEN.ECONOMY.sh] --> B[PAF Daily Payment]
-    B --> C[ZEN.SWARM.payments.sh]
-    C --> D{Check Subscriptions}
-    D --> E{Payment Due?}
-    E -->|Yes| F[Execute Weekly Payment]
-    E -->|No| G[Skip - Not Due]
-    F --> H[Update next_payment +7 days]
-    H --> I[Record last_payment]
-    I --> J[Next Subscription]
-```
-
-### 1. Système de Paiement Ğ1
-
-| Type de Paiement | Montant | Fréquence | Destinataire |
-|------------------|---------|-----------|--------------|
-| **MULTIPASS** | 1 Ẑen | Hebdomadaire | Captain |
-| **ZENCARD** | 4 Ẑen | Hebdomadaire | Captain |
-| **NOSTR Card** | 1 Ẑen | Hebdomadaire | Captain |
-| **UPlanet ORIGIN** | 0.1 Ğ1 | Quotidien | UPlanet |
-
-### 2. Calcul des Soldes
-
-```bash
-# Conversion Ğ1 vers Ẑen
-COINS=$(${MY_PATH}/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
-if [[ -n "$COINS" && "$COINS" != "null" ]]; then
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
-else
-    ZEN=-10
-fi
-```
-
-### 3. Automatisation des Paiements
-
-```bash
-# Cycle de paiement hebdomadaire
-if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
-    if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
-        # Paiement automatique
-        ${MY_PATH}/../tools/PAYforSURE.sh \
-            "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" \
-            "$Gpaf" "${CAPTAING1PUB}" \
-            "NOSTR:${UPLANETG1PUB:0:8}:PAF"
-    else
-        # Destruction de la carte
-        ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
-    fi
-fi
-```
-
----
-
-## 🔐 Filtres NIP-101 et Intégration UPassport
-
-### **Architecture des Filtres NOSTR**
-
-#### **Système de Filtrage Multi-niveaux**
-
-```mermaid
-graph TD
-    A[Event NOSTR] --> B[all_but_blacklist.sh]
-    B --> C{Blacklisted?}
-    C -->|Oui| D[Rejet]
-    C -->|Non| E{Kind Type?}
-    E -->|Kind 1| F[filter/1.sh]
-    E -->|Kind 7| G[filter/7.sh]
-    E -->|Kind 22242| H[NIP-42 Auth]
-    F --> I[Visitor Management]
-    F --> J[AI Processing]
-    G --> K[Reaction Payments]
-    H --> L[UPassport Validation]
-```
-
-#### **Filtre Principal (all_but_blacklist.sh)**
-
-| **Fonction** | **Action** | **Fichier** |
-|--------------|------------|-------------|
-| **Whitelist** | Accepte tous les événements | Par défaut |
-| **Blacklist** | Rejette les clés bannies | `~/.zen/strfry/blacklist.txt` |
-| **Routing** | Dirige vers filtres spécialisés | Selon kind |
-
-#### **Filtre Kind 1 - Messages Texte (filter/1.sh)**
-
-##### **Classification des Utilisateurs**
-```bash
-# Types d'utilisateurs
-nobody    # Visiteur non autorisé
-player    # Joueur UPlanet avec carte
-uplanet   # Clé géographique UPlanet
-```
-
-##### **Gestion des Visiteurs**
-```bash
-# Limite de messages pour visiteurs
-MESSAGE_LIMIT=3
-WARNING_MESSAGE_TTL=172800  # 48 heures
-
-# Message d'avertissement automatique
-"Hello NOSTR visitor. You have X message(s) left before being blocked."
-```
-
-##### **Intégration IA**
-```bash
-# Tags déclencheurs IA
-#search    # Recherche web
-#image     # Génération d'image
-#video     # Génération vidéo
-#music     # Génération musique
-#youtube   # Téléchargement YouTube
-#pierre    # Text-to-speech
-#mem       # Affichage mémoire
-#rec       # Enregistrement mémoire
-#reset     # Reset mémoire
-```
-
-#### **Filtre Kind 7 - Réactions (filter/7.sh)**
-
-##### **Types de Réactions**
-| **Réaction** | **Type** | **Action** |
-|--------------|----------|------------|
-| `+`, `👍`, `❤️`, `♥️` | LIKE | Paiement 0.1 Ğ1 |
-| `-`, `👎`, `💔` | DISLIKE | Aucune action |
-| Autres emojis | CUSTOM | Aucune action |
-
-##### **Flux de Paiement Automatique**
-```bash
-# Vérification autorisation
-AUTHORIZED = check_uplanet_membership(reactor)
-TARGET_AUTHORIZED = check_uplanet_membership(target_author)
-
-# Paiement automatique
-if AUTHORIZED && TARGET_AUTHORIZED:
-    PAYforSURE.sh(reactor_key, "0.1", target_g1pub, "_like_${event_id}")
-```
-
-### **Intégration UPassport et NIP-42**
-
-#### **Architecture d'Authentification**
-
-```mermaid
-graph TD
-    A[Client Web] --> B[NOSTR Extension]
-    B --> C[Sign kind:22242]
-    C --> D[UPassport 54321.py]
-    D --> E[Local Relay 7777]
-    E --> F[Verify Event]
-    F --> G[Check Timestamp]
-    G --> H[Validate Pubkey]
-    H --> I[IPFS Drive Access]
-    I --> J[Owner Validation]
-    J --> K[Operation Allowed]
-```
-
-#### **Twin-Key Mechanism**
-
-##### **Structure des Clés Jumelles**
-```bash
-# Clés dérivées de la même graine
-NOSTR_HEX      # Identité NOSTR
-IPFS_NODEID    # Stockage IPFS
-G1_PUBKEY      # Portefeuille Ğ1
-BITCOIN_KEY    # Clé Bitcoin (optionnel)
-```
-
-##### **Validation de Propriété**
-```json
-// manifest.json dans IPFS Drive
-{
-  "owner_hex_pubkey": "user_nostr_hex",
-  "drive_type": "uDRIVE",
-  "created_at": "2024-01-01T00:00:00Z"
+# Surveillance des transactions Ğ1
+function monitor_g1_transactions() {
+    local player="$1"
+    local g1pub="$2"
+    
+    # Surveillance continue des transactions
+    while true; do
+        # Récupération des nouvelles transactions
+        local new_transactions=$(get_new_transactions "$g1pub")
+        
+        # Traitement des transactions
+        for transaction in $new_transactions; do
+            process_transaction "$transaction" "$player"
+        done
+        
+        sleep 30
+    done
 }
 ```
 
-#### **Système de Mémoire IA**
+### 3. Économie des Likes
 
-##### **Types de Mémoire**
-| **Type** | **Localisation** | **Contenu** |
-|----------|------------------|-------------|
-| **User Memory** | `~/.zen/tmp/flashmem/uplanet_memory/pubkey/{pubkey}.json` | Conversations utilisateur |
-| **UMAP Memory** | `~/.zen/tmp/flashmem/uplanet_memory/{lat}_{lon}.json` | Conversations géographiques |
-
-##### **Contrôle de Mémoire**
-```bash
-# Tags de contrôle
-#rec       # Enregistrer le message (requis)
-#mem       # Afficher la mémoire
-#reset     # Effacer la mémoire
-```
-
-##### **Structure de Mémoire**
-```json
-{
-  "pubkey": "user_public_key",
-  "messages": [
-    {
-      "timestamp": "2024-01-01T12:00:00Z",
-      "event_id": "event_hash",
-      "latitude": "48.8534",
-      "longitude": "-2.3412",
-      "content": "Message content"
-    }
-  ]
-}
-```
-
-### **Sécurité et Privacy**
-
-#### **Contrôles de Sécurité**
-- **Authentification NIP-42** : Vérification cryptographique
-- **Blacklist dynamique** : Protection contre spam
-- **Limite de messages** : Contrôle des visiteurs
-- **Validation propriété** : Protection des données IPFS
-
-#### **Protection de la Vie Privée**
-- **Contrôle mémoire** : Tags explicites pour l'enregistrement
-- **Géolocalisation optionnelle** : Coordonnées non obligatoires
-- **Nettoyage automatique** : Suppression des anciens messages
-- **Isolation des données** : Séparation user/UMAP memory
+- **Chaque like reçu** = 0.1 Ğ1 automatiquement transféré
+- **Système de gratitude** : Récompense directe pour les interactions
+- **Capitalisation automatique** : Gestion des tokens en temps réel
 
 ---
 
-## 🔄 Flux de Données Intégrés
+## 💾 Stockage et Cache
 
-### **Flux Principal Astroport.ONE**
+### 1. Structure IPFS
 
-```mermaid
-graph TD
-    A[Client Web] --> B[API 1234]
-    B --> C[Cache Redis]
-    B --> D[IPFS Storage]
-    B --> E[NOSTR Relay 7777]
-    E --> F[UPassport Auth 54321]
-    F --> G[G1 Payments]
-    G --> H[Economic System]
-    E --> I[Filter System]
-    I --> J[AI Responder]
-    I --> K[Visitor Management]
-    I --> L[Reaction Payments]
-    
-    subgraph "Economic Flow"
-        H --> M[ZEN.ECONOMY.sh]
-        M --> N[ZEN.SWARM.payments.sh]
-        N --> O[PAYforSURE.sh]
-        O --> P[Blockchain Ğ1]
-    end
-    
-    subgraph "AI Processing"
-        J --> Q[Ollama]
-        J --> R[ComfyUI]
-        J --> S[Memory System]
-        S --> T[User Memory]
-        S --> U[UMAP Memory]
-    end
-    
-    subgraph "Storage Layer"
-        D --> V[IPFS Network]
-        V --> W[Swarm Cache]
-        W --> X[Local Storage]
-    end
+```
+~/.zen/game/
+├── players/              # Données des joueurs
+│   ├── .current/        # Joueur actuel
+│   └── */               # Données par joueur
+│       ├── secret.dunikey
+│       ├── ipfs/        # Stockage IPFS personnel
+│       └── nostr/       # Données NOSTR
+├── nostr/               # Données NOSTR globales
+└── tmp/                 # Cache temporaire
 ```
 
-### **Flux d'Authentification Complète**
+### 2. Système de Cache
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant U as UPassport
-    participant R as NOSTR Relay
-    participant I as IPFS Drive
-    participant G as G1 Blockchain
-    
-    C->>U: Request Upload
-    U->>C: Challenge Request
-    C->>R: Sign kind:22242
-    R->>U: Verify Event
-    U->>I: Check Owner
-    I->>U: Owner Validation
-    U->>G: Verify G1 Balance
-    G->>U: Balance Confirmed
-    U->>I: Allow Operation
-    I->>C: Upload Success
-```
+- **Cache Local** : `~/.zen/tmp/` pour les données temporaires
+- **Cache IPFS** : Stockage local des blobs IPFS fréquemment accédés
+- **Cache NOSTR** : Stockage local des événements NOSTR
 
-### **Flux Économique Automatique**
+### 3. Synchronisation
 
-```mermaid
-graph LR
-    A[Daily Cron] --> B[ZEN.ECONOMY.sh]
-    B --> C{Check Balances}
-    C --> D{Captain > PAF?}
-    D -->|Yes| E[Captain Pays Node]
-    D -->|No| F[UPlanet Pays Node]
-    E --> G[ZEN.SWARM.payments.sh]
-    F --> G
-    G --> H[Check Weekly Subscriptions]
-    H --> I{Payment Due?}
-    I -->|Yes| J[Weekly Payment]
-    I -->|No| K[Skip - Not Due]
-    J --> L[Update next_payment +7 days]
-    L --> M[Record last_payment]
-    
-    N[User Like] --> O[filter/7.sh]
-    O --> P{Both UPlanet?}
-    P -->|Yes| Q[0.1 Ğ1 Payment]
-    P -->|No| R[No Action]
-    Q --> S[PAYforSURE.sh]
-    S --> T[Transaction Recorded]
-```
-
-### **Intégration des Composants**
-
-| **Composant** | **Rôle** | **Intégration** | **Dépendances** |
-|---------------|----------|-----------------|-----------------|
-| **Astroport.ONE** | Plateforme principale | Orchestrateur | Tous les services |
-| **UPassport** | Identité numérique | Auth NIP-42 | NOSTR Relay |
-| **NOSTR Relay** | Communication | Filtrage événements | IPFS, G1 |
-| **ZEN.ECONOMY** | Économie automatique | Paiements quotidiens | G1 Blockchain |
-| **IPFS** | Stockage décentralisé | Données utilisateurs | Twin-Key |
-| **G1 Blockchain** | Monnaie libre | Transactions | Tous les paiements |
-
-### **Synchronisation des Données**
-
-```mermaid
-graph TD
-    A[Local Changes] --> B[IPFS Add]
-    B --> C[Generate CID]
-    C --> D[Update IPNS]
-    D --> E[Swarm Notification]
-    E --> F[Remote Nodes]
-    F --> G[Cache Update]
-    G --> H[Data Sync]
-    H --> I[Consistency Check]
-    I --> J[Conflict Resolution]
-    J --> K[Final State]
-```
+- **Synchronisation Swarm** : Partage des données entre stations UPlanet
+- **Publication IPNS** : Mise à jour des références IPNS
+- **Cache Invalidation** : Gestion automatique de l'expiration des caches
 
 ---
 
-## 📊 Métriques et Monitoring
+## 🔌 APIs et Services
 
-### **Indicateurs de Performance**
-
-| **Métrique** | **Source** | **Seuil** | **Action** |
-|--------------|------------|-----------|------------|
-| **IPFS Peers** | `ipfs swarm peers` | < 10 | Redémarrage IPFS |
-| **NOSTR Events** | `strfry stats` | > 1000/h | Analyse trafic |
-| **G1 Transactions** | `COINScheck.sh` | < 1 | Alerte solde |
-| **Memory Usage** | `uplanet_memory/` | > 100MB | Nettoyage |
-| **Response Time** | API endpoints | > 5s | Optimisation |
-
-### **Logs et Debugging**
+### 1. API Gateway (Port 1234)
 
 ```bash
-# Logs principaux
-~/.zen/tmp/uplanet_messages.log    # Messages NOSTR
-~/.zen/tmp/nostr_likes.log         # Réactions et paiements
-~/.zen/tmp/IA.log                  # IA interactions
-~/.zen/tmp/strfry.log           # Relay NOSTR
-~/.zen/tmp/54321.log             # UPassport API
+# Point d'entrée principal
+GET /?cmd=action&param=value
+
+# Redirection vers ports dynamiques (45780-90)
+# Exécution des services API/
+```
+
+### 2. Station Map (Port 12345)
+
+```bash
+# Cartographie des stations UPlanet
+GET / - Interface de cartographie
+GET /api/stations - Données JSON des stations
+GET /api/players - Données des joueurs
+```
+
+### 3. UPassport API (Port 54321)
+
+```bash
+# API d'identité numérique
+POST /api/upload - Upload de fichiers vers IPFS
+POST /api/delete - Suppression de fichiers
+GET /api/test-nostr - Test d'authentification NOSTR
 ```
 
 ---
 
-## 🔮 Évolutions Futures
+## 🔧 Maintenance et Monitoring
 
-### **Roadmap Technique**
+### 1. Maintenance Quotidienne (20h12.process.sh)
 
-| **Phase** | **Fonctionnalité** | **Priorité** |
-|-----------|-------------------|--------------|
-| **Phase 1** | IA décentralisée | Haute |
-| **Phase 2** | Métavers uWORLD | Moyenne |
-| **Phase 3** | IoT Integration | Basse |
-| **Phase 4** | DeFi Services | Moyenne |
+```bash
+# Vérification IPFS
+check_ipfs_status
 
-### **Améliorations Prévues**
+# Nettoyage cache
+cleanup_temp_files
 
-- **IA Distribuée** : Assistant personnel #BRO multi-nodes
-- **Métavers Étendu** : Monde virtuel uWORLD avec géolocalisation
-- **IoT Connecté** : Intégration objets connectés UPlanet
-- **Services DeFi** : Prêts, épargne, assurance décentralisés
-- **Niveaux N1/N2** : Système de validation des compétences
+# Sauvegarde caches critiques
+backup_critical_caches
+
+# Mise à jour code
+update_code
+
+# Redémarrage services
+restart_services
+
+# Analyse système
+system_analysis
+
+# Rapport email
+send_maintenance_report
+```
+
+### 2. Monitoring Système
+
+- **heartbox_analysis.sh** : Analyse complète du système
+- **heartbox_control.sh** : Contrôle et gestion du système
+- **heartbox_prometheus_analysis.sh** : Métriques Prometheus
+
+### 3. Logs et Debugging
+
+- **Logs système** : `/var/log/astroport/`
+- **Logs IPFS** : `~/.zen/tmp/ipfs.log`
+- **Logs NOSTR** : `~/.zen/tmp/nostr.log`
 
 ---
 
-## 📚 Références
+## 🚀 Déploiement
 
-- [Documentation UPlanet](https://astroport-1.gitbook.io/astroport.one/)
-- [Protocole NOSTR](https://github.com/nostr-protocol/nostr)
-- [NIP-101: UPlanet Geographic Keys](https://github.com/papiche/NIP-101)
-- [Monnaie Libre Ğ1](https://monnaie-libre.fr)
-- [IPFS Documentation](https://docs.ipfs.io/)
-- [UPassport API](https://github.com/papiche/UPassport)
+### 1. Installation Automatique
+
+```bash
+# Installation complète
+bash <(curl -sL https://install.astroport.com)
+
+# Ou installation manuelle
+git clone https://github.com/papiche/Astroport.ONE.git ~/.zen/Astroport.ONE
+cd ~/.zen/Astroport.ONE
+./install.sh
+```
+
+### 2. Configuration Système
+
+```bash
+# Configuration IPFS
+~/.zen/Astroport.ONE/ipfs_setup.sh
+
+# Configuration NOSTR
+~/.zen/workspace/NIP-101/setup.sh
+
+# Configuration UPassport
+~/.zen/Astroport.ONE/install_upassport.sh
+```
+
+### 3. Services Systemd
+
+```bash
+# Service Astroport
+sudo systemctl enable astroport
+sudo systemctl start astroport
+
+# Service UPassport
+sudo systemctl enable upassport
+sudo systemctl start upassport
+
+# Service NOSTR Relay
+sudo systemctl enable strfry
+sudo systemctl start strfry
+```
 
 ---
 
-*Document généré automatiquement (et corrigé) - Astroport.ONE v3.6* 
+## 🤖 Intégration NOSTR
+
+### 1. Relay NOSTR (Port 7777)
+
+Astroport.ONE utilise un relay NOSTR dédié avec des filtres personnalisés pour :
+
+- **Authentification NIP-42** : Vérification des identités
+- **IA Contextuelle** : Réponses automatiques avec #BRO
+- **Géolocalisation** : Messages liés aux coordonnées GPS
+- **Mémoire Privée** : Stockage contrôlé avec #rec
+
+### 2. Filtres Personnalisés
+
+```bash
+# Filtre principal (all_but_blacklist.sh)
+# Accepte tous les événements sauf ceux de la blacklist
+
+# Filtre kind 1 (filter/1.sh)
+# Gestion des messages texte avec IA et mémoire
+```
+
+### 3. Système de Mémoire
+
+- **Mémoire Utilisateur** : `~/.zen/strfry/uplanet_memory/pubkey/{pubkey}.json`
+- **Mémoire UMAP** : `~/.zen/strfry/uplanet_memory/{latitude}_{longitude}.json`
+- **Contrôle Privé** : Tag #rec requis pour stockage
+
+---
+
+## 🛡️ Système UPassport
+
+### 1. API d'Identité Numérique (Port 54321)
+
+UPassport fournit une API complète pour :
+
+- **Gestion d'Identité** : Création et gestion des UPassports
+- **Stockage IPFS** : Upload et gestion de fichiers décentralisés
+- **Intégration NOSTR** : Authentification et gestion des cartes NOSTR
+- **Intégration Ğ1** : Vérification de solde et transactions
+
+### 2. Authentification NIP-42
+
+```bash
+# Test d'authentification
+curl -X POST http://localhost:54321/api/test-nostr \
+  -F "npub=npub1..."
+
+# Upload avec authentification
+curl -F "file=@photo.jpg" \
+     -F "npub=npub1..." \
+     http://localhost:54321/api/upload
+```
+
+### 3. Structure de Stockage
+
+```
+~/.zen/UPassport/
+├── Images/          # Images uploadées
+├── Music/           # Fichiers audio
+├── Videos/          # Fichiers vidéo
+├── Documents/       # Documents
+└── _index.html      # Interface web
+```
+
+---
+
+## 📊 Métriques et Performance
+
+### 1. Indicateurs Clés
+
+- **Uptime** : Disponibilité des services
+- **Latence** : Temps de réponse des APIs
+- **Stockage** : Utilisation IPFS et cache
+- **Transactions** : Volume de transactions Ğ1
+
+### 2. Monitoring Prometheus
+
+- **Exporters** : Métriques système et application
+- **Dashboards** : Visualisation des performances
+- **Alertes** : Notifications automatiques
+
+### 3. Optimisation
+
+- **Cache IPFS** : Optimisation des accès fréquents
+- **Compression** : Réduction de la bande passante
+- **Load Balancing** : Répartition de charge
+
+---
+
+## 🔗 Liens et Ressources
+
+### Documentation
+- **[README.md](README.md)** - Introduction principale
+- **[WELCOME.md](WELCOME.md)** - Guide écosystème UPlanet
+- **[UPASSPORT_API.md](UPASSPORT_API.md)** - Documentation API UPassport
+- **[API.NOSTRAuth.readme.md](API.NOSTRAuth.readme.md)** - Documentation NOSTR
+
+### Ressources Externes
+- **[GitHub Repository](https://github.com/papiche/Astroport.ONE)** - Code source
+- **[Open Collective](https://opencollective.com/monnaie-libre)** - Support financier
+- **[Documentation GitBook](https://astroport-1.gitbook.io/astroport.one/)** - Guide utilisateur
+
+### Contact
+- **Email** : support@qo-op.com
+- **Site Web** : https://astroport.copylaradio.com
+- **Communauté** : https://copylaradio.com
+
+---
+
+**Astroport.ONE : L'architecture décentralisée pour un Internet libre et souverain** 🌍✨ 

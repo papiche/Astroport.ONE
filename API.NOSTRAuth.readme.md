@@ -1,4 +1,4 @@
-# Astroport.ONE API & UPlanet Swarm – Developer Guide
+# 🔐 API NOSTR Auth - Guide Développeur Astroport.ONE
 
 ## 🚀 Introduction
 
@@ -17,7 +17,13 @@ graph TD
     API --> Relay[Relais NOSTR]
     API --> IPFS[IPFS]
     API --> Swarm[Essaim UPlanet]
+    
+    Relay --> Auth[Authentification NIP-42]
+    IPFS --> Storage[Stockage Décentralisé]
+    Swarm --> Discovery[Découverte de Services]
 ```
+
+### Composants Principaux
 
 - **Astroport.ONE** : API locale sur chaque node
 - **UPlanet Swarm** : Réseau de nodes interconnectés (swarm.key)
@@ -29,7 +35,7 @@ graph TD
 
 ## 📚 Librairie JavaScript NOSTR
 
-### Installation et utilisation
+### Installation et Utilisation
 
 Astroport.ONE utilise et recommande la librairie JavaScript NOSTR hébergée sur IPFS :
 
@@ -38,7 +44,7 @@ Astroport.ONE utilise et recommande la librairie JavaScript NOSTR hébergée sur
 <script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
 ```
 
-### Fonctions principales disponibles
+### Fonctions Principales Disponibles
 
 ```javascript
 // Génération de clés
@@ -64,7 +70,7 @@ await relay.connect();
 await relay.publish(signedEvent);
 ```
 
-### Exemple d'intégration complète
+### Exemple d'Intégration Complète
 
 ```html
 <!DOCTYPE html>
@@ -151,7 +157,7 @@ await relay.publish(signedEvent);
 </html>
 ```
 
-### Fonctions NOSTR disponibles
+### Fonctions NOSTR Disponibles
 
 La librairie fournit toutes les fonctions NOSTR standards :
 
@@ -164,263 +170,503 @@ La librairie fournit toutes les fonctions NOSTR standards :
 
 ---
 
-## 🔐 Authentification NOSTR (NIP42)
+## 🔐 Authentification NOSTR (NIP-42)
 
 ### Pourquoi NOSTR ?
-- Authentification sans serveur central
-- Interopérabilité et résistance à la censure
 
-### Workflow
+- **Authentification sans serveur central** : Aucun point de défaillance unique
+- **Interopérabilité** : Compatible avec tous les clients NOSTR
+- **Résistance à la censure** : Distribution sur plusieurs relais
+- **Souveraineté numérique** : L'utilisateur contrôle ses clés
+
+### Workflow d'Authentification
 
 ```mermaid
 sequenceDiagram
     participant Client as Application
     participant API as Astroport.ONE
     participant Relay as Relais NOSTR
+    participant IPFS as IPFS Storage
+    
     Client->>API: POST /api/upload (avec npub)
-    API->>Relay: Vérifie événement NIP42 (kind 22242)
-    Relay->>API: Retourne événements
-    API->>Client: Succès ou erreur
+    API->>Relay: Vérifie événement NIP-42 (kind 22242)
+    Relay->>API: Retourne événements récents
+    API->>API: Valide signature et timestamp
+    API->>IPFS: Upload fichier si authentifié
+    API->>Client: Réponse avec statut
 ```
 
-### Exemple minimal (Python)
+### Exemple Minimal (Python)
 
 ```python
 import requests
+
+# Test d'authentification NOSTR
 npub = "npub1..."
-res = requests.post("http://127.0.0.1:54321/api/test-nostr", data={"npub": npub})
+res = requests.post("http://127.0.0.1:54321/api/test-nostr", 
+                   data={"npub": npub})
 print(res.json())
+```
+
+### Exemple JavaScript
+
+```javascript
+// Authentification avec fetch
+async function authenticateWithNOSTR(npub) {
+    const formData = new FormData();
+    formData.append('npub', npub);
+    
+    const response = await fetch('/api/test-nostr', {
+        method: 'POST',
+        body: formData
+    });
+    
+    const result = await response.json();
+    return result.auth_verified;
+}
 ```
 
 ---
 
 ## 📡 Endpoints API Astroport.ONE
 
-| Endpoint                | Méthode | Description                  | Authentification |
-|------------------------|---------|------------------------------|------------------|
-| `/api/upload`          | POST    | Upload vers uDRIVE           | NOSTR            |
-| `/api/upload_from_drive`| POST   | Sync depuis IPFS             | NOSTR            |
-| `/api/delete`          | POST    | Suppression fichier          | NOSTR            |
-| `/api/test-nostr`      | POST    | Test authentification        | NOSTR            |
-| `/`                    | GET     | Statut, découverte territoire| Publique         |
+### Ports et Services
 
-### Exemple d'upload (JS avec librairie NOSTR)
+| Port | Service | Description | Protocole |
+|------|---------|-------------|-----------|
+| **1234** | API Gateway | Point d'entrée principal | HTTP |
+| **12345** | Station Map | Cartographie UPlanet | HTTP |
+| **54321** | UPassport API | Identité numérique | HTTP |
+| **7777** | NOSTR Relay | Authentification | WebSocket |
+
+### Endpoints Principaux
+
+#### 1. Test d'Authentification NOSTR
+
+```http
+POST /api/test-nostr
+```
+
+**Paramètres** :
+- `npub` : Clé publique NOSTR (requis)
+
+**Réponse** :
+```json
+{
+  "auth_verified": true,
+  "npub": "npub1...",
+  "message": "NOSTR authentication successful",
+  "timestamp": "2024-01-01T12:00:00Z"
+}
+```
+
+#### 2. Upload de Fichier avec Authentification
+
+```http
+POST /api/upload
+```
+
+**Headers** :
+```
+Content-Type: multipart/form-data
+```
+
+**Paramètres** :
+- `file` : Fichier à uploader (requis)
+- `npub` : Clé publique NOSTR (requis)
+
+**Réponse** :
+```json
+{
+  "success": true,
+  "message": "File uploaded successfully",
+  "file_path": "Images/photo.jpg",
+  "file_type": "image",
+  "target_directory": "Images",
+  "new_cid": "QmHash...",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "auth_verified": true
+}
+```
+
+#### 3. Suppression de Fichier
+
+```http
+POST /api/delete
+```
+
+**Body** :
+```json
+{
+  "file_path": "Images/photo.jpg",
+  "npub": "npub1..."
+}
+```
+
+---
+
+## 🌍 Intégration Géographique (NIP-101)
+
+### Clés Géographiques Hiérarchiques
+
+Astroport.ONE étend NOSTR avec des clés géographiques hiérarchiques :
 
 ```javascript
-// Utilisation de la librairie NOSTR pour l'authentification
-async function uploadFile(file, npub) {
-    const formData = new FormData();
-    formData.append('npub', npub);
-    formData.append('file', file);
-    
-    const response = await fetch('/api/upload', { 
-        method: 'POST', 
-        body: formData 
-    });
-    
-    return await response.json();
+// Génération de clé géographique
+function generateGeoKey(namespace, latitude, longitude, precision) {
+    const coords = `${latitude.toFixed(precision)}_${longitude.toFixed(precision)}`;
+    const input = `${namespace}_${coords}`;
+    return NostrTools.generatePrivateKey(input);
 }
 
-// Exemple d'utilisation
-document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const file = document.getElementById('fileInput').files[0];
-    const npub = document.getElementById('npub').value;
-    
-    try {
-        const result = await uploadFile(file, npub);
-        console.log('Upload réussi:', result.new_cid);
-    } catch (error) {
-        console.error('Erreur upload:', error);
-    }
-});
+// Exemples d'utilisation
+const umapKey = generateGeoKey("UPlanetV1", 48.8534, 2.3412, 2); // 0.01°
+const sectorKey = generateGeoKey("UPlanetV1", 48.8534, 2.3412, 1); // 0.1°
+const regionKey = generateGeoKey("UPlanetV1", 48.8534, 2.3412, 0); // 1.0°
+```
+
+### Tags Géographiques
+
+```javascript
+// Événement avec tags géographiques
+const geoEvent = {
+    kind: 1,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [
+        ['latitude', '48.8534'],
+        ['longitude', '2.3412'],
+        ['application', 'uplanet']
+    ],
+    content: 'Message géolocalisé sur UPlanet'
+};
 ```
 
 ---
 
-## 🗺️ Découverte du territoire et services locaux
+## 🤖 Intégration IA et Automatisation
 
-### Système UMAP/SECTOR/REGION/ZONE
+### Système de Vœux AstroBot
 
-- **ZONE** : 10° x 10° (~1111km)
-- **REGION** : 1° x 1° (~111km)
-- **SECTOR** : 0.1° x 0.1° (~11km)
-- **UMAP** : 0.01° x 0.01° (~1.1km)
+Astroport.ONE utilise un système de "Vœux" pour l'automatisation :
 
-```mermaid
-graph TD
-    Monde --> ZONE
-    ZONE --> REGION
-    REGION --> SECTOR
-    SECTOR --> UMAP
+```javascript
+// Déclenchement d'action IA
+const voeuEvent = {
+    kind: 1,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [
+        ['latitude', '48.8534'],
+        ['longitude', '2.3412'],
+        ['application', 'uplanet']
+    ],
+    content: 'Quel temps fait-il ici ? #BRO #rec'
+};
 ```
 
-### Découverte dynamique (nouveauté Ustats.sh)
+### Tags IA Disponibles
 
-L'API retourne désormais les **4 UMAPs les plus proches** du centre demandé :
+| Tag | Fonction | Description |
+|-----|----------|-------------|
+| `#BRO` | Assistant IA | Assistant personnel intelligent |
+| `#rec` | Enregistrement | Stockage en mémoire IA |
+| `#mem` | Affichage mémoire | Afficher l'historique |
+| `#reset` | Reset mémoire | Effacer l'historique |
+| `#search` | Recherche | Recherche d'information |
+| `#image` | Génération image | Création d'image IA |
+| `#video` | Génération vidéo | Création de vidéo IA |
+| `#music` | Génération musique | Création de musique IA |
 
-#### Exemple de requête
+---
+
+## 🔧 Configuration et Déploiement
+
+### Installation du Relay NOSTR
 
 ```bash
-GET /?lat=48.8566&lon=2.3522&deg=0.01
+# Installation automatique
+bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
+
+# Configuration manuelle
+cd ~/.zen/workspace/NIP-101
+./setup.sh
+./systemd.setup.sh
 ```
 
-#### Extrait de réponse JSON
+### Configuration du Relay
 
-```json
-{
-  "CENTER": {"LAT": "48.86", "LON": "2.35", "DEG": "0.01"},
-  "CLOSEST_UMAPs": [
-    { "LAT": "48.86", "LON": "2.35", "UMAPROOT": "...", "DISTANCE_KM": "0.0", ... },
-    ...
-  ],
-  "UMAPs": [...],
-  "PLAYERs": [...],
-  ...
-}
+```bash
+# Fichier de configuration strfry.conf
+cat > ~/.zen/strfry/strfry.conf << EOF
+# Configuration du relay NOSTR pour Astroport.ONE
+bind = "0.0.0.0:7777"
+writePolicy.plugin = "$HOME/.zen/workspace/NIP-101/relay.writePolicy.plugin/all_but_blacklist.sh"
+
+# Métadonnées NIP-11
+name = "♥️BOX $IPFSNODEID"
+description = "Relay NOSTR pour UPlanet Astroport.ONE"
+pubkey = "$CAPTAINHEX"
+contact = "$CAPTAINEMAIL"
+EOF
 ```
 
-#### Utilisation côté client
+### Filtres Personnalisés
 
-- Afficher les 4 UMAPs les plus proches sur une carte
-- Lister les services ou utilisateurs présents dans ces UMAPs
-- Proposer des interactions contextuelles (chat, partage, etc.)
+#### Filtre Principal (all_but_blacklist.sh)
 
-#### Exemple Python
+```bash
+#!/bin/bash
+# Filtre principal du relay NOSTR
 
-```python
-import requests
-r = requests.get('http://127.0.0.1:54321/', params={'lat': 48.8566, 'lon': 2.3522, 'deg': 0.01})
-data = r.json()
-for umap in data['CLOSEST_UMAPs']:
-    print(f"UMAP {umap['LAT']},{umap['LON']} à {umap['DISTANCE_KM']} km")
+PUBKEY="$1"
+KIND="$2"
+
+# Vérifier la blacklist
+if grep -q "^$PUBKEY$" ~/.zen/strfry/blacklist.txt; then
+    exit 1  # Rejeter
+fi
+
+# Traitement spécial pour les messages texte
+if [[ "$KIND" == "1" ]]; then
+    ~/.zen/workspace/NIP-101/relay.writePolicy.plugin/filter/1.sh "$PUBKEY" "$KIND"
+fi
+
+exit 0  # Accepter
+```
+
+#### Filtre Messages (filter/1.sh)
+
+```bash
+#!/bin/bash
+# Filtre pour les messages texte (kind 1)
+
+PUBKEY="$1"
+KIND="$2"
+
+# Gestion des visiteurs
+if [[ ! -f ~/.zen/game/players/*/secret.nostr ]]; then
+    # Envoyer message d'accueil
+    send_welcome_message "$PUBKEY"
+fi
+
+# Déclenchement IA si nécessaire
+if echo "$CONTENT" | grep -q "#BRO\|#BOT"; then
+    ~/.zen/Astroport.ONE/IA/UPlanet_IA_Responder.sh &
+fi
+
+exit 0
 ```
 
 ---
 
-## 📁 Structure des données et réponses
+## 📊 Monitoring et Debugging
 
-### Exemple de réponse complète
+### Logs du Relay NOSTR
 
-```json
-{
-  "version": "1.1",
-  "DATE": "2024-01-01 12:00:00 UTC",
-  "CENTER": {"LAT": "48.86", "LON": "2.35", "DEG": "0.01"},
-  "CLOSEST_UMAPs": [ ... ],
-  "UMAPs": [ ... ],
-  "PLAYERs": [ ... ],
-  "NOSTR": [ ... ],
-  "SWARM": [ ... ],
-  "ZEN": "990",
-  "BILAN": "934",
-  ...
-}
+```bash
+# Voir les logs du relay
+sudo journalctl -u strfry -f
+
+# Logs spécifiques
+tail -f ~/.zen/strfry/log.txt
 ```
 
-### Explication des champs principaux
-- **CENTER** : Coordonnées et précision de la requête
-- **CLOSEST_UMAPs** : Les 4 UMAPs les plus proches du centre
-- **UMAPs** : Toutes les UMAPs trouvées dans la zone
-- **PLAYERs** : Utilisateurs actifs dans la zone
-- **NOSTR** : Comptes NOSTR actifs
-- **SWARM** : Autres nodes Astroport dans l'essaim
-- **ZEN/BILAN** : Indicateurs d'économie locale
+### Test de Connectivité
+
+```bash
+# Test du relay
+curl -I http://localhost:7777
+
+# Test WebSocket
+wscat -c ws://localhost:7777
+```
+
+### Métriques de Performance
+
+```bash
+# Statistiques du relay
+curl http://localhost:7777/stats
+
+# Nombre de connexions
+netstat -an | grep :7777 | wc -l
+```
 
 ---
 
-## 🛠️ Exemples d'intégration
+## 🔒 Sécurité et Bonnes Pratiques
 
-### Web (HTML/JS avec librairie NOSTR)
+### Gestion des Clés
+
+```bash
+# Génération sécurisée de clés
+openssl rand -hex 32
+
+# Stockage sécurisé
+chmod 600 ~/.zen/game/nostr/*/.secret.nostr
+```
+
+### Rate Limiting
+
+```bash
+# Configuration du rate limiting
+echo "max_events_per_second = 10" >> ~/.zen/strfry/strfry.conf
+echo "max_events_per_minute = 100" >> ~/.zen/strfry/strfry.conf
+```
+
+### Blacklist Management
+
+```bash
+# Ajouter une clé à la blacklist
+echo "npub1..." >> ~/.zen/strfry/blacklist.txt
+
+# Supprimer une clé de la blacklist
+sed -i '/npub1.../d' ~/.zen/strfry/blacklist.txt
+```
+
+---
+
+## 🌐 Intégration avec UPlanet
+
+### Découverte de Services
+
+```javascript
+// Découverte de services UPlanet
+async function discoverUPlanetServices(latitude, longitude) {
+    const geoKey = generateGeoKey("UPlanetV1", latitude, longitude, 2);
+    const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
+    
+    await relay.connect();
+    
+    const events = await relay.list([
+        {
+            kinds: [1],
+            authors: [geoKey],
+            limit: 100
+        }
+    ]);
+    
+    return events;
+}
+```
+
+### Synchronisation Swarm
+
+```javascript
+// Synchronisation avec l'essaim UPlanet
+async function syncWithUPlanetSwarm() {
+    const bootstrapNodes = [
+        'ws://node1.uplanet.org:7777',
+        'ws://node2.uplanet.org:7777',
+        'ws://node3.uplanet.org:7777'
+    ];
+    
+    for (const node of bootstrapNodes) {
+        const relay = NostrTools.relayInit(node);
+        await relay.connect();
+        // Synchronisation des données
+    }
+}
+```
+
+---
+
+## 📚 Exemples d'Applications
+
+### Application Web Simple
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mon App Astroport.ONE</title>
+    <title>UPlanet App</title>
     <script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
 </head>
 <body>
-    <h1>Upload vers uDRIVE avec NOSTR</h1>
-    
-    <form id="uploadForm">
-        <input type="text" id="npub" placeholder="Votre clé publique NOSTR" required>
-        <input type="file" id="fileInput" required>
-        <button type="submit">Upload</button>
-    </form>
-    
-    <div id="result"></div>
+    <div id="messages"></div>
     
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const npub = document.getElementById('npub').value;
-            const file = document.getElementById('fileInput').files[0];
-            
-            const formData = new FormData();
-            formData.append('npub', npub);
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                document.getElementById('result').innerHTML = 
-                    `<p>✅ Upload réussi! CID: ${result.new_cid}</p>`;
-            } catch (error) {
-                document.getElementById('result').innerHTML = 
-                    `<p>❌ Erreur: ${error.message}</p>`;
+        // Connexion au relay local
+        const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
+        
+        relay.on('event', (event) => {
+            if (event.kind === 1) {
+                displayMessage(event);
             }
         });
+        
+        function displayMessage(event) {
+            const div = document.createElement('div');
+            div.textContent = event.content;
+            document.getElementById('messages').appendChild(div);
+        }
     </script>
 </body>
 </html>
 ```
 
-### Mobile (React Native)
+### Application Mobile (React Native)
 
 ```javascript
-// ... voir documentation précédente pour l'exemple complet
+// Exemple React Native
+import { NostrTools } from 'nostr-tools';
+
+class UPlanetApp extends Component {
+    async componentDidMount() {
+        // Connexion au relay
+        this.relay = NostrTools.relayInit('ws://127.0.0.1:7777');
+        await this.relay.connect();
+        
+        // Écoute des événements
+        this.relay.on('event', this.handleEvent);
+    }
+    
+    handleEvent = (event) => {
+        if (event.kind === 1) {
+            this.setState(prevState => ({
+                messages: [...prevState.messages, event]
+            }));
+        }
+    }
+}
 ```
 
-### CLI (Shell)
+---
 
-```bash
-curl -X POST http://127.0.0.1:54321/api/test-nostr -d "npub=your_npub_here"
-curl "http://127.0.0.1:54321/?lat=48.8566&lon=2.3522&deg=0.01"
-```
+## 🔗 Ressources et Documentation
+
+### Documentation Officielle
+
+- **[NOSTR Protocol](https://github.com/nostr-protocol/nips)** - Spécifications officielles
+- **[NIP-42](https://github.com/nostr-protocol/nips/blob/master/42.md)** - Authentification
+- **[NIP-101](https://github.com/nostr-protocol/nips/blob/master/101.md)** - Clés géographiques
+
+### Outils et Bibliothèques
+
+- **[NostrTools](https://github.com/pablof7z/nostr-tools)** - Bibliothèque JavaScript
+- **[NostrPy](https://github.com/jeffthibault/python-nostr)** - Bibliothèque Python
+- **[NostrKit](https://github.com/nbd-wtf/nostr-tools)** - Outils de développement
+
+### Communauté
+
+- **[Forum NOSTR](https://t.me/nostr_protocol)** - Groupe Telegram officiel
+- **[Reddit NOSTR](https://reddit.com/r/nostr)** - Communauté Reddit
+- **[GitHub Discussions](https://github.com/nostr-protocol/nostr/discussions)** - Discussions GitHub
 
 ---
 
-## 🔒 Sécurité, bonnes pratiques et gestion des erreurs
+## 📞 Support et Contact
 
-- **Validation des entrées** (npub, fichiers, etc.)
-- **Gestion des erreurs API** (statuts HTTP, messages d'erreur)
-- **Conseils production** : cache, logs, monitoring
+### Support Technique
 
----
+- **Email** : support@qo-op.com
+- **Documentation** : https://astroport-1.gitbook.io/astroport.one/
+- **GitHub Issues** : https://github.com/papiche/Astroport.ONE/issues
 
-## ❓ FAQ et ressources
+### Communauté
 
-- [Protocole NOSTR](https://github.com/nostr-protocol/nostr)
-- [NIP42 - Authentification](https://github.com/nostr-protocol/nips/blob/master/42.md)
-- [IPFS Documentation](https://docs.ipfs.io/)
-- [CopyLaRadio](https://copylaradio.com/)
-- [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio.com)
-- **Librairie NOSTR** : [https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js](https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js)
-- Discord UPlanet, GitHub Astroport.ONE
+- **CopyLaRadio** : https://copylaradio.com
+- **Open Collective** : https://opencollective.com/monnaie-libre
+- **Forum Monnaie Libre** : https://forum.monnaie-libre.fr
 
 ---
 
-## 📚 Annexe : Structure JSON détaillée
-
-Voir la section « Structure des données et réponses » pour un exemple complet et l'explication de chaque champ.
-
----
-
-*Développez librement, restez décentralisé !* 🌍✨
+**Astroport.ONE NOSTR Auth : L'authentification décentralisée pour un web libre** 🔐✨
