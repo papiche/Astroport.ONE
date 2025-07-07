@@ -138,9 +138,9 @@ echo "############################################"
 echo "REFRESH SECTORS HEX"
 rm -Rf ~/.zen/game/nostr/SECTOR* ## REMOVE OLD VALUE
 # Récupérer la liste des fichiers HEX du swarm
-SECTORHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_*_*/_*_*/HEX 2>/dev/null))
+SECTORHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_*_*/_*_*/SECTORHEX 2>/dev/null))
 # Ajouter les fichiers HEX $IPFSNODEID
-SECTORHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/SECTORS/_*_*/_*_*/HEX 2>/dev/null))
+SECTORHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/SECTORS/_*_*/_*_*/SECTORHEX 2>/dev/null))
 
 # Parcourir tous les fichiers HEX dans UMAPHEXLIST
 for nhex in ${SECTORHEXLIST[@]}; do
@@ -156,9 +156,9 @@ echo "############################################"
 echo "REFRESH REGIONS HEX"
 rm -Rf ~/.zen/game/nostr/REGION* ## REMOVE OLD VALUE
 # Récupérer la liste des fichiers HEX du swarm
-REGIONHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_*_*/HEX 2>/dev/null))
+REGIONHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_*_*/REGIONHEX 2>/dev/null))
 # Ajouter les fichiers HEX $IPFSNODEID
-REGIONHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/REGIONS/_*_*/HEX 2>/dev/null))
+REGIONHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/UPLANET/REGIONS/_*_*/REGIONHEX 2>/dev/null))
 
 # Parcourir tous les fichiers HEX dans UMAPHEXLIST
 for nhex in ${REGIONHEXLIST[@]}; do

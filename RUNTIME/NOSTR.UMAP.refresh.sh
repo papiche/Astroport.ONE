@@ -127,8 +127,8 @@ process_friend_messages() {
         local fof_list=$($MY_PATH/../tools/nostr_get_N1.sh "$ami" 2>/dev/null)
         if [[ -n "$fof_list" ]]; then
             for fof in $fof_list; do
-                # Only append if fof not already in file
-                if ! grep -q "^${fof}$" ~/.zen/strfry/amisOfAmis.txt 2>/dev/null; then
+                # Only append if fof not already in file (case-insensitive check)
+                if ! grep -qi "^${fof}$" ~/.zen/strfry/amisOfAmis.txt 2>/dev/null; then
                     echo "$fof" >> ~/.zen/strfry/amisOfAmis.txt
                 fi
             done
@@ -455,10 +455,14 @@ create_sector_journal() {
     local sector=$1
     echo "Creating Sector ${sector} Journal from sub UMAPS"
     # Get from local then swarm
-    local message_text="$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/${sector}/*/NOSTR_messages)"
+    local slat=$(echo ${sector} | cut -d '_' -f 2)
+    local slon=$(echo ${sector} | cut -d '_' -f 3)
+    local rlat=$(echo ${slat} | cut -d '.' -f 1)
+    local rlon=$(echo ${slon} | cut -d '.' -f 1)
+    local message_text="$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/${sector}/NOSTR_journal)"
     if [[ -z "$message_text" ]]; then
         echo "search for sector ${sector} journal in swarm"
-        message_text="$(cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/_*_*/${sector}/*/NOSTR_messages)"
+        message_text="$(cat ${HOME}/.zen/tmp/swarm/*/UPLANET/SECTORS/_${rlat}_${rlon}/${sector}/NOSTR_journal)"
         if [[ -z "$message_text" ]]; then
             echo "No NOSTR_messages found for sector ${sector}"
             return
@@ -691,6 +695,15 @@ main() {
         echo "Info: $BLACKLIST_FILE not found, no blacklist to clean."
     elif [[ ! -f "$AMISOFAMIS_FILE" ]]; then
         echo "Info: $AMISOFAMIS_FILE not found, no friends of friends list for cleaning blacklist."
+    fi
+
+    # Clean up duplicate entries in amisOfAmis.txt
+    if [[ -f "$AMISOFAMIS_FILE" ]]; then
+        # Create a temporary file with unique entries
+        sort -u "$AMISOFAMIS_FILE" > "${AMISOFAMIS_FILE}.tmp"
+        # Overwrite the original file with deduplicated content
+        mv "${AMISOFAMIS_FILE}.tmp" "$AMISOFAMIS_FILE"
+        echo "Cleaned $AMISOFAMIS_FILE: removed duplicate entries."
     fi
 
     exit 0

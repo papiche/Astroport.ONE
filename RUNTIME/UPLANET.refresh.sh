@@ -109,7 +109,7 @@ for UMAP in ${unique_combined[@]}; do
                 if [[ ! "${UMAPPATH}" =~ "${IPFSNODEID}" ]]; then
                     rm "${UMAPPATH}/${filename}" 2>/dev/null
                 fi
-                ln -sf "$swarm_file" "${UMAPPATH}/${filename}" # Create symlink to reduce storage duplication
+                cp "$swarm_file" "${UMAPPATH}/${filename}" # 
             else
                 echo "Génération de ${filename} via page_screenshot.py..."
                 python "${MY_PATH}/../tools/page_screenshot.py" "$gen_url" "${UMAPPATH}/${filename}" 900 900
@@ -148,20 +148,26 @@ for UMAP in ${unique_combined[@]}; do
     echo "$NPUB" > ${UMAPPATH}/NPUB
     ####################################################################################
     echo "${UMAPG1PUB}" > ${UMAPPATH}/G1PUB
-
+    echo "${SECTORG1PUB}" > ${UMAPPATH}/SECTORG1PUB
+    echo "${REGIONG1PUB}" > ${UMAPPATH}/REGIONG1PUB
+    ####################################################################################
     SECTORNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
     echo "${SECTORHEX}" > ${UMAPPATH}/HEX_SECTOR
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}
-    echo "${SECTORHEX}" > ${UMAPPATH}/SECTORHEX
-    echo "${SECTORG1PUB}" > ${UMAPPATH}/SECTORG1PUB
-
+    ####################################################################################
+    SECTORPATH=$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}
+    mkdir -p ${SECTORPATH}
+    echo "${SECTORHEX}" > ${SECTORPATH}/SECTORHEX
+    echo "${SECTORG1PUB}" > ${SECTORPATH}/SECTORG1PUB
+    ####################################################################################
     REGIONNPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
     echo "${REGIONHEX}" > ${UMAPPATH}/HEX_REGION
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}
-    echo "${REGIONHEX}" > ${UMAPPATH}/HEX
-    echo "${REGIONG1PUB}" > ${UMAPPATH}/REGIONG1PUB
+    ####################################################################################
+    REGIONPATH=$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_${RLAT}_${RLON}
+    mkdir -p ${REGIONPATH}
+    echo "${REGIONHEX}" > ${REGIONPATH}/REGIONHEX
+    echo "${REGIONG1PUB}" > ${REGIONPATH}/REGIONG1PUB
 
     ####################################################################################
     ## COPY SECTOR & REGION IFPSROOT
