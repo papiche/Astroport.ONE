@@ -43,7 +43,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeicwphbbz5r65qqprlzx3qrug2niyxngaazq3pqlra6vhoijze34ce" ##
+TWUPLANET="/ipfs/bafybeih6d7z6wqzjvvb4y3vwq2qbs4k4nmm6xqz5zu4nmmr2gcjyc5lkmi" ##
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -285,11 +285,16 @@ sed -i "s~_SSHPUB_~${SSHPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.htm
 sed -i "s~_MEDIAKEY_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~k2k4r8kxfnknsdf7tpyc46ks2jb3s9uvd3lqtcv9xlq9rsoem7jajd75~${ASTRONAUTENS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
-if [[ -z $HEX ]]; then
-    # Search for MULTIPASS
+if [[ -z $HEX && -z $NPUB ]]; then
+    # Search for MULTIPASS to copy HEX & NPUB in "email" tiddler
+    # tools/search_for_this_email_in_nostr.sh example@email.com
+    # export source=LOCAL HEX=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef LAT= LON= EMAIL=example@email.com G1PUBNOSTR=ExampleG1PubKeyABCDEFGHIJKLMNOPQRSTUVWXYZ123456789 NPUB=npub1example0123456789abcdef0123456789abcdef0123456789abcdef0123456 RELAY=ws://127.0.0.1:7777
     $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh "$PLAYER" | tail -n 1)
-    NPUB=$(${MY_PATH}/../tools/keygen -t nostr "$SALT" "$PEPPER")
-    HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUB")
+    
+else
+    ## NO MULTIPASS FOUND - SET EMPTY VALUES
+    NPUB=""
+    HEX=""
 fi
 # NOSTR Card : keep reference of PLAYER NostrCard
 sed -i "s~_NPUB_~${NPUB}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html

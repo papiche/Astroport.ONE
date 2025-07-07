@@ -35,18 +35,21 @@ if [[ -s ~/.ssh/id_ed25519.pub ]]; then
     ## TEST IF TRANSMUTATION IS MADE
     YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
     if [[ ${IPFSNODEID} == ${YIPNS} ]]; then
+        # Y LEVEL CONFIRMED !
             echo "Y LEVEL CONFIRMED !" \
             && cat ~/.ssh/id_ed25519.pub > ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
     else
-        rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub
-        echo "IPFSNODEID not linked with SSH _____ ٩(̾●̮̮̃̾•̃̾)۶ _____"
+        # DEFAULT X LEVEL - IPFSNODEID not linked with SSH
+        rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub 2>/dev/null
+        echo "LEVLEL X - IPFSNODEID not linked with SSH _____ ٩(̾●̮̮̃̾•̃̾)۶ _____"
         echo "${YIPNS} != ${IPFSNODEID}"
+        cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/x_ssh.pub
     fi
 fi
 
 ## DRAGONz PGP style
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
-[[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub # remove empty file
+[[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub 2>/dev/null # remove empty file
 
 ## PRODUCE SWARM SEED PART - used to create swarm.key
 if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub ]]; then
