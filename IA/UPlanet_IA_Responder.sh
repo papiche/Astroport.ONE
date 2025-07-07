@@ -583,8 +583,26 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     
                     # En mode secret, l'événement source n'existe pas dans strfry
                     # On envoie un DM simple sans référence à l'événement
-                    $HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$KeyANSWER" "$myRELAY"
-                    echo "[SECRET] Private DM sent to $KNAME ($KNAME_HEX) via NOSTR relay (event not stored in strfry)."
+                    
+                    # Vérifier que KeyANSWER n'est pas vide
+                    if [[ -z "$KeyANSWER" ]]; then
+                        echo "[SECRET] KeyANSWER is empty, sending fallback message" >&2
+                        KeyANSWER="Réponse IA non générée. Erreur technique. $(date '+%Y-%m-%d %H:%M:%S')"
+                    fi
+                    
+                    echo "[SECRET] Sending DM with content: $KeyANSWER" >&2
+                    DM_RESULT=$($HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$KeyANSWER" "$myRELAY" 2>&1)
+                    DM_EXIT_CODE=$?
+                    
+                    if [[ $DM_EXIT_CODE -eq 0 ]]; then
+                        echo "[SECRET] Private DM sent successfully to $KNAME ($KNAME_HEX) via NOSTR relay (event not stored in strfry)." >&2
+                    else
+                        echo "[SECRET] Failed to send DM. Exit code: $DM_EXIT_CODE" >&2
+                        echo "[SECRET] DM error output: $DM_RESULT" >&2
+                        # Fallback: send a simple timestamp message to indicate failure
+                        FALLBACK_MSG="Message privé non envoyé. Erreur technique. $(date '+%Y-%m-%d %H:%M:%S')"
+                        $HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
+                    fi
                 else
                     echo "[SECRET] KNAME hex key not found at $KNAME_HEX_FILE, cannot send DM."
                 fi
