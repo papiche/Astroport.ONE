@@ -168,9 +168,13 @@ check_services_status() {
             astroport_active=true
         fi
         
-        # uSPOT - vérifier le port d'écoute
-        if netstat -tln 2>/dev/null | grep -q ":54321 "; then
+        # uSPOT/uPassport - simple port check
+        if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
             uspot_active=true
+            uspot_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+        else
+            uspot_active=false
+            uspot_proc=""
         fi
         
         # NextCloud - vérifier les conteneurs Docker
@@ -178,9 +182,13 @@ check_services_status() {
             nextcloud_active=true
         fi
         
-        # NOSTR Relay - vérifier le port d'écoute
-        if netstat -tln 2>/dev/null | grep -q ":7777 "; then
+        # NOSTR Relay - simple port check
+        if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
             nostr_relay_active=true
+            nostr_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+        else
+            nostr_relay_active=false
+            nostr_proc=""
         fi
         
         # G1Billet - vérifier le processus
@@ -215,6 +223,20 @@ show_services_status() {
     local services_info=$(check_services_status)
     local nextcloud_available=false
     
+    # Détection en temps réel des services réseau
+    local uspot_active=false
+    local uspot_proc=""
+    if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
+        uspot_active=true
+        uspot_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+    fi
+    local nostr_relay_active=false
+    local nostr_proc=""
+    if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
+        nostr_relay_active=true
+        nostr_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+    fi
+    
     # Extraire la disponibilité de NextCloud
     for info in $services_info; do
         if [[ "$info" == "NEXTCLOUD_AVAILABLE:"* ]]; then
@@ -233,6 +255,23 @@ show_services_status() {
         local service_name="${service_info%:*}"
         local service_active="${service_info#*:}"
         
+        if [[ "$service_name" == "uSPOT/uPassport" ]]; then
+            if [[ "$uspot_active" == true ]]; then
+                print_status "uSPOT/uPassport" "ACTIVE" "(Services locaux)${uspot_proc:+ - $uspot_proc}"
+            else
+                print_status "uSPOT/uPassport" "INACTIVE" "(Services locaux)"
+            fi
+            continue
+        fi
+        if [[ "$service_name" == "NOSTR_Relay" ]]; then
+            if [[ "$nostr_relay_active" == true ]]; then
+                print_status "NOSTR Relay" "ACTIVE" "(Réseau social)${nostr_proc:+ - $nostr_proc}"
+            else
+                print_status "NOSTR Relay" "INACTIVE" "(Réseau social)"
+            fi
+            continue
+        fi
+        
         if [[ "$service_active" == "true" ]]; then
             case "$service_name" in
                 "IPFS")
@@ -242,13 +281,13 @@ show_services_status() {
                     print_status "Astroport" "ACTIVE" "(Interface web)"
                     ;;
                 "uSPOT/uPassport")
-                    print_status "uSPOT/uPassport" "ACTIVE" "(Services locaux)"
+                    print_status "uSPOT/uPassport" "ACTIVE" "(Services locaux)${uspot_proc:+ - $uspot_proc}"
                     ;;
                 "NextCloud")
                     print_status "NextCloud" "ACTIVE" "(Stockage personnel)"
                     ;;
                 "NOSTR_Relay")
-                    print_status "NOSTR Relay" "ACTIVE" "(Réseau social)"
+                    print_status "NOSTR Relay" "ACTIVE" "(Réseau social)${nostr_proc:+ - $nostr_proc}"
                     ;;
                 "G1Billet")
                     print_status "G1Billet" "ACTIVE" "(Économie G1)"
@@ -299,7 +338,17 @@ show_services_status() {
                         missing_services+=("NextCloud")
                     fi
                     ;;
-                "IPFS"|"Astroport"|"uSPOT/uPassport"|"NOSTR_Relay"|"G1Billet")
+                "uSPOT/uPassport")
+                    if [[ "$uspot_active" == false ]]; then
+                        missing_services+=("uSPOT/uPassport")
+                    fi
+                    ;;
+                "NOSTR_Relay")
+                    if [[ "$nostr_relay_active" == false ]]; then
+                        missing_services+=("NOSTR_Relay")
+                    fi
+                    ;;
+                "IPFS"|"Astroport"|"G1Billet")
                     missing_services+=("$service_name")
                     ;;
             esac
@@ -754,20 +803,16 @@ show_main_menu() {
     print_section "MENU PRINCIPAL"
     
     if [[ -z "$PLAYER" ]]; then
-        echo "1. 🎫 Créer/Connecter ZEN Card"
+        echo "1. 🎫 Créer/Connecter MULTIPASS / ZEN Card"
         echo "2. 📋 Lister les cartes existantes"
         echo "3. 🗑️  Supprimer une carte"
-        echo "8. 🐳 Applications Docker"
+        echo "4. 🛠️ EXTRA"
         echo "0. ❌ Quitter"
     else
-    echo "1. 🎫 Gérer ZEN Card"
+    echo "1. 🎫 Gérer MULTIPASS / ZEN Card"
     echo "2. 🌐 Connexion Swarm"
     echo "3. 📊 Statut Swarm"
-        echo "4. 💫 Faire un vœu"
-        echo "5. 📱 Applications"
-        echo "6. ⚙️  Configuration"
-        echo "7. 🔌 Déconnexion"
-        echo "8. 🐳 Applications Docker"
+     echo "4. 🛠️ EXTRA"
     echo "0. ❌ Quitter"
     fi
     echo ""
@@ -972,26 +1017,242 @@ connect_existing_card() {
 
 # Fonction de gestion ZEN Card
 handle_zen_card_management() {
-    print_section "GESTION ZEN CARD"
-    echo "1. 🖨️  Imprimer VISA"
-    echo "2. 🆕 Créer nouvelle ZEN Card"
-    echo "3. 📋 Lister les cartes"
-    echo "4. 🔄 Changer de carte"
+    print_section "GESTION IDENTITÉS (MULTIPASS & ZEN Card)"
+    echo "1. 📋 Lister MULTIPASS & ZEN Card"
+    echo "2. 🆕 Créer un nouveau MULTIPASS"
+    echo "3. 🆕 Créer une nouvelle ZEN Card (à partir d'un MULTIPASS)"
+    echo "4. 🗑️  Supprimer un MULTIPASS ou une ZEN Card"
     echo "0. ⬅️  Retour"
     echo ""
-    
     read -p "Votre choix: " zen_choice
-    
     case $zen_choice in
         1) 
-            print_info "Impression de la VISA..."
-            "${MY_PATH}/tools/VISA.print.sh" "$PLAYER"
+            while true; do
+                print_section "MULTIPASS & ZEN Card"
+                printf "%-30s | %-20s\n" "MULTIPASS (Email)" "ZEN Card (Pseudo)"
+                printf -- "%.0s-" {1..55}; echo
+                for mp in $(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | sort); do
+                    pseudo=""
+                    # Cherche une ZEN Card associée (même email)
+                    for zc in $(ls ~/.zen/game/players 2>/dev/null | grep "@" | sort); do
+                        if [[ "$mp" == "$zc" ]]; then
+                            pseudo="$zc"
+                            break
+                        fi
+                    done
+                    if [[ -n "$pseudo" ]]; then
+                        printf "%-30s | %-20s\n" "$mp" "$pseudo"
+                    else
+                        printf "%-30s | %-20s\n" "$mp" "Aucune ZEN Card associée"
+                    fi
+                done
+                echo ""
+                read -p "Appuyez sur ENTRÉE pour revenir au menu de gestion..." _
+                break
+            done
+            handle_zen_card_management
             ;;
-        2) create_zencard ;;
-        3) list_existing_cards ;;
-        4) connect_existing_card ;;
-        0) return ;;
-        *) print_error "Choix invalide" ;;
+        2)
+            print_section "CRÉATION D'UN NOUVEAU MULTIPASS"
+            echo "0. ⬅️  Annuler"
+            echo ""
+            read -p "📧 Email: " EMAIL
+            if [[ "$EMAIL" == "0" ]]; then
+                handle_zen_card_management
+                return
+            fi
+            [[ -z "$EMAIL" ]] && { print_error "Email requis"; return; }
+            print_info "Récupération de votre localisation..."
+            GEO_INFO=$(curl -s ipinfo.io/json 2>/dev/null)
+            if [[ -n "$GEO_INFO" ]]; then
+                AUTO_LAT=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f1 2>/dev/null)
+                AUTO_LON=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f2 2>/dev/null)
+                print_info "Localisation détectée: $AUTO_LAT, $AUTO_LON"
+                read -p "📍 Latitude [$AUTO_LAT]: " LAT
+                read -p "📍 Longitude [$AUTO_LON]: " LON
+                [[ -z "$LAT" ]] && LAT="$AUTO_LAT"
+                [[ -z "$LON" ]] && LON="$AUTO_LON"
+            else
+                read -p "📍 Latitude: " LAT
+                read -p "📍 Longitude: " LON
+            fi
+            [[ -z "$LAT" ]] && LAT="0.00"
+            [[ -z "$LON" ]] && LON="0.00"
+            print_info "Création de la MULTIPASS..."
+            if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "fr" "$LAT" "$LON"; then
+                print_success "MULTIPASS créée avec succès pour $EMAIL"
+            else
+                print_error "Erreur lors de la création de la MULTIPASS"
+            fi
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            handle_zen_card_management
+            ;;
+        3)
+            print_section "CRÉATION D'UNE NOUVELLE ZEN CARD (à partir d'un MULTIPASS)"
+            # Lister les MULTIPASS existants qui n'ont PAS de ZEN Card associée
+            mps=()
+            for mp in $(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | sort); do
+                # Vérifier si ce MULTIPASS a déjà une ZEN Card associée
+                has_zencard=false
+                for zc in $(ls ~/.zen/game/players 2>/dev/null | grep "@" | sort); do
+                    if [[ "$mp" == "$zc" ]]; then
+                        has_zencard=true
+                        break
+                    fi
+                done
+                # Ajouter seulement si pas de ZEN Card associée
+                if [[ "$has_zencard" == false ]]; then
+                    mps+=("$mp")
+                fi
+            done
+            if [[ ${#mps[@]} -eq 0 ]]; then
+                print_error "Aucun MULTIPASS sans ZEN Card trouvé. Tous les MULTIPASS ont déjà une ZEN Card associée."
+                read -p "Appuyez sur ENTRÉE pour continuer..."
+                return
+            fi
+            echo "MULTIPASS disponibles (sans ZEN Card) :"
+            for i in "${!mps[@]}"; do
+                echo "$((i+1)). ${mps[$i]}"
+            done
+            echo "0. ⬅️  Annuler"
+            echo ""
+            read -p "Sélectionnez le numéro du MULTIPASS: " mp_choice
+            if [[ "$mp_choice" == "0" ]]; then
+                handle_zen_card_management
+                return
+            fi
+            if ! [[ "$mp_choice" =~ ^[0-9]+$ ]] || (( mp_choice < 1 || mp_choice > ${#mps[@]} )); then
+                print_error "Choix invalide."
+                read -p "Appuyez sur ENTRÉE pour continuer..."
+                return
+            fi
+            EMAIL="${mps[$((mp_choice-1))]}"
+            # Récupérer les infos associées
+            mp_dir="$HOME/.zen/game/nostr/$EMAIL"
+            LAT=""; LON=""; [[ -f "$mp_dir/LAT" ]] && LAT=$(cat "$mp_dir/LAT")
+            [[ -f "$mp_dir/LON" ]] && LON=$(cat "$mp_dir/LON")
+            [[ -z "$LAT" ]] && LAT="0.00"
+            [[ -z "$LON" ]] && LON="0.00"
+            print_info "Création de la ZEN Card pour $EMAIL ($LAT, $LON)"
+            # Génération automatique des secrets
+            PPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+            NPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+            print_info "Secret 1 généré: $PPASS"
+            print_info "Secret 2 généré: $NPASS"
+            read -p "🔐 Secret 1 [$PPASS]: " CUSTOM_PPASS
+            read -p "🔐 Secret 2 [$NPASS]: " CUSTOM_NPASS
+            [[ -n "$CUSTOM_PPASS" ]] && PPASS="$CUSTOM_PPASS"
+            [[ -n "$CUSTOM_NPASS" ]] && NPASS="$CUSTOM_NPASS"
+            print_info "Création de la ZEN Card..."
+            if "${MY_PATH}/RUNTIME/VISA.new.sh" "$PPASS" "$NPASS" "$EMAIL" "UPlanet" "fr" "$LAT" "$LON"; then
+                PSEUDO=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
+                rm -f ~/.zen/tmp/PSEUDO
+                print_success "ZEN Card créée avec succès pour $PSEUDO"
+            else
+                print_error "Erreur lors de la création de la ZEN Card"
+            fi
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            handle_zen_card_management
+            ;;
+        4)
+            print_section "SUPPRESSION D'UN MULTIPASS OU D'UNE ZEN CARD"
+            echo "1. Supprimer un MULTIPASS"
+            echo "2. Supprimer une ZEN Card"
+            echo "0. ⬅️  Retour"
+            read -p "Votre choix: " del_choice
+            case $del_choice in
+                1)
+                    mps=( $(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | sort) )
+                    if [[ ${#mps[@]} -eq 0 ]]; then
+                        print_error "Aucun MULTIPASS à supprimer."
+                        read -p "Appuyez sur ENTRÉE pour continuer..."
+                        return
+                    fi
+                    echo "MULTIPASS disponibles :"
+                    for i in "${!mps[@]}"; do
+                        echo "$((i+1)). ${mps[$i]}"
+                    done
+                    echo "0. ⬅️  Annuler"
+                    echo ""
+                    read -p "Sélectionnez le numéro du MULTIPASS à supprimer: " mp_del
+                    if [[ "$mp_del" == "0" ]]; then
+                        handle_zen_card_management
+                        return
+                    fi
+                    if ! [[ "$mp_del" =~ ^[0-9]+$ ]] || (( mp_del < 1 || mp_del > ${#mps[@]} )); then
+                        print_error "Choix invalide."
+                        read -p "Appuyez sur ENTRÉE pour continuer..."
+                        return
+                    fi
+                    EMAIL="${mps[$((mp_del-1))]}"
+                    read -p "Êtes-vous sûr de vouloir supprimer le MULTIPASS $EMAIL ? (oui/non): " confirm
+                    if [[ "$confirm" =~ ^(oui|o|y|yes)$ ]]; then
+                        print_info "Suppression de $EMAIL..."
+                        if "${MY_PATH}/tools/nostr_DESTROY_TW.sh" "$EMAIL"; then
+                            print_success "MULTIPASS $EMAIL supprimé."
+                        else
+                            print_error "Erreur lors de la suppression du MULTIPASS."
+                        fi
+                    else
+                        print_info "Suppression annulée."
+                    fi
+                    read -p "Appuyez sur ENTRÉE pour continuer..."
+                    handle_zen_card_management
+                    ;;
+                2)
+                    zcs=( $(ls ~/.zen/game/players 2>/dev/null | grep "@" | sort) )
+                    if [[ ${#zcs[@]} -eq 0 ]]; then
+                        print_error "Aucune ZEN Card à supprimer."
+                        read -p "Appuyez sur ENTRÉE pour continuer..."
+                        return
+                    fi
+                    echo "ZEN Cards disponibles :"
+                    for i in "${!zcs[@]}"; do
+                        echo "$((i+1)). ${zcs[$i]}"
+                    done
+                    echo "0. ⬅️  Annuler"
+                    echo ""
+                    read -p "Sélectionnez le numéro de la ZEN Card à supprimer: " zc_del
+                    if [[ "$zc_del" == "0" ]]; then
+                        handle_zen_card_management
+                        return
+                    fi
+                    if ! [[ "$zc_del" =~ ^[0-9]+$ ]] || (( zc_del < 1 || zc_del > ${#zcs[@]} )); then
+                        print_error "Choix invalide."
+                        read -p "Appuyez sur ENTRÉE pour continuer..."
+                        return
+                    fi
+                    PSEUDO="${zcs[$((zc_del-1))]}"
+                    read -p "Êtes-vous sûr de vouloir supprimer la ZEN Card $PSEUDO ? (oui/non): " confirm
+                    if [[ "$confirm" =~ ^(oui|o|y|yes)$ ]]; then
+                        print_info "Suppression de $PSEUDO..."
+                        if "${MY_PATH}/RUNTIME/PLAYER.unplug.sh" "$HOME/.zen/game/players/$PSEUDO/ipfs/moa/index.html" "$PSEUDO"; then
+                            print_success "ZEN Card $PSEUDO supprimée."
+                        else
+                            print_error "Erreur lors de la suppression de la ZEN Card."
+                        fi
+                    else
+                        print_info "Suppression annulée."
+                    fi
+                    read -p "Appuyez sur ENTRÉE pour continuer..."
+                    handle_zen_card_management
+                    ;;
+                0)
+                    return
+                    ;;
+                *)
+                    print_error "Choix invalide."
+                    sleep 1
+                    ;;
+            esac
+            ;;
+        0)
+            return
+            ;;
+        *)
+            print_error "Choix invalide."
+            sleep 1
+            ;;
     esac
 }
 
@@ -1276,6 +1537,59 @@ propose_y_level_upgrade() {
     fi
 }
 
+handle_extra_menu() {
+    print_section "MENU EXTRA"
+    echo "1. 🚀 Passer au niveau Y (UPlanet Ẑen)"
+    echo "2. ☁️  Installer NextCloud"
+    echo "3. 🐳 Applications Docker"
+    echo "4. 💫 Faire un vœu"
+    echo "0. ⬅️  Retour"
+    echo ""
+    read -p "Votre choix: " extra_choice
+    case $extra_choice in
+        1)
+            propose_y_level_upgrade
+            ;;
+        2)
+            install_nextcloud
+            ;;
+        3)
+            list_docker_apps
+            ;;
+        4)
+            if [[ -n "$PLAYER" ]]; then
+                print_section "FAIRE UN VŒU"
+                print_info "Création d'un QR Code pour les lieux ou objets portant une Gvaleur..."
+                cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
+                "${MY_PATH}/RUNTIME/G1Voeu.sh" "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
+                DIFF=$(diff ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html)
+                if [[ $DIFF ]]; then
+                    echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
+                    cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
+                    TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
+                    ipfs name publish --key=$PLAYER /ipfs/$TW
+                    echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
+                    print_success "Vœu publié avec succès"
+                fi
+                echo "================================================"
+                echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
+                echo "================================================"
+                read -p "Appuyez sur ENTRÉE pour continuer..."
+            else
+                print_error "Aucune ZEN Card connectée. Connectez-vous d'abord."
+                read -p "Appuyez sur ENTRÉE pour continuer..."
+            fi
+            ;;
+        0)
+            return
+            ;;
+        *)
+            print_error "Choix invalide"
+            sleep 1
+            ;;
+    esac
+}
+
 # Fonction principale
 main() {
     # Vérifier les dépendances
@@ -1345,48 +1659,7 @@ while true; do
                 fi
                 ;;
             4)
-                if [[ -n "$PLAYER" ]]; then
-            print_section "FAIRE UN VŒU"
-                    print_info "Création d'un QR Code pour les lieux ou objets portant une Gvaleur..."
-                    cp ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html
-            "${MY_PATH}/RUNTIME/G1Voeu.sh" "" "$PLAYER" "$HOME/.zen/tmp/$PLAYER.html"
-                    
-                    # Vérifier les changements
-                    DIFF=$(diff ~/.zen/game/players/$PLAYER/ipfs/moa/index.html ~/.zen/tmp/$PLAYER.html)
-                    if [[ $DIFF ]]; then
-                        echo $MOATS > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-                        cp ~/.zen/game/players/$PLAYER/ipfs/moa/.chain ~/.zen/game/players/$PLAYER/ipfs/moa/.chain.$(cat ~/.zen/game/players/$PLAYER/ipfs/moa/.moats)
-                        
-                        TW=$(ipfs add -Hq ~/.zen/game/players/$PLAYER/ipfs/moa/index.html | tail -n 1)
-                        ipfs name publish --key=$PLAYER /ipfs/$TW
-                        
-                        echo $TW > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
-                        print_success "Vœu publié avec succès"
-                    fi
-                    
-                    echo "================================================"
-                    echo "$PLAYER : $myIPFS/ipns/$ASTRONAUTENS"
-                    echo "================================================"
-                    read -p "Appuyez sur ENTRÉE pour continuer..."
-                fi
-                ;;
-            5)
-                if [[ -n "$PLAYER" ]]; then
-                    handle_applications
-                fi
-                ;;
-            6)
-                if [[ -n "$PLAYER" ]]; then
-                    handle_configuration
-                fi
-                ;;
-            7)
-                if [[ -n "$PLAYER" ]]; then
-                    handle_disconnect
-                fi
-                ;;
-            8)
-                list_docker_apps
+                handle_extra_menu
                 ;;
             0)
                 print_success "Au revoir!"
