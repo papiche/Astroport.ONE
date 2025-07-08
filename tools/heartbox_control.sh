@@ -174,25 +174,25 @@ display_services_status() {
     fi
     
     print_section "🔧 ÉTAT DES SERVICES"
-    
-    # IPFS
+        
+        # IPFS
     local ipfs_active=$(jq -r '.services.ipfs.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     local ipfs_size=$(jq -r '.services.ipfs.size' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     local ipfs_peers=$(jq -r '.services.ipfs.peers_connected' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     
     if [[ "$ipfs_active" == "true" ]]; then
-        print_status "IPFS" "ACTIVE" "($ipfs_size, $ipfs_peers peers)"
-    else
-        print_status "IPFS" "INACTIVE" ""
-    fi
-    
-    # Astroport
+            print_status "IPFS" "ACTIVE" "($ipfs_size, $ipfs_peers peers)"
+        else
+            print_status "IPFS" "INACTIVE" ""
+        fi
+        
+        # Astroport
     local astroport_active=$(jq -r '.services.astroport.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     if [[ "$astroport_active" == "true" ]]; then
-        print_status "Astroport" "ACTIVE" "(API: http://localhost:12345)"
-    else
-        print_status "Astroport" "INACTIVE" ""
-    fi
+            print_status "Astroport" "ACTIVE" "(API: http://localhost:12345)"
+        else
+            print_status "Astroport" "INACTIVE" ""
+        fi
     
     # uSPOT
     local uspot_active=$(jq -r '.services.uspot.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
@@ -201,8 +201,8 @@ display_services_status() {
     else
         print_status "uSPOT" "INACTIVE" ""
     fi
-    
-    # NextCloud
+        
+        # NextCloud
     local nextcloud_active=$(jq -r '.services.nextcloud.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     local nc_aio=$(jq -r '.services.nextcloud.aio_https.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     local nc_cloud=$(jq -r '.services.nextcloud.cloud_http.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
@@ -222,14 +222,14 @@ display_services_status() {
         print_status "NOSTR Relay" "ACTIVE" "(Réseau social: 7777)"
     else
         print_status "NOSTR Relay" "INACTIVE" ""
-    fi
-    
-    # G1Billet
+        fi
+        
+        # G1Billet
     local g1billet_active=$(jq -r '.services.g1billet.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
     if [[ "$g1billet_active" == "true" ]]; then
-        print_status "G1Billet" "ACTIVE" ""
-    else
-        print_status "G1Billet" "INACTIVE" ""
+            print_status "G1Billet" "ACTIVE" ""
+        else
+            print_status "G1Billet" "INACTIVE" ""
     fi
 }
 
