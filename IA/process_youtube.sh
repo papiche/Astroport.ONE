@@ -117,11 +117,13 @@ process_youtube() {
     local media_file=""
     local media_ipfs=""
     local line=""
-    local try_cookies=0
+    local yid media_title duration uploader
+    local filename ipfs_url
 
-    # 1. Try without cookies
+    # 1. Try to extract metadata without cookies
     line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> ~/.zen/tmp/IA.log)"
     if [[ $? -ne 0 || -z "$line" ]]; then
+        # 2. Try with preferred browser cookies
         browser_pref=$(xdg-settings get default-web-browser 2>/dev/null | cut -d'.' -f1 | tr 'A-Z' 'a-z')
         case "$browser_pref" in
             chromium|chrome) browser_cookies="--cookies-from-browser chrome" ;;
@@ -133,6 +135,7 @@ process_youtube() {
         if [[ -n "$browser_cookies" ]]; then
             line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> ~/.zen/tmp/IA.log)"
         fi
+        # 3. Try with generated cookies if still not working
         if [[ $? -ne 0 || -z "$line" ]]; then
             browser_cookies=$(get_youtube_cookies)
             if [[ -n "$browser_cookies" ]]; then
@@ -141,11 +144,17 @@ process_youtube() {
         fi
     fi
 
-    local yid=$(echo "$line" | cut -d '&' -f 1)
-    local media_title=$(echo "$line" | cut -d '&' -f 2 | detox --inline)
-    local duration=$(echo "$line" | cut -d '&' -f 3)
-    local uploader=$(echo "$line" | cut -d '&' -f 4)
+    yid=$(echo "$line" | cut -d '&' -f 1)
+    media_title=$(echo "$line" | cut -d '&' -f 2 | detox --inline)
+    duration=$(echo "$line" | cut -d '&' -f 3)
+    uploader=$(echo "$line" | cut -d '&' -f 4)
     [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
+
+    # If we still don't have a valid title or id, fail
+    if [[ -z "$yid" || -z "$media_title" ]]; then
+        echo '{"error":"Failed to extract video metadata (title/id) from YouTube. Authentication or consent may be required."}'
+        return 1
+    fi
 
     # Set max duration to 3h (10800s) for both mp3 and mp4
     if [[ -n "$duration" ]]; then
@@ -155,7 +164,7 @@ process_youtube() {
         fi
     fi
 
-    # Download according to type
+    # Download according to type, using the last successful browser_cookies (may be empty)
     case "$media_type" in
         mp3)
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
@@ -175,14 +184,14 @@ process_youtube() {
         media_ipfs=$(ipfs add -wq "$media_file" 2>/dev/null | tail -n 1)
         if [[ -n "$media_ipfs" ]]; then
             ipfs_url="$myIPFS/ipfs/$media_ipfs/$filename"
-            # Output JSON with all metadata
+            # Output JSON with all metadata (quoted values)
             echo '{'
-            echo '  "ipfs_url": '"$ipfs_url",''
-            echo '  "title": '"$media_title",''
-            echo '  "duration": '"$duration",''
-            echo '  "uploader": '"$uploader",''
-            echo '  "original_url": '"$url",''
-            echo '  "filename": '"$filename"''
+            echo '  "ipfs_url": '"\"$ipfs_url\"",'
+            echo '  "title": '"\"$media_title\"",'
+            echo '  "duration": '"\"$duration\"",'
+            echo '  "uploader": '"\"$uploader\"",'
+            echo '  "original_url": '"\"$url\"",'
+            echo '  "filename": '"\"$filename\""'
             echo '}'
             return 0
         fi
