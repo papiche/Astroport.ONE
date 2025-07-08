@@ -150,23 +150,29 @@ process_youtube() {
     uploader=$(echo "$line" | cut -d '&' -f 4)
     [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
 
-    # If we still don't have a valid title or id, try to extract from YouTube page JSON
+    # If we still don't have a valid title or id, fail
     if [[ -z "$yid" || -z "$media_title" ]]; then
         page_html=$(curl -sL "$url")
         # Try to extract ytInitialPlayerResponse JSON
         player_json=$(echo "$page_html" | grep -oP 'var ytInitialPlayerResponse = \K\{.*?\}(?=;)' | head -n1)
         if [[ -n "$player_json" ]]; then
-            title=$(echo "$player_json" | jq -r '.videoDetails.title' 2>/dev/null)
-            uploader=$(echo "$player_json" | jq -r '.videoDetails.author' 2>/dev/null)
-            yid=$(echo "$player_json" | jq -r '.videoDetails.videoId' 2>/dev/null)
-            duration=$(echo "$player_json" | jq -r '.videoDetails.lengthSeconds' 2>/dev/null)
+            title=$(echo "$player_json" | jq -r '.videoDetails.title // empty' 2>/dev/null)
+            uploader=$(echo "$player_json" | jq -r '.videoDetails.author // empty' 2>/dev/null)
+            yid=$(echo "$player_json" | jq -r '.videoDetails.videoId // empty' 2>/dev/null)
+            duration=$(echo "$player_json" | jq -r '.videoDetails.lengthSeconds // empty' 2>/dev/null)
+            # Only output if we have at least a title and id
             if [[ -n "$title" && -n "$yid" ]]; then
+                # If any field is empty, output null in JSON
+                [[ -z "$title" ]] && title=null || title="\"$title\""
+                [[ -z "$uploader" ]] && uploader=null || uploader="\"$uploader\""
+                [[ -z "$duration" ]] && duration=null || duration="\"$duration\""
+                [[ -z "$url" ]] && original_url=null || original_url="\"$url\""
                 echo '{'
                 echo '  "ipfs_url": null,'
-                echo '  "title": '"\"$title\"",'
-                echo '  "duration": '"\"$duration\"",'
-                echo '  "uploader": '"\"$uploader\"",'
-                echo '  "original_url": '"\"$url\"",'
+                echo '  "title": '$title','
+                echo '  "duration": '$duration','
+                echo '  "uploader": '$uploader','
+                echo '  "original_url": '$original_url','
                 echo '  "filename": null,'
                 echo '  "error": "Download not possible, but metadata extracted from YouTube page."'
                 echo '}'
@@ -181,8 +187,8 @@ process_youtube() {
     if [[ -n "$duration" ]]; then
         if [ "$duration" -gt 10800 ]; then
             echo '{"error":"Media duration exceeds 3 hour limit"}'
-            return 1
-        fi
+                    return 1
+                fi
     fi
 
     # Download according to type, using the last successful browser_cookies (may be empty)
