@@ -610,8 +610,9 @@ handle_first_time_onboarding() {
         echo -e "  🟩 HEX: ${GREEN}$hex${NC}"
     fi
     if [[ -f "$gps_file" ]]; then
-        lat=$(grep -oP 'LAT=\\K[^;]+' "$gps_file")
-        lon=$(grep -oP 'LON=\\K[^;]+' "$gps_file")
+        source "$gps_file"
+        lat=$LAT
+        lon=$LON
         echo -e "  📍 Latitude: ${GREEN}$lat${NC}"
         echo -e "  📍 Longitude: ${GREEN}$lon${NC}"
     fi
