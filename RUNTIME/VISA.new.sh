@@ -43,7 +43,7 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
 #~ TWMODEL="/ipfs/bafybeid7xwuqkgyiffehs77x3wky3dghjncxepr5ln6dewapgvbwrqi7n4"
 #~ # ipfs cat $TWMODEL > templates/twdefault.html
-TWUPLANET="/ipfs/bafybeih6d7z6wqzjvvb4y3vwq2qbs4k4nmm6xqz5zu4nmmr2gcjyc5lkmi" ##
+TWUPLANET="/ipfs/bafybeigfcvq2jznbyxnkvb6ilslqn5hm5oqt4nvq6u4uvwdcrp3zmgck5y"
 # ipfs cat $TWUPLANET > templates/twuplanet.html
 ################################################################################
 
@@ -58,7 +58,7 @@ if [[ $SALT != "" && PEPPER != "" ]]; then
     # echo "/ipns/${ASTRONAUTENS}"
 
     ## CREATING SALT/PEPPER SSH KEY
-    ${MY_PATH}/../tools/keygen -t ssh -o ~/.zen/tmp/${MOATS}/ssh "$SALT" "$PEPPER" 2>/dev/null
+    ${MY_PATH}/../tools/keygen -t ssh -o ~/.zen/tmp/${MOATS}/ssh "$SALT" "$PEPPER" &>/dev/null
     SSHPUB="$(cat ~/.zen/tmp/${MOATS}/ssh.pub)"
 
     echo "SCANNING /ipns/${ASTRONAUTENS} for 180s"
@@ -552,7 +552,7 @@ LP=$(ls /dev/usb/lp* 2>/dev/null)
 ## NO. GCHANGE+ IS THE MAIN INTERFACE, astrXbian manage
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "$(${MY_PATH}/../tools/face.sh cool)"
-echo " 'Astronaut'  $PSEUDO"
+echo " 'Astronaut'  $PLAYER"
 echo
 echo "* ZenCard : Public Key and Wallet
 ${NID}/ipns/${ASTRONAUTENS}#ZenCard"
