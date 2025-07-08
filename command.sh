@@ -35,6 +35,9 @@ PLAYER=""
 ASTRONAUTENS=""
 G1PUB=""
 
+SYSLANG=${LANG:0:2}
+[[ -z "$SYSLANG" ]] && SYSLANG="en" # Fallback to english
+
 echo -e "\033[0;36m  🎫 Vérification du capitaine connecté...\033[0m"
 
 ### CHECK and CORRECT .current
@@ -499,7 +502,7 @@ handle_first_time_onboarding() {
     echo -e "${GREEN}🎉 Félicitations! Votre station Astroport.ONE est prête.${NC}"
     echo ""
     echo -e "${CYAN}Nous allons vous guider pour créer votre première identité numérique:${NC}"
-    echo "  1. Créer un compte MULTIPASS (interface web)"
+    echo "  1. Créer un compte MULTIPASS (interface CLI)"
     echo "  2. Créer une ZEN Card (interface CLI)"
     echo ""
     echo -e "${YELLOW}Cette configuration vous permettra de:${NC}"
@@ -516,62 +519,63 @@ handle_first_time_onboarding() {
         return
     fi
     
-    # Étape 1: Création MULTIPASS via interface web
+    # Étape 1: Création MULTIPASS via CLI
     print_section "ÉTAPE 1: CRÉATION DU COMPTE MULTIPASS"
     
-    # New: Ask user for creation method
-    echo -e "${CYAN}How do you want to create your MULTIPASS?${NC}"
-    echo "  1. Web interface (recommended)"
-    echo "  2. CLI (command line)"
-    read -p "Choose method [1/2]: " multipass_method
-    if [[ "$multipass_method" == "2" ]]; then
-        create_multipass
-        # After CLI creation, check if MULTIPASS exists and continue as usual
-        local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
-        if [[ $multipass_count -eq 0 ]]; then
-            print_error "No MULTIPASS found. Please try again."
-            return
-        fi
-        print_success "MULTIPASS detected!"
-    else
-        echo -e "${CYAN}We will open the web interface to create your MULTIPASS account.${NC}"
-        echo ""
-        echo -e "${YELLOW}Instructions:${NC}"
-        echo "  1. The web interface will open automatically"
-        echo "  2. Fill in the form with your email and location"
-        echo "  3. Note the email and GPS coordinates used"
-        echo "  4. Once finished, return here to continue"
-        echo ""
-        read -p "Press ENTER to open the web interface..."
-        # Open the web interface
-        print_info "Opening web interface..."
-        if command -v xdg-open >/dev/null 2>&1; then
-            xdg-open "http://127.0.0.1:54321/g1" 2>/dev/null
-        elif command -v open >/dev/null 2>&1; then
-            open "http://127.0.0.1:54321/g1" 2>/dev/null
+    echo -e "${CYAN}Nous allons créer votre compte MULTIPASS en ligne de commande.${NC}"
+    echo ""
+    
+    # Récupérer les informations de géolocalisation
+    print_info "Récupération de votre localisation..."
+    GEO_INFO=$(curl -s ipinfo.io/json 2>/dev/null)
+    
+    local EMAIL LAT LON
+    read -p "📧 Email: " EMAIL
+    [[ -z "$EMAIL" ]] && { print_error "Email requis"; return; }
+    
+    # Géolocalisation automatique
+    if [[ -n "$GEO_INFO" ]]; then
+        AUTO_LAT=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f1 2>/dev/null)
+        AUTO_LON=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f2 2>/dev/null)
+        
+        if [[ "$AUTO_LAT" != "null" && "$AUTO_LON" != "null" ]]; then
+            print_info "Localisation détectée: $AUTO_LAT, $AUTO_LON"
+            read -p "📍 Latitude [$AUTO_LAT]: " LAT
+            read -p "📍 Longitude [$AUTO_LON]: " LON
+            
+            [[ -z "$LAT" ]] && LAT="$AUTO_LAT"
+            [[ -z "$LON" ]] && LON="$AUTO_LON"
         else
-            echo -e "${YELLOW}Open your browser manually and go to:${NC}"
-            echo "  http://127.0.0.1:54321/g1"
+            read -p "📍 Latitude: " LAT
+            read -p "📍 Longitude: " LON
         fi
-        echo ""
-        echo -e "${GREEN}✅ Web interface opened!${NC}"
-        echo ""
-        echo -e "${CYAN}Once your MULTIPASS account is created, we will move to the next step.${NC}"
-        echo ""
-        # Wait for user confirmation
-        read -p "Did you create your MULTIPASS account? (yes/no): " multipass_created
-        if [[ "$multipass_created" != "oui" && "$multipass_created" != "o" && "$multipass_created" != "y" && "$multipass_created" != "yes" ]]; then
-            print_warning "Please create your MULTIPASS account first, then relaunch command.sh"
-            return
-        fi
-        # Check that the MULTIPASS account was created
-        local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
-        if [[ $multipass_count -eq 0 ]]; then
-            print_error "No MULTIPASS found. Please create your account first."
-            return
-        fi
-        print_success "MULTIPASS detected!"
+    else
+        read -p "📍 Latitude: " LAT
+        read -p "📍 Longitude: " LON
     fi
+    
+    # Valeurs par défaut
+    [[ -z "$LAT" ]] && LAT="0.00"
+    [[ -z "$LON" ]] && LON="0.00"
+    
+    print_info "Création de la MULTIPASS..."
+    if ! "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
+        print_error "Erreur lors de la création de la MULTIPASS"
+        read -p "Appuyez sur ENTRÉE pour retourner au menu."
+        return
+    fi
+    
+    print_success "MULTIPASS créée avec succès pour $EMAIL !"
+    echo ""
+    
+    # Vérifier que le compte MULTIPASS a bien été créé
+    local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+    if [[ $multipass_count -eq 0 ]]; then
+        print_error "Aucun compte MULTIPASS trouvé. La création a échoué."
+        return
+    fi
+    
+    print_success "Compte MULTIPASS détecté!"
     
     # Étape 2: Création ZEN Card via CLI
     print_section "ÉTAPE 2: CRÉATION DE LA ZEN CARD"
@@ -633,7 +637,7 @@ handle_first_time_onboarding() {
     print_info "Secret 2 généré: $npass"
     
     # Créer la ZEN Card
-    if "${MY_PATH}/RUNTIME/VISA.new.sh" "$ppass" "$npass" "$email" "UPlanet" "fr" "$lat" "$lon" "$npub" "$hex"; then
+    if "${MY_PATH}/RUNTIME/VISA.new.sh" "$ppass" "$npass" "$email" "UPlanet" "$SYSLANG" "$lat" "$lon" "$npub" "$hex"; then
         local pseudo=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
         rm -f ~/.zen/tmp/PSEUDO
         
@@ -673,6 +677,361 @@ handle_first_time_onboarding() {
         print_error "Erreur lors de la création de la ZEN Card"
         echo "Vous pouvez réessayer plus tard avec la commande: ./command.sh"
     fi
+}
+
+# Fonction d'affichage du tableau de bord
+show_dashboard() {
+    print_header "ASTROPORT.ONE - STATION ZEN"
+
+    echo -e "${WHITE}Node ID:${NC} $IPFSNODEID"
+    echo -e "${WHITE}Capitaine:${NC} ${CURRENT:-'Non connecté'}"
+    echo -e "${WHITE}UPlanet:${NC} $UPLANETG1PUB"
+    echo ""
+
+    if [[ -n "$PLAYER" ]]; then
+        echo -e "${GREEN}🎫 Capitaine connecté: $PLAYER${NC}"
+        if [[ -n "$G1PUB" ]]; then
+            echo -e "${WHITE}G1PUB:${NC} $G1PUB"
+        fi
+        if [[ -n "$ASTRONAUTENS" ]]; then
+            echo -e "${WHITE}IPNS:${NC} $myIPFS/ipns/$ASTRONAUTENS"
+        fi
+        echo ""
+    fi
+
+    echo -e "${CYAN}Astroport est un moteur Web3 exécutant UPlanet sur IPFS${NC}"
+    echo "Il vous permet de:"
+    echo "  • Gérer votre identité numérique (ZEN Card)"
+    echo "  • Participer au réseau social NOSTR"
+    echo "  • Stocker et partager des fichiers (uDRIVE)"
+    echo "  • Gagner des récompenses (0.1 G1 par like)"
+    echo ""
+
+    # Vérifier le niveau de la station
+    local level_info=$(check_station_level)
+    local current_level=$(echo "$level_info" | grep "LEVEL:" | cut -d':' -f2)
+    local ssh_mismatch=$(echo "$level_info" | grep "MISMATCH:" | cut -d':' -f2)
+
+    echo -e "${YELLOW}Niveaux de capitaine:${NC}"
+    if [[ "$current_level" == "Y" ]]; then
+        echo -e "  X: Clé IPFS standard" UPlanet ORIGIN
+        echo -e "  Y: Clé SSH jumelle" UPlanet Ẑen " ${GREEN}← Votre niveau${NC}"
+        echo -e "  Z: Clé PGP/Yubikey" UPlanet PGP
+    else
+        echo -e "  X: Clé IPFS standard" UPlanet ORIGIN " ${YELLOW}← Votre niveau${NC}"
+        echo -e "  Y: Clé SSH jumelle" UPlanet Ẑen " ${CYAN}← Niveau supérieur${NC}"
+        echo -e "  Z: Clé PGP/Yubikey" UPlanet PGP
+    fi
+    echo ""
+
+    show_services_status
+    
+    # Proposer le passage au niveau Y si nécessaire
+    if [[ "$current_level" == "X" ]] && [[ "$ssh_mismatch" == "true" ]]; then
+    echo ""
+        echo -e "${CYAN}🚀 OPPORTUNITÉ D'ÉVOLUTION${NC}"
+        echo -e "${YELLOW}Votre station peut passer au niveau Y pour rejoindre UPlanet Ẑen${NC}"
+        echo -e "  • Intégration à la toile de confiance CopyLaRadio"
+        echo -e "  • Hébergement pour vous et vos amis"
+        echo -e "  • Identité SSH/IPFS unifiée et sécurisée"
+    echo ""
+        read -p "Voulez-vous en savoir plus sur le passage au niveau Y ? (oui/non): " info_choice
+        
+        if [[ "$info_choice" == "oui" || "$info_choice" == "o" || "$info_choice" == "y" || "$info_choice" == "yes" ]]; then
+            propose_y_level_upgrade
+        fi
+    fi
+    
+    echo -e "\033[0;32m✅ Initialisation terminée - Prêt à utiliser\033[0m"
+    echo ""
+}
+
+# Fonction pour lister et installer les applications Docker
+list_docker_apps() {
+    print_section "APPLICATIONS DOCKER INSTALLABLES"
+    local docker_dir="$HOME/.zen/Astroport.ONE/_DOCKER"
+    local workspace_dir="$HOME/.zen/workspace"
+    local found_apps=()
+    local i=1
+    
+    # Recherche des apps avec docker-compose.yml
+    for app_path in "$docker_dir"/*; do
+        if [[ -d "$app_path" && -f "$app_path/docker-compose.yml" ]]; then
+            app_name=$(basename "$app_path")
+            found_apps+=("$app_name")
+        fi
+    done
+    
+    if [[ ${#found_apps[@]} -eq 0 ]]; then
+        print_warning "Aucune application Docker installable trouvée."
+        read -p "Appuyez sur ENTRÉE pour revenir au menu..."
+        return
+    fi
+    
+    echo "Applications détectées :"
+    for app in "${found_apps[@]}"; do
+        local install_dir="$workspace_dir/.$app"
+        if [[ -d "$install_dir" ]]; then
+            echo -e "  $i. ${GREEN}$app${NC} - Installée dans $install_dir"
+        else
+            echo -e "  $i. ${YELLOW}$app${NC} - Non installée"
+        fi
+        ((i++))
+    done
+    echo ""
+    echo "Sélectionnez le numéro de l'application à installer, ou 0 pour revenir :"
+    read -p "Votre choix: " app_choice
+    
+    if [[ "$app_choice" == "0" || -z "$app_choice" ]]; then
+        return
+    fi
+    
+    # Vérifier que le choix est valide
+    if ! [[ "$app_choice" =~ ^[0-9]+$ ]] || (( app_choice < 1 || app_choice > ${#found_apps[@]} )); then
+        print_error "Choix invalide."
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        return
+    fi
+    
+    local selected_app="${found_apps[$((app_choice-1))]}"
+    local app_src="$docker_dir/$selected_app"
+    local app_dst="$workspace_dir/.$selected_app"
+    
+    if [[ -d "$app_dst" ]]; then
+        print_success "L'application $selected_app est déjà installée dans $app_dst."
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        return
+    fi
+    
+    print_info "Installation de $selected_app dans $app_dst..."
+    mkdir -p "$app_dst"
+    cp -r "$app_src"/* "$app_dst/"
+    
+    # Lancer docker-compose up -d
+    if command -v docker-compose >/dev/null 2>&1; then
+        (cd "$app_dst" && docker-compose up -d)
+        print_success "$selected_app installé et démarré avec docker-compose."
+    else
+        print_warning "docker-compose n'est pas installé. Installez-le pour démarrer l'application."
+    fi
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+}
+
+# Fonction de menu principal
+show_main_menu() {
+    print_section "MENU PRINCIPAL"
+    
+    if [[ -z "$PLAYER" ]]; then
+        echo "1. 🎫 Créer/Connecter MULTIPASS / ZEN Card"
+        echo "2. 📋 Lister les cartes existantes"
+        echo "3. 🗑️  Supprimer une carte"
+        echo "4. 🛠️ EXTRA"
+        echo "0. ❌ Quitter"
+    else
+    echo "1. 🎫 Gérer MULTIPASS / ZEN Card"
+    echo "2. 🌐 Connexion Swarm"
+    echo "3. 📊 Statut Swarm"
+     echo "4. 🛠️ EXTRA"
+    echo "0. ❌ Quitter"
+    fi
+    echo ""
+}
+
+# Fonction de création/connexion de carte
+handle_card_creation() {
+    print_section "CRÉATION/CONNEXION DE CARTE"
+    echo "1. 🆕 Créer une nouvelle MULTIPASS"
+    echo "2. 🎫 Créer une nouvelle ZEN Card"
+    echo "3. 📋 Lister les cartes existantes"
+    echo "4. 🔗 Se connecter avec une carte existante"
+    echo "0. ⬅️  Retour"
+    echo ""
+    
+    read -p "Votre choix: " card_choice
+    
+    case $card_choice in
+        1) create_multipass ;;
+        2) create_zencard ;;
+        3) list_existing_cards ;;
+        4) connect_existing_card ;;
+        0) return ;;
+        *) print_error "Choix invalide" ;;
+    esac
+}
+
+# Fonction de création MULTIPASS
+create_multipass() {
+    print_section "CRÉATION MULTIPASS"
+    
+        # Récupérer les informations de géolocalisation
+    print_info "Récupération de votre localisation..."
+    GEO_INFO=$(curl -s ipinfo.io/json 2>/dev/null)
+    
+    read -p "📧 Email: " EMAIL
+    [[ -z "$EMAIL" ]] && { print_error "Email requis"; return; }
+    
+    # Géolocalisation automatique
+    if [[ -n "$GEO_INFO" ]]; then
+        AUTO_LAT=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f1 2>/dev/null)
+        AUTO_LON=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f2 2>/dev/null)
+        
+        if [[ "$AUTO_LAT" != "null" && "$AUTO_LON" != "null" ]]; then
+            print_info "Localisation détectée: $AUTO_LAT, $AUTO_LON"
+            read -p "📍 Latitude [$AUTO_LAT]: " LAT
+            read -p "📍 Longitude [$AUTO_LON]: " LON
+            
+            [[ -z "$LAT" ]] && LAT="$AUTO_LAT"
+            [[ -z "$LON" ]] && LON="$AUTO_LON"
+        else
+            read -p "📍 Latitude: " LAT
+            read -p "📍 Longitude: " LON
+        fi
+    else
+        read -p "📍 Latitude: " LAT
+        read -p "📍 Longitude: " LON
+    fi
+    
+    # Valeurs par défaut
+    [[ -z "$LAT" ]] && LAT="0.00"
+    [[ -z "$LON" ]] && LON="0.00"
+    
+    print_info "Création de la MULTIPASS..."
+    if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
+        print_success "MULTIPASS créée avec succès pour $EMAIL"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+    else
+        print_error "Erreur lors de la création de la MULTIPASS"
+    fi
+}
+
+# Fonction de création ZEN Card
+create_zencard() {
+    print_section "CRÉATION ZEN CARD"
+    
+    read -p "📧 Email: " EMAIL
+    [[ -z "$EMAIL" ]] && { print_error "Email requis"; return; }
+    
+    # Génération automatique des secrets
+    print_info "Génération automatique des secrets..."
+    PPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+    NPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+    
+    print_info "Secret 1 généré: $PPASS"
+    print_info "Secret 2 généré: $NPASS"
+    
+    read -p "🔐 Secret 1 [$PPASS]: " CUSTOM_PPASS
+    read -p "🔐 Secret 2 [$NPASS]: " CUSTOM_NPASS
+    
+    [[ -n "$CUSTOM_PPASS" ]] && PPASS="$CUSTOM_PPASS"
+    [[ -n "$CUSTOM_NPASS" ]] && NPASS="$CUSTOM_NPASS"
+    
+    read -p "📍 Latitude [0.00]: " LAT
+    read -p "📍 Longitude [0.00]: " LON
+    read -p "🔑 NPUB (NOSTR Card, optionnel): " NPUB
+    
+    [[ -z "$LAT" ]] && LAT="0.00"
+    [[ -z "$LON" ]] && LON="0.00"
+    
+    if [[ -n "$NPUB" ]]; then
+        HEX=$(${MY_PATH}/tools/nostr2hex.py "$NPUB" 2>/dev/null)
+        [[ -n "$HEX" ]] && print_info "Clé NOSTR convertie: $HEX"
+    fi
+    
+    print_info "Création de la ZEN Card..."
+    if "${MY_PATH}/RUNTIME/VISA.new.sh" "$PPASS" "$NPASS" "$EMAIL" "UPlanet" "$SYSLANG" "$LAT" "$LON" "$NPUB" "$HEX"; then
+        PSEUDO=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
+        rm -f ~/.zen/tmp/PSEUDO
+        print_success "ZEN Card créée avec succès pour $PSEUDO"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+    else
+        print_error "Erreur lors de la création de la ZEN Card"
+    fi
+}
+
+# Fonction de liste des cartes existantes
+list_existing_cards() {
+    print_section "CARTES EXISTANTES"
+    
+    # Cartes MULTIPASS
+    echo -e "${CYAN}MULTIPASS:${NC}"
+    NOSTR_CARDS=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" || echo "Aucune")
+    if [[ "$NOSTR_CARDS" != "Aucune" ]]; then
+        echo "$NOSTR_CARDS" | nl
+    else
+        echo "  Aucune carte MULTIPASS trouvée"
+    fi
+    
+    echo ""
+    
+    # Cartes ZEN
+    echo -e "${CYAN}ZEN CARDS:${NC}"
+    ZEN_CARDS=$(ls ~/.zen/game/players 2>/dev/null | grep "@" || echo "Aucune")
+    if [[ "$ZEN_CARDS" != "Aucune" ]]; then
+        echo "$ZEN_CARDS" | nl
+    else
+        echo "  Aucune carte ZEN trouvée"
+    fi
+    
+    echo ""
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+}
+
+# Fonction de connexion avec une carte existante
+connect_existing_card() {
+    print_section "CONNEXION AVEC UNE CARTE EXISTANTE"
+    
+    # Lister les cartes disponibles
+    ZEN_CARDS=$(ls ~/.zen/game/players 2>/dev/null | grep "@")
+    if [[ -z "$ZEN_CARDS" ]]; then
+        print_error "Aucune carte ZEN trouvée"
+        return
+    fi
+    
+    echo "Cartes disponibles:"
+    echo "$ZEN_CARDS" | nl
+    echo ""
+    
+    read -p "Numéro de la carte: " CARD_NUM
+    if [[ -z "$CARD_NUM" ]]; then
+        print_error "Numéro requis"
+        return
+    fi
+    
+    SELECTED_CARD=$(echo "$ZEN_CARDS" | sed -n "${CARD_NUM}p")
+    if [[ -z "$SELECTED_CARD" ]]; then
+        print_error "Carte invalide"
+        return
+    fi
+    
+    print_info "Connexion à $SELECTED_CARD..."
+    
+    # Vérifier le mot de passe
+    PASS_FILE="$HOME/.zen/game/players/$SELECTED_CARD/.pass"
+    if [[ ! -f "$PASS_FILE" ]]; then
+        print_error "Fichier de mot de passe introuvable"
+        return
+    fi
+    
+    STORED_PASS=$(cat "$PASS_FILE")
+    read -s -p "🔐 Mot de passe: " INPUT_PASS
+    echo ""
+    
+    if [[ "$INPUT_PASS" != "$STORED_PASS" ]]; then
+        print_error "Mot de passe incorrect"
+        return
+    fi
+    
+    # Connexion réussie
+    PLAYER="$SELECTED_CARD"
+    G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1)
+    
+    # Mettre à jour .current
+    rm -f ~/.zen/game/players/.current
+    ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+    
+    print_success "Connexion réussie! Bienvenue $PLAYER"
+    read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 
 # Fonction de gestion ZEN Card
@@ -739,7 +1098,7 @@ handle_zen_card_management() {
             [[ -z "$LAT" ]] && LAT="0.00"
             [[ -z "$LON" ]] && LON="0.00"
             print_info "Création de la MULTIPASS..."
-            if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "fr" "$LAT" "$LON"; then
+            if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
                 print_success "MULTIPASS créée avec succès pour $EMAIL"
             else
                 print_error "Erreur lors de la création de la MULTIPASS"
@@ -804,7 +1163,7 @@ handle_zen_card_management() {
             [[ -n "$CUSTOM_PPASS" ]] && PPASS="$CUSTOM_PPASS"
             [[ -n "$CUSTOM_NPASS" ]] && NPASS="$CUSTOM_NPASS"
             print_info "Création de la ZEN Card..."
-            if "${MY_PATH}/RUNTIME/VISA.new.sh" "$PPASS" "$NPASS" "$EMAIL" "UPlanet" "fr" "$LAT" "$LON"; then
+            if "${MY_PATH}/RUNTIME/VISA.new.sh" "$PPASS" "$NPASS" "$EMAIL" "UPlanet" "$SYSLANG" "$LAT" "$LON"; then
                 PSEUDO=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
                 rm -f ~/.zen/tmp/PSEUDO
                 print_success "ZEN Card créée avec succès pour $PSEUDO"
