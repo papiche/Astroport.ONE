@@ -158,20 +158,12 @@ check_services_status() {
         local nostr_relay_active=false
         local g1billet_active=false
         
-        # IPFS - vérifier le processus et la connectivité
-        local ipfs_processes=$(pgrep ipfs | wc -l)
-        local ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
-        
-        if [[ $ipfs_processes -gt 0 ]]; then
+        # IPFS - vérifier le processus
+        ipfs_active=false
+        ipfs_peers=0
+        if pgrep ipfs >/dev/null; then
             ipfs_active=true
-            if [[ $ipfs_peers -eq 0 ]]; then
-                ipfs_status="ACTIVE (Aucun peer connecté)"
-            else
-                ipfs_status="ACTIVE"
-            fi
-        else
-            ipfs_active=false
-            ipfs_status="INACTIVE"
+            ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
         fi
         
         # Astroport - vérifier le processus principal
@@ -286,10 +278,13 @@ show_services_status() {
         if [[ "$service_active" == "true" ]]; then
             case "$service_name" in
                 "IPFS")
-                    if [[ "$ipfs_status" == "ACTIVE (Aucun peer connecté)" ]]; then
-                        print_status "IPFS" "ACTIVE" "(Stockage distribué) - ⚠️  Aucun peer connecté"
-                    else
+                    if [[ "$ipfs_active" == true ]]; then
                         print_status "IPFS" "ACTIVE" "(Stockage distribué)"
+                        if [[ "$ipfs_peers" == "0" ]]; then
+                            echo -e "  ${YELLOW}⚠️  IPFS actif mais aucun peer connecté${NC}"
+                        fi
+                    else
+                        print_status "IPFS" "INACTIVE" "(Stockage distribué)"
                     fi
                     ;;
                 "Astroport")
@@ -311,7 +306,11 @@ show_services_status() {
         else
             case "$service_name" in
                 "IPFS")
-                    print_status "IPFS" "INACTIVE" "(Stockage distribué)"
+                    if [[ "$ipfs_active" == true ]]; then
+                        print_status "IPFS" "INACTIVE" "(Stockage distribué)"
+                    else
+                        print_status "IPFS" "INACTIVE" "(Stockage distribué)"
+                    fi
                     ;;
                 "Astroport")
                     print_status "Astroport" "INACTIVE" "(Interface web)"
