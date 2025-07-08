@@ -227,6 +227,12 @@ show_services_status() {
     local nextcloud_available=false
     
     # Détection en temps réel des services réseau
+    local ipfs_active=false
+    local ipfs_peers=0
+    if pgrep ipfs >/dev/null; then
+        ipfs_active=true
+        ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
+    fi
     local uspot_active=false
     local uspot_proc=""
     if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
