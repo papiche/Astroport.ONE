@@ -646,7 +646,7 @@ handle_first_time_onboarding() {
         echo ""
         
         # Définir comme carte courante
-        PLAYER="$pseudo"
+        PLAYER="$email"
         G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1)
         

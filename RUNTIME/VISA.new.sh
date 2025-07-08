@@ -19,7 +19,8 @@ SALT="$1"
 PEPPER="$2"
 PLAYER="$3"
 PSEUDO="$4"
-[[ $PSEUDO == "" ]] && PSEUDO="Anonymous"
+echo $PSEUDO > ~/.zen/tmp/PSEUDO
+PSEUDO="$(${MY_PATH}/../tools/clyuseryomail.sh $PLAYER)"
 
 LANG="$5"
 [[ $LANG == "" ]] && LANG="_LANG_"
