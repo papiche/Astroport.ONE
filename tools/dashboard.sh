@@ -8,9 +8,8 @@
 # Focus: Simplicité, utilité, économie ZEN
 ################################################################################
 
-MY_PATH="`dirname \"$0\"`"
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
-. "${MY_PATH}/my.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${SCRIPT_DIR}/my.sh"
 
 # Forcer la locale numérique pour éviter les problèmes de virgule/point
 export LC_NUMERIC=C
