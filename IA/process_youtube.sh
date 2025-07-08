@@ -114,134 +114,81 @@ process_youtube() {
     local media_type="$2"
     local temp_dir="$3"
     local browser_cookies=""
-
     local media_file=""
     local media_ipfs=""
-
-    # Try to get cookies from common browsers with correct paths
-    echo "Searching for browser cookies..." >&2
-    
-    # Chrome/Chromium paths
-    for chrome_path in \
-        "$HOME/.config/google-chrome/Default/Cookies" \
-        "$HOME/.config/chromium/Default/Cookies" \
-        "$HOME/snap/chromium/common/chromium/Default/Cookies" \
-        "$HOME/.var/app/com.google.Chrome/config/google-chrome/Default/Cookies"; do
-        if [[ -f "$chrome_path" ]]; then
-            browser_cookies="--cookies-from-browser chrome"
-            echo "Found Chrome/Chromium cookies: $chrome_path" >&2
-            break
-        fi
-    done
-    
-    # Firefox paths (if Chrome not found)
-    if [[ -z "$browser_cookies" ]]; then
-        for firefox_path in \
-            "$HOME/.mozilla/firefox/"*/cookies.sqlite \
-            "$HOME/snap/firefox/common/.mozilla/firefox/"*/cookies.sqlite \
-            "$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/"*/cookies.sqlite; do
-            if [[ -f "$firefox_path" ]]; then
-                browser_cookies="--cookies-from-browser firefox"
-                echo "Found Firefox cookies: $firefox_path" >&2
-                break
-            fi
-        done
-    fi
-    
-    # Brave paths (if others not found)
-    if [[ -z "$browser_cookies" ]]; then
-        for brave_path in \
-            "$HOME/.config/BraveSoftware/Brave-Browser/Default/Cookies" \
-            "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/Default/Cookies"; do
-            if [[ -f "$brave_path" ]]; then
-                browser_cookies="--cookies-from-browser brave"
-                echo "Found Brave cookies: $brave_path" >&2
-                break
-            fi
-        done
-    fi
-    
-    # Edge paths (if others not found)
-    if [[ -z "$browser_cookies" ]]; then
-        for edge_path in \
-            "$HOME/.config/microsoft-edge/Default/Cookies" \
-            "$HOME/.var/app/com.microsoft.Edge/config/microsoft-edge/Default/Cookies"; do
-            if [[ -f "$edge_path" ]]; then
-                browser_cookies="--cookies-from-browser edge"
-                echo "Found Edge cookies: $edge_path" >&2
-                break
-            fi
-        done
-    fi
-
-    # If no browser cookies found, try to get them with curl
-    if [[ -z "$browser_cookies" ]]; then
-        echo "No browser cookies found, trying to generate cookies with curl..." >&2
-        browser_cookies=$(get_youtube_cookies)
-    else
-        echo "Using browser cookies: $browser_cookies" >&2
-    fi
-
-    # Obtenir le titre et la durée
     local line=""
-    if [[ -n "$browser_cookies" ]]; then
-        line="$(yt-dlp $browser_cookies --print "%(id)s&%(title)s&%(duration)s" "$url" 2>> ~/.zen/tmp/IA.log)"
-        if [[ $? -ne 0 ]]; then
-            echo "Warning: Failed to get video info with cookies, trying without" >&2
-            line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>> ~/.zen/tmp/IA.log)"
+    local try_cookies=0
+
+    # 1. Try without cookies
+    line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> ~/.zen/tmp/IA.log)"
+    if [[ $? -ne 0 || -z "$line" ]]; then
+        browser_pref=$(xdg-settings get default-web-browser 2>/dev/null | cut -d'.' -f1 | tr 'A-Z' 'a-z')
+        case "$browser_pref" in
+            chromium|chrome) browser_cookies="--cookies-from-browser chrome" ;;
+            firefox) browser_cookies="--cookies-from-browser firefox" ;;
+            brave) browser_cookies="--cookies-from-browser brave" ;;
+            edge) browser_cookies="--cookies-from-browser edge" ;;
+            *) browser_cookies="" ;;
+        esac
+        if [[ -n "$browser_cookies" ]]; then
+            line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> ~/.zen/tmp/IA.log)"
         fi
-    else
-        line="$(yt-dlp --print "%(id)s&%(title)s&%(duration)s" "$url" 2>> ~/.zen/tmp/IA.log)"
+        if [[ $? -ne 0 || -z "$line" ]]; then
+            browser_cookies=$(get_youtube_cookies)
+            if [[ -n "$browser_cookies" ]]; then
+                line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> ~/.zen/tmp/IA.log)"
+            fi
+        fi
     fi
 
     local yid=$(echo "$line" | cut -d '&' -f 1)
-    local media_title=$(echo "$line" | cut -d '&' -f 2- | sed 's/&[0-9]*$//' | detox --inline)
-    local duration=$(echo "$line" | grep -o '[0-9]*$')
+    local media_title=$(echo "$line" | cut -d '&' -f 2 | detox --inline)
+    local duration=$(echo "$line" | cut -d '&' -f 3)
+    local uploader=$(echo "$line" | cut -d '&' -f 4)
     [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
 
-    # Vérifier la durée selon le type
+    # Set max duration to 3h (10800s) for both mp3 and mp4
     if [[ -n "$duration" ]]; then
-        case "$media_type" in
-            mp3)
-                if [ "$duration" -gt 3600 ]; then
-                    echo "Error: Audio duration exceeds 1 hour limit" >&2
-                    return 1
-                fi
-                ;;
-            mp4)
-                if [ "$duration" -gt 900 ]; then
-                    echo "Error: Video duration exceeds 15 minutes limit" >&2
-                    return 1
-                fi
-                ;;
-        esac
+        if [ "$duration" -gt 10800 ]; then
+            echo '{"error":"Media duration exceeds 3 hour limit"}'
+            return 1
+        fi
     fi
 
-    # Télécharger selon le type
+    # Download according to type
     case "$media_type" in
         mp3)
-            echo "Downloading and converting to MP3..." >&2
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 -o "${temp_dir}/${media_title}.%(ext)s" "$url" 2>> ~/.zen/tmp/IA.log
             ;;
         mp4)
-            echo "Downloading and converting to MP4 (720p max)..." >&2
             yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
                 -o "${temp_dir}/${media_title}.%(ext)s" "$url" 2>> ~/.zen/tmp/IA.log
             ;;
     esac
 
-    # Trouver le fichier téléchargé
     media_file=$(ls "$temp_dir"/${media_title}.* 2>/dev/null | head -n 1)
+    filename=$(basename "$media_file")
 
     if [[ -n "$media_file" ]]; then
-        # Ajouter à IPFS
         media_ipfs=$(ipfs add -wq "$media_file" 2>/dev/null | tail -n 1)
         if [[ -n "$media_ipfs" ]]; then
-            echo "$myIPFS/ipfs/$media_ipfs/$media_title.$media_type"
+            ipfs_url="$myIPFS/ipfs/$media_ipfs/$filename"
+            # Output JSON with all metadata
+            echo '{'
+            echo '  "ipfs_url": '"$ipfs_url",''
+            echo '  "title": '"$media_title",''
+            echo '  "duration": '"$duration",''
+            echo '  "uploader": '"$uploader",''
+            echo '  "original_url": '"$url",''
+            echo '  "filename": '"$filename"''
+            echo '}'
+            return 0
         fi
     fi
+    echo '{"error":"Download or IPFS add failed"}'
+    return 1
 }
 
 # Main execution

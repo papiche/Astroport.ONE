@@ -486,17 +486,34 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 else
                     # Check if #mp3 tag is present
                     if [[ "$message_text" =~ \#mp3 ]]; then
-                        echo "Téléchargement et conversion en MP3..." >&2
-                        media_url=$($MY_PATH/process_youtube.sh "$youtube_url" "mp3")
+                        json=$($MY_PATH/process_youtube.sh "$youtube_url" "mp3")
                     else
-                        echo "Téléchargement en MP4 (720p max)..." >&2
-                        media_url=$($MY_PATH/process_youtube.sh "$youtube_url" "mp4")
+                        json=$($MY_PATH/process_youtube.sh "$youtube_url" "mp4")
                     fi
-
-                    if [ -n "$media_url" ]; then
-                        KeyANSWER="$media_url"
+                    error=$(echo "$json" | jq -r .error 2>/dev/null)
+                    if [[ -n "$error" && "$error" != "null" ]]; then
+                        KeyANSWER="Désolé, erreur lors du téléchargement : $error"
                     else
-                        KeyANSWER="Désolé, je n'ai pas pu télécharger la vidéo YouTube."
+                        ipfs_url=$(echo "$json" | jq -r .ipfs_url)
+                        title=$(echo "$json" | jq -r .title)
+                        duration=$(echo "$json" | jq -r .duration)
+                        uploader=$(echo "$json" | jq -r .uploader)
+                        filename=$(echo "$json" | jq -r .filename)
+                        original_url=$(echo "$json" | jq -r .original_url)
+                        # Format duration in H:MM:SS if possible
+                        if [[ "$duration" =~ ^[0-9]+$ ]]; then
+                            hours=$((duration/3600))
+                            mins=$(( (duration%3600)/60 ))
+                            secs=$((duration%60))
+                            if (( hours > 0 )); then
+                                duration_fmt=$(printf "%d:%02d:%02d" $hours $mins $secs)
+                            else
+                                duration_fmt=$(printf "%02d:%02d" $mins $secs)
+                            fi
+                        else
+                            duration_fmt="$duration"
+                        fi
+                        KeyANSWER="🎬 Title: $title\n⏱️ Duration: $duration_fmt\n👤 Uploader: $uploader\n🔗 Original: $original_url\n📦 IPFS: $ipfs_url"
                     fi
                 fi
                 ################################################"
