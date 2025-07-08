@@ -1,11 +1,12 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 1.0
+# Version: 2.0 - Optimisé pour l'essaim UPlanet
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# ♥️BOX CONTROL - Interface CLI complète pour la gestion des ♥️box UPlanet
-# Intègre : monitoring système, WireGuard, Swarm, VISA, services
+# ♥️BOX CONTROL - Interface CLI pour la gestion des ♥️box UPlanet
+# Utilise le cache JSON quotidien de heartbox_analysis.sh (20h12)
+# Optimisé pour l'essaim de nodes interconnectés
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
@@ -26,313 +27,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration globale
-HEARTBOX_DIR="$HOME/.zen/heartbox"
-HEARTBOX_CACHE_DIR="$HOME/.zen/tmp/heartbox_cache"
-mkdir -p "$HEARTBOX_DIR" "$HEARTBOX_CACHE_DIR"
-
-# Cache sudo pour éviter les demandes répétées
-SUDO_CACHE_FILE="$HEARTBOX_CACHE_DIR/sudo_check.cache"
-SUDO_CACHE_TIMEOUT=300  # 5 minutes
-
-#######################################################################
-# Utilitaires système
-#######################################################################
-
-# Vérification sudo avec cache
-check_sudo_cached() {
-    if [[ -f "$SUDO_CACHE_FILE" ]]; then
-        local cache_age=$(( $(date +%s) - $(stat -c %Y "$SUDO_CACHE_FILE" 2>/dev/null || echo 0) ))
-        if [[ $cache_age -lt $SUDO_CACHE_TIMEOUT ]]; then
-            return 0  # Sudo OK récemment
-        fi
-    fi
-    
-    # Test silencieux de sudo
-    if sudo -n true 2>/dev/null; then
-        touch "$SUDO_CACHE_FILE"
-        return 0
-    else
-        return 1
-    fi
-}
-
-#######################################################################
-# Fonctions de cache et optimisation (CORRIGÉES)
-#######################################################################
-
-# Initialiser le cache
-init_cache() {
-    mkdir -p "$HEARTBOX_CACHE_DIR"
-    echo "$(date +%s)" > "$HEARTBOX_CACHE_DIR/.cache_init"
-}
-
-# Vérifier si le cache est valide (expire après X secondes)
-is_cache_valid() {
-    local cache_file="$1"
-    local max_age="${2:-300}"  # 5 minutes par défaut
-    
-    if [[ ! -f "$cache_file" ]]; then
-        return 1
-    fi
-    
-    local file_age=$(( $(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0) ))
-    [[ $file_age -lt $max_age ]]
-}
-
-# Fonction pour échapper les caractères spéciaux dans les valeurs de cache
-escape_cache_value() {
-    local value="$1"
-    # Échapper les caractères problématiques pour bash
-    echo "$value" | sed 's/[()]/\\&/g' | sed "s/'/\\\\'/g"
-}
-
-# Cache des informations système (CORRIGÉ)
-get_cached_system_info() {
-    local cache_file="$HEARTBOX_CACHE_DIR/system_info.cache"
-    
-    if ! is_cache_valid "$cache_file" 900; then  # Cache valide 15 minutes
-        local cpu_model_raw=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
-        local cpu_model=$(escape_cache_value "$cpu_model_raw")
-        local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo "0")
-        local cpu_freq_raw=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
-        local cpu_freq=$(escape_cache_value "$cpu_freq_raw")
-        local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
-        local mem_total_gb=$((mem_total / 1024 / 1024))
-        
-        {
-            echo "CPU_MODEL='$cpu_model'"
-            echo "CPU_CORES='$cpu_cores'" 
-            echo "CPU_FREQ='$cpu_freq'"
-            echo "MEM_TOTAL_GB='$mem_total_gb'"
-        } > "$cache_file"
-    fi
-    
-    if [[ -f "$cache_file" ]]; then
-        source "$cache_file" 2>/dev/null || {
-            # Si le sourcing échoue, régénérer le cache
-            rm -f "$cache_file"
-            get_cached_system_info
-        }
-    fi
-}
-
-# Cache des capacités de stockage (AMÉLIORÉ)
-get_cached_capacities() {
-    local cache_file="$HEARTBOX_CACHE_DIR/capacities.cache"
-    
-    # Forcer le recalcul à chaque fois car l'espace disque peut changer rapidement
-    local disk_info=$(df -h / 2>/dev/null | tail -1)
-    local disk_total=$(echo "$disk_info" | awk '{print $2}')
-    local disk_used=$(echo "$disk_info" | awk '{print $3}')
-    local disk_available=$(echo "$disk_info" | awk '{print $4}')
-    local disk_usage_percent=$(echo "$disk_info" | awk '{print $5}')
-    
-    # Conversion plus robuste en GB
-    local available_gb=0
-    if [[ "$disk_available" =~ ([0-9]+\.?[0-9]*)([KMGT]) ]]; then
-        local number="${BASH_REMATCH[1]}"
-        local unit="${BASH_REMATCH[2]}"
-        case "$unit" in
-            "K") available_gb=$(echo "scale=0; $number / 1024 / 1024" | bc -l 2>/dev/null || echo "0") ;;
-            "M") available_gb=$(echo "scale=0; $number / 1024" | bc -l 2>/dev/null || echo "0") ;;
-            "G") available_gb=$(echo "scale=0; $number" | bc -l 2>/dev/null || echo "0") ;;
-            "T") available_gb=$(echo "scale=0; $number * 1024" | bc -l 2>/dev/null || echo "0") ;;
-        esac
-    fi
-    
-    local zencard_parts=0
-    local nostr_parts=0
-    if (( $(echo "$available_gb > 0" | bc -l) )); then
-        zencard_parts=$(echo "scale=0; ($available_gb - 8*128) / 128" | bc -l 2>/dev/null || echo "0")
-        nostr_parts=$(echo "scale=0; ($available_gb - 8*10) / 10" | bc -l 2>/dev/null || echo "0")
-        [[ $zencard_parts -lt 0 ]] && zencard_parts=0
-        [[ $nostr_parts -lt 0 ]] && nostr_parts=0
-    fi
-    
-    {
-        echo "DISK_TOTAL='$disk_total'"
-        echo "DISK_USED='$disk_used'"
-        echo "DISK_AVAILABLE='$disk_available'"
-        echo "DISK_USAGE_PERCENT='$disk_usage_percent'"
-        echo "ZENCARD_PARTS='$zencard_parts'"
-        echo "NOSTR_PARTS='$nostr_parts'"
-        echo "AVAILABLE_GB='$available_gb'"
-    } > "$cache_file"
-    
-    source "$cache_file" 2>/dev/null
-}
-
-# Cache des informations matérielles (CORRIGÉ)
-get_cached_hardware() {
-    local cache_file="$HEARTBOX_CACHE_DIR/hardware.cache"
-    
-    if ! is_cache_valid "$cache_file" 3600; then  # Cache valide 1 heure
-        local cpu_model_raw=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
-        local cpu_model=$(escape_cache_value "$cpu_model_raw")
-        local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo "0")
-        local cpu_freq_raw=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Non détecté")
-        local cpu_freq=$(escape_cache_value "$cpu_freq_raw")
-        
-        local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
-        local mem_total_gb=$((mem_total / 1024 / 1024))
-        
-        {
-            echo "CPU_MODEL='$cpu_model'"
-            echo "CPU_CORES='$cpu_cores'"
-            echo "CPU_FREQ='$cpu_freq'"
-            echo "MEM_TOTAL_GB='$mem_total_gb'"
-        } > "$cache_file"
-    fi
-    
-    if [[ -f "$cache_file" ]]; then
-        source "$cache_file" 2>/dev/null || {
-            # Si le sourcing échoue, régénérer le cache
-            rm -f "$cache_file"
-            get_cached_hardware
-        }
-    fi
-}
-
-# Fonction pour recalculer l'état des services (toujours à jour)
-update_services_status() {
-    local cache_file="$HEARTBOX_CACHE_DIR/services_status.json"
-    local timestamp=$(date +%s)
-    
-    # Services à vérifier
-    local ipfs_status="inactive"
-    local ipfs_size="N/A"
-    local ipfs_peers="0"
-    if pgrep ipfs >/dev/null; then
-        ipfs_status="active"
-        ipfs_size=$(du -sh ~/.ipfs 2>/dev/null | cut -f1 || echo "N/A")
-        ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
-    fi
-    
-    local astroport_status="inactive"
-    if pgrep -f "12345" >/dev/null; then
-        astroport_status="active"
-    fi
-    
-    local nextcloud_status="inactive"
-    local nc_containers=""
-    if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
-        nextcloud_status="active"
-        nc_containers=$(docker ps --filter "name=nextcloud" --format "{{.Status}}" 2>/dev/null | head -1)
-    fi
-    
-    local wireguard_status="inactive"
-    local wg_peers="0"
-    if check_sudo_cached && sudo -n wg show wg0 >/dev/null 2>&1; then
-        wireguard_status="active"
-        wg_peers=$(sudo -n wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
-    else
-        # Vérification alternative sans sudo si possible
-        if systemctl is-active --quiet wg-quick@wg0 2>/dev/null; then
-            wireguard_status="active"
-            wg_peers=$(sudo -n wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
-        else
-            wireguard_status="inactive"
-        fi
-    fi
-    
-    local g1billet_status="inactive"
-    if pgrep -f "G1BILLETS" >/dev/null; then
-        g1billet_status="active"
-    fi
-    
-    # Sauvegarder le cache JSON des services
-    cat > "$cache_file" << EOF
-{
-    "timestamp": $timestamp,
-    "services": {
-        "ipfs": {
-            "status": "$ipfs_status",
-            "size": "$ipfs_size", 
-            "peers": $ipfs_peers
-        },
-        "astroport": {
-            "status": "$astroport_status"
-        },
-        "nextcloud": {
-            "status": "$nextcloud_status",
-            "containers": "$nc_containers"
-        },
-        "wireguard": {
-            "status": "$wireguard_status",
-            "peers": $wg_peers
-        },
-        "g1billet": {
-            "status": "$g1billet_status"
-        }
-    }
-}
-EOF
-    
-    echo "🔄 Services mis à jour: $(date '+%H:%M:%S')" > "$HEARTBOX_CACHE_DIR/.last_services_update"
-}
-
-# Afficher l'état des services depuis le cache
-display_services_status() {
-    print_section "🔧 ÉTAT DES SERVICES"
-    
-    local cache_file="$HEARTBOX_CACHE_DIR/services_status.json"
-    
-    if [[ -f "$cache_file" ]]; then
-        local last_update=""
-        if [[ -f "$HEARTBOX_CACHE_DIR/.last_services_update" ]]; then
-            last_update=" $(cat "$HEARTBOX_CACHE_DIR/.last_services_update")"
-        fi
-        
-        echo -e "${CYAN}$last_update${NC}"
-        
-        # IPFS
-        local ipfs_status=$(jq -r '.services.ipfs.status' "$cache_file" 2>/dev/null)
-        local ipfs_size=$(jq -r '.services.ipfs.size' "$cache_file" 2>/dev/null)
-        local ipfs_peers=$(jq -r '.services.ipfs.peers' "$cache_file" 2>/dev/null)
-        
-        if [[ "$ipfs_status" == "active" ]]; then
-            print_status "IPFS" "ACTIVE" "($ipfs_size, $ipfs_peers peers)"
-        else
-            print_status "IPFS" "INACTIVE" ""
-        fi
-        
-        # Astroport
-        local astroport_status=$(jq -r '.services.astroport.status' "$cache_file" 2>/dev/null)
-        if [[ "$astroport_status" == "active" ]]; then
-            print_status "Astroport" "ACTIVE" "(API: http://localhost:12345)"
-        else
-            print_status "Astroport" "INACTIVE" ""
-        fi
-        
-        # NextCloud
-        local nextcloud_status=$(jq -r '.services.nextcloud.status' "$cache_file" 2>/dev/null)
-        local nc_containers=$(jq -r '.services.nextcloud.containers' "$cache_file" 2>/dev/null)
-        if [[ "$nextcloud_status" == "active" ]]; then
-            print_status "NextCloud" "ACTIVE" "($nc_containers)"
-        else
-            print_status "NextCloud" "INACTIVE" "(Docker ou conteneurs non démarrés)"
-        fi
-        
-        # WireGuard
-        local wireguard_status=$(jq -r '.services.wireguard.status' "$cache_file" 2>/dev/null)
-        local wg_peers=$(jq -r '.services.wireguard.peers' "$cache_file" 2>/dev/null)
-        if [[ "$wireguard_status" == "active" ]]; then
-            print_status "WireGuard" "ACTIVE" "($wg_peers clients connectés)"
-        else
-            print_status "WireGuard" "INACTIVE" ""
-        fi
-        
-        # G1Billet
-        local g1billet_status=$(jq -r '.services.g1billet.status' "$cache_file" 2>/dev/null)
-        if [[ "$g1billet_status" == "active" ]]; then
-            print_status "G1Billet" "ACTIVE" ""
-        else
-            print_status "G1Billet" "INACTIVE" ""
-        fi
-    else
-        echo -e "${RED}❌ Cache des services non disponible${NC}"
-    fi
-}
+HEARTBOX_CACHE_FILE="$HOME/.zen/tmp/$IPFSNODEID/heartbox_analysis.json"
 
 #######################################################################
 # Fonctions utilitaires d'affichage
@@ -373,74 +68,173 @@ print_status() {
 }
 
 #######################################################################
-# Analyse matérielle et système
+# Gestion du cache JSON quotidien
 #######################################################################
 
-get_system_info() {
-    # Charger les informations système depuis le cache
-    get_cached_system_info
+# Vérifier si le cache JSON est disponible et récent (< 24h)
+is_cache_valid() {
+    if [[ ! -f "$HEARTBOX_CACHE_FILE" ]]; then
+        return 1
+    fi
     
-    # Informations dynamiques (charge CPU et RAM)
-    local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | xargs)
-    local mem_available=$(grep "MemAvailable" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
-    local mem_total=$(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")
-    local mem_used=$((mem_total - mem_available))
-    local mem_used_gb=$((mem_used / 1024 / 1024))
-    local mem_usage_percent=$((mem_used * 100 / mem_total))
+    local file_age=$(( $(date +%s) - $(stat -c %Y "$HEARTBOX_CACHE_FILE" 2>/dev/null || echo 0) ))
+    [[ $file_age -lt 86400 ]]  # 24 heures = 86400 secondes
+}
+
+# Charger les données depuis le cache JSON
+load_cache_data() {
+    if ! is_cache_valid; then
+        echo -e "${YELLOW}⚠️  Cache JSON non disponible ou obsolète${NC}"
+        echo "  Le cache sera mis à jour à 20h12 par heartbox_analysis.sh"
+        return 1
+    fi
     
-    local disk_info=$(df -h / | tail -1)
-    local disk_total=$(echo "$disk_info" | awk '{print $2}')
-    local disk_used=$(echo "$disk_info" | awk '{print $3}')
-    local disk_available=$(echo "$disk_info" | awk '{print $4}')
-    local disk_usage_percent=$(echo "$disk_info" | awk '{print $5}')
+    if ! command -v jq >/dev/null 2>&1; then
+        echo -e "${RED}❌ jq non disponible pour lire le cache JSON${NC}"
+        return 1
+    fi
     
-    echo -e "${WHITE}Processeur:${NC} $CPU_MODEL"
-    echo -e "${WHITE}Cœurs:${NC} $CPU_CORES threads @ ${CPU_FREQ} MHz"
+    return 0
+}
+
+#######################################################################
+# Affichage des informations système depuis le cache
+#######################################################################
+
+display_system_info() {
+    if ! load_cache_data; then
+        return
+    fi
+    
+    print_section "💻 INFORMATIONS SYSTÈME"
+    
+    # Informations CPU
+    local cpu_model=$(jq -r '.system.cpu.model' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local cpu_cores=$(jq -r '.system.cpu.cores' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local cpu_freq=$(jq -r '.system.cpu.frequency_mhz' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local cpu_load=$(jq -r '.system.cpu.load_average' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    
+    echo -e "${WHITE}Processeur:${NC} $cpu_model"
+    echo -e "${WHITE}Cœurs:${NC} $cpu_cores threads @ ${cpu_freq} MHz"
     echo -e "${WHITE}Charge CPU:${NC} $cpu_load"
     echo ""
-    echo -e "${WHITE}Mémoire:${NC} ${mem_used_gb}GB / ${MEM_TOTAL_GB}GB (${mem_usage_percent}%)"
-    echo -e "${WHITE}Disque:${NC} $disk_used / $disk_total ($disk_usage_percent utilisé)"
+    
+    # Informations mémoire
+    local mem_total=$(jq -r '.system.memory.total_gb' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local mem_used=$(jq -r '.system.memory.used_gb' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local mem_usage=$(jq -r '.system.memory.usage_percent' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    
+    echo -e "${WHITE}Mémoire:${NC} ${mem_used}GB / ${mem_total}GB (${mem_usage}%)"
+    
+    # Informations stockage
+    local disk_total=$(jq -r '.system.storage.total' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local disk_used=$(jq -r '.system.storage.used' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local disk_available=$(jq -r '.system.storage.available' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local disk_usage=$(jq -r '.system.storage.usage_percent' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    
+    echo -e "${WHITE}Disque:${NC} $disk_used / $disk_total ($disk_usage utilisé)"
     echo -e "${WHITE}Libre:${NC} $disk_available"
     
-    # GPU detection
-    if command -v nvidia-smi >/dev/null 2>&1; then
-        local gpu_info=$(nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1)
-        if [[ -n "$gpu_info" ]]; then
-            echo -e "${WHITE}GPU:${NC} $gpu_info"
-        fi
+    # GPU si disponible
+    local gpu_info=$(jq -r '.system.gpu' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    if [[ "$gpu_info" != "null" ]]; then
+        echo -e "${WHITE}GPU:${NC} $gpu_info"
     fi
 }
 
 #######################################################################
-# Calcul des capacités d'abonnement (CORRIGÉ pour utiliser le cache)
+# Affichage des capacités d'abonnement depuis le cache
 #######################################################################
 
-calculate_subscription_capacity() {
-    # Utiliser le cache des capacités
-    get_cached_capacities
+display_capacities() {
+    if ! load_cache_data; then
+        return
+    fi
     
-    if (( $(echo "${AVAILABLE_GB:-0} > 0" | bc -l) )); then
-        echo -e "${WHITE}Capacités d'abonnement:${NC}"
-        echo "  🎫 ZenCards (128 GB/slot): ${ZENCARD_PARTS:-0} slots"
-        echo "  📻 NOSTR Cards (10 GB/slot): ${NOSTR_PARTS:-0} slots"
-        echo "  👨‍✈️  Réservé capitaine: 8 slots (1024 GB)"
+    print_section "📊 CAPACITÉS D'ABONNEMENT"
+    
+    local zencard_slots=$(jq -r '.capacities.zencard_slots' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local nostr_slots=$(jq -r '.capacities.nostr_slots' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local available_gb=$(jq -r '.capacities.available_space_gb' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    
+    echo -e "${WHITE}Capacités d'abonnement:${NC}"
+    echo "  🎫 ZenCards (128 GB/slot): ${zencard_slots} slots"
+    echo "  📻 NOSTR Cards (10 GB/slot): ${nostr_slots} slots"
+    echo "  👨‍✈️  Réservé capitaine: 8 slots (1024 GB)"
+    echo "  💾 Espace total disponible: ${available_gb} GB"
+}
+
+#######################################################################
+# Affichage de l'état des services depuis le cache
+#######################################################################
+
+display_services_status() {
+    if ! load_cache_data; then
+        return
+    fi
+    
+    print_section "🔧 ÉTAT DES SERVICES"
+    
+    # IPFS
+    local ipfs_active=$(jq -r '.services.ipfs.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local ipfs_size=$(jq -r '.services.ipfs.size' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local ipfs_peers=$(jq -r '.services.ipfs.peers_connected' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    
+    if [[ "$ipfs_active" == "true" ]]; then
+        print_status "IPFS" "ACTIVE" "($ipfs_size, $ipfs_peers peers)"
     else
-        echo -e "${RED}❌ Impossible de calculer les capacités${NC}"
+        print_status "IPFS" "INACTIVE" ""
+    fi
+    
+    # Astroport
+    local astroport_active=$(jq -r '.services.astroport.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    if [[ "$astroport_active" == "true" ]]; then
+        print_status "Astroport" "ACTIVE" "(API: http://localhost:12345)"
+    else
+        print_status "Astroport" "INACTIVE" ""
+    fi
+    
+    # uSPOT
+    local uspot_active=$(jq -r '.services.uspot.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    if [[ "$uspot_active" == "true" ]]; then
+        print_status "uSPOT" "ACTIVE" "(Services locaux: 54321)"
+    else
+        print_status "uSPOT" "INACTIVE" ""
+    fi
+    
+    # NextCloud
+    local nextcloud_active=$(jq -r '.services.nextcloud.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local nc_aio=$(jq -r '.services.nextcloud.aio_https.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local nc_cloud=$(jq -r '.services.nextcloud.cloud_http.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    
+    if [[ "$nextcloud_active" == "true" ]]; then
+        local nc_status=""
+        [[ "$nc_aio" == "true" ]] && nc_status+="AIO "
+        [[ "$nc_cloud" == "true" ]] && nc_status+="Cloud"
+        print_status "NextCloud" "ACTIVE" "($nc_status)"
+    else
+        print_status "NextCloud" "INACTIVE" ""
+    fi
+    
+    # NOSTR Relay
+    local nostr_active=$(jq -r '.services.nostr_relay.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    if [[ "$nostr_active" == "true" ]]; then
+        print_status "NOSTR Relay" "ACTIVE" "(Réseau social: 7777)"
+    else
+        print_status "NOSTR Relay" "INACTIVE" ""
+    fi
+    
+    # G1Billet
+    local g1billet_active=$(jq -r '.services.g1billet.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    if [[ "$g1billet_active" == "true" ]]; then
+        print_status "G1Billet" "ACTIVE" ""
+    else
+        print_status "G1Billet" "INACTIVE" ""
     fi
 }
 
 #######################################################################
-# État des services (REMPLACÉ par display_services_status)
-#######################################################################
-
-check_services_status() {
-    # Cette fonction est maintenant remplacée par display_services_status
-    # qui utilise le cache mis à jour par update_services_status
-    display_services_status
-}
-
-#######################################################################
-# Analyse du Swarm
+# Analyse du Swarm UPlanet
 #######################################################################
 
 analyze_swarm() {
@@ -559,17 +353,11 @@ show_guide() {
 }
 
 #######################################################################
-# Menu principal amélioré
+# Menu principal simplifié
 #######################################################################
 
 show_main_menu() {
     clear
-    
-    # Initialiser le cache si nécessaire
-    init_cache
-    
-    # Recalculer l'état des services à chaque affichage du menu
-    update_services_status
     
     print_header "♥️BOX CONTROL - Pilotage UPlanet"
     
@@ -578,25 +366,31 @@ show_main_menu() {
     echo -e "${WHITE}Type:${NC} $(if [[ -f ~/.zen/tmp/$IPFSNODEID/y_ssh.pub ]]; then echo "Y Level (Node autonome)"; elif [[ -f ~/.zen/tmp/$IPFSNODEID/z_ssh.pub ]]; then echo "Z Level (Node relais)"; else echo "X Level (Node standard)"; fi)"
     echo ""
     
-    get_system_info
+    # Afficher les informations depuis le cache JSON
+    display_system_info
     echo ""
-    calculate_subscription_capacity
+    display_capacities
     echo ""
-    check_services_status
+    display_services_status
     echo ""
     analyze_swarm
+    echo ""
+    
+    # Informations sur le cache
+    if is_cache_valid; then
+        local cache_age=$(( ($(date +%s) - $(stat -c %Y "$HEARTBOX_CACHE_FILE" 2>/dev/null || echo 0)) / 3600 ))
+        echo -e "${CYAN}📊 Cache JSON:${NC} Mis à jour il y a ${cache_age}h (prochaine mise à jour: 20h12)"
+    else
+        echo -e "${YELLOW}⚠️  Cache JSON:${NC} Obsolète ou manquant (mise à jour à 20h12)"
+    fi
     echo ""
     
     echo -e "${YELLOW}ACTIONS DISPONIBLES:${NC}"
     echo "  1. 📊 Monitoring détaillé"
     echo "  2. 🌐 Gestion WireGuard"
     echo "  3. 🔗 Gestion Swarm UPlanet"
-    echo "  4. 🎫 Impression VISA/ZenCard"
-    echo "  5. 🛠️  Gestion des services"
-    echo "  6. 📱 NextCloud Docker"
-    echo "  7. 📋 Logs et diagnostics"
-    echo "  8. ⚙️  Configuration"
-    echo "  9. 📚 Guide du capitaine"
+    echo "  4. ⚙️  Configuration"
+    echo "  5. 📚 Guide du capitaine"
     echo "  0. ❌ Quitter"
     echo ""
 }
@@ -862,199 +656,6 @@ manage_swarm() {
 }
 
 #######################################################################
-# Impression VISA/ZenCard
-#######################################################################
-
-manage_visa() {
-    clear
-    print_header "🎫 IMPRESSION VISA/ZENCARD"
-    
-    local current_player=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
-    
-    echo "1. 🖨️  Imprimer VISA du capitaine actuel"
-    echo "2. 🆕 Créer nouvelle ZenCard"
-    echo "3. 🎨 Imprimer ZenCard personnalisée"
-    echo "0. ⬅️  Retour"
-    echo ""
-    
-    if [[ -n "$current_player" ]]; then
-        echo -e "${WHITE}Capitaine actuel:${NC} $current_player"
-    else
-        echo -e "${RED}❌ Aucun capitaine connecté${NC}"
-    fi
-    echo ""
-    
-    read -p "Choix: " visa_choice
-    
-    case $visa_choice in
-        1)
-            if [[ -n "$current_player" ]]; then
-                echo "🖨️  Impression VISA pour $current_player..."
-                "${MY_PATH}/VISA.print.sh" "$current_player"
-            else
-                echo "❌ Aucun capitaine connecté"
-            fi
-            ;;
-        2)
-            read -p "Email: " email
-            read -p "Secret 1: " salt
-            read -p "Secret 2: " pepper
-            read -p "PIN (4 chiffres): " pin
-            echo "🆕 Création ZenCard..."
-            "${MY_PATH}/VISA.print.sh" "$email" "$salt" "$pepper" "$pin"
-            ;;
-        3)
-            echo "🎨 Fonctionnalité à venir..."
-            ;;
-    esac
-    
-    [[ $visa_choice != "0" ]] && { echo ""; read -p "Appuyez sur ENTRÉE..."; }
-}
-
-#######################################################################
-# Gestion des services
-#######################################################################
-
-manage_services() {
-    clear
-    print_header "🛠️  GESTION DES SERVICES"
-    
-    echo "1. 🔄 Redémarrer IPFS"
-    echo "2. 🔄 Redémarrer Astroport"
-    echo "3. 🔄 Redémarrer G1Billet"
-    echo "4. 🔄 Redémarrer tous les services"
-    echo "5. 🛑 Arrêter tous les services"
-    echo "6. 🚀 Démarrer tous les services"
-    echo "0. ⬅️  Retour"
-    echo ""
-    read -p "Choix: " service_choice
-    
-    case $service_choice in
-        1) 
-            echo "🔄 Redémarrage IPFS..."
-            sudo systemctl restart ipfs
-            ;;
-        2)
-            echo "🔄 Redémarrage Astroport..."
-            sudo systemctl restart astroport 2>/dev/null || {
-                killall nc 12345.sh 2>/dev/null
-                "${MY_PATH}/../12345.sh" > ~/.zen/tmp/12345.log &
-            }
-            ;;
-        3)
-            echo "🔄 Redémarrage G1Billet..."
-            sudo systemctl restart g1billet 2>/dev/null || echo "Service G1Billet non trouvé"
-            ;;
-        4)
-            echo "🔄 Redémarrage de tous les services..."
-            sudo systemctl restart ipfs astroport g1billet 2>/dev/null
-            ;;
-        5)
-            echo "🛑 Arrêt de tous les services..."
-            sudo systemctl stop ipfs astroport g1billet 2>/dev/null
-            ;;
-        6)
-            echo "🚀 Démarrage de tous les services..."
-            sudo systemctl start ipfs astroport g1billet 2>/dev/null
-            ;;
-    esac
-    
-    [[ $service_choice != "0" ]] && { echo ""; read -p "Appuyez sur ENTRÉE..."; }
-}
-
-#######################################################################
-# NextCloud Docker
-#######################################################################
-
-manage_nextcloud() {
-    clear
-    print_header "📱 NEXTCLOUD DOCKER"
-    
-    local compose_file="$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml"
-    
-    echo "1. 🚀 Démarrer NextCloud"
-    echo "2. 🛑 Arrêter NextCloud"
-    echo "3. 🔄 Redémarrer NextCloud"
-    echo "4. 📊 État des conteneurs"
-    echo "5. 📋 Logs NextCloud"
-    echo "0. ⬅️  Retour"
-    echo ""
-    
-    if [[ -f "$compose_file" ]]; then
-        echo -e "${WHITE}Configuration:${NC} $compose_file"
-    else
-        echo -e "${RED}❌ Configuration NextCloud non trouvée${NC}"
-    fi
-    echo ""
-    
-    read -p "Choix: " nc_choice
-    
-    case $nc_choice in
-        1)
-            if [[ -f "$compose_file" ]]; then
-                echo "🚀 Démarrage NextCloud..."
-                cd "$(dirname "$compose_file")" && docker-compose up -d
-            else
-                echo "❌ Fichier docker-compose.yml non trouvé"
-            fi
-            ;;
-        2)
-            echo "🛑 Arrêt NextCloud..."
-            cd "$(dirname "$compose_file")" && docker-compose down 2>/dev/null
-            ;;
-        3)
-            echo "🔄 Redémarrage NextCloud..."
-            cd "$(dirname "$compose_file")" && docker-compose restart 2>/dev/null
-            ;;
-        4)
-            echo "📊 État des conteneurs NextCloud:"
-            docker ps --filter "name=nextcloud"
-            ;;
-        5)
-            echo "📋 Logs NextCloud:"
-            docker logs nextcloud-aio-mastercontainer 2>/dev/null | tail -20
-            ;;
-    esac
-    
-    [[ $nc_choice != "0" ]] && { echo ""; read -p "Appuyez sur ENTRÉE..."; }
-}
-
-#######################################################################
-# Logs et diagnostics
-#######################################################################
-
-show_logs() {
-    clear
-    print_header "📋 LOGS ET DIAGNOSTICS"
-    
-    echo "1. 📊 Observer logs en temps réel"
-    echo "2. 📝 Logs Astroport"
-    echo "3. 🌐 Logs IPFS"
-    echo "4. 🔗 Logs Swarm"
-    echo "5. 💾 Archive 20h12"
-    echo "0. ⬅️  Retour"
-    echo ""
-    read -p "Choix: " log_choice
-    
-    case $log_choice in
-        1) "${MY_PATH}/log_observation.sh" --menu ;;
-        2) tail -f ~/.zen/tmp/12345.log 2>/dev/null || echo "❌ Aucun log Astroport" ;;
-        3) tail -f ~/.zen/tmp/ipfs.swarm.peers 2>/dev/null || echo "❌ Aucun log IPFS" ;;
-        4) tail -f ~/.zen/tmp/DRAGON.log 2>/dev/null || echo "❌ Aucun log Swarm" ;;
-        5) 
-            if [[ -f /tmp/20h12.log ]]; then
-                less /tmp/20h12.log
-            else
-                echo "❌ Archive 20h12 non trouvée"
-            fi
-            ;;
-
-    esac
-    
-    [[ $log_choice != "0" ]] && { echo ""; read -p "Appuyez sur ENTRÉE..."; }
-}
-
-#######################################################################
 # Configuration
 #######################################################################
 
@@ -1126,12 +727,8 @@ main_loop() {
             1) show_detailed_monitoring ;;
             2) manage_wireguard ;;
             3) manage_swarm ;;
-            4) manage_visa ;;
-            5) manage_services ;;
-            6) manage_nextcloud ;;
-            7) show_logs ;;
-            8) manage_config ;;
-            9) show_guide ;;
+            4) manage_config ;;
+            5) show_guide ;;
             0) 
                 echo -e "${GREEN}👋 Au revoir !${NC}"
                 exit 0
