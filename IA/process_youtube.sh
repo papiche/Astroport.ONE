@@ -150,10 +150,31 @@ process_youtube() {
     uploader=$(echo "$line" | cut -d '&' -f 4)
     [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
 
-    # If we still don't have a valid title or id, fail
+    # If we still don't have a valid title or id, try to extract from YouTube page JSON
     if [[ -z "$yid" || -z "$media_title" ]]; then
+        page_html=$(curl -sL "$url")
+        # Try to extract ytInitialPlayerResponse JSON
+        player_json=$(echo "$page_html" | grep -oP 'var ytInitialPlayerResponse = \K\{.*?\}(?=;)' | head -n1)
+        if [[ -n "$player_json" ]]; then
+            title=$(echo "$player_json" | jq -r '.videoDetails.title' 2>/dev/null)
+            uploader=$(echo "$player_json" | jq -r '.videoDetails.author' 2>/dev/null)
+            yid=$(echo "$player_json" | jq -r '.videoDetails.videoId' 2>/dev/null)
+            duration=$(echo "$player_json" | jq -r '.videoDetails.lengthSeconds' 2>/dev/null)
+            if [[ -n "$title" && -n "$yid" ]]; then
+                echo '{'
+                echo '  "ipfs_url": null,'
+                echo '  "title": '"\"$title\"",'
+                echo '  "duration": '"\"$duration\"",'
+                echo '  "uploader": '"\"$uploader\"",'
+                echo '  "original_url": '"\"$url\"",'
+                echo '  "filename": null,'
+                echo '  "error": "Download not possible, but metadata extracted from YouTube page."'
+                echo '}'
+                exit 0
+            fi
+        fi
         echo '{"error":"Failed to extract video metadata (title/id) from YouTube. Authentication or consent may be required."}'
-        return 1
+        exit 1
     fi
 
     # Set max duration to 3h (10800s) for both mp3 and mp4
