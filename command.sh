@@ -159,8 +159,19 @@ check_services_status() {
         local g1billet_active=false
         
         # IPFS - vérifier le processus et la connectivité
-        if pgrep ipfs >/dev/null && ipfs swarm peers 2>/dev/null | grep -q .; then
+        local ipfs_processes=$(pgrep ipfs | wc -l)
+        local ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
+        
+        if [[ $ipfs_processes -gt 0 ]]; then
             ipfs_active=true
+            if [[ $ipfs_peers -eq 0 ]]; then
+                ipfs_status="ACTIVE (Aucun peer connecté)"
+            else
+                ipfs_status="ACTIVE"
+            fi
+        else
+            ipfs_active=false
+            ipfs_status="INACTIVE"
         fi
         
         # Astroport - vérifier le processus principal
@@ -275,7 +286,11 @@ show_services_status() {
         if [[ "$service_active" == "true" ]]; then
             case "$service_name" in
                 "IPFS")
-                    print_status "IPFS" "ACTIVE" "(Stockage distribué)"
+                    if [[ "$ipfs_status" == "ACTIVE (Aucun peer connecté)" ]]; then
+                        print_status "IPFS" "ACTIVE" "(Stockage distribué) - ⚠️  Aucun peer connecté"
+                    else
+                        print_status "IPFS" "ACTIVE" "(Stockage distribué)"
+                    fi
                     ;;
                 "Astroport")
                     print_status "Astroport" "ACTIVE" "(Interface web)"
