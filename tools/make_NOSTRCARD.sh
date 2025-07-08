@@ -122,7 +122,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # Create an G1CARD : G1Wallet waiting for G1 to make key batch running
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey "${SALT}" "${PEPPER}"
     G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
-    echo "G1NOSTR _WALLET: $G1PUBNOSTR"
+    # echo "G1NOSTR _WALLET: $G1PUBNOSTR"
 
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
@@ -274,7 +274,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ./generate_ipfs_structure.sh
     ## RUN App
-    UDRIVE=$(./generate_ipfs_structure.sh .)
+    UDRIVE=$(./generate_ipfs_structure.sh . 2>/dev/null)
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
 
     ## Link generate_ipfs_RPG.sh to uWORLD
@@ -283,7 +283,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
     ## RUN App
-    UWORLD=$(./generate_ipfs_RPG.sh .)
+    UWORLD=$(./generate_ipfs_RPG.sh . 2>/dev/null)
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
     cd -
 
