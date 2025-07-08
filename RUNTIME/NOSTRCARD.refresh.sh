@@ -175,6 +175,9 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL NOSTR CARDS
 for PLAYER in "${NOSTR[@]}"; do
+    echo "==============================="
+    echo "PLAYER = $PLAYER"
+    echo "==============================="
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
 
     ## SWARM CACHE PUBLISHING
@@ -315,19 +318,12 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "$primal" == "" ]]; then
 
-        # UPLANET ORIGIN : patch jaklis gva history error
-        #~ [[ $UPLANETNAME == "EnfinLibre" && $(echo "$COINS > 0" | bc -l) -eq 1 ]] \
-            #~ && echo "UPlanet Primal Correction" \
-            #~ && [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal ]] \
-            #~ && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
-            #~ || echo "NOSTR G1 CARD is EMPTY .............. !!! ${TODATE} / ${BIRTHDATE}"
-
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
                 # UPlanet ORIGIN ... DAY2 => BRO WELCOME ...
                 echo "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation"
                 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-                ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "1" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}" 2>/dev/null
+                ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}" 2>/dev/null
                 [[ $? -eq 0 ]] \
                     && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
             else
