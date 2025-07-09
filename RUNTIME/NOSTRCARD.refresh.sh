@@ -110,7 +110,8 @@ should_refresh() {
         # Convert current_time and refresh_time (HH:MM) to seconds since midnight
         current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
         refresh_seconds=$((10#${refresh_time%%:*} * 3600 + 10#${refresh_time##*:} * 60))
-        if [[ $current_seconds -gt $refresh_seconds ]]; then
+        # Check if we're in the hour following the refresh time (within 1 hour window)
+        if [[ $current_seconds -gt $refresh_seconds && $current_seconds -le $((refresh_seconds + 3600)) ]]; then
             return 0
         fi
     fi
@@ -189,7 +190,6 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
-    rm ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB 2>/dev/null ## TODO REMOVE
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB ]]; then
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/NPUB ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB 2>/dev/null
@@ -232,10 +232,9 @@ for PLAYER in "${NOSTR[@]}"; do
                 if [[ ! -z $BMAS_NODE ]]; then
                     echo "Trying primal check with GVA NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
-                    silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money history ${g1pub} 2>/dev/null)
+                    silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${g1pub} 2>/dev/null)
                     if echo "$silkaj_output" | jq empty 2>/dev/null; then
-                        result=$(echo "$silkaj_output" | jq '.history[0]')
-                        g1prime=$(echo $result | jq -r '."Issuers/Recipients"' | cut -d':' -f1)
+                        g1prime=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey')
                         if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
                             success=true
                             break
@@ -254,8 +253,7 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "$g1prime"
         }
 
-        milletxzero=$(get_primal_transaction "${G1PUBNOSTR}")
-        g1prime=$(echo $milletxzero | jq -r .pubkey)
+        g1prime=$(get_primal_transaction "${G1PUBNOSTR}")
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         [[ ! -z ${g1prime} && ${g1prime} != "null" ]] \
             && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
