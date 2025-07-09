@@ -227,6 +227,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP # RUNTIME/NOSTR.UMAP.refresh.sh
     echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
+    ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) ## OPTIONAL for others
+    echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
+    chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
+
     ##############################################################
     ### PREPARE NOSTR ZINE
     cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \
