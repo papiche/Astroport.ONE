@@ -202,8 +202,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
     amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
     
-    ## Add white margins of 120 pixels around the QR code image (for a flashable coracle profile picture)
-    convert ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png -bordercolor white -border 120x120 ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
+    ## Add white margins of 100 pixels around the QR code image (for a flashable coracle profile picture)
+    convert ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png -bordercolor white -border 100x100 ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
     
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
