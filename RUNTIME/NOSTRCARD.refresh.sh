@@ -557,22 +557,20 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################################
-    echo "## CONTROL NOSTR WALLET PRIMAL RX"
-    ########################################################################################
-    echo "Checking NOSTR wallet for $PLAYER: $G1PUBNOSTR"
+    echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
     
     # Use the generic primal wallet control function
     if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
         # Get DISCO from PLAYER to create dunikey if needed
-                if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
-                    DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
-                    IFS='=&' read -r s salt p pepper <<< "$DISCO"
-                    # Create secret.dunikey from DISCO
-                    if [[ -n $salt && -n $pepper ]]; then
-                        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
-                    fi
-                fi
-        
+        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
+            DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
+            IFS='=&' read -r s salt p pepper <<< "$DISCO"
+            # Create secret.dunikey from DISCO
+            if [[ -n $salt && -n $pepper ]]; then
+                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
+            fi
+        fi
+        echo "## CONTROL MULTIPASS TRANSACTIONS..."
         # Call the generic primal wallet control function
         ${MY_PATH}/../tools/primal_wallet_control.sh \
             "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
@@ -595,6 +593,9 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "Exported ${COUNT} events to ${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json"
     cd - 2>&1 >/dev/null
 
+    ########################################################################################
+    echo "## UPDATE MULTIPASS IPNS KEY $myIPFS/ipns/$NOSTRNS"
+    ########################################################################################
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
