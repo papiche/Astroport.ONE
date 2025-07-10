@@ -35,6 +35,8 @@ log "AMOUNT=${AMOUNT}"
 log "DESTG1PUB=${G1PUB}"
 log "COMMENT=${COMMENT}"
 
+[[ -z $G1PUB ]] && log "ERROR : MISSING PAYMENT DESTINATION - EXIT -" && exit 1
+
 [[ -z $MOATS ]] \
     && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") \
     || log "OLD PAYMENT FAILURE = NEW TRY $MOATS"
@@ -87,8 +89,6 @@ if [[ "$COINS" != "null" && $(echo "$COINS < $AMOUNT" | bc -l) -eq 1 ]]; then
     log "ERROR : SOURCE WALLET ${ISSUERPUB} IS MISSING COINS !!! $AMOUNT > $COINS - EXIT -"
     exit 1
 fi
-
-[[ -z $G1PUB ]] && log "ERROR : ${ISSUERPUB}=$COINS ($AMOUNT) MISSING DESTINATION - EXIT -" && exit 1
 
 log "Payment processor ID: ${MOATS}"
 log "${ISSUERPUB} : (${AMOUNT}) -> ${G1PUB}"
