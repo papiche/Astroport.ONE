@@ -98,7 +98,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$NSEC" \
     "$YOUSER [♥️BOX Captain]" "$CAPTAING1PUB" \
-    "UPlanet ${UPLANETG1PUB:0:8} -- $uSPOT/g1 [CopyLaRadio] Dragon WoT Member" \
+    "UPlanet ${UPLANETG1PUB:0:8} -- $myIPFS/ipns/copylaradio.com" \
     "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
     "${myIPFS}/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
     "$CAPTAINEMAIL" "$myIPFS/ipns/$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" "" "" "" "" \
