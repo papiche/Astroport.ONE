@@ -109,16 +109,19 @@ else
     BMAS_SERVER=$(get_bmas_server)
 fi
 
+## CHECKING BALANCE WITH BMAS SERVER
+BMAS_SERVER=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
 while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
     log "Attempting to get balance with silkaj (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-    
     # Use silkaj to get balance with BMAS server if available
     if [[ -n "$BMAS_SERVER" ]]; then
         COINS=$(silkaj --json --endpoint "$BMAS_SERVER" --dunikey-file "${KEYFILE}" money balance ${ISSUERPUB} 2>/dev/null | jq -r '.balances.total')
     else
         COINS=$(silkaj --json --dunikey-file "${KEYFILE}" money balance ${ISSUERPUB} 2>/dev/null | jq -r '.balances.total')
     fi
-    
+    # silkaj balance return COINS in cents, convert to G1
+    COINS=$(echo "$COINS / 100" | bc)
+
     if [[ -n $COINS && "$COINS" != "null" ]]; then
         log "Successfully retrieved balance: $COINS"
         break
