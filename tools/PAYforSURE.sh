@@ -120,10 +120,10 @@ while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
         COINS=$(silkaj --json --dunikey-file "${KEYFILE}" money balance ${ISSUERPUB} 2>/dev/null | jq -r '.balances.total')
     fi
     # silkaj balance return COINS in cents, convert to G1
-    COINS=$(echo "$COINS / 100" | bc)
+    COINS=$(echo "scale=2; $COINS / 100" | bc)
 
     if [[ -n $COINS && "$COINS" != "null" ]]; then
-        log "Successfully retrieved balance: $COINS"
+        log "Successfully retrieved balance: for $ISSUERPUB : $COINS Ğ1"
         break
     fi
     RETRY_COUNT=$((RETRY_COUNT + 1))
