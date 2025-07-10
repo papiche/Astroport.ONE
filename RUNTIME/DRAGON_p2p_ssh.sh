@@ -90,11 +90,11 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
 ##################################################################################
 ############################################ SETUP CAPTAIN NOSTR PROFILE
-if [[ -s ~/.zen/game/players/.current/secret.nostr ]]; then
+if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${CAPTAINEMAIL}")
 
     echo "Setup Captain NOSTR profile"
-    source ~/.zen/game/players/.current/secret.nostr
+    source ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$NSEC" \
     "$YOUSER [♥️BOX Captain]" "$CAPTAING1PUB" \
