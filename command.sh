@@ -559,7 +559,11 @@ handle_first_time_onboarding() {
     [[ -z "$LON" ]] && LON="0.00"
     
     print_info "Création de la MULTIPASS..."
-    if ! "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
+    if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
+        ## MAILJET SEND MULTIPASS
+        YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${EMAIL})
+        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "UPlanet MULTIPASS - $YOUSER"
+    else
         print_error "Erreur lors de la création de la MULTIPASS"
         read -p "Appuyez sur ENTRÉE pour retourner au menu."
         return
@@ -898,6 +902,9 @@ create_multipass() {
     
     print_info "Création de la MULTIPASS..."
     if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
+        ## MAILJET SEND MULTIPASS
+        YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${EMAIL})
+        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "UPlanet MULTIPASS - $YOUSER"
         print_success "MULTIPASS créée avec succès pour $EMAIL"
         read -p "Appuyez sur ENTRÉE pour continuer..."
     else
