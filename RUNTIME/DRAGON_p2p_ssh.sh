@@ -101,9 +101,9 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     "UPlanet ${UPLANETG1PUB:0:8} -- $uSPOT/g1 [CopyLaRadio] Dragon WoT Member" \
     "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
     "${myIPFS}/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-    "$CAPTAINEMAIL" "$myIPFS/ipns/copylaradio.com" "" "" "" "" \
+    "$CAPTAINEMAIL" "$myIPFS/ipns/$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" "" "" "" "" \
     "$myRELAY" \
-    --ipns_vault "/ipns/$(cat ~/.zen/game/players/.current/.playerns)" \
+    --ipns_vault "/ipns/$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" \
     --ipfs_gw "$myIPFS"
 
     ## FOLLOW EVERY NOSTR CARD
