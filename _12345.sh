@@ -102,9 +102,9 @@ if [[ -s ~/.zen/game/secret.june && ! -s ~/.zen/game/secret.nostr ]]; then
 fi
 
 ######################################### CAPTAIN RELATED
-## CREATE ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-if [[ -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.june ]]; then
-    source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.june
+## CREATE ~/.zen/game/players/.current/secret.nostr
+if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
+    source ~/.zen/game/players/.current/secret.june
     CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$SALT" "$PEPPER")
     CAPTAINCOINS=$($MY_PATH/tools/COINScheck.sh ${CAPTAING1PUB} | tail -n 1)
     CAPTAINZEN=$(echo "($CAPTAINCOINS - 1) * 10" | bc | cut -d '.' -f 1)
