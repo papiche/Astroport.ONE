@@ -67,6 +67,12 @@ log "AMOUNT=${AMOUNT}"
 log "DESTG1PUB=${G1PUB}"
 log "COMMENT=${COMMENT}"
 
+## CHECKING AMOUNT
+if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
+    log "NOTHING TO PAY... OK"
+    exit 0
+fi
+
 [[ -z $MOATS ]] \
     && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") \
     || log "OLD PAYMENT FAILURE = NEW TRY $MOATS"
