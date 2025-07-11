@@ -417,7 +417,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS/ipns/${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS${NOSTRNS}"
                 ## TODO CONVERT SEND NOSTR MULTIPASS MESSAGE
             else
                 echo "## PRIMAL existing : $G1PRIME"
@@ -502,7 +502,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "" "$myIPFS${NOSTRNS}" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
             --ipfs_gw "$myIPFS" \
-            --ipns_vault "/ipns/${NOSTRNS}" \
+            --ipns_vault "${NOSTRNS}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?
@@ -594,7 +594,7 @@ for PLAYER in "${NOSTR[@]}"; do
     cd - 2>&1 >/dev/null
 
     ########################################################################################
-    echo "## UPDATE MULTIPASS IPNS KEY $myIPFS/ipns/$NOSTRNS"
+    echo "## UPDATE MULTIPASS IPNS KEY $myIPFS$NOSTRNS"
     ########################################################################################
     ## UPDATE IPNS NOSTRVAULT KEY
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
@@ -603,7 +603,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## UPDATE IPNS RESOLVE
     NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
-    echo "${PLAYER} STORAGE: /ipns/$NOSTRNS = /ipfs/${NOSTRIPFS}"
+    echo "${PLAYER} STORAGE: $NOSTRNS = /ipfs/${NOSTRIPFS}"
 
     ## MEMORIZE TODATE PUBLISH (reduce publish if APP was modified or once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
