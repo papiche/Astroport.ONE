@@ -136,7 +136,7 @@ send_memory_access_denied() {
     
     (
     source $HOME/.zen/Astroport.ONE/tools/my.sh
-    source ~/.zen/game/players/.current/secret.nostr ## CAPTAIN SPEAKING
+    source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ## CAPTAIN SPEAKING
     if [[ "$pubkey" != "$HEX" && "$NSEC" != "" ]]; then
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
         
@@ -565,7 +565,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         fi
 
         ## LOAD CAPTAIN KEY
-        source ~/.zen/game/players/.current/secret.nostr
+        source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
         # ADD TO CAPTAIN FOLLOW LIST
         ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
 
@@ -589,7 +589,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             # KNAME est un email, sa clé hex est dans ~/.zen/game/nostr/{KNAME}/HEX
             if [[ -n "$KNAME" ]]; then
                 # Charger la clé privée du Capitaine
-                source ~/.zen/game/players/.current/secret.nostr
+                source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
                 NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
                 
                 # Récupérer la clé hex de KNAME
