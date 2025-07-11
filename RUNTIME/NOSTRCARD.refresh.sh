@@ -101,8 +101,8 @@ should_refresh() {
 
     local refresh_time=$(cat "$refresh_time_file")
     local last_refresh=$(cat "$last_refresh_file")
-    local last_udrive=$(cat "$last_udrive_file")
-    local last_uworld=$(cat "$last_uworld_file")
+    local last_udrive=$(cat "$last_udrive_file" 2>/dev/null)
+    local last_uworld=$(cat "$last_uworld_file" 2>/dev/null)
 
     # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée ## 24 H spreading
     # Patch: Compare times as seconds since midnight to avoid string comparison issues
@@ -230,7 +230,7 @@ for PLAYER in "${NOSTR[@]}"; do
             while [[ $attempts -lt 3 && $success == false ]]; do
                 BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
                 if [[ ! -z $BMAS_NODE ]]; then
-                    echo "Trying primal check with GVA NODE: $BMAS_NODE (attempt $((attempts + 1)))"
+                    echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
                     silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${g1pub} 2>/dev/null)
                     if echo "$silkaj_output" | jq empty 2>/dev/null; then
@@ -391,6 +391,9 @@ for PLAYER in "${NOSTR[@]}"; do
     ## PRIMAL RX SOURCE ?!
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
     [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB ## MISSING DAY 1 PRIMAL : UPLANET ORIGIN
+    ## CHECKING PRIMAL IPFS conversion
+    G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs ${G1PRIME})
+    [[ -z $G1PRIME_IPFS ]] && rm ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null && G1PRIME=""
 
     ########################################################################
     ## STATION OFFICIAL UPASSPORT = UPassport + 1 G1 RX (from WoT member)
