@@ -88,16 +88,29 @@ get_wallet_history() {
         if [[ ! -z $BMAS_NODE ]]; then
             echo "Trying history with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
+            # Get the full JSON response and extract history array
             ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            silkaj --endpoint "$BMAS_NODE" --json money history ${wallet_pubkey} 2>/dev/null | jq '.history' > ${output_file}
+            silkaj --endpoint "$BMAS_NODE" --json money history ${wallet_pubkey} 2>/dev/null > ${output_file}.full
 
-            if [[ -s ${output_file} ]]; then
-                success=true
-                # Cache the result
-                mkdir -p "$HOME/.zen/tmp/coucou"
-                cp "$output_file" "$cache_file"
-                break
+            if [[ -s ${output_file}.full ]]; then
+                # Extract and transform the history to the expected format
+                jq -r '.history[] | {
+                    date: .Date,
+                    pubkey: (.["Issuers/Recipients"] | split(":")[0]),
+                    amount: (.["Amounts Ğ1"] | tonumber),
+                    comment: .Reference
+                }' ${output_file}.full > ${output_file}
+
+                if [[ -s ${output_file} ]]; then
+                    success=true
+                    # Cache the result
+                    mkdir -p "$HOME/.zen/tmp/coucou"
+                    cp "$output_file" "$cache_file"
+                    rm -f ${output_file}.full
+                    break
+                fi
             fi
+            rm -f ${output_file}.full
         fi
 
         attempts=$((attempts + 1))
@@ -161,10 +174,10 @@ terminate_wallet() {
     local intrusion_count="$5"
 
     echo "TERMINATING WALLET due to $intrusion_count intrusions"
-    
+
     # Get current balance
     local balance=$(silkaj --json money balance ${wallet_pubkey} 2>/dev/null | jq -r '.balances.total // 0')
-    
+
     if [[ -n "$balance" && "$balance" != "null" && $(echo "$balance > 0" | bc -l) -eq 1 ]]; then
         # Send remaining balance to master primal
         ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${balance}" "${master_primal}" "WALLET:TERMINATION:INTRUSION:${intrusion_count}" 2>/dev/null
@@ -182,24 +195,24 @@ count_existing_intrusions() {
     local wallet_pubkey="$1"
     local master_primal="$2"
     local temp_history_file="$3"
-    
+
     local intrusion_count=0
-    
+
     if [[ -s "$temp_history_file" ]]; then
         # Convert JSON to inline format for processing
         local inline_history_file=$(mktemp)
         cat "$temp_history_file" | jq -rc '.[]' > "$inline_history_file"
-        
+
         # Count refund transactions that match intrusion pattern
         while read LINE; do
             [[ -z "$LINE" ]] && continue
-            
+
             local JSON="$LINE"
             local TXIDATE=$(echo "$JSON" | jq -r '.date')
             local TXIPUBKEY=$(echo "$JSON" | jq -r '.pubkey')
             local TXIAMOUNT=$(echo "$JSON" | jq -r '.amount')
             local COMMENT=$(echo "$JSON" | jq -r '.comment // ""')
-            
+
             # Look for outgoing transactions (negative amount) with intrusion comments
             if [[ $(echo "$TXIAMOUNT < 0" | bc -l) -eq 1 ]]; then
                 # Check if this is a refund for intrusion - multiple patterns to catch all variations
@@ -213,10 +226,10 @@ count_existing_intrusions() {
                 fi
             fi
         done < "$inline_history_file"
-        
+
         rm -f "$inline_history_file"
     fi
-    
+
     echo "$intrusion_count"
 }
 
@@ -289,7 +302,7 @@ control_primal_transactions() {
             # Verify if transaction is from a valid wallet with same primal
             if [[ "$master_primal" != "$tx_primal" ]]; then
                 echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
-                
+
                 # Check if we've already reached the maximum intrusions
                 local current_total=$((existing_intrusions + new_intrusions))
                 if [[ $current_total -ge $max_intrusions ]]; then
@@ -298,18 +311,18 @@ control_primal_transactions() {
                     rm -f "$temp_history_file" "$inline_history_file"
                     return 0
                 fi
-                
+
                 # Refund the transaction
                 ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${TXIPUBKEY}" "PRIMAL:${master_primal:0:8}:INTRUSION" 2>/dev/null
-                
+
                 if [[ $? -eq 0 ]]; then
                     echo "INTRUSION REFUNDED: ${TXIAMOUNT} G1 sent back to ${TXIPUBKEY:0:8}"
                     new_intrusions=$((new_intrusions + 1))
-                    
+
                     # Send intrusion alert
                     local total_intrusions=$((existing_intrusions + new_intrusions))
                     send_alert_email "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$total_intrusions" "intrusion"
-                    
+
                     # Check if this refund reaches the maximum
                     if [[ $total_intrusions -ge $max_intrusions ]]; then
                         echo "MAXIMUM INTRUSIONS REACHED ($total_intrusions/$max_intrusions) - TERMINATING WALLET"
@@ -363,4 +376,4 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     fi
 
     control_primal_transactions "$@"
-fi 
+fi
