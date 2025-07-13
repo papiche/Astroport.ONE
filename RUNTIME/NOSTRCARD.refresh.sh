@@ -392,7 +392,7 @@ for PLAYER in "${NOSTR[@]}"; do
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
     [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB ## MISSING DAY 1 PRIMAL : UPLANET ORIGIN
     ## CHECKING PRIMAL IPFS conversion
-    G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs ${G1PRIME})
+    G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PRIME})
     [[ -z $G1PRIME_IPFS ]] && rm ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null && G1PRIME=""
 
     ########################################################################
@@ -561,7 +561,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ########################################################################################
     echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
-    
+
     # Use the generic primal wallet control function
     if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
         # Get DISCO from PLAYER to create dunikey if needed
