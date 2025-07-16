@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test script for nostr_send_dm.py (interactive, send as CAPTAIN)
 
-CAPTAIN_SECRET="$HOME/.zen/game/players/.current/secret.nostr"
+CAPTAIN_SECRET="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
 if [[ ! -f "$CAPTAIN_SECRET" ]]; then
     echo "❌ Captain secret file not found: $CAPTAIN_SECRET"
     exit 1

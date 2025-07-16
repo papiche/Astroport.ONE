@@ -102,32 +102,40 @@ if [[ -s ~/.zen/game/secret.june && ! -s ~/.zen/game/secret.nostr ]]; then
 fi
 
 ######################################### CAPTAIN RELATED
-## CREATE ~/.zen/game/players/.current/secret.nostr
-if [[ -s ~/.zen/game/players/.current/secret.june ]]; then
-    source ~/.zen/game/players/.current/secret.june
-    CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$SALT" "$PEPPER")
-    CAPTAINCOINS=$($MY_PATH/tools/COINScheck.sh ${CAPTAING1PUB} | tail -n 1)
-    CAPTAINZEN=$(echo "($CAPTAINCOINS - 1) * 10" | bc | cut -d '.' -f 1)
-    captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
-    captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
-    captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER" -s)
-    echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
-        > ~/.zen/game/players/.current/secret.nostr
-    chmod 600 ~/.zen/game/players/.current/secret.nostr
+## TODO REMOVE THIS CORRECTION
+rm ~/.zen/game/players/.current/secret.nostr 2>/dev/null ## Correct nostr secret
+rm ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr 2>/dev/null
+## CREATE ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
+    DISCO=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.disco)
+    IFS='=&' read -r s salt p pepper <<< "$DISCO"
+    if [[ -n $salt && -n $pepper ]]; then
+        CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$salt" "$pepper")
+        CAPTAINCOINS=$($MY_PATH/tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
+        CAPTAINZEN=$(echo "($CAPTAINCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+        captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper")
+        captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
+        captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper" -s)
+        echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
+            > ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+        chmod 600 ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
 
-    ## Add CAPTAIN HEX to nostr WhiteList
-    mkdir -p ~/.zen/game/nostr/CAPTAIN
-    echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
-    echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
+        ## Add CAPTAIN HEX to nostr WhiteList
+        mkdir -p ~/.zen/game/nostr/CAPTAIN
+        echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
+        echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
 
-    ## REFRESH ZSWARM & HEX_CAPTAIN
-    mkdir -p ~/.zen/game/nostr/ZSWARM
-    cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
-    cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
+        ## REFRESH ZSWARM collect HEX & HEX_CAPTAIN
+        mkdir -p ~/.zen/game/nostr/ZSWARM
+        cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
+        cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
+    else
+        echo "ERROR : CAPTAIN BAD DISCO DECODING" >> ~/.zen/game/nostr/$CAPTAINEMAIL/ERROR
+    fi
 
 else
 
-    rm -Rf ~/.zen/game/nostr/CAPTAIN
+    rm -Rf ~/.zen/game/nostr/CAPTAIN 2>/dev/null
 
 fi
 ##################################################

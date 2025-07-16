@@ -138,7 +138,7 @@ done
 # Test 4: Test with Captain's key
 echo "👨‍✈️ Test 4: Testing with Captain's key"
 echo "------------------------------------"
-CAPTAIN_SECRET="$HOME/.zen/game/players/.current/secret.nostr"
+CAPTAIN_SECRET="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
 
 if [[ -f "$CAPTAIN_SECRET" ]]; then
     echo "Found Captain's secret file: $CAPTAIN_SECRET"
