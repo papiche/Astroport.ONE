@@ -683,10 +683,10 @@ for PLAYER in ${PLAYERONE[@]}; do
             echo "[7 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
             ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
         else
-            echo "[7 DAYS CYCLE] ZCARD ($COINS G1) UNPLUG !!"
-            $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN MEMBERSHIP ENDED" "MEMBERSHIP..."
-            [[ ${PLAYER} != ${CAPTAINEMAIL} ]] \
-                && ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
+            echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
+            if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
+                $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN CARD UNPLUG ($COINS Ğ1)" "ZEN CARD UNPLUG..."
+                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
             continue
         fi
     fi
