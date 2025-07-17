@@ -89,7 +89,7 @@ nostpy-cli send_event \
     -kind 3 \
     -content "" \
     -tags "$NEW_TAGS" \
-    --relay "$RELAY"
+    --relay "$RELAY" 2>/dev/null
 
-echo "Follow list updated with ${#@} new entries"
+echo "Follow list updated with ${#@} new entries ($NEW_TAGS)"
 exit 0

@@ -687,7 +687,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
                 $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN CARD UNPLUG ($COINS Ğ1)" "ZEN CARD UNPLUG..."
                 ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
-            continue
+            fi
         fi
     fi
 

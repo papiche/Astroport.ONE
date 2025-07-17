@@ -82,6 +82,10 @@ if [[ $(echo "$DAILYG1 > 0" | bc -l) -eq 1 ]]; then
         fi
     else
         echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
+        if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
+            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+            chmod 600 ~/.zen/game/uplanet.dunikey
+        fi
         ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$IPFSNODEID:INIT" 2>/dev/null
     fi
 fi
