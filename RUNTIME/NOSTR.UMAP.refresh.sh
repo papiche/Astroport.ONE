@@ -294,29 +294,7 @@ process_recent_messages() {
             process_market_images "$content" "$UMAPPATH"
             create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
         fi
-    done | head -n 25
-}
-
-process_single_message() {
-    local message=$1
-    local UMAPPATH=$2
-    local LAT=$3
-    local LON=$4
-    local ami=$5
-
-    local content=$(echo "$message" | jq -r .content)
-    local message_id=$(echo "$message" | jq -r .id)
-    local created_at=$(echo "$message" | jq -r .created_at)
-
-    mkdir -p "${UMAPPATH}/APP/uMARKET/Images"
-    mkdir -p "${UMAPPATH}/APP/uMARKET/ads"
-
-    if [[ "$content" == *"#market"* ]]; then
-        process_market_images "$content" "$UMAPPATH" "$LAT" "$LON"
-        create_market_ad "$content" "${message_id}" "$UMAPPATH" "$LAT" "$LON" "$ami" "$created_at"
-    fi
-
-    echo "$content" >> ${UMAPPATH}/NOSTR_messages
+    done | head -n 50 # limit to 50 messages a day from each friend
 }
 
 process_market_images() {
@@ -735,8 +713,6 @@ create_region_journal() {
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
 
-    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## Get UMAP ENV for REGION
-    
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$REGSEC" \
         "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
