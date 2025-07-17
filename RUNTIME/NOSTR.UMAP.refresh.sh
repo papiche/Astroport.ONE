@@ -759,9 +759,9 @@ update_friends_list() {
     # Update friends list using nostr_follow.sh
     if [[ ${#friends[@]} -gt 0 ]]; then
         $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY"
-        echo "Updated friends list with ${#friends[@]} active friends"
+        echo "(${LAT} ${LON}) Updated friends list with ${#friends[@]} active friends "
     else
-        echo "No active friends to update"
+        echo "(${LAT} ${LON}) No active friends to update"
     fi
 }
 
