@@ -28,6 +28,10 @@ SECTORS=()
 STAGS=()
 REGIONS=()
 RTAGS=()
+ACTIVE_FRIENDS=()  # Global array for active friends
+TAGS=()            # Global array for tags
+LAT=""             # Global current latitude
+LON=""             # Global current longitude
 
 ################################################################################
 # Utility Functions
@@ -36,6 +40,20 @@ RTAGS=()
 check_dependencies() {
     [[ ! -s $MY_PATH/../tools/my.sh ]] && echo "ERROR. Astroport.ONE is missing !!" && exit 1
     source $MY_PATH/../tools/my.sh
+    
+    # Check for required external tools
+    local missing_tools=()
+    
+    [[ ! -x $(command -v jq) ]] && missing_tools+=("jq")
+    [[ ! -x $(command -v nostpy-cli) ]] && missing_tools+=("nostpy-cli")
+    [[ ! -x $(command -v ipfs) ]] && missing_tools+=("ipfs")
+    [[ ! -d ~/.zen/strfry ]] && missing_tools+=("strfry directory")
+    [[ ! -s $MY_PATH/../IA/question.py ]] && missing_tools+=("question.py")
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        echo "ERROR. Missing required dependencies: ${missing_tools[*]}"
+        exit 1
+    fi
 }
 
 display_banner() {
@@ -65,8 +83,17 @@ NOTR.UMAP.refresh.sh'
 process_umap_messages() {
     local hexline=$1
     local hex=$(cat $hexline)
-    local LAT=$(makecoord $(echo $hexline | cut -d '_' -f 2))
-    local LON=$(makecoord $(echo $hexline | cut -d '_' -f 3 | cut -d '/' -f 1))
+    
+    # Set global coordinates for this UMAP
+    LAT=$(makecoord $(echo $hexline | cut -d '_' -f 2))
+    LON=$(makecoord $(echo $hexline | cut -d '_' -f 3 | cut -d '/' -f 1))
+    
+    # Validate coordinates
+    if [[ -z "$LAT" || -z "$LON" ]]; then
+        echo "ERROR: Invalid coordinates from $hexline"
+        return 1
+    fi
+    
     local SLAT="${LAT::-1}"
     local SLON="${LON::-1}"
     local RLAT=$(echo ${LAT} | cut -d '.' -f 1)
@@ -78,7 +105,7 @@ process_umap_messages() {
 
     SECTORS+=("_${SLAT}_${SLON}")
 
-    process_umap_friends "$hex" "$UMAPPATH" "$LAT" "$LON"
+    process_umap_friends "$hex" "$UMAPPATH"
 
     # Appel IA si journal UMAP trop long
     MAX_MSGS=10
@@ -98,16 +125,14 @@ process_umap_messages() {
         fi
     fi
 
-    setup_umap_identity "$LAT" "$LON" "$UMAPPATH"
+    setup_umap_identity "$UMAPPATH"
 }
 
 process_umap_friends() {
     local hex=$1
     local UMAPPATH=$2
-    local LAT=$3
-    local LON=$4
 
-    # Initialize NPRIV_HEX early for this UMAP
+    # Initialize NPRIV_HEX early for this UMAP using global coordinates
     local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
 
@@ -118,11 +143,12 @@ process_umap_friends() {
 
     cd ~/.zen/strfry
 
-    local TAGS=()
-    local ACTIVE_FRIENDS=()
+    # Reset global arrays for this UMAP
+    TAGS=()
+    ACTIVE_FRIENDS=()
 
     for ami in ${friends[@]}; do
-        process_friend_messages "$ami" "$UMAPPATH" "$LAT" "$LON" "$SINCE" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
+        process_friend_messages "$ami" "$UMAPPATH" "$SINCE" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
     done
 
     update_friends_list "${ACTIVE_FRIENDS[@]}"
@@ -132,12 +158,10 @@ process_umap_friends() {
 process_friend_messages() {
     local ami=$1
     local UMAPPATH=$2
-    local LAT=$3
-    local LON=$4
-    local SINCE=$5
-    local WEEK_AGO=$6
-    local MONTH_AGO=$7
-    local NPRIV_HEX=$8
+    local SINCE=$3
+    local WEEK_AGO=$4
+    local MONTH_AGO=$5
+    local NPRIV_HEX=$6
 
     local PROFILE=$(./strfry scan '{
       "kinds": [0],
@@ -162,7 +186,7 @@ process_friend_messages() {
         echo "👤 UNKNOWN VISITOR" >> ${UMAPPATH}/NOSTR_messages
     fi
 
-    process_recent_messages "$ami" "$UMAPPATH" "$LAT" "$LON" "$SINCE"
+    process_recent_messages "$ami" "$UMAPPATH" "$SINCE"
 }
 
 handle_active_friend() {
@@ -211,6 +235,7 @@ handle_active_friend_activity() {
     local WEEK_AGO=$3
     local NPRIV_HEX=$4
 
+    # Add to global arrays
     ACTIVE_FRIENDS+=("$ami")
     TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
 
@@ -244,9 +269,7 @@ send_reminder_message() {
 process_recent_messages() {
     local ami=$1
     local UMAPPATH=$2
-    local LAT=$3
-    local LON=$4
-    local SINCE=$5
+    local SINCE=$3
 
     # Récupère le profil source
     local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
@@ -268,8 +291,8 @@ process_recent_messages() {
 
         # (Optionnel) Traite les images #market comme avant
         if [[ "$content" == *"#market"* ]]; then
-            process_market_images "$content" "$UMAPPATH" "$LAT" "$LON"
-            create_market_ad "$content" "${message_id}" "$UMAPPATH" "$LAT" "$LON" "$ami" "$created_at"
+            process_market_images "$content" "$UMAPPATH"
+            create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
         fi
     done | head -n 25
 }
@@ -299,8 +322,6 @@ process_single_message() {
 process_market_images() {
     local content=$1
     local UMAPPATH=$2
-    local LAT=$3
-    local LON=$4
 
     local image_urls=$(echo "$content" | grep -o 'https\?://[^[:space:]]*\.\(jpg\|jpeg\|png\|gif\)')
     if [[ -n "$image_urls" ]]; then
@@ -318,10 +339,8 @@ create_market_ad() {
     local content=$1
     local message_id=$2
     local UMAPPATH=$3
-    local LAT=$4
-    local LON=$5
-    local ami=$6
-    local created_at=$7
+    local ami=$4
+    local created_at=$5
 
     # Get author profile information
     local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
@@ -436,9 +455,7 @@ cleanup_old_images() {
 }
 
 setup_umap_identity() {
-    local LAT=$1
-    local LON=$2
-    local UMAPPATH=$3
+    local UMAPPATH=$1
 
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     STAGS+=("[\"p\", \"$SECTORHEX\", \"$myRELAY\", \"$SECTOR\"]")
@@ -691,7 +708,7 @@ create_region_journal() {
     # Génère le résumé AI si besoin
     if [[ -s $regionpath/NOSTR_journal ]]; then
         local ANSWER=$(generate_ai_summary "$(cat $regionpath/NOSTR_journal)")
-    echo "$ANSWER" > $regionpath/NOSTR_journal
+        echo "$ANSWER" > $regionpath/NOSTR_journal
     fi
 
     # Après avoir généré le journal régional (dans create_region_journal, sur $regionpath/NOSTR_journal)
@@ -718,6 +735,8 @@ create_region_journal() {
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
 
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## Get UMAP ENV for REGION
+    
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$REGSEC" \
         "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
@@ -753,7 +772,7 @@ create_region_journal() {
 update_friends_list() {
     local friends=("$@")
 
-    # Get UMAP NSEC from environment
+    # Get UPlanet UMAP NSEC with LAT and LON
     local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
 
     # Update friends list using nostr_follow.sh
@@ -784,6 +803,12 @@ main() {
 
     # Process UMAPs
     for hexline in $(ls ~/.zen/game/nostr/UMAP_*_*/HEX); do
+        # Reset global variables for each UMAP to ensure clean state
+        LAT=""
+        LON=""
+        TAGS=()
+        ACTIVE_FRIENDS=()
+        
         process_umap_messages "$hexline"
     done
 
