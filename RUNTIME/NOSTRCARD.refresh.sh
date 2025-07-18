@@ -179,6 +179,7 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "==============================="
     echo "PLAYER = $PLAYER"
     echo "==============================="
+    start=$(date +%s)
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
 
     ## SWARM CACHE PUBLISHING
@@ -586,7 +587,9 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay
     fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))
-    printf "%s\n" "${fof_list[@]}" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+    if [[ ${#fof_list[@]} -gt 0 ]]; then
+        printf "%s\n" "${fof_list[@]}" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+    fi
 
     ## EXPORT NOSTR EVENTS TO JSON
     echo "Exporting NOSTR events for ${PLAYER}..."
@@ -610,8 +613,9 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## MEMORIZE TODATE PUBLISH (reduce publish if APP was modified or once a day)
     echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
-    echo "___________________________________________________"
-    sleep 1
+    echo "___________________________________________________ $TODATE"
+    stop=$(date +%s)
+    echo "## MULTIPASS refresh DONE in $((stop - start)) seconds"
 
 done
 

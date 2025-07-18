@@ -12,6 +12,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # LOAD EXTRA DATA TO CACHE ~/.zen/tmp/${IPFSNODEID}/
 # PUBLISH STATION BALISE
 ############################################
+start=$(date +%s)
 echo "
  _   _  ___  ____  _____             __               _     
 | \ | |/ _ \|  _ \| ____|  _ __ ___ / _|_ __ ___  ___| |__  
@@ -170,8 +171,17 @@ for nhex in ${REGIONHEXLIST[@]}; do
     echo "$hex" > ~/.zen/game/nostr/REGION$hexumap/HEX
 done
 
+########################################################
+## REFRESH ZSWARM collect HEX & HEX_CAPTAIN
+########################################################
+mkdir -p ~/.zen/game/nostr/ZSWARM
+cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
+cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
+
+
 # COPY strfry nostr blacklist.txt to ~/.zen/tmp/$IPFSNODEID/
-cp "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/blacklist.txt
+echo "COPY strfry nostr blacklist.txt to ~/.zen/tmp/$IPFSNODEID/blacklist.txt"
+cp -f "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/blacklist.txt
 
 ########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
@@ -183,5 +193,7 @@ fi
 ## Refresh Ustats.json
 curl -s http://localhost:54321 > /dev/null
 ########################################################
+stop=$(date +%s)
+echo "## NODE.refresh.sh DONE in $((stop - start)) seconds"
 
 exit 0
