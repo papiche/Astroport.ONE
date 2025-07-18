@@ -260,7 +260,12 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
-    pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
+    primal_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${primal}) # Validate PRIMAL IPFS conversion
+    if [[ -z ${primal_IPFS} ]]; then
+        rm ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null
+    else
+        pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
+    fi
 
     ############################################################################
     ###################### DISCO DECRYPTION - with Captain + UPlanet parts
