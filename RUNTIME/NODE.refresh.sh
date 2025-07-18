@@ -85,8 +85,8 @@ if [[ ! -s ~/.zen/game/secret.dunikey && -s ~/.ssh/id_ed25519 ]]; then
 fi
 
 ######################################################
-echo "~/.zen/game/nostr/ 3 DAYS OLD LISTING"
-find ~/.zen/game/nostr/ -mtime +3 -type d -exec echo '{}' \;
+#echo "~/.zen/game/nostr/ 3 DAYS OLD LISTING"
+# find ~/.zen/game/nostr/ -mtime +3 -type d -exec echo '{}' \;
 ######################################################
 ## WRITE NOSTR HEX ADDRESS (strfry whitelisting)
 ##########################################################
