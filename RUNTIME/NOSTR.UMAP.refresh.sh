@@ -152,7 +152,13 @@ process_umap_friends() {
     done
 
     update_friends_list "${ACTIVE_FRIENDS[@]}"
-    setup_ipfs_structure "$UMAPPATH" "$NPRIV_HEX"
+    
+    # Check if UMAP has no active friends and clean up cache if needed
+    if [[ ${#ACTIVE_FRIENDS[@]} -eq 0 ]]; then
+        rm -Rf "$UMAPPATH" ## Remove UMAP cache if no active friends
+    else
+        setup_ipfs_structure "$UMAPPATH" "$NPRIV_HEX"
+    fi
 }
 
 process_friend_messages() {
@@ -560,6 +566,8 @@ create_sector_journal() {
         message_text="$(cat ${HOME}/.zen/tmp/swarm/*/UPLANET/SECTORS/_${rlat}_${rlon}/${sector}/NOSTR_journal)"
         if [[ -z "$message_text" ]]; then
             echo "No NOSTR_messages found for sector ${sector}"
+            # Clean up empty sector cache
+            rm -Rf "$sectorpath"
             return
         fi
     fi
@@ -709,7 +717,7 @@ create_region_journal() {
     local rlat=$(echo ${region} | cut -d '_' -f 2)
     local rlon=$(echo ${region} | cut -d '_' -f 3)
 
-    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## Get UMAP ENV for REGION
+    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## Get UMAP ENV for REGION = export REGIONHEX...
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
 
@@ -738,6 +746,9 @@ create_region_journal() {
             -kind 1 \
             -content "$(cat $regionpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
             --relay "$myRELAY" 2>/dev/null
+    else
+        # Clean up empty region cache
+        rm -Rf "$regionpath"
     fi
 }
 
