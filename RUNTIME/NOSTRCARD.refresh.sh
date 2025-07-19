@@ -7,10 +7,14 @@
 #~ NOSTRCARD.refresh.sh
 #~ Refresh NOSTR Card data & wallet
 ################################################################################
-# Ce script gère le rafraîchissement des cartes NOSTR :
+# Ce script gère l'évolution des cartes NOSTR (MULTIPASS) selon leur état :
 # 1. Vérifie et met à jour les données des cartes NOSTR
-# 2. Gère les paiements des cartes NOSTR
+# 2. Gère les paiements des cartes NOSTR (cycles 7 jours)
 # 3. Implémente le système de distribution des bénéfices
+# 4. Évolue le compte selon le type de PRIMAL :
+#    - PRIMAL = UPlanet wallet : Compte UPlanet ORIGIN (EnfinLibre)
+#    - PRIMAL = Membre G1 : Compte UPlanet ZEN avec UPassport N1
+# 5. Crée ZenCard pour les comptes UPlanet ZEN (primo transaction membre Ğ1)
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -228,6 +232,13 @@ for PLAYER in "${NOSTR[@]}"; do
             local success=false
             local result=""
 
+            # Validate G1PUB format and convert to IPFS to ensure it's valid
+            local g1pub_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1pub} 2>/dev/null)
+            if [[ -z $g1pub_ipfs ]]; then
+                echo "ERROR: INVALID G1PUB: $g1pub"
+                return 1
+            fi
+
             while [[ $attempts -lt 3 && $success == false ]]; do
                 BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
                 if [[ ! -z $BMAS_NODE ]]; then
@@ -237,8 +248,14 @@ for PLAYER in "${NOSTR[@]}"; do
                     if echo "$silkaj_output" | jq empty 2>/dev/null; then
                         g1prime=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey')
                         if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
-                            success=true
-                            break
+                            # Validate primal G1PUB as well
+                            local primal_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
+                            if [[ -n $primal_ipfs ]]; then
+                                success=true
+                                break
+                            else
+                                echo "Warning: Invalid primal G1PUB returned: $g1prime"
+                            fi
                         fi
                     else
                         echo "Warning: silkaj did not return valid JSON for $g1pub"
@@ -256,12 +273,15 @@ for PLAYER in "${NOSTR[@]}"; do
 
         g1prime=$(get_primal_transaction "${G1PUBNOSTR}")
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
-        [[ ! -z ${g1prime} && ${g1prime} != "null" ]] \
-            && echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+        if [[ $? -eq 0 && ! -z ${g1prime} && ${g1prime} != "null" ]]; then
+            echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+        else
+            echo "Failed to get primal transaction for ${G1PUBNOSTR}"
+        fi
     fi
 
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
-        pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
+    pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
 
     ############################################################################
     ###################### DISCO DECRYPTION - with Captain + UPlanet parts
@@ -392,7 +412,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## PRIMAL RX SOURCE ?!
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
     [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB ## MISSING DAY 1 PRIMAL : UPLANET ORIGIN
-    ## CHECKING PRIMAL IPFS conversion
+    ## CHECKING PRIMAL IPFS conversion (correction)
     G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PRIME})
     [[ -z $G1PRIME_IPFS ]] && rm ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null && G1PRIME=""
 
