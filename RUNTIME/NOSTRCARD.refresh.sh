@@ -174,6 +174,7 @@ should_refresh() {
         if [[ -n "$UDRIVE" ]]; then
             echo "$UDRIVE" > "${last_udrive_file}"
         fi
+        REFRESH_REASON="udrive_update"
         return 0
     fi
 
@@ -195,6 +196,7 @@ should_refresh() {
             && ipfs --timeout 20s pin rm $last_uworld ## remove old pin
         [[ -n $UWORLD ]] \
             && echo $UWORLD > "${last_uworld_file}"
+        REFRESH_REASON="uworld_update"
         return 0
     fi
 
@@ -714,8 +716,17 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
             echo "Daily refresh completed for ${PLAYER}"
             DAILY_UPDATES=$((DAILY_UPDATES + 1))
-        else
+        elif [[ "$REFRESH_REASON" == "new_files" ]]; then
             echo "IPNS updated due to new files for ${PLAYER}"
+            FILE_UPDATES=$((FILE_UPDATES + 1))
+        elif [[ "$REFRESH_REASON" == "udrive_update" ]]; then
+            echo "IPNS updated due to uDRIVE changes for ${PLAYER}"
+            FILE_UPDATES=$((FILE_UPDATES + 1))
+        elif [[ "$REFRESH_REASON" == "uworld_update" ]]; then
+            echo "IPNS updated due to uWORLD changes for ${PLAYER}"
+            FILE_UPDATES=$((FILE_UPDATES + 1))
+        else
+            echo "IPNS updated for ${PLAYER} (unknown reason: $REFRESH_REASON)"
             FILE_UPDATES=$((FILE_UPDATES + 1))
         fi
     else
