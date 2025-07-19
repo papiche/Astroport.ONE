@@ -28,7 +28,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ## CONTACT N1 WoT
 ## REFRESH N1/N2
 ############################################
-start=`date +%s`
+gstart=`date +%s`
 
 
 #### AVOID MULTIPLE RUN
@@ -742,7 +742,7 @@ for PLAYER in "${NOSTR[@]}"; do
 done
 
 end=`date +%s`
-dur=`expr $end - $start`
+dur=`expr $end - $gstart`
 hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 
