@@ -148,8 +148,9 @@ should_refresh() {
             return 0
         fi
     fi
+
     ##############################################
-    ## ACTIVATE & CHECK APP STRUCTURE
+    ## MULTIPASS APP UPDATE
     [[ ! -d ${player_dir}/APP/uDRIVE ]] \
         && rm -Rf ${player_dir}/APP \
         && mkdir -p ${player_dir}/APP/uDRIVE/
@@ -167,14 +168,15 @@ should_refresh() {
     echo "UDRIVE UDPATE : $myIPFS/ipfs/$UDRIVE"
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
     cd - 2>&1 >/dev/null
+    
     if [[ "$UDRIVE" != "$last_udrive" ]]; then
+        REFRESH_REASON="udrive_update"
         if [[ -n "$last_udrive" ]]; then
             ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
         fi
         if [[ -n "$UDRIVE" ]]; then
             echo "$UDRIVE" > "${last_udrive_file}"
         fi
-        REFRESH_REASON="udrive_update"
         return 0
     fi
 
@@ -192,11 +194,11 @@ should_refresh() {
     cd - 2>&1 >/dev/null
 
     if [[ "$UWORLD" != "$last_uworld" ]]; then
+        REFRESH_REASON="uworld_update"
         [[ -n $last_uworld ]] \
             && ipfs --timeout 20s pin rm $last_uworld ## remove old pin
         [[ -n $UWORLD ]] \
             && echo $UWORLD > "${last_uworld_file}"
-        REFRESH_REASON="uworld_update"
         return 0
     fi
 
@@ -235,7 +237,7 @@ for PLAYER in "${NOSTR[@]}"; do
     COINS=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
     [[ -z $COINS ]] && COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
 
-    ## Add to node then swarm published cache
+    ## Add to node => swarm cache propagation (used by search_for_this_hex/email_in_uplanet.sh)
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR ]]; then
         echo "$G1PUBNOSTR" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR
     fi

@@ -174,7 +174,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         echo "#########################################
 myIPFS=$myIPFS
 myASTROPORT=https://astroport.$MYDOMAIN
-uSPOT=https://u.$MYDOMAIN
+uSPOT=$uSPOT
 ###################################
 " > ~/.zen/Astroport.ONE/.env
 
