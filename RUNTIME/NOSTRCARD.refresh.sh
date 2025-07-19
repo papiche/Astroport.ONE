@@ -379,6 +379,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}" 2>/dev/null
                 [[ $? -eq 0 ]] \
                     && echo "${UPLANETG1PUB}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+                    && echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
             else
                 # UPlanet Zen : need Primo RX from UPlanet and WoT member
                 echo "UPlanet Zen : ${CAPTAINEMAIL} or INVALID CARD"
