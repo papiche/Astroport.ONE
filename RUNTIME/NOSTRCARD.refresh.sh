@@ -230,8 +230,10 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
+    COINS=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
+    [[ -z $COINS ]] && COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUBNOSTR} | tail -n 1)
 
+    ## Add to node then swarm published cache
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR ]]; then
         echo "$G1PUBNOSTR" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR
     fi
@@ -241,7 +243,6 @@ for PLAYER in "${NOSTR[@]}"; do
         ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     else
         ZEN=-10
-        echo "WARNING: Empty or invalid wallet state for ${PLAYER}"
     fi
 
     echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
@@ -305,6 +306,13 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
+    ## test &correction of primal format (g1_to_ipfs.py)
+    g1primetest=$( ${MY_PATH}/../tools/g1_to_ipfs.py ${primal} 2>/dev/null)
+    if [[ -z $g1primetest ]]; then
+        g1prime=$(get_primal_transaction "${G1PUBNOSTR}")
+        echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+        primal=${g1prime}
+    fi
     pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
 
     ############################################################################
