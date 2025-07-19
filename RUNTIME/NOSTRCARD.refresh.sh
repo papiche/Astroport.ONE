@@ -51,6 +51,14 @@ echo "## RUNNING NOSTRCARD.refresh.sh
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}
 
+# Initialize counters for summary
+DAILY_UPDATES=0
+FILE_UPDATES=0
+SKIPPED_PLAYERS=0
+PAYMENTS_PROCESSED=0
+PAYMENTS_FAILED=0
+PAYMENTS_ALREADY_DONE=0
+
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
     local player="$1"
@@ -81,6 +89,12 @@ initialize_account() {
     # Initialiser le fichier BIRTHDATE si nécessaire
     [[ ! -s "${player_dir}/TODATE" ]] && echo "$TODATE" > "${player_dir}/TODATE"
 
+    # Initialiser le fichier de dernière mise à jour IPNS
+    date +%s > "${player_dir}/.last_ipns_update"
+
+    # Initialiser le fichier de dernier paiement
+    echo "" > "${player_dir}/.lastpayment"
+
     echo "Account ${PLAYER} initialized with refresh time: ${random_time}"
 }
 
@@ -93,9 +107,11 @@ should_refresh() {
     local last_refresh_file="${player_dir}/.todate"
     local last_udrive_file="${player_dir}/.udrive"
     local last_uworld_file="${player_dir}/.uworld"
+    local last_ipns_update_file="${player_dir}/.last_ipns_update"
 
     UDRIVE=""
     UWORLD=""
+    REFRESH_REASON=""
 
     # Si le compte n'est pas initialisé, l'initialiser
     if [[ ! -d "$player_dir" ]] || [[ ! -s "$refresh_time_file" ]]; then
@@ -107,15 +123,28 @@ should_refresh() {
     local last_refresh=$(cat "$last_refresh_file")
     local last_udrive=$(cat "$last_udrive_file" 2>/dev/null)
     local last_uworld=$(cat "$last_uworld_file" 2>/dev/null)
+    local last_ipns_update=$(cat "$last_ipns_update_file" 2>/dev/null)
 
-    # Si c'est un nouveau jour et que l'heure de rafraîchissement est passée ## 24 H spreading
-    # Patch: Compare times as seconds since midnight to avoid string comparison issues
+    # Vérification 1: Mise à jour quotidienne (une fois par jour à l'heure aléatoire)
     if [[ "$last_refresh" != "$TODATE" ]]; then
         # Convert current_time and refresh_time (HH:MM) to seconds since midnight
         current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
         refresh_seconds=$((10#${refresh_time%%:*} * 3600 + 10#${refresh_time##*:} * 60))
         # Check if we're in the hour following the refresh time (within 1 hour window)
         if [[ $current_seconds -gt $refresh_seconds && $current_seconds -le $((refresh_seconds + 3600)) ]]; then
+            REFRESH_REASON="daily_update"
+            echo "Daily refresh needed for ${PLAYER} (scheduled time: ${refresh_time})"
+            return 0
+        fi
+    fi
+
+    # Vérification 2: Nouveaux fichiers détectés depuis la dernière mise à jour IPNS
+    if [[ -n "$last_ipns_update" ]]; then
+        # Find files modified since last IPNS update
+        new_files=$(find "$player_dir" -type f -newer "$last_ipns_update_file" 2>/dev/null | wc -l)
+        if [[ $new_files -gt 0 ]]; then
+            REFRESH_REASON="new_files"
+            echo "New files detected since last IPNS update: $new_files files for ${PLAYER}"
             return 0
         fi
     fi
@@ -217,11 +246,6 @@ for PLAYER in "${NOSTR[@]}"; do
 
     echo "${G1PUBNOSTR} ______ AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
 
-    refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"
-    echo "\m/_(>_<)_\m/ ($refreshtime) : ${PLAYER} $COINS G1 -> ${ZEN} ZEN : ${HEX} UDRIVE : $(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
-
-    # Vérifier si le rafraîchissement est nécessaire
-    should_refresh "${PLAYER}" || continue
 
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL RX CHECK
@@ -369,21 +393,51 @@ for PLAYER in "${NOSTR[@]}"; do
     BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
     # Calculate the difference in days
     DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+    
+    # Calculate next payment date (next multiple of 7 days from birthdate)
+    NEXT_PAYMENT_DAYS=$(( ((DIFF_DAYS / 7) + 1) * 7 ))
+    NEXT_PAYMENT_SECONDS=$(( BIRTHDATE_SECONDS + (NEXT_PAYMENT_DAYS * 86400) ))
+    NEXT_PAYMENT_DATE=$(date -d "@$NEXT_PAYMENT_SECONDS" '+%Y-%m-%d')
+    
+    # Get player's refresh time for payment hour
+    PLAYER_REFRESH_TIME=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
+    [[ -z "$PLAYER_REFRESH_TIME" ]] && PLAYER_REFRESH_TIME="00:00"
+    
+    echo "💰 Next weekly payment for ${PLAYER}: $NEXT_PAYMENT_DATE at $PLAYER_REFRESH_TIME (in $((NEXT_PAYMENT_DAYS - DIFF_DAYS)) days)"
+    
     # Check if the difference is a multiple of 7 // Weekly cycle
     if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
         if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
-            if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
-                ## Pay NCARD to CAPTAIN
-                [[ -z $NCARD ]] && NCARD=1
-                Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                echo "[7 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT ($COINS G1) !!"
-                [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
-                    && ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
+            # Check if payment was already made today
+            last_payment_file="${HOME}/.zen/game/nostr/${PLAYER}/.lastpayment"
+            if [[ ! -s "$last_payment_file" ]] || [[ "$(cat "$last_payment_file")" != "$TODATE" ]]; then
+                if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+                    ## Pay NCARD to CAPTAIN
+                    [[ -z $NCARD ]] && NCARD=1
+                    Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+                    echo "[7 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT ($COINS G1) !!"
+                    if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
+                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF" 2>/dev/null)
+                        if [[ $? -eq 0 ]]; then
+                            # Record successful payment
+                            echo "$TODATE" > "$last_payment_file"
+                            echo "✅ Weekly payment recorded for ${PLAYER} on $TODATE"
+                            PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+                        else
+                            echo "❌ Weekly payment failed for ${PLAYER} on $TODATE"
+                            PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
+                        fi
+                    fi
+                else
+                    echo "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds !!"
+                    if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
+                        ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
+                    fi
+                    continue
+                fi
             else
-                echo "[7 DAYS CYCLE] NOSTR Card ($COINS G1) !!"
-                [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
-                    && ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
-                continue
+                echo "[7 DAYS CYCLE] Weekly payment already processed for ${PLAYER} on $TODATE"
+                PAYMENTS_ALREADY_DONE=$((PAYMENTS_ALREADY_DONE + 1))
             fi
         fi
     else
@@ -414,7 +468,9 @@ for PLAYER in "${NOSTR[@]}"; do
     [[ -z $G1PRIME ]] && G1PRIME=$UPLANETG1PUB ## MISSING DAY 1 PRIMAL : UPLANET ORIGIN
     ## CHECKING PRIMAL IPFS conversion (correction)
     G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PRIME})
-    [[ -z $G1PRIME_IPFS ]] && rm ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null && G1PRIME=""
+    [[ -z $G1PRIME_IPFS ]] \
+        && rm ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null \
+        && G1PRIME="" ## cleaning G1PRIME (bad format)
 
     ########################################################################
     ## STATION OFFICIAL UPASSPORT = UPassport + 1 G1 RX (from WoT member)
@@ -611,28 +667,52 @@ for PLAYER in "${NOSTR[@]}"; do
         printf "%s\n" "${fof_list[@]}" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
     fi
 
-    ## EXPORT NOSTR EVENTS TO JSON
-    echo "Exporting NOSTR events for ${PLAYER}..."
-    cd ${HOME}/.zen/strfry/
-    ./strfry scan '{"authors": ["'$HEX'"]}' 2> /dev/null > "${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json"
-    COUNT=$(wc -l < "${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json")
-    echo "Exported ${COUNT} events to ${HOME}/.zen/game/nostr/${PLAYER}/nostr_export.json"
-    cd - 2>&1 >/dev/null
+
+    refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"
+    echo "\m/_(>_<)_\m/ ($refreshtime) : ${PLAYER} $COINS G1 -> ${ZEN} ZEN : ${HEX} UDRIVE : $(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
+
+    # Vérifier si le rafraîchissement est nécessaire
+    should_refresh "${PLAYER}"
+    refresh_needed=$?
+    
+    # Si pas de rafraîchissement nécessaire, continuer
+    if [[ $refresh_needed -eq 1 ]]; then
+        echo "No refresh needed for ${PLAYER} - skipping"
+        SKIPPED_PLAYERS=$((SKIPPED_PLAYERS + 1))
+        continue
+    fi
 
     ########################################################################################
     echo "## UPDATE MULTIPASS IPNS KEY $myIPFS$NOSTRNS"
     ########################################################################################
-    ## UPDATE IPNS NOSTRVAULT KEY
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
-    ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
-    NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
-    ## UPDATE IPNS RESOLVE
-    NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
-    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
-    echo "${PLAYER} STORAGE: $NOSTRNS = /ipfs/${NOSTRIPFS}"
-
-    ## MEMORIZE TODATE PUBLISH (reduce publish if APP was modified or once a day)
-    echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
+    ## UPDATE IPNS NOSTRVAULT KEY - Only when refresh is needed
+    if [[ $refresh_needed -eq 0 ]]; then
+        echo "IPNS update triggered for ${PLAYER} - Reason: $REFRESH_REASON"
+        
+        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
+        ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
+        NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
+        ## UPDATE IPNS RESOLVE
+        NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
+        ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
+        echo "${PLAYER} STORAGE: $NOSTRNS = /ipfs/${NOSTRIPFS}"
+        echo "IPNS updated for ${PLAYER} (reason: $REFRESH_REASON)"
+        
+        # Record the last IPNS update time
+        date +%s > ${HOME}/.zen/game/nostr/${PLAYER}/.last_ipns_update
+        
+        # Update .todate only for daily updates, not for new files
+        if [[ "$REFRESH_REASON" == "daily_update" ]]; then
+            echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
+            echo "Daily refresh completed for ${PLAYER}"
+            DAILY_UPDATES=$((DAILY_UPDATES + 1))
+        else
+            echo "IPNS updated due to new files for ${PLAYER}"
+            FILE_UPDATES=$((FILE_UPDATES + 1))
+        fi
+    else
+        echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
+    fi
     echo "___________________________________________________ $TODATE"
     stop=$(date +%s)
     echo "## MULTIPASS refresh DONE in $((stop - start)) seconds"
@@ -643,6 +723,12 @@ end=`date +%s`
 dur=`expr $end - $start`
 hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 echo "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
+
+# Afficher un résumé concis
+echo ""
+echo "============================================ NOSTR REFRESH SUMMARY"
+echo "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
+echo "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
 echo "============================================ NOSTR.refresh DONE."
 rm -Rf ~/.zen/tmp/${MOATS}
 
