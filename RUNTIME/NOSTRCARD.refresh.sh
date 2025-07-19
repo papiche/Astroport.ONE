@@ -309,7 +309,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null) ### PRIMAL READING
     ## test &correction of primal format (g1_to_ipfs.py)
-    g1primetest=$( ${MY_PATH}/../tools/g1_to_ipfs.py ${primal} 2>/dev/null)
+    g1primetest=$(${MY_PATH}/../tools/g1_to_ipfs.py ${primal} 2>/dev/null)
     if [[ -z $g1primetest ]]; then
         g1prime=$(get_primal_transaction "${G1PUBNOSTR}")
         echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal

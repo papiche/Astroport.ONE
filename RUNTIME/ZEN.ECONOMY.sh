@@ -18,6 +18,24 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 start=`date +%s`
 
 #######################################################################
+# Daily payment check - ensure payment is made only once per day
+# Check if payment was already done today using marker file
+#######################################################################
+PAYMENT_MARKER="$HOME/.zen/game/.payment.done"
+
+# Check if payment was already done today
+if [[ -f "$PAYMENT_MARKER" ]]; then
+    LAST_PAYMENT_DATE=$(cat "$PAYMENT_MARKER")
+    if [[ "$LAST_PAYMENT_DATE" == "$TODATE" ]]; then
+        echo "ZEN ECONOMY: Daily payment already completed today ($TODATE)"
+        echo "Skipping payment process..."
+        exit 0
+    fi
+fi
+
+echo "ZEN ECONOMY: Starting daily payment process for $TODATE"
+
+#######################################################################
 # Vérification des soldes des différents acteurs du système
 # UPlanet : La "banque centrale" coopérative
 # Node : Le serveur physique (PC Gamer ou RPi5)
@@ -94,5 +112,12 @@ fi
 
 ## AFTER PAF PAYMENT: CHECK SWARM SUBSCRIPTIONS
 ${MY_PATH}/ZEN.SWARM.payments.sh
+
+#######################################################################
+# Mark daily payment as completed
+# Create marker file with today's date to prevent duplicate payments
+#######################################################################
+echo "$TODATE" > "$PAYMENT_MARKER"
+echo "ZEN ECONOMY: Daily payment completed and marked for $TODATE"
 
 exit 0
