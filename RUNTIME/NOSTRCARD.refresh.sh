@@ -98,6 +98,51 @@ initialize_account() {
     echo "Account ${PLAYER} initialized with refresh time: ${random_time}"
 }
 
+function get_primal_transaction() {
+    local g1pub="$1"
+    local attempts=0
+    local success=false
+    local result=""
+
+    # Validate G1PUB format and convert to IPFS to ensure it's valid
+    local g1pub_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1pub} 2>/dev/null)
+    if [[ -z $g1pub_ipfs ]]; then
+        echo "ERROR: INVALID G1PUB: $g1pub"
+        return 1
+    fi
+
+    while [[ $attempts -lt 3 && $success == false ]]; do
+        BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
+        if [[ ! -z $BMAS_NODE ]]; then
+            echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
+
+            silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${g1pub} 2>/dev/null)
+            if echo "$silkaj_output" | jq empty 2>/dev/null; then
+                g1prime=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey')
+                if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
+                    # Validate primal G1PUB as well
+                    local primal_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
+                    if [[ -n $primal_ipfs ]]; then
+                        success=true
+                        break
+                    else
+                        echo "Warning: Invalid primal G1PUB returned: $g1prime"
+                    fi
+                fi
+            else
+                echo "Warning: silkaj did not return valid JSON for $g1pub"
+            fi
+        fi
+
+        attempts=$((attempts + 1))
+        if [[ $attempts -lt 3 ]]; then
+            sleep 2
+        fi
+    done
+
+    echo "$g1prime"
+}
+
 # Fonction pour vérifier si le rafraîchissement est nécessaire
 should_refresh() {
     local player="$1"
@@ -255,51 +300,6 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL RX CHECK
         echo "# RX from ${G1PUBNOSTR}.... checking primal transaction..."
-        function get_primal_transaction() {
-            local g1pub="$1"
-            local attempts=0
-            local success=false
-            local result=""
-
-            # Validate G1PUB format and convert to IPFS to ensure it's valid
-            local g1pub_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1pub} 2>/dev/null)
-            if [[ -z $g1pub_ipfs ]]; then
-                echo "ERROR: INVALID G1PUB: $g1pub"
-                return 1
-            fi
-
-            while [[ $attempts -lt 3 && $success == false ]]; do
-                BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
-                if [[ ! -z $BMAS_NODE ]]; then
-                    echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
-
-                    silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${g1pub} 2>/dev/null)
-                    if echo "$silkaj_output" | jq empty 2>/dev/null; then
-                        g1prime=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey')
-                        if [[ ! -z ${g1prime} && ${g1prime} != "null" ]]; then
-                            # Validate primal G1PUB as well
-                            local primal_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
-                            if [[ -n $primal_ipfs ]]; then
-                                success=true
-                                break
-                            else
-                                echo "Warning: Invalid primal G1PUB returned: $g1prime"
-                            fi
-                        fi
-                    else
-                        echo "Warning: silkaj did not return valid JSON for $g1pub"
-                    fi
-                fi
-
-                attempts=$((attempts + 1))
-                if [[ $attempts -lt 3 ]]; then
-                    sleep 2
-                fi
-            done
-
-            echo "$g1prime"
-        }
-
         g1prime=$(get_primal_transaction "${G1PUBNOSTR}")
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         if [[ $? -eq 0 && ! -z ${g1prime} && ${g1prime} != "null" ]]; then
