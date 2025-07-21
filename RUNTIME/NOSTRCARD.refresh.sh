@@ -366,7 +366,7 @@ for PLAYER in "${NOSTR[@]}"; do
         && chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
 
     mkdir -p ~/.zen/tmp/${MOATS}
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey "${salt}" "${pepper}"
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/NOSTR/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
     ############################################################ BLOCKING
@@ -430,7 +430,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
                     echo "[7 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT ($COINS G1) !!"
                     if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
-                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF" 2>/dev/null)
+                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/NOSTR/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF" 2>/dev/null)
                         if [[ $? -eq 0 ]]; then
                             # Record successful payment
                             echo "$TODATE" > "$last_payment_file"
@@ -510,7 +510,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING TO CESIUM PROFILE
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/NOSTR/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS${NOSTRNS}"
                 ## TODO CONVERT SEND NOSTR MULTIPASS MESSAGE
             else
                 echo "## PRIMAL existing : $G1PRIME"
@@ -524,14 +524,14 @@ for PLAYER in "${NOSTR[@]}"; do
                         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
                             # Définir le message en fonction de la clé
                             if [[ "$KEY" == "certin" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t " ¯\_༼qO͡〰op༽_/¯ 12P ?" -m "BRO Certification <=> $G1PUB"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/NOSTR/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t " ¯\_༼qO͡〰op༽_/¯ 12P ?" -m "BRO Certification <=> $G1PUB"
                                 sleep 1
                             elif [[ "$KEY" == "certout" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ P21 ?" -m "BRO Certification <=> $G1PRIME"
+                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/NOSTR/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ P21 ?" -m "BRO Certification <=> $G1PRIME"
                                 sleep 1
                             fi
                             MESSAGE="$G1PRIME est devenu membre de CopyLaRadio https://www.copylaradio.com --- UPlanet : $myIPFS/ipns/copylaradio.com"
-                            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/nostr.${PLAYER}.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ " -m "$MESSAGE"
+                            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/NOSTR/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ " -m "$MESSAGE"
                             echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                             sleep 2
                         fi
