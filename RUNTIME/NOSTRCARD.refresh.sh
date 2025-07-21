@@ -365,7 +365,6 @@ for PLAYER in "${NOSTR[@]}"; do
         && echo "$DISCO" > ~/.zen/game/nostr/${PLAYER}/.secret.disco \
         && chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
 
-    mkdir -p ~/.zen/tmp/${MOATS}
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/NOSTR/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
