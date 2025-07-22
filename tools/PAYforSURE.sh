@@ -301,3 +301,8 @@ if [[ ${ISOK} == 0 ]]; then
     </h3>
 </body>
 </html>
+EOF
+    exit 0
+fi
+
+exit 1
