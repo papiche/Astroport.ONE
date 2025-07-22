@@ -98,8 +98,8 @@ get_wallet_history() {
                     date: .Date,
                     pubkey: (.["Issuers/Recipients"] | split(":")[0]),
                     amount: (.["Amounts Ğ1"] | tonumber),
-                    comment: .Reference
-                }' ${output_file}.full > ${output_file}
+                    comment: (.Reference // "")
+                }' ${output_file}.full | jq -s '.' > ${output_file}
 
                 if [[ -s ${output_file} ]]; then
                     success=true
@@ -108,6 +108,8 @@ get_wallet_history() {
                     cp "$output_file" "$cache_file"
                     rm -f ${output_file}.full
                     break
+                else
+                    echo "Warning: No valid transaction history extracted from silkaj response"
                 fi
             fi
             rm -f ${output_file}.full
@@ -213,6 +215,11 @@ count_existing_intrusions() {
             local TXIAMOUNT=$(echo "$JSON" | jq -r '.amount')
             local COMMENT=$(echo "$JSON" | jq -r '.comment // ""')
 
+            # Skip transactions with invalid or empty data
+            if [[ -z "$TXIPUBKEY" || "$TXIPUBKEY" == "null" || -z "$TXIAMOUNT" || "$TXIAMOUNT" == "null" ]]; then
+                continue
+            fi
+
             # Look for outgoing transactions (negative amount) with intrusion comments
             if [[ $(echo "$TXIAMOUNT < 0" | bc -l) -eq 1 ]]; then
                 # Check if this is a refund for intrusion - multiple patterns to catch all variations
@@ -290,6 +297,12 @@ control_primal_transactions() {
         local TXIDATE=$(echo "$JSON" | jq -r '.date')
         local TXIPUBKEY=$(echo "$JSON" | jq -r '.pubkey')
         local TXIAMOUNT=$(echo "$JSON" | jq -r '.amount')
+
+        # Skip transactions with invalid or empty data
+        if [[ -z "$TXIPUBKEY" || "$TXIPUBKEY" == "null" || -z "$TXIAMOUNT" || "$TXIAMOUNT" == "null" ]]; then
+            echo "Skipping transaction with invalid data: pubkey='$TXIPUBKEY', amount='$TXIAMOUNT'"
+            continue
+        fi
 
         # Skip outgoing transactions (refunds)
         [[ $(echo "$TXIAMOUNT < 0" | bc -l) -eq 1 ]] && continue
