@@ -477,6 +477,8 @@ for PLAYER in "${NOSTR[@]}"; do
                 echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME
             fi
         fi
+        [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]] \
+            && echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME fixing
     fi
 
     ## PRIMAL RX SOURCE ?!
