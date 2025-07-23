@@ -24,7 +24,10 @@ select_player_email() {
     fi
 
     for i in "${!player_emails[@]}"; do
-        echo "$i) ${player_emails[$i]}"
+        g1pub=$(cat ~/.zen/game/nostr/${player_emails[$i]}/G1PUBNOSTR)
+        pcoins=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS)
+        pprime=$(cat ~/.zen/tmp/coucou/${g1pub}.primal)
+        echo "$i) ${player_emails[$i]} (${pcoins} Ğ1) -> ${pprime}" 
     done
 
     read -p "Select the number corresponding to the player email: " selection
