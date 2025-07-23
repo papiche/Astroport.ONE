@@ -1,4 +1,17 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# nostr_DESTROY_TW.sh
+#
+# This script is used to deactivate ("unplug") a NOSTR + PLAYER UPlanet account.
+# It allows the user to select a player email, exports and backs up all NOSTR data
+# to IPFS, removes the NOSTR profile, transfers any remaining G1 balance to the
+# primal account, removes the ZEN card, and sends a notification email to the user
+# with recovery information and backup links. It also cleans up local cache and
+# removes the NOSTR IPNS vault key.
+#
+# Usage: ./nostr_DESTROY_TW.sh [email]
+# If no email is provided, the script will prompt the user to select one.
+# -----------------------------------------------------------------------------
 # Unplug NOSTR + PLAYER UPlanet Account
 
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -27,7 +40,7 @@ select_player_email() {
         g1pub=$(cat ~/.zen/game/nostr/${player_emails[$i]}/G1PUBNOSTR)
         pcoins=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS)
         pprime=$(cat ~/.zen/tmp/coucou/${g1pub}.primal)
-        echo "$i) ${player_emails[$i]} (${pcoins} Ğ1) -> ${pprime}" 
+        echo "$i) ${player_emails[$i]} (${pcoins} Ğ1) ${g1pub} -> ${pprime}" 
     done
 
     read -p "Select the number corresponding to the player email: " selection
