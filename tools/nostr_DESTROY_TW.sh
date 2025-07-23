@@ -44,31 +44,36 @@ g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)
 hex=$(cat ~/.zen/game/nostr/${player}/HEX)
 
 ##################### DISCO DECODING ########################
-tmp_mid=$(mktemp)
-tmp_tail=$(mktemp)
-# Decrypt the middle part using CAPTAIN key
-${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" \
-        -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
-
-# Decrypt the tail part using UPLANET dunikey
-if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
-    chmod 600 ~/.zen/game/uplanet.dunikey
-fi
-${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/ssss.tail.uplanet.enc" \
-        -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
-
-# Combine decrypted shares
-DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
-#~ echo "DISCO = $DISCO" ## DEBUG
-IFS='=&' read -r s salt p pepper <<< "$DISCO"
-
-if [[ -n $pepper ]]; then
-    rm "$tmp_mid" "$tmp_tail"
+if [[ -s ~/.zen/game/nostr/${player}/.secret.disco ]]; then
+    DISCO=$(cat ~/.zen/game/nostr/${player}/.secret.disco)
+    IFS='=&' read -r s salt p pepper <<< "$DISCO"
 else
-    cat "$tmp_mid" "$tmp_tail"
-    exit 1
+    tmp_mid=$(mktemp)
+    tmp_tail=$(mktemp)
+    # Decrypt the middle part using CAPTAIN key
+    ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/.ssss.mid.captain.enc" \
+            -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
+
+    # Decrypt the tail part using UPLANET dunikey
+    if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+        chmod 600 ~/.zen/game/uplanet.dunikey
+    fi
+    ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${player}/ssss.tail.uplanet.enc" \
+            -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
+
+    # Combine decrypted shares
+    DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
+    IFS='=&' read -r s salt p pepper <<< "$DISCO"
+
+    if [[ -n $pepper ]]; then
+        rm "$tmp_mid" "$tmp_tail"
+    else
+        cat "$tmp_mid" "$tmp_tail"
+        exit 1
+    fi
 fi
+
 ##################################################### DISCO DECODED
 ## Extract email from s parameter
 # DEBUG: s before removal (quoted): '/?youyou@yopmail.com'
@@ -117,7 +122,7 @@ ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
     "<html>
         <head>
-            <title>MULTIPASS/uDRIVE Temporarily Paused | MULTIPASS/uDRIVE Temporairement en Pause</title>
+            <title>MULTIPASS/uDRIVE Desactivated | MULTIPASS/uDRIVE Désactivé</title>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
             <style>
@@ -383,10 +388,10 @@ ${MY_PATH}/../tools/mailjet.sh \
             <div class='email-container'>
                 <div class='header'>
                     <div class='lang-content' data-lang='en'>
-                        <h1>⏸️ MULTIPASS/uDRIVE Temporarily Paused</h1>
+                        <h1>⏸️ MULTIPASS/uDRIVE Paused</h1>
                     </div>
                     <div class='lang-content' data-lang='fr'>
-                        <h1>⏸️ MULTIPASS/uDRIVE Temporairement en Pause</h1>
+                        <h1>⏸️ MULTIPASS/uDRIVE en Pause</h1>
                     </div>
                 </div>
                 
