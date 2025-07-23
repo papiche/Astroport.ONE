@@ -317,7 +317,10 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## READING PRIMAL COINS from "coucou" cache
     pcoins=$(cat ~/.zen/tmp/coucou/${primal}.COINS 2>/dev/null)
-    [[ -z $pcoins ]] && pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
+    # Vérification du format de pcoins (entier ou décimal)
+    if [[ ! "$pcoins" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        pcoins=$($MY_PATH/../tools/COINScheck.sh ${primal} | tail -n 1) ## PRIMAL COINS
+    fi
 
     ############################################################################
     ###################### DISCO DECRYPTION - with Captain + UPlanet parts
