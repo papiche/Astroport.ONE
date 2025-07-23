@@ -11,13 +11,22 @@ for f in ~/.zen/tmp/coucou/*.primal; do
         # Get the G1 pubkey from the filename (remove .primal extension)
         g1pub=$(basename "$f" .primal)
         echo "Invalid primal in $f ($key) - trying to fix with silkaj..."
-        # Try to recover the primal using silkaj
-        primal=$(silkaj --json money primal "$g1pub" 2>/dev/null | jq -r .primal_source_pubkey)
-        if is_valid_g1pub "$primal"; then
-            echo "Fixed: $g1pub.primal -> $primal"
-            echo "$primal" > "$f"
+        
+        # Try to recover the primal using silkaj with better error handling
+        silkaj_output=$(silkaj --json money primal "$g1pub" 2>&1)
+        
+        # Check if silkaj command was successful and returned valid JSON
+        if echo "$silkaj_output" | jq . >/dev/null 2>&1; then
+            primal=$(echo "$silkaj_output" | jq -r .primal_source_pubkey 2>/dev/null)
+            if is_valid_g1pub "$primal"; then
+                echo "Fixed: $g1pub.primal -> $primal"
+                echo "$primal" > "$f"
+            else
+                echo "Could not fix $f - invalid primal returned: $primal"
+            fi
         else
-            echo "Could not fix $f"
+            echo "Could not fix $f - silkaj error or invalid JSON:"
+            echo "$silkaj_output" | head -3
         fi
     fi
 done
