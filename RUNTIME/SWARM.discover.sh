@@ -162,13 +162,11 @@ show_node_details() {
 generate_subscription_email() {
     local target_node_id="$1"
 
-    # Format: capitaine+nodeid-1@domain.com
+    # Format: capitaine+ipfsnodeid@domain.com
     local base_email="$CAPTAINEMAIL"
     local local_part="${base_email%@*}"
     local domain_part="${base_email#*@}"
-    local node_suffix=$(echo "$target_node_id" | tail -c 2)  # Dernier caractère du node ID
-
-    echo "${local_part}+${target_node_id:0:8}-${node_suffix}@${domain_part}"
+    echo "${local_part}+${target_node_id}@${domain_part}"
 }
 
 #######################################################################
@@ -192,7 +190,7 @@ subscribe_to_node() {
     echo "🌐 API: $uSPOT"
     echo "💸 Coût: $total_cost Ẑ/28 jours"
 
-    # Générer l'email d'inscription
+    # Générer l'email d'inscription ## captainemail+target_node_id@emaildomain.tld
     local subscription_email=$(generate_subscription_email "$target_node_id")
     echo "📧 Email d'inscription: $subscription_email"
 
@@ -252,19 +250,73 @@ subscribe_to_node() {
     echo "🚀 INSCRIPTION EN COURS..."
     echo "========================="
 
-    # Appeler l'API /g1 du node distant
-    local api_url="${uSPOT}/g1"
+    # Appeler l'API /g1nostr du node distant (POST)
+    local api_url="${uSPOT}/g1nostr"
     echo "📡 Connexion à: $api_url"
 
     # Créer un fichier temporaire pour l'inscription
     local temp_dir="$HOME/.zen/tmp/$MOATS"
     mkdir -p "$temp_dir"
 
-    # Générer les données d'inscription
-    # (Ici on simule, dans la réalité il faudrait appeler l'API)
-    echo "Inscription de $subscription_email au node $target_node_id" > "$temp_dir/subscription.log"
-    echo "Coût: $total_cost Ẑ" >> "$temp_dir/subscription.log"
-    echo "Timestamp: $(date)" >> "$temp_dir/subscription.log"
+    # Récupérer les vraies valeurs GPS et langue du capitaine
+    local gps_file="$HOME/.zen/game/nostr/$CAPTAINEMAIL/GPS"
+    local lang_file="$HOME/.zen/game/nostr/$CAPTAINEMAIL/LANG"
+    
+    # Valeurs par défaut
+    local lang="fr"
+    local lat="0.0"
+    local lon="0.0"
+    
+    # Lire la langue
+    if [[ -f "$lang_file" ]]; then
+        lang=$(cat "$lang_file" | tr -d '\n\r')
+        echo "🌍 Langue détectée: $lang"
+    else
+        echo "⚠️  Fichier langue non trouvé: $lang_file (utilisation de 'fr' par défaut)"
+    fi
+    
+    # Lire les coordonnées GPS
+    if [[ -f "$gps_file" ]]; then
+        local gps_content=$(cat "$gps_file")
+        if [[ "$gps_content" =~ LAT=([0-9.]+) ]]; then
+            lat="${BASH_REMATCH[1]}"
+            echo "📍 Latitude détectée: $lat"
+        fi
+        if [[ "$gps_content" =~ LON=([0-9.]+) ]]; then
+            lon="${BASH_REMATCH[1]}"
+            echo "📍 Longitude détectée: $lon"
+        fi
+    else
+        echo "⚠️  Fichier GPS non trouvé: $gps_file (utilisation de 0.0,0.0 par défaut)"
+    fi
+    
+    echo "🚀 Envoi de la demande d'inscription..."
+    echo "📧 Email: $subscription_email"
+    echo "🎯 Node: $target_node_id"
+    echo "💸 Coût: $total_cost Ẑ"
+    echo "🌍 Langue: $lang"
+    echo "📍 Coordonnées: $lat, $lon"
+    
+    # Appel réel à l'API POST /g1nostr
+    local response=$(curl -s -X POST "$api_url" \
+        -F "email=$subscription_email" \
+        -F "lang=$lang" \
+        -F "lat=$lat" \
+        -F "lon=$lon" \
+        -F "salt=" \
+        -F "pepper=" \
+        --connect-timeout 30 \
+        --max-time 60)
+    
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Réponse reçue du node distant"
+        echo "$response" > "$temp_dir/api_response.log"
+    else
+        echo "❌ Erreur lors de l'appel API"
+        echo "Inscription simulée de $subscription_email au node $target_node_id" > "$temp_dir/subscription.log"
+        echo "Coût: $total_cost Ẑ" >> "$temp_dir/subscription.log"
+        echo "Timestamp: $(date)" >> "$temp_dir/subscription.log"
+    fi
 
     # Enregistrer l'abonnement localement
     local subscriptions_file="$HOME/.zen/tmp/$IPFSNODEID/swarm_subscriptions.json"
