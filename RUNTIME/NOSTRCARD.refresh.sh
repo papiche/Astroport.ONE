@@ -103,18 +103,19 @@ function get_primal_transaction() {
     local attempts=0
     local success=false
     local result=""
+    local g1prime=""
 
     # Validate G1PUB format and convert to IPFS to ensure it's valid
     local g1pub_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1pub} 2>/dev/null)
     if [[ -z $g1pub_ipfs ]]; then
-        echo "ERROR: INVALID G1PUB: $g1pub"
+        echo "ERROR: INVALID G1PUB: $g1pub" >&2
         return 1
     fi
 
     while [[ $attempts -lt 3 && $success == false ]]; do
         BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
         if [[ ! -z $BMAS_NODE ]]; then
-            echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
+            echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $attempts)" >&2
             silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${g1pub} 2>/dev/null)
             g1prime=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey' 2>/dev/null)
             if [[ -n "${g1prime}" && "${g1prime}" != "null" ]]; then
@@ -124,7 +125,7 @@ function get_primal_transaction() {
                     success=true
                     break
                 else
-                    echo "Warning: Invalid ${g1pub} primal: $g1prime"
+                    echo "Warning: Invalid ${g1pub} primal: $g1prime" >&2
                     g1prime=""
                 fi
             fi
@@ -310,7 +311,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## test &correction of primal format (g1_to_ipfs.py)
     g1primetest=$(${MY_PATH}/../tools/g1_to_ipfs.py ${primal} 2>/dev/null)
     if [[ -z $g1primetest ]]; then
-        g1prime=$(get_primal_transaction "${G1PUBNOSTR}")
+        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null)
         echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
         primal=${g1prime}
     fi
