@@ -56,12 +56,12 @@ for player_dir in ~/.zen/game/nostr/*/; do
             primal=$(echo "$silkaj_output" | jq -r .primal_source_pubkey 2>/dev/null)
             if is_valid_g1pub "$primal"; then
                 echo "Fixed: $g1pub.primal -> $primal"
-                echo "$primal" > "$f"
+                echo "$primal" > "$g1prime_file"
             else
-                echo "Could not fix $f - invalid primal returned: $primal"
+                echo "Could not fix $g1prime_file - invalid primal returned: $primal"
             fi
         else
-            echo "Could not fix $f - silkaj error or invalid JSON:"
+            echo "Could not fix $g1prime_file - silkaj error or invalid JSON:"
             echo "$silkaj_output" | head -3
         fi
     fi
