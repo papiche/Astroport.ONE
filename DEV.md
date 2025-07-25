@@ -54,7 +54,7 @@ await fetch('/api/test-nostr', { method: 'POST', body: 'npub=' + publicKey });
 # (handler JS ou Python)
 
 # UPlanet ASTROBOT
-./Astroport.ONE/IA/UPlanet_IA_Responder.sh
+~/.zen/Astroport.ONE/IA/UPlanet_IA_Responder.sh
 ```
 
 **Base de données (DynamoDB/CosmosDB → NOSTR/IPFS)**
@@ -279,7 +279,7 @@ Les nœuds UPlanet peuvent exécuter des bots programmables (ASTROBOT) pour auto
 1. **Créer une NOSTR Card**  
    Utiliser les scripts fournis sur votre nœud :
    ```bash
-   ./Astroport.ONE/tools/make_NOSTRCARD.sh user@example.com
+   ~/.zen/Astroport.ONE/tools/make_NOSTRCARD.sh user@example.com
    ```
    Cela génère la paire de clés NOSTR, le portefeuille Ğ1 et l’espace IPFS.
 

@@ -32,11 +32,18 @@ gstart=`date +%s`
 
 
 #### AVOID MULTIPLE RUN
-countMErunning=$(pgrep -au $USER -f "$0" | wc -l)
-if [[ $countMErunning -gt 2 ]]; then
-    echo "$ME already running $countMErunning time"
-    exit 0
+LOCKFILE="/tmp/nostrcard_refresh.lock"
+if [[ -f "$LOCKFILE" ]]; then
+    PID=$(cat "$LOCKFILE" 2>/dev/null)
+    if [[ -n "$PID" && -d "/proc/$PID" ]]; then
+        echo "NOSTRCARD.refresh.sh already running (PID: $PID)"
+        exit 0
+    else
+        # Remove stale lock file
+        rm -f "$LOCKFILE"
+    fi
 fi
+echo $$ > "$LOCKFILE"
 
 echo "## RUNNING NOSTRCARD.refresh.sh
                  _
@@ -297,7 +304,7 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ! -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal && ${COINS} != "null" ]]; then
     ################################################################ PRIMAL RX CHECK
         echo "# NEW MULTIPASS${G1PUBNOSTR}.... checking primal transaction..."
-        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null)
+        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null | tail -n 1)
         ### CACHE PRIMAL TX SOURCE IN "COUCOU" BUCKET
         if [[ $? -eq 0 && ! -z ${g1prime} && ${g1prime} != "null" ]]; then
             echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
@@ -311,7 +318,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## test &correction of primal format (g1_to_ipfs.py)
     g1primetest=$(${MY_PATH}/../tools/g1_to_ipfs.py ${primal} 2>/dev/null)
     if [[ -z $g1primetest ]]; then
-        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null)
+        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null | tail -n 1)
         echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
         primal=${g1prime}
     fi
@@ -487,11 +494,27 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## PRIMAL RX SOURCE ?!
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
+    
+    ## Validate and clean G1PRIME if it contains debug output
+    if [[ -n "$G1PRIME" && ("$G1PRIME" =~ "Trying primal check" || "$G1PRIME" =~ "BMAS NODE") ]]; then
+        echo "Cleaning corrupted G1PRIME file for ${PLAYER}"
+        # Extract only the G1PUB part (last line should be the G1PUB)
+        G1PRIME=$(echo "$G1PRIME" | tail -n 1 | tr -d ' ')
+        echo "$G1PRIME" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
+    fi
+    
     ## CHECKING PRIMAL IPFS conversion (correction)
-    G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PRIME})
-    [[ -z $G1PRIME_IPFS ]] \
-        && echo "G1PRIME BAD FORMAT" >> ~/.zen/game/nostr/${PLAYER}/ERROR \
-        && echo "ERROR G1PRIME BAD FORMAT" && continue
+    # Validate G1PUB format (should be base58 encoded, typically 44 characters)
+    if [[ -n "$G1PRIME" && ${#G1PRIME} -eq 44 && "$G1PRIME" =~ ^[1-9A-HJ-NP-Za-km-z]+$ ]]; then
+        G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PRIME} 2>/dev/null)
+        if [[ -z $G1PRIME_IPFS ]]; then
+            echo "G1PRIME BAD FORMAT: $G1PRIME" >> ~/.zen/game/nostr/${PLAYER}/ERROR
+            echo "ERROR G1PRIME BAD FORMAT: $G1PRIME" && continue
+        fi
+    else
+        echo "G1PRIME INVALID FORMAT: $G1PRIME" >> ~/.zen/game/nostr/${PLAYER}/ERROR
+        echo "ERROR G1PRIME INVALID FORMAT: $G1PRIME" && continue
+    fi
 
     ########################################################################
     ## STATION OFFICIAL UPASSPORT = UPassport + 1 G1 RX (from WoT member)
@@ -762,5 +785,6 @@ echo "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES fi
 echo "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
 echo "============================================ NOSTR.refresh DONE."
 rm -Rf ~/.zen/tmp/${MOATS}
+rm -f "$LOCKFILE"
 
 exit 0
