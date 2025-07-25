@@ -55,7 +55,7 @@ echo "$NODEZEN Ẑen"
 
 # Vérification du Captain (gestionnaire)
 echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
-CAPTAINCOIN=$(${MY_PATH}/../tools/COINScheck.sh ${NODEG1PUB} | tail -n 1)
+CAPTAINCOIN=$(${MY_PATH}/../tools/COINScheck.sh ${CAPTAING1PUB} | tail -n 1)
 CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
 echo "$CAPTAINZEN Ẑen"
 
@@ -66,7 +66,7 @@ echo "$CAPTAINZEN Ẑen"
 #######################################################################
 NOSTRS=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 PLAYERS=($(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@" ))
-echo "NODE hosts NOSTR : ${#NOSTRS[@]} / ZEN : ${#PLAYERS[@]}"
+echo "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 
 #######################################################################
 # Configuration des paramètres économiques

@@ -283,7 +283,7 @@ source ./primal_wallet_control.sh
 # Call the function
 control_primal_transactions \
     "/path/to/wallet.dunikey" \
-    "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" \
+    "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo" \
     "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" \
     "player@example.com"
 ```

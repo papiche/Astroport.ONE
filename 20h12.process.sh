@@ -155,7 +155,7 @@ rm "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null ## RESET Friends of Friends 
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
 ########################################################################
-if [[ ${UPLANETG1PUB} == "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
+if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
     #################### UPLANET ORIGIN : <<<<< DETECT PRIVATE SWARM BLOOM >>>>> #########
     ${MY_PATH}/RUNTIME/BLOOM.Me.sh
 else

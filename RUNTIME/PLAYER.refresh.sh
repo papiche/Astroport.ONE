@@ -38,7 +38,7 @@ PLAYERONE="$1"
 [[ ! ${PLAYERONE} ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
 
 echo "FOUND ${#PLAYERONE[@]} ASTRONAUTS : ${PLAYERONE[@]}"
-CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
+CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev) ## ALSO in CAPTAINEMAIL
 
 echo "RENEWING LOCAL UPLANET REPOSITORY (CAPTAIN=${CURRENT})
  ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/_*.??_*.??"
@@ -669,24 +669,36 @@ for PLAYER in ${PLAYERONE[@]}; do
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
     ####################################################################
-    ## EVERY 7 DAYS PAY CAPTAIN
-    TODATE_SECONDS=$(date -d "$TODATE" +%s)
-    BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
-    # Calculate the difference in days
-    DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
-    [[ -z $ZCARD ]] && ZCARD=4
-    Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
-    # Check if the difference is a multiple of 7
-    if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
-        if [[ $(echo "$COINS > $Gpaf" | bc -l) -eq 1 ]]; then
-            ## Pay ZCARD to CAPTAIN
-            echo "[7 DAYS CYCLE] $TODATE is ZEN Card $ZCARD ẐEN PAYMENT !!"
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
-        else
-            echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
-            if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
-                $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN CARD UNPLUG ($COINS Ğ1)" "ZEN CARD UNPLUG..."
-                ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
+    
+    if [[ -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
+        ## U SOCIETY MEMBER
+        UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY)
+        echo "U SOCIETY REGISTRATION : $UDATE"
+    else
+        ## EVERY 7 DAYS PAY CAPTAIN
+        TODATE_SECONDS=$(date -d "$TODATE" +%s)
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+        # Calculate the difference in days
+        DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+        [[ -z $NCARD ]] && NCARD=1
+        Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+        [[ -z $ZCARD ]] && ZCARD=4
+        Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
+        # Check if the difference is a multiple of 7
+        if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
+            if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 ]]; then
+                ## Pay ZCARD to CAPTAIN
+                echo "[7 DAYS CYCLE] $TODATE ZENCARD is paying $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PAY" 2>/dev/null
+                ## RECHARGE MULTIPASS
+                g1dest=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Npaf" "${g1dest}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:REFIL" 2>/dev/null
+            else
+                echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
+                if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
+                    $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN CARD UNPLUG ($COINS Ğ1)" "ZEN CARD UNPLUG..."
+                    ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
+                fi
             fi
         fi
     fi
@@ -733,8 +745,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
                 && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
                 && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-                && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" 2>/dev/null \
-                && echo "UPLANET${UPLANETG1PUB:0:8}:WELCOME:${YOUSER}" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
+                && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" 2>/dev/null \
+                && echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
                 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
         fi
     fi

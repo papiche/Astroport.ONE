@@ -5,7 +5,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 ################################################################################
-## API: UPLANET
+## API: UPLANET => VISA.new ZENCARD
 ## Dedicated to OSM2IPFS & UPlanet Client App
 # ?uplanet=EMAIL&zlat=LAT&zlon=LON&g1pub=PASS
 ## https://git.p2p.legal/qo-op/OSM2IPFS
@@ -124,9 +124,9 @@ NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_
 
 ## CREATE ASTRONAUTE TW ON CURRENT ASTROPORT
 (
-echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "${VAL}" "${LAT}" "${LON}"
+echo VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "${VAL}" "${LAT}" "${LON}" "$MOATS" "$COOKIE"
     ##### (☉_☉ ) #######
-${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "${VAL}" "${LAT}" "${LON}" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
+${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${EMAIL}" "UPlanet" "${VAL}" "${LAT}" "${LON}" "$MOATS" "$COOKIE" >> ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt
 
 end=`date +%s`
 echo "(TW REGISTRATION) Operation time was "`expr $end - $start` seconds.
@@ -193,7 +193,7 @@ function countdown() {
 <br>CONSOLE<br>
 $(cat ~/.zen/tmp/email.${EMAIL}.${MOATS}.txt 2>/dev/null)
 <br>(☉_☉ ) use above credentials... utilisez les identiants ci-dessus<br>
-<br><br>${EMAIL} REGISTERED on UPlanet UMAP($LAT/$LON) : ${MOATS} : $(date)
+<br><br>${EMAIL} REGISTERED on UPlanet UMAP($LAT/$LON) : MULTIPASS linking ${MOATS} : $(date)
 </body>
 </html>" > ~/.zen/tmp/${MOATS}/http.rep
 

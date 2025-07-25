@@ -76,7 +76,7 @@ if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
         "${UPLANETG1PUB}" \
         "${EMAIL}"
 else
-    echo "UPlanet ORIGIN AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z - No Control -"
+    echo "UPlanet ORIGIN - No Control -"
 fi
 
 ##########################################################

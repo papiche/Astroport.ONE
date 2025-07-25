@@ -371,26 +371,18 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "${primal}" == "" ]]; then
         ## 2nd day MULTIPASS must have received PRIMAL RX
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
-            if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
-                # on UPlanet ORIGIN : From UPlanet Wallet
-                echo "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation"
-                YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-                ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET${UPLANETG1PUB:0:8}:MULTIPASS:${YOUSER}:${NPUB}" 2>/dev/null
-                [[ $? -eq 0 ]] \
-                    && echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
-            else
-                # on UPlanet Ẑen : From WoT member (except for CAPTAIN)
-                echo "UPlanet Zen : NO PRIMAL RX received from Ğ1 Member"
-                [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] \
-                    && ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}" \
-                    || echo "CAPTAIN ${CAPTAINEMAIL} has no PRIMAL"
-            fi
+            # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
+            echo "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation"
+            YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+            ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:ORIGIN" 2>/dev/null
+            [[ $? -eq 0 ]] \
+                && echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
         else
             ## 1st Day send welcome EMAIL...
             [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]] \
             && cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
             && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME /ipns/$YOUSER"
+            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
         fi
 
         rm -Rf ~/.zen/tmp/${MOATS}
@@ -416,40 +408,61 @@ for PLAYER in "${NOSTR[@]}"; do
     echo "💰 Next weekly payment for ${PLAYER}: $NEXT_PAYMENT_DATE at $PLAYER_REFRESH_TIME (in $((NEXT_PAYMENT_DAYS - DIFF_DAYS)) days)"
     
     # Check if the difference is a multiple of 7 // Weekly cycle
-    if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
-        if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
-            # Check if payment was already made today
-            last_payment_file="${HOME}/.zen/game/nostr/${PLAYER}/.lastpayment"
-            if [[ ! -s "$last_payment_file" || "$(cat "$last_payment_file")" != "$TODATE" ]]; then
-                if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
-                    ## Pay NCARD to CAPTAIN
-                    [[ -z $NCARD ]] && NCARD=1
-                    Gpaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                    echo "[7 DAYS CYCLE] $TODATE is MULTIPASS NOSTR Card $NCARD ẐEN PAYMENT ($COINS G1) !!"
-                    payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "NOSTR:${UPLANETG1PUB:0:8}:PAF" 2>/dev/null)
-                    if [[ $? -eq 0 ]]; then
-                        # Record successful payment
-                        echo "$TODATE" > "$last_payment_file"
-                        echo "✅ Weekly payment recorded for ${PLAYER} on $TODATE"
-                        PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+    if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
+        if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
+            if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
+                # Check if payment was already made today
+                last_payment_file="${HOME}/.zen/game/nostr/${PLAYER}/.lastpayment"
+                if [[ ! -s "$last_payment_file" || "$(cat "$last_payment_file")" != "$TODATE" ]]; then
+                    if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+                        ## Pay NCARD to CAPTAIN
+                        [[ -z $NCARD ]] && NCARD=1
+                        Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+                        echo "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) !!"
+                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:MULTIPASS:PAY" 2>/dev/null)
+                        if [[ $? -eq 0 ]]; then
+                            # Record successful payment
+                            echo "$TODATE" > "$last_payment_file"
+                            echo "✅ Weekly payment recorded for ${PLAYER} on $TODATE"
+                            PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+                        else
+                            echo "❌ Weekly payment failed for ${PLAYER} on $TODATE"
+                            PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
+                        fi
                     else
-                        echo "❌ Weekly payment failed for ${PLAYER} on $TODATE"
-                        PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
+                        echo "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds !!"
+                        if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
+                            ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
+                        fi
+                        continue
                     fi
                 else
-                    echo "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds !!"
-                    if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
-                        ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
-                    fi
-                    continue
+                    echo "[7 DAYS CYCLE] Weekly payment already processed for ${PLAYER} on $TODATE"
+                    PAYMENTS_ALREADY_DONE=$((PAYMENTS_ALREADY_DONE + 1))
                 fi
-            else
-                echo "[7 DAYS CYCLE] Weekly payment already processed for ${PLAYER} on $TODATE"
-                PAYMENTS_ALREADY_DONE=$((PAYMENTS_ALREADY_DONE + 1))
             fi
+        else
+            echo "___ CAPTAIN WALLET ACCOUNT : $COINS G1"
         fi
     else
-        echo "___ CAPTAIN WALLET ACCOUNT : $COINS G1"
+        echo "U SOCIETY MEMBER "
+        UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY)
+        ## CHECK VALIDITY (less than a year ?)
+        TODATE_SECONDS=$(date --date="$TODATE" +%s)
+        UDATE_SECONDS=$(date --date="$UDATE" +%s)
+        DIFF_SECONDS=$((TODATE_SECONDS - UDATE_SECONDS))
+        DIFF_DAYS=$((DIFF_SECONDS / 86400))
+        if [ $DIFF_DAYS -lt 365 ]; then
+            echo "OK VALID $((365 - DIFF_DAYS)) days left..."
+        else
+            echo "GAME OVER since $((DIFF_DAYS - 365))"
+        fi
+        if [[ $DIFF_DAYS == 365 ]]; then
+            echo "### ENDING U SOCIETY FREE MODE"
+            rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
+            rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
+            ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${PLAYER}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "PLEASE RENEW"
+        fi
     fi
 
     ########################################################################
@@ -593,7 +606,7 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
-        ## Indicate "NOSTRG1PUB:primal" into nostr profile 
+        ## Indicate "G1PUBNOSTR:primal" into nostr profile 
         if [[ -d ~/.zen/game/nostr/${PLAYER}/PRIMAL/N1 ]]; then
             # Member Wallet
             PoH=":${primal}"
