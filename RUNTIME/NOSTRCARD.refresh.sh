@@ -187,17 +187,6 @@ should_refresh() {
         fi
     fi
 
-    # Vérification 2: Nouveaux fichiers détectés depuis la dernière mise à jour IPNS
-    if [[ -n "$last_ipns_update" ]]; then
-        # Find files modified since last IPNS update
-        new_files=$(find "$player_dir" -type f -newer "$last_ipns_update_file" 2>/dev/null | wc -l)
-        if [[ $new_files -gt 0 ]]; then
-            REFRESH_REASON="new_files"
-            echo "New files detected since last IPNS update: $new_files files for ${PLAYER}"
-            return 0
-        fi
-    fi
-
     ##############################################
     ## MULTIPASS APP UPDATE
     [[ ! -d ${player_dir}/APP/uDRIVE ]] \
@@ -212,10 +201,8 @@ should_refresh() {
     ## update uDRIVE APP
     cd ${player_dir}/APP/uDRIVE/
     # remove when generate_ipfs_structure.sh code is stable
-    rm index.html _index.html manifest.json 2>/dev/null ## Reset uDRIVE index & manifest
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
     echo "UDRIVE UDPATE : $myIPFS/ipfs/$UDRIVE"
-    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
     cd - 2>&1 >/dev/null
     
     if [[ "$UDRIVE" != "$last_udrive" ]]; then
@@ -237,9 +224,7 @@ should_refresh() {
 
     ## update uWORLD APP
     cd ${player_dir}/APP/uWORLD/
-    rm index.html _index.html manifest.json 2>/dev/null ## Reset uWORLD index & manifest
     UWORLD=$(./generate_ipfs_RPG.sh .) ## UPDATE MULTIPASS uWORLD
-    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
     cd - 2>&1 >/dev/null
 
     if [[ "$UWORLD" != "$last_uworld" ]]; then
