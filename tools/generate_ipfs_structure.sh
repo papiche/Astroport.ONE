@@ -33,7 +33,7 @@ DESCRIPTION:
 WORKFLOW:
     1. ./generate_ipfs_structure.sh [--log] DIRECTORY
     2. Le script retourne le CID final de l'application
-    3. Accéder à http://127.0.0.1:8080/ipfs/[CID]/
+    3. Accéder à http://127.0.0.1:8080/ipfs/[CID]
 
 SORTIE:
     - Mode normal: Seul le CID final est affiché
@@ -3776,7 +3776,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
 
             // Build new URL with the new CID
             const currentURL = new URL(window.location.href);
-            const newURL = `${currentURL.protocol}//${currentURL.host}/ipfs/${newCid}/`;
+            const newURL = `${currentURL.protocol}//${currentURL.host}/ipfs/${newCid}`;
 
             console.log('Redirecting to:', newURL);
 
