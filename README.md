@@ -1,369 +1,122 @@
-# Astroport.ONE: Your Decentralized Portal to a New Digital Frontier
+Of course. The current README is very dense and technically focused. It's excellent as a specification sheet but can be overwhelming for a newcomer. The key is to transform it from a "What it is" document into a "Why it matters and how you can join" guide.
+
+The most crucial change is to **center the entire narrative around the cooperative model**. Astroport.ONE isn't just a piece of software; it's the tool to build a new kind of digital economy.
+
+Here is a proposed rewrite of the README.md. It simplifies the concepts, clarifies the user journey, and puts the cooperative vision front and center.
+
+---
+
+# Astroport.ONE: Building a Cooperative Internet
 
 [FR](README.fr.md) - [ES](README.es.md)
 
-**Welcome to Astroport.ONE!** Imagine a digital world where you are in control, where data is secure, payments are seamless, and community thrives beyond borders. Astroport.ONE is building this future, and you are invited to be a part of it.
+**The internet was meant to be a tool for liberation. Instead, we became its product.** Our data is monetized, our communities are fragmented, and our digital lives are owned by a handful of giant corporations.
+
+**Astroport.ONE is a declaration of digital independence.** It's not just another platform; it's a suite of open-source tools and a social contract designed to help individuals and communities build a Web3 ecosystem they truly own.
+
+Powered by the **[CopyLaRadio](https://copylaradio.com) Cooperative**, our mission is to transform users from digital tenants into sovereign co-owners of their infrastructure.
 
 ## 🌍 What is Astroport.ONE?
 
-Astroport.ONE is a revolutionary platform designed to empower individuals and communities in the Web3 era. It's more than just software; it's a toolkit for creating your own decentralized digital embassy - a **Station** - where you can manage your digital identity, participate in a decentralized economy using the Ğ1 (June) cryptocurrency, and contribute to a global network of interconnected stations.
+Astroport.ONE is the open-source software that allows you to run your own personal server—a **Station**. Think of it as your digital embassy on a new, decentralized frontier.
 
-**Think of Astroport.ONE as:**
+With your Station, you can:
+*   ✊ **Own Your Data:** Store your files on the InterPlanetary File System (IPFS), making them resistant to censorship and corporate control.
+*   💬 **Communicate Freely:** Connect to the decentralized social network NOSTR, safe from algorithms and arbitrary bans.
+*   💰 **Build a Real Economy:** Use the Ğ1 (June) free currency and our internal Ẑen accounting system to create value and exchange it fairly.
 
-*   **Your Personal Data Haven:** Store and manage your data securely thanks to the InterPlanetary File System (IPFS), ensuring it is censorship-resistant and always accessible.
-*   **A Commission-Free Payment System:** Use the Ğ1 (June) cryptocurrency for peer-to-peer transactions without intermediaries or fees, fostering a fair and equitable economy.
-*   **A Digital Community Builder:** Connect with other Astroport.ONE Stations and users worldwide, sharing information, resources, and building trust-based networks.
-*   **A "Construction Guide" for the Decentralized Web:** Leverage our open-source tools and software to create and deploy your own Web3 applications and services.
+## 🌱 The Cooperative Economic Model: From Users to Owners
 
-## 🚀 The UPlanet Ecosystem: Two Levels of Digital Sovereignty
+This isn't just about technology. It's about building a sustainable, cooperative economy. The legal and social backbone of our project is the **[CopyLaRadio](https://www.copylaradio.com) SCIC**, a French cooperative society.
 
-Astroport.ONE powers the **UPlanet ecosystem**, which operates on two distinct levels with different capabilities and security requirements:
+Our model is simple: **we turn the cost of infrastructure into shared capital.**
+*   **The Ẑen (Ẑ):** To manage our projects, we use an internal, stable accounting unit called the Ẑen. Within our cooperative, **1 Ẑen = 1€**. It allows us to transparently manage our assets (servers, domains, etc.) and our expenses.
+*   **Shared Ownership:** When you contribute to the cooperative, you're not just "paying for a service." You are buying parts of the shared infrastructure, becoming a co-owner of the servers, and investing in our collective future—including real-world assets like forests.
 
-### 🌐 **UPlanet ORIGIN (EnfinLibre)**
-- **Level**: Basic access level for all users
-- **Security**: Standard Ğ1 transaction monitoring
-- **Network**: Public network with no swarm key restrictions
-- **Control**: Basic primal transaction verification (any primal source accepted)
-- **Purpose**: Entry point for new users with MULTIPASS and ZENCARD services
-- **Token Value**: 1 Ẑen = 0.1 Ğ1 (fixed rate)
+## 🚀 Your Journey in Our Ecosystem: 3 Paths to Sovereignty
 
-### 🛡️ **UPlanet Ẑen (Private Network)**
-- **Level**: Advanced level requiring Y-level activation (SSH<->IPFS key twin)
-- **Security**: Enhanced primal transaction control with intrusion detection
-- **Network**: Private network using custom `~/.ipfs/swarm.key` for secure isolation
-- **Control**: **Real-time token capitalization tool** - controls input € = output Ẑen emissions
-- **Purpose**: Secure financial operations and advanced services
-- **Token Value**: Customizable based on community needs (technically still 0.1 Ğ1)
+We offer three clear ways to join, each with its own Zine (flyer) to guide you.
 
-#### **ZEN Economy Stable COIN System**
+### 1. 🌐 [MULTIPASS](https://ipfs.copylaradio.com/ipfs/QmcjpCAfSCn3pucSSWKP5i7HqQCkXnfesVo5z7m6btT5Mv/multipass.html) - Your First Step
+**The User Path (1 Ẑen/week)**
 
-UPlanet Ẑen operates as a **Stable COIN system** that can work with **any asset class** while maintaining proper value equity:
+This is your digital passport. It’s the easiest way to explore the ecosystem, secure your identity, and start using our services.
 
-| **Asset Class** | **ZEN Representation** | **Example Community** |
-|-----------------|----------------------|----------------------|
-| **Fiat Currencies** | 1 Ẑen = 1€, 1$, 1¥ | Local Economy Networks |
-| **Real Estate** | 1 Ẑen = 1m² land | Property Investment Groups |
-| **Commodities** | 1 Ẑen = 1kg gold/silver | Precious Metals Collectives |
-| **DeFi Tokens** | 1 Ẑen = 1 USDC/DAI | DeFi Integration Networks |
-| **Energy Credits** | 1 Ẑen = 1 kWh | Renewable Energy Communities |
-| **Carbon Credits** | 1 Ẑen = 1 ton CO2 | Environmental Conservation Groups |
+*   **What you get:**
+    *   ✅ A sovereign **NOSTR Identity**.
+    *   ✅ A personal **AI Assistant** (#BRO).
+    *   ✅ A **Ẑen Wallet** to participate in the economy (earn Ẑen when your content is liked!).
+    *   ✅ **uDRIVE**, your personal IPFS storage space.
 
-**Learn more about the security system**: [Primal Wallet Control Documentation](tools/primal_wallet_control.README.md)
+### 2. ☁️ [ZENCARD](https://ipfs.copylaradio.com/ipfs/QmQRreMYDHhAnkg7rwgYYdS5QDhvjjeBdozE16L3h5A8ED/zencard.html) - Your Sovereign Cloud
+**The Co-owner Path (5 Ẑen/week or purchase parts)**
 
-### 🏢 **Made In Zen Cooperative**
+Ready to de-google your life? The ZenCard gives you a full-featured, private cloud and makes you a member of the cooperative.
 
-**[Made In Zen](https://opencollective.com/made-in-zen)** is the cooperative that federates other cooperatives and trains people to create new "UPlanet Ẑen" communities. It operates as a fiscal host and stablecoin issuer, providing:
+*   **What you get:**
+    *   ✅ **Everything from MULTIPASS.**
+    *   ✅ **128 GB Private NextCloud** to sync your files, contacts, and calendars.
+    *   ✅ A path to becoming a **co-owner of the infrastructure** by purchasing cooperative shares.
+    *   **Investment Tiers:**
+        *   **[UPlanet SATELLITE (50€/year)](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611):** Own a share of a Raspberry Pi 5 node.
+        *   **[Sagittarius Constellation](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400):** Invest in a high-performance PC Gamer node and share in its revenue.
 
-- **Infrastructure Ownership**: Co-ownership of Raspberry Pi 5 satellites and PC Gamer constellation
-- **Training Programs**: Formation UPlanet ẐEN for creating new decentralized communities
-- **Token Distribution**: Distribution of Ğ1 tokens to associations and companies
-- **100% Collateralization**: For every euro received, 1 Ẑen is credited to the corresponding ZenCard
+### 3. ⚡ [CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html) - The Builder
+**The Contributor Path**
 
-**Investment Opportunities**:
-- **[UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611)**: 50€/year for 128 GB on Raspberry Pi 5
-- **[Sagittarius Constellation](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)**: PC Gamer investment with AI access and revenue generation potential
+For those who want to be at the heart of the network. A Captain runs a Station, provides services to other users, and earns Ẑen for their contribution.
 
-## 🎫 Three Identity Levels: Your Journey to Digital Sovereignty
+*   **What you do:**
+    *   ✅ Transform your PC or Raspberry Pi into a value-generating node.
+    *   ✅ Join the **CopyLaRadio cooperative** as a technical provider.
+    *   ✅ Earn Ẑen by hosting MULTIPASS and ZenCard users.
+    *   ✅ Receive full training and support from the community.
 
-### 1. 🌐 **MULTIPASS** - Your Basic Digital Identity
+> 📄 Click each link to view or print the Zine flyer for that path!
 
-**Price**: 1 Ẑen/week (0.1 Ğ1)
+---
 
-**What you get:**
-- ✅ **NOSTR Identity**: Secure public key for decentralized social network
-- ✅ **uDRIVE IPFS**: Personal decentralized storage (128 GB)
-- ✅ **MULTIPASS Wallet**: Dedicated Ẑen accounting system (1 Ẑen = 0.1 Ğ1 on UPlanet ORIGIN)
-- ✅ **Personal AI Assistant**: #BRO for your questions and tasks
-- ✅ **UMAP Geolocation**: Connect to your local community (0.01° precision)
-- ✅ **Ẑen Exchanges**: Direct transfers between MULTIPASS holders
+## A Tale of Two Worlds: UPlanet ORIGIN vs. UPlanet Ẑen
 
-**Economy:**
-- Each like received = 0.1 Ğ1 automatically transferred to your MULTIPASS wallet
-- Rechargeable via Cesium Ginkgo on UPlanet ORIGIN
-- Rechargeable via Open Collective on UPlanet Ẑen
-- Captain receives 1 Ẑen/week for hosting
+The UPlanet ecosystem has two interconnected "realms" designed for different purposes.
 
-### 2. ☁️ **ZENCARD** - Liberate Your Cloud & Smartphone
+| Feature | **UPlanet ORIGIN (The Public Gateway)** | ✅ **UPlanet Ẑen (The Cooperative Network)** |
+| :--- | :--- | :--- |
+| **Purpose** | **Discovery & Onboarding.** A "bac à sable" to test the tech. | **Building & Economy.** The real, value-driven cooperative space. |
+| **Access** | Open to everyone with an email or Ğ1 account. | Reserved for **cooperative members** (ZENCARD & Captains). |
+| **Value of Ẑen**| 1 Ẑen = 0.1 Ğ1 (an internal play-money). | **1 Ẑen = 1€** (a stable unit for our real economy). |
+| **Confiance**| Basic identity verification. | Based on the Ğ1 **Web of Trust** and the legal cooperative pact. |
+| **Identity** | Basic MULTIPASS. | **Validated uPASSPORT**, your certificate of co-ownership. |
 
-**Price**: 4 Ẑen/week (4€)
+---
 
-**Available to members**: [CopyLaRadio](https://opencollective.com/monnaie-libre)
+## 🛠️ Get Started: Become a Builder
 
-**What you get:**
-- ✅ **Everything from MULTIPASS** included
-- ✅ **Personal NextCloud**: 128 GB secure storage
-- ✅ **De-googling**: Liberate your smartphone from GAFAM
-- ✅ **Synchronization**: All your connected devices
-- ✅ **Collaboration**: Secure document sharing
-- ✅ **ZENCARD Wallet**: Separate Ẑen accounting system with enhanced features
-- ✅ **ZENCARD Exchanges**: Transfers between ZENCARD holders
-- ✅ **Made In Zen Access**: Become a co-owner of infrastructure through Made In Zen tokens
-
-**Recharge**: [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
-Volunteer on UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
-
-**Infrastructure Investment**: Access to [UPlanet SATELLITE](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611) (50€/year) and [Sagittarius Constellation](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400) (PC Gamer investment)
-
-### 💰 **Token Accounting System**
-
-The UPlanet ecosystem uses **multiple token types** with different accounting systems:
-
-#### **Ẑen Tokens (MULTIPASS & ZENCARD)**
-- **UPlanet ORIGIN**: 1 Ẑen = 0.1 Ğ1 (fixed rate)
-- **UPlanet Ẑen**: 1 Ẑen = Custom value (€, land, energy, etc.) while maintaining 0.1 Ğ1 technical base
-
-#### **NEẐ Tokens (uPASSPORT ZEROCARD)**
-- **Value**: 1 NEẐ = 1 Ğ1 (direct Ğ1 equivalent)
-- **Purpose**: Capital shares in Made In Zen cooperative infrastructure
-- **Usage**: Investment in UPlanet SATELLITE and Sagittarius Constellation
-
-#### **Made In Zen Tokens**
-- **Purpose**: Cooperative governance and infrastructure ownership
-- **Access**: Available to ZENCARD holders and uPASSPORT users
-- **Value**: Represents shares in the cooperative's physical infrastructure
-
-This multi-token system allows for flexible economic models while maintaining Ğ1 as the underlying foundation and enabling cooperative ownership structures.
-
-### 3. 🛡️ **uPASSPORT** - Your Validated Identity
-
-**Access**: Via primary transaction from a Ğ1 member account
-
-**What you get:**
-- ✅ **ZEROCARD Wallet**: Connected to member wallet creating Ğ1 at DU rate (Universal Dividend) and NEẐ tokens (1 NEẐ = 1 Ğ1)
-- ✅ **Web of Trust Validation**: Community-verified identity
-- ✅ **Advanced Services Access**: Premium features
-- ✅ **N1/N2 Preparation**: Foundation for future level exploration
-- ✅ **Made In Zen Participation**: Access to cooperative governance and training programs (DU² voting system)
-
-Option: **321 DU Organization**: [The DU Game](https://pad.p2p.legal/s/321DU.LeJeu#)
-
-## 🚀 Progression from UPlanet ORIGIN to UPlanet Ẑen
-
-### **Getting Started with UPlanet ORIGIN**
-1. **Install Astroport.ONE** using the automated installation script
-2. **Create your MULTIPASS** for basic digital identity and AI assistant
-3. **Access public services** with standard Ğ1 transaction monitoring
-4. **Join the community** and learn about decentralized technologies
-
-### **Advancing to UPlanet Ẑen**
-To access the advanced features and custom token valuations:
-
-1. **Activate Y-Level**: Enable SSH<->IPFS key twin functionality
-2. **Create Private Network**: Generate your custom `~/.ipfs/swarm.key`
-3. **Join Specialized Communities**: Access asset-backed token networks
-4. **Participate in Advanced Services**: Use DeFi integrations and custom valuations
-
-### **Benefits of UPlanet Ẑen Advancement**
-- **Enhanced Security**: Intrusion detection and automatic refund systems
-- **Custom Token Values**: Define your community's economic model
-- **Asset Backing**: Real-world asset representation (forest, energy, etc.)
-- **DeFi Integration**: Seamless connection with existing DeFi protocols
-- **Community Autonomy**: Control your own token valuation and economic rules
-
-## 🚀 Essential Features: The Power of Astroport.ONE
-
-### 🔐 **Digital Identity & Access Management**
-
-*   **ZenCard**: An innovative payment system based on the simplicity and security of QR Codes, enabling seamless Ğ1 transactions and digital payments across the UPlanet ecosystem. This is the basic payment system available to all users.
-
-*   **ZENCARD**: Advanced payment system for CopyLaRadio members, providing enhanced features and access to the Made In Zen cooperative ecosystem. ZENCARD holders become co-owners of infrastructure through Made In Zen tokens.
-
-*   **AstroID**: Your sovereign digital identity, inviolable and under your complete control. Built on NOSTR protocol, it provides secure authentication and reputation management within the Web of Trust.
-
-### 💾 **Decentralized Storage & Data Management**
-
-*   **IPFS at its Core**: Benefit from distributed storage, resistant to censorship and centralized failures. Your data is stored across a global network, ensuring availability and resilience.
-
-*   **MBR and Allocation Table**: A Tiddlywiki-based data organization system optimized for performance and reliability. Your personal knowledge base is automatically synchronized and version-controlled.
-
-### 🤖 **AstroBot: Intelligent Automation Engine**
-
-*   **Vœux System**: "Vœux" (Vows) are intelligent keywords that *you* define in your TiddlyWiki to trigger **AstroBot**, the automated heart of Astroport.ONE. These keywords activate BASH programs - rudimentary smart contracts - that automate actions, synchronize data, or perform specific tasks within your station.
-
-*   **Smart Contract Automation**: AstroBot reacts to events on the Ğ1 network and your "Vœux" to orchestrate automation and optimize your experience. While Vœux can be supported by donations in the Ğ1 free currency, their primary function is automation via AstroBOT, not collaborative funding.
-
-### 🌐 **Network Synchronization & Communication**
-
-*   **Astroport.ONE Stations Network**: Your station communicates and synchronizes with a global network of digital embassies, ensuring maximum data consistency and availability across the UPlanet ecosystem.
-
-*   **G1PalPay.sh: Real-Time Transaction Monitor**: A crucial script that monitors the Ğ1 blockchain in real-time. It allows Astroport.ONE to react to transactions, execute commands based on transaction comments, and manage financial flows within the ecosystem.
-
-### 🔄 **Cross-Platform Integration**
-
-*   **NOSTR Integration**: Seamless connection to the decentralized social network, enabling secure messaging, content sharing, and community building.
-
-*   **DeFi Compatibility**: Ready integration with existing DeFi protocols and traditional financial systems through the ZEN Economy Stable COIN system.
-
-*   **API Ecosystem**: Comprehensive REST APIs for third-party integrations, mobile applications, and custom Web3 services.
-
-## **Who is Astroport.ONE For?**
-
-*   **Individuals seeking digital sovereignty:** Take back control of your data and your online presence.
-*   **Communities building decentralized solutions:** Create and manage shared resources and collaborative projects.
-*   **Developers and innovators:** Explore the potential of Web3 and build decentralized applications on a robust platform.
-*   **Users of the Ğ1 (June) cryptocurrency:** Enhance your Ğ1 experience with secure payments and a thriving ecosystem.
-*   **Anyone interested in a freer, safer, and more interconnected digital world.**
-
-## **Get Started with Astroport.ONE:**
+Ready to host your own Station and join the cooperative network?
 
 **Installation (Linux - Debian/Ubuntu/Mint):**
-
-Setting up your Astroport.ONE Station is easy thanks to our automated installation script:
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
 ```
+This script will set up your Astroport.ONE Station. By installing it, you will automatically appear on the [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio) swarm map. To join the `UPlanet Ẑen` cooperative networks, you will need to activate advanced features and become a member.
 
-### Running Processes
+## 📚 Documentation & Technical Details
 
-After installation, you should find the following processes running:
+For those who want to dive deeper into the nuts and bolts of our system.
 
-```
-/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub
-/bin/bash /home/fred/.zen/G1BILLET/G1BILLETS.sh daemon
-/bin/bash /home/fred/.zen/Astroport.ONE/12345.sh
-/bin/bash /home/fred/.zen/Astroport.ONE/_12345.sh
-```
+*   **[🏗️ ARCHITECTURE.md](ARCHITECTURE.md)**: A complete technical overview of the system, data flows, and economic models.
+*   **[📖 DOCUMENTATION.md](DOCUMENTATION.md)**: Our central documentation hub for all components.
+*   **[GitBook Guide](https://astroport-1.gitbook.io/astroport.one/)**: User-friendly documentation and tutorials.
 
-with directories & files in ~/.zen
-```
-$ ls ~/.zen
-Astroport.ONE  [♥Box]  G1BILLET  game  [GPS]  strfry  tmp  UPassport  workspace
-```
-♥Box contains real external IP for NATed LAN stations
-GPS contains Captain account geo location, it is used as "sun time consensus" between ♥Box giving UMAP data priority to closest official relay.
+---
 
-## Usage
+## 🤝 Get Involved & Contribute
 
-### Creating a Player
+Astroport.ONE is FOSS-powered and community-driven.
 
-To create a player, define the following parameters: email, salt, pepper, lat, lon and PASS.
-
-```bash
-~/.zen/Astroport.ONE/command.sh
-```
-
-### BASH API
-
-Once your Astroport station is started, the following ports are activated:
-
-- **Port 1234**: Publishes API v1 (/45780, /45781 and /45782 are the response ports)
-- **Port 12345**: Publishes the station map.
-- **Port 33101**: Commands the creation of G1BILLETS (:33102 allows their retrieval)
-- **Ports 8080, 4001 and 5001**: IPFS gateway ports.
-- **Port 54321**: Publishes API v2 ([UPassport](https://github.com/papiche/UPassport/)).
-
-![](./OpenPORTS.jpg)
-
-### UPLANET API (Port 54321)
-
-The UPLANET API, provided by UPassport, is a comprehensive interface for managing digital identity and multimedia content within the Astroport.ONE ecosystem. It runs on port 54321 and offers the following endpoints:
-
-#### Core Endpoints
-
-- **`/scan` or `/`**: Main terminal for QR code scanning and UPassport actions
-- **`/nostr`**: NOSTR Card management and interactions
-- **`/rec`**: OBS Studio recording control and multimedia processing
-- **`/webcam`**: Direct webcam recording and processing
-- **`/api/upload`**: File upload to IPFS with NIP authentification
-- **`/uplanet`**: UPlanet account creation and management
-
-#### UPLANET Account Creation
-
-To create a UPLANET account, send a GET request with the following parameters:
-
-```http
-GET /?uplanet=${EMAIL}&zlat=${LATITUDE}&zlon=${LONGITUDE}&g1pub=${LANGUAGE}
-```
-
-| Parameter | Type     | Description                       |
-| :-------- | :------- | :-------------------------------- |
-| `uplanet` | `email`  | **Required**. Player's email       |
-| `zlat`    | `decimal`| **Required**. Latitude with 2 decimal places |
-| `zlon`    | `decimal`| **Required**. Longitude with 2 decimal places |
-| `g1pub`   | `string` | **Optional**. Origin language (fr, en, ...) |
-
-#### Features
-
-- **Identity Management**: Create and manage UPassports with QR code scanning
-- **Multimedia Processing**: Record and process video/audio content
-- **IPFS Integration**: Decentralized storage for all content
-- **NOSTR Integration**: Publish events and manage NOSTR Cards
-- **Ğ1 Integration**: Check balances and process transactions
-
-For more detailed information about the UPLANET API and its capabilities, visit the [UPassport documentation](https://github.com/papiche/UPassport/).
-
-## Documentation
-
-### 📚 Documentation Hub
-
-For complete access to all Astroport.ONE documentation, visit our **[Documentation Hub](DOCUMENTATION.md)** - your central guide to everything Astroport.ONE.
-
-### Technical Architecture
-
-For a comprehensive understanding of Astroport.ONE's technical architecture, including system components, data flows, economic models, and integration details, please refer to our detailed architecture documentation:
-
-**[🏗️ ARCHITECTURE.md](ARCHITECTURE.md)** - Complete technical architecture with diagrams, flow charts, and implementation details
-
-This document covers:
-- System architecture and component interactions
-- Economic system (ZEN.ECONOMY.sh) and payment flows
-- NOSTR integration and filtering system (NIP-101)
-- UPassport authentication and IPFS storage
-- Swarm network and inter-node subscriptions
-- Security, privacy, and monitoring systems
-
-### User Documentation
-
-https://astroport-1.gitbook.io/astroport.one/
-
-## Contribution
-
-FOSS Powered : This project is a selection of some of the most valuable free and open-source software.
-
-By installing Astroport.ONE, you will appear on [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio) swarm map.
-
-By activating Y level (SSH<->IPFS key twin) or Z level (PGP<->IPFS twins) you can join "UPlanet Ẑen"
-
-> Become part of [Astroport #monnaie-libre](https://opencollective.com/monnaie-libre) DRAGON WoT 
-maintained by [CopyLaRadio](https://copylaradio.com) : La coopérative des auto hébergeurs Web2 et Web3 
-
-## Stargazers over time
+*   **Become a Member:** The best way to contribute is to join the **[CopyLaRadio Cooperative on OpenCollective](https://opencollective.com/monnaie-libre)**.
+*   **Star our Repo:** Show your support for our work.
+*   **Discover Ğ1:** Learn more about the [best cryptocurrency you could dream of](https://monnaie-libre.fr).
 
 [![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
-
-## Credits
-
-Thank you to everyone who has contributed to making this software available to all. Do you know [Ğ1](https://monnaie-libre.fr)?
-
-The best cryptocurrency you could dream of.
-
-## Discover the 3 Main Usage Types
-
-Astroport.ONE offers three main ways to join and benefit from the ecosystem. Each usage is explained in a dedicated Zine (flyer) for easy onboarding:
-
-### 1. [🌐 MULTIPASS](https://ipfs.copylaradio.com/ipfs/QmcjpCAfSCn3pucSSWKP5i7HqQCkXnfesVo5z7m6btT5Mv/multipass.html)
-**Your Digital Identity & AI Assistant**
-- Access the decentralized NOSTR social network
-- Get your secure digital identity (NOSTR Card)
-- Enjoy a personal AI assistant (#BRO)
-- 1 Ẑen per week
-
-### 2. [☁️ ZENCARD](https://ipfs.copylaradio.com/ipfs/QmQRreMYDHhAnkg7rwgYYdS5QDhvjjeBdozE16L3h5A8ED/zencard.html)
-**Liberate Your Cloud & Smartphone**
-- 128 GB private NextCloud storage
-- Smartphone "de-googling" and digital detox
-- All the benefits of MULTIPASS included
-- Access to Made In Zen cooperative infrastructure
-- 1 + 4 Ẑen per week
-
-### 3. [⚡ CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html)
-**Become a Node & Earn Ẑen**
-- Transform your PC into a value node
-- Join the CopyLaRadio cooperative
-- Earn Ẑen by offering MULTIPASS and ZENCARD to others
-- Access to Made In Zen training programs
-- Full training and support
-
-> 📄 Click each link to view or print the Zine flyer for that usage!
-

@@ -71,16 +71,16 @@ UPlanet Ẑen fonctionne comme un **système Stable COIN** capable de travailler
 
 **Ce que vous obtenez :**
 - ✅ **Identité NOSTR** : Clé publique sécurisée pour le réseau social décentralisé
-- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (128 Go)
+- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (10 Go)
 - ✅ **Portefeuille MULTIPASS** : Système de comptabilité Ẑen dédié (1 Ẑen = 0.1 Ğ1 sur UPlanet ORIGIN)
-- ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches
+- ✅ **Assistant IA Personnel** : à l'essai gratuitement le service #BRO pour vos questions et tâches
 - ✅ **Géolocalisation UMAP** : Connexion à votre communauté locale (0.01° précision)
 - ✅ **Échanges Ẑen** : Transferts directs entre détenteurs de MULTIPASS
 
 **Économie :**
 - Chaque like reçu = 0.1 Ğ1 automatiquement transféré vers votre portefeuille MULTIPASS
-- Rechargeable via Cesium Ginkgo sur UPlanet ORIGIN
-- Rechargeable via Open Collective sur UPlanet ẐEN
+- Rechargeable via Cesium Ginkgo, silkaj, (et autres clients Duniter v1... sur UPlanet ORIGIN
+- Rechargeable via Open Collective sur UPlanet ẐEN (compatibilité Duniter v2 en cours...)
 - Le capitaine perçoit 1 Ẑen/semaine pour l'hébergement
 
 ### 2. ☁️ **ZENCARD** - Libérez Votre Cloud et Smartphone
@@ -113,7 +113,7 @@ L'écosystème UPlanet utilise **plusieurs types de tokens** avec différents sy
 - **UPlanet Ẑen** : 1 Ẑen = Valeur personnalisée (€, terrain, énergie, etc.) tout en maintenant 0.1 Ğ1 comme base technique
 
 #### **Tokens NEẐ (uPASSPORT ZEROCARD)**
-- **Valeur** : 1 NEẐ = 1 Ğ1 (équivalent Ğ1 direct)
+- **Valeur** : 1 NEẐ = 0.1 Ğ1
 - **Objectif** : Parts de capital dans l'infrastructure coopérative Made In Zen
 - **Utilisation** : Investissement dans UPlanet SATELLITE et Constellation Sagittarius
 
@@ -129,7 +129,7 @@ Ce système multi-tokens permet des modèles économiques flexibles tout en main
 **Accès :** Via transaction primaire depuis un compte membre Ğ1
 
 **Ce que vous obtenez :**
-- ✅ **Portefeuille ZEROCARD** : Connecté au portefeuille membre créant Ğ1 au taux DU (Dividende Universel) et tokens NEẐ (1 NEẐ = 1 Ğ1)
+- ✅ **Portefeuille ZEROCARD** : Connecté au portefeuille membre créant Ğ1 au taux DU (Dividende Universel) et tokens NEẐ
 - ✅ **Validation Web of Trust** : Identité vérifiée par la communauté
 - ✅ **Accès aux services avancés** : Fonctionnalités premium
 - ✅ **Préparation N1/N2** : Base pour l'exploration des futurs niveaux
@@ -170,17 +170,11 @@ Pour accéder aux fonctionnalités avancées et aux valuations personnalisées :
 *   **Stockage Décentralisé et Organisé**
 
     *   **IPFS au Cœur** : Bénéficiez d'un stockage distribué, résistant à la censure et aux pannes centralisées.
-    *   **MBR et Table d'Allocation** : Une organisation des données Tiddlywiki optimisée pour la performance et la fiabilité.
-
-*   **Vœux : Les Mots-Clés qui Animent AstroBot**
-
-    *   **Système de Vœux** :  Plus que de simples souhaits, les "Vœux" sont des mots-clés que *vous* définissez dans votre TiddlyWiki pour déclencher **AstroBot**, le cœur automatisé d'Astroport.ONE. Ces mots-clés activent des programmes en BASH, des contrats intelligents rudimentaires, qui permettent d'automatiser des actions, de synchroniser des données, ou de réaliser des tâches spécifiques au sein de votre station. Bien que les Vœux puissent être soutenus par des dons en monnaie libre Ğ1, leur fonction première est d'orchestrer l'automatisation via AstroBOT, et non le financement collaboratif.
+    *   **MBR et Table d'Allocation** : Une organisation des données par Clefs Géo Spatiales optimisée pour la performance et la fiabilité.
 
 *   **Synchronisation et Communication P2P**
 
-    *   **Stations Astroport.ONE** : Votre station communique et se synchronise avec un réseau d'ambassades numériques, assurant une cohérence et une disponibilité maximales des données.
-    *   **AstroBot : L'Intelligence au Service de Vos Données** : Un système de contrats intelligents en BASH, réagissant aux événements du réseau Ğ1 et aux "Vœux" pour automatiser et optimiser votre expérience.
-    *   **G1PalPay.sh : Le Moniteur de Transactions Ğ1** : Un script crucial qui surveille en temps réel la blockchain Ğ1. Il permet à Astroport.ONE de réagir aux transactions, d'exécuter des commandes basées sur les commentaires de transaction, et de gérer les flux financiers au sein de l'écosystème.
+    *   **Stations Astroport.ONE** : Votre station communique et se synchronise avec un réseau d'ambassades numériques entre amis d'amis, assurant une cohérence et une disponibilité maximales des données.
 
 ## **À Qui s'Adresse Astroport.ONE ?**
 
@@ -231,25 +225,6 @@ Une fois votre station Astroport démarrée, les ports suivants sont activés :
 - **Ports 8080, 4001 et 5001** : Ports de la passerelle IPFS.
 - **Port 54321** : Publie l'API v2 ([UPassport](https://github.com/papiche/UPassport/)).
 
-### Exemples d'Utilisation de l'API
-
-#### Créer un Joueur
-
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&g1pub=${URLENCODEDURL}&email=${PLAYER}
-```
-
-#### Lire la Messagerie de la Base GChange
-
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&messaging=on
-```
-
-#### Déclencher un Paiement de Ğ1
-
-```http
-GET /?salt=${SALT}&pepper=${PEPPER}&pay=1&g1pub=DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech
-```
 
 ### Utilisation de l'API UPLANET
 
