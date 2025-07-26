@@ -689,10 +689,10 @@ for PLAYER in ${PLAYERONE[@]}; do
             if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 ]]; then
                 ## Pay ZCARD to CAPTAIN
                 echo "[7 DAYS CYCLE] $TODATE ZENCARD is paying $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PAY" 2>/dev/null
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null
                 ## RECHARGE MULTIPASS
                 g1dest=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Npaf" "${g1dest}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:REFIL" 2>/dev/null
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Npaf" "${g1dest}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:4NCARD" 2>/dev/null
             else
                 echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
                 if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then

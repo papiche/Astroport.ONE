@@ -301,12 +301,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         "⏰ UPlanet MULTIPASS ... 🪙 ... UPlanet ${UPLANETG1PUB:0:8} ${uSPOT}/nostr" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
-        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
+        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
     ## CREATE CESIUM + PROFILE
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey set --name "UPlanet MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "https://coracle.copylaradio.com" -d "UPlanet MULTIPASS : $HEX : UPlanet ${UPLANETG1PUB:0:8}" &>/dev/null
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey set --name "UPlanet MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "${myIPFS}/ipns/copylaradio.com" -d "UPlanet MULTIPASS : $HEX : UPlanet ${UPLANETG1PUB:0:8}" &>/dev/null
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}

@@ -238,7 +238,7 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "${TODATE} JOURNAL - VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record // UMAP : ${myLIBRA}${UMAPGEN} // USAT : ${myLIBRA}${USATGEN}" \
+    "${TODATE} JOURNAL - VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
     "" "${myLIBRA}/ipfs/${UMAPROOT}/APP" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \

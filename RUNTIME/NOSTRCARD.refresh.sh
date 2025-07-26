@@ -367,13 +367,13 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
     ############################################################ BLOCKING
+    YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
     if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "${primal}" == "" ]]; then
         ## 2nd day MULTIPASS must have received PRIMAL RX
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
             echo "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation"
-            YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
             ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:ORIGIN" 2>/dev/null
             [[ $? -eq 0 ]] \
                 && echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
@@ -419,7 +419,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         [[ -z $NCARD ]] && NCARD=1
                         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
                         echo "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) !!"
-                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:MULTIPASS:PAY" 2>/dev/null)
+                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:NCARD" 2>/dev/null)
                         if [[ $? -eq 0 ]]; then
                             # Record successful payment
                             echo "$TODATE" > "$last_payment_file"
@@ -574,8 +574,6 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "## OFFICIAL PDF UPASSPORT : ${primal} is STATION co OWNER !!"
     fi
 
-    YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-
     ########################################################################
     ######### NOSTR PROFILE SETTING
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
@@ -622,7 +620,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "$description - $city" \
             "$myIPFS/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-            "" "$myIPFS${NOSTRNS}" "" "" "" "" \
+            "" "$myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
             --ipfs_gw "$myIPFS" \
             --ipns_vault "${NOSTRNS}" \
