@@ -100,7 +100,7 @@ Pour rejoindre l'écosystème, il existe deux chemins distincts répondant à de
     *   [Réveiller l'Internet (ToC vs Désinfo)](https://www.copylaradio.com/blog/blog-1/post/reveiller-l-internet-la-toile-de-confiance-web3-contre-la-desinformation-et-les-bulles-d-information-146)
     *   [Made In Zen](https://www.copylaradio.com/blog/blog-1/post/made-in-zen-128)
 *   **Guide Pratique (Pad) :** [https://pad.p2p.legal/s/UPlanet_Enter_Help](https://pad.p2p.legal/s/UPlanet_Enter_Help)
+*   [**Visualisez le avantages du "réseau d'amis d'amis" Web3(N1N2)** par rapport au modèle Internet Wen2 actuel](https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html)
 
 ---
 
-* [Découvrez les avantages du "réseau d'amis d'amis" (N1N2) par rapport au modèle Internet actuel](https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html)  
