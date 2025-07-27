@@ -482,7 +482,6 @@ my_IPCity() {
     echo "$ville,$pays"
 }
 
-IPFSNODEID="$(myIpfsPeerId)"
 # Optimisation: utiliser un cache pour éviter les appels IPFS répétés
 if [[ -z "$IPFSNODEID" ]]; then
     # Fallback: essayer de lire depuis un cache
@@ -606,10 +605,23 @@ CAPTAING1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYE
 CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
 CAPTAINHEX=$(cat $HOME/.zen/game/nostr/CAPTAIN/HEX 2>/dev/null) ## PLAYER ONE HEX
 
-UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB
+## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
+UPLANETNAME_G1=$(cat $HOME/.zen/tmp/UPLANETNAME_G1 2>/dev/null) ## UPLANETNAME_G1 (G1 source)
+[[ -z ${UPLANETNAME_G1} ]] \
+    && UPLANETNAME_G1=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1")
+    && echo ${UPLANETNAME_G1} > $HOME/.zen/tmp/UPLANETNAME_G1
+
+## UPLANETNAME wallet for Service Layer
+UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB (Zen for Services)
 [[ -z ${UPLANETG1PUB} ]] \
     && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
     && echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
+
+## UPLANETNAME.SOCIETY wallet for Cooperative Holders 
+UPLANETNAME.SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME.SOCIETY 2>/dev/null) ## UPLANETNAME.SOCIETY (Zen for Cooperative Holders)
+[[ -z ${UPLANETNAME.SOCIETY} ]] \
+    && UPLANETNAME.SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
+    && echo ${UPLANETNAME.SOCIETY} > $HOME/.zen/tmp/UPLANETNAME.SOCIETY
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \

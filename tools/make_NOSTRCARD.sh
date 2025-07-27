@@ -231,9 +231,6 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
-    ## ADD UPLANETNAME.G1 WALLET LINK FOR Ğ1 DONATION 
-    UPLANETNAME_G1=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1")
-
     ##############################################################
     ### PREPARE NOSTR ZINE
     cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \
