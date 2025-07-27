@@ -37,6 +37,10 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 exec 2>&1 >> ~/.zen/tmp/IA.log
 
+# Optimisation: Pre-compute current timestamp
+CURRENT_TIMESTAMP=$(date +%s)
+CURRENT_TIME_STR=$(date '+%Y-%m-%d %H:%M:%S')
+
 [[ ! -s ~/.zen/Astroport.ONE/tools/my.sh ]] && echo "ERROR. Astroport.ONE is missing !!" && exit 1
 source ~/.zen/Astroport.ONE/tools/my.sh ## finding UPLANETNAME
 
@@ -45,7 +49,6 @@ if ! $MY_PATH/ollama.me.sh; then
     echo "Error: Failed to maintain Ollama connection" >&2
     exit 1
 fi
-
 
 # --- Help function ---
 print_help() {
@@ -83,9 +86,8 @@ if [[ $# -lt 5 ]]; then
   exit 1
 fi
 
-## If No URL : Getting URL from message content - recognize describe_image.py
+## Optimisation: Extract URLs once
 if [ -z "$URL" ]; then
-    # Extraire le premier lien .gif .png ou .jpg de MESSAGE
     URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
     ANYURL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+' | head -n 1)
 fi
@@ -103,8 +105,57 @@ echo "" >&2
 
 # Define log function
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+    echo "[$CURRENT_TIME_STR] $1" >&2
 }
+
+# Optimisation: Detect secret mode early
+SECRET_MODE=false
+[[ "$8" == "--secret" ]] && SECRET_MODE=true
+
+# Optimisation: Parse tags once at the beginning
+message_text=$(echo "$MESSAGE" | tr '\n' ' ')
+declare -A TAGS
+TAGS[BRO]=false
+TAGS[BOT]=false
+TAGS[reset]=false
+TAGS[mem]=false
+TAGS[search]=false
+TAGS[image]=false
+TAGS[video]=false
+TAGS[music]=false
+TAGS[youtube]=false
+TAGS[pierre]=false
+TAGS[amelie]=false
+TAGS[rec2]=false
+TAGS[all]=false
+
+# Single pass tag detection
+if [[ "$message_text" =~ \#BRO\  ]]; then TAGS[BRO]=true; fi
+if [[ "$message_text" =~ \#BOT\  ]]; then TAGS[BOT]=true; fi
+if [[ "$message_text" =~ \#reset ]]; then TAGS[reset]=true; fi
+if [[ "$message_text" =~ \#mem ]]; then TAGS[mem]=true; fi
+if [[ "$message_text" =~ \#search ]]; then TAGS[search]=true; fi
+if [[ "$message_text" =~ \#image ]]; then TAGS[image]=true; fi
+if [[ "$message_text" =~ \#video ]]; then TAGS[video]=true; fi
+if [[ "$message_text" =~ \#music ]]; then TAGS[music]=true; fi
+if [[ "$message_text" =~ \#youtube ]]; then TAGS[youtube]=true; fi
+if [[ "$message_text" =~ \#pierre ]]; then TAGS[pierre]=true; fi
+if [[ "$message_text" =~ \#amelie ]]; then TAGS[amelie]=true; fi
+if [[ "$message_text" =~ \#rec2 ]]; then TAGS[rec2]=true; fi
+if [[ "$message_text" =~ \#all ]]; then TAGS[all]=true; fi
+
+# Detect memory slot once
+memory_slot=0
+for i in {1..12}; do
+    if [[ "$message_text" =~ \#${i}\b ]]; then
+        memory_slot=$i
+        break
+    fi
+done
+
+# Optimisation: Set user_id once
+user_id="$KNAME"
+[[ -z "$user_id" ]] && user_id="$PUBKEY"
 
 # Function to check if user has access to memory slots 1-12
 check_memory_slot_access() {
@@ -112,17 +163,11 @@ check_memory_slot_access() {
     local slot="$2"
     
     # Slot 0 is always accessible
-    if [[ "$slot" == "0" ]]; then
-        return 0
-    fi
+    [[ "$slot" == "0" ]] && return 0
     
     # For slots 1-12, check if user is in ~/.zen/game/players/
     if [[ "$slot" -ge 1 && "$slot" -le 12 ]]; then
-        if [[ -d "$HOME/.zen/game/players/$user_id" ]]; then
-            return 0  # User has access
-        else
-            return 1  # User doesn't have access
-        fi
+        [[ -d "$HOME/.zen/game/players/$user_id" ]] && return 0 || return 1
     fi
     
     return 0  # Default allow for other cases
@@ -165,12 +210,11 @@ Votre Astroport Captain.
 get_event_by_id() {
     local event_id="$1"
     cd $HOME/.zen/strfry
-    # Use strfry scan with a filter for the specific event ID
     ./strfry scan '{"ids":["'"$event_id"'"]}' 2>/dev/null
     cd - 1>&2>/dev/null
 }
 
-# Function to get the conversation thread :
+# Function to get the conversation thread
 get_conversation_thread() {
     local event_id="$1"
     local current_content=""
@@ -206,17 +250,15 @@ get_conversation_thread() {
     echo -e "$current_content"
 }
 
-## Getting KNAME default localisation
+## Optimisation: Load GPS data once
 if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     if [[ $LAT == "0.00" && $LON == "0.00" ]]; then
         ## Check SWARM account
         isInSwarmGPS=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${KNAME}/GPS 2>/dev/null)
-        [[ -n  ${isInSwarmGPS} ]] \
-            && source ${isInSwarmGPS}
+        [[ -n  ${isInSwarmGPS} ]] && source ${isInSwarmGPS}
 
         ## source NOSTR Card LAT=?;LON=?;
-        [[ -s ${HOME}/.zen/game/nostr/${KNAME}/GPS ]] \
-            && source ${HOME}/.zen/game/nostr/${KNAME}/GPS
+        [[ -s ${HOME}/.zen/game/nostr/${KNAME}/GPS ]] && source ${HOME}/.zen/game/nostr/${KNAME}/GPS
     fi
     # correct empty value
     [[ -z $LAT ]] && LAT="0.00"
@@ -225,8 +267,10 @@ fi
 
 echo "UMAP : ${LAT} ${LON}"
 
+# Optimisation: Calculate UMAP values once
 UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
+
 ## Do not reply to UPLanet UMAP message
 [[ $PUBKEY == $UMAPHEX ]] && exit 0
 
@@ -239,75 +283,48 @@ if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     #######################################################################
 fi
 
-##################################################################""
-## Inform Swarm cache (UPLANET.refresh.sh)
+## Optimisation: Calculate paths once
 SLAT="${LAT::-1}"
 SLON="${LON::-1}"
 RLAT=$(echo ${LAT} | cut -d '.' -f 1)
 RLON=$(echo ${LON} | cut -d '.' -f 1)
-##################################################################""
 UMAPPATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}"
-## Indicates UMAP HEX to swarm
+
+# Create UMAP directories and files once
 if [ ! -s ${UMAPPATH}/HEX ]; then
     mkdir -p ${UMAPPATH}
     echo "$UMAPHEX" > ${UMAPPATH}/HEX
 fi
 
-# nostr whitelist, Used by NOSTR.UMAP.refresh.sh (completed by NODE.refresh.sh)
 if [ ! -s ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX ]; then
     mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
     echo "$UMAPHEX" > ~/.zen/game/nostr/UMAP_${LAT}_${LON}/HEX
 fi
 
-##################################################################""
-### Extract message
-message_text=$(echo "$MESSAGE" | tr '\n' ' ')
-#~ echo "Message text from message: '$message_text'"
-
-################################################################### #BRO #BOT
-if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
-    #######################################################################
-    # Detect slot tag (#1 to #12) for memory context
-    slot=0
-    for i in {1..12}; do
-        if [[ "$message_text" =~ \#${i}\b ]]; then
-            slot=$i
-            break
-        fi
-    done
-    # Use KNAME (nostr email) if available, else fallback to pubkey
-    user_id="$KNAME"
-    if [[ -z "$user_id" ]]; then
-        user_id="$PUBKEY"
-    fi
+################################################################### 
+# Optimisation: Main processing logic simplified
+if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     
-    # Check for #rec2 tag to auto-record bot response
-    auto_record_response=false
-    if [[ "$message_text" =~ \#rec2 ]]; then
-        auto_record_response=true
-    fi
-    
-    # Check for #reset tag to clear user memory
-    if [[ "$message_text" =~ \#reset ]]; then
-        # Check if reset is for a specific slot
+    # Optimisation: Handle memory operations first
+    if [[ "${TAGS[reset]}" == true ]]; then
+        # Memory reset logic
         reset_slot=0
-        for i in {1..12}; do
-            if [[ "$message_text" =~ \#reset.*\#${i}\b ]]; then
-                reset_slot=$i
-                break
+        [[ $memory_slot -gt 0 ]] && reset_slot=$memory_slot
+        
+        if [[ "${TAGS[all]}" == true ]]; then
+            # Reset all slots (0-12)
+            user_dir="$HOME/.zen/tmp/flashmem/${user_id}"
+            if [[ -d "$user_dir" ]]; then
+                rm -f "$user_dir"/slot*.json
+                echo "All memory slots reset for USER: $user_id"
+                KeyANSWER="Toutes les mémoires (slots 0-12) ont été réinitialisées. Utilisez #reset #N pour réinitialiser un slot spécifique, ou #reset pour réinitialiser le slot 0."
+            else
+                echo "No memory directory found for USER: $user_id"
+                KeyANSWER="Aucune mémoire trouvée."
             fi
-        done
-        
-        # Check if #all is present to reset all slots
-        reset_all=false
-        if [[ "$message_text" =~ \#all ]]; then
-            reset_all=true
-        fi
-        
-        if [[ $reset_slot -gt 0 ]]; then
+        elif [[ $reset_slot -gt 0 ]]; then
             # Check memory slot access for reset
             if check_memory_slot_access "$user_id" "$reset_slot"; then
-                # Reset specific slot
                 slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot${reset_slot}.json"
                 if [[ -f "$slot_file" ]]; then
                     rm -f "$slot_file"
@@ -322,17 +339,6 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 send_memory_access_denied "$PUBKEY" "$EVENT" "$reset_slot"
                 KeyANSWER="Accès refusé au slot $reset_slot. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12."
             fi
-        elif [[ "$reset_all" == true ]]; then
-            # Reset all slots (0-12)
-            user_dir="$HOME/.zen/tmp/flashmem/${user_id}"
-            if [[ -d "$user_dir" ]]; then
-                rm -f "$user_dir"/slot*.json
-                echo "All memory slots reset for USER: $user_id"
-                KeyANSWER="Toutes les mémoires (slots 0-12) ont été réinitialisées. Utilisez #reset #N pour réinitialiser un slot spécifique, ou #reset pour réinitialiser le slot 0."
-            else
-                echo "No memory directory found for USER: $user_id"
-                KeyANSWER="Aucune mémoire trouvée."
-            fi
         else
             # Reset only slot 0 (default behavior)
             slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot0.json"
@@ -345,31 +351,21 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 KeyANSWER="Pas de mémoire trouvée pour le slot 0."
             fi
         fi
-    # Check for #mem tag to return memory content
-    elif [[ "$message_text" =~ \#mem ]]; then
-        # Check if mem is for a specific slot
+    elif [[ "${TAGS[mem]}" == true ]]; then
+        # Memory display logic
         mem_slot=0
-        for i in {1..12}; do
-            if [[ "$message_text" =~ \#mem.*\#${i}\b ]]; then
-                mem_slot=$i
-                break
-            fi
-        done
+        [[ $memory_slot -gt 0 ]] && mem_slot=$memory_slot
         
         if [[ $mem_slot -gt 0 ]]; then
             # Check memory slot access for display
             if check_memory_slot_access "$user_id" "$mem_slot"; then
-                # Show specific slot memory
                 slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot${mem_slot}.json"
                 if [[ -f "$slot_file" ]]; then
                     echo "Returning memory content for USER: $user_id, SLOT: $mem_slot"
                     temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot${mem_slot}.txt"
-
                     echo "📝 Historique (#mem slot $mem_slot)" > "$temp_mem_file"
                     echo "========================" >> "$temp_mem_file"
-
                     jq -r '.messages | to_entries | .[-30:] | .[] | "📅 \(.value.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y %H:%M"))\n💬 \(.value.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n---"' "$slot_file" >> "$temp_mem_file"
-
                     KeyANSWER=$(cat "$temp_mem_file")
                     rm -f "$temp_mem_file"
                 else
@@ -387,15 +383,12 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
             if [[ -f "$slot_file" ]]; then
                 echo "Returning memory content for USER: $user_id, SLOT: 0"
                 temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot0.txt"
-                
                 echo "📝 Historique (#mem slot 0)" > "$temp_mem_file"
-            echo "========================" >> "$temp_mem_file"
-
+                echo "========================" >> "$temp_mem_file"
                 jq -r '.messages | to_entries | .[-30:] | .[] | "📅 \(.value.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y %H:%M"))\n💬 \(.value.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n---"' "$slot_file" >> "$temp_mem_file"
-
-            KeyANSWER=$(cat "$temp_mem_file")
-            rm -f "$temp_mem_file"
-        else
+                KeyANSWER=$(cat "$temp_mem_file")
+                rm -f "$temp_mem_file"
+            else
                 echo "No memory file found for USER: $user_id, SLOT: 0"
                 KeyANSWER="Aucune mémoire trouvée."
             fi
@@ -403,88 +396,66 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
     fi
 
     #######################################################################
-    if [[ ! -z $URL ]]; then
+    # Optimisation: Process image description once if needed
+    if [[ ! -z $URL && -z "$KeyANSWER" ]]; then
         echo "Looking at the image (using ollama + llava)..."
         DESC="IMAGE : $("$MY_PATH/describe_image.py" "$URL" --json | jq -r '.description')"
     fi
 
-    #######################################################################
-    echo "Preparing question for IA..."
-    if [[ -n $DESC ]]; then
-        QUESTION="[IMAGE received]: $DESC --- $message_text"
-    else
-        QUESTION="$message_text ---"
+    # Optimisation: Prepare question once
+    if [[ -z "$KeyANSWER" ]]; then
+        if [[ -n $DESC ]]; then
+            QUESTION="[IMAGE received]: $DESC --- $message_text"
+        else
+            QUESTION="$message_text ---"
+        fi
     fi
-
 
     ##################################################### ASK IA
     ## KNOWN KNAME & CAPTAIN REPLY
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ || $KNAME == "CAPTAIN" ]]; then
-        # Only generate an answer if KeyANSWER is not already set (e.g., by #reset)
+        # Only generate an answer if KeyANSWER is not already set
         if [[ -z "$KeyANSWER" ]]; then
-            if [[ "$message_text" =~ \#search ]]; then
-                # Ensure Perplexica is available
+            # Optimisation: Process specialized commands
+            if [[ "${TAGS[search]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
-                ################################################"
-                # remove #BRO #search tags from message_text
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
-                # search = perplexica
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
-                ################################################"
-            elif [[ "$message_text" =~ \#image ]]; then
-                ################################################
-                # remove #BRO #image tags from message_text
+            elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
-                # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
-                # Generate image and measure time
                 start_time=$(date +%s.%N)
                 IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
                 end_time=$(date +%s.%N)
                 execution_time=$(echo "$end_time - $start_time" | bc)
                 if [ -n "$IMAGE_URL" ]; then
-                    # Get current timestamp
-                    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-                    # Format the response with description, timestamp and execution time
-                    KeyANSWER=$(echo -e "🖼️ $TIMESTAMP (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL")
+                    KeyANSWER=$(echo -e "🖼️ $CURRENT_TIME_STR (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL")
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
                 fi
-                ################################################"
-            elif [[ "$message_text" =~ \#video ]]; then
-                ################################################"
+            elif [[ "${TAGS[video]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/"//g' <<< "$message_text")
-                # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
-                # Generate video using Text2VideoWan2.1 workflow
                 VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
                 if [ -n "$VIDEO_AI_RETURN" ]; then
                     KeyANSWER="$VIDEO_AI_RETURN"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
                 fi
-                ################################################"
-            elif [[ "$message_text" =~ \#music ]]; then
-                ################################################"
+            elif [[ "${TAGS[music]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g; s/"//g' <<< "$message_text")
-                # Ensure ComfyUI is available
                 $MY_PATH/comfyui.me.sh
-                # Generate music using audio_ace_step_1_t2m workflow
                 MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
                 if [ -n "$MUSIC_URL" ]; then
                     KeyANSWER="$MUSIC_URL"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
                 fi
-                ################################################"
-            elif [[ "$message_text" =~ \#youtube ]]; then
-                ################################################"
-                # Extract YouTube URL from message
+            elif [[ "${TAGS[youtube]}" == true ]]; then
                 youtube_url=$(echo "$message_text" | grep -oE 'http[s]?://(www\.)?(youtube\.com|youtu\.be)/[^ ]+')
                 if [ -z "$youtube_url" ]; then
                     KeyANSWER="Désolé, Aucune URL YouTube valide trouvée dans votre message."
                 else
-                    # Check if #mp3 tag is present
                     if [[ "$message_text" =~ \#mp3 ]]; then
                         json=$($MY_PATH/process_youtube.sh "$youtube_url" "mp3")
                     else
@@ -494,12 +465,9 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     if [[ -n "$error" && "$error" != "null" ]]; then
                         KeyANSWER="Désolé, erreur lors du téléchargement : $error"
                     else
-                        ipfs_url=$(echo "$json" | jq -r .ipfs_url)
-                        title=$(echo "$json" | jq -r .title)
-                        duration=$(echo "$json" | jq -r .duration)
-                        uploader=$(echo "$json" | jq -r .uploader)
-                        filename=$(echo "$json" | jq -r .filename)
-                        original_url=$(echo "$json" | jq -r .original_url)
+                        # Extract multiple values in one jq call
+                        eval $(echo "$json" | jq -r '"ipfs_url=" + .ipfs_url + ";" + "title=" + (.title | @sh) + ";" + "duration=" + (.duration | tostring) + ";" + "uploader=" + (.uploader | @sh) + ";" + "original_url=" + .original_url')
+                        
                         # Format duration in H:MM:SS if possible
                         if [[ "$duration" =~ ^[0-9]+$ ]]; then
                             hours=$((duration/3600))
@@ -516,17 +484,14 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                         KeyANSWER="🎬 Title: $title\n⏱️ Duration: $duration_fmt\n👤 Uploader: $uploader\n🔗 Original: $original_url\n📦 IPFS: $ipfs_url"
                     fi
                 fi
-                ################################################"
-            elif [[ "$message_text" =~ \#pierre || "$message_text" =~ \#amelie ]]; then
-                ################################################"
-                # Determine voice based on tag
-                if [[ "$message_text" =~ \#pierre ]]; then
+            elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then
+                # Determine voice
+                if [[ "${TAGS[pierre]}" == true ]]; then
                     voice="pierre"
-                elif [[ "$message_text" =~ \#amelie ]]; then
+                else
                     voice="amelie"
                 fi
                 
-                # Remove tags from message text
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#pierre//g; s/#amelie//g; s/"//g' <<< "$message_text")
                 
                 echo "Génération de synthèse vocale avec la voix: $voice" >&2
@@ -536,42 +501,33 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 execution_time=$(echo "$end_time - $start_time" | bc)
                 
                 if [ -n "$audio_url" ]; then
-                    # Get current timestamp
-                    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-                    # Format the response with description, timestamp and execution time
-                    KeyANSWER=$(echo -e "🔊 $TIMESTAMP (⏱️ ${execution_time%.*} s)\n👤 Voix: $voice\n📝 Texte: $cleaned_text\n🔗 $audio_url")
+                    KeyANSWER=$(echo -e "🔊 $CURRENT_TIME_STR (⏱️ ${execution_time%.*} s)\n👤 Voix: $voice\n📝 Texte: $cleaned_text\n🔗 $audio_url")
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la synthèse vocale demandée."
                 fi
-                ################################################"
             else
-                ################################################"
+                # Default AI response
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$QUESTION")
-                # default = ollama (using slot-based memory if available, else PUBKEY MEMORY)
                 if [[ -n "$user_id" ]]; then
-                    # Check memory slot access for AI question
-                    if check_memory_slot_access "$user_id" "$slot"; then
-                        KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --user-id "${user_id}" --slot ${slot})"
+                    if check_memory_slot_access "$user_id" "$memory_slot"; then
+                        KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --user-id "${user_id}" --slot ${memory_slot})"
                     else
-                        echo "Memory access denied for AI question - USER: $user_id, SLOT: $slot"
-                        send_memory_access_denied "$PUBKEY" "$EVENT" "$slot"
-                        KeyANSWER="Accès refusé au slot $slot pour l'IA. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12. Utilisez le slot 0 ou devenez sociétaire."
+                        echo "Memory access denied for AI question - USER: $user_id, SLOT: $memory_slot"
+                        send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
+                        KeyANSWER="Accès refusé au slot $memory_slot pour l'IA. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12. Utilisez le slot 0 ou devenez sociétaire."
                     fi
                 else
-                KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --pubkey ${PUBKEY})"
+                    KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --pubkey ${PUBKEY})"
                 fi
-                ################################################"
             fi
         fi
 
-        ## LOAD CAPTAIN KEY
+        # BY DEFAULT CAPTAIN is Responding
         source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-        # ADD TO CAPTAIN FOLLOW LIST
         ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
 
-        ## PREFERED KNAME SELF RESPONSE
-        [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] \
-            && source ~/.zen/game/nostr/${KNAME}/.secret.nostr
+        ## but KNAME self RESPONSE is prefered
+        [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] && source ~/.zen/game/nostr/${KNAME}/.secret.nostr
 
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
 
@@ -579,32 +535,21 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
         KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
 
         ## SEND REPLY MESSAGE
-        # Détection du mode secret
-        SECRET_MODE=false
-        if [[ "$8" == "--secret" ]]; then
-            SECRET_MODE=true
-        fi
         if [[ "$SECRET_MODE" == true ]]; then
-            # Envoi en DM NOSTR kind 4 (chiffré) du Capitaine à KNAME
-            # KNAME est un email, sa clé hex est dans ~/.zen/game/nostr/{KNAME}/HEX
+            # Send encrypted DM
             if [[ -n "$KNAME" ]]; then
-                # Charger la clé privée du Capitaine
+                # Capitaine speaking
                 source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
                 NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
                 
-                # Récupérer la clé hex de KNAME
                 KNAME_HEX_FILE="$HOME/.zen/game/nostr/$KNAME/HEX"
                 if [[ -f "$KNAME_HEX_FILE" ]]; then
                     KNAME_HEX=$(cat "$KNAME_HEX_FILE")
                     echo "[SECRET] Found KNAME hex key: $KNAME_HEX for $KNAME"
                     
-                    # En mode secret, l'événement source n'existe pas dans strfry
-                    # On envoie un DM simple sans référence à l'événement
-                    
-                    # Vérifier que KeyANSWER n'est pas vide
                     if [[ -z "$KeyANSWER" ]]; then
                         echo "[SECRET] KeyANSWER is empty, sending fallback message" >&2
-                        KeyANSWER="Réponse IA non générée. Erreur technique. $(date '+%Y-%m-%d %H:%M:%S')"
+                        KeyANSWER="Réponse IA non générée. Erreur technique. $CURRENT_TIME_STR"
                     fi
                     
                     echo "[SECRET] Sending DM with content: $KeyANSWER" >&2
@@ -616,8 +561,7 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                     else
                         echo "[SECRET] Failed to send DM. Exit code: $DM_EXIT_CODE" >&2
                         echo "[SECRET] DM error output: $DM_RESULT" >&2
-                        # Fallback: send a simple timestamp message to indicate failure
-                        FALLBACK_MSG="Message privé non envoyé. Erreur technique. $(date '+%Y-%m-%d %H:%M:%S')"
+                        FALLBACK_MSG="Message privé non envoyé. Erreur technique. $CURRENT_TIME_STR"
                         $HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
                     fi
                 else
@@ -627,46 +571,35 @@ if [[ "$message_text" =~ \#BRO\  || "$message_text" =~ \#BOT\  ]]; then
                 echo "[SECRET] KNAME not set, cannot send DM."
             fi
         else
-            # Envoi public classique avec référence à l'événement source
-        nostpy-cli send_event \
-          -privkey "$NPRIV_HEX" \
-          -kind 1 \
-          -content "$KeyANSWER" \
-          -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-          --relay "$myRELAY"
+            # Send public message
+            nostpy-cli send_event \
+              -privkey "$NPRIV_HEX" \
+              -kind 1 \
+              -content "$KeyANSWER" \
+              -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
+              --relay "$myRELAY"
         fi
         
         ## AUTO-RECORD BOT RESPONSE if #rec2 is present
-        if [[ "$auto_record_response" == true ]]; then
-            # Check memory slot access for auto-recording
-            if check_memory_slot_access "$user_id" "$slot"; then
-                echo "Auto-recording bot response for USER: $user_id, SLOT: $slot"
-                # Create a fake event JSON for the bot response
-                # En mode secret, utiliser un ID différent pour éviter les conflits
+        if [[ "${TAGS[rec2]}" == true ]]; then
+            if check_memory_slot_access "$user_id" "$memory_slot"; then
+                echo "Auto-recording bot response for USER: $user_id, SLOT: $memory_slot"
                 if [[ "$SECRET_MODE" == true ]]; then
-                    bot_event_json='{"event":{"id":"secret_bot_response_'$(date +%s)'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$(date +%s)'}}'
+                    bot_event_json='{"event":{"id":"secret_bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
                 else
-                    bot_event_json='{"event":{"id":"bot_response_'$(date +%s)'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$(date +%s)'}}'
+                    bot_event_json='{"event":{"id":"bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
                 fi
-                $MY_PATH/short_memory.py "$bot_event_json" "$LAT" "$LON" "$slot" "$user_id"
+                $MY_PATH/short_memory.py "$bot_event_json" "$LAT" "$LON" "$memory_slot" "$user_id"
             else
-                echo "Memory access denied for auto-recording - USER: $user_id, SLOT: $slot"
-                if [[ "$SECRET_MODE" == true ]]; then
-                    # En mode secret, ne pas envoyer de message d'erreur public
-                    echo "[SECRET] Memory access denied for auto-recording, but not sending public error message."
-                else
-                    send_memory_access_denied "$PUBKEY" "$EVENT" "$slot"
+                echo "Memory access denied for auto-recording - USER: $user_id, SLOT: $memory_slot"
+                if [[ "$SECRET_MODE" != true ]]; then
+                    send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
                 fi
             fi
         fi
-        #######################################################################
-
     fi
-    #######################################################################
 fi
-#######################################################################
 
-#######################################################################
 echo ""
 echo "--- Summary ---"
 echo "PUBKEY: $PUBKEY"
@@ -676,7 +609,7 @@ echo "LON: $LON"
 echo "Message: $message_text"
 echo "Image: $DESC"
 echo "Question: $QUESTION"
-echo "Answer: $ANSWER"
+echo "Answer: $KeyANSWER"
 echo "---------------"
 
 exit 0
