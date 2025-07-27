@@ -125,10 +125,6 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
         echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
         echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
 
-        ## REFRESH ZSWARM collect HEX & HEX_CAPTAIN
-        mkdir -p ~/.zen/game/nostr/ZSWARM
-        cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
-        cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
     else
         echo "ERROR : CAPTAIN BAD DISCO DECODING" >> ~/.zen/game/nostr/$CAPTAINEMAIL/ERROR
     fi
@@ -327,6 +323,11 @@ while true; do
 
         done
 
+        ## REFRESH ZSWARM collect HEX & HEX_CAPTAIN
+        mkdir -p ~/.zen/game/nostr/ZSWARM
+        cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
+        cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
+
     #############################################
         # ERASE EMPTY DIRECTORIES
         du -b ~/.zen/tmp/swarm > /tmp/du
@@ -418,7 +419,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"3.6\",
+    \"version\" : \"4.2\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -441,6 +442,8 @@ NODE12345="{
     \"NODEZEN\" : \"${NODEZEN}\",
     \"NODENPUB\" : \"${npub}\",
     \"NODEHEX\" : \"${hex}\",
+    \"UPLANETNAME_G1\" : \"${UPLANETNAME_G1}\",
+    \"UPLANETNAME_SOCIETY\" : \"${UPLANETNAME_SOCIETY}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
     \"UPLANETG1\" : \"${UPLANETCOINS}\",
     \"UPLANETZEN\" : \"${UPLANETZEN}\",
