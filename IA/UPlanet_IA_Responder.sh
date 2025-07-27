@@ -384,11 +384,11 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Returning memory content for USER: $user_id, SLOT: 0"
                 temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot0.txt"
                 echo "📝 Historique (#mem slot 0)" > "$temp_mem_file"
-                echo "========================" >> "$temp_mem_file"
+            echo "========================" >> "$temp_mem_file"
                 jq -r '.messages | to_entries | .[-30:] | .[] | "📅 \(.value.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y %H:%M"))\n💬 \(.value.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n---"' "$slot_file" >> "$temp_mem_file"
-                KeyANSWER=$(cat "$temp_mem_file")
-                rm -f "$temp_mem_file"
-            else
+            KeyANSWER=$(cat "$temp_mem_file")
+            rm -f "$temp_mem_file"
+        else
                 echo "No memory file found for USER: $user_id, SLOT: 0"
                 KeyANSWER="Aucune mémoire trouvée."
             fi
@@ -404,11 +404,11 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
 
     # Optimisation: Prepare question once
     if [[ -z "$KeyANSWER" ]]; then
-        if [[ -n $DESC ]]; then
-            QUESTION="[IMAGE received]: $DESC --- $message_text"
-        else
-            QUESTION="$message_text ---"
-        fi
+    if [[ -n $DESC ]]; then
+        QUESTION="[IMAGE received]: $DESC --- $message_text"
+    else
+        QUESTION="$message_text ---"
+    fi
     fi
 
     ##################################################### ASK IA
@@ -517,7 +517,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                         KeyANSWER="Accès refusé au slot $memory_slot pour l'IA. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12. Utilisez le slot 0 ou devenez sociétaire."
                     fi
                 else
-                    KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --pubkey ${PUBKEY})"
+                KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --pubkey ${PUBKEY})"
                 fi
             fi
         fi
@@ -572,12 +572,12 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             fi
         else
             # Send public message
-            nostpy-cli send_event \
-              -privkey "$NPRIV_HEX" \
-              -kind 1 \
-              -content "$KeyANSWER" \
-              -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-              --relay "$myRELAY"
+        nostpy-cli send_event \
+          -privkey "$NPRIV_HEX" \
+          -kind 1 \
+          -content "$KeyANSWER" \
+          -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
+          --relay "$myRELAY"
         fi
         
         ## AUTO-RECORD BOT RESPONSE if #rec2 is present
