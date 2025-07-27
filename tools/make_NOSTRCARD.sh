@@ -244,6 +244,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~/ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/${uSPOT_QR_ipfs}~g" \
             -e "s~_UPLANETNAME_G1_~${UPLANETNAME_G1}~g" \
             -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
+            -e "s~_LAT_~${ZLAT}~g" \
+            -e "s~_LON_~${ZLON}~g" \
             -e "s~_UMAP_~_${ZLAT}_${ZLON}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
             -e "s~_SALT_~${SALT}~g" \
