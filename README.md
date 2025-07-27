@@ -1,11 +1,3 @@
-Of course. The current README is very dense and technically focused. It's excellent as a specification sheet but can be overwhelming for a newcomer. The key is to transform it from a "What it is" document into a "Why it matters and how you can join" guide.
-
-The most crucial change is to **center the entire narrative around the cooperative model**. Astroport.ONE isn't just a piece of software; it's the tool to build a new kind of digital economy.
-
-Here is a proposed rewrite of the README.md. It simplifies the concepts, clarifies the user journey, and puts the cooperative vision front and center.
-
----
-
 # Astroport.ONE: Building a Cooperative Internet
 
 [FR](README.fr.md) - [ES](README.es.md)
@@ -120,3 +112,5 @@ Astroport.ONE is FOSS-powered and community-driven.
 *   **Discover Ğ1:** Learn more about the [best cryptocurrency you could dream of](https://monnaie-libre.fr).
 
 [![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
+
+Note : Mistral, Deepseek, Claude & Gemini companions help a lot. Now UPlanet is using localized GPU units "exo" linked and can produce better informative source than Web2 for future builds...
