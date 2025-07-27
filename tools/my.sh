@@ -608,7 +608,7 @@ CAPTAINHEX=$(cat $HOME/.zen/game/nostr/CAPTAIN/HEX 2>/dev/null) ## PLAYER ONE HE
 ## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
 UPLANETNAME_G1=$(cat $HOME/.zen/tmp/UPLANETNAME_G1 2>/dev/null) ## UPLANETNAME_G1 (G1 source)
 [[ -z ${UPLANETNAME_G1} ]] \
-    && UPLANETNAME_G1=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
+    && UPLANETNAME_G1=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
     && echo ${UPLANETNAME_G1} > $HOME/.zen/tmp/UPLANETNAME_G1
 
 ## UPLANETNAME wallet for Service Layer
