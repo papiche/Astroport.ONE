@@ -214,20 +214,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # ipfs pin rm /ipfs/${G1PUBNOSTRQR}
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png.cid
 
-    ##############################################################
-    # INSERT NOSTR ORACOLO APP
-    cat ${MY_PATH}/../templates/NOSTR/oracolo/index.html \
-        | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
-            -e "s~_MYRELAY_~${myRELAY}~g" \
-            > ${HOME}/.zen/game/nostr/${EMAIL}/_index.BLOG.html
-
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
     ## ZLAT ZLON
     echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP # RUNTIME/NOSTR.UMAP.refresh.sh
     echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
-    ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) ## OPTIONAL for others
+    ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) - 
+    # ease Captain change # NEED HARDER SECURITY # Can be removed & be decoded from SSSS (or use encrypted RAM fs cycled every 20h12)
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
