@@ -231,6 +231,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
+    ## ADD UPLANETNAME.G1 WALLET LINK FOR Ğ1 DONATION 
+    UPLANETNAME_G1=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1")
+
     ##############################################################
     ### PREPARE NOSTR ZINE
     cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \
@@ -242,6 +245,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
             -e "s~/ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/${uSPOT_QR_ipfs}~g" \
+            -e "s~_UPLANETNAME_G1_~${UPLANETNAME_G1}~g" \
             -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
             -e "s~_UMAP_~_${ZLAT}_${ZLON}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
