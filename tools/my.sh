@@ -617,11 +617,11 @@ UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB (Zen
     && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
     && echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
-## UPLANETNAME.SOCIETY wallet for Cooperative Holders 
-UPLANETNAME.SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME.SOCIETY 2>/dev/null) ## UPLANETNAME.SOCIETY (Zen for Cooperative Holders)
-[[ -z ${UPLANETNAME.SOCIETY} ]] \
-    && UPLANETNAME.SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
-    && echo ${UPLANETNAME.SOCIETY} > $HOME/.zen/tmp/UPLANETNAME.SOCIETY
+## UPLANETNAME_SOCIETY wallet for Cooperative Holders 
+UPLANETNAME_SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME_SOCIETY 2>/dev/null) ## UPLANETNAME_SOCIETY (Zen for Cooperative Holders)
+[[ -z ${UPLANETNAME_SOCIETY} ]] \
+    && UPLANETNAME_SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
+    && echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
