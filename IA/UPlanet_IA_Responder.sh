@@ -522,12 +522,21 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             fi
         fi
 
-        # BY DEFAULT CAPTAIN is Responding
-        source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
+        # Check if we have valid geographical coordinates for UMAP response
+        if [[ "$LAT" != "0.00" && "$LON" != "0.00" && -n "$LAT" && -n "$LON" ]]; then
+            # UMAP is responding when geographical coordinates are provided
+            echo "Using UMAP key for geographical location: ${LAT}, ${LON}"
+            UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+            NSEC="$UMAPNSEC"
+            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
+        else
+            # BY DEFAULT CAPTAIN is Responding when no valid coordinates
+            source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
 
-        ## but KNAME self RESPONSE is prefered
-        [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] && source ~/.zen/game/nostr/${KNAME}/.secret.nostr
+            ## but KNAME self RESPONSE is prefered
+            [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] && source ~/.zen/game/nostr/${KNAME}/.secret.nostr
+        fi
 
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
 

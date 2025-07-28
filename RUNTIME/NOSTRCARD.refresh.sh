@@ -202,7 +202,7 @@ should_refresh() {
     cd ${player_dir}/APP/uDRIVE/
     # remove when generate_ipfs_structure.sh code is stable
     UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
-    echo "UDRIVE UDPATE : $myIPFS/ipfs/$UDRIVE"
+    echo "UDRIVE gen : $myIPFS/ipfs/$UDRIVE"
     cd - 2>&1 >/dev/null
     
     if [[ "$UDRIVE" != "$last_udrive" ]]; then
@@ -712,7 +712,7 @@ for PLAYER in "${NOSTR[@]}"; do
     refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"
     echo "\m/_(>_<)_\m/ ($refreshtime)"
     echo "${PLAYER} $COINS G1 -> ${ZEN} ZEN : ${HEX}"
-    echo "UDRIVE : $(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
+    echo "UDRIVE state : $(cat ~/.zen/game/nostr/${PLAYER}/.udrive 2>/dev/null)"
 
     # Vérifier si le rafraîchissement est nécessaire
     should_refresh "${PLAYER}"
@@ -732,9 +732,14 @@ for PLAYER in "${NOSTR[@]}"; do
         echo "IPNS update triggered for ${PLAYER} - Reason: $REFRESH_REASON"
         echo "## $myIPFS$NOSTRNS"
         
-        ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/nostr.ipns "${salt}" "${pepper}"
-        ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
-        NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/nostr.ipns)
+        ## Keeping .secret.ipns (quicker ipfs processing)
+        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.ipns ]]; then
+            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/nostr/${PLAYER}/.secret.ipns "${salt}" "${pepper}"]
+            ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
+            NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/game/nostr/${PLAYER}/.secret.ipns
+            chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.ipns
+        fi
+
         ## UPDATE IPNS RESOLVE
         NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
         ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
