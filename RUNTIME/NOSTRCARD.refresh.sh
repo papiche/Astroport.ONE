@@ -734,7 +734,7 @@ for PLAYER in "${NOSTR[@]}"; do
         
         ## Keeping .secret.ipns (quicker ipfs processing)
         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.ipns ]]; then
-            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/nostr/${PLAYER}/.secret.ipns "${salt}" "${pepper}"]
+            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/nostr/${PLAYER}/.secret.ipns "${salt}" "${pepper}"
             ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
             NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/game/nostr/${PLAYER}/.secret.ipns
             chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.ipns
