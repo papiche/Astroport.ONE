@@ -277,7 +277,7 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL NOSTR CARDS
 for PLAYER in "${NOSTR[@]}"; do
-    log "INFO" "Processing PLAYER: $PLAYER"
+    log "INFO" ">>>>>>>>>>>>>>>>>> Processing PLAYER: $PLAYER"
     start=$(date +%s)
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null)
     [[ -z "$HEX" ]] && log "ERROR" "Missing HEX for $PLAYER" && continue
@@ -342,37 +342,20 @@ for PLAYER in "${NOSTR[@]}"; do
         log_metric "PRIMAL_CACHED" "1" "${PLAYER}"
     # Day 2+: Check if UPlanet PRIMO TX sent (G1PRIME file exists) or sufficient time passed
     elif [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
-        # Calculate days since birth
-        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s 2>/dev/null || echo "0")
-        TODATE_SECONDS=$(date -d "$TODATE" +%s)
-        DIFF_HOURS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 3600 ))
-        
-        # Only check PRIMAL after 6+ hours (gives time for member TX + UPlanet response)
-        if [[ $DIFF_HOURS -ge 6 ]]; then
-            log "INFO" "MULTIPASS day 2+ ($DIFF_HOURS hours old) - checking for PRIMAL transaction"
-            g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null | tail -n 1)
-            
-            if [[ $? -eq 0 && ! -z ${g1prime} && ${g1prime} != "null" ]]; then
-                # Validate format before permanent caching
-                g1primetest=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
-                if [[ -n $g1primetest ]]; then
-                    echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
-                    primal=${g1prime}
-                    log "INFO" "PRIMAL discovered and permanently cached: $G1PUBNOSTR -> $primal"
-                    log_metric "PRIMAL_DISCOVERED" "1" "${PLAYER}"
-                else
-                    log "WARN" "Invalid PRIMAL format received: $g1prime"
-                    primal=""
-                fi
+        log "INFO" "MULTIPASS day 2+ - checking for PRIMAL transaction"
+        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null | tail -n 1)
+        if [[ $? -eq 0 && ! -z ${g1prime} && ${g1prime} != "null" ]]; then
+            # Validate format before permanent caching
+            g1primetest=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
+            if [[ -n $g1primetest ]]; then
+                echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
+                primal=${g1prime}
+                log "INFO" "PRIMAL discovered and permanently cached: $G1PUBNOSTR -> $primal"
+                log_metric "PRIMAL_DISCOVERED" "1" "${PLAYER}"
             else
-                log "DEBUG" "No PRIMAL transaction found yet for ${G1PUBNOSTR} (${DIFF_HOURS}h old)"
-                log_metric "PRIMAL_PENDING" "1" "${PLAYER}"
+                log "WARN" "Invalid PRIMAL format received: $g1prime"
                 primal=""
             fi
-        else
-            log "DEBUG" "MULTIPASS too young ($DIFF_HOURS hours) - waiting for PRIMAL readiness"
-            log_metric "PRIMAL_TOO_EARLY" "1" "${PLAYER}"
-            primal=""
         fi
     else
         log "DEBUG" "MULTIPASS has no funds yet - PRIMAL check skipped"
@@ -393,7 +376,10 @@ for PLAYER in "${NOSTR[@]}"; do
         pcoins=""
     fi
 
-    ############################################################################
+    ################################################################# ~/.zen/game/uplanet.dunikey
+    [[ ! -s ~/.zen/game/uplanet.dunikey ]] \
+        && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}" \
+        && chmod 600 ~/.zen/game/uplanet.dunikey
     ###################### DISCO DECRYPTION - with Captain + UPlanet parts
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.disco ]]; then
         tmp_mid=$(mktemp)
@@ -403,12 +389,8 @@ for PLAYER in "${NOSTR[@]}"; do
                 -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
 
         # Decrypt the tail part using UPLANET dunikey
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
         ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
                 -k ~/.zen/game/uplanet.dunikey -o "$tmp_tail"
-
-        ## Keep UPlanet Dunikey
-        chmod 600 ~/.zen/game/uplanet.dunikey
 
         # Combine decrypted shares
         DISCO=$(cat "$tmp_mid" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
@@ -429,19 +411,23 @@ for PLAYER in "${NOSTR[@]}"; do
     ## NOW salt & pepper are valid, we can generate NSEC & NPUB
     # BIRTHDATE already read above for PRIMAL timing logic
     ## s=/?email
-    NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
-    NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
     echo $s
 
-    ## CACHING SECRET & DISCO to NOSTR Card (.file = no ipfs !!)
-    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]] \
-        && echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX;" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr \
-        && chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
+    ## CACHING SECRET & DISCO to nostr/${PLAYER}/.secret.nostr 
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then 
+        NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
+        NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
+        echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX;" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr
+        chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
+    else
+        source ~/.zen/game/nostr/${PLAYER}/.secret.nostr 
+    fi
 
-    ## CREATE DUNITER KEY
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
-    chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.dunikey
-
+    ## CREATE nostr/${PLAYER}/.secret.dunikey
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then 
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
+        chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.dunikey
+    fi 
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
     ############################################################ BLOCKING
@@ -556,7 +542,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################
-    echo ">>> SOURCE : ${primal} ($pcoins G1)"
+    echo ">>> VALID MULTIPASS ($pcoins G1) : ${primal}"
     ########################################################################
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
@@ -632,11 +618,11 @@ for PLAYER in "${NOSTR[@]}"; do
                 $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS${NOSTRNS}"
                 ## TODO CONVERT SEND NOSTR MULTIPASS MESSAGE
             else
-                echo "## /PRIMAL file structure existing : $G1PRIME"
+                echo "## /PRIMAL file structure existing"
                 ## SENDING MESSAGE TO N1 (P2P: peer to peer, P21 : peer to one, 12P : one to peer ) RELATIONS in manifest.json
                 json_file="$HOME/.zen/game/nostr/${PLAYER}/PRIMAL/N1/manifest.json"
                 if [[ -s "$json_file" ]]; then
-                    echo ">>> UPassport N1"
+                    echo ">>> UPassport N1 : $json_file"
                     # Parcourir chaque clé (p2p, certin, certout) et extraire les valeurs
                     jq -r '.[][] | select(. != null) | capture("(?<G1PUB>[^.]+)\\.(?<PSEUDO>[^.]+)\\.(?<KEY>[^.]+)") | "\(.G1PUB) \(.PSEUDO) \(.KEY)"' "$json_file" | while read -r G1PUB PSEUDO KEY; do
                         # Vérifier si le message existe déjà
@@ -653,9 +639,6 @@ for PLAYER in "${NOSTR[@]}"; do
                             $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ " -m "$MESSAGE"
                             echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
                             sleep 2
-                        else
-                            echo "$json_file"
-                            cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt 2>/dev/null
                         fi
                     done
                 fi
@@ -727,8 +710,7 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ -n $LAT && -n $LON ]] && echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
     else
-        echo "################################## PRIME : $G1PRIME"
-        echo "## Nostr Card PROFILE EXISTING"
+        echo "## MULTIPASS nostr PROFILE EXISTING"
         #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
         ########################################################################
@@ -773,7 +755,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################################
     # Use the generic primal wallet control function
     if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-        echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
+    echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
         # Get DISCO from PLAYER to create dunikey if needed
         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
             DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
@@ -793,6 +775,7 @@ for PLAYER in "${NOSTR[@]}"; do
     else
         echo "UPlanet ORIGIN - No primal control"
     fi
+
     ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay
     fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))
     if [[ ${#fof_list[@]} -gt 0 ]]; then
