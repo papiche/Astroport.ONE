@@ -298,10 +298,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet ${ORIGIN} ... Ẑen 🪙 ... Geo Messaging : ${uSPOT}/nostr" \
+        "⏰ UPlanet Ẑen ${ORIGIN} ... ♥️ ... Geo Messaging : ${uSPOT}/nostr" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
-        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}" "" "" "" "" \
+        "" "$myIPFS/ipns/${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
