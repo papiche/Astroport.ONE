@@ -62,6 +62,39 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
     echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
+    #################################################################
+    ## CLEANING NON-LOCAL UMAP CACHES
+    if [[ -s ~/.zen/GPS ]]; then
+        source ~/.zen/GPS
+        if [[ -n "$LAT" && -n "$LON" && "$LAT" != "0.00" && "$LON" != "0.00" ]]; then
+            echo "## CLEANING NON-LOCAL ($LAT $LON) UMAP CACHES"
+            MY_SLAT="${LAT::-1}"
+            MY_SLON="${LON::-1}"
+            MY_SECTOR="_${MY_SLAT}_${MY_SLON}"
+            echo "Node's current sector is ${MY_SECTOR}. Deleting other UMAP caches..."
+
+            for umap_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/__ -mindepth 3 -maxdepth 3 -type d -name "_*.*_*.*"); do
+                umap_name=$(basename "$umap_path")
+                umap_lat=$(echo "$umap_name" | cut -d '_' -f 2)
+                umap_lon=$(echo "$umap_name" | cut -d '_' -f 3)
+                umap_slat="${umap_lat::-1}"
+                umap_slon="${umap_lon::-1}"
+                umap_sector="_${umap_slat}_${umap_slon}"
+
+                if [[ "$umap_sector" != "$MY_SECTOR" ]]; then
+                    echo "Deleting non-local UMAP cache: $umap_path (Sector: $umap_sector)"
+                    rm -Rf "$umap_path"
+                fi
+            done
+            echo "Cleanup of non-local UMAPs complete."
+        else
+            echo "LAT/LON are 0.00. Skipping cleanup."
+        fi
+    else
+        echo "Node GPS file ~/.zen/GPS not found."
+    fi
+    #################################################################
+
     echo "############################################ MY MAP "
     ls ~/.zen/tmp/${IPFSNODEID}/
     echo "############################################"

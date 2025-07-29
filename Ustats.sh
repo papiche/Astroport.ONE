@@ -187,7 +187,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         fi
 
         NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
-        [[ -z ]] && NCOINS=$($MY_PATH/tools/G1check.sh ${G1PUBNOSTR} | tail -n 1)
+        [[ -z "$NCOINS" ]] && NCOINS=$($MY_PATH/tools/G1check.sh ${G1PUBNOSTR} | tail -n 1)
         ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
         echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
         # Construct JSON object using printf and associative array
