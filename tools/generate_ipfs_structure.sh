@@ -797,10 +797,6 @@ update_final_cid_in_manifest() {
 log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
 log_message "   📊 Statistiques IPFS: $updated_count nouveaux/modifiés, $cached_count en cache, $deleted_count supprimés"
 
-# Clean old unused files (TODO remove)
-rm _index.html 2>/dev/null
-rm _redirect.html 2>/dev/null
-
 # Générer index.html
 log_message "🎨 Génération de index.html..."
 cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
@@ -2578,17 +2574,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                         directWs.close();
                     }
                 }, 5000);
-            }
-        }
-
-        function sendViaWebSocket(ws, signedAuthEvent) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const eventMessage = JSON.stringify(['EVENT', signedAuthEvent]);
-                console.log('Sending EVENT message via WebSocket:', eventMessage);
-                ws.send(eventMessage);
-                console.log('✅ NIP42 event sent via direct WebSocket');
-            } else {
-                console.error('❌ WebSocket not ready for direct send, state:', ws ? ws.readyState : 'null');
             }
         }
 
