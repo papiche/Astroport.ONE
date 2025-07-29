@@ -102,9 +102,6 @@ if [[ -s ~/.zen/game/secret.june && ! -s ~/.zen/game/secret.nostr ]]; then
 fi
 
 ######################################### CAPTAIN RELATED
-## TODO REMOVE THIS CORRECTION
-rm ~/.zen/game/players/.current/secret.nostr 2>/dev/null ## Correct nostr secret
-rm ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr 2>/dev/null
 ## CREATE ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
 if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     DISCO=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.disco)

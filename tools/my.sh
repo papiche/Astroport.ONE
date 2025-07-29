@@ -601,9 +601,10 @@ myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
     && UPLANETNAME="$(UPlanetSharedSecret)" \
     || UPLANETNAME="EnfinLibre"
 
-CAPTAING1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE G1PUB
+CAPTAINZENCARDG1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE ZEN CARD G1PUB
 CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
-CAPTAINHEX=$(cat $HOME/.zen/game/nostr/CAPTAIN/HEX 2>/dev/null) ## PLAYER ONE HEX
+CAPTAINHEX=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null) ## PLAYER ONE HEX
+CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null) ## PLAYER ONE MULTIPASS G1PUBNOSTR
 
 ## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
 UPLANETNAME_G1=$(cat $HOME/.zen/tmp/UPLANETNAME_G1 2>/dev/null) ## UPLANETNAME_G1 (G1 source)
@@ -611,7 +612,7 @@ UPLANETNAME_G1=$(cat $HOME/.zen/tmp/UPLANETNAME_G1 2>/dev/null) ## UPLANETNAME_G
     && UPLANETNAME_G1=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
     && echo ${UPLANETNAME_G1} > $HOME/.zen/tmp/UPLANETNAME_G1
 
-## UPLANETNAME wallet for Service Layer
+## UPLANETNAME Ẑen wallet for Locative Service Layer
 UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB (Zen for Services)
 [[ -z ${UPLANETG1PUB} ]] \
     && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
