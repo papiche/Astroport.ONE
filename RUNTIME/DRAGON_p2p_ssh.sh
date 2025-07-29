@@ -103,7 +103,8 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     "${myIPFS}/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
     "$CAPTAINEMAIL" "$myIPFS$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" "" "" "" "" \
     "$myRELAY" \
-    --ipns_vault "$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" \
+    --zencard "$(cat ~/.zen/game/players/${CAPTAINEMAIL}/.g1pub 2>/dev/null)" \
+    --ipns_vault "$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS 2>/dev/null)" \
     --ipfs_gw "$myIPFS"
 
     ## FOLLOW EVERY NOSTR CARD

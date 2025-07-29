@@ -269,6 +269,8 @@ should_refresh() {
     return 1
 }
 
+[[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
+
 ########################################################################
 # NOSTR Card is evolving depending PRIMAL RX source.
 # on UPLanet ORIGIN or UPlanet Zen.
@@ -438,7 +440,7 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
             log "INFO" "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation for $G1PUBNOSTR"
-            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:ORIGIN" 2>/dev/null)
+            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${YOUSER}:MULTIPASS:ORIGIN" 2>/dev/null)
             if [[ $? -eq 0 ]]; then
                 echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
                 log "INFO" "PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB}" wallet
@@ -493,7 +495,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         [[ -z $NCARD ]] && NCARD=1
                         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
                         log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1)"
-                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:NCARD" 2>/dev/null)
+                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:$YOUSER:NCARD" 2>/dev/null)
                         if [[ $? -eq 0 ]]; then
                             # Record successful payment
                             echo "$TODATE" > "$last_payment_file"
@@ -665,9 +667,9 @@ for PLAYER in "${NOSTR[@]}"; do
         title=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.title)
         [[ -z $title ]] && title="$YOUSER"
         city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
-        [[ -z $city ]] && city="UPlanet ${UPLANETG1PUB:0:8}"
+        [[ -z $city ]] && city="UPlanet ${ORIGIN}"
         description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
-        [[ -z $description ]] && description="MULTIPASS"
+        [[ -z $description ]] && description="MULTIPASS 🪙 Ẑen 💬 ${uSPOT}/nostr"
 
         ## GET CESIUM AVATAR
         if [[ -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]]; then
@@ -688,6 +690,9 @@ for PLAYER in "${NOSTR[@]}"; do
             # REGULAR Wallet
             PoH=""
         fi
+
+        ZENCARDG1=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+
         g1pubnostr=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
         ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/nostr_setup_profile.py \
@@ -699,6 +704,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "" "$myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
             --ipfs_gw "$myIPFS" \
+            --zencard "$ZENCARDG1" \
             --ipns_vault "${NOSTRNS}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 

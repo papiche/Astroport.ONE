@@ -297,6 +297,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## ORIGIN or ẐEN's
     [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
+    ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null)
 
     ### CREATE PROFILE in NOSTR RELAYS
     ${MY_PATH}/../tools/nostr_setup_profile.py \
@@ -305,8 +306,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         "⏰ UPlanet Ẑen ${ORIGIN} ... ♥️ ... Geo Messaging : ${uSPOT}/nostr" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
-        "" "$myIPFS/ipns/${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" "" \
+        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
+        --zencard "$ZENCARDG1" \
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
     ## CREATE CESIUM + PROFILE
