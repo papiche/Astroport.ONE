@@ -98,9 +98,9 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$NSEC" \
     "$YOUSER [♥️BOX Captain]" "$CAPTAING1PUB" \
-    "UPlanet ${UPLANETG1PUB:0:8} : $myIPFS/ipns/copylaradio.com" \
+    "UPlanet ${UPLANETG1PUB:0:8} : $myIPFS/ipns/copylaradio.com ($TODATE)" \
     "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
-    "${myIPFS}/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
+    "${myIPFS}/ipfs/QmVwnUSH9ZAUfHxh9FU19szax2F8ukcfJMeDfH8UQHXkrY/FutureFork.png" \
     "$CAPTAINEMAIL" "$myIPFS$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" "" "" "" "" \
     "$myRELAY" \
     --zencard "$(cat ~/.zen/game/players/${CAPTAINEMAIL}/.g1pub 2>/dev/null)" \
