@@ -28,7 +28,7 @@ BMAS_CACHE_TTL_HOURS=6  # BMAS server cache TTL in hours
 
 # Logging function
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
 # Validate if a value is a valid balance (numeric)
@@ -161,12 +161,12 @@ fi
 get_bmas_server() {
     local server=""
     local cache_file="$HOME/.zen/tmp/current.duniter.bmas"
+    local force_refresh="${1:-false}"
     
-    # Check if cached BMAS server is still fresh
-    if is_file_fresh "$cache_file" "$BMAS_CACHE_TTL_HOURS"; then
+    # Check if cached BMAS server is still fresh (unless force refresh)
+    if [[ "$force_refresh" != "true" ]] && is_file_fresh "$cache_file" "$BMAS_CACHE_TTL_HOURS"; then
         server=$(cat "$cache_file" 2>/dev/null)
         if [[ -n "$server" && "$server" != "ERROR" ]]; then
-            log "Using cached BMAS server: $server"
             echo "$server"
             return 0
         fi
@@ -194,22 +194,28 @@ check_balance() {
     while [[ $retries -lt $MAX_RETRIES ]]; do
         # Use silkaj to get balance with specific BMAS server
         if [[ -n "$server" ]]; then
+            log "Trying silkaj with server: $server"
             balance=$(silkaj --json --endpoint "$server" money balance "$g1pub" 2>/dev/null | jq -r '.balances.total')
         else
+            log "Trying silkaj without specific endpoint"
             balance=$(silkaj --json money balance "$g1pub" 2>/dev/null | jq -r '.balances.total')
         fi
         
         # Convert centimes to full Ğ1 units (divide by 100)
         if [[ "$balance" != "" && "$balance" != "null" ]]; then
             balance=$(echo "scale=2; $balance / 100" | bc -l)
-        fi
-        
-        if [[ "$balance" != "" ]]; then
+            log "Retrieved balance: $balance"
             echo "$balance"
             return 0
+        else
+            log "Failed to get balance from server: $server"
         fi
+        
         retries=$((retries + 1))
-        [[ $retries -lt $MAX_RETRIES ]] && server=$(get_bmas_server)
+        if [[ $retries -lt $MAX_RETRIES ]]; then
+            log "Retry $retries/$MAX_RETRIES - getting new server..."
+            server=$(get_bmas_server "true")
+        fi
     done
     return 1
 }
@@ -231,8 +237,8 @@ if [[ -z "$CURCOINS" ]]; then
     log "Primary BMAS server failed, trying alternative servers..."
     attempts=0
     while [[ $attempts -lt $MAX_RETRIES ]]; do
-        # Try to get a new BMAS server
-        NEW_SERVER=$(get_bmas_server)
+        # Try to get a new BMAS server (force refresh)
+        NEW_SERVER=$(get_bmas_server "true")
         if [[ -n "$NEW_SERVER" && "$NEW_SERVER" != "$BMAS_SERVER" ]]; then
             log "Trying with new BMAS server: $NEW_SERVER"
             
@@ -242,9 +248,16 @@ if [[ -z "$CURCOINS" ]]; then
                 CURCOINS="$balance"
                 break
             fi
+        else
+            log "No different server available, trying without specific endpoint"
+            balance=$(check_balance "$G1PUB" "")
+            if [[ "$balance" != "" ]]; then
+                CURCOINS="$balance"
+                break
+            fi
         fi
         attempts=$((attempts + 1))
-        [[ $attempts -lt $MAX_RETRIES ]] && sleep 1
+        [[ $attempts -lt $MAX_RETRIES ]] && sleep 2
     done
 fi
 
