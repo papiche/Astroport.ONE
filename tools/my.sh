@@ -563,7 +563,7 @@ FLIPPERCID="/ipns/copylaradio.com/coinflip" ### EASTER EGG
 ###########################
 ## VISIO ROOM APP
 ## https://github.com/steveseguin/vdo.ninja
-VDONINJA="/ipfs/QmRq6LusiEG49BA3nsUTQvBmQxUQnY3tjqNM4M66rbBEt7"
+VDONINJA="/ipfs/QmeHPPHR5g4iW4VkCedZCpR8Vc6aBFJZSVbtsFxz3KaJzv"
 ###########################
 ## CESIUM APP
 ## https://cesium.app
