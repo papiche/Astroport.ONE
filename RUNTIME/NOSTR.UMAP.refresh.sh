@@ -299,8 +299,8 @@ process_recent_messages() {
         if [[ "$content" == *"#market"* ]]; then
             # Check if the ad file already exists to avoid reprocessing
             if [[ ! -f "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json" ]]; then
-                process_market_images "$content" "$UMAPPATH"
-                create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
+            process_market_images "$content" "$UMAPPATH"
+            create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
             fi
         fi
     done | head -n 50 # limit to 50 messages a day from each friend
@@ -512,8 +512,8 @@ create_aggregate_journal() {
     if [[ "$type" == "Sector" ]]; then
         local slat=$(echo ${geo_id} | cut -d '_' -f 2)
         local slon=$(echo ${geo_id} | cut -d '_' -f 3)
-        local rlat=$(echo ${slat} | cut -d '.' -f 1)
-        local rlon=$(echo ${slon} | cut -d '.' -f 1)
+    local rlat=$(echo ${slat} | cut -d '.' -f 1)
+    local rlon=$(echo ${slon} | cut -d '.' -f 1)
         geo_path="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/${geo_id}"
         find_pattern="*/UMAP_${slat}*_${slon}*/HEX"
     else # Region
@@ -549,7 +549,7 @@ create_aggregate_journal() {
 
     # 3. Process each liked message
     for msgid in "${liked_event_ids[@]}"; do
-        local likes=$(count_likes "$msgid")
+                local likes=$(count_likes "$msgid")
         if [[ $likes -ge $like_threshold ]]; then
             cd ~/.zen/strfry
             local message_json=$(./strfry scan "{\"ids\": [\"${msgid}\"], \"kinds\": [1], \"limit\": 1}" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, author: .pubkey, content: .content, created_at: .created_at}' | head -n 1)
@@ -560,12 +560,12 @@ create_aggregate_journal() {
                 local author_hex=$(echo "$message_json" | jq -r .author)
                 local created_at=$(echo "$message_json" | jq -r .created_at)
                 local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
-                local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+                    local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
                 
                 echo "[$date_str] $author_nprofile ($likes likes) :" >> "$geo_path/NOSTR_journal"
                 echo "> $content" >> "$geo_path/NOSTR_journal"
                 echo "" >> "$geo_path/NOSTR_journal"
-            fi
+                fi
         fi
     done
 
@@ -739,11 +739,11 @@ update_region_nostr_profile() {
         -tags "$TAGS_JSON" \
         --relay "$myRELAY" 2>/dev/null
 
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
+        nostpy-cli send_event \
+            -privkey "$NPRIV_HEX" \
+            -kind 1 \
         -content "$content $myIPFS/ipns/copylaradio.com" \
-        --relay "$myRELAY" 2>/dev/null
+            --relay "$myRELAY" 2>/dev/null
 }
 
 ################################################################################

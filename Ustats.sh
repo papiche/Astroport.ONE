@@ -151,8 +151,8 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
     # search for active NOSTR MULTIPASS
     ####################################
-    echo " ## SEARCH HEX in ~/.zen/game/nostr/*@*.*/HEX" >&2
-    MENOSTR=($(ls -d ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
+    echo " ## SEARCH HEX in ~/.zen/tmp/{12*,swarm/*}/TW/*/HEX" >&2
+    MENOSTR=($(ls ~/.zen/tmp/$IPFSNODEID/TW/*/HEX ~/.zen/tmp/swarm/*/TW/*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort -u))
 
     echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}" >&2
     echo "===========================================================" >&2
