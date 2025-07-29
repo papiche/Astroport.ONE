@@ -242,8 +242,9 @@ for UMAP in ${unique_combined[@]}; do
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
     "" "${myLIBRA}/ipfs/${UMAPROOT}/APP" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
-    "$myRELAY"
-
+    "$myRELAY" \
+    --zencard "$UPLANETNAME_G1"
+    
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done
@@ -268,18 +269,16 @@ fi
 
 ####################################################
 ## SETUP UPLANET PROFILE + UPLANET/HEX signaling
-if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
-    ${MY_PATH}/../tools/nostr_setup_profile.py \
-    "$UPLANETNSEC" \
-    "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
-    "VISIO ROOM : ${myLIBRA}${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
-    "${myLIBRA}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
-    "${myLIBRA}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
-    "" "${myLIBRA}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
-    "$myRELAY" \
-    --zencard "$UPLANETNAME_G1" \
-    | tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
-fi
+${MY_PATH}/../tools/nostr_setup_profile.py \
+"$UPLANETNSEC" \
+"UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
+"VISIO ROOM : ${myLIBRA}${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
+"${myLIBRA}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
+"${myLIBRA}/ipfs/QmQMB9GkBXYdufZ7XicKsNsTFvN78G72co8vKrJrepXhs3/auto_heberger.jpg" \
+"" "${myLIBRA}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
+"$myRELAY" \
+--zencard "$UPLANETNAME_G1" \
+| tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 ####################################################################################
 
 ######################################################
