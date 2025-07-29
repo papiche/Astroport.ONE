@@ -120,8 +120,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "$NPUBLIC" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.pub
 
     # Create an G1CARD : G1Wallet waiting for G1 to make key batch running
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey "${SALT}" "${PEPPER}"
-    G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey "${SALT}" "${PEPPER}"
+    G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
     # echo "G1NOSTR _WALLET: $G1PUBNOSTR"
 
     ############ CREATE LOCAL USER SPACE
@@ -200,19 +200,19 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
-    amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n G1PUBNOSTR.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
+    amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n MULTIPASS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
     
     ## Add white margins of 100 pixels around the QR code image (for a flashable coracle profile picture)
-    convert ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png -bordercolor white -border 100x100 ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png
+    convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png -bordercolor white -border 100x100 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
     
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
     ## MOVE webcam picture
     mv ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ${HOME}/.zen/game/nostr/${EMAIL}/scan_${MOATS}.png 2>/dev/null
 
-    G1PUBNOSTRQR=$(ipfs --timeout 30s add -q ~/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png)
+    G1PUBNOSTRQR="$(ipfs --timeout 30s add -wq ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png | tail -f 1)/MULTIPASS.QR.png"
     # ipfs pin rm /ipfs/${G1PUBNOSTRQR}
-    echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR.QR.png.cid
+    echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png.cid
 
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
@@ -312,7 +312,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
     ## CREATE CESIUM + PROFILE
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.g1card.dunikey set --name "UPlanet ${ORIGIN} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}" -d "UPlanet MULTIPASS : $HEX : UPlanet ${UPLANETG1PUB:0:8}" &>/dev/null
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey set --name "UPlanet ${ORIGIN} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}" -d "UPlanet MULTIPASS : $HEX : UPlanet ${UPLANETG1PUB:0:8}" &>/dev/null
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
