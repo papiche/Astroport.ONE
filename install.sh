@@ -38,6 +38,7 @@ echo "#############################################"
 echo "###### ASTROPORT.ONE ZEN STATION ##############"
 echo "############# TW HOSTING & Ŋ1 SERVICES #############"
 echo "##################################################"
+mkdir -p ~/.zen
 
 echo ; echo "UPDATING SYSTEM REPOSITORY"
 #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
@@ -50,7 +51,7 @@ for i in git tldr ssss make cmake docker.io docker-compose hdparm iptables fail2
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
 
     fi
 done
@@ -58,11 +59,11 @@ done
 echo "#############################################"
 echo "######### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-tk ssss; do
+for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
 
     fi
 done
@@ -74,7 +75,7 @@ for i in qrencode pv gnupg gpa pandoc cargo btop prometheus ocrmypdf ca-certific
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
 
     fi
 done
@@ -86,7 +87,7 @@ for i in figlet cmatrix cowsay fonts-hack-ttf; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
 
     fi
 done
@@ -109,7 +110,7 @@ echo "#############################################"
 sudo npm install -g tiddlywiki@5.2.3
 [[ $? != 0 ]] \
     && echo "INSTALL tiddlywiki FAILED." \
-    && echo "INSTALL tiddlywiki FAILED." >> /tmp/install.errors.log
+    && echo "INSTALL tiddlywiki FAILED." >> ~/.zen/install.errors.log
 
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
@@ -133,9 +134,9 @@ pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
 for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr nostpy-cli bech32; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        pip install  $i 2>> /tmp/install.errors.log
-        # [[ $? != 0 ]] && pipx install $i 2>> /tmp/install.errors.log
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> /tmp/install.errors.log && continue
+        pip install -U $i 2>> ~/.zen/install.errors.log
+        # [[ $? != 0 ]] && pipx install $i 2>> ~/.zen/install.errors.log
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
 done
 
 if [[ $(which X 2>/dev/null) ]]; then
@@ -146,7 +147,7 @@ if [[ $(which X 2>/dev/null) ]]; then
         if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
             echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             sudo apt install -y $i;
-            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> /tmp/install.errors.log && continue
+            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
         fi
     done
 fi
@@ -204,7 +205,7 @@ echo Installation time was `expr $end - $start` seconds.
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX LOG ERRORS XXx"
-cat /tmp/install.errors.log
+cat ~/.zen/install.errors.log
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX please report any errors encountered during install  XXx"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
