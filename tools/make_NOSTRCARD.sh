@@ -270,6 +270,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CESIUM.v1.html
 
+    # ecire README.${YOUSER}.md
+    cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
+
+
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
 

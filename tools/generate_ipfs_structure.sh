@@ -121,10 +121,6 @@ if [[ ! -d "$SOURCE_DIR/Music" || ! -d "$SOURCE_DIR/Documents" || ! -d "$SOURCE_
     mkdir -p "$SOURCE_DIR/Videos"
     #ajouter le répertoire Audio
     mkdir -p "$SOURCE_DIR/Music"
-    # ecire un coucou dans le fichier README.md
-    if [ ! -f "$SOURCE_DIR/Documents/README.md" ]; then
-        touch "$SOURCE_DIR/Documents/README.md"
-    fi
 fi
 
 log_message "🚀 Génération de la structure IPFS..."
@@ -2280,7 +2276,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                             <p>Supported types: Images, Music, Videos, Documents</p>
                             <p>Files will be automatically sorted into appropriate folders</p>
                         </div>
-                        <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.tiff,.ico,.mp3,.wav,.ogg,.flac,.aac,.m4a,.wma,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.m4v,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar,.7z">
+                        <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.tiff,.ico,.mp3,.wav,.ogg,.flac,.aac,.m4a,.wma,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.m4v,.md,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar,.7z">
                     </div>
                     <div class="upload-progress" id="upload-progress" style="display: none;">
                         <div class="progress-bar">
