@@ -213,20 +213,19 @@ should_refresh() {
     fi
 
     ##############################################
-    ## MULTIPASS APP UPDATE
+    ## uDRIVE APP UPDATE
     [[ ! -d ${player_dir}/APP/uDRIVE ]] \
         && rm -Rf ${player_dir}/APP \
         && mkdir -p ${player_dir}/APP/uDRIVE/
 
     ## Verify Link
-    [[ ! -L "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" ]] && \
+    [[ ! -e "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" ]] && \
         cd "${player_dir}/APP/uDRIVE" && \
-        ln -s "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh"
+        ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh"
 
     ## update uDRIVE APP
     cd ${player_dir}/APP/uDRIVE/
-    # remove when generate_ipfs_structure.sh code is stable
-    UDRIVE=$(./generate_ipfs_structure.sh .) ## UPDATE MULTIPASS IPFS DRIVE
+    UDRIVE=$(./generate_ipfs_structure.sh .)
     cd - 2>&1 >/dev/null
     
     if [[ "$UDRIVE" != "$last_udrive" ]]; then
@@ -240,17 +239,20 @@ should_refresh() {
         else
             echo "Empty new CID... keeping $last_udrive"
         fi
+    else
+        echo "Same CID... keeping $last_udrive"
     fi
 
+    ###########################################################""
     ## uWORLD Link
-    [[ ! -L "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
+    [[ ! -e "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
         mkdir -p "${player_dir}/APP/uWORLD" && \
         cd ${player_dir}/APP/uWORLD/ && \
-        ln -s "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh" "generate_ipfs_RPG.sh"
+        ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh" "generate_ipfs_RPG.sh"
 
     ## update uWORLD APP
     cd ${player_dir}/APP/uWORLD/
-    UWORLD=$(./generate_ipfs_RPG.sh .) ## UPDATE MULTIPASS uWORLD
+    UWORLD=$(./generate_ipfs_RPG.sh .)
     cd - 2>&1 >/dev/null
 
     if [[ "$UWORLD" != "$last_uworld" ]]; then
@@ -264,6 +266,8 @@ should_refresh() {
         else
             echo "Empty new CID... keeping $last_uworld"
         fi
+    else
+        echo "Same CID... keeping $last_uworld"
     fi
 
     return 1
