@@ -63,30 +63,64 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
     #################################################################
-    ## CLEANING NON-LOCAL UMAP CACHES
+    ## REGION, SECTOR, AND UMAP CACHE CLEANING
     if [[ -s ~/.zen/GPS ]]; then
         source ~/.zen/GPS
         if [[ -n "$LAT" && -n "$LON" && "$LAT" != "0.00" && "$LON" != "0.00" ]]; then
-            echo "## CLEANING NON-LOCAL ($LAT $LON) UMAP CACHES"
-            MY_SLAT="${LAT::-1}"
-            MY_SLON="${LON::-1}"
-            MY_SECTOR="_${MY_SLAT}_${MY_SLON}"
-            echo "Node's current sector is ${MY_SECTOR}. Deleting other UMAP caches..."
+            echo "## CLEANING NON-LOCAL REGION / SECTOR / UMAP CACHES"
 
+            # Current region coordinates (integer part of LAT/LON)
+            RLAT=$(printf "%.0f" "$LAT")
+            RLON=$(printf "%.0f" "$LON")
+            echo "Node's current region is _${RLAT}_${RLON}"
+
+            # Create a list of regions to keep (current + 8 neighbors)
+            REGIONS_TO_KEEP=()
+            for i in -1 0 1; do
+                for j in -1 0 1; do
+                    REGIONS_TO_KEEP+=("_$(($RLAT + i))_$(($RLON + j))")
+                done
+            done
+            echo "Keeping regions: ${REGIONS_TO_KEEP[@]}"
+
+            ## CLEANING REGIONS
+            for region_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS -mindepth 1 -maxdepth 1 -type d -name "R*_*"); do
+                region_name=$(basename "$region_path")
+                if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${region_name} " ]]; then
+                    echo "Deleting non-local REGION cache: $region_path"
+                    rm -Rf "$region_path"
+                fi
+            done
+
+            ## CLEANING SECTORS
+            for sector_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS -mindepth 1 -maxdepth 1 -type d -name "_*_*"); do
+                sector_name=$(basename "$sector_path")
+                sector_lat=$(echo "$sector_name" | cut -d '_' -f 2)
+                sector_lon=$(echo "$sector_name" | cut -d '_' -f 3)
+                # Determine the region for this sector
+                sector_region="_$(printf "%.0f" "$sector_lat")_$(printf "%.0f" "$sector_lon")"
+
+                if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${sector_region} " ]]; then
+                    echo "Deleting non-local SECTOR cache: $sector_path (Region: $sector_region)"
+                    rm -Rf "$sector_path"
+                fi
+            done
+
+            ## CLEANING UMAPs
             for umap_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/__ -mindepth 3 -maxdepth 3 -type d -name "_*.*_*.*"); do
                 umap_name=$(basename "$umap_path")
                 umap_lat=$(echo "$umap_name" | cut -d '_' -f 2)
                 umap_lon=$(echo "$umap_name" | cut -d '_' -f 3)
-                umap_slat="${umap_lat::-1}"
-                umap_slon="${umap_lon::-1}"
-                umap_sector="_${umap_slat}_${umap_slon}"
 
-                if [[ "$umap_sector" != "$MY_SECTOR" ]]; then
-                    echo "Deleting non-local UMAP cache: $umap_path (Sector: $umap_sector)"
+                # Determine the region for this umap
+                umap_region="_$(printf "%.0f" "$umap_lat")_$(printf "%.0f" "$umap_lon")"
+
+                if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${umap_region} " ]]; then
+                    echo "Deleting non-local UMAP cache: $umap_path (Region: $umap_region)"
                     rm -Rf "$umap_path"
                 fi
             done
-            echo "Cleanup of non-local UMAPs complete."
+            echo "Cleanup of non-local caches complete."
         else
             echo "LAT/LON are 0.00. Skipping cleanup."
         fi
