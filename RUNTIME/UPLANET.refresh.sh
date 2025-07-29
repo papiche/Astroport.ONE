@@ -238,13 +238,13 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "${TODATE} JOURNAL - VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
+    "${TODATE} JOURNAL : VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
     "" "${myLIBRA}/ipfs/${UMAPROOT}/APP" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" \
     --zencard "$UPLANETNAME_G1"
-    
+
     rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done
