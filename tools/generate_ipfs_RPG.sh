@@ -26,7 +26,7 @@ DESCRIPTION:
 
 WORKFLOW:
     1. ./generate_ipfs_RPG.sh [--log] DIRECTORY
-    2. Le script génère _index.html et d'autres fichiers pour l'application RPG.
+    2. Le script génère index.html et manifest.json pour l'application RPG.
     3. Il retourne le CID final de l'application IPFS.
     4. Accéder à http://127.0.0.1:8080/ipfs/[CID]/
 
@@ -422,14 +422,8 @@ create_current_files_list() {
 
         # Ignorer les fichiers générés par ce script et les fichiers cachés
         if [[ "$basename_file" == manifest.json ]] || \
-           [[ "$basename_file" == _index.html ]] || \
-           [[ "$basename_file" == _redirect.html ]] || \
-           [[ "$basename_file" == upload_test.html ]] || \
-           [[ "$basename_file" == main.py ]] || \
-           [[ "$basename_file" == requirements.txt ]] || \
            [[ "$basename_file" == generate_ipfs_structure.sh ]] || \
            [[ "$basename_file" == generate_ipfs_RPG.sh ]] || \
-           [[ "$basename_file" == start_server.sh ]] || \
            [[ "$basename_file" == .* ]] || \
            [[ "$relative_path" == .* ]] || \
            [[ "$relative_path" == *"__pycache__"* ]]; then
@@ -639,9 +633,6 @@ while IFS= read -r -d '' file; do
     if [[ "$basename_file" == manifest.json ]]; then
         log_message "   ⏭️  Ignoré: fichier manifest.json (généré par ce script)"
         continue
-    elif [[ "$basename_file" == _index.html ]]; then
-        log_message "   ⏭️  Ignoré: fichier _index.html (généré par ce script)"
-        continue
     elif [[ "$basename_file" == index.html ]]; then
         # Vérifier si c'est notre fichier de redirection
         if [ -f "$file" ] && grep -q "UPLANET_IPFS_GENERATOR" "$file" 2>/dev/null; then
@@ -650,29 +641,11 @@ while IFS= read -r -d '' file; do
         else
             log_message "   ⚠️  index.html détecté mais pas généré par ce script - sera traité"
         fi
-    elif [[ "$basename_file" == _redirect.html ]]; then
-        log_message "   ⏭️  Ignoré: fichier _redirect.html (généré par ce script)"
-        continue
-    elif [[ "$basename_file" == update_manifest.sh ]]; then
-        log_message "   ⏭️  Ignoré: script update_manifest.sh"
-        continue
-    elif [[ "$basename_file" == upload_test.html ]]; then
-        log_message "   ⏭️  Ignoré: fichier upload_test.html (page de test)"
-        continue
-    elif [[ "$basename_file" == main.py ]]; then
-        log_message "   ⏭️  Ignoré: fichier main.py (serveur FastAPI)"
-        continue
-    elif [[ "$basename_file" == requirements.txt ]]; then
-        log_message "   ⏭️  Ignoré: fichier requirements.txt (dépendances Python)"
-        continue
     elif [[ "$basename_file" == generate_ipfs_structure.sh ]]; then
         log_message "   ⏭️  Ignoré: script generate_ipfs_structure.sh"
         continue
     elif [[ "$basename_file" == generate_ipfs_RPG.sh ]]; then
         log_message "   ⏭️  Ignoré: script generate_ipfs_RPG.sh"
-        continue
-    elif [[ "$basename_file" == start_server.sh ]]; then
-        log_message "   ⏭️  Ignoré: script start_server.sh"
         continue
     elif [[ "$basename_file" == .* ]]; then
         log_message "   ⏭️  Ignoré: fichier caché $basename_file"
@@ -824,9 +797,9 @@ update_final_cid_in_manifest() {
 log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
 log_message "   📊 Statistiques IPFS: $updated_count nouveaux/modifiés, $cached_count en cache, $deleted_count supprimés"
 
-log_message "🎨 Génération de _index.html pour le Geo-RPG..."
+log_message "🎨 Génération de index.html pour le Geo-RPG..."
 
-cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
+cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2619,7 +2592,7 @@ cat > "$SOURCE_DIR/_index.html" << 'HTML_EOF'
 </html>
 HTML_EOF
 
-log_message "✅ _index.html pour le Geo-RPG généré dans $SOURCE_DIR/_index.html"
+log_message "✅ index.html pour le Geo-RPG généré dans $SOURCE_DIR/index.html"
 
 # Créer un index.html de redirection simple
 log_message "🔄 Vérification du fichier index.html..."
@@ -2638,61 +2611,11 @@ if [ -f "$SOURCE_DIR/index.html" ]; then
         log_message "   ↻ Mise à jour de l'index.html existant (généré par ce script)"
     else
         log_message "   ⚠️  index.html existe mais n'a pas notre marqueur"
-        log_message "   📖 Aperçu du contenu actuel:"
-        log_message "$(head -5 "$SOURCE_DIR/index.html" 2>/dev/null | sed 's/^/      /')"
-        log_message "   📄 Création de _redirect.html à la place"
-        log_message "   💡 Pour utiliser notre redirection, renommez manuellement :"
-        log_message "      mv index.html index_original.html"
-        log_message "      mv _redirect.html index.html"
-
-        # Créer _redirect.html au lieu d'index.html
-        cat > "$SOURCE_DIR/_redirect.html" << REDIRECT_EOF
-<!DOCTYPE html>
-<html>
-$MARKER
-<head>
-    <meta charset="utf-8">
-    <title>UPlanet IPFS RPG Explorer</title>
-    <script>
-        // Redirection immédiate vers _index.html
-        window.location.replace('./_index.html');
-    </script>
-</head>
-<body>
-    <p>If you are not redirected automatically, <a href="_index.html">click here</a>.</p>
-</body>
-</html>
-REDIRECT_EOF
-        log_message "✅ _redirect.html créé (sauvegarde de votre index.html préservée)"
-        CREATE_INDEX=false
     fi
 else
     log_message "   📄 Aucun fichier index.html existant - création d'un nouveau"
 fi
 
-# Créer ou remplacer index.html avec notre version seulement si nécessaire
-if [ "$CREATE_INDEX" = true ]; then
-    log_message "   🔧 Création du fichier index.html de redirection..."
-    cat > "$SOURCE_DIR/index.html" << REDIRECT_EOF
-<!DOCTYPE html>
-<html>
-$MARKER
-<head>
-    <meta charset="utf-8">
-    <title>UPlanet IPFS RPG Explorer</title>
-    <script>
-        // Redirection immédiate vers _index.html
-        window.location.replace('./_index.html');
-    </script>
-</head>
-<body>
-    <p>If you are not redirected automatically, <a href="_index.html">click here</a>.</p>
-</body>
-</html>
-REDIRECT_EOF
-
-    log_message "✅ index.html de redirection créé avec marqueur UPlanet"
-fi
 
 # Fonction pour obtenir le CID actuel du répertoire depuis IPFS
 get_current_directory_cid() {
@@ -2765,8 +2688,7 @@ log_message "🎉 Structure IPFS Geo-RPG générée avec succès!"
 log_message ""
 log_message "📋 Fichiers créés:"
 log_message "  - manifest.json (structure optimisée avec liens IPFS individuels pour le RPG)"
-log_message "  - _index.html (interface Geo-RPG avec chargement du manifest)"
-log_message "  - index.html (redirection vers _index.html)"
+log_message "  - index.html (interface Geo-RPG avec chargement du manifest)"
 log_message ""
 log_message "🔧 Nouvelles fonctionnalités ajoutées:"
 log_message "  - ⚡ Mise à jour incrémentale des fichiers du jeu (seuls les fichiers modifiés sont re-ajoutés à IPFS)"
