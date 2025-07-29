@@ -9,9 +9,14 @@ ME="${0##*/}"
 
 . "${MY_PATH}/tools/my.sh"
 
-ULAT=$1
-ULON=$2
-DEG=$3
+MLAT=$1
+MLON=$2
+MDEG=$3
+
+## Check format
+ULAT=$(makecoord $MLAT)
+ULON=$(makecoord $MLON)
+DEG=$(makecoord $MDEG)
 
 # Create cache filename based on parameters
 if [[ -n "$ULAT" && -n "$ULON" ]]; then
@@ -182,6 +187,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         fi
 
         NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
+        [[ -z ]] && NCOINS=$($MY_PATH/tools/G1check.sh ${G1PUBNOSTR} | tail -n 1)
         ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
         echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
         # Construct JSON object using printf and associative array
@@ -219,11 +225,9 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
                 echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON" >&2
                 
                 # Construct JSON object for closest UMAP
-                if [[ -n $UMAPROOT ]]; then
-                    closest_umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPROOT": "%s", "UMAPHEX": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORROOT": "%s", "SECTORHEX": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONROOT": "%s", "REGIONHEX": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s", "DISTANCE_KM": "%s"}' \
-                                    "$lat" "$lon" "${UMAPROOT}" "${UMAPHEX}" "${UMAPG1PUB}" "${myIPFS}${UMAPIPNS}" "${SECTORROOT}" "${SECTORHEX}" "${SECTORG1PUB}" "${myIPFS}${SECTORIPNS}" "${REGIONROOT}" "${REGIONHEX}" "${REGIONG1PUB}" "${myIPFS}${REGIONIPNS}" "$(calculate_distance "$ULAT" "$ULON" "$lat" "$lon")")
-                    closest_umaps_array+=("$closest_umap_obj")
-                fi
+                closest_umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPROOT": "%s", "UMAPHEX": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORROOT": "%s", "SECTORHEX": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONROOT": "%s", "REGIONHEX": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s", "DISTANCE_KM": "%s"}' \
+                                "$lat" "$lon" "${UMAPROOT}" "${UMAPHEX}" "${UMAPG1PUB}" "${myIPFS}${UMAPIPNS}" "${SECTORROOT}" "${SECTORHEX}" "${SECTORG1PUB}" "${myIPFS}${SECTORIPNS}" "${REGIONROOT}" "${REGIONHEX}" "${REGIONG1PUB}" "${myIPFS}${REGIONIPNS}" "$(calculate_distance "$ULAT" "$ULON" "$lat" "$lon")")
+                closest_umaps_array+=("$closest_umap_obj")
             fi
         done
     fi
@@ -234,6 +238,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         lat=$(echo "$umap" | cut -d '_' -f 2)
         lon=$(echo "$umap" | cut -d '_' -f 3)
 
+        ## Adjust to layer grid
         # Filter by geographic area if coordinates are provided
         if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then
             # Convert coordinates to float for comparison
@@ -256,12 +261,10 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         $(${MY_PATH}/tools/getUMAP_ENV.sh "$lat" "$lon" | tail -n 1)
         echo "UMAPROOT=$UMAPROOT SECTORROOT=$SECTORROOT REGIONROOT=$REGIONROOT UMAPHEX=$UMAPHEX UMAPG1PUB=$UMAPG1PUB UMAPIPNS=$UMAPIPNS SECTOR=$SECTOR SECTORHEX=$SECTORHEX SECTORG1PUB=$SECTORG1PUB SECTORIPNS=$SECTORIPNS REGION=$REGION REGIONHEX=$REGIONHEX REGIONG1PUB=$REGIONG1PUB REGIONIPNS=$REGIONIPNS LAT=$LAT LON=$LON SLAT=$SLAT SLON=$SLON RLAT=$RLAT RLON=$RLON" >&2
         # Construct JSON object using printf and associative array, filter out UMAPs with no root
-        if [[ -n $UMAPROOT ]]; then
         umap_obj=$(printf '{"LAT": "%s", "LON": "%s", "UMAPROOT": "%s", "UMAPHEX": "%s", "UMAPG1PUB": "%s", "UMAPIPNS": "%s", "SECTORROOT": "%s", "SECTORHEX": "%s", "SECTORG1PUB": "%s", "SECTORIPNS": "%s", "REGIONROOT": "%s", "REGIONHEX": "%s", "REGIONG1PUB": "%s", "REGIONIPNS": "%s"}' \
                             "$lat" "$lon" "${UMAPROOT}" "${UMAPHEX}" "${UMAPG1PUB}" "${myIPFS}${UMAPIPNS}" "${SECTORROOT}" "${SECTORHEX}" "${SECTORG1PUB}" "${myIPFS}${SECTORIPNS}" "${REGIONROOT}" "${REGIONHEX}" "${REGIONG1PUB}" "${myIPFS}${REGIONIPNS}")
             umap_array+=("$umap_obj")
             echo
-        fi
     done
 
     #########################################################
@@ -305,6 +308,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     #######################################
     ## BILAN ZEN ECONOMY
     COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
+    [[ -z $COINS ]] && COINS=$($MY_PATH/tools/G1check.sh $UPLANETG1PUB | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
 
     [[ -z $PAF ]] && PAF=14
