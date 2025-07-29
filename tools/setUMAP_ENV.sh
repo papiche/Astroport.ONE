@@ -28,9 +28,11 @@ REGION="_${RLAT}_${RLON}"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir ~/.zen/tmp/${MOATS}
 
-## GET ENV
+## SET ENV
 ######################################################################
 echo "UMAP : _${LAT}_${LON}"
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
+
 UMAPROOT=$(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${TODATE} 2>/dev/null)
 [[ -z $UMAPROOT ]] && UMAPROOT=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ipfs.${TODATE} 2>/dev/null | tail -n 1)
 echo "UMAPROOT=$UMAPROOT"
@@ -40,7 +42,6 @@ UMAPG1PUB=$(cat ~/.zen/tmp/swarm/*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/
 
 if [[ -z $UMAPG1PUB ]]; then
     UMAPG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/
     echo "$UMAPG1PUB" > ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/G1PUB
 fi
 echo "UMAPG1PUB=$UMAPG1PUB"

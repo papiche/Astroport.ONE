@@ -295,10 +295,13 @@ process_recent_messages() {
         echo "> $content" >> ${UMAPPATH}/NOSTR_messages
         echo "" >> ${UMAPPATH}/NOSTR_messages
 
-        # (Optionnel) Traite les images #market comme avant
+        # (Optional) Process #market images, ensuring they are not processed multiple times
         if [[ "$content" == *"#market"* ]]; then
-            process_market_images "$content" "$UMAPPATH"
-            create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
+            # Check if the ad file already exists to avoid reprocessing
+            if [[ ! -f "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json" ]]; then
+                process_market_images "$content" "$UMAPPATH"
+                create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
+            fi
         fi
     done | head -n 50 # limit to 50 messages a day from each friend
 }
@@ -380,8 +383,8 @@ setup_ipfs_structure() {
     fi
     
     ## Redirect to uCID actual ipfs CID
-    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$uCID\"></head></html>" > index.html
-    rm index.html ## DEBUG MODE (todo remove)
+    #echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$uCID\"></head></html>" > index.html
+    # rm index.html ## DEBUG MODE (todo remove)
     cd - 2>&1>/dev/null
 }
 
@@ -441,12 +444,8 @@ cleanup_old_images() {
 setup_umap_identity() {
     local UMAPPATH=$1
 
-    $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+    $(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
     STAGS+=("[\"p\", \"$SECTORHEX\", \"$myRELAY\", \"$SECTOR\"]")
-
-    # NPRIV_HEX is already initialized in process_umap_friends, so we don't need to regenerate it
-    # Just get the public key for reference
-    UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 
     local TAGS_JSON=$(printf '%s\n' "${TAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
@@ -502,79 +501,99 @@ count_likes() {
     cd - >/dev/null
 }
 
-create_sector_journal() {
-    local sector=$1
-    echo "Creating Sector ${sector} Journal from sub UMAPS"
-    local slat=$(echo ${sector} | cut -d '_' -f 2)
-    local slon=$(echo ${sector} | cut -d '_' -f 3)
-    local rlat=$(echo ${slat} | cut -d '.' -f 1)
-    local rlon=$(echo ${slon} | cut -d '.' -f 1)
-    local sectorpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}"
-    mkdir -p $sectorpath
-    rm -f $sectorpath/NOSTR_journal
+create_aggregate_journal() {
+    local type=$1 # "Sector" or "Region"
+    local geo_id=$2 # sector or region id like _45.4_1.2 or _45_1
+    local like_threshold=$3
 
-    # Agrège tous les messages des UMAPs du secteur
-    for umap in ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${rlat}_${rlon}/_${slat}_${slon}/_*_*; do
-        if [[ -d "$umap/APP/uMARKET/ads" ]]; then
-            for adfile in "$umap/APP/uMARKET/ads"/*.json; do
-                [[ ! -f "$adfile" ]] && continue
-                local msgid=$(jq -r '.id' "$adfile")
-                local likes=$(count_likes "$msgid")
-                if [[ $likes -ge 3 ]]; then
-                    local content=$(jq -r '.content' "$adfile" 2>/dev/null)
-                    local author=$(jq -r '.author_nprofile' "$adfile" 2>/dev/null)
-                    local created_at=$(jq -r '.created_at' "$adfile" 2>/dev/null)
-                    local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
-                    echo "On $date_str, $author (with $likes likes) published:" >> $sectorpath/NOSTR_journal
-                    echo "> $content" >> $sectorpath/NOSTR_journal
-                    echo "" >> $sectorpath/NOSTR_journal
-                fi
-            done
+    echo "Creating ${type} ${geo_id} Journal from recently liked messages (threshold: ${like_threshold} likes)"
+
+    local geo_path find_pattern
+    if [[ "$type" == "Sector" ]]; then
+        local slat=$(echo ${geo_id} | cut -d '_' -f 2)
+        local slon=$(echo ${geo_id} | cut -d '_' -f 3)
+        local rlat=$(echo ${slat} | cut -d '.' -f 1)
+        local rlon=$(echo ${slon} | cut -d '.' -f 1)
+        geo_path="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/${geo_id}"
+        find_pattern="*/UMAP_${slat}*_${slon}*/HEX"
+    else # Region
+        local rlat=$(echo ${geo_id} | cut -d '_' -f 2)
+        local rlon=$(echo ${geo_id} | cut -d '_' -f 3)
+        geo_path="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/${geo_id}"
+        find_pattern="*/UMAP_${rlat}.*_${rlon}.*/HEX"
+    fi
+
+    mkdir -p "$geo_path"
+    rm -f "$geo_path/NOSTR_journal"
+
+    # 1. Collect unique friends
+    local all_friends=()
+    for umap_hex_file in $(find ~/.zen/game/nostr -path "$find_pattern" 2>/dev/null); do
+        local umap_hex=$(cat "$umap_hex_file")
+        local umap_friends=($($MY_PATH/../tools/nostr_get_N1.sh "$umap_hex" 2>/dev/null))
+        all_friends+=(${umap_friends[@]})
+    done
+
+    if [[ ${#all_friends[@]} -eq 0 ]]; then echo "No friends found for ${type} ${geo_id}."; rm -Rf "$geo_path"; return; fi
+    local unique_friends=($(echo "${all_friends[@]}" | tr ' ' '\n' | sort -u))
+
+    # 2. Get recently liked message IDs from friends
+    local authors_json=$(printf '"%s",' "${unique_friends[@]}"); authors_json="[${authors_json%,}]"
+    local SINCE=$(date -d "24 hours ago" +%s)
+    cd ~/.zen/strfry
+    local liked_event_ids=($(./strfry scan "{\"kinds\": [7], \"authors\": ${authors_json}, \"since\": ${SINCE}}" 2>/dev/null | jq -r '.tags[] | select(.[0] == "e") | .[1]' | sort -u))
+    cd - >/dev/null
+
+    if [[ ${#liked_event_ids[@]} -eq 0 ]]; then echo "No recently liked messages for ${type} ${geo_id}."; rm -Rf "$geo_path"; return; fi
+    echo "Found ${#liked_event_ids[@]} unique recently liked messages to process for ${type} ${geo_id}."
+
+    # 3. Process each liked message
+    for msgid in "${liked_event_ids[@]}"; do
+        local likes=$(count_likes "$msgid")
+        if [[ $likes -ge $like_threshold ]]; then
+            cd ~/.zen/strfry
+            local message_json=$(./strfry scan "{\"ids\": [\"${msgid}\"], \"kinds\": [1], \"limit\": 1}" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, author: .pubkey, content: .content, created_at: .created_at}' | head -n 1)
+            cd - >/dev/null
+
+            if [[ -n "$message_json" ]]; then
+                local content=$(echo "$message_json" | jq -r .content)
+                local author_hex=$(echo "$message_json" | jq -r .author)
+                local created_at=$(echo "$message_json" | jq -r .created_at)
+                local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
+                local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+                
+                echo "[$date_str] $author_nprofile ($likes likes) :" >> "$geo_path/NOSTR_journal"
+                echo "> $content" >> "$geo_path/NOSTR_journal"
+                echo "" >> "$geo_path/NOSTR_journal"
+            fi
         fi
     done
 
-    # Génère le résumé AI si besoin
-    if [[ -s $sectorpath/NOSTR_journal ]]; then
-        local ANSWER=$(generate_ai_summary "$(cat $sectorpath/NOSTR_journal)")
-        echo "$ANSWER" > $sectorpath/NOSTR_journal
+    # 4. Finalize
+    if [[ ! -s "$geo_path/NOSTR_journal" ]]; then echo "No messages with enough likes for ${type} ${geo_id} journal."; rm -Rf "$geo_path"; return; fi
+
+    local journal_content
+    local MAX_MSGS=10
+    local MAX_SIZE=3000
+    if [[ $(grep -c 'likes) :$' "$geo_path/NOSTR_journal") -gt $MAX_MSGS || $(wc -c < "$geo_path/NOSTR_journal") -gt $MAX_SIZE ]]; then
+        echo "Journal for ${type} ${geo_id} is too large. Summarizing with AI..."
+        journal_content=$(generate_ai_summary "$(cat "$geo_path/NOSTR_journal")")
+    else
+        journal_content=$(cat "$geo_path/NOSTR_journal")
     fi
 
-    # Après avoir généré le journal sectoriel (dans create_sector_journal, sur $sectorpath/NOSTR_journal)
-    MAX_MSGS=10
-    MAX_SIZE=3000
-    if [[ -f "$sectorpath/NOSTR_journal" ]]; then
-        msg_count=$(grep -c '^On ' "$sectorpath/NOSTR_journal")
-        file_size=$(wc -c < "$sectorpath/NOSTR_journal")
-        if [[ $msg_count -gt $MAX_MSGS || $file_size -gt $MAX_SIZE ]]; then
-            IA_PROMPT="[TEXT] $(cat $sectorpath/NOSTR_journal) [/TEXT] --- \
-# 1. Summarize and group messages by profile (author), clearly cite each profile. \
-# 2. For each profile, list the main messages of the day. \
-# 3. Add hashtags and emojis for readability. \
-# 4. IMPORTANT: Never omit an author, even if you summarize. \
-# 5. Use the same language as the messages."
-            ANSWER=$($MY_PATH/../IA/question.py "$IA_PROMPT")
-            echo "$ANSWER" > "$sectorpath/NOSTR_journal"
-        fi
+    # 5. Save and publish
+    if [[ "$type" == "Sector" ]]; then
+        local SECROOT=$(save_sector_journal "$geo_id" "$journal_content")
+        update_sector_nostr_profile "$geo_id" "$journal_content" "$SECROOT"
+    else # Region
+        save_region_journal "$geo_id" "$journal_content"
     fi
-    local slat=$(echo ${sector} | cut -d '_' -f 2)
-    local slon=$(echo ${sector} | cut -d '_' -f 3)
-    local rlat=$(echo ${slat} | cut -d '.' -f 1)
-    local rlon=$(echo ${slon} | cut -d '.' -f 1)
-    local message_text="$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/${sector}/NOSTR_journal)"
-    if [[ -z "$message_text" ]]; then
-        echo "search for sector ${sector} journal in swarm"
-        message_text="$(cat ${HOME}/.zen/tmp/swarm/*/UPLANET/SECTORS/_${rlat}_${rlon}/${sector}/NOSTR_journal)"
-        if [[ -z "$message_text" ]]; then
-            echo "No NOSTR_messages found for sector ${sector}"
-            # Clean up empty sector cache
-            rm -Rf "$sectorpath"
-            return
-        fi
-    fi
+}
 
-    local ANSWER=$(generate_ai_summary "$message_text")
-    save_sector_journal "$sector" "$ANSWER"
-    update_sector_nostr_profile "$sector" "$ANSWER"
+create_sector_journal() {
+    local sector=$1
+    create_aggregate_journal "Sector" "$sector" 3
 }
 
 save_sector_journal() {
@@ -591,8 +610,9 @@ save_sector_journal() {
     mkdir -p $sectorpath
     echo "$ANSWER" > $sectorpath/NOSTR_journal
 
-    SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
+    local SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
     update_sector_calendar "$sectorpath" "$SECROOT"
+    echo "$SECROOT"
 }
 
 update_sector_calendar() {
@@ -611,6 +631,7 @@ update_sector_calendar() {
 update_sector_nostr_profile() {
     local sector=$1
     local ANSWER=$2
+    local SECROOT=$3
 
     local slat=$(echo ${sector} | cut -d '_' -f 2)
     local slon=$(echo ${sector} | cut -d '_' -f 3)
@@ -666,55 +687,31 @@ process_regions() {
 
 create_region_journal() {
     local region=$1
+    create_aggregate_journal "Region" "$region" 12
+}
+
+save_region_journal() {
+    local region=$1
+    local content=$2
     local rlat=$(echo ${region} | cut -d '_' -f 2)
     local rlon=$(echo ${region} | cut -d '_' -f 3)
     local regionpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/${region}"
-    mkdir -p $regionpath
-    rm -f $regionpath/NOSTR_journal
+    mkdir -p "$regionpath"
+    echo "$content" > "$regionpath/NOSTR_journal"
 
-    # Agrège tous les messages des SECTORS de la région
-    for sector in ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/${region}/*; do
-        if [[ -d "$sector/APP/uMARKET/ads" ]]; then
-            for adfile in "$sector/APP/uMARKET/ads"/*.json; do
-                [[ ! -f "$adfile" ]] && continue
-                local msgid=$(jq -r '.id' "$adfile")
-                local likes=$(count_likes "$msgid")
-                if [[ $likes -ge 12 ]]; then
-                    local content=$(jq -r '.content' "$adfile" 2>/dev/null)
-                    local author=$(jq -r '.author_nprofile' "$adfile" 2>/dev/null)
-                    local created_at=$(jq -r '.created_at' "$adfile" 2>/dev/null)
-                    local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
-                    echo "On $date_str, $author (with $likes likes) published:" >> $regionpath/NOSTR_journal
-                    echo "> $content" >> $regionpath/NOSTR_journal
-                    echo "" >> $regionpath/NOSTR_journal
-                fi
-            done
-        fi
-    done
+    # Minimal IPFS publishing, can be expanded
+    local REGROOT=$(ipfs add -rwHq "$regionpath"/* | tail -n 1)
+    echo "Published Region ${region} to IPFS: ${REGROOT}"
 
-    # Génère le résumé AI si besoin
-    if [[ -s $regionpath/NOSTR_journal ]]; then
-        local ANSWER=$(generate_ai_summary "$(cat $regionpath/NOSTR_journal)")
-        echo "$ANSWER" > $regionpath/NOSTR_journal
-    fi
+    # Publish to Nostr
+    update_region_nostr_profile "$region" "$content" "$REGROOT"
+}
 
-    # Après avoir généré le journal régional (dans create_region_journal, sur $regionpath/NOSTR_journal)
-    MAX_MSGS=10
-    MAX_SIZE=3000
-    if [[ -f "$regionpath/NOSTR_journal" ]]; then
-        msg_count=$(grep -c '^On ' "$regionpath/NOSTR_journal")
-        file_size=$(wc -c < "$regionpath/NOSTR_journal")
-        if [[ $msg_count -gt $MAX_MSGS || $file_size -gt $MAX_SIZE ]]; then
-            IA_PROMPT="[TEXT] $(cat $regionpath/NOSTR_journal) [/TEXT] --- \
-# 1. Summarize and group messages by profile (author), clearly cite each profile. \
-# 2. For each profile, list the main messages of the day. \
-# 3. Add hashtags and emojis for readability. \
-# 4. IMPORTANT: Never omit an author, even if you summarize. \
-# 5. Use the same language as the messages."
-            ANSWER=$($MY_PATH/../IA/question.py "$IA_PROMPT")
-            echo "$ANSWER" > "$regionpath/NOSTR_journal"
-        fi
-    fi
+update_region_nostr_profile() {
+    local region=$1
+    local content=$2
+    local REGROOT=$3
+
     local rlat=$(echo ${region} | cut -d '_' -f 2)
     local rlon=$(echo ${region} | cut -d '_' -f 3)
 
@@ -732,7 +729,6 @@ create_region_journal() {
         "$myRELAY" "wss://relay.copylaradio.com" \
         --zencard "$UPLANETNAME_G1"
 
-
     local TAGS_JSON=$(printf '%s\n' "${RTAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
@@ -743,16 +739,11 @@ create_region_journal() {
         -tags "$TAGS_JSON" \
         --relay "$myRELAY" 2>/dev/null
 
-    if [[ -s $regionpath/NOSTR_journal ]]; then
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$(cat $regionpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY" 2>/dev/null
-    else
-        # Clean up empty region cache
-        rm -Rf "$regionpath"
-    fi
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 1 \
+        -content "$content $myIPFS/ipns/copylaradio.com" \
+        --relay "$myRELAY" 2>/dev/null
 }
 
 ################################################################################
