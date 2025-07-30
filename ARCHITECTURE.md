@@ -65,7 +65,7 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
         └──────────────┘ └─────────────┘ └───────────┘
                 │               │               │
         ┌───────▼──────┐ ┌──────▼──────┐ ┌─────▼─────┐
-        │   Port 1234  │ │  RUNTIME/   │ │   IPFS    │
+        │   Port 54321  │ │  RUNTIME/   │ │   IPFS    │
         │  API Gateway │ │  Services   │ │  Storage  │
         └──────────────┘ └─────────────┘ └───────────┘
                 │               │               │
@@ -79,7 +79,7 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
 
 | Couche | Composants | Description |
 |--------|------------|-------------|
-| **Présentation** | Ports 1234, 12345, 54321 | Interfaces web et APIs |
+| **Présentation** | Ports 12345, 54321 | Interfaces web et APIs |
 | **Application** | API/, RUNTIME/, ASTROBOT/ | Services métier et automatisation |
 | **Données** | IPFS, ~/.zen/game/ | Stockage décentralisé et cache |
 | **Réseau** | Ğ1, NOSTR, IPFS | Protocoles de communication |
@@ -93,7 +93,7 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
 | Script | Taille | Port | Rôle |
 |--------|--------|------|------|
 | `command.sh` | 51KB | - | Interface principale de gestion |
-| `12345.sh` | 10KB | 1234 | Serveur API principal |
+| `12345.sh` | 10KB | 1234 | Launcher principal |
 | `_12345.sh` | 23KB | 12345 | Cartographie des stations |
 | `20h12.process.sh` | 11KB | - | Maintenance quotidienne |
 | `NOSTRCARD.refresh.sh` | 34KB | - | Gestion des cartes NOSTR |
@@ -102,13 +102,14 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
 
 | Port | Service | Description | Protocole |
 |------|---------|-------------|-----------|
-| **1234** | API Gateway | Point d'entrée principal | HTTP |
+| **1234** | Twist API | Twist BASH API (deprecated) | HTTP |
 | **12345** | Station Map | Cartographie UPlanet | HTTP |
-| **45780-90** | API Response | Ports de réponse dynamiques | HTTP |
-| **33101** | G1Billet | Service de paiement Ğ1 | HTTP |
-| **54321** | UPassport | API d'identité numérique | HTTP |
+| **45780-90** | Twist API Response | Ports de réponse twist uniques | HTTP |
+| **33101** | G1Billet | Service fabrication Ğ1 BILLETS | HTTP |
+| **54321** | UPassport | UPassport 'FastApi' API | HTTP |
 | **8080, 4001, 5001** | IPFS Gateway | Accès stockage décentralisé | HTTP |
-| **7777** | NOSTR Relay | Réseau social décentralisé | WebSocket |
+| **7777** | NOSTR Relay | Réseau social décentralisé | HTTP/WebSocket |
+| **80, 443** | Proxy SSL | Nginx Proxy Manager (docker n°1) | HTTP |
 
 ### 3. Structure des Répertoires
 
@@ -141,27 +142,7 @@ Astroport.ONE/
 
 ## 🔄 Flux de Données
 
-### 1. Flux de Requête API Typique
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API_Gateway as Port 1234
-    participant Dynamic_Port as Port 45780-90
-    participant API_Service as API/
-    participant IPFS as IPFS Storage
-    participant Response as Client
-
-    Client->>API_Gateway: GET /?cmd=action&param=value
-    API_Gateway->>Dynamic_Port: Redirection vers port dynamique
-    Dynamic_Port->>API_Service: Exécution du service
-    API_Service->>IPFS: Lecture/Écriture données
-    IPFS-->>API_Service: Retour données
-    API_Service-->>Dynamic_Port: Réponse formatée
-    Dynamic_Port-->>Client: Réponse HTTP
-```
-
-### 2. Flux de Synchronisation Swarm
+### 1. Flux de Synchronisation Swarm
 
 ```mermaid
 flowchart TD
@@ -181,7 +162,7 @@ flowchart TD
     M --> C
 ```
 
-### 3. Flux de Maintenance Quotidienne
+### 2. Flux de Maintenance Quotidienne
 
 ```mermaid
 flowchart TD
@@ -199,6 +180,10 @@ flowchart TD
     K --> L[Rapport Email]
 ```
 
+### 3. Flux de Requête API Typique
+
+cf. Dépot de code /UPassport 
+
 ---
 
 ## 🔐 Sécurité et Cryptographie
@@ -207,7 +192,7 @@ flowchart TD
 
 | Type de Clé | Format | Usage | Stockage |
 |-------------|--------|-------|----------|
-| **Dunikey** | Ğ1 | Paiements et transactions | `~/.zen/game/players/*/secret.dunikey` |
+| **Zen Card** | Ẑen | Paiements et transactions | `~/.zen/game/players/*/secret.dunikey` |
 | **IPFS Key** | IPFS | Identité décentralisée | `~/.ipfs/keystore/` |
 | **NOSTR Key** | NOSTR | Réseau social | `~/.zen/game/nostr/*/.secret.nostr` |
 | **SSSS Keys** | Shamir | Partage de secrets | `~/.zen/game/nostr/*/.secret.disco` |
@@ -254,9 +239,9 @@ function validate_primal_transaction() {
 
 #### **Made In Zen Tokens**
 - **Usage** : Gouvernance coopérative et propriété d'infrastructure
-- **Accès** : Disponible aux détenteurs de ZENCARD et utilisateurs uPASSPORT
+- **Accès** : Disponible aux détenteurs de ZENCARD et dépositaires uPASSPORT
 
-### 2. G1PalPay.sh - Surveillance Temps Réel
+### 2. G1PalPay.sh - Surveillance "TW" quotidienne (avec ZEN.ECONOMY.sh, NOSTRCARD.refresh.sh, PLAYERS.refresh.sh, ...) 
 
 ```bash
 # Surveillance des transactions Ğ1
@@ -281,7 +266,7 @@ function monitor_g1_transactions() {
 
 ### 3. Économie des Likes
 
-- **Chaque like reçu** = 0.1 Ğ1 automatiquement transféré
+- **Chaque like reçu** = 1 Ẑ automatiquement transféré
 - **Système de gratitude** : Récompense directe pour les interactions
 - **Capitalisation automatique** : Gestion des tokens en temps réel
 
@@ -294,20 +279,23 @@ function monitor_g1_transactions() {
 ```
 ~/.zen/game/
 ├── players/              # Données des joueurs
-│   ├── .current/        # Joueur actuel
+│   ├── .current/        # Capitaine actuel
 │   └── */               # Données par joueur
 │       ├── secret.dunikey
-│       ├── ipfs/        # Stockage IPFS personnel
-│       └── nostr/       # Données NOSTR
-├── nostr/               # Données NOSTR globales
+│       ├── ipfs/        # Stockage IPFS TW personnel
+├── nostr/               # Données NOSTR
+│   └── */               # Données par MULTIPASS (@, UMAP, ZCARD, ...)
 └── tmp/                 # Cache temporaire
+│   ├── coucou/          # Cache Metadonnées Profil : .COINS, .primal, .cesium, .gchange, ...
+│   ├── ${IPFSNODEID]/   # Balise IPNS de la Station
+│   ├── swarm/           # Capture des balises des stations de l'essaim
 ```
 
 ### 2. Système de Cache
 
 - **Cache Local** : `~/.zen/tmp/` pour les données temporaires
-- **Cache IPFS** : Stockage local des blobs IPFS fréquemment accédés
-- **Cache NOSTR** : Stockage local des événements NOSTR
+- **Cache IPFS** : Stockage local IPFS du TW de la ZenCard
+- **Cache NOSTR** : Stockage local + N1 des événements NOSTR
 
 ### 3. Synchronisation
 
@@ -319,7 +307,7 @@ function monitor_g1_transactions() {
 
 ## 🔌 APIs et Services
 
-### 1. API Gateway (Port 1234)
+### 1. API Gateway (Port 1234) - script debug zone - you can break it ;)
 
 ```bash
 # Point d'entrée principal
@@ -329,16 +317,15 @@ GET /?cmd=action&param=value
 # Exécution des services API/
 ```
 
-### 2. Station Map (Port 12345)
+### 2. Station Map (Port 12345) - /12345 ssl mapping -
 
 ```bash
 # Cartographie des stations UPlanet
 GET / - Interface de cartographie
-GET /api/stations - Données JSON des stations
-GET /api/players - Données des joueurs
+Données JSON des stations
 ```
 
-### 3. UPassport API (Port 54321)
+### 3. UPassport API (Port 54321) - u. ssl mapping -
 
 ```bash
 # API d'identité numérique
@@ -351,7 +338,7 @@ GET /api/test-nostr - Test d'authentification NOSTR
 
 ## 🔧 Maintenance et Monitoring
 
-### 1. Maintenance Quotidienne (20h12.process.sh)
+### 1. Maintenance Quotidienne (20h12.process.sh) - evolutive
 
 ```bash
 # Vérification IPFS
@@ -376,7 +363,7 @@ system_analysis
 send_maintenance_report
 ```
 
-### 2. Monitoring Système
+### 2. Monitoring Système - work in progress
 
 - **heartbox_analysis.sh** : Analyse complète du système
 - **heartbox_control.sh** : Contrôle et gestion du système
@@ -384,9 +371,10 @@ send_maintenance_report
 
 ### 3. Logs et Debugging
 
-- **Logs système** : `/var/log/astroport/`
-- **Logs IPFS** : `~/.zen/tmp/ipfs.log`
-- **Logs NOSTR** : `~/.zen/tmp/nostr.log`
+- **Logs UPassport** : `journalctl -fu upassport`
+- **Logs NOSTR** : `~/.zen/tmp/nostr_*.log`
+- **Logs UPlanet** : `~/.zen/tmp/uplanet_*.log`
+- **Logs IA** : `~/.zen/tmp/IA.log`
 
 ---
 
@@ -404,7 +392,7 @@ cd ~/.zen/Astroport.ONE
 ./install.sh
 ```
 
-### 2. Configuration Système
+### 2. Configuration Système - automatiquemet réalisé par install -
 
 ```bash
 # Configuration IPFS
@@ -488,20 +476,9 @@ curl -F "file=@photo.jpg" \
      http://localhost:54321/api/upload
 ```
 
-### 3. Structure de Stockage
-
-```
-~/.zen/UPassport/
-├── Images/          # Images uploadées
-├── Music/           # Fichiers audio
-├── Videos/          # Fichiers vidéo
-├── Documents/       # Documents
-└── _index.html      # Interface web
-```
-
 ---
 
-## 📊 Métriques et Performance
+## 📊 Métriques et Performance - Try & Update -
 
 ### 1. Indicateurs Clés
 
