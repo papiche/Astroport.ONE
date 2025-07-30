@@ -78,17 +78,17 @@ UPlanet propose une alternative complète aux systèmes centralisés actuels, en
 
 **Ce que vous obtenez :**
 - ✅ **Identité NOSTR** : Clé publique sécurisée pour le réseau social décentralisé
-- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (128 Go)
-- ✅ **Portefeuille UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1
-- ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches
+- ✅ **uDRIVE IPFS** : Stockage personnel décentralisé (max 1 Go sur UPlanet ORIGIN ou 10 Go sur UPlanet Ẑen)
+- ✅ **Portefeuille UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1 (ou 1 €)
+- ✅ **Assistant IA Personnel** : #BRO pour vos questions et tâches (offre gratuite et limitée dans le temps)
 - ✅ **Géolocalisation UMAP** : Connexion à votre communauté locale (0.01° précision)
-- ✅ **Échanges Ẑen** : Transferts directs entre MULTIPASS
+- ✅ **Échanges Ẑen** : Transferts directs entre MULTIPASS (de la même UPlanet)
 
 **Économie :**
-- Chaque like reçu = 0.1 Ğ1 automatiquement transféré
+- Chaque like reçu = 1 Ẑen automatiquement transféré
 - Rechargeable via Cesium Ginkgo sur UPlanet ORIGIN
 - Rechargeable via Open Collective sur UPlanet ẐEN
-- Le capitaine perçoit 1 Ẑen/semaine pour l'hébergement
+- Le capitaine perçoit 1 Ẑen/semaine
 
 ---
 
@@ -100,11 +100,11 @@ UPlanet propose une alternative complète aux systèmes centralisés actuels, en
 
 **Ce que vous obtenez :**
 - ✅ **Tout de MULTIPASS** inclus
-- ✅ **NextCloud Personnel** : 128 Go de stockage sécurisé
-- ✅ **Dégooglisation** : Libérez votre smartphone des GAFAM
-- ✅ **Synchronisation** : Tous vos appareils connectés
-- ✅ **Collaboration** : Partage sécurisé de documents
-- ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD
+- ✅ **NextCloud Personnel** : 128 Go de stockage "Fediverse"
+- ✅ **Dégooglisation** : Partage du savroi faire sur comment libérer votre smartphone des GAFAM
+- ✅ **Synchronisation** : Tous vos appareils connectés, votre Astroport et les autres
+- ✅ **Collaboration** : Partage sécurisé de documents (uDRIVE, en cours de développement...)
+- ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD (entre UPlanet #made-in-zen)
 
 **Recharge :** [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
 Bénévole sur UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
@@ -119,9 +119,12 @@ Bénévole sur UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
 - ✅ **Portefeuille ZEROCARD** : Utilise le DU (Dividende Universel)
 - ✅ **Validation Web of Trust** : Identité vérifiée par la communauté
 - ✅ **Accès aux services avancés** : Fonctionnalités premium
-- ✅ **Préparation N1/N2** : Base pour l'exploration des futurs niveaux
+- ✅ **Préparation N1/N2 et (Forfait)²** : Base pour la conception des futurs services 
 
-Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.LeJeu#)
+Expérience(s) : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.LeJeu#)
+
+(ajoutez vos expériences, ...)
+
 
 ---
 
@@ -154,7 +157,7 @@ Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.
 | 🔴 Algorithmes manipulateurs | 🟢 Interactions humaines authentiques |
 | 🔴 Bulles de filtres | 🟢 Diversité des perspectives |
 | 🔴 Engagement toxique | 🟢 Collaboration constructive |
-| 🔴 Exploitation des créateurs | 🟢 Récompense directe (0.1 Ğ1 par like) |
+| 🔴 Exploitation des créateurs | 🟢 Récompense directe (1 Ẑ par like) |
 | 🔴 Isolation sociale | 🟢 Toile de confiance géolocalisée |
 
 ### 🎓 **Validation des Compétences vs Système Éducatif Actuel**
@@ -237,6 +240,7 @@ Option : **Organisation 321 DU :** [Le Jeu du DU](https://pad.p2p.legal/s/321DU.
 ## ✨ Comment Commencer ?
 
 Inscrivez-vous sur [UPlanet ORIGIN](https://qo-op.com) obtenez votre MULTIPASS 🛂 et laissez vous guider par un Capitaine installé près de chez vous.
+
 ## 🎯 Comment aller plus loin ?
 
 ### 🚀 **Étape 1 : Installer Astroport.ONE et devenir CAPITAINE**
@@ -249,8 +253,8 @@ bash <(curl -sL https://install.astroport.com)
 ```
 
 ### 🌐 **Étape 2 : Rejoindre la Communauté**
-- [CopyLaRadio](https://copylaradio.com) : La coopérative des auto-hébergeurs Web3
-- [UPlanet Ẑen](https://opencollective.com/uplanet-zero) : Soutenir le projet
+- [support@qo-op.com](mailto:support@qo-op.com) : Contactez la coopérative des auto-hébergeurs Web3
+- [UPlanet Ẑen](https://opencollective.com/uplanet-zero) : Obtenir des €/Ẑ (locataire et sociétaire UPlanet ẐEN)
 
 ### 📚 **Étape 3 : Découvrir les Ressources**
 - [Documentation UPlanet (en cours...)](https://astroport-1.gitbook.io/astroport.one/)
