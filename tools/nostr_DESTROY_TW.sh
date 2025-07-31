@@ -432,12 +432,12 @@ ${MY_PATH}/../tools/mailjet.sh \
                         <div class='lang-content' data-lang='en'>
                             <h3>📦 Complete Data Backup</h3>
                             <p>We've created a complete backup of all your MULTIPASS data on IPFS for your peace of mind:</p>
-                            <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}' class='cta-button'>📥 Download Your Backup</a>
+                            <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}/nostr_export.json' class='cta-button'>📥 Download Your Backup</a>
                         </div>
                         <div class='lang-content' data-lang='fr'>
                             <h3>📦 Sauvegarde Complète des Données</h3>
                             <p>Nous avons créé une sauvegarde complète de toutes vos données MULTIPASS sur IPFS pour votre tranquillité d'esprit :</p>
-                            <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}' class='cta-button'>📥 Télécharger votre Sauvegarde</a>
+                            <a target='_blank' href='${myIPFS}/ipfs/${NOSTRIFS}/nostr_export.json' class='cta-button'>📥 Télécharger votre Sauvegarde</a>
                         </div>
                     </div>
 
