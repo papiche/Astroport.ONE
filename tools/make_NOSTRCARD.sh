@@ -209,8 +209,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## MOVE webcam picture
     mv ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ${HOME}/.zen/game/nostr/${EMAIL}/scan_${MOATS}.png 2>/dev/null
-
-    G1PUBNOSTRQR="$(ipfs --timeout 30s add -wq ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png | tail -f 1)/MULTIPASS.QR.png"
+    MULTIZENIMG=$(ipfs --timeout 30s add -wq ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png | tail -f 1)
+    G1PUBNOSTRQR="$MULTIZENIMG/MULTIPASS.QR.png"
     # ipfs pin rm /ipfs/${G1PUBNOSTRQR}
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png.cid
 
