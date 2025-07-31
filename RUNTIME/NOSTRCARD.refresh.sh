@@ -228,47 +228,47 @@ should_refresh() {
     UDRIVE=$(./generate_ipfs_structure.sh .)
     cd - 2>&1 >/dev/null
     
-    if [[ "$UDRIVE" != "$last_udrive" ]]; then
-        if [[ -n "$UDRIVE" ]]; then
+    if [[ -n "$UDRIVE" ]]; then
+        if [[ "$UDRIVE" != "$last_udrive" ]]; then
             if [[ -n "$last_udrive" ]]; then
                 ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
+                echo "$UDRIVE" > "${last_udrive_file}"
+                REFRESH_REASON="udrive_update"
+                return 0
             fi
-            echo "$UDRIVE" > "${last_udrive_file}"
-            REFRESH_REASON="udrive_update"
-            return 0
         else
-            echo "Empty new CID... keeping $last_udrive"
+            echo "UDRIVE CID: $last_udrive"
         fi
     else
-        echo "Same CID... keeping $last_udrive"
+        echo "UDRIVE CID: $last_udrive"
     fi
 
-    ###########################################################""
-    ## uWORLD Link
-    [[ ! -e "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
-        mkdir -p "${player_dir}/APP/uWORLD" && \
-        cd ${player_dir}/APP/uWORLD/ && \
-        ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh" "generate_ipfs_RPG.sh"
+    # ###########################################################""
+    # ## uWORLD Link
+    # [[ ! -e "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
+    #     mkdir -p "${player_dir}/APP/uWORLD" && \
+    #     cd ${player_dir}/APP/uWORLD/ && \
+    #     ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh" "generate_ipfs_RPG.sh"
 
-    ## update uWORLD APP
-    cd ${player_dir}/APP/uWORLD/
-    UWORLD=$(./generate_ipfs_RPG.sh .)
-    cd - 2>&1 >/dev/null
+    # ## update uWORLD APP
+    # cd ${player_dir}/APP/uWORLD/
+    # UWORLD=$(./generate_ipfs_RPG.sh .)
+    # cd - 2>&1 >/dev/null
 
-    if [[ "$UWORLD" != "$last_uworld" ]]; then
-        if [[ -n "$UWORLD" ]]; then
-           if [[ -n "$last_uworld" ]]; then
-                ipfs --timeout 20s pin rm "$last_uworld" 2>/dev/null
-            fi
-            echo $UWORLD > "${last_uworld_file}"
-            REFRESH_REASON="uworld_update"
-            return 0
-        else
-            echo "Empty new CID... keeping $last_uworld"
-        fi
-    else
-        echo "Same CID... keeping $last_uworld"
-    fi
+    # if [[ -n "$UWORLD" ]]; then
+    #     if [[ "$UWORLD" != "$last_uworld"  ]]; then
+    #        if [[ -n "$last_uworld" ]]; then
+    #             ipfs --timeout 20s pin rm "$last_uworld" 2>/dev/null
+    #             echo $UWORLD > "${last_uworld_file}"
+    #             REFRESH_REASON="uworld_update"
+    #             return 0
+    #         fi
+    #     else
+    #         echo "UWORLD CID: $last_uworld"
+    #     fi
+    # else
+    #     echo "UWORLD CID: $last_uworld"
+    # fi
 
     return 1
 }
