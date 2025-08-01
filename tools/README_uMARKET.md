@@ -59,8 +59,8 @@ Each advertisement is stored as a JSON file with the following structure:
     "author_nprofile": "nostr:npub1...",
     "created_at": 1703000000,
     "location": {
-        "lat": 48.8566,
-        "lon": 2.3522
+        "lat": 48.85,
+        "lon": 2.35
     },
     "local_images": ["image1.jpg", "image2.jpg"],
     "umap_id": "UMAP_xxx_lat_lon"
