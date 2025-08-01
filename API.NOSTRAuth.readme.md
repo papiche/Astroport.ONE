@@ -497,12 +497,54 @@ netstat -an | grep :7777 | wc -l
 ### Gestion des Clés
 
 ```bash
-# Génération sécurisée de clés
+# Génération sécurisée de clés (ancienne méthode)
 openssl rand -hex 32
 
-# Stockage sécurisé
-chmod 600 ~/.zen/game/nostr/*/.secret.nostr
+# Nouvelle méthode SSSS / 3
+~/.zen/Astroport.ONE/tools/make_NOSTRCARD.sh 
+Usage: Make_NOSTRCARD.sh [OPTIONS] <EMAIL> [IMAGE] [LATITUDE] [LONGITUDE] [SALT] [PEPPER]
+
+  Generates a NOSTR card and related cryptographic keys, stores them
+  locally, and prepares files for a NOSTR application.
+
+Arguments:
+  <EMAIL>        Email address to associate with the NOSTR card.
+                 Must be a valid email format.
+  [IMAGE]        Optional: Path to an image file to use as profile picture.
+                 Alternatively, a two-letter language code (e.g., 'en', 'fr')
+                 to set the language. If omitted, defaults to 'fr'.
+  [LATITUDE]     Optional: UMAP Latitude for location data.
+  [LONGITUDE]    Optional: UMAP Longitude for location data.
+  [SALT]         Optional: Salt for key generation. If omitted, a random salt is generated.
+  [PEPPER]       Optional: Pepper for key generation. If omitted, a random pepper is generated.
+
+Options:
+  -h, --help    Display this help message and exit.
+
+Example:
+  make_NOSTRCARD.sh john.doe@example.com ./profile.png 48.85 2.35
+  make_NOSTRCARD.sh jane.doe@example.com en
+
+
 ```
+
+### Sécurité cryptographique
+
+Le secret principal (DISCO) est divisé en 3 parts :
+
+* Partie 1 : Chiffrée pour le joueur (1/3 personnel)
+```~/.zen/game/nostr/*@*/.ssss.head.player.enc```
+
+* Partie 2 : Chiffrée pour le capitaine (1/3 relai)
+```~/.zen/game/nostr/*@*/.ssss.mid.captain.enc```
+
+* Partie 3 : Chiffrée pour UPlanet (1/3 infrastructure)
+```~/.zen/game/nostr/*@*/ssss.tail.uplanet.enc```
+
+Avantage : Il faut 2 des 3 parties pour reconstituer l'identité complète.
+
+Toutes les clés sont dérivées de SALT + PEPPER
+
 
 ### Rate Limiting
 
@@ -516,58 +558,14 @@ echo "max_events_per_minute = 100" >> ~/.zen/strfry/strfry.conf
 
 ```bash
 # Ajouter une clé à la blacklist
-echo "npub1..." >> ~/.zen/strfry/blacklist.txt
+echo "hex1..." >> ~/.zen/strfry/blacklist.txt
 
 # Supprimer une clé de la blacklist
-sed -i '/npub1.../d' ~/.zen/strfry/blacklist.txt
+sed -i '/hex1.../d' ~/.zen/strfry/blacklist.txt
 ```
 
 ---
 
-## 🌐 Intégration avec UPlanet
-
-### Découverte de Services
-
-```javascript
-// Découverte de services UPlanet
-async function discoverUPlanetServices(latitude, longitude) {
-    const geoKey = generateGeoKey("UPlanetV1", latitude, longitude, 2);
-    const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
-    
-    await relay.connect();
-    
-    const events = await relay.list([
-        {
-            kinds: [1],
-            authors: [geoKey],
-            limit: 100
-        }
-    ]);
-    
-    return events;
-}
-```
-
-### Synchronisation Swarm
-
-```javascript
-// Synchronisation avec l'essaim UPlanet
-async function syncWithUPlanetSwarm() {
-    const bootstrapNodes = [
-        'ws://node1.uplanet.org:7777',
-        'ws://node2.uplanet.org:7777',
-        'ws://node3.uplanet.org:7777'
-    ];
-    
-    for (const node of bootstrapNodes) {
-        const relay = NostrTools.relayInit(node);
-        await relay.connect();
-        // Synchronisation des données
-    }
-}
-```
-
----
 
 ## 📚 Exemples d'Applications
 
