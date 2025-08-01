@@ -673,7 +673,7 @@ for PLAYER in "${NOSTR[@]}"; do
         city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
         [[ -z $city ]] && city="UPlanet ${ORIGIN}"
         description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
-        [[ -z $description ]] && description="MULTIPASS 🪙 Ẑen 💬 ${uSPOT}/nostr"
+        [[ -z $description ]] && description="MULTIPASS ♡ Ẑen 💬 ${uSPOT}/nostr"
 
         ## GET CESIUM AVATAR
         if [[ -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]]; then
