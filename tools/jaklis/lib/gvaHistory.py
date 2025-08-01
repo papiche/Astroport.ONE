@@ -21,7 +21,8 @@ class History:
             sys.exit(1)
 
         # Define Duniter GVA node
-        transport = AIOHTTPTransport(url=node)
+        url = node if node.startswith(("http://", "https://")) else "https://" + node
+        transport = AIOHTTPTransport(url=url)
         self.client = Client(transport=transport, fetch_schema_from_transport=True)
 
     def sendDoc(self, number):
