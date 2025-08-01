@@ -103,25 +103,25 @@ http://localhost:54321
 ```http
 GET /
 ```
-**Description** : Interface principale UPassport avec capacités de scan QR
+**Description** : creates System json with @Ustats.sh (accept UPlanet grid coord ie. ```/?lat=43&lon=1&deg=1```)
 
-#### 2. Gestion NOSTR
+#### 2. Gestion GEO Message NOSTR
 ```http
 GET /nostr
 ```
-**Description** : Interface de gestion des cartes NOSTR
+**Description** : Interface de publication des "UPlanet GEO Message"
 
-#### 3. Interface Blog
+#### 3. Interface SCAN
 ```http
-GET /blog
+GET /scan
 ```
-**Description** : Interface blog NOSTR
+**Description** : MULITPASS 0.00 email registration + QR CODE Multi Scan : MULTIPASS, ZEN Card, uPASSPORT
 
 #### 4. Intégration Ğ1
 ```http
 GET /g1
 ```
-**Description** : Interface d'intégration cryptomonnaie Ğ1
+**Description** : Interface Inscription MULTIPASS (option credentials Ğ1) ( Geo Localized )
 
 ### API de Gestion de Fichiers
 
@@ -286,7 +286,7 @@ await relay.publish(signedEvent);
 
 ### Structure de Stockage
 
-UPassport organise automatiquement les fichiers dans une structure hiérarchique :
+uDRIVE organise automatiquement les fichiers dans une structure hiérarchique :
 
 ```
 ~/.zen/UPassport/
@@ -319,41 +319,14 @@ Chaque fichier est lié à l'identité NOSTR de l'utilisateur :
 
 ## 🌐 Intégration NOSTR
 
-### Cartes NOSTR
-
-UPassport permet la création et gestion de cartes NOSTR :
-
-```bash
-# Création d'une carte NOSTR
-curl -X POST http://localhost:54321/nostr/create \
-  -F "email=user@example.com" \
-  -F "name=Nom Utilisateur"
-```
-
-### Profils NOSTR
-
-Gestion automatique des profils NOSTR avec métadonnées :
-
-```json
-{
-  "name": "Nom Utilisateur",
-  "display_name": "Display Name",
-  "about": "Description du profil",
-  "picture": "ipfs://QmHash/avatar.jpg",
-  "banner": "ipfs://QmHash/banner.jpg",
-  "website": "https://example.com",
-  "lud16": "user@example.com"
-}
-```
-
 ### Événements NOSTR
 
-Publication automatique d'événements NOSTR :
+Gestion d'événements NOSTR :
 
 - **Kind 0** : Mise à jour de profil
 - **Kind 1** : Messages texte
 - **Kind 3** : Contacts et suivi
-- **Kind 1063** : Données personnalisées
+- **Kind 22242** : Authentification (NIP-42)
 
 ---
 
@@ -447,10 +420,10 @@ curl -X POST http://localhost:54321/api/delete \
 # Accès à l'interface web
 open http://localhost:54321
 
-# Interface NOSTR
+# Interface Geo Messaging NOSTR
 open http://localhost:54321/nostr
 
-# Interface Ğ1
+# Interface MULTIPASS Ğ1
 open http://localhost:54321/g1
 ```
 
@@ -463,7 +436,7 @@ open http://localhost:54321/g1
 #### 1. Service UPassport ne démarre pas
 ```bash
 # Vérifier les logs
-sudo journalctl -u upassport -f
+journalctl -fu upassport
 
 # Vérifier la configuration
 cat ~/.zen/UPassport/.env
@@ -488,23 +461,19 @@ curl -X POST http://localhost:54321/api/test-nostr \
 ipfs swarm peers
 
 # Vérifier l'espace disque
-df -h ~/.zen/UPassport
+df -h ~/.ipfs
 
-# Nettoyer le cache
-rm -rf ~/.zen/tmp/*
 ```
 
 ### Logs et Debugging
 
 ```bash
 # Logs UPassport
-tail -f ~/.zen/UPassport/logs/upassport.log
+tail -f ~/.zen/tmp/54321.log
 
 # Logs système
 sudo journalctl -u upassport -f
 
-# Logs IPFS
-tail -f ~/.zen/tmp/ipfs.log
 ```
 
 ---
@@ -516,7 +485,7 @@ tail -f ~/.zen/tmp/ipfs.log
 ```
 UPassport/
 ├── 54321.py              # Serveur principal FastAPI
-├── upassport.sh          # Scripts de gestion
+├── upassport.sh          # Scripts de gestion /SCAN
 ├── templates/            # Templates HTML
 ├── static/              # Fichiers statiques
 ├── tools/               # Outils utilitaires
@@ -603,8 +572,6 @@ sudo systemctl status upassport
 # Vérifier les métriques
 curl http://localhost:54321/health
 
-# Vérifier l'espace disque
-df -h ~/.zen/UPassport
 ```
 
 ---
