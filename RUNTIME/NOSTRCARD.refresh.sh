@@ -553,7 +553,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
-    echo "IPNS VAULT : ${myIPFS}${NOSTRNS}"
+    echo "uDRIVE : ${myIPFS}${NOSTRNS}/${PLAYER}/APP/uDRIVE"
 
     ## FILL UP NOSTRCard/PRIMAL
     if [[ ${primal} != "" && ${primal} != "null"  ]]; then
@@ -622,7 +622,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
                 ###############################################
                 ## SENDING CESIUM+ MESSAGE to G1PRIME
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "NOSTR UPassport" -m "NOSTR App : $myIPFS${NOSTRNS}"
+                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "MULTIPASS" -m "uDRIVE : $myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE"
                 ## TODO CONVERT SEND NOSTR MULTIPASS MESSAGE
             else
                 echo "## /PRIMAL file structure existing"
@@ -721,7 +721,7 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ -n $LAT && -n $LON ]] && echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
     else
-        echo "## MULTIPASS nostr PROFILE EXISTING"
+        # echo "## MULTIPASS nostr PROFILE EXISTING"
         #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
         ########################################################################
@@ -758,7 +758,7 @@ for PLAYER in "${NOSTR[@]}"; do
         ############## UPLANET ORIGIN #############################################
         else
             $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh ${PLAYER} | tail -n 1)
-            echo "UPlanet ORIGIN ($LAT $LON) $source NOSTR Card : $HEX = $EMAIL"
+            echo "$source MULTIPASS profile ($LAT $LON) : $HEX = $EMAIL"
 
         fi
     fi
@@ -796,8 +796,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     refreshtime="$(cat ~/.zen/game/nostr/${PLAYER}/.todate) $(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time)"
-    echo "\m/_(>_<)_\m/ ($refreshtime)"
-    echo "${PLAYER} $COINS G1 -> ${ZEN} ZEN : ${HEX}"
+    echo "\m/_(>_<)_\m/  ----- last refresh $refreshtime ----- \m/_(>_<)_\m/"
 
     # Vérifier si le rafraîchissement est nécessaire
     should_refresh "${PLAYER}"

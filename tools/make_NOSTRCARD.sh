@@ -262,16 +262,16 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         -tags "[['p', '$HEX_HEX']]" \
         --relay "$myRELAY" &>/dev/null
 
-    ### ADD /APP/uDRIVE - redirections APP IPFS
+    ### Add /APP/uDRIVE - First files
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps
-
-    ## Add Web3 App Links
     echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CESIUM.v1.html
+    ## Add More Web3 Apps ;p
 
-    # ecire README.${YOUSER}.md
-    cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
-
+    # README.${YOUSER}.md
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents
+    cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" \
+        > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
 
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
@@ -281,7 +281,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     UDRIVE=$(./generate_ipfs_structure.sh . 2>/dev/null)
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
 
-    ## Link generate_ipfs_RPG.sh to uWORLD
+    ## Link generate_ipfs_RPG.sh to uWORLD --- ANOTHER DEMO APP
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
     cd -
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
@@ -296,13 +296,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## ORIGIN or ẐEN's
     [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
-    ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null)
+    ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
 
-    ### CREATE PROFILE in NOSTR RELAYS
+    ### CREATE TEPORARY PROFILE in NOSTR RELAYS
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet Ẑen ${ORIGIN} ... ♥️ ... Geo Messaging : ${uSPOT}/nostr" \
+        "⏰ UPlanet Ẑen ${ORIGIN} // Waiting for Primo Ğ1 RX // ${myIPFS}/ipns/copylaradio.com" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
@@ -311,7 +311,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
     ## CREATE CESIUM + PROFILE
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey set --name "UPlanet ${ORIGIN} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}" -d "UPlanet MULTIPASS : $HEX : UPlanet ${UPLANETG1PUB:0:8}" &>/dev/null
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
