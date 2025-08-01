@@ -446,8 +446,8 @@ Astroport.ONE utilise un relay NOSTR dédié avec des filtres personnalisés pou
 
 ### 3. Système de Mémoire
 
-- **Mémoire Utilisateur** : `~/.zen/strfry/uplanet_memory/pubkey/{pubkey}.json`
-- **Mémoire UMAP** : `~/.zen/strfry/uplanet_memory/{latitude}_{longitude}.json`
+- **Mémoire Utilisateur** : `~/.zen/tmp/flashmem/uplanet_memory/pubkey/{pubkey}.json`
+- **Mémoire UMAP** : `~/.zen/tmp/flashmem/uplanet_memory/{latitude}_{longitude}.json`
 - **Contrôle Privé** : Tag #rec requis pour stockage
 
 ---
