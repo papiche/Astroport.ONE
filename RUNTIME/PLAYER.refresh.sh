@@ -272,7 +272,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 ############################################## +1 DAY REMOVE AstroID !!
     ## REMOVE AstroID
     [[ -s ~/.zen/tmp/${MOATS}/AstroID.json && $days -gt 1 ]] \
-        && ${MY_PATH}/TW/delete_tiddler.sh "~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html" "AstroID" \
+        && ${MY_PATH}/TW/delete_tiddler.sh "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "AstroID" \
         && rm ~/.zen/tmp/${MOATS}/AstroID.json
 
 ####################################################################### RTFM DUMB FIREWALL
