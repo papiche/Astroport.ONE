@@ -26,6 +26,8 @@ The UPlanet ecosystem operates on two distinct levels with different security re
 
 ### Custom Token Valuation in UPlanet Ẑen
 
+The ZEN Economy operates as a **Stable COIN system** that can work with **any asset class** while maintaining proper value equity through the primal wallet control mechanism:
+
 One of the most powerful features of UPlanet Ẑen is the ability to **define custom token valuations** based on the specific `swarm.key` used. While the technical value remains **0.1 Ğ1** per token, the **perceived and economic value** can be customized according to the community's needs:
 
 #### **Examples of Custom Token Valuations**
@@ -38,20 +40,14 @@ One of the most powerful features of UPlanet Ẑen is the ability to **define cu
 | **Education** | 1 hour of tutoring | Knowledge credits | Skill exchange |
 | **Healthcare** | 1 consultation | Health credits | Medical services |
 | **Agriculture** | 1 kg organic produce | Food credits | Local food networks |
+| **Fiat Currencies** | 1 Ẑen = 1€, 1$, 1¥ | Exchange rate monitoring | Real-time forex tracking |
+| **Real Estate** | 1 Ẑen = 1m² land | Property valuation index | Market price updates |
+| **Commodities** | 1 Ẑen = 1kg gold/silver | Commodity price feeds | Live market data |
+| **DeFi Tokens** | 1 Ẑen = 1 USDC/DAI | Smart contract oracles | Blockchain price feeds |
+| **Energy Credits** | 1 Ẑen = 1 kWh | Energy market pricing | Grid price monitoring |
+| **Carbon Credits** | 1 Ẑen = 1 ton CO2 | Environmental markets | Carbon price tracking |
 
-#### **Technical Implementation**
-
-```bash
-# Each swarm.key creates a unique private network
-~/.ipfs/swarm.key = "SharedSecretForForestConservationGroup"
-# Result: 1 Ẑen = 1 hectare of forest (technically still 0.1 Ğ1)
-
-~/.ipfs/swarm.key = "SharedSecretForLocalEconomyParis"
-# Result: 1 Ẑen = 10€ (technically still 0.1 Ğ1)
-
-~/.ipfs/swarm.key = "SharedSecretForEnergyNetworkSolar"
-# Result: 1 Ẑen = 1 kWh solar energy (technically still 0.1 Ğ1)
-```
+...
 
 #### **Benefits of Custom Valuation**
 
@@ -60,40 +56,14 @@ One of the most powerful features of UPlanet Ẑen is the ability to **define cu
 3. **Flexible Exchange Rates**: Different communities can have different €/Ẑen ratios
 4. **Incentive Alignment**: Token values align with community goals and values
 5. **Scalable Architecture**: Multiple communities can coexist with different valuations
+6. **Universal Asset Support**: Any asset can be tokenized as ZEN
+7. **Stable Value Preservation**: Each community maintains its defined value
+8. **DeFi Compatibility**: Seamless integration with existing DeFi protocols
+9. **Real-World Utility**: Direct backing by tangible assets
+10. **Risk Diversification**: Multiple asset classes reduce systemic risk
+11. **Community Autonomy**: Each community controls its own asset backing
 
-### ZEN Economy Stable COIN System
-
-The ZEN Economy operates as a **Stable COIN system** that can work with **any asset class** while maintaining proper value equity through the primal wallet control mechanism:
-
-#### **Multi-Asset Support**
-
-| **Asset Class** | **ZEN Representation** | **Value Equity Mechanism** | **Monitoring** |
-|-----------------|----------------------|---------------------------|----------------|
-| **Fiat Currencies** | 1 Ẑen = 1€, 1$, 1¥ | Exchange rate monitoring | Real-time forex tracking |
-| **Real Estate** | 1 Ẑen = 1m² land | Property valuation index | Market price updates |
-| **Commodities** | 1 Ẑen = 1kg gold/silver | Commodity price feeds | Live market data |
-| **DeFi Tokens** | 1 Ẑen = 1 USDC/DAI | Smart contract oracles | Blockchain price feeds |
-| **Energy Credits** | 1 Ẑen = 1 kWh | Energy market pricing | Grid price monitoring |
-| **Carbon Credits** | 1 Ẑen = 1 ton CO2 | Environmental markets | Carbon price tracking |
-
-#### **Value Equity Principles**
-
-```bash
-# Core principle: 1 Ẑen = 0.1 Ğ1 (technical base)
-# Economic principle: 1 Ẑen = Asset Value (community defined)
-
-# Example: Forest Conservation Community
-~/.ipfs/swarm.key = "SharedSecretForForestConservationGroup"
-1_Ẑen = 1_hectare_forest = 0.1_Ğ1 = 10,000€_market_value
-
-# Example: Local Economy Community  
-~/.ipfs/swarm.key = "SharedSecretForLocalEconomyParis"
-1_Ẑen = 10€_local_currency = 0.1_Ğ1 = 10€_economic_value
-
-# Example: DeFi Integration Community
-~/.ipfs/swarm.key = "SharedSecretForDeFiStableCoin"
-1_Ẑen = 1_USDC = 0.1_Ğ1 = 1€_stable_value
-```
+...
 
 #### **Stable COIN Monitoring Architecture**
 
@@ -182,15 +152,6 @@ function prevent_cross_asset_arbitrage() {
 }
 ```
 
-#### **Benefits of Multi-Asset Stable COIN**
-
-1. **Universal Asset Support**: Any asset can be tokenized as ZEN
-2. **Stable Value Preservation**: Each community maintains its defined value
-3. **DeFi Compatibility**: Seamless integration with existing DeFi protocols
-4. **Real-World Utility**: Direct backing by tangible assets
-5. **Risk Diversification**: Multiple asset classes reduce systemic risk
-6. **Community Autonomy**: Each community controls its own asset backing
-
 ### Real-Time Token Capitalization Tool
 
 The `primal_wallet_control.sh` script is specifically designed for **UPlanet Ẑen** as a **Real-Time Token Capitalization Tool** that:
@@ -223,7 +184,7 @@ This implementation extracts and generalizes the primal transaction control func
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache
 
 #### 3. Integration Points
-- **NOSTR Card Refresh**: Monitors NOSTR wallet transactions
+- **NOSTR Card Refresh**: Monitors MULTIPASS wallet transactions
 - **G1PalPay**: Monitors player wallet transactions
 - **Extensible**: Can be used for any wallet requiring primal control
 
