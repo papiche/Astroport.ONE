@@ -300,6 +300,10 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
+    
+    ## LAT & LON
+    source ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS
+
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB ]]; then
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/NPUB ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB 2>/dev/null
@@ -605,7 +609,11 @@ for PLAYER in "${NOSTR[@]}"; do
             ## MAKE /upassport API make /PRIMAL/_upassport.html
             if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html ]]; then
                 echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
-                curl -s -X POST -F "parametre=${primal}" http://127.0.0.1:54321/upassport \
+                curl -s -X POST \
+                        -F "parametre=${primal}" \
+                        -F "zlat=${LAT}" \
+                        -F "zlon=${LON}" \
+                        http://127.0.0.1:54321/upassport \
                     > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html
                 [[ ! $? -eq 0 ]] \
                     && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html 2>/dev/null
