@@ -93,9 +93,8 @@ PAYMENTS_ALREADY_DONE=0
 
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
-    local player="$1"
-    # Générer un nombre aléatoire de minutes entre 1 et 1440 (24h)
-    local random_minutes=$(( (RANDOM % 1440) + 1 ))
+    # Générer un nombre aléatoire de minutes entre 1 et 1212 (avant 20h12 - Astroport Refresh Time)
+    local random_minutes=$(( (RANDOM % 1212) - 1 ))
     # Calculer l'heure et les minutes
     local random_hour=$(( random_minutes / 60 ))
     local random_minute=$(( random_minutes % 60 ))
@@ -112,14 +111,16 @@ initialize_account() {
     mkdir -p "$player_dir"
 
     # Initialiser l'heure de rafraîchissement
-    local random_time=$(get_random_refresh_time "${PLAYER}")
+    local random_time=$(get_random_refresh_time)
     echo "$random_time" > "${player_dir}/.refresh_time"
 
-    # Initialiser la date du dernier rafraîchissement
+    # Initialiser le jour du dernier rafraîchissement
     echo "$TODATE" > "${player_dir}/.todate"
 
-    # Initialiser le fichier BIRTHDATE si nécessaire (can be used to change payment period)
-    [[ ! -s "${player_dir}/TODATE" ]] && echo "$TODATE" > "${player_dir}/TODATE"
+    # Initialiser le fichier TODAY (date de début de contrat), .birthdate (= date inscription)
+    [[ ! -s "${player_dir}/TODATE" ]] \
+        && echo "$TODATE" > "${player_dir}/TODATE" \
+        && echo "$TODATE" > "${player_dir}/.birthdate"
 
     # Initialiser le fichier de dernière mise à jour IPNS
     date +%s > "${player_dir}/.last_ipns_update"
@@ -243,7 +244,7 @@ should_refresh() {
         echo "UDRIVE CID: $last_udrive"
     fi
 
-    # ###########################################################""
+    # ########################################################### NEED EXTRA DEV
     # ## uWORLD Link
     # [[ ! -e "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
     #     mkdir -p "${player_dir}/APP/uWORLD" && \
@@ -276,12 +277,14 @@ should_refresh() {
 [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
 
 ########################################################################
-# NOSTR Card is evolving depending PRIMAL RX source.
-# on UPLanet ORIGIN or UPlanet Zen.
+#  PRIMAL RX source determine the MULTIPASS owner
+#  on UPLanet ORIGIN (can be UPLANETG1PUB or Ğ1 member) 1Ẑ = 0.1Ğ1 
+#  on UPlanet Ẑen (can be member only) 1Ẑ = 1€ !!
 ########################################################################
+# Get all emails from ~/.zen/game/nostr/
 NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
-## RUNING FOR ALL LOCAL NOSTR CARDS
+## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
     log "INFO" ">>>>>>>>>>>>>>>>>> Processing PLAYER: $PLAYER"
     start=$(date +%s)
@@ -303,8 +306,11 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
-    
-    # Use optimized cache-first approach for COINS
+    ## Add to node => swarm cache propagation (used by search_for_this_hex/email_in_uplanet.sh)
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR ]]; then
+        echo "$G1PUBNOSTR" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR
+    fi
+
     COINS=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
     if [[ -z $COINS || "$COINS" == "null" ]]; then
         log "DEBUG" "Cache miss for $G1PUBNOSTR, refreshing with G1check.sh"
@@ -314,12 +320,7 @@ for PLAYER in "${NOSTR[@]}"; do
         log_metric "CACHE_HIT" "1" "${PLAYER}"
     fi
 
-    ## Add to node => swarm cache propagation (used by search_for_this_hex/email_in_uplanet.sh)
-    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR ]]; then
-        echo "$G1PUBNOSTR" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR
-    fi
-
-    # Add validation for COINS value
+    # Convert COINS value into ẐEN
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
         ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     else
@@ -329,18 +330,18 @@ for PLAYER in "${NOSTR[@]}"; do
     log "INFO" "${G1PUBNOSTR} AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
 
-
     # PRIMAL TIMING LOGIC: Respect MULTIPASS workflow
     # Day 1: No PRIMAL yet (waiting for member TX)
     # Day 2+: If still no PRIMAL, UPlanet sends PRIMO TX (marks PRIMAL)
     # Only then: PRIMAL becomes available for caching
     
     BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
+    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.birthdate ]] && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.birthdate ## Todo Remove
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null)
     
     # Check if we're still on the first day (PRIMAL not ready yet)
     if [[ "${TODATE}" == "${BIRTHDATE}" ]]; then
-        log "DEBUG" "MULTIPASS first day - PRIMAL not available yet for $G1PUBNOSTR"
+        log "DEBUG" "MULTIPASS first day - ${BIRTHDATE} : Waiting to receive Primo TX on $G1PUBNOSTR"
         log_metric "PRIMAL_FIRST_DAY" "1" "${PLAYER}"
         primal=""
     # Check if PRIMAL already cached (blockchain immutable)
