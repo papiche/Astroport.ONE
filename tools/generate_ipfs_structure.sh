@@ -1703,6 +1703,44 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             box-shadow: 0 1px 5px rgba(76, 175, 80, 0.3);
         }
 
+        /* Style spécial pour le bouton Apps */
+        .filter-tab.apps-filter {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            border-color: #ff6b35;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+            font-weight: bold;
+            position: relative;
+        }
+
+        .filter-tab.apps-filter:hover {
+            background: linear-gradient(45deg, #f7931e, #e67e22);
+            color: white;
+            border-color: #f7931e;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .filter-tab.apps-filter.active {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            border-color: #ff6b35;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+        }
+
+        .filter-tab.apps-filter::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff6b35, #f7931e, #ff6b35);
+            border-radius: 17px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
         /* Panel du bas */
         .bottom-panel {
             position: fixed;
@@ -2194,11 +2232,11 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
         <!-- Filtres directement visibles -->
         <div class="filters-bar">
+            <div class="filter-tab apps-filter" data-filter="apps">
+                <i class="fas fa-rocket"></i> Apps
+            </div>
             <div class="filter-tab active" data-filter="all">
                 <i class="fas fa-th-large"></i> All Files
-            </div>
-            <div class="filter-tab" data-filter="apps">
-                <i class="fas fa-rocket"></i> Apps
             </div>
             <div class="filter-tab" data-filter="image">
                 <i class="fas fa-image"></i> Images
