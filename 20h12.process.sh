@@ -243,6 +243,9 @@ else
     echo "Astroport processes systemd restart"
 fi
 
+## ComfyUI need to get restarted to reduce VRAM
+[[ -s ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh ]] && sudo systemctl restart comfyui 
+
 #####################################
 # Node refreshing
 #####################################
