@@ -102,7 +102,7 @@ if [[ -d ~/.zen/workspace/UPlanet ]]; then
     # Compare hashes to detect changes
     if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
         echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH"
-        ipfs add -rwq ~/.zen/workspace/UPlanet/* 
+        ipfs add -rwq ~/.zen/workspace/UPlanet/* > /dev/null
     fi
 else
     mkdir -p ~/.zen/workspace
@@ -110,7 +110,17 @@ else
     git clone --depth 1 https://github.com/papiche/UPlanet
 fi
 
-## UPDATE Silkaj JSON utilities
+## UPDATE OC2UPlanet (Open Collective ZEN Economy bridge + AstroBot Triple Agents)
+if [[ -d ~/.zen/workspace/OC2UPlanet ]]; then
+    cd ~/.zen/workspace/OC2UPlanet
+    git pull
+else
+    mkdir -p ~/.zen/workspace
+    cd ~/.zen/workspace
+    git clone --depth 1 https://github.com/papiche/OC2UPlanet.git
+fi
+
+## UPDATE Silkaj Ğ1 tool
 if [[ -d ~/.zen/workspace/silkaj ]]; then
     cd ~/.zen/workspace/silkaj
     # Store current commit hash before pull
