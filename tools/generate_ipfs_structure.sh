@@ -4307,15 +4307,15 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                     console.log('New manifest loaded:', manifest);
                     currentManifest = manifest;
 
-                    // Mettre à jour l'URL du navigateur seulement si on n'est pas sur un lien IPNS
+                    // Mettre à jour si ce n'est pas le propriétaire
                     const currentURL = new URL(window.location.href);
-                    if (!currentURL.pathname.includes('/ipns/')) {
+                    if (!isOwner) {
                         const newUrl = `/ipfs/${newCid}/`;
-                        console.log('Updating browser URL to:', newUrl);
-                        history.pushState({ path: newUrl }, '', newUrl);
-                        console.log('Browser URL updated.');
+                        console.log('Non-owner redirecting browser URL to:', newUrl);
+                        window.location.href = newUrl;
+                        return; // Stop execution to allow for full page redirect
                     } else {
-                        console.log('On IPNS path, URL not changed.');
+                        console.log('Owner detected, URL not changed - dynamicaly reload manifest.json ');
                     }
 
                     prepareItemsData(manifest);
