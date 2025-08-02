@@ -3225,9 +3225,12 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             const modalBody = $('#fileModal .modal-body');
 
             // Reset classes
-            modalContent.removeClass('image-modal text-modal');
+            modalContent.removeClass('image-modal text-modal app-modal');
             modalHeader.removeClass('text-header');
             modalBody.removeClass('text-body');
+
+            // Show navigation buttons for files (hide for apps)
+            $('#prevFile, #nextFile').show();
 
             const ipfsUrl = buildIPFSUrl(item);
             if (!ipfsUrl) {
