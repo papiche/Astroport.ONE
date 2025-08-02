@@ -31,6 +31,26 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
+# Function to output final result, converting to ZEN if requested
+output_result() {
+    local balance="$1"
+    local is_zen_request="$2"
+
+    if [[ "$is_zen_request" == "true" ]]; then
+        if validate_balance "$balance"; then
+            # Formula: (COINS - 1) * 10, integer part
+            local zen_value=$(echo "($balance - 1) * 10" | bc | cut -d '.' -f 1)
+            log "Calculated ZEN value: $zen_value from G1 balance: $balance"
+            echo "$zen_value"
+        else
+            log "Invalid balance '$balance' for ZEN calculation. Returning empty."
+            echo "" # Return empty for invalid balance
+        fi
+    else
+        echo "$balance"
+    fi
+}
+
 # Validate if a value is a valid balance (numeric)
 validate_balance() {
     local value="$1"
@@ -110,10 +130,19 @@ get_backup_balance() {
 }
 
 # Validate input
-G1PUB="${1:-}"
-if [[ -z "$G1PUB" ]]; then
+G1PUB_ORIGINAL="${1:-}"
+if [[ -z "$G1PUB_ORIGINAL" ]]; then
     log "ERROR: PLEASE ENTER WALLET G1PUB"
     exit 1
+fi
+
+IS_ZEN="false"
+if [[ "$G1PUB_ORIGINAL" == *":ZEN" ]]; then
+    IS_ZEN="true"
+    G1PUB=$(echo "$G1PUB_ORIGINAL" | sed 's/:ZEN$//')
+    log "ZEN calculation requested for $G1PUB"
+else
+    G1PUB="$G1PUB_ORIGINAL"
 fi
 
 log "Starting balance check for $G1PUB using silkaj with BMAS servers"
@@ -153,7 +182,7 @@ COINSFILE="$CACHE_DIR/${G1PUB}.COINS"
 # First, try to get fresh cached balance
 cached_balance=$(get_cached_balance "$COINSFILE")
 if [[ $? -eq 0 ]]; then
-    echo "$cached_balance"
+    output_result "$cached_balance" "$IS_ZEN"
     exit 0
 fi
 
@@ -266,7 +295,7 @@ if [[ "$CURCOINS" != "" ]] && validate_balance "$CURCOINS"; then
     log "Successfully retrieved balance: $CURCOINS"
     echo "$CURCOINS" > "$COINSFILE"
     create_backup "$G1PUB" "$CURCOINS"
-    echo "$CURCOINS"
+    output_result "$CURCOINS" "$IS_ZEN"
     exit 0
 fi
 
@@ -274,7 +303,7 @@ fi
 log "Failed to get fresh balance, trying backup..."
 backup_balance=$(get_backup_balance "$G1PUB")
 if [[ $? -eq 0 ]]; then
-    echo "$backup_balance"
+    output_result "$backup_balance" "$IS_ZEN"
     exit 0
 fi
 
