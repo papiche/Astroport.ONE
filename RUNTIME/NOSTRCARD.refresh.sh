@@ -689,7 +689,7 @@ for PLAYER in "${NOSTR[@]}"; do
             zavatar="/ipfs/"$(ipfs --timeout 10s add -q "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" 2>/dev/null)
         else
             ## OR NOSTR(+PICTURE) G1PUB QRCODE
-            zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR.QR.png.cid 2>/dev/null)
+            zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/MULTIPASS.QR.png.cid 2>/dev/null)
         fi
         ## ELSE ASTROPORT LOGO
         [[ $zavatar == "/ipfs/" ]] \
