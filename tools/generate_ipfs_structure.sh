@@ -2756,7 +2756,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                         if (basename.startsWith('index.') && basename.endsWith('.html')) {
                             appName = basename.substring(6, basename.length - 5);
                             isIndex = true;
-                        } else if (basename.endsWith('.png') && basename !== 'icon.png') {
+                        } else if (basename.endsWith('.png')) {
                             appName = basename.substring(0, basename.length - 4);
                             isIcon = true;
                         }
