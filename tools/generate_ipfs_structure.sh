@@ -4081,9 +4081,15 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                             
                             // Handle relative URLs by making them absolute
                             if (redirectUrl.startsWith('/')) {
-                                // Extract base URL from app.ipfsLink
-                                const baseUrl = app.ipfsLink.substring(0, app.ipfsLink.lastIndexOf('/'));
-                                redirectUrl = baseUrl + redirectUrl;
+                                // For absolute paths starting with /, construct full IPFS URL
+                                if (redirectUrl.startsWith('/ipfs/')) {
+                                    // Already an IPFS path, just add the gateway
+                                    redirectUrl = currentGateway + redirectUrl;
+                                } else {
+                                    // Extract base URL from app.ipfsLink and append
+                                    const baseUrl = app.ipfsLink.substring(0, app.ipfsLink.lastIndexOf('/'));
+                                    redirectUrl = baseUrl + redirectUrl;
+                                }
                             } else if (!redirectUrl.startsWith('http')) {
                                 // Handle relative URLs without leading slash
                                 const baseUrl = app.ipfsLink.substring(0, app.ipfsLink.lastIndexOf('/') + 1);
@@ -4477,7 +4483,7 @@ log_message "  - $cached_count fichier(s) inchangé(s) (utilisent le cache)"
 log_message "  - $deleted_count fichier(s) supprimé(s) du manifest"
 log_message ""
 log_message "🌐 Accès à l'application:"
-log_message "  - URL IPFS: http://127.0.0.1:8080/ipfs/$FINAL_CID/"
+log_message "  - URL IPFS: $ORIGIN_IPFS_GATEWAY/ipfs/$FINAL_CID/"
 log_message "  - CID: $FINAL_CID"
 log_message ""
 log_message "💡 Conseil: Réexécutez ce script après modification de fichiers pour une mise à jour incrémentale automatique!"
