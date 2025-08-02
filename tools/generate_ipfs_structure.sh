@@ -4047,6 +4047,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
             const modal = $('#fileModal');
             const modalContent = modal.find('.modal-content');
+            const modalBody = modal.find('.modal-body');
             const iframe = $('#modal-iframe');
             const modalFilename = $('#modal-filename');
             const fileCounter = $('#modal-file-counter');
