@@ -182,7 +182,7 @@ get_media_metadata() {
         image)
             # Essayer d'obtenir les dimensions de l'image
             if command -v identify >/dev/null 2>&1; then
-                local dimensions=$(identify -format "%wx%h" "$file" 2>/dev/null)
+                local dimensions=$(identify -format "%wx%h" "$file[0]" 2>/dev/null)
                 if [ -n "$dimensions" ] && [ "$dimensions" != "0x0" ]; then
                     local width=$(echo $dimensions | cut -d'x' -f1)
                     local height=$(echo $dimensions | cut -d'x' -f2)
@@ -422,7 +422,7 @@ create_current_files_list() {
 
         # Ignorer les fichiers générés par ce script et les fichiers cachés
         if [[ "$basename_file" == manifest.json ]] || \
-           [[ "$basename_file" == index.html ]] || \
+           [[ "$relative_path" == "index.html" ]] || \
            [[ "$basename_file" == upload_test.html ]] || \
            [[ "$basename_file" == generate_ipfs_structure.sh ]] || \
            [[ "$basename_file" == .* ]] || \
@@ -601,6 +601,12 @@ while IFS= read -r -d '' dir; do
     clean_basename=$(clean_filename "$basename_dir")
     clean_path=$(clean_filename "$relative_path")
 
+    # Ajouter une catégorie "app" si le répertoire est dans "Apps"
+    app_category_field=""
+    if [[ "$relative_path" == Apps* ]]; then
+        app_category_field=",\"category\": \"app\""
+    fi
+
     # Ajouter à la collection
     if [ -n "$directories_json" ]; then
         directories_json="${directories_json},"
@@ -612,7 +618,7 @@ while IFS= read -r -d '' dir; do
             \"path\": \"$clean_path\",
             \"type\": \"directory\",
             \"files_count\": $files_in_dir,
-            \"subdirs_count\": $subdirs_in_dir
+            \"subdirs_count\": $subdirs_in_dir$app_category_field
         }"
 
     dir_count=$((dir_count + 1))
@@ -638,8 +644,8 @@ while IFS= read -r -d '' file; do
     if [[ "$basename_file" == manifest.json ]]; then
         log_message "   ⏭️  Ignoré: fichier manifest.json (généré par ce script)"
         continue
-    elif [[ "$basename_file" == index.html ]]; then
-        log_message "   ⏭️  Ignoré: fichier index.html (généré par ce script)"
+    elif [[ "$relative_path" == "index.html" ]]; then
+        log_message "   ⏭️  Ignoré: fichier index.html racine (généré par ce script)"
         continue
     elif [[ "$basename_file" == upload_test.html ]]; then
         log_message "   ⏭️  Ignoré: fichier upload_test.html (page de test)"
@@ -730,6 +736,12 @@ while IFS= read -r -d '' file; do
         log_message "      ⚠️  Aucun lien IPFS disponible"
     fi
 
+    # Ajouter une catégorie "app" si le fichier est dans "Apps"
+    app_category_field=""
+    if [[ "$relative_path" == Apps* ]]; then
+        app_category_field=", \"category\": \"app\""
+    fi
+
     # Ajouter à la collection
     if [ -n "$files_json" ]; then
         files_json="${files_json},"
@@ -742,7 +754,7 @@ while IFS= read -r -d '' file; do
             \"size\": $file_size,
             \"formatted_size\": \"$formatted_size\",
             \"type\": \"$file_type\",
-            \"last_modified\": $current_timestamp$metadata_fields$ipfs_link_field
+            \"last_modified\": $current_timestamp$metadata_fields$ipfs_link_field$app_category_field
         }"
 
     total_size=$((total_size + file_size))
@@ -1388,6 +1400,14 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
         .file-card {
             animation: fadeIn 0.5s ease forwards;
+        }
+
+        .file-card.syncing .file-icon i {
+            animation: fa-spin 1.5s linear infinite;
+        }
+
+        .file-card.syncing .sync-btn i {
+            animation: fa-spin 1.5s linear infinite;
         }
 
         /* Barre de contrôles */
@@ -2177,6 +2197,9 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             <div class="filter-tab active" data-filter="all">
                 <i class="fas fa-th-large"></i> All Files
             </div>
+            <div class="filter-tab" data-filter="apps">
+                <i class="fas fa-rocket"></i> Apps
+            </div>
             <div class="filter-tab" data-filter="image">
                 <i class="fas fa-image"></i> Images
             </div>
@@ -2242,7 +2265,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 </div>
             </div>
             <div class="modal-body">
-                <iframe id="modal-iframe" src=""></iframe>
+                <iframe id="modal-iframe" src="" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
             </div>
         </div>
     </div>
@@ -2290,6 +2313,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
     <script>
         let currentManifest = null;
         let allItems = [];
+        let allApps = [];
         let filteredItems = [];
         let currentFilter = 'all';
         let currentFileIndex = 0;
@@ -2300,6 +2324,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
         let isNostrConnected = false;
         let userPublicKey = null;
         let userPrivateKey = null;
+        let isOwner = false;
 
         const typeIcons = {
             image: 'fas fa-image',
@@ -2313,8 +2338,28 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             archive: 'fas fa-file-archive',
             script: 'fas fa-terminal',
             directory: 'fas fa-folder',
+            app: 'fas fa-rocket',
             file: 'fas fa-file'
         };
+
+        function getTypeColor(type) {
+            const colors = {
+                image: '#ff9800',
+                html: '#4CAF50',
+                javascript: '#ffc107',
+                json: '#9c27b0',
+                text: '#607d8b',
+                document: '#e91e63',
+                audio: '#673ab7',
+                video: '#3f51b5',
+                archive: '#795548',
+                script: '#009688',
+                directory: '#ff5722',
+                app: '#4CAF50',
+                file: '#666'
+            };
+            return colors[type] || colors.file;
+        }
 
         $(document).ready(function() {
             console.log('Loading IPFS directory from manifest...');
@@ -2577,6 +2622,16 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             }
         }
 
+        function sendViaWebSocket(ws, event) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = JSON.stringify(["EVENT", event]);
+                ws.send(message);
+                console.log('✅ Sent NIP42 auth event directly via WebSocket:', message);
+            } else {
+                console.error('❌ WebSocket not open. Cannot send message. State:', ws ? ws.readyState : 'null');
+            }
+        }
+
     function updateConnectionStatus(connected) {
         const connectBtn = $('#connect-btn');
         const icon = connectBtn.find('i');
@@ -2668,14 +2723,75 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
         }
 
         function prepareItemsData(manifest) {
-            allItems = [];
+            allItems = []; // for regular files
+            allApps = [];  // for apps
+            let appGroups = {};
+            let defaultIconUrl = '';
 
-            // Ajouter seulement les fichiers (pas les répertoires)
-            if (manifest.files) {
-                manifest.files.forEach(file => {
-                    allItems.push({...file, itemType: 'file'});
-                });
+            if (!manifest.files) return;
+
+            // Find default icon first
+            const defaultIconFile = manifest.files.find(file => file.path === 'Apps/icon.png');
+            if (defaultIconFile) {
+                defaultIconUrl = buildIPFSUrl(defaultIconFile);
             }
+
+            // Group app files
+                manifest.files.forEach(file => {
+                if (file.category !== 'app') {
+                    allItems.push({ ...file, itemType: 'file' });
+                    return;
+                }
+
+                const pathParts = file.path.split('/');
+                const basename = file.name;
+                let appName = null;
+                let isIndex = false;
+                let isIcon = false;
+
+                if (pathParts.length >= 2 && pathParts[0] === 'Apps') {
+                    if (pathParts.length === 2) { // Direct child of Apps
+                        if (basename.startsWith('index.') && basename.endsWith('.html')) {
+                            appName = basename.substring(6, basename.length - 5);
+                            isIndex = true;
+                        } else if (basename.endsWith('.png') && basename !== 'icon.png') {
+                            appName = basename.substring(0, basename.length - 4);
+                            isIcon = true;
+                        }
+                    } else if (pathParts.length === 3) { // In a subdirectory of Apps
+                        appName = pathParts[1];
+                        if (basename === 'index.html') {
+                            isIndex = true;
+                        } else if (basename === 'icon.png') {
+                            isIcon = true;
+                        }
+                    }
+                }
+
+                if (appName) {
+                    if (!appGroups[appName]) {
+                        appGroups[appName] = { name: appName, itemType: 'app' };
+                    }
+                    if (isIndex) {
+                        appGroups[appName].ipfsLink = buildIPFSUrl(file);
+                        appGroups[appName].path = file.path;
+                    }
+                    if (isIcon) {
+                        appGroups[appName].iconUrl = buildIPFSUrl(file);
+                    }
+                } else {
+                    // It's a file in /Apps that doesn't match a pattern, treat as regular file.
+                    allItems.push({ ...file, itemType: 'file' });
+                }
+            });
+
+            // Finalize apps array
+            allApps = Object.values(appGroups).filter(app => app.ipfsLink); // Only include apps that have an index file.
+            allApps.forEach(app => {
+                if (!app.iconUrl) {
+                    app.iconUrl = defaultIconUrl;
+                }
+            });
         }
 
         function setupEventListeners() {
@@ -2840,9 +2956,11 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             const connectBtn = $('#connect-btn');
             const body = $('body');
 
-            // Determine if the drive is foreign (connected, but owner key doesn't match)
-            const isForeignDrive = currentManifest && currentManifest.owner_hex_pubkey && userPublicKey &&
-                                   currentManifest.owner_hex_pubkey.toLowerCase() !== userPublicKey.toLowerCase();
+            // Determine if the current user is the owner of the drive
+            isOwner = currentManifest && currentManifest.owner_hex_pubkey && userPublicKey &&
+                                   currentManifest.owner_hex_pubkey.toLowerCase() === userPublicKey.toLowerCase();
+            
+            const isForeignDrive = isNostrConnected && !isOwner;
 
             // Determine if upload should be disabled
             // It should be disabled if NOT connected to Nostr, OR if connected but it's a foreign drive.
@@ -2850,7 +2968,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
             if (disableUpload) {
                 console.log('⚠️ Upload disabled. Connected:', isNostrConnected, 'Foreign Drive:', isForeignDrive);
-                body.addClass('foreign-drive');
                 uploadBtn.prop('disabled', true).css('opacity', '0.5');
                 if (!isNostrConnected) {
                     uploadBtn.attr('title', 'Connect to Nostr to enable uploads.');
@@ -2859,12 +2976,11 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 }
             } else {
                 console.log('✅ Upload enabled. Connected:', isNostrConnected, 'Foreign Drive:', isForeignDrive);
-                body.removeClass('foreign-drive');
                 uploadBtn.prop('disabled', false).css('opacity', '1').attr('title', 'Upload files to your drive');
             }
 
             // Apply foreign drive styling only if it's actually foreign and connected
-            if (isForeignDrive && isNostrConnected) {
+            if (isForeignDrive) {
                 body.addClass('foreign-drive');
             } else {
                 body.removeClass('foreign-drive');
@@ -2874,6 +2990,14 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
 
         function filterAndDisplayItems(filter, searchTerm = '') {
+            $('#files-container').empty();
+
+            if (filter === 'apps') {
+                const appsToDisplay = allApps.filter(app => {
+                    return searchTerm === '' || app.name.toLowerCase().includes(searchTerm);
+                });
+                displayApps(appsToDisplay);
+            } else {
             filteredItems = allItems.filter(item => {
                 // Filter by type
                 const typeMatch = filter === 'all' || item.type === filter || item.itemType === filter;
@@ -2885,11 +3009,11 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
                 return typeMatch && searchMatch;
             });
-
-            displayItems(filteredItems);
+                displayFiles(filteredItems);
+            }
         }
 
-        function displayItems(items) {
+        function displayFiles(items) {
             if (!items || items.length === 0) {
                 $('#files-container').html('<div class="error"><i class="fas fa-search"></i> No items found</div>');
                 console.log("No items found or items array is empty. Displaying error message."); // Debug
@@ -2961,7 +3085,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                         <div class="file-type-badge type-${item.type}">
                             ${item.type.toUpperCase()}
                         </div>
-                        <div class="file-name">${item.name}</div>
+                        <div class="file-name">${item.displayName || item.name}</div>
                         <div class="file-details">
                             ${details}<br>
                             Path: ${item.path}
@@ -2975,54 +3099,115 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
             console.log("Total generated itemsHtml length:", itemsHtml.length); // Debug
             $('#files-container').html(itemsHtml);
-            console.log("Files HTML injected into container."); // Debug
 
-            $('.file-card').off('click').on('click', function(e) {
-                // S'assurer qu'on ne clique pas sur un bouton d'action
-                if ($(e.target).closest('.file-action-btn').length === 0) {
-                    const index = parseInt($(this).data('index'));
-                    openFilePreview(index);
+            // Attacher les écouteurs d'événements après avoir ajouté les éléments au DOM
+            $('.file-card').click(function(e) {
+                // S'assurer que le clic n'est pas sur un bouton d'action
+                if ($(e.target).closest('.file-action-btn').length > 0) {
+                    return;
                 }
+                const index = $(this).data('index');
+                openModal(index);
             });
-
-            // Add click handlers for download/sync/delete (using .off() to prevent multiple bindings)
-            $('.download-btn').off('click').on('click', function(e) {
+            $('.download-btn').click(function(e) {
                 e.stopPropagation();
-                const index = parseInt($(this).data('index'));
-                downloadCurrentFile(index);
+                const index = $(this).data('index');
+                downloadFileByIndex(index);
             });
-
-            $('.sync-btn').off('click').on('click', function(e) {
+            $('.delete-btn').click(function(e) {
                 e.stopPropagation();
-                const index = parseInt($(this).data('index'));
-                syncFile(index);
+                const index = $(this).data('index');
+                deleteFileByIndex(index);
             });
-
-            $('.delete-btn').off('click').on('click', function(e) {
+            $('.sync-btn').click(function(e) {
                 e.stopPropagation();
-                const index = parseInt($(this).data('index'));
-                deleteCurrentFile(index);
+                const index = $(this).data('index');
+                syncFileByIndex(index);
             });
         }
 
+        function displayApps(apps) {
+            const container = $('#files-container');
+            container.empty();
 
-        function getTypeColor(type) {
-            const colors = {
-                image: '#ff9800',
-                video: '#3f51b5',
-                audio: '#673ab7',
-                html: '#4CAF50',
-                javascript: '#ffc107',
-                json: '#9c27b0',
-                text: '#607d8b',
-                document: '#e91e63',
-                directory: '#ff5722',
-                file: '#666'
-            };
-            return colors[type] || colors.file;
+            if (!apps || apps.length === 0) {
+                container.html('<div class="error"><i class="fas fa-search"></i> No apps found</div>');
+                return;
+            }
+
+            const itemsHtml = apps.map((app, index) => {
+                const defaultIcon = '/ipfs/QmPPELF7HhM9BXtAUMnNUSNsrRJgsFzLNCQ5pFhWKr9ogk/favicon.galaxy.ico';
+                const iconSrc = app.iconUrl || defaultIcon;
+
+                return `
+                    <a href="${app.ipfsLink}" target="_blank" class="file-card app-card" data-index="${index}" data-type="app">
+                        <div class="file-icon">
+                            <img src="${iconSrc}" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover;" alt="${app.name} icon" onerror="this.onerror=null;this.src='${defaultIcon}';">
+                        </div>
+                        <div class="file-type-badge type-html">
+                            APP
+                        </div>
+                        <div class="file-name">${app.name}</div>
+                        <div class="file-details">
+                            Click to launch application<br>
+                            Path: ${app.path}
+                        </div>
+                    </a>
+                `;
+            }).join('');
+
+            container.html(itemsHtml);
+             // Attacher les écouteurs d'événements après avoir ajouté les éléments au DOM
+            $('.app-card').click(function(e) {
+                const index = $(this).data('index');
+                openModalForApp(index);
+            });
         }
 
-        function openFilePreview(index) {
+        function displayDirectoryInfo(manifest) {
+            const container = $('#info-content');
+            if (!manifest) {
+                container.html('<div class="error">No manifest data</div>');
+                return;
+            }
+
+            const generatedDate = new Date(manifest.generated_at).toLocaleString();
+            const currentHash = getCurrentIPFSHash();
+            const hashDisplay = currentHash ?
+                `<code style="font-size:0.8em;"><i class="fas fa-fingerprint"></i> ${currentHash}</code>` :
+                '<span style="color: #ffa500; font-size:0.8em;"><i class="fas fa-clock"></i> Not published to IPFS</span>';
+
+            // Add Nostr Connected Key display
+            let connectedKeyDisplay = '';
+            if (userPublicKey) {
+                connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><code>${userPublicKey.substring(0, 10)}...${userPublicKey.substring(userPublicKey.length - 10)}</code></div>`;
+            } else {
+                connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><span style="color: #ffa500; font-size:0.8em;">Not Connected</span></div>`;
+            }
+
+            // NEW: Add Owner Email and Origin IPFS Gateway display
+            const ownerEmailDisplay = manifest.owner_email ?
+                `<div><strong><i class="fas fa-user"></i> Owner:</strong><br><code>${manifest.owner_email}</code></div>` : '';
+            const originGatewayDisplay = manifest.my_ipfs_gateway ?
+                `<div><strong><i class="fas fa-link"></i> Origin Gateway:</strong><br><code>${manifest.my_ipfs_gateway}</code></div>` : '';
+
+            const html = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 0.85em;">
+                    <div><strong><i class="fas fa-fingerprint"></i> Hash:</strong><br>${hashDisplay}</div>
+                    <div><strong><i class="fas fa-server"></i> Gateway:</strong><br><code>${currentGateway}</code></div>
+                    <div><strong><i class="fas fa-folder"></i> Dirs:</strong> ${manifest.total_directories || 0}</div>
+                    <div><strong><i class="fas fa-file"></i> Files:</strong> ${manifest.total_files}</div>
+                    <div><strong><i class="fas fa-weight-hanging"></i> Size:</strong> ${manifest.formatted_total_size}</div>
+                    <div><strong><i class="fas fa-clock"></i> Generated:</strong><br><span style="font-size:0.8em;">${generatedDate}</span></div>
+                    ${ownerEmailDisplay} <!-- NEW: Owner Email -->
+                    ${originGatewayDisplay} <!-- NEW: Origin IPFS Gateway -->
+                    ${connectedKeyDisplay}
+                </div>
+            `;
+            container.html(html);
+        }
+
+        function openModal(index) {
             currentFileIndex = index;
             const item = filteredItems[index];
 
@@ -3373,7 +3558,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
         function navigateFile(direction) {
             const newIndex = currentFileIndex + direction;
             if (newIndex >= 0 && newIndex < filteredItems.length) {
-                openFilePreview(newIndex);
+                openModal(newIndex);
             }
         }
 
@@ -3392,25 +3577,35 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
         // NEW: Function to copy IPFS link to clipboard
         function copyIpfsLink() {
-            const item = filteredItems[currentFileIndex];
+            let item;
+            // Déterminer si une app ou un fichier est ouvert
+            if ($('#fileModal .modal-content').hasClass('app-modal')) {
+                item = allApps[currentFileIndex];
+            } else {
+                item = filteredItems[currentFileIndex];
+            }
+
             if (!item) return;
 
-            const ipfsUrl = buildIPFSUrl(item);
+            const ipfsUrl = item.ipfsLink || buildIPFSUrl(item);
             if (!ipfsUrl) {
-                // No alert needed, button is hidden if no link, or user will see no change.
+                alert('Could not build the IPFS link.');
                 return;
             }
 
             navigator.clipboard.writeText(ipfsUrl).then(() => {
-                const originalText = $('#copyLinkBtn').html();
-                $('#copyLinkBtn').html('<i class="fas fa-check"></i> Copied!');
+                const statusSpan = $('#modal-temp-status');
+                statusSpan.css('color', '#4CAF50').text('✅ Link copied!');
                 setTimeout(() => {
-                    $('#copyLinkBtn').html(originalText);
-                }, 1500);
-                console.log('IPFS link copied:', ipfsUrl);
+                    statusSpan.text('');
+                }, 2000);
             }).catch(err => {
-                console.error('Failed to copy IPFS link:', err);
-                // No alert, just console error for user experience
+                console.error('Failed to copy link: ', err);
+                const statusSpan = $('#modal-temp-status');
+                statusSpan.css('color', '#ff6b6b').text('❌ Failed to copy');
+                setTimeout(() => {
+                    statusSpan.text('');
+                }, 2000);
             });
         }
 
@@ -3527,61 +3722,85 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             console.log('Downloading:', item.name, 'from', ipfsUrl);
         }
 
-        function displayDirectoryInfo(manifest) {
-            const generatedDate = new Date(manifest.generated_at).toLocaleString();
-            const currentHash = getCurrentIPFSHash();
-            const hashDisplay = currentHash ?
-                `<code style="font-size:0.8em;"><i class="fas fa-fingerprint"></i> ${currentHash}</code>` :
-                '<span style="color: #ffa500; font-size:0.8em;"><i class="fas fa-clock"></i> Not published to IPFS</span>';
+        function deleteCurrentFile(index) {
+            const item = filteredItems[index !== undefined ? index : currentFileIndex];
+            if (!item) return;
 
-            // Add Nostr Connected Key display
-            let connectedKeyDisplay = '';
-            if (userPublicKey) {
-                connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><code>${userPublicKey.substring(0, 10)}...${userPublicKey.substring(userPublicKey.length - 10)}</code></div>`;
-            } else {
-                connectedKeyDisplay = `<div><strong><i class="fas fa-key"></i> Connected Key:</strong><br><span style="color: #ffa500; font-size:0.8em;">Not Connected</span></div>`;
+            const originalButton = $(`.delete-btn[data-index="${index}"]`);
+            const originalContent = originalButton.html(); // Save original content
+
+            // Vérifier l'authentification NOSTR
+            if (!userPublicKey) {
+                console.log('❌ Authentification NOSTR requise pour supprimer un fichier.');
+                originalButton.html('<i class="fas fa-exclamation-triangle"></i> No Auth'); // Temporary message
+                setTimeout(() => {
+                    originalButton.html(originalContent).prop('disabled', false); // Restore button
+                }, 2000);
+                return;
             }
 
-            // NEW: Add Owner Email and Origin IPFS Gateway display
-            const ownerEmailDisplay = manifest.owner_email ?
-                `<div><strong><i class="fas fa-user"></i> Owner:</strong><br><code>${manifest.owner_email}</code></div>` : '';
-            const originGatewayDisplay = manifest.my_ipfs_gateway ?
-                `<div><strong><i class="fas fa-link"></i> Origin Gateway:</strong><br><code>${manifest.my_ipfs_gateway}</code></div>` : '';
+            // Demander confirmation avec détails (on conserve le confirm)
+            const confirmMessage = `⚠️ ATTENTION - Suppression définitive ⚠️\n\n` +
+                                 `Fichier : ${item.name}\n` +
+                                 `Type : ${item.type}\n` +
+                                 `Chemin : ${item.path}\n\n` +
+                                 `Cette action est IRRÉVERSIBLE.\n` +
+                                 `Êtes-vous sûr de vouloir supprimer ce fichier ?`;
 
-            const html = `
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 0.85em;">
-                    <div><strong><i class="fas fa-fingerprint"></i> Hash:</strong><br>${hashDisplay}</div>
-                    <div><strong><i class="fas fa-server"></i> Gateway:</strong><br><code>${currentGateway}</code></div>
-                    <div><strong><i class="fas fa-folder"></i> Dirs:</strong> ${manifest.total_directories || 0}</div>
-                    <div><strong><i class="fas fa-file"></i> Files:</strong> ${manifest.total_files}</div>
-                    <div><strong><i class="fas fa-weight-hanging"></i> Size:</strong> ${manifest.formatted_total_size}</div>
-                    <div><strong><i class="fas fa-clock"></i> Generated:</strong><br><span style="font-size:0.8em;">${generatedDate}</span></div>
-                    ${ownerEmailDisplay} <!-- NEW: Owner Email -->
-                    ${originGatewayDisplay} <!-- NEW: Origin IPFS Gateway -->
-                    ${connectedKeyDisplay}
-                </div>
-            `;
-            $('#info-content').html(html);
+            if (!confirm(confirmMessage)) {
+                console.log('Suppression annulée par l\'utilisateur');
+                return;
+            }
+
+            console.log('DEBUG delete - isNostrConnected:', isNostrConnected, 'userPublicKey:', userPublicKey ? 'présente' : 'absente');
+            console.log('Suppression du fichier:', item.name, 'chemin:', item.path);
+
+            const apiBaseUrl = getAPIBaseUrl();
+
+            // Préparer les données de suppression
+            const deleteData = {
+                file_path: item.path,
+                npub: userPublicKey
+            };
+
+            console.log('Envoi de la requête de suppression:', deleteData);
+
+            // Afficher un indicateur de progression sur le bouton
+            originalButton.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+            $.ajax({
+                url: `${apiBaseUrl}/api/delete`,
+                type: 'POST',
+                data: JSON.stringify(deleteData),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log('Suppression réussie:', response);
+                    originalButton.html('<i class="fas fa-check"></i> Deleted!'); // Temporary success message
+
+                    // Rediriger vers le nouveau CID ou recharger la page
+                    if (response.new_cid) {
+                        redirectToNewCid(response.new_cid);
+                    } else {
+                        // Recharger la page si pas de nouveau CID
+                        setTimeout(() => {
+                            window.location.reload(); // Reload after a short delay to show message
+                        }, 1000);
         }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur de suppression:', error, xhr.responseJSON);
 
-        // Upload modal functions
-        function openUploadModal() {
-            $('#uploadModal').fadeIn(300);
-            resetUploadForm();
-        }
+                    let errorMessage = 'Deletion failed';
+                    if (xhr.responseJSON && xhr.responseJSON.detail) {
+                        errorMessage = xhr.responseJSON.detail;
+                    }
 
-        function closeUploadModal() {
-            $('#uploadModal').fadeOut(300);
-            resetUploadForm();
-        }
-
-        function resetUploadForm() {
-            $('#file-input').val('');
-            $('#upload-progress').hide();
-            $('#upload-results').hide();
-            $('#upload-zone').show();
-            $('#progress-fill').css('width', '0%');
-            $('#progress-text').text('Uploading...');
+                    originalButton.html('<i class="fas fa-times"></i> Failed!').prop('disabled', false); // Temporary error message
+                    setTimeout(() => {
+                        originalButton.html(originalContent); // Restore button
+                    }, 3000);
+                }
+            });
         }
 
         function uploadFiles(files) {
@@ -3816,6 +4035,295 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 }
             });
         }
+
+        function openModalForApp(index) {
+            const app = allApps[index];
+            if (!app) return;
+
+            currentFileIndex = index; // Store index for potential navigation (if we add it for apps)
+
+            const modal = $('#fileModal');
+            const modalContent = modal.find('.modal-content');
+            const iframe = $('#modal-iframe');
+            const modalFilename = $('#modal-filename');
+            const fileCounter = $('#modal-file-counter');
+
+            // Configure modal for an app
+            modalContent.removeClass('text-modal image-modal markdown-modal').addClass('app-modal');
+            modalFilename.text(app.name);
+            fileCounter.text(`App`);
+
+            // Hide navigation buttons as they don't apply to apps in the same way
+            $('#prevFile, #nextFile').hide();
+
+            iframe.attr('src', app.ipfsLink).show();
+            modal.show();
+        }
+
+        function downloadFile(item) {
+            if (!item) return;
+            const url = buildIPFSUrl(item);
+            if (url) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = item.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert('Could not build download link.');
+            }
+        }
+
+        function downloadFileByIndex(index) {
+            const item = filteredItems[index];
+            downloadFile(item);
+        }
+
+        function downloadCurrentFile() {
+            const item = filteredItems[currentFileIndex];
+            downloadFile(item);
+        }
+
+        function deleteFileByIndex(index) {
+            if (!isNostrConnected || !userPublicKey) {
+                alert('Please connect to NOSTR to delete files.');
+                return;
+            }
+
+            const item = filteredItems[index];
+            if (!item) return;
+
+            if (!confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            const deleteUrl = `${upassportUrl}/api/delete`;
+            const payload = {
+                file_path: item.path,
+                npub: userPublicKey
+            };
+
+            console.log('Deleting file:', payload);
+
+            $.ajax({
+                url: deleteUrl,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    console.log('Delete response:', response);
+                    if (response.success) {
+                        alert('File deleted successfully. The view will now reload.');
+                        if (response.new_cid) {
+                            reloadManifest(response.new_cid, false);
+                        } else {
+                            loadManifest(); // Fallback
+                        }
+                    } else {
+                        alert('Failed to delete file: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error deleting file:', xhr.responseText);
+                    let errorMsg = 'An error occurred while deleting the file.';
+                    try {
+                        const err_json = JSON.parse(xhr.responseText);
+                        errorMsg = err_json.detail || err_json.error || errorMsg;
+                    } catch (e) {}
+                    alert('Error: ' + errorMsg);
+                }
+            });
+        }
+
+        function syncFileByIndex(index) {
+            if (!isNostrConnected || !userPublicKey) {
+                alert('Please connect to NOSTR to sync files.');
+                return;
+            }
+            const item = filteredItems[index];
+            if (!item || !item.ipfs_link) {
+                alert('This file does not have a valid IPFS link to sync.');
+                return;
+            }
+
+            // Add syncing animation
+            const fileCard = $(`.file-card[data-index="${index}"]`);
+            fileCard.addClass('syncing');
+
+            const syncUrl = `${upassportUrl}/api/upload_from_drive`;
+            const payload = {
+                ipfs_link: item.ipfs_link,
+                npub: userPublicKey
+            };
+            console.log('Syncing file:', payload);
+            $.ajax({
+                url: syncUrl,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    if (response.success) {
+                        alert(`Successfully synced "${item.name}" to your drive!`);
+                        if (response.new_cid) {
+                            reloadManifest(response.new_cid, true);
+                        }
+                    } else {
+                        alert('Failed to sync file: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error syncing file:', xhr.responseText);
+                    let errorMsg = 'An error occurred while syncing the file.';
+                    try {
+                        const err_json = JSON.parse(xhr.responseText);
+                        errorMsg = err_json.detail || err_json.error || errorMsg;
+                    } catch (e) {}
+                    alert('Error: ' + errorMsg);
+                },
+                complete: function() {
+                    // Remove syncing animation
+                    fileCard.removeClass('syncing');
+                }
+            });
+        }
+
+        function openUploadModal() {
+            if (!isNostrConnected) {
+                alert('You must be connected to NOSTR to upload files.');
+                return;
+            }
+            $('#uploadModal').show();
+            // Reset modal state
+            $('#upload-progress').hide();
+            $('#upload-results').hide().empty();
+            $('#progress-text').text('Uploading...');
+            $('#progress-fill').css('width', '0%');
+        }
+
+        function closeUploadModal() {
+            $('#uploadModal').hide();
+        }
+
+        async function uploadFiles(files) {
+            if (!isNostrConnected || !userPublicKey) {
+                alert('NOSTR connection is required to upload files.');
+                return;
+            }
+
+            const uploadUrl = `${upassportUrl}/api/upload`;
+            const resultsContainer = $('#upload-results');
+            const progressContainer = $('#upload-progress');
+            const progressFill = $('#progress-fill');
+            const progressText = $('#progress-text');
+
+            progressContainer.show();
+            resultsContainer.empty().hide();
+
+            let uploadedCount = 0;
+            const totalFiles = files.length;
+            let lastNewCid = null;
+
+            for (let i = 0; i < totalFiles; i++) {
+                const file = files[i];
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('npub', userPublicKey);
+
+                // Update progress bar
+                const progress = ((i + 1) / totalFiles) * 100;
+                progressFill.css('width', `${progress}%`);
+                progressText.text(`Uploading ${i + 1} of ${totalFiles}: ${file.name}`);
+
+                try {
+                    const response = await $.ajax({
+                        url: uploadUrl,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                    });
+
+                    resultsContainer.show();
+                    resultsContainer.append(`<div class="upload-result-item success"><span class="upload-result-file">${file.name}</span><span class="upload-result-status">Success</span></div>`);
+                    uploadedCount++;
+                    if (response.new_cid) {
+                        lastNewCid = response.new_cid;
+                    }
+
+                } catch (xhr) {
+                    console.error('Upload error:', xhr.responseText);
+                    let errorMsg = 'Upload failed.';
+                    try {
+                        const err_json = JSON.parse(xhr.responseText);
+                        errorMsg = err_json.detail || err_json.error || errorMsg;
+                    } catch (e) {}
+
+                    resultsContainer.show();
+                    resultsContainer.append(`<div class="upload-result-item error"><span class="upload-result-file">${file.name}</span><span class="upload-result-status">Error: ${errorMsg}</span></div>`);
+                }
+            }
+
+            progressText.text(`Upload complete. ${uploadedCount} of ${totalFiles} files succeeded.`);
+
+            // Auto-reload after a successful upload
+            if (uploadedCount > 0 && lastNewCid) {
+                progressText.text('Upload complete. Refreshing view...');
+                setTimeout(() => {
+                    reloadManifest(lastNewCid, false);
+                }, 1000);
+            } else if (uploadedCount > 0) {
+                 setTimeout(() => {
+                    closeUploadModal();
+                    loadManifest(); // Fallback if no CID was returned
+                }, 2000);
+            }
+        }
+
+        function reloadManifest(newCid, isSync = false) {
+            const manifestUrl = `/ipfs/${newCid}/manifest.json`;
+            console.log('Reloading manifest from new CID:', manifestUrl);
+            $('#files-container').html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Reloading content with new CID...</div>');
+
+            // Si c'est une synchronisation par un non-propriétaire, on recharge toute la page pour aller sur son Drive
+            if (isSync && !isOwner) {
+                console.log('Sync by non-owner detected. Redirecting to updated drive.');
+                window.location.href = `/ipfs/${newCid}/`;
+                return; // Stop execution to allow for full page redirect
+            }
+
+
+            $.ajax({
+                url: manifestUrl,
+                dataType: 'json',
+                success: function(manifest) {
+                    console.log('New manifest loaded:', manifest);
+                    currentManifest = manifest;
+
+                    // Mettre à jour l'URL du navigateur seulement si on n'est pas sur un lien IPNS
+                    const currentURL = new URL(window.location.href);
+                    if (!currentURL.pathname.includes('/ipns/')) {
+                        const newUrl = `/ipfs/${newCid}/`;
+                        console.log('Updating browser URL to:', newUrl);
+                        history.pushState({ path: newUrl }, '', newUrl);
+                        console.log('Browser URL updated.');
+                    } else {
+                        console.log('On IPNS path, URL not changed.');
+                    }
+
+                    prepareItemsData(manifest);
+                    displayDirectoryInfo(manifest);
+                    filterAndDisplayItems(currentFilter || 'all', $('#search-input').val().toLowerCase());
+                    updateUIBasedOnOwnership();
+                    closeUploadModal();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading new manifest:', error);
+                    $('#files-container').html('<div class="error"><i class="fas fa-exclamation-triangle"></i> Error reloading files list from new CID.</div>');
+                    alert('Could not reload the content with the new version. Please refresh the page manually.');
+                }
+            });
+        }
     </script>
 </body>
 </html>
@@ -3895,15 +4403,6 @@ log_message ""
 log_message "📋 Fichiers créés:"
 log_message "  - manifest.json (structure optimisée avec liens IPFS individuels)"
 log_message "  - index.html (interface d'exploration moderne avec éditeur Markdown)"
-log_message ""
-log_message "🔧 Nouvelles fonctionnalités ajoutées:"
-log_message "  - ⚡ Mise à jour incrémentale (seuls les fichiers modifiés sont re-ajoutés à IPFS)"
-log_message "  - 🔗 Liens IPFS individuels pour chaque fichier"
-log_message "  - 📝 Éditeur Markdown intégré avec aperçu en temps réel"
-log_message "  - 📥 Boutons de téléchargement sur les cartes et dans les modals"
-log_message "  - 🌙 Toggle thème sombre/clair avec sauvegarde"
-log_message "  - 📱 Interface optimisée pour tous types d'écrans"
-log_message "  - 🚀 Navigation directe vers UPlanet, Scanner, NOSTR, et Coracle"
 log_message ""
 log_message "📊 Statistiques de cette exécution:"
 log_message "  - $updated_count fichier(s) ajouté(s) ou mis à jour dans IPFS"

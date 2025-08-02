@@ -201,10 +201,10 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
     amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n MULTIPASS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
-    
+
     ## Add white margins of 100 pixels around the QR code image (for a flashable coracle profile picture)
     convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png -bordercolor white -border 100x100 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
-    
+
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
     ## MOVE webcam picture
@@ -219,7 +219,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP # RUNTIME/NOSTR.UMAP.refresh.sh
     echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
-    ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) - 
+    ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) -
     # ease Captain change # NEED HARDER SECURITY # Can be removed & be decoded from SSSS (or use encrypted RAM fs cycled every 20h12)
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
@@ -262,11 +262,17 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         -tags "[['p', '$HEX_HEX']]" \
         --relay "$myRELAY" &>/dev/null
 
-    ### Add /APP/uDRIVE - First files
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps
-    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${ISSUERPUB}/'">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CESIUM.v1.html
-    ## Add More Web3 Apps ;p
+    ###############################################################################################
+    ### Add /APP/uDRIVE
+    #~ Réception : Quand un fichier .zip est téléversé via l'API (UPassport/54321.py),
+    #~ il est immédiatement identifié et spécifiquement dirigé vers le répertoire uDRIVE/Apps/
+    #~ Application dans un dossier : Apps/MonApp/index.html avec son icône Apps/MonApp/icon.png.
+    #~ Application "flat" : Apps/index.MonApp.html avec son icône Apps/MonApp.png.
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1
+    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${G1PUBNOSTR}/'">' \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/index.html
+    cp ${MY_PATH}/../images/cesium.png ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/icon.png
+    ## Add you App !
 
     # README.${YOUSER}.md
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents
@@ -281,19 +287,22 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     UDRIVE=$(./generate_ipfs_structure.sh . 2>/dev/null)
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
 
-    ## Link generate_ipfs_RPG.sh to uWORLD --- ANOTHER DEMO APP
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
-    cd -
-    cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
-    ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
-    ## RUN App
-    UWORLD=$(./generate_ipfs_RPG.sh . 2>/dev/null)
-    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
-    cd -
+    ###############################################################################################
+    #~ ## Link generate_ipfs_RPG.sh to uWORLD --- ANOTHER DEMO APP
+    #~ mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
+    #~ cd -
+    #~ cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
+    #~ ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
+    #~ ## RUN App
+    #~ UWORLD=$(./generate_ipfs_RPG.sh . 2>/dev/null)
+    #~ echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
+    #~ cd -
+    ###############################################################################################
 
+    ### PUBLISH MULTIPASS IPFS ####################################################################
     NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
-
+    ###############################################################################################
     ## ORIGIN or ẐEN's
     [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
