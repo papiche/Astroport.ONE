@@ -4047,7 +4047,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
             const modal = $('#fileModal');
             const modalContent = modal.find('.modal-content');
-            const modalBody = modal.find('.modal-body');
             const iframe = $('#modal-iframe');
             const modalFilename = $('#modal-filename');
             const fileCounter = $('#modal-file-counter');
@@ -4060,76 +4059,8 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             // Hide navigation buttons as they don't apply to apps in the same way
             $('#prevFile, #nextFile').hide();
 
-            // Show loading indicator
-            iframe.hide();
-            modalBody.html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading application...</div>');
-            
-            // Load the app content first to check for meta refresh
-            $.ajax({
-                url: app.ipfsLink,
-                dataType: 'text',
-                success: function(htmlContent) {
-                    // Check if the page has a meta refresh tag
-                    const metaRefreshMatch = htmlContent.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["']([^"']*)["'][^>]*>/i);
-                    
-                    if (metaRefreshMatch) {
-                        const refreshContent = metaRefreshMatch[1];
-                        const urlMatch = refreshContent.match(/url=([^;]*)/i);
-                        
-                        if (urlMatch) {
-                            let redirectUrl = urlMatch[1].trim();
-                            
-                            // Handle relative URLs by making them absolute
-                            if (redirectUrl.startsWith('/')) {
-                                // For absolute paths starting with /, construct full IPFS URL
-                                if (redirectUrl.startsWith('/ipfs/')) {
-                                    // Already an IPFS path, just add the gateway
-                                    redirectUrl = currentGateway + redirectUrl;
-                                } else {
-                                    // Extract base URL from app.ipfsLink and append
-                                    const baseUrl = app.ipfsLink.substring(0, app.ipfsLink.lastIndexOf('/'));
-                                    redirectUrl = baseUrl + redirectUrl;
-                                }
-                            } else if (!redirectUrl.startsWith('http')) {
-                                // Handle relative URLs without leading slash
-                                const baseUrl = app.ipfsLink.substring(0, app.ipfsLink.lastIndexOf('/') + 1);
-                                redirectUrl = baseUrl + redirectUrl;
-                            }
-                            
-                            console.log('Meta refresh detected, redirecting to:', redirectUrl);
-                            modalBody.html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Redirecting application...</div>');
-                            iframe.attr('src', redirectUrl);
-                        } else {
-                            // No URL specified in meta refresh, use original link
-                            modalBody.html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading application...</div>');
-                            iframe.attr('src', app.ipfsLink);
-                        }
-                    } else {
-                        // No meta refresh, load normally
-                        modalBody.html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading application...</div>');
-                        iframe.attr('src', app.ipfsLink);
-                    }
-                    
-                    // Show iframe after a short delay to ensure proper loading
-                    setTimeout(() => {
-                        modalBody.empty();
-                        iframe.show();
-                    }, 500);
-                },
-                error: function(xhr, status, error) {
-                    // If AJAX fails, fallback to direct iframe loading
-                    console.log('Failed to check meta refresh, loading directly:', error);
-                    modalBody.html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading application...</div>');
-                    iframe.attr('src', app.ipfsLink);
-                    
-                    setTimeout(() => {
-                        modalBody.empty();
-                        iframe.show();
-                    }, 500);
-                }
-            });
-
-            iframe.show();
+            // Load the app directly in the iframe and let the browser handle meta redirects
+            iframe.attr('src', app.ipfsLink).show();
             modal.show();
         }
 
