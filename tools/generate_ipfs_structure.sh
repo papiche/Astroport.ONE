@@ -2212,9 +2212,11 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             <div class="filter-tab" data-filter="text">
                 <i class="fas fa-file-alt"></i> Text
             </div>
+         <!-- //
             <div class="filter-tab" data-filter="html">
                 <i class="fas fa-code"></i> Web
             </div>
+        // -->
             <div class="filter-tab" data-filter="document">
                 <i class="fas fa-file-pdf"></i> Docs
             </div>
