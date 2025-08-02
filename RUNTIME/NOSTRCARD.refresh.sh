@@ -238,6 +238,7 @@ should_refresh() {
                 return 0
             fi
         else
+            echo "$UDRIVE" > "${last_udrive_file}"
             echo "UDRIVE CID: $last_udrive"
         fi
     else
@@ -264,7 +265,8 @@ should_refresh() {
     #             REFRESH_REASON="uworld_update"
     #             return 0
     #         fi
-    #     else
+    #     else         
+    #         echo $UWORLD > "${last_uworld_file}"
     #         echo "UWORLD CID: $last_uworld"
     #     fi
     # else
