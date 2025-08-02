@@ -3142,7 +3142,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 const iconSrc = app.iconUrl || defaultIcon;
 
                 return `
-                    <a href="${app.ipfsLink}" target="_blank" class="file-card app-card" data-index="${index}" data-type="app">
+                    <a href="#" class="file-card app-card" data-index="${index}" data-type="app">
                         <div class="file-icon">
                             <img src="${iconSrc}" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover;" alt="${app.name} icon" onerror="this.onerror=null;this.src='${defaultIcon}';">
                         </div>
@@ -3161,6 +3161,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             container.html(itemsHtml);
              // Attacher les écouteurs d'événements après avoir ajouté les éléments au DOM
             $('.app-card').click(function(e) {
+                e.preventDefault(); // Prevent default link behavior
                 const index = $(this).data('index');
                 openModalForApp(index);
             });
