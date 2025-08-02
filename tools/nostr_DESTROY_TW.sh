@@ -505,7 +505,7 @@ ${MY_PATH}/../tools/mailjet.sh \
     "${youser} : MULTIPASS #BRO access temporarily paused - your data is safe!"
 
 ## REMOVE NOSTR IPNS VAULT key
-#~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR.QR.png.cid") ## "G1QR" CID
+#~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/MULTIPASS.QR.png.cid") ## "G1QR" CID
 ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
 
 ## Cleaning local cache
