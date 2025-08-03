@@ -36,38 +36,37 @@ select_nostr_account() {
     echo "Available NOSTR accounts:"
     echo "========================="
     
-    # Find all .secret.dunikey files in NOSTR directories
+    # Find all NOSTR accounts with G1PUBNOSTR files (much faster than finding .secret.dunikey)
     nostr_accounts=()
     nostr_keys=()
     
     if [[ -d ~/.zen/game/nostr ]]; then
-        while IFS= read -r -d '' keyfile; do
-            if [[ -f "$keyfile" ]]; then
-                # Extract account name from path
-                account_path=$(dirname "$keyfile")
-                account_name=$(basename "$account_path")
+        # Use the same approach as nostr_DESTROY_TW.sh - find accounts with G1PUBNOSTR files
+        account_names=($(ls ~/.zen/game/nostr/*@*.*/G1PUBNOSTR 2>/dev/null | rev | cut -d '/' -f 2 | rev))
+        
+        for account_name in "${account_names[@]}"; do
+            g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
+            if [[ -n "$g1pub" ]]; then
+                # Get balance from cache (much faster than COINScheck.sh)
+                balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
+                if [[ -z "$balance" || "$balance" == "null" ]]; then
+                    balance="0"
+                fi
                 
-                # Get public key from dunikey file
-                pubkey=$(grep "pub:" "$keyfile" | cut -d ' ' -f 2 2>/dev/null)
-                
-                if [[ -n "$pubkey" ]]; then
-                    # Get balance
-                    balance=$(${MY_PATH}/COINScheck.sh "$pubkey" 2>/dev/null | tail -n 1)
-                    if [[ -z "$balance" || "$balance" == "null" ]]; then
-                        balance="0"
-                    fi
-                    
+                # Check if .secret.dunikey exists
+                keyfile="$HOME/.zen/game/nostr/${account_name}/.secret.dunikey"
+                if [[ -f "$keyfile" ]]; then
                     nostr_accounts+=("$account_name")
                     nostr_keys+=("$keyfile")
                     
                     echo "${#nostr_accounts[@]}) $account_name"
-                    echo "   Public Key: $pubkey"
+                    echo "   Public Key: $g1pub"
                     echo "   Balance: $balance Ğ1"
                     echo "   Key File: $keyfile"
                     echo ""
                 fi
             fi
-        done < <(find ~/.zen/game/nostr -name ".secret.dunikey" -print0 2>/dev/null)
+        done
     fi
     
     if [[ ${#nostr_accounts[@]} -eq 0 ]]; then
@@ -140,7 +139,7 @@ validate_parameters() {
     fi
     
     # Validate destination public key
-    if [[ -z "$dest_pubkey" ]] || [[ ${#dest_pubkey} -ne 43 ]]; then
+    if [[ -z "$dest_pubkey" ]] || [[ ${#dest_pubkey} -gt 100 ]]; then
         echo "ERROR: Invalid destination public key '$dest_pubkey'"
         exit 1
     fi
@@ -162,14 +161,14 @@ confirm_payment() {
     # Get source public key
     source_pubkey=$(grep "pub:" "$keyfile" | cut -d ' ' -f 2 2>/dev/null)
     
-    # Get source balance
-    source_balance=$(${MY_PATH}/COINScheck.sh "$source_pubkey" 2>/dev/null | tail -n 1)
+    # Get source balance from cache (much faster than COINScheck.sh)
+    source_balance=$(cat ~/.zen/tmp/coucou/${source_pubkey}.COINS 2>/dev/null)
     if [[ -z "$source_balance" || "$source_balance" == "null" ]]; then
         source_balance="0"
     fi
     
-    # Get destination balance
-    dest_balance=$(${MY_PATH}/COINScheck.sh "$dest_pubkey" 2>/dev/null | tail -n 1)
+    # Get destination balance from cache
+    dest_balance=$(cat ~/.zen/tmp/coucou/${dest_pubkey}.COINS 2>/dev/null)
     if [[ -z "$dest_balance" || "$dest_balance" == "null" ]]; then
         dest_balance="0"
     fi
