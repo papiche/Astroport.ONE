@@ -71,6 +71,7 @@ fi
 
 PARAM="$1"
 EMAIL="${PARAM,,}" ## lowercase
+EMAIL="${EMAIL// }" # Remove all spaces
 IMAGE="$2"
 ZLAT=$(makecoord "$3")
 ZLON=$(makecoord "$4")
