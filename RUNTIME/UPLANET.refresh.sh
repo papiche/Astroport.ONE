@@ -241,7 +241,7 @@ for UMAP in ${unique_combined[@]}; do
     "${TODATE} JOURNAL : VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
-    "" "${myLIBRA}/ipfs/${UMAPROOT}/APP" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
+    "" "${myLIBRA}/ipfs/${UMAPROOT}" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" \
     --zencard "$UPLANETNAME_G1"
 

@@ -453,9 +453,9 @@ cleanup_old_documents() {
         if [[ $file_date -lt $SIX_MONTHS_AGO ]]; then
             # Extract author from JSON file
             local author=$(jq -r '.author_pubkey' "$file" 2>/dev/null)
-
+            local author_profile=$($MY_PATH/../tools/nostr_hex2nprofile.sh $author 2>/dev/null)
             if [[ -n "$author" && "$author" != "null" ]]; then
-                local notification="🛒 Votre annonce de marché a été retirée après 6 mois. Vous pouvez la republier si elle est toujours d'actualité. #UPlanet #Market #Community"
+                local notification="🛒 nostr:$author_profile votre annonce a été retirée après 6 mois. Vous pouvez la republier si elle est toujours d'actualité. #UPlanet #uMARKET #Community"
 
                 nostpy-cli send_event \
                     -privkey "$NPRIV_HEX" \
@@ -809,6 +809,7 @@ update_region_nostr_profile() {
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
 
+    ## Update profile with new REGROOT
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$REGSEC" \
         "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
@@ -822,18 +823,20 @@ update_region_nostr_profile() {
     local TAGS_JSON=$(printf '%s\n' "${RTAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
+    ## Confirm UMAP friendship
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
         --relay "$myRELAY" 2>/dev/null
-
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-        -content "$content $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY" 2>/dev/null
+    
+    ## Publish Report to NOSTR
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 1 \
+    -content "$content $myIPFS/ipns/copylaradio.com" \
+        --relay "$myRELAY" 2>/dev/null
 }
 
 ################################################################################
