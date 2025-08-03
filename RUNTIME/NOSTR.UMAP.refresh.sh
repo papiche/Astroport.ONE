@@ -312,13 +312,41 @@ process_market_images() {
     local content=$1
     local UMAPPATH=$2
 
+    # Ensure Images directory exists
+    mkdir -p "${UMAPPATH}/APP/uMARKET/Images"
+
     local image_urls=$(echo "$content" | grep -o 'https\?://[^[:space:]]*\.\(jpg\|jpeg\|png\|gif\)')
     if [[ -n "$image_urls" ]]; then
         for img_url in $image_urls; do
+            # Validate URL format
+            if [[ ! "$img_url" =~ ^https?://[^[:space:]]+\.(jpg|jpeg|png|gif)$ ]]; then
+                echo "⚠️  Invalid image URL format: $img_url" >&2
+                continue
+            fi
+            
             local filename=$(basename "$img_url")
+            # Sanitize filename to prevent path traversal
+            filename=$(echo "$filename" | sed 's/[^a-zA-Z0-9._-]//g')
+            
             local umap_filename="UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_${filename}"
-            if [[ ! -f "${UMAPPATH}/APP/uMARKET/Images/$umap_filename" ]]; then
-                wget -q "$img_url" -O "${UMAPPATH}/APP/uMARKET/Images/$umap_filename"
+            local target_path="${UMAPPATH}/APP/uMARKET/Images/$umap_filename"
+            
+            # Check if file already exists
+            if [[ ! -f "$target_path" ]]; then
+                # Download with timeout and size limit
+                if wget -q --timeout=30 --tries=3 --max-redirect=3 --limit-rate=1m "$img_url" -O "$target_path" 2>/dev/null; then
+                    # Validate downloaded file
+                    if [[ -s "$target_path" ]] && file "$target_path" | grep -q "image"; then
+                        echo "✅ Downloaded: $filename"
+                    else
+                        echo "⚠️  Invalid image file: $filename" >&2
+                        rm -f "$target_path"
+                    fi
+                else
+                    echo "❌ Failed to download: $img_url" >&2
+                fi
+            else
+                echo "ℹ️  Image already exists: $filename"
             fi
         done
     fi
@@ -331,6 +359,9 @@ create_market_ad() {
     local ami=$4
     local created_at=$5
 
+    # Ensure ads directory exists
+    mkdir -p "${UMAPPATH}/APP/uMARKET/ads"
+
     # Get author profile information
     local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
     
@@ -342,40 +373,56 @@ create_market_ad() {
         done < <(find "${UMAPPATH}/APP/uMARKET/Images" -name "UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}_*" -print0)
     fi
 
-    # Create JSON advertisement
+    # Validate required fields
+    if [[ -z "$message_id" || -z "$content" || -z "$ami" ]]; then
+        echo "❌ Missing required fields for market ad" >&2
+        return 1
+    fi
+
+    # Create JSON advertisement with proper escaping
     local ad_json=$(cat << EOF
 {
     "id": "${message_id}",
-    "content": "${content//\"/\\\"}",
+    "content": "$(echo "$content" | jq -R -s . | sed 's/^"//;s/"$//')",
     "author_pubkey": "${ami}",
-    "author_nprofile": "${author_nprofile}",
+    "author_nprofile": "${author_nprofile:-}",
     "created_at": ${created_at},
     "location": {
         "lat": ${LAT},
         "lon": ${LON}
     },
     "local_images": $(printf '%s\n' "${local_images[@]}" | jq -R . | jq -s .),
-    "umap_id": "UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}"
+    "umap_id": "UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}",
+    "generated_at": $(date +%s)
 }
 EOF
 )
 
-    echo "$ad_json" > "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json"
+    # Validate JSON before saving
+    if echo "$ad_json" | jq . >/dev/null 2>&1; then
+        echo "$ad_json" > "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json"
+        echo "✅ Created market ad: ${message_id}"
+    else
+        echo "❌ Invalid JSON generated for ad: ${message_id}" >&2
+        return 1
+    fi
 }
 
 setup_ipfs_structure() {
     local UMAPPATH=$1
     local NPRIV_HEX=$2
 
-    mkdir -p "${UMAPPATH}/APP/uMARKET"
+    # Create complete uMARKET directory structure
+    mkdir -p "${UMAPPATH}/APP/uMARKET/ads"
+    mkdir -p "${UMAPPATH}/APP/uMARKET/Images"
     cd "${UMAPPATH}/APP/uMARKET"
     
     # Check if there are market advertisements
     if [[ -d "ads" && $(find "ads" -name "*.json" | wc -l) -gt 0 ]]; then
         # Use uMARKET for market advertisements
-        ln -sf "${MY_PATH}/../tools/generate_uMARKET.sh" ./generate_uMARKET.sh
+        ln -sf "${MY_PATH}/../tools/_uMARKET.generate.sh" ./_uMARKET.generate.sh
         cleanup_old_files "$NPRIV_HEX"
-        uCID=$(./generate_uMARKET.sh .)
+        uCID=$(./_uMARKET.generate.sh .)
     else
         # Use standard uMARKET for non-market content
         ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script pour générer l'interface IPFS pour uMARKET
-# Usage: ./generate_uMARKET.sh [repertoire_source]
+# Usage: ./_uMARKET.generate.sh [repertoire_source]
 
 set -e
 
@@ -11,7 +11,7 @@ show_help() {
 🛒 uMARKET IPFS Application Generator
 
 USAGE:
-    ./generate_uMARKET.sh [OPTIONS] DIRECTORY
+    ./_uMARKET.generate.sh [OPTIONS] DIRECTORY
 
 ARGUMENTS:
     DIRECTORY    Répertoire source (OBLIGATOIRE) - Doit contenir un sous-répertoire 'ads/' avec les annonces en JSON.
@@ -19,20 +19,25 @@ ARGUMENTS:
 OPTIONS:
     -h, --help   Afficher cette aide
     --log        Activer le logging détaillé (sinon sortie silencieuse)
+    --validate   Valider les fichiers JSON avant traitement
+    --max-size   Taille maximale des images en MB (défaut: 10)
 
 DESCRIPTION:
     Génère une interface de marché complète pour UPlanet à partir d'annonces JSON.
     Crée une application web moderne avec recherche, filtres et affichage des produits.
 
 EXAMPLES:
-    ./generate_uMARKET.sh /path/to/market/data
-    ./generate_uMARKET.sh --log /path/to/market/data
+    ./_uMARKET.generate.sh /path/to/market/data
+    ./_uMARKET.generate.sh --log /path/to/market/data
+    ./_uMARKET.generate.sh --validate --max-size 5 /path/to/market/data
 
 HELP_EOF
 }
 
 # Variables globales
 VERBOSE=false
+VALIDATE_JSON=false
+MAX_IMAGE_SIZE=10
 SOURCE_DIR=""
 
 # Fonction de logging
@@ -48,6 +53,34 @@ error_message() {
     exit 1
 }
 
+# Fonction de validation JSON
+validate_json_file() {
+    local file="$1"
+    if ! jq . "$file" >/dev/null 2>&1; then
+        # Ne pas afficher l'erreur pour éviter l'arrêt du script
+        return 1
+    fi
+    return 0
+}
+
+# Fonction de validation d'image
+validate_image_file() {
+    local file="$1"
+    local size_mb=$(($(stat -c%s "$file") / 1024 / 1024))
+    
+    if [[ $size_mb -gt $MAX_IMAGE_SIZE ]]; then
+        echo "⚠️  Image too large ($size_mb MB): $file" >&2
+        return 1
+    fi
+    
+    if ! file "$file" 2>/dev/null | grep -q "image" 2>/dev/null; then
+        echo "⚠️  Not a valid image file: $file" >&2
+        return 1
+    fi
+    
+    return 0
+}
+
 # Traitement des arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -58,6 +91,14 @@ while [[ $# -gt 0 ]]; do
         --log)
             VERBOSE=true
             shift
+            ;;
+        --validate)
+            VALIDATE_JSON=true
+            shift
+            ;;
+        --max-size)
+            MAX_IMAGE_SIZE="$2"
+            shift 2
             ;;
         -*)
             error_message "❌ Option inconnue: $1"
@@ -95,6 +136,52 @@ fi
 
 log_message "📊 $AD_COUNT annonces trouvées dans $SOURCE_DIR/ads/"
 
+# Validation des fichiers JSON si demandé
+if [ "$VALIDATE_JSON" = true ]; then
+    log_message "🔍 Validation des fichiers JSON..."
+    invalid_count=0
+    while IFS= read -r -d '' file; do
+        if ! validate_json_file "$file"; then
+            ((invalid_count++))
+        fi
+    done < <(find "$SOURCE_DIR/ads" -name "*.json" -print0)
+    
+    if [[ $invalid_count -gt 0 ]]; then
+        error_message "❌ $invalid_count fichiers JSON invalides trouvés"
+    fi
+    log_message "✅ Tous les fichiers JSON sont valides"
+fi
+
+# Validation des images si le répertoire Images existe
+if [ -d "$SOURCE_DIR/Images" ]; then
+    log_message "🖼️  Validation des images..."
+    invalid_images=0
+    
+    # Désactiver set -e temporairement pour les validations
+    set +e
+    
+    # Utiliser une approche plus simple avec for
+    for image in "$SOURCE_DIR/Images"/*.{jpg,jpeg,png,gif}; do
+        # Vérifier que le fichier existe (éviter les globs vides)
+        if [[ ! -f "$image" ]]; then
+            continue
+        fi
+        
+        if ! validate_image_file "$image" 2>/dev/null; then
+            ((invalid_images++))
+        fi
+    done
+    
+    # Réactiver set -e
+    set -e
+    
+    if [[ $invalid_images -gt 0 ]]; then
+        log_message "⚠️  $invalid_images images invalides trouvées"
+    else
+        log_message "✅ Toutes les images sont valides"
+    fi
+fi
+
 # Créer le répertoire public
 mkdir -p "$SOURCE_DIR/public"
 
@@ -106,18 +193,43 @@ echo '{"ads": [' > "$SOURCE_DIR/public/market.json"
 
 # Ajouter chaque annonce
 FIRST=true
-while IFS= read -r -d '' file; do
+VALID_ADS=0
+
+# Utiliser une approche plus simple avec for
+for file in "$SOURCE_DIR/ads"/*.json; do
+    # Vérifier que le fichier existe (éviter les globs vides)
+    if [[ ! -f "$file" ]]; then
+        continue
+    fi
+    
+    # Validation JSON (toujours active pour éviter les fichiers malformés)
+    if ! validate_json_file "$file" 2>/dev/null; then
+        log_message "⚠️  Ignoring invalid JSON file: $file"
+        continue
+    fi
+    
     if [ "$FIRST" = true ]; then
         FIRST=false
     else
         echo "," >> "$SOURCE_DIR/public/market.json"
     fi
-    cat "$file" >> "$SOURCE_DIR/public/market.json"
-done < <(find "$SOURCE_DIR/ads" -name "*.json" -print0)
+    
+    # Ajouter le fichier JSON de manière sécurisée
+    if [[ -f "$file" ]]; then
+        cat "$file" >> "$SOURCE_DIR/public/market.json" || {
+            log_message "⚠️  Failed to process file: $file"
+            continue
+        }
+        ((VALID_ADS++))
+        log_message "✅ Processed: $(basename "$file")"
+    else
+        log_message "⚠️  File not found: $file"
+    fi
+done
 
 echo "]}" >> "$SOURCE_DIR/public/market.json"
 
-log_message "✅ market.json généré avec $AD_COUNT annonces."
+log_message "✅ market.json généré avec $VALID_ADS annonces valides."
 
 # Créer l'interface web moderne
 log_message "🌐 Génération de l'interface web uMARKET..."
