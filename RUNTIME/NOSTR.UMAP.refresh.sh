@@ -293,7 +293,7 @@ process_recent_messages() {
         local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
 
         # Format journaliste
-        echo "On $date_str, $author_nprofile published:" >> ${UMAPPATH}/NOSTR_messages
+        echo "On $date_str, nostr:$author_nprofile published:" >> ${UMAPPATH}/NOSTR_messages
         echo "> $content" >> ${UMAPPATH}/NOSTR_messages
         echo "" >> ${UMAPPATH}/NOSTR_messages
 
