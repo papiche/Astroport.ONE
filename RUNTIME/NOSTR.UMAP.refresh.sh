@@ -287,7 +287,7 @@ process_recent_messages() {
     }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at}' | while read -r message; do
         local content=$(echo "$message" | jq -r .content)
         ## Avoid treating Captain Warning Messages sent to unregistered message publishers
-        if [[ "$content" ~= "Hello NOSTR visitor." ]]; then continue; fi  
+        if [[ "$content" =~ "Hello NOSTR visitor." ]]; then continue; fi  
         local message_id=$(echo "$message" | jq -r .id)
         local created_at=$(echo "$message" | jq -r .created_at)
         local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
