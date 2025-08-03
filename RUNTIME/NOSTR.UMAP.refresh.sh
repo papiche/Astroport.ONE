@@ -511,7 +511,7 @@ cleanup_orphaned_ads() {
             local event_exists=$(./strfry scan "{\"ids\": [\"${message_id}\"], \"kinds\": [1], \"limit\": 1}" 2>/dev/null | jq -r 'select(.kind == 1) | .id' | head -n 1)
             
             if [[ -z "$event_exists" ]]; then
-                echo "🗑️  Removing orphaned ad: ${message_id} (event not found on relay)"
+                echo "🗑️  Removing orphaned ad: ${message_id} ($author)"
                    # Remove the orphaned ad file
                 rm "$file"
                 ((orphaned_count++))

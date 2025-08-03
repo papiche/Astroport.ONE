@@ -246,10 +246,9 @@ cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM
 cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
 
 
-# COPY strfry nostr blacklist.txt to ~/.zen/tmp/$IPFSNODEID/
-echo "COPY strfry nostr blacklist.txt to ~/.zen/tmp/$IPFSNODEID/blacklist.txt"
-cp -f "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/blacklist.txt
-
+echo "COPYing blacklist.txt $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) + amisOfAmis.txt $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l)"
+cp -f "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/
+cp -f "${HOME}/.zen/strfry/amisOfAmis.txt" ~/.zen/tmp/$IPFSNODEID/
 ########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
     # Mailjet - UPlanet ORIGIN - edit config to change provider
