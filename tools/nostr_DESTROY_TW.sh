@@ -511,4 +511,9 @@ ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
 ## Cleaning local cache
 rm ~/.zen/tmp/coucou/${g1pubnostr-null}.*
 rm -Rf ~/.zen/game/nostr/${player-null}
+
+## Cleaning Node (& Swarm cache)
+rm -Rf ~/.zen/tmp/$IPFSNODEID/TW/${player-null}
+
+
 exit 0
