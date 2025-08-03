@@ -423,12 +423,6 @@ setup_ipfs_structure() {
         ln -sf "${MY_PATH}/../tools/_uMARKET.generate.sh" ./_uMARKET.generate.sh
         cleanup_old_files "$NPRIV_HEX"
         uCID=$(./_uMARKET.generate.sh .)
-    else
-        # Use standard uMARKET for non-market content
-        ln -sf "${MY_PATH}/../tools/generate_ipfs_structure.sh" ./generate_ipfs_structure.sh
-        rm index.html _index.html manifest.json 2>/dev/null ## Reset uMARKET index & manifest
-        cleanup_old_files "$NPRIV_HEX"
-        uCID=$(./generate_ipfs_structure.sh .)
     fi
     
     ## Redirect to uCID actual ipfs CID
@@ -443,6 +437,7 @@ cleanup_old_files() {
     cleanup_old_documents "$SIX_MONTHS_AGO" "$NPRIV_HEX"
     cleanup_old_images "$SIX_MONTHS_AGO"
 }
+
 cleanup_old_documents() {
     local SIX_MONTHS_AGO=$1
     local NPRIV_HEX=$2
@@ -573,7 +568,7 @@ create_aggregate_journal() {
     fi
 
     mkdir -p "$geo_path"
-    rm -f "$geo_path/NOSTR_journal"
+    rm -f "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
 
     # 1. Collect unique friends
     local all_friends=()
@@ -609,26 +604,26 @@ create_aggregate_journal() {
                 local author_hex=$(echo "$message_json" | jq -r .author)
                 local created_at=$(echo "$message_json" | jq -r .created_at)
                 local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
-                    local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+                local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
                 
-                echo "[$date_str] $author_nprofile ($likes likes) :" >> "$geo_path/NOSTR_journal"
-                echo "> $content" >> "$geo_path/NOSTR_journal"
-                echo "" >> "$geo_path/NOSTR_journal"
+                echo "[$date_str] $author_nprofile ($likes likes) :" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                echo "> $content" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                echo "" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 fi
         fi
     done
 
     # 4. Finalize
-    if [[ ! -s "$geo_path/NOSTR_journal" ]]; then echo "No messages with enough likes for ${type} ${geo_id} journal."; rm -Rf "$geo_path"; return; fi
+    if [[ ! -s "$geo_path/${IPFSNODEID: -12}.NOSTR_journal" ]]; then echo "No messages with enough likes for ${type} ${geo_id} journal."; rm -Rf "$geo_path"; return; fi
 
     local journal_content
     local MAX_MSGS=10
     local MAX_SIZE=3000
-    if [[ $(grep -c 'likes) :$' "$geo_path/NOSTR_journal") -gt $MAX_MSGS || $(wc -c < "$geo_path/NOSTR_journal") -gt $MAX_SIZE ]]; then
+    if [[ $(grep -c 'likes) :$' "$geo_path/${IPFSNODEID: -12}.NOSTR_journal") -gt $MAX_MSGS || $(wc -c < "$geo_path/${IPFSNODEID: -12}.NOSTR_journal") -gt $MAX_SIZE ]]; then
         echo "Journal for ${type} ${geo_id} is too large. Summarizing with AI..."
-        journal_content=$(generate_ai_summary "$(cat "$geo_path/NOSTR_journal")")
+        journal_content=$(generate_ai_summary "$(cat "$geo_path/${IPFSNODEID: -12}.NOSTR_journal")")
     else
-        journal_content=$(cat "$geo_path/NOSTR_journal")
+        journal_content=$(cat "$geo_path/${IPFSNODEID: -12}.NOSTR_journal")
     fi
 
     # 5. Save and publish
@@ -657,7 +652,7 @@ save_sector_journal() {
 
     local sectorpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}"
     mkdir -p $sectorpath
-    echo "$ANSWER" > $sectorpath/NOSTR_journal
+    echo "$ANSWER" > $sectorpath/${IPFSNODEID: -12}.NOSTR_journal
 
     local SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
     update_sector_calendar "$sectorpath" "$SECROOT"
@@ -669,12 +664,14 @@ update_sector_calendar() {
     local SECROOT=$2
 
     echo "${SECROOT}" > ${sectorpath}/ipfs.${DEMAINDATE} 2>/dev/null
+    echo "${SECROOT}" > ${sectorpath}/ipfs.${TODATE} 2>/dev/null
     rm ${sectorpath}/ipfs.${YESTERDATE} 2>/dev/null
 
     local JOUR_SEMAINE=$(LANG=fr_FR.UTF-8 date +%A)
     local HIER=$(LANG=fr_FR.UTF-8 date --date="yesterday" +%A)
-    echo '<meta http-equiv="refresh" content="0;url='${myIPFS}'/ipfs/'${SECROOT}'">' > ${sectorpath}/${JOUR_SEMAINE}.html 2>/dev/null
-    rm ${sectorpath}/${HIER}.html 2>/dev/null
+    echo '<meta http-equiv="refresh" content="0;url='${myIPFS}'/ipfs/'${SECROOT}'">' \
+            > ${sectorpath}/_${JOUR_SEMAINE}.html 2>/dev/null
+    rm ${sectorpath}/_${HIER}.html 2>/dev/null
 }
 
 update_sector_nostr_profile() {
@@ -713,11 +710,11 @@ update_sector_nostr_profile() {
         -tags "$TAGS_JSON" \
         --relay "$myRELAY" 2>/dev/null
 
-    if [[ -s $sectorpath/NOSTR_journal ]]; then
+    if [[ -s $sectorpath/${IPFSNODEID: -12}.NOSTR_journal ]]; then
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
-            -content "$(cat $sectorpath/NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
+            -content "$(cat $sectorpath/${IPFSNODEID: -12}.NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
             --relay "$myRELAY" 2>/dev/null
     fi
 }
@@ -746,7 +743,7 @@ save_region_journal() {
     local rlon=$(echo ${region} | cut -d '_' -f 3)
     local regionpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/${region}"
     mkdir -p "$regionpath"
-    echo "$content" > "$regionpath/NOSTR_journal"
+    echo "$content" > "$regionpath/${IPFSNODEID: -12}.NOSTR_journal"
 
     # Minimal IPFS publishing, can be expanded
     local REGROOT=$(ipfs add -rwHq "$regionpath"/* | tail -n 1)
@@ -848,6 +845,15 @@ main() {
     # Process Regions
     process_regions
 
+    # Clean up duplicate entries in amisOfAmis.txt
+    if [[ -f "$AMISOFAMIS_FILE" ]]; then
+        # Create a temporary file with unique entries
+        sort -u "$AMISOFAMIS_FILE" > "${AMISOFAMIS_FILE}.tmp"
+        # Overwrite the original file with deduplicated content
+        mv "${AMISOFAMIS_FILE}.tmp" "$AMISOFAMIS_FILE"
+        echo "Cleaned $AMISOFAMIS_FILE: removed duplicate entries."
+    fi
+
     # Remove entries from blacklist.txt that are found in amisOfAmis.txt
     if [[ -f "$BLACKLIST_FILE" && -f "$AMISOFAMIS_FILE" ]]; then
         # Create a temporary file for the filtered blacklist
@@ -859,15 +865,6 @@ main() {
         echo "Info: $BLACKLIST_FILE not found, no blacklist to clean."
     elif [[ ! -f "$AMISOFAMIS_FILE" ]]; then
         echo "Info: $AMISOFAMIS_FILE not found, no friends of friends list for cleaning blacklist."
-    fi
-
-    # Clean up duplicate entries in amisOfAmis.txt
-    if [[ -f "$AMISOFAMIS_FILE" ]]; then
-        # Create a temporary file with unique entries
-        sort -u "$AMISOFAMIS_FILE" > "${AMISOFAMIS_FILE}.tmp"
-        # Overwrite the original file with deduplicated content
-        mv "${AMISOFAMIS_FILE}.tmp" "$AMISOFAMIS_FILE"
-        echo "Cleaned $AMISOFAMIS_FILE: removed duplicate entries."
     fi
 
     exit 0
