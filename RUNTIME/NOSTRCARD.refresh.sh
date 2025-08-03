@@ -451,7 +451,7 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ ${TODATE} != ${BIRTHDATE} ]]; then
             # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
             log "INFO" "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation for $G1PUBNOSTR"
-            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${YOUSER}:MULTIPASS:ORIGIN" 2>/dev/null)
+            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:${YOUSER}:MULTIPASS" 2>/dev/null)
             if [[ $? -eq 0 ]]; then
                 echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
                 log "INFO" "PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB}" wallet
@@ -506,7 +506,7 @@ for PLAYER in "${NOSTR[@]}"; do
                         [[ -z $NCARD ]] && NCARD=1
                         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
                         log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1)"
-                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:$YOUSER:NCARD" 2>/dev/null)
+                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
                         if [[ $? -eq 0 ]]; then
                             # Record successful payment
                             echo "$TODATE" > "$last_payment_file"
