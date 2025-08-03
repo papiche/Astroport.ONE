@@ -123,7 +123,7 @@ echo "______ AMOUNT = ${AMOUNT} G1"
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
 [[ -z $prime ]] && prime=${UPLANETG1PUB}
 if [[ -n ${AMOUNT} && ${AMOUNT} != "null" ]]; then
-    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH BACK" 2>/dev/null
+    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH-BACK" 2>/dev/null
 fi
 rm ~/.zen/tmp/nostr.dunikey
 
