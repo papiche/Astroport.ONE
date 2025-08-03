@@ -436,6 +436,7 @@ cleanup_old_files() {
 
     cleanup_old_documents "$SIX_MONTHS_AGO" "$NPRIV_HEX"
     cleanup_old_images "$SIX_MONTHS_AGO"
+    cleanup_orphaned_ads
 }
 
 cleanup_old_documents() {
@@ -483,6 +484,49 @@ cleanup_old_images() {
             rm "$image"
         fi
     done < <(find "Images" -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" -o -name "*.gif" \) -print0)
+}
+
+cleanup_orphaned_ads() {
+    if [[ ! -d "ads" ]]; then
+        return
+    fi
+
+    echo "🔍 Checking for orphaned market advertisements..."
+
+    # Store current directory
+    local current_dir=$(pwd)
+    
+    # Change to strfry directory for queries
+    cd ~/.zen/strfry
+
+    local orphaned_count=0
+    while IFS= read -r -d '' file; do
+        local message_id=$(basename "$file" .json)
+        
+        # Extract author from JSON file
+        local author=$(jq -r '.author_pubkey' "$file" 2>/dev/null)
+        
+        if [[ -n "$message_id" && -n "$author" && "$author" != "null" ]]; then
+            # Check if the Nostr event still exists on the relay
+            local event_exists=$(./strfry scan "{\"ids\": [\"${message_id}\"], \"kinds\": [1], \"limit\": 1}" 2>/dev/null | jq -r 'select(.kind == 1) | .id' | head -n 1)
+            
+            if [[ -z "$event_exists" ]]; then
+                echo "🗑️  Removing orphaned ad: ${message_id} (event not found on relay)"
+                   # Remove the orphaned ad file
+                rm "$file"
+                ((orphaned_count++))
+            fi
+        fi
+    done < <(find "$current_dir/ads" -type f -name "*.json" -print0)
+
+    # Return to original directory
+    cd "$current_dir"
+
+    if [[ $orphaned_count -gt 0 ]]; then
+        echo "✅ Cleaned up $orphaned_count orphaned advertisements"
+    else
+        echo "✅ No orphaned advertisements found"
+    fi
 }
 
 setup_umap_identity() {
