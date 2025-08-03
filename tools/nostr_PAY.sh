@@ -109,10 +109,15 @@ get_payment_details() {
     # Get destination public key
     while true; do
         read -p "Enter destination public key: " dest_pubkey
-        if [[ -n "$dest_pubkey" ]] && [[ ${#dest_pubkey} -eq 43 ]]; then
-            break
+        if [[ -n "$dest_pubkey" ]]; then
+            # Test the public key with g1_to_ipfs.py
+            if ${MY_PATH}/g1_to_ipfs.py "$dest_pubkey" >/dev/null 2>&1; then
+                break
+            else
+                echo "Please enter a valid G1 public key"
+            fi
         else
-            echo "Please enter a valid public key (43 characters)"
+            echo "Please enter a valid public key"
         fi
     done
     
@@ -138,9 +143,15 @@ validate_parameters() {
         exit 1
     fi
     
-    # Validate destination public key
-    if [[ -z "$dest_pubkey" ]] || [[ ${#dest_pubkey} -gt 100 ]]; then
-        echo "ERROR: Invalid destination public key '$dest_pubkey'"
+    # Validate destination public key using g1_to_ipfs.py
+    if [[ -z "$dest_pubkey" ]]; then
+        echo "ERROR: Empty destination public key"
+        exit 1
+    fi
+    
+    # Test the public key with g1_to_ipfs.py
+    if ! ${MY_PATH}/g1_to_ipfs.py "$dest_pubkey" >/dev/null 2>&1; then
+        echo "ERROR: Invalid G1 public key '$dest_pubkey'"
         exit 1
     fi
     
