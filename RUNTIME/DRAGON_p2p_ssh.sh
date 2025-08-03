@@ -110,6 +110,15 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     ## FOLLOW EVERY NOSTR CARD
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
     ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}" 2>/dev/null
+
+    ## FOLLOW EVERY ACTIVE UMAP NODE
+    if [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__ ]]; then
+        umaphex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*/*/*/HEX 2>/dev/null))
+        if [[ ${#umaphex[@]} -gt 0 ]]; then
+            echo "Following ${#umaphex[@]} active UMAP nodes"
+            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${umaphex[@]}" 2>/dev/null
+        fi
+    fi
 fi
 ##################################################################################
 
