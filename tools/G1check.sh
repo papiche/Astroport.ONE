@@ -24,6 +24,7 @@ BACKUP_DIR="$HOME/.zen/tmp"
 CACHE_COINS_LIMIT=7
 BACKUP_AGE_DAYS=1
 CACHE_TTL_HOURS=24  # Cache TTL in hours
+CACHE_FRESH_MINUTES=15  # Cache considered fresh for 15 minutes
 BMAS_CACHE_TTL_HOURS=6  # BMAS server cache TTL in hours
 
 # Logging function
@@ -60,7 +61,7 @@ validate_balance() {
     return 1
 }
 
-# Check if file is within TTL
+# Check if file is within TTL (in hours)
 is_file_fresh() {
     local file_path="$1"
     local ttl_hours="$2"
@@ -79,6 +80,25 @@ is_file_fresh() {
     return 1
 }
 
+# Check if file is within TTL (in minutes)
+is_file_fresh_minutes() {
+    local file_path="$1"
+    local ttl_minutes="$2"
+    
+    if [[ ! -s "$file_path" ]]; then
+        return 1
+    fi
+    
+    local file_age=$(stat -c %Y "$file_path" 2>/dev/null || echo 0)
+    local current_time=$(date +%s)
+    local age_minutes=$(( (current_time - file_age) / 60 ))
+    
+    if [[ $age_minutes -lt $ttl_minutes ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # Get cached balance if fresh and valid
 get_cached_balance() {
     local cache_file="$1"
@@ -87,6 +107,24 @@ get_cached_balance() {
         local cached_value=$(cat "$cache_file" 2>/dev/null)
         if validate_balance "$cached_value"; then
             log "Using fresh cached balance: $cached_value"
+            echo "$cached_value"
+            return 0
+        else
+            log "Cached value is invalid, removing corrupted cache"
+            rm -f "$cache_file"
+        fi
+    fi
+    return 1
+}
+
+# Get cached balance for background refresh logic
+get_cached_balance_for_refresh() {
+    local cache_file="$1"
+    
+    # If file exists and is valid, return it regardless of age
+    if [[ -s "$cache_file" ]]; then
+        local cached_value=$(cat "$cache_file" 2>/dev/null)
+        if validate_balance "$cached_value"; then
             echo "$cached_value"
             return 0
         else
@@ -179,11 +217,66 @@ fi
 mkdir -p "$CACHE_DIR"
 COINSFILE="$CACHE_DIR/${G1PUB}.COINS"
 
-# First, try to get fresh cached balance
-cached_balance=$(get_cached_balance "$COINSFILE")
-if [[ $? -eq 0 ]]; then
-    output_result "$cached_balance" "$IS_ZEN"
-    exit 0
+# First, try to get fresh cached balance (within 15 minutes)
+if is_file_fresh_minutes "$COINSFILE" "$CACHE_FRESH_MINUTES"; then
+    cached_balance=$(get_cached_balance_for_refresh "$COINSFILE")
+    if [[ $? -eq 0 ]]; then
+        log "Using fresh cached balance: $cached_balance"
+        output_result "$cached_balance" "$IS_ZEN"
+        exit 0
+    fi
+fi
+
+# If cache is older than 15 minutes but still valid, return it immediately
+# and trigger background refresh
+if is_file_fresh_minutes "$COINSFILE" "$CACHE_FRESH_MINUTES"; then
+    # Cache is still fresh (less than 15 minutes), return it
+    cached_balance=$(get_cached_balance_for_refresh "$COINSFILE")
+    if [[ $? -eq 0 ]]; then
+        log "Using cached balance (fresh): $cached_balance"
+        output_result "$cached_balance" "$IS_ZEN"
+        exit 0
+    fi
+else
+    # Cache is older than 15 minutes, check if we have a valid cached value
+    cached_balance=$(get_cached_balance_for_refresh "$COINSFILE")
+    if [[ $? -eq 0 ]]; then
+        log "Using cached balance (stale, will refresh in background): $cached_balance"
+        
+        # Trigger background refresh (completely detached to avoid any stdout interference)
+        (
+            # Background process to refresh cache
+            # All output redirected to avoid any interference with main process stdout
+            exec 1>/dev/null 2>/dev/null
+            
+            # Small delay to ensure main process has finished
+            sleep 1
+            
+            # Get BMAS server
+            BMAS_SERVER_BG=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
+            
+            # Try to get fresh balance
+            if [[ -n "$BMAS_SERVER_BG" ]]; then
+                balance_bg=$(silkaj --json --endpoint "$BMAS_SERVER_BG" money balance "$G1PUB" 2>/dev/null | jq -r '.balances.total')
+            else
+                balance_bg=$(silkaj --json money balance "$G1PUB" 2>/dev/null | jq -r '.balances.total')
+            fi
+            
+            # Convert centimes to full Ğ1 units
+            if [[ "$balance_bg" != "" && "$balance_bg" != "null" ]]; then
+                balance_bg=$(echo "scale=2; $balance_bg / 100" | bc -l)
+                if validate_balance "$balance_bg"; then
+                    echo "$balance_bg" > "$COINSFILE"
+                    create_backup "$G1PUB" "$balance_bg"
+                    # Log to a separate file to avoid any interference
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Background refresh completed for $G1PUB: $balance_bg" >> "$HOME/.zen/tmp/g1check_background.log" 2>/dev/null
+                fi
+            fi
+        ) >/dev/null 2>&1 &
+        
+        output_result "$cached_balance" "$IS_ZEN"
+        exit 0
+    fi
 fi
 
 # Function to get BMAS server using duniter_getnode.sh with TTL check

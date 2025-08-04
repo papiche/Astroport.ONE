@@ -1,0 +1,103 @@
+flowchart TD
+    %% ----- SUBGRAPHS FOR ORGANIZATION -----
+    subgraph "External World & Inputs"
+        A[OpenCollective]
+        B[User's Certified Ğ1 Wallet]
+    end
+
+    subgraph "Parent Cooperative"
+        C[MADEINZEN.SOCIETY]
+    end
+
+    subgraph "Operational Cooperative: CopyLaRadio"
+        D[UPLANETNAME.G1<br/><i>Ğ1 Reserve</i>]
+        E[UPLANETNAME<br/><i>Services Wallet & Cash-Flow</i>]
+        F[UPLANETNAME.SOCIETY<br/><i>Social Capital Wallet</i>]
+    end
+
+    subgraph "Actors & Beneficiaries"
+        G[Captain]
+        H[Shipowner]
+        I[("Made In ZION<br/><i>Forest Purchases</i>")]
+        M[G1FabLab<br/><i>R&D / Maintenance</i>]
+    end
+
+    subgraph "User Wallets"
+        J[MULTIPASS<br/><i>Utility</i>]
+        K[ZenCard<br/><i>Investment</i>]
+        L[UPassport<br/><i>Governance</i>]
+    end
+
+    %% ----- PROCESSES -----
+    P1{ZEN.ECONOMY.sh<br/><i>Rent Collection</i>}
+    P2{NOSTRCARD.refresh.sh<br/><i>Likes Management</i>}
+    P3{Surplus Distribution}
+
+    %% ----- FLOWS -----
+    %% 1. Tenant Flow (Soft Blue)
+    A -- "Rent Payment" --> E
+    E -- "First TX (Service)" --> J
+    J -- "Rent deducted by script" --> P1
+
+    %% 2. Member Flow (Soft Green)
+    A -- "Purchase of Shares" --> F
+    F -- "Transfers Shares (50/540 Ẑ)" --> K
+    B -- "First TX (Proof of Humanity)" --> K
+    K -- "Manual Recharge<br/>(member's decision)" --> J
+
+    %% 3. Pioneer Flow (Lavender)
+    C -- "Transfers NEẐ Tokens" --> L
+
+    %% 4. Internal Economic Flow & Compensation (Salmon)
+    P1 -- "Collects Rent" --> G
+    G -- "Pays PAF_Node (Daily)" --> H
+    G -- "Keeps 2x PAF_Node<br/>(Compensation)" --> G
+    G -- "Collected Surplus (>3x PAF)" --> P3
+    P3 -- "1/3 Treasury / Cash Flow" --> E
+    P3 -- "1/3 R&D & Maintenance" --> M
+    P3 -- "1/3 Impact / Forest Purchases" --> I
+
+    %% 5. Peer-to-Peer Flow (Peach)
+    J_A[MULTIPASS User A] -- "+1 Ẑen / like" --> J_B[MULTIPASS User B]
+    P2 -.-> J_A
+    P2 -.-> J_B
+
+    %% ----- STYLING -----
+    style A fill:#6B8EFF,stroke:#333,stroke-width:1.5px,color:white
+    style B fill:#6B8EFF,stroke:#333,stroke-width:1.5px,color:white
+    style C fill:#A78BFA,stroke:#333,stroke-width:1.5px
+    style D fill:#F0ABFC,stroke:#333,stroke-width:1.5px
+    style E fill:#F0ABFC,stroke:#333,stroke-width:1.5px
+    style F fill:#F0ABFC,stroke:#333,stroke-width:1.5px
+    style G fill:#F9A8D4,stroke:#333,stroke-width:1.5px
+    style H fill:#F9A8D4,stroke:#333,stroke-width:1.5px
+    style I fill:#86EFAC,stroke:#333,stroke-width:1.5px
+    style M fill:#86EFAC,stroke:#333,stroke-width:1.5px
+    style J fill:#93C5FD,stroke:#333,stroke-width:1.5px
+    style K fill:#5EEAD4,stroke:#333,stroke-width:1.5px
+    style L fill:#C4B5FD,stroke:#333,stroke-width:1.5px
+    style P1 fill:#FCA5A5,stroke:#333,stroke-width:1.5px
+    style P2 fill:#FCD34D,stroke:#333,stroke-width:1.5px
+    style P3 fill:#FCA5A5,stroke:#333,stroke-width:1.5px
+
+    %% Link colors
+    linkStyle 0 stroke:#3B82F6,stroke-width:2px
+    linkStyle 1 stroke:#3B82F6,stroke-width:2px
+    linkStyle 2 stroke:#3B82F6,stroke-width:2px
+
+    linkStyle 3 stroke:#10B981,stroke-width:2px
+    linkStyle 4 stroke:#10B981,stroke-width:2px
+    linkStyle 5 stroke:#10B981,stroke-width:2px
+    linkStyle 6 stroke:#10B981,stroke-width:2px
+
+    linkStyle 7 stroke:#8B5CF6,stroke-width:2px
+
+    linkStyle 8 stroke:#EC4899,stroke-width:2px
+    linkStyle 9 stroke:#EC4899,stroke-width:2px
+    linkStyle 10 stroke:#EC4899,stroke-width:2px
+    linkStyle 11 stroke:#EC4899,stroke-width:2px
+    linkStyle 12 stroke:#EC4899,stroke-width:2px
+    linkStyle 13 stroke:#EC4899,stroke-width:2px
+    linkStyle 14 stroke:#EC4899,stroke-width:2px
+
+    linkStyle 15 stroke:#F59E0B,stroke-width:2px

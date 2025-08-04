@@ -100,6 +100,8 @@ For those who want to dive deeper into the nuts and bolts of our system.
 *   **[🏗️ ARCHITECTURE.md](ARCHITECTURE.md)**: A complete technical overview of the system, data flows, and economic models.
 *   **[📖 DOCUMENTATION.md](DOCUMENTATION.md)**: Our central documentation hub for all components.
 *   **[GitBook Guide](https://astroport-1.gitbook.io/astroport.one/)**: User-friendly documentation and tutorials.
+*   **[📋 Le Livre Blanc Astroport.ONE](BOOKS/Le%20Livre%20Blanc%20Astroport.ONE%20_%20De%20la%20Souveraineté%20Numérique%20à%20la%20Régénération%20Écologique.md)**: The comprehensive white paper detailing our vision from digital sovereignty to ecological regeneration (French).
+*   **[🌍 UPlanet: Votre Guide pour Entrer dans le Nouveau Monde](BOOKS/UPlanet%20_%20Votre%20Guide%20pour%20Entrer%20dans%20le%20Nouveau%20Monde.md)**: Your complete guide to entering the UPlanet ecosystem (French).
 
 ---
 
