@@ -103,10 +103,13 @@ OUTPUT_DIR="$HOME/.zen/game/nostr/${email}"
 
 echo ./strfry scan '{"authors": ["'$hex'"]}'
 cd ~/.zen/strfry
-./strfry scan '{"authors": ["'$hex'"]}' 2> /dev/null > "${OUTPUT_DIR}/nostr_export.json"
+# Export NOSTR events and format as proper JSON array
+echo "[" > "${OUTPUT_DIR}/nostr_export.json"
+./strfry scan '{"authors": ["'$hex'"]}' 2> /dev/null | sed 's/^/,/' | sed '1s/^,//' >> "${OUTPUT_DIR}/nostr_export.json"
+echo "]" >> "${OUTPUT_DIR}/nostr_export.json"
 cd - > /dev/null 2>&1
 
-COUNT=$(wc -l < "${OUTPUT_DIR}/nostr_export.json")
+COUNT=$(grep -c '^{' "${OUTPUT_DIR}/nostr_export.json" 2>/dev/null || echo "0")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
 NOSTRIFS=$(ipfs add -rwq "${OUTPUT_DIR}"/* | tail -n 1) ## ADD ALL FILES IN OUTPUT_DIR
 ipfs pin rm ${NOSTRIFS}
