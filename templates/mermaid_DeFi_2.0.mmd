@@ -1,0 +1,65 @@
+flowchart TD
+    %% ----- SUBGRAPHS -----
+    subgraph "Monde Extérieur & Entrées"
+        A[Compte en Banque]
+    end
+
+    subgraph "Projet DeFi Central"
+        E[PROJET.DEFI<br/><i>Wallet Central</i>]
+        C[PROJET.DEFI.DAO<br/><i>Émission des COINS</i>]
+    end
+
+    subgraph "Infrastructure Externe"
+        H[Cloud Centralisé<br/><i>ex: AWS, Google</i>]
+    end
+
+    subgraph "Investisseurs"
+        L[UPassport<br/><i>Détenteurs de COINS</i>]
+        I[("Actifs Financiers<br/><i>Bourse, Or, Crypto</i>")]
+    end
+
+    subgraph "Utilisateurs / Clients"
+        J[MULTIPASS]
+    end
+
+    %% ----- PROCESSES -----
+    P1{Script de Paiement}
+    P3{Distribution du Rendement}
+
+    %% ----- FLOWS -----
+    %% Flux de paiement du client
+    A -- "Paiement en Euros" --> E
+    E -- "Délivre Accès" --> J
+    J -- "Paiement Abonnement" --> P1
+    P1 -- "Verse Revenus" --> E
+
+    %% Flux des dépenses
+    E -- "Paie Frais de Location" --> H
+
+    %% Flux des investisseurs et du rendement
+    C -- "Vente initiale de COINS" --> L
+    E -- "Verse Surplus / Bénéfices" --> P3
+    P3 -- "Distribue Rendement (en € ou stablecoin)<br/>au prorata des COINS" --> L
+    L -- "Investissent leur rendement" --> I
+
+
+    %% ----- STYLING -----
+    style A fill:#A8DADC,stroke:#1D3557,stroke-width:2px
+    style H fill:#F1FAEE,stroke:#1D3557,stroke-width:2px
+    style E fill:#457B9D,stroke:#1D3557,stroke-width:2px,color:white
+    style C fill:#457B9D,stroke:#1D3557,stroke-width:2px,color:white
+    style J fill:#A8DADC,stroke:#1D3557,stroke-width:2px
+    style L fill:#E63946,stroke:#1D3557,stroke-width:2px,color:white
+    style I fill:#F1FAEE,stroke:#1D3557,stroke-width:2px
+    style P1 fill:#A8DADC,stroke:#1D3557,stroke-width:1.5px
+    style P3 fill:#E63946,stroke:#1D3557,stroke-width:1.5px,color:white
+
+    linkStyle 0 stroke:#457B9D,stroke-width:2px
+    linkStyle 1 stroke:#457B9D,stroke-width:2px
+    linkStyle 2 stroke:#457B9D,stroke-width:2px
+    linkStyle 3 stroke:#457B9D,stroke-width:2px
+    linkStyle 4 stroke:#1D3557,stroke-width:2px
+    linkStyle 5 stroke:#E63946,stroke-width:2px
+    linkStyle 6 stroke:#E63946,stroke-width:2px
+    linkStyle 7 stroke:#E63946,stroke-width:2px
+    linkStyle 8 stroke:#E63946,stroke-width:2px
