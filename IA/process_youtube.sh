@@ -15,6 +15,8 @@
 # - Upload automatique vers IPFS
 # - Limitations de durée (3h max)
 ########################################################################
+# Source my.sh to get all necessary constants and functions
+source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 
 DEBUG=0
 if [[ "$1" == "--debug" ]]; then
