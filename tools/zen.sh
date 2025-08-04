@@ -228,6 +228,26 @@ select_wallet() {
     echo "$selected_wallet"
 }
 
+# Function to check if primal transaction comes from UPLANETG1PUB
+check_primal_source() {
+    local pubkey="$1"
+    local primal_source=""
+    
+    # Get primal transaction source
+    primal_source=$(silkaj money primal "$pubkey" 2>/dev/null | grep "comes from:" | cut -d ':' -f 2 | xargs)
+    
+    if [[ -n "$primal_source" ]]; then
+        # Check if it comes from UPLANETG1PUB
+        if [[ "$primal_source" == "$UPLANETG1PUB" ]]; then
+            echo "UPLANET"
+        else
+            echo "EXTERNAL"
+        fi
+    else
+        echo "NONE"
+    fi
+}
+
 # Function to get user status details
 get_user_status() {
     local user_email="$1"
@@ -626,6 +646,345 @@ handle_services() {
     fi
 }
 
+# Function to handle wallet analysis and advanced features
+handle_wallet_analysis() {
+    echo -e "\n${CYAN}🔍 WALLET DETAILS & ANALYSIS${NC}"
+    echo -e "${YELLOW}============================${NC}"
+    echo -e "${GREEN}Advanced wallet analysis and reporting features.${NC}"
+    
+    # List available wallets for analysis
+    echo -e "\n${BLUE}📋 AVAILABLE WALLETS FOR ANALYSIS:${NC}"
+    
+    # MULTIPASS wallets
+    if [[ -d ~/.zen/game/nostr ]]; then
+        account_names=($(ls ~/.zen/game/nostr/*@*.*/G1PUBNOSTR 2>/dev/null | rev | cut -d '/' -f 2 | rev))
+        if [[ ${#account_names[@]} -gt 0 ]]; then
+            echo -e "\n${CYAN}MULTIPASS WALLETS:${NC}"
+            for i in "${!account_names[@]}"; do
+                echo -e "  ${GREEN}$((i+1)))${NC} ${account_names[i]}"
+            done
+        fi
+    fi
+    
+    # ZenCard wallets
+    if [[ -d ~/.zen/game/players ]]; then
+        player_dirs=($(ls ~/.zen/game/players/*@*.*/.g1pub 2>/dev/null | rev | cut -d '/' -f 2 | rev))
+        if [[ ${#player_dirs[@]} -gt 0 ]]; then
+            echo -e "\n${CYAN}ZENCARD WALLETS:${NC}"
+            for i in "${!player_dirs[@]}"; do
+                echo -e "  ${GREEN}$((i+1+${#account_names[@]}))${NC} ${player_dirs[i]}"
+            done
+        fi
+    fi
+    
+    # System wallets
+    echo -e "\n${CYAN}SYSTEM WALLETS:${NC}"
+    echo -e "  ${GREEN}$((1+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME.G1 (Ğ1 Reserve)"
+    echo -e "  ${GREEN}$((2+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME (Services & Cash-Flow)"
+    echo -e "  ${GREEN}$((3+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME.SOCIETY (Social Capital)"
+    
+    # Get wallet selection
+    echo -e "\n${YELLOW}Select wallet to analyze (1-$((3+${#account_names[@]}+${#player_dirs[@]}))):${NC}"
+    read -p "Enter number: " wallet_choice
+    
+    # Determine selected wallet
+    local selected_wallet=""
+    local wallet_type=""
+    local pubkey=""
+    
+    if [[ "$wallet_choice" -le "${#account_names[@]}" ]]; then
+        # MULTIPASS wallet
+        selected_wallet="${account_names[$((wallet_choice-1))]}"
+        wallet_type="MULTIPASS"
+        pubkey=$(cat ~/.zen/game/nostr/${selected_wallet}/G1PUBNOSTR 2>/dev/null)
+    elif [[ "$wallet_choice" -le $((${#account_names[@]}+${#player_dirs[@]})) ]]; then
+        # ZenCard wallet
+        selected_wallet="${player_dirs[$((wallet_choice-1-${#account_names[@]}))]}"
+        wallet_type="ZenCard"
+        pubkey=$(cat ~/.zen/game/players/${selected_wallet}/.g1pub 2>/dev/null)
+    elif [[ "$wallet_choice" -eq $((1+${#account_names[@]}+${#player_dirs[@]})) ]]; then
+        # UPLANETNAME.G1
+        selected_wallet="UPLANETNAME.G1"
+        wallet_type="SYSTEM"
+        pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_G1" | cut -d ' ' -f 2 2>/dev/null)
+    elif [[ "$wallet_choice" -eq $((2+${#account_names[@]}+${#player_dirs[@]})) ]]; then
+        # UPLANETNAME
+        selected_wallet="UPLANETNAME"
+        wallet_type="SYSTEM"
+        pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETG1PUB" | cut -d ' ' -f 2 2>/dev/null)
+    elif [[ "$wallet_choice" -eq $((3+${#account_names[@]}+${#player_dirs[@]})) ]]; then
+        # UPLANETNAME.SOCIETY
+        selected_wallet="UPLANETNAME.SOCIETY"
+        wallet_type="SYSTEM"
+        pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" | cut -d ' ' -f 2 2>/dev/null)
+    else
+        echo -e "${RED}Invalid selection.${NC}"
+        exit 1
+    fi
+    
+    if [[ -z "$pubkey" ]]; then
+        echo -e "${RED}Could not retrieve public key for selected wallet.${NC}"
+        exit 1
+    fi
+    
+    # Show analysis menu
+    show_analysis_menu "$selected_wallet" "$wallet_type" "$pubkey"
+}
+
+# Function to show analysis menu for a specific wallet
+show_analysis_menu() {
+    local wallet_name="$1"
+    local wallet_type="$2"
+    local pubkey="$3"
+    
+    echo -e "\n${CYAN}🔍 ANALYSIS MENU - $wallet_type: $wallet_name${NC}"
+    echo -e "${YELLOW}===============================================${NC}"
+    echo -e "${GREEN}Public Key: ${CYAN}$pubkey${NC}"
+    
+    # Get current balance
+    ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+    balance=$(cat ~/.zen/tmp/coucou/${pubkey}.COINS 2>/dev/null)
+    if [[ -z "$balance" || "$balance" == "null" ]]; then
+        balance="0"
+    fi
+    
+    # Calculate Ẑen for non-G1 wallets
+    if [[ "$wallet_type" != "UPLANETNAME.G1" ]]; then
+        if (( $(echo "$balance > 1" | bc -l) )); then
+            ZEN=$(echo "($balance - 1) * 10" | bc | cut -d '.' -f 1)
+        else
+            ZEN="0"
+        fi
+        echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC} (${CYAN}$ZEN Ẑen${NC})"
+    else
+        echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC}"
+    fi
+    
+    echo -e "\n${BLUE}ANALYSIS OPTIONS:${NC}"
+    echo -e "  1. 📊 View Transaction History"
+    echo -e "  2. 🔗 View Primal Chain Analysis"
+    echo -e "  3. 📈 Generate Accounting Report"
+    echo -e "  4. 🔍 Search Primal Chain"
+    echo -e "  5. 📋 Export History to CSV"
+    echo -e "  6. 🔙 Back to Main Menu"
+    
+    read -p "Select option (1-6): " analysis_choice
+    
+    case "$analysis_choice" in
+        1)
+            show_transaction_history "$pubkey" "$wallet_name"
+            ;;
+        2)
+            show_primal_chain "$pubkey" "$wallet_name"
+            ;;
+        3)
+            generate_accounting_report "$pubkey" "$wallet_name"
+            ;;
+        4)
+            search_primal_chain "$pubkey" "$wallet_name"
+            ;;
+        5)
+            export_history_csv "$pubkey" "$wallet_name"
+            ;;
+        6)
+            echo -e "${GREEN}Returning to main menu...${NC}"
+            main "$@"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection. Please choose 1-6.${NC}"
+            show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
+            ;;
+    esac
+}
+
+# Function to show transaction history
+show_transaction_history() {
+    local pubkey="$1"
+    local wallet_name="$2"
+    
+    echo -e "\n${CYAN}📊 TRANSACTION HISTORY - $wallet_name${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    # Show recent transactions
+    echo -e "${GREEN}Recent transactions:${NC}"
+    silkaj money history "$pubkey" | head -20
+    
+    echo -e "\n${YELLOW}Options:${NC}"
+    echo -e "  1. View full history"
+    echo -e "  2. View with UIDs"
+    echo -e "  3. View with full public keys"
+    echo -e "  4. Back to analysis menu"
+    
+    read -p "Select option (1-4): " history_choice
+    
+    case "$history_choice" in
+        1)
+            silkaj money history "$pubkey"
+            ;;
+        2)
+            silkaj money history --uids "$pubkey"
+            ;;
+        3)
+            silkaj money history --full-pubkey "$pubkey"
+            ;;
+        4)
+            show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection.${NC}"
+            ;;
+    esac
+}
+
+# Function to show primal chain analysis
+show_primal_chain() {
+    local pubkey="$1"
+    local wallet_name="$2"
+    
+    echo -e "\n${CYAN}🔗 PRIMAL CHAIN ANALYSIS - $wallet_name${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    # Show primal transaction source
+    echo -e "${GREEN}Primal transaction source:${NC}"
+    silkaj money primal "$pubkey"
+    
+    echo -e "\n${YELLOW}Options:${NC}"
+    echo -e "  1. Follow primal chain (recursive)"
+    echo -e "  2. Follow primal chain (limited to 10)"
+    echo -e "  3. Back to analysis menu"
+    
+    read -p "Select option (1-3): " primal_choice
+    
+    case "$primal_choice" in
+        1)
+            silkaj money primal --chain "$pubkey"
+            ;;
+        2)
+            silkaj money primal --chain --limit 10 "$pubkey"
+            ;;
+        3)
+            show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection.${NC}"
+            ;;
+    esac
+}
+
+# Function to generate accounting report
+generate_accounting_report() {
+    local pubkey="$1"
+    local wallet_name="$2"
+    
+    echo -e "\n${CYAN}📈 ACCOUNTING REPORT - $wallet_name${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    echo -e "${GREEN}Generate accounting report for:${NC}"
+    echo -e "  1. Current year"
+    echo -e "  2. Previous year"
+    echo -e "  3. Current month"
+    echo -e "  4. Custom period"
+    echo -e "  5. Back to analysis menu"
+    
+    read -p "Select option (1-5): " report_choice
+    
+    case "$report_choice" in
+        1)
+            current_year=$(date +%Y)
+            echo -e "${GREEN}Generating report for year $current_year...${NC}"
+            silkaj money history --compta "$current_year" "$pubkey"
+            ;;
+        2)
+            prev_year=$(( $(date +%Y) - 1 ))
+            echo -e "${GREEN}Generating report for year $prev_year...${NC}"
+            silkaj money history --compta "$prev_year" "$pubkey"
+            ;;
+        3)
+            current_month=$(date +%m-%Y)
+            echo -e "${GREEN}Generating report for month $current_month...${NC}"
+            silkaj money history --compta "$current_month" "$pubkey"
+            ;;
+        4)
+            read -p "Enter period (e.g., '2024' for year, '03-2024' for month): " custom_period
+            echo -e "${GREEN}Generating report for period $custom_period...${NC}"
+            silkaj money history --compta "$custom_period" "$pubkey"
+            ;;
+        5)
+            show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection.${NC}"
+            ;;
+    esac
+}
+
+# Function to search primal chain
+search_primal_chain() {
+    local pubkey="$1"
+    local wallet_name="$2"
+    
+    echo -e "\n${CYAN}🔍 PRIMAL CHAIN SEARCH - $wallet_name${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    echo -e "${GREEN}Search options:${NC}"
+    echo -e "  1. Follow chain until UPLANET source"
+    echo -e "  2. Follow chain with custom limit"
+    echo -e "  3. Back to analysis menu"
+    
+    read -p "Select option (1-3): " search_choice
+    
+    case "$search_choice" in
+        1)
+            echo -e "${GREEN}Following primal chain until UPLANET source...${NC}"
+            silkaj money primal --chain --limit 50 "$pubkey" | grep -i "uplanet\|$UPLANETG1PUB" || echo "No UPLANET source found in chain"
+            ;;
+        2)
+            read -p "Enter limit (1-100): " limit
+            if [[ "$limit" =~ ^[0-9]+$ ]] && [[ "$limit" -ge 1 ]] && [[ "$limit" -le 100 ]]; then
+                silkaj money primal --chain --limit "$limit" "$pubkey"
+            else
+                echo -e "${RED}Invalid limit. Please enter a number between 1 and 100.${NC}"
+            fi
+            ;;
+        3)
+            show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection.${NC}"
+            ;;
+    esac
+}
+
+# Function to export history to CSV
+export_history_csv() {
+    local pubkey="$1"
+    local wallet_name="$2"
+    
+    echo -e "\n${CYAN}📋 EXPORT HISTORY TO CSV - $wallet_name${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    # Create export directory
+    export_dir="$HOME/.zen/exports"
+    mkdir -p "$export_dir"
+    
+    # Generate filename
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    filename="${export_dir}/${wallet_name}_history_${timestamp}.csv"
+    
+    echo -e "${GREEN}Exporting transaction history to: ${CYAN}$filename${NC}"
+    
+    # Export to CSV
+    silkaj money history --csv-file "$filename" "$pubkey"
+    
+    if [[ -f "$filename" ]]; then
+        echo -e "${GREEN}✅ Export successful!${NC}"
+        echo -e "${GREEN}File: ${CYAN}$filename${NC}"
+        echo -e "${GREEN}Size: ${CYAN}$(du -h "$filename" | cut -f1)${NC}"
+    else
+        echo -e "${RED}❌ Export failed.${NC}"
+    fi
+}
+
 # Function to handle UPLANETNAME.SOCIETY operations
 handle_social_capital() {
     echo -e "\n${CYAN}⭐ UPLANETNAME.SOCIETY - SOCIAL CAPITAL WALLET${NC}"
@@ -803,10 +1162,21 @@ display_economic_dashboard() {
                     ZEN="0"
                 fi
                 
-                # Check primal transaction
+                # Check primal transaction and its source
                 primal_info=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
                 if [[ -n "$primal_info" ]]; then
-                    primal_status="${GREEN}✓ Primal TX${NC}"
+                    primal_source=$(check_primal_source "$g1pub")
+                    case "$primal_source" in
+                        "UPLANET")
+                            primal_status="${GREEN}✓ Primal TX (UPLANET)${NC}"
+                            ;;
+                        "EXTERNAL")
+                            primal_status="${YELLOW}✓ Primal TX (EXTERNAL)${NC}"
+                            ;;
+                        *)
+                            primal_status="${GREEN}✓ Primal TX${NC}"
+                            ;;
+                    esac
                 else
                     primal_status="${RED}✗ No Primal TX${NC}"
                 fi
@@ -836,10 +1206,21 @@ display_economic_dashboard() {
                     ZEN="0"
                 fi
                 
-                # Check primal transaction
+                # Check primal transaction and its source
                 primal_info=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
                 if [[ -n "$primal_info" ]]; then
-                    primal_status="${GREEN}✓ Primal TX${NC}"
+                    primal_source=$(check_primal_source "$g1pub")
+                    case "$primal_source" in
+                        "UPLANET")
+                            primal_status="${GREEN}✓ Primal TX (UPLANET)${NC}"
+                            ;;
+                        "EXTERNAL")
+                            primal_status="${YELLOW}✓ Primal TX (EXTERNAL)${NC}"
+                            ;;
+                        *)
+                            primal_status="${GREEN}✓ Primal TX${NC}"
+                            ;;
+                    esac
                 else
                     primal_status="${RED}✗ No Primal TX${NC}"
                 fi
@@ -894,8 +1275,14 @@ main() {
     echo -e "   • Investment operations → ZenCard wallet management"
     echo ""
     
+    echo -e "${BLUE}4. 🔍 WALLET DETAILS & ANALYSIS${NC} - Advanced Features"
+    echo -e "   • View transaction history and primal chain"
+    echo -e "   • Generate accounting reports"
+    echo -e "   • Analyze wallet activities"
+    echo ""
+    
     # Get user selection
-    read -p "Select wallet type (1-3): " choice
+    read -p "Select wallet type (1-4): " choice
     
     case "$choice" in
         1)
@@ -907,8 +1294,11 @@ main() {
         3)
             handle_social_capital
             ;;
+        4)
+            handle_wallet_analysis
+            ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1, 2, or 3.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, or 4.${NC}"
             exit 1
             ;;
     esac

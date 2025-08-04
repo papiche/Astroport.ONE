@@ -249,6 +249,21 @@ cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
 echo "COPYing blacklist.txt $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) + amisOfAmis.txt $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l)"
 cp -f "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/
 cp -f "${HOME}/.zen/strfry/amisOfAmis.txt" ~/.zen/tmp/$IPFSNODEID/
+
+# Merge swarm blacklist and amisOfAmis with local files
+echo "Merging swarm blacklist and amisOfAmis files..."
+cat ~/.zen/tmp/swarm/*/blacklist.txt 2>/dev/null | sort -u >> "$HOME/.zen/strfry/blacklist.txt"
+cat ~/.zen/tmp/swarm/*/amisOfAmis.txt 2>/dev/null | sort -u >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+
+# Remove duplicates from merged files
+sort -u "$HOME/.zen/strfry/blacklist.txt" -o "$HOME/.zen/strfry/blacklist.txt"
+sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.txt"
+
+echo "Updated blacklist.txt: $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) entries"
+echo "Updated amisOfAmis.txt: $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l) entries"
+
+
+
 ########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
     # Mailjet - UPlanet ORIGIN - edit config to change provider
