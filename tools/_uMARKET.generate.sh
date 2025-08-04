@@ -188,46 +188,46 @@ mkdir -p "$SOURCE_DIR/public"
 # Compiler toutes les annonces en un seul fichier JSON
 log_message "🔄 Compilation des annonces en market.json..."
 
-# Créer un tableau JSON avec toutes les annonces
-echo '{"ads": [' > "$SOURCE_DIR/public/market.json"
-
-# Ajouter chaque annonce
-FIRST=true
+# Créer un tableau JSON avec toutes les annonces de manière plus sûre
 VALID_ADS=0
+TEMP_JSON_FILES=()
 
-# Utiliser une approche plus simple avec for
+# Collecter et valider tous les fichiers JSON valides
 for file in "$SOURCE_DIR/ads"/*.json; do
     # Vérifier que le fichier existe (éviter les globs vides)
     if [[ ! -f "$file" ]]; then
         continue
     fi
     
-    # Validation JSON (toujours active pour éviter les fichiers malformés)
-    if ! validate_json_file "$file" 2>/dev/null; then
+    # Validation JSON stricte
+    if validate_json_file "$file" 2>/dev/null; then
+        # Vérifier que le JSON est un objet valide (pas un tableau)
+        if jq -e 'type == "object"' "$file" >/dev/null 2>&1; then
+            TEMP_JSON_FILES+=("$file")
+            ((VALID_ADS++))
+            log_message "✅ Validated: $(basename "$file")"
+        else
+            log_message "⚠️  Ignoring non-object JSON file: $file"
+        fi
+    else
         log_message "⚠️  Ignoring invalid JSON file: $file"
-        continue
-    fi
-    
-    if [ "$FIRST" = true ]; then
-        FIRST=false
-    else
-        echo "," >> "$SOURCE_DIR/public/market.json"
-    fi
-    
-    # Ajouter le fichier JSON de manière sécurisée
-    if [[ -f "$file" ]]; then
-        cat "$file" >> "$SOURCE_DIR/public/market.json" || {
-            log_message "⚠️  Failed to process file: $file"
-            continue
-        }
-        ((VALID_ADS++))
-        log_message "✅ Processed: $(basename "$file")"
-    else
-        log_message "⚠️  File not found: $file"
     fi
 done
 
-echo "]}" >> "$SOURCE_DIR/public/market.json"
+# Créer le market.json avec jq pour garantir la validité
+if [[ ${#TEMP_JSON_FILES[@]} -gt 0 ]]; then
+    # Utiliser jq pour combiner tous les fichiers JSON de manière sûre
+    jq -s '{ads: .}' "${TEMP_JSON_FILES[@]}" > "$SOURCE_DIR/public/market.json" || {
+        log_message "❌ Failed to create market.json with jq"
+        # Fallback: créer un market.json vide mais valide
+        echo '{"ads": []}' > "$SOURCE_DIR/public/market.json"
+        VALID_ADS=0
+    }
+else
+    # Créer un market.json vide mais valide si aucun fichier valide
+    echo '{"ads": []}' > "$SOURCE_DIR/public/market.json"
+    log_message "⚠️  No valid JSON files found, creating empty market.json"
+fi
 
 log_message "✅ market.json généré avec $VALID_ADS annonces valides."
 

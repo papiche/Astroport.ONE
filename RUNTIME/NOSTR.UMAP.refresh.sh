@@ -137,7 +137,7 @@ process_umap_friends() {
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
 
     local friends=($($MY_PATH/../tools/nostr_get_N1.sh $hex 2>/dev/null))
-    local SINCE=$(date -d "24 hours ago" +%s)
+    local SINCE=$(date -d "48 hours ago" +%s)
     local WEEK_AGO=$(date -d "7 days ago" +%s)
     local MONTH_AGO=$(date -d "28 days ago" +%s)
 
@@ -146,6 +146,9 @@ process_umap_friends() {
     # Reset global arrays for this UMAP
     TAGS=()
     ACTIVE_FRIENDS=()
+
+    # First, get all market messages from friends in the last 48h
+    process_market_messages_from_friends "${friends[@]}" "$UMAPPATH" "$SINCE"
 
     for ami in ${friends[@]}; do
         process_friend_messages "$ami" "$UMAPPATH" "$SINCE" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
@@ -272,6 +275,35 @@ send_reminder_message() {
     echo "📬 Sent reminder to $profile" 2>/dev/null >> ${UMAPPATH}/NOSTR_messages
 }
 
+process_market_messages_from_friends() {
+    local friends=("$@")
+    local UMAPPATH=${friends[-2]}
+    local SINCE=${friends[-1]}
+    unset "friends[-1]" "friends[-2]"
+
+    # Create authors JSON array for strfry query
+    local authors_json=$(printf '"%s",' "${friends[@]}"); authors_json="[${authors_json%,}]"
+
+    # Get all market messages from friends in the last 48h
+    ./strfry scan "{
+      \"kinds\": [1],
+      \"authors\": ${authors_json},
+      \"since\": ${SINCE},
+      \"limit\": 500
+    }" 2>/dev/null | jq -c 'select(.kind == 1 and (.content | contains("#market"))) | {id: .id, content: .content, created_at: .created_at, author: .pubkey}' | while read -r message; do
+        local content=$(echo "$message" | jq -r .content)
+        local message_id=$(echo "$message" | jq -r .id)
+        local author_hex=$(echo "$message" | jq -r .author)
+        local created_at=$(echo "$message" | jq -r .created_at)
+
+        # Check if the ad file already exists to avoid reprocessing
+        if [[ ! -f "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json" ]]; then
+            process_market_images "$content" "$UMAPPATH"
+            create_market_ad "$content" "${message_id}" "$UMAPPATH" "$author_hex" "$created_at"
+        fi
+    done
+}
+
 process_recent_messages() {
     local ami=$1
     local UMAPPATH=$2
@@ -280,6 +312,7 @@ process_recent_messages() {
     # Récupère le profil source
     local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
 
+    # Get all messages from the last 48 hours
     ./strfry scan '{
       "kinds": [1],
       "authors": ["'"$ami"'"],
@@ -297,15 +330,15 @@ process_recent_messages() {
         echo "> $content" >> ${UMAPPATH}/NOSTR_messages
         echo "" >> ${UMAPPATH}/NOSTR_messages
 
-        # (Optional) Process #market images, ensuring they are not processed multiple times
+        # Process #market messages, ensuring they are not processed multiple times
         if [[ "$content" == *"#market"* ]]; then
             # Check if the ad file already exists to avoid reprocessing
             if [[ ! -f "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json" ]]; then
-            process_market_images "$content" "$UMAPPATH"
-            create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
+                process_market_images "$content" "$UMAPPATH"
+                create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
             fi
         fi
-    done | head -n 50 # limit to 50 messages a day from each friend
+    done | head -n 100 # limit to 100 messages from 48h from each friend
 }
 
 process_market_images() {
@@ -380,6 +413,14 @@ create_market_ad() {
     fi
 
     # Create JSON advertisement with proper escaping
+    # Handle empty local_images array properly
+    local local_images_json
+    if [[ ${#local_images[@]} -eq 0 ]]; then
+        local_images_json="[]"
+    else
+        local_images_json=$(printf '%s\n' "${local_images[@]}" | jq -R . | jq -s .)
+    fi
+
     local ad_json=$(cat << EOF
 {
     "id": "${message_id}",
@@ -391,7 +432,7 @@ create_market_ad() {
         "lat": ${LAT},
         "lon": ${LON}
     },
-    "local_images": $(printf '%s\n' "${local_images[@]}" | jq -R . | jq -s .),
+    "local_images": ${local_images_json},
     "umap_id": "UMAP_${UPLANETG1PUB:0:8}_${LAT}_${LON}",
     "generated_at": $(date +%s)
 }
@@ -404,7 +445,15 @@ EOF
         echo "✅ Created market ad: ${message_id}"
     else
         echo "❌ Invalid JSON generated for ad: ${message_id}" >&2
-        return 1
+        # Try to fix common JSON issues
+        local fixed_json=$(echo "$ad_json" | sed 's/,$//' | sed 's/,$//' | sed 's/,$//')
+        if echo "$fixed_json" | jq . >/dev/null 2>&1; then
+            echo "$fixed_json" > "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json"
+            echo "✅ Fixed and created market ad: ${message_id}"
+        else
+            echo "❌ Could not fix JSON for ad: ${message_id}" >&2
+            return 1
+        fi
     fi
 }
 
@@ -491,7 +540,7 @@ cleanup_orphaned_ads() {
         return
     fi
 
-    echo "🔍 Checking for orphaned market advertisements..."
+    echo "🔍 Checking for orphaned and malformed market advertisements..."
 
     # Store current directory
     local current_dir=$(pwd)
@@ -500,8 +549,18 @@ cleanup_orphaned_ads() {
     cd ~/.zen/strfry
 
     local orphaned_count=0
+    local malformed_count=0
+    
     while IFS= read -r -d '' file; do
         local message_id=$(basename "$file" .json)
+        
+        # First check if the JSON file is valid
+        if ! jq . "$file" >/dev/null 2>&1; then
+            echo "🗑️  Removing malformed JSON ad: ${message_id}"
+            rm "$file"
+            ((malformed_count++))
+            continue
+        fi
         
         # Extract author from JSON file
         local author=$(jq -r '.author_pubkey' "$file" 2>/dev/null)
@@ -512,7 +571,7 @@ cleanup_orphaned_ads() {
             
             if [[ -z "$event_exists" ]]; then
                 echo "🗑️  Removing orphaned ad: ${message_id} ($author)"
-                   # Remove the orphaned ad file
+                # Remove the orphaned ad file
                 rm "$file"
                 ((orphaned_count++))
             fi
@@ -522,10 +581,10 @@ cleanup_orphaned_ads() {
     # Return to original directory
     cd "$current_dir"
 
-    if [[ $orphaned_count -gt 0 ]]; then
-        echo "✅ Cleaned up $orphaned_count orphaned advertisements"
+    if [[ $orphaned_count -gt 0 || $malformed_count -gt 0 ]]; then
+        echo "✅ Cleaned up $orphaned_count orphaned and $malformed_count malformed advertisements"
     else
-        echo "✅ No orphaned advertisements found"
+        echo "✅ No orphaned or malformed advertisements found"
     fi
 }
 
@@ -627,7 +686,7 @@ create_aggregate_journal() {
 
     # 2. Get recently liked message IDs from friends
     local authors_json=$(printf '"%s",' "${unique_friends[@]}"); authors_json="[${authors_json%,}]"
-    local SINCE=$(date -d "24 hours ago" +%s)
+    local SINCE=$(date -d "48 hours ago" +%s)
     cd ~/.zen/strfry
     local liked_event_ids=($(./strfry scan "{\"kinds\": [7], \"authors\": ${authors_json}, \"since\": ${SINCE}}" 2>/dev/null | jq -r '.tags[] | select(.[0] == "e") | .[1]' | sort -u))
     cd - >/dev/null
