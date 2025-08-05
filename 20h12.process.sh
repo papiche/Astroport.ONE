@@ -253,7 +253,7 @@ ${MY_PATH}/RUNTIME/NODE.refresh.sh
 #####################################
 
 ########################################################################
-## ANALYSE FINALE ET RAPPORT
+## ANALYSE FINALE ET RAPPORT - Optimisée avec cache
 ########################################################################
 end=`date +%s`
 dur=`expr $end - $start`
@@ -273,26 +273,64 @@ UPLANET: ${UPLANETG1PUB}
 STATUS: SUCCESS
 #######################################################################" >> /tmp/20h12.log
 
-echo "📊 Lancement de l'analyse de la ♥️BOX - Captain ${CAPTAINEMAIL}..."
+echo "📊 Mise à jour de l'analyse de la ♥️BOX - Captain ${CAPTAINEMAIL}..."
+
+# Utiliser le système de cache optimisé
 ANALYSIS_JSON=$(${MY_PATH}/tools/heartbox_analysis.sh export --json)
 
 if [[ -n "$ANALYSIS_JSON" ]]; then
+    # Extraire les capacités depuis l'analyse JSON
     ZENCARD_SLOTS=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.zencard_slots' 2>/dev/null)
     NOSTR_SLOTS=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.nostr_slots' 2>/dev/null)
     AVAILABLE_SPACE_GB=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.available_space_gb' 2>/dev/null)
+    
+    # Extraire les statuts des services
+    IPFS_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.ipfs.active' 2>/dev/null)
+    ASTROPORT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.astroport.active' 2>/dev/null)
+    NEXTCLOUD_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.nextcloud.active' 2>/dev/null)
+    NOSTR_RELAY_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.nostr_relay.active' 2>/dev/null)
+    USPOT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.uspot.active' 2>/dev/null)
+    G1BILLET_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.g1billet.active' 2>/dev/null)
 
     echo "Capacités UPlanet détectées:"
     echo "  ZenCard Slots (128GB/slot): $ZENCARD_SLOTS"
     echo "  NOSTR/MULTIPASS Slots (10GB/slot): $NOSTR_SLOTS"
     echo "  Espace disque disponible (GB): $AVAILABLE_SPACE_GB"
+    
+    echo "Statuts des services:"
+    echo "  IPFS: $IPFS_ACTIVE"
+    echo "  Astroport: $ASTROPORT_ACTIVE"
+    echo "  NextCloud: $NEXTCLOUD_ACTIVE"
+    echo "  NOSTR Relay: $NOSTR_RELAY_ACTIVE"
+    echo "  uSPOT: $USPOT_ACTIVE"
+    echo "  G1Billet: $G1BILLET_ACTIVE"
 
-    # Save analysis JSON to ~/.zen/tmp/$IPFSNODEID/
+    # Sauvegarder l'analyse JSON dans le cache
     mkdir -p ~/.zen/tmp/$IPFSNODEID
     ANALYSIS_FILE=~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json
     echo "$ANALYSIS_JSON" > "$ANALYSIS_FILE"
     echo "✅ Analyse JSON sauvegardée dans $ANALYSIS_FILE"
+    
+    # Mettre à jour 12345.json avec les données fraîches
+    if [[ -f "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" ]]; then
+        # Extraire capacities et services de l'analyse fraîche
+        local capacities=$(echo "$ANALYSIS_JSON" | jq -r '.capacities' 2>/dev/null)
+        local services=$(echo "$ANALYSIS_JSON" | jq -r '.services' 2>/dev/null)
+        
+        # Mettre à jour 12345.json
+        jq --argjson capacities "$capacities" --argjson services "$services" \
+           '.capacities = $capacities | .services = $services' \
+           "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" > "$HOME/.zen/tmp/${IPFSNODEID}/12345.json.tmp" 2>/dev/null
+        
+        if [[ $? -eq 0 ]]; then
+            mv "$HOME/.zen/tmp/${IPFSNODEID}/12345.json.tmp" "$HOME/.zen/tmp/${IPFSNODEID}/12345.json"
+            echo "✅ 12345.json mis à jour avec les données fraîches"
+        fi
+    fi
 else
     echo "❌ Erreur: Impossible d'obtenir les données d'analyse JSON de heartbox_analysis.sh."
+    echo "🔄 Tentative de mise à jour du cache..."
+    ${MY_PATH}/tools/heartbox_analysis.sh update
 fi
 
 end=`date +%s`

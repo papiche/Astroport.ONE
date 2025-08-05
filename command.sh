@@ -128,32 +128,40 @@ check_dependencies() {
     fi
 }
 
-# Fonction pour vérifier le statut réel des services
+# Fonction pour vérifier le statut réel des services - Optimisée avec cache
 check_services_status() {
     local services_status=()
     local nextcloud_available=false
     
-    # Vérifier si le fichier 12345.json existe et est récent (< 24 heures)
-    local status_file="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
-    local use_json_status=false
+    # Utiliser le cache heartbox_analysis.sh pour une détection rapide et cohérente
+    local heartbox_cache="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
+    local use_cache=false
     
-    if [[ -f "$status_file" ]]; then
-        local file_age=$(( $(date +%s) - $(stat -c %Y "$status_file" 2>/dev/null || echo 0) ))
-        if [[ $file_age -lt 86400 ]]; then  # 24 heures = 86400 secondes
-            use_json_status=true
+    if [[ -f "$heartbox_cache" ]]; then
+        local cache_age=$(( $(date +%s) - $(stat -c %Y "$heartbox_cache" 2>/dev/null || echo 0) ))
+        if [[ $cache_age -lt 300 ]]; then  # 5 minutes = 300 secondes
+            use_cache=true
         fi
     fi
     
-    if [[ "$use_json_status" == "true" ]]; then
-        # Lire les statuts depuis le fichier JSON récent
-        local ipfs_active=$(jq -r '.services.ipfs.active // false' "$status_file" 2>/dev/null)
-        local astroport_active=$(jq -r '.services.astroport.active // false' "$status_file" 2>/dev/null)
-        local uspot_active=$(jq -r '.services.uspot.active // false' "$status_file" 2>/dev/null)
-        local nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$status_file" 2>/dev/null)
-        local nostr_relay_active=$(jq -r '.services.nostr_relay.active // false' "$status_file" 2>/dev/null)
-        local g1billet_active=$(jq -r '.services.g1billet.active // false' "$status_file" 2>/dev/null)
+    if [[ "$use_cache" == "true" ]]; then
+        # Lire les statuts depuis le cache heartbox_analysis
+        local ipfs_active=$(jq -r '.services.ipfs.active // false' "$heartbox_cache" 2>/dev/null)
+        local astroport_active=$(jq -r '.services.astroport.active // false' "$heartbox_cache" 2>/dev/null)
+        local uspot_active=$(jq -r '.services.uspot.active // false' "$heartbox_cache" 2>/dev/null)
+        local nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null)
+        local nostr_relay_active=$(jq -r '.services.nostr_relay.active // false' "$heartbox_cache" 2>/dev/null)
+        local g1billet_active=$(jq -r '.services.g1billet.active // false' "$heartbox_cache" 2>/dev/null)
+        
+        # Récupérer les détails IPFS depuis le cache
+        ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0' "$heartbox_cache" 2>/dev/null)
+        
+        # Récupérer les détails uSPOT et NOSTR depuis le cache
+        uspot_proc=""
+        nostr_proc=""
+        
     else
-        # Vérification en temps réel
+        # Vérification en temps réel (fallback)
         local ipfs_active=false
         local astroport_active=false
         local uspot_active=false
@@ -200,6 +208,11 @@ check_services_status() {
         # G1Billet - vérifier le processus
         if pgrep -f "G1BILLETS" >/dev/null; then
             g1billet_active=true
+        fi
+        
+        # Mettre à jour le cache en arrière-plan si nécessaire
+        if [[ ! -f "$heartbox_cache" ]] || [[ $cache_age -ge 300 ]]; then
+            (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
         fi
     fi
     

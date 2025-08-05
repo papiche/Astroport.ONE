@@ -403,14 +403,28 @@ while true; do
     [[ -z $ZCARD ]] && ZCARD=4
     BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
 
-    ## READ HEARTBOX ANALYSIS
+    ## READ HEARTBOX ANALYSIS - Fast cache-based approach
     ANALYSIS_FILE=~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
+    
+    # Check if cache is fresh (< 12h)
     if [[ -s ${ANALYSIS_FILE} ]]; then
-        TEMP_CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities')
-        TEMP_SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services')
-        CAPACITIES=${TEMP_CAPACITIES:-"{\"reserved_captain_slots\":8}"}
-        SERVICES=${TEMP_SERVICES:-"{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"}
+        local cache_age=$(( $(date +%s) - $(stat -c %Y "${ANALYSIS_FILE}" 2>/dev/null || echo 0) ))
+        if [[ $cache_age -lt 43200 ]]; then  # 12h = 43200 seconds
+            TEMP_CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities' 2>/dev/null)
+            TEMP_SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services' 2>/dev/null)
+            CAPACITIES=${TEMP_CAPACITIES:-"{\"reserved_captain_slots\":8}"}
+            SERVICES=${TEMP_SERVICES:-"{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"}
+        else
+            # Cache expired, update it in background
+            (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
+            # Use fallback data for immediate response
+            CAPACITIES="{\"reserved_captain_slots\":8}"
+            SERVICES="{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
+        fi
     else
+        # No cache file, create it in background
+        (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
+        # Use fallback data for immediate response
         CAPACITIES="{\"reserved_captain_slots\":8}"
         SERVICES="{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
     fi
