@@ -272,7 +272,7 @@ should_refresh() {
     # else
     #     echo "UWORLD CID: $last_uworld"
     # fi
-
+    log_metric "no_refresh" "${$last_udrive}" "${player}"
     return 1
 }
 
