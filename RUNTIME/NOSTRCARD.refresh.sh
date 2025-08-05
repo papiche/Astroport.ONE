@@ -746,6 +746,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
                 ## GET LANG FROM NOSTR CARD
                 LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+                source ${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr 2>/dev/null
                 [[ -z $LANG ]] && LANG="fr"
                 #####################################
                 ## CREATE ASTRONAUTE TW ZEN CARD

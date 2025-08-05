@@ -208,6 +208,7 @@ while true; do
 
     case $CMD in
         "salt")
+            # TWISTY API PLAYGROUND - FORMATION BASH : http protocol + nc twisted API (NIVEAU 1)
             exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
         ;;
 

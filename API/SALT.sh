@@ -7,11 +7,17 @@
 ################################################################################
 ## API: SALT & PEPPER - PRIVATE KEY AUTH
 ################################################################################
+### DESACTIVATED
+exit 0 ## REMOVE IF YOU WANT TO PLAY WITH SOME API OF YOUR OWN
+################################################################################
+
+
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 
 start=`date +%s`
+
 
 PORT=$1 THAT=$2 AND=$3 THIS=$4  APPNAME=$5 WHAT=$6 OBJ=$7 VAL=$8 MOATS=$9
 SALT=$THAT
