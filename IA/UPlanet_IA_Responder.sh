@@ -147,11 +147,13 @@ if [[ "$message_text" =~ \#all ]]; then TAGS[all]=true; fi
 # Detect memory slot once
 memory_slot=0
 for i in {1..12}; do
-    if [[ "$message_text" =~ \#${i}\b ]]; then
+    if [[ "$message_text" =~ \#${i}([[:space:]]|$) ]]; then
         memory_slot=$i
+        echo "DEBUG: Detected memory slot $i in message: $message_text" >&2
         break
     fi
 done
+echo "DEBUG: Final memory_slot value: $memory_slot" >&2
 
 # Optimisation: Set user_id once
 user_id="$KNAME"
@@ -162,8 +164,13 @@ check_memory_slot_access() {
     local user_id="$1"
     local slot="$2"
     
+    echo "DEBUG: Checking memory access for user: $user_id, slot: $slot" >&2
+    
     # Slot 0 is always accessible
-    [[ "$slot" == "0" ]] && return 0
+    if [[ "$slot" == "0" ]]; then
+        echo "DEBUG: Slot 0 is always accessible" >&2
+        return 0
+    fi
     
     # For slots 1-12, check if user is in ~/.zen/game/players/
     if [[ "$slot" -ge 1 && "$slot" -le 12 ]]; then
