@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Check if debug mode is enabled
 DEBUG_MODE = os.environ.get('DEBUG', '0') == '1'
-DEBUG_MODE = 1 ## TODO Remove
+DEBUG_MODE = '1'
 
 def debug_print(*args, **kwargs):
     """Print debug messages only if DEBUG mode is enabled"""
@@ -32,6 +32,70 @@ def clean_json_string(json_str):
         json_str = json_str[1:-1]
     
     return json_str
+
+def fix_json_control_characters(json_str):
+    """Fix control characters in JSON that cause parsing errors"""
+    import json
+    
+    try:
+        # First, try to parse as-is to see if it's already valid
+        json.loads(json_str)
+        return json_str
+    except json.JSONDecodeError:
+        pass
+    
+    # If parsing fails, try to fix control characters
+    # This is a more aggressive approach to handle malformed JSON
+    try:
+        # Use Python's json module to properly escape the string
+        # We'll parse it as a Python dict first, then re-serialize
+        import ast
+        # Try to safely evaluate the JSON-like string as a Python literal
+        parsed = ast.literal_eval(json_str)
+        # Re-serialize with proper JSON formatting
+        return json.dumps(parsed, ensure_ascii=False)
+    except (ValueError, SyntaxError):
+        pass
+    
+    # If all else fails, try manual character replacement
+    # Replace common problematic control characters
+    fixed = json_str
+    # Replace newlines with escaped newlines
+    fixed = fixed.replace('\n', '\\n')
+    fixed = fixed.replace('\r', '\\r')
+    fixed = fixed.replace('\t', '\\t')
+    
+    return fixed
+
+def fix_json_content_newlines(json_str):
+    """Specifically fix newlines in JSON content fields"""
+    import json
+    import re
+    
+    try:
+        # Try to parse as-is first
+        json.loads(json_str)
+        return json_str
+    except json.JSONDecodeError:
+        pass
+    
+    # Look for content field and fix newlines within it
+    # This regex looks for "content":"... and fixes newlines in the content
+    pattern = r'("content"\s*:\s*")([^"]*(?:\\.[^"]*)*)(")'
+    
+    def fix_content_newlines(match):
+        prefix = match.group(1)
+        content = match.group(2)
+        suffix = match.group(3)
+        
+        # Replace newlines with escaped newlines in content
+        fixed_content = content.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+        
+        return prefix + fixed_content + suffix
+    
+    fixed_json = re.sub(pattern, fix_content_newlines, json_str)
+    
+    return fixed_json
 
 def fix_common_json_issues(json_str):
     """Fix common JSON formatting issues"""
@@ -71,6 +135,22 @@ def parse_event_json(json_input):
             return json.loads(fixed_json)
         except json.JSONDecodeError as e2:
             debug_print(f"DEBUG: Fixed JSON parsing also failed: {e2}")
+        
+        # Try to fix control characters
+        try:
+            control_fixed_json = fix_json_control_characters(cleaned_json)
+            debug_print(f"DEBUG: Attempting to parse control-character-fixed JSON")
+            return json.loads(control_fixed_json)
+        except json.JSONDecodeError as e3:
+            debug_print(f"DEBUG: Control character fix also failed: {e3}")
+        
+        # Try to fix content newlines specifically
+        try:
+            newline_fixed_json = fix_json_content_newlines(cleaned_json)
+            debug_print(f"DEBUG: Attempting to parse newline-fixed JSON")
+            return json.loads(newline_fixed_json)
+        except json.JSONDecodeError as e4:
+            debug_print(f"DEBUG: Newline fix also failed: {e4}")
         
         # If that fails, try to read from file
         if os.path.isfile(json_input):
