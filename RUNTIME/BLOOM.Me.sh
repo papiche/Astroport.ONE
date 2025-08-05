@@ -115,7 +115,7 @@ echo $MYASTROPORT
 ## IS IPFSNODEID FORGING NEW UPLANET
 echo "UPlanet ORIGIN /// $MYhostname WARPING /// ${UPNAME} ACTIVATION"
 #######################################################################
-if [[ ${#ZENSTATIONS[@]} -ge 4 ]]; then
+if [[ ${#ZENSTATIONS[@]} -ge 9 ]]; then ## NEED 9 ASTROPORT FROM THE SAME REGION (~100 km) TO BLOOM
     [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
     # Prepare "new_straps.list" from WAN only
