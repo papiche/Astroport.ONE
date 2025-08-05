@@ -276,10 +276,19 @@ send_reminder_message() {
 }
 
 process_market_messages_from_friends() {
-    local friends=("$@")
-    local UMAPPATH=${friends[-2]}
-    local SINCE=${friends[-1]}
-    unset "friends[-1]" "friends[-2]"
+    local all_args=("$@")
+    local args_count=${#all_args[@]}
+    
+    # Extract the last two parameters (UMAPPATH and SINCE)
+    if [[ $args_count -ge 2 ]]; then
+        local SINCE=${all_args[$((args_count-1))]}
+        local UMAPPATH=${all_args[$((args_count-2))]}
+        # Get all friends (all arguments except the last two)
+        local friends=("${all_args[@]:0:$((args_count-2))}")
+    else
+        echo "Warning: Not enough parameters for process_market_messages_from_friends" >&2
+        return 1
+    fi
 
     # Create authors JSON array for strfry query
     local authors_json=$(printf '"%s",' "${friends[@]}"); authors_json="[${authors_json%,}]"
