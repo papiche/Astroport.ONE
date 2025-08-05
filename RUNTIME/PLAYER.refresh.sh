@@ -58,10 +58,48 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 
-    ### UPGRADE PLAYER for myos IPFS API ### DOUBLON WITH VISA.new (TO REMOVE)
-    mkdir -p ~/.zen/game/players/${PLAYER}/.ipfs # Prepare PLAYER datastructure
-    echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
-    ######## WORK IN PROGRESS #### myos integration
+    #########################################################
+    ######## ZEN ECONOMY INTEGRATION
+    #########################################################
+    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
+    [[ -z $BIRTHDATE ]] \
+        && BIRTHDATE="$TODATE" \
+        && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
+    ####################################################################
+    
+    if [[ -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
+        ## U SOCIETY MEMBER
+        UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY)
+        echo "U SOCIETY REGISTRATION : $UDATE"
+    else
+        ## EVERY 7 DAYS PAY CAPTAIN
+        TODATE_SECONDS=$(date -d "$TODATE" +%s)
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+        # Calculate the difference in days
+        DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+        [[ -z $NCARD ]] && NCARD=1
+        Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+        [[ -z $ZCARD ]] && ZCARD=4
+        Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
+        # Check if the difference is a multiple of 7
+        if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
+            if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 ]]; then
+                ## Pay ZCARD to CAPTAIN
+                echo "[7 DAYS CYCLE] $TODATE ZENCARD is paying $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
+                [[ ${PLAYER} != ${CAPTAINEMAIL} ]] \
+                    && ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null
+                ## RECHARGE MULTIPASS
+                g1dest=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Npaf" "${g1dest}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:4NCARD" 2>/dev/null
+            else
+                echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
+                $MY_PATH/../tools/mailjet.sh "${PLAYER}" "$COINS Ğ1" "ZEN Card is missing Ẑen..."
+                if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
+                    ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
+                fi
+            fi
+        fi
+    fi
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}
@@ -662,46 +700,6 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -z ${TW} ]] && TWLNK="/ipfs/${TW}" || TWLNK="/ipns/${ASTRONAUTENS}"
     echo "<meta http-equiv=\"refresh\" content=\"0; url='${TWLNK}'\" />${PLAYER}" \
                 > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
-
-    #########################################################
-    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
-    [[ -z $BIRTHDATE ]] \
-        && BIRTHDATE="$TODATE" \
-        && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
-    ####################################################################
-    
-    if [[ -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
-        ## U SOCIETY MEMBER
-        UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY)
-        echo "U SOCIETY REGISTRATION : $UDATE"
-    else
-        ## EVERY 7 DAYS PAY CAPTAIN
-        TODATE_SECONDS=$(date -d "$TODATE" +%s)
-        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
-        # Calculate the difference in days
-        DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
-        [[ -z $NCARD ]] && NCARD=1
-        Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-        [[ -z $ZCARD ]] && ZCARD=4
-        Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
-        # Check if the difference is a multiple of 7
-        if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
-            if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 ]]; then
-                ## Pay ZCARD to CAPTAIN
-                echo "[7 DAYS CYCLE] $TODATE ZENCARD is paying $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null
-                ## RECHARGE MULTIPASS
-                g1dest=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Npaf" "${g1dest}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:4NCARD" 2>/dev/null
-            else
-                echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
-                if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
-                    $MY_PATH/../tools/mailjet.sh "${PLAYER}" "UPLANET ZEN CARD UNPLUG ($COINS Ğ1)" "ZEN CARD UNPLUG..."
-                    ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
-                fi
-            fi
-        fi
-    fi
 
     #################################################
     ################### COPY DATA TO UP LEVEL GRIDS
