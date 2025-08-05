@@ -127,9 +127,10 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     fi
 
 else
-
-    rm -Rf ~/.zen/game/nostr/CAPTAIN 2>/dev/null
-
+    ## Get data from cache
+    CAPTAING1=$(cat ~/.zen/tmp/coucou/$CAPTAING1PUB.COINS)
+    CAPTAINZEN=$(echo "($CAPTAING1 - 1) * 10" | bc | cut -d '.' -f 1)
+    captainHEX=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/HEX)
 fi
 ##################################################
 
