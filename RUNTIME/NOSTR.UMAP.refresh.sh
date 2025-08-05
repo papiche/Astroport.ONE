@@ -32,10 +32,56 @@ ACTIVE_FRIENDS=()  # Global array for active friends
 TAGS=()            # Global array for tags
 LAT=""             # Global current latitude
 LON=""             # Global current longitude
+VERBOSE=false      # Verbosity flag
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [-v|--verbose] [-h|--help]"
+            echo "  -v, --verbose  Enable verbose output"
+            echo "  -h, --help     Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 ################################################################################
 # Utility Functions
 ################################################################################
+
+log() {
+    if [[ "$VERBOSE" == "true" ]]; then
+        echo "$1"
+    fi
+}
+
+log_always() {
+    echo "$1"
+}
+
+# Wrapper function for nostpy-cli to reduce verbosity
+send_nostr_event() {
+    local output
+    if [[ "$VERBOSE" == "true" ]]; then
+        nostpy-cli "$@"
+    else
+        output=$(nostpy-cli "$@" 2>&1)
+        # Only show errors or important messages
+        if [[ $? -ne 0 ]] || [[ "$output" =~ "ERROR" ]] || [[ "$output" =~ "WARNING" ]]; then
+            echo "$output" >&2
+        fi
+    fi
+}
 
 check_dependencies() {
     [[ ! -s $MY_PATH/../tools/my.sh ]] && echo "ERROR. Astroport.ONE is missing !!" && exit 1
@@ -230,12 +276,12 @@ handle_inactive_friend() {
 
     # echo "🚫 Removing inactive friend: nostr:$profile (no activity in 4 weeks)" >> ${UMAPPATH}/NOSTR_messages
     local GOODBYE_MSG="👋 nostr:$profile ! It seems you've been inactive for a while. I remove you from my GeoKey list, but you're welcome to reconnect anytime! #UPlanet #Community"
-    nostpy-cli send_event \
+    send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \
         -content "$GOODBYE_MSG" \
         -tags "[['p', '$ami']]" \
-        --relay "$myRELAY" 2>/dev/null
+        --relay "$myRELAY"
 }
 
 handle_active_friend_activity() {
@@ -266,7 +312,7 @@ send_reminder_message() {
     local NPRIV_HEX=$3
 
     local REMINDER_MSG="👋 nostr:$profile ! Haven't seen you around lately. How are you doing? Feel free to share your thoughts or updates! #UPlanet #Community"
-    nostpy-cli send_event \
+    send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \
         -content "$REMINDER_MSG" \
@@ -515,12 +561,12 @@ cleanup_old_documents() {
             if [[ -n "$author" && "$author" != "null" ]]; then
                 local notification="🛒 nostr:$author_profile votre annonce a été retirée après 6 mois. Vous pouvez la republier si elle est toujours d'actualité. #UPlanet #uMARKET #Community"
 
-                nostpy-cli send_event \
+                send_nostr_event send_event \
                     -privkey "$NPRIV_HEX" \
                     -kind 1 \
                     -content "$notification" \
                     -tags "[['p', '$author']]" \
-                    --relay "$myRELAY" 2>/dev/null
+                    --relay "$myRELAY"
             fi
 
             rm "$file"
@@ -549,7 +595,7 @@ cleanup_orphaned_ads() {
         return
     fi
 
-    echo "🔍 Checking for orphaned and malformed market advertisements..."
+    log "🔍 Checking for orphaned and malformed market advertisements..."
 
     # Store current directory
     local current_dir=$(pwd)
@@ -565,7 +611,7 @@ cleanup_orphaned_ads() {
         
         # First check if the JSON file is valid
         if ! jq . "$file" >/dev/null 2>&1; then
-            echo "🗑️  Removing malformed JSON ad: ${message_id}"
+            log "🗑️  Removing malformed JSON ad: ${message_id}"
             rm "$file"
             ((malformed_count++))
             continue
@@ -579,7 +625,7 @@ cleanup_orphaned_ads() {
             local event_exists=$(./strfry scan "{\"ids\": [\"${message_id}\"], \"kinds\": [1], \"limit\": 1}" 2>/dev/null | jq -r 'select(.kind == 1) | .id' | head -n 1)
             
             if [[ -z "$event_exists" ]]; then
-                echo "🗑️  Removing orphaned ad: ${message_id} ($author)"
+                log "🗑️  Removing orphaned ad: ${message_id} ($author)"
                 # Remove the orphaned ad file
                 rm "$file"
                 ((orphaned_count++))
@@ -591,9 +637,9 @@ cleanup_orphaned_ads() {
     cd "$current_dir"
 
     if [[ $orphaned_count -gt 0 || $malformed_count -gt 0 ]]; then
-        echo "✅ Cleaned up $orphaned_count orphaned and $malformed_count malformed advertisements"
+        log_always "✅ Cleaned up $orphaned_count orphaned and $malformed_count malformed advertisements"
     else
-        echo "✅ No orphaned or malformed advertisements found"
+        log "✅ No orphaned or malformed advertisements found"
     fi
 }
 
@@ -618,19 +664,19 @@ send_nostr_events() {
     local TAGS_JSON=$2
     local UMAPPATH=$3
 
-    nostpy-cli send_event \
+    send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
-        --relay "$myRELAY" 2>/dev/null
+        --relay "$myRELAY"
 
     if [[ $(cat ${UMAPPATH}/NOSTR_messages) != "" ]]; then
-        nostpy-cli send_event \
+        send_nostr_event send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$(cat ${UMAPPATH}/NOSTR_messages) $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY" 2>/dev/null
+            --relay "$myRELAY"
     fi
 }
 
@@ -662,7 +708,7 @@ create_aggregate_journal() {
     local geo_id=$2 # sector or region id like _45.4_1.2 or _45_1
     local like_threshold=$3
 
-    echo "Creating ${type} ${geo_id} Journal from recently liked messages (threshold: ${like_threshold} likes)"
+    log "Creating ${type} ${geo_id} Journal from recently liked messages (threshold: ${like_threshold} likes)"
 
     local geo_path find_pattern
     if [[ "$type" == "Sector" ]]; then
@@ -690,7 +736,7 @@ create_aggregate_journal() {
         all_friends+=(${umap_friends[@]})
     done
 
-    if [[ ${#all_friends[@]} -eq 0 ]]; then echo "No friends found for ${type} ${geo_id}."; rm -Rf "$geo_path"; return; fi
+    if [[ ${#all_friends[@]} -eq 0 ]]; then log "No friends found for ${type} ${geo_id}."; rm -Rf "$geo_path"; return; fi
     local unique_friends=($(echo "${all_friends[@]}" | tr ' ' '\n' | sort -u))
 
     # 2. Get recently liked message IDs from friends
@@ -700,8 +746,8 @@ create_aggregate_journal() {
     local liked_event_ids=($(./strfry scan "{\"kinds\": [7], \"authors\": ${authors_json}, \"since\": ${SINCE}}" 2>/dev/null | jq -r '.tags[] | select(.[0] == "e") | .[1]' | sort -u))
     cd - >/dev/null
 
-    if [[ ${#liked_event_ids[@]} -eq 0 ]]; then echo "No recently liked messages for ${type} ${geo_id}."; rm -Rf "$geo_path"; return; fi
-    echo "Found ${#liked_event_ids[@]} unique recently liked messages to process for ${type} ${geo_id}."
+    if [[ ${#liked_event_ids[@]} -eq 0 ]]; then log "No recently liked messages for ${type} ${geo_id}."; rm -Rf "$geo_path"; return; fi
+    log "Found ${#liked_event_ids[@]} unique recently liked messages to process for ${type} ${geo_id}."
 
     # 3. Process each liked message
     for msgid in "${liked_event_ids[@]}"; do
@@ -815,19 +861,19 @@ update_sector_nostr_profile() {
     local TAGS_JSON=$(printf '%s\n' "${STAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
-    nostpy-cli send_event \
+    send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
-        --relay "$myRELAY" 2>/dev/null
+        --relay "$myRELAY"
 
     if [[ -s $sectorpath/${IPFSNODEID: -12}.NOSTR_journal ]]; then
-        nostpy-cli send_event \
+        send_nostr_event send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$(cat $sectorpath/${IPFSNODEID: -12}.NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
-            --relay "$myRELAY" 2>/dev/null
+            --relay "$myRELAY"
     fi
 }
 
@@ -859,7 +905,7 @@ save_region_journal() {
 
     # Minimal IPFS publishing, can be expanded
     local REGROOT=$(ipfs add -rwHq "$regionpath"/* | tail -n 1)
-    echo "Published Region ${region} to IPFS: ${REGROOT}"
+    log "Published Region ${region} to IPFS: ${REGROOT}"
 
     # Publish to Nostr
     update_region_nostr_profile "$region" "$content" "$REGROOT"
@@ -892,19 +938,19 @@ update_region_nostr_profile() {
     TAGS_JSON="[$TAGS_JSON]"
 
     ## Confirm UMAP friendship
-    nostpy-cli send_event \
+    send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
         -kind 3 \
         -content "" \
         -tags "$TAGS_JSON" \
-        --relay "$myRELAY" 2>/dev/null
+        --relay "$myRELAY"
     
     ## Publish Report to NOSTR
-    nostpy-cli send_event \
+    send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \
     -content "$content $myIPFS/ipns/copylaradio.com" \
-        --relay "$myRELAY" 2>/dev/null
+        --relay "$myRELAY"
 }
 
 ################################################################################
