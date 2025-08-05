@@ -38,7 +38,7 @@ autres nodes et recevoir des abonnements sur son propre node.
 • Source de paiement :
   - Node Y Level : portefeuille du node (secret.dunikey)
   - Node standard : portefeuille du capitaine
-• Paiement quotidien = coût_mensuel / 28 jours
+• Paiement quotidien = coût_semaine / 7 jours
 • Solidarité UPlanet si fonds insuffisants
 
 🛠️ SERVICES DISPONIBLES

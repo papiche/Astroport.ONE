@@ -236,6 +236,100 @@ check_services_status() {
     echo "NEXTCLOUD_AVAILABLE:$nextcloud_available"
 }
 
+# Fonction pour gérer les paiements NOSTR
+handle_nostr_payment() {
+    print_section "PAIEMENT NOSTR"
+    
+    # Vérifier si des comptes NOSTR existent
+    nostr_accounts=($(ls ~/.zen/game/nostr/*@*.*/G1PUBNOSTR 2>/dev/null | rev | cut -d '/' -f 2 | rev))
+    
+    if [[ ${#nostr_accounts[@]} -eq 0 ]]; then
+        print_error "Aucun compte NOSTR trouvé."
+        echo ""
+        echo -e "${YELLOW}Pour créer un compte NOSTR:${NC}"
+        echo "  1. Utilisez l'interface web: http://127.0.0.1:54321/g1"
+        echo "  2. Ou utilisez l'option 'Créer une ZEN Card' dans le menu principal"
+        echo ""
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        return
+    fi
+    
+    print_info "Assistant de paiement NOSTR - Transfert de Ğ1 entre comptes"
+    echo ""
+    echo -e "${CYAN}Comptes NOSTR disponibles:${NC}"
+    
+    # Afficher les comptes disponibles
+    for i in "${!nostr_accounts[@]}"; do
+        account_name="${nostr_accounts[$i]}"
+        g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
+        balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
+        if [[ -z "$balance" || "$balance" == "null" ]]; then
+            balance="0"
+        fi
+        
+        echo -e "  ${BLUE}$((i+1)))${NC} ${WHITE}$account_name${NC}"
+        echo -e "      ${WHITE}💰 Balance: ${GREEN}$balance Ğ1${NC}"
+        echo -e "      ${WHITE}🔑 Public Key: ${CYAN}${g1pub:0:20}...${NC}"
+        echo ""
+    done
+    
+    echo -e "${YELLOW}Options:${NC}"
+    echo "  1. 🔄 Lancer l'assistant de paiement interactif"
+    echo "  2. 📊 Voir les soldes détaillés"
+    echo "  3. ⬅️  Retour au menu principal"
+    echo ""
+    
+    read -p "Votre choix: " payment_choice
+    
+    case $payment_choice in
+        1)
+            print_info "Lancement de l'assistant de paiement NOSTR..."
+            echo ""
+            # Lancer le script de paiement en mode interactif
+            if "${MY_PATH}/tools/nostr_PAY.sh"; then
+                print_success "Assistant de paiement terminé"
+            else
+                print_error "Erreur lors de l'exécution de l'assistant de paiement"
+            fi
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            ;;
+        2)
+            print_section "SOLDES DÉTAILLÉS"
+            echo -e "${WHITE}Comptes NOSTR et leurs soldes:${NC}"
+            echo ""
+            
+            total_balance=0
+            for account_name in "${nostr_accounts[@]}"; do
+                g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
+                balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
+                if [[ -z "$balance" || "$balance" == "null" ]]; then
+                    balance="0"
+                fi
+                
+                echo -e "${WHITE}📧 $account_name${NC}"
+                echo -e "  ${WHITE}💰 Balance: ${GREEN}$balance Ğ1${NC}"
+                echo -e "  ${WHITE}🔑 Public Key: ${CYAN}$g1pub${NC}"
+                echo ""
+                
+                # Ajouter au total
+                total_balance=$(echo "$total_balance + $balance" | bc -l 2>/dev/null || echo "$total_balance")
+            done
+            
+            echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+            echo -e "${WHITE}💰 Total de tous les comptes: ${GREEN}$total_balance Ğ1${NC}"
+            echo ""
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            ;;
+        3)
+            return
+            ;;
+        *)
+            print_error "Choix invalide"
+            sleep 1
+            ;;
+    esac
+}
+
 # Fonction pour afficher les services avec statut réel
 show_services_status() {
     echo -e "\033[0;36m  🔍 Vérification des services...\033[0m"
@@ -1583,6 +1677,7 @@ handle_extra_menu() {
     echo "2. ☁️  Installer NextCloud"
     echo "3. 🐳 Applications Docker"
     echo "4. 💫 Faire un vœu"
+    echo "5. 💰 Paiement NOSTR"
     echo "0. ⬅️  Retour"
     echo ""
     read -p "Votre choix: " extra_choice
@@ -1619,6 +1714,9 @@ handle_extra_menu() {
                 print_error "Aucune ZEN Card connectée. Connectez-vous d'abord."
                 read -p "Appuyez sur ENTRÉE pour continuer..."
             fi
+            ;;
+        5)
+            handle_nostr_payment
             ;;
         0)
             return

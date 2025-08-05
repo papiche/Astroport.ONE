@@ -125,15 +125,15 @@ show_node_details() {
     echo "🏠 Hostname: $hostname"
     echo "🌐 API: $uSPOT"
     echo "💰 PAF: $PAF Ẑ"
-    echo "🔑 MULTIPASS: $NCARD Ẑ/28 jours"
-    echo "💳 ZEN Card: $ZCARD Ẑ/28 jours"
+    echo "🔑 MULTIPASS: $NCARD Ẑ/semaine"
+    echo "💳 ZEN Card: $ZCARD Ẑ/semaine"
     echo "📊 Bilan: $BILAN Ẑ"
     echo "👨‍💼 Capitaine ZEN: $captainZEN Ẑ"
     echo "🖥️  Node ZEN: $NODEZEN Ẑ"
 
     # Coût total pour 1 slot (NCARD + ZCARD)
     local total_cost=$((NCARD + ZCARD))
-    echo "💸 Coût total abonnement: $total_cost Ẑ/28 jours"
+    echo "💸 Coût total abonnement: $total_cost Ẑ/semaine"
 
     # Services disponibles (fichiers x_*.sh)
     echo ""
@@ -188,7 +188,7 @@ subscribe_to_node() {
     echo "======================================="
     echo "🎯 Capitaine distant: $captain"
     echo "🌐 API: $uSPOT"
-    echo "💸 Coût: $total_cost Ẑ/28 jours"
+    echo "💸 Coût: $total_cost Ẑ/semaine"
 
     # Générer l'email d'inscription ## captainemail+target_node_id@emaildomain.tld
     local subscription_email=$(generate_subscription_email "$target_node_id")
@@ -234,7 +234,7 @@ subscribe_to_node() {
     echo "=========================="
     echo "📧 Email: $subscription_email"
     echo "🎯 Node: $target_node_id"
-    echo "💸 Coût: $total_cost Ẑ/28 jours"
+    echo "💸 Coût: $total_cost Ẑ/semaine"
     echo "💳 Paiement: $payment_source ($available_zen Ẑ disponibles)"
     echo ""
     echo "Tapez 'OUI' pour confirmer, ou ENTER pour annuler:"
