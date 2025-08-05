@@ -302,6 +302,12 @@ if [[ ${ISOK} == 0 ]]; then
 </body>
 </html>
 EOF
+
+    ## TODO REMOVE : monitor 
+    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
+
+
+
     exit 0
 fi
 
