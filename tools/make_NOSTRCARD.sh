@@ -301,7 +301,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ###############################################################################################
 
     ### PUBLISH MULTIPASS IPFS ####################################################################
-    NOSTRIPFS=$(ipfs --timeout 20s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+    NOSTRIPFS=$(ipfs --timeout 30s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
     ###############################################################################################
     ## ORIGIN or ẐEN's
