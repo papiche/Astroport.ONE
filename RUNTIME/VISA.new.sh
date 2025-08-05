@@ -607,7 +607,7 @@ cat ${ZINE} \
             -e "s~_SLON_~${SLON}~g" \
         > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "UPlanet ẐENCARD"
+$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "... ẐEN Card activated ..."
 
 ### SEND INITIAL G1 - IF failing PLAYER.refresh.sh will make TX again
 
