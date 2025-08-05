@@ -626,169 +626,26 @@ handle_first_time_onboarding() {
         return
     fi
     
-    # Étape 1: Création MULTIPASS via CLI
-    print_section "ÉTAPE 1: CRÉATION DU COMPTE MULTIPASS"
-    
-    echo -e "${CYAN}Nous allons créer votre compte MULTIPASS en ligne de commande.${NC}"
+    # Utiliser le script captain.sh pour l'embarquement
+    print_info "Lancement de l'assistant d'embarquement..."
     echo ""
     
-    # Récupérer les informations de géolocalisation
-    print_info "Récupération de votre localisation..."
-    GEO_INFO=$(curl -s ipinfo.io/json 2>/dev/null)
-    
-    local EMAIL LAT LON
-    read -p "📧 Email: " EMAIL
-    [[ -z "$EMAIL" ]] && { print_error "Email requis"; return; }
-    
-    # Géolocalisation automatique
-    if [[ -n "$GEO_INFO" ]]; then
-        AUTO_LAT=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f1 2>/dev/null)
-        AUTO_LON=$(echo "$GEO_INFO" | jq -r '.loc' | cut -d',' -f2 2>/dev/null)
+    if "${MY_PATH}/captain.sh"; then
+        print_success "Embarquement terminé avec succès!"
         
-        if [[ "$AUTO_LAT" != "null" && "$AUTO_LON" != "null" ]]; then
-            print_info "Localisation détectée: $AUTO_LAT, $AUTO_LON"
-            read -p "📍 Latitude [$AUTO_LAT]: " LAT
-            read -p "📍 Longitude [$AUTO_LON]: " LON
-            
-            [[ -z "$LAT" ]] && LAT="$AUTO_LAT"
-            [[ -z "$LON" ]] && LON="$AUTO_LON"
-        else
-            read -p "📍 Latitude: " LAT
-            read -p "📍 Longitude: " LON
+        # Mettre à jour les variables globales après l'embarquement
+        CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+        if [[ -n "$CURRENT" ]]; then
+            PLAYER="$CURRENT"
+            G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+            ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1 2>/dev/null)
         fi
     else
-        read -p "📍 Latitude: " LAT
-        read -p "📍 Longitude: " LON
-    fi
-    
-    # Valeurs par défaut
-    [[ -z "$LAT" ]] && LAT="0.00"
-    [[ -z "$LON" ]] && LON="0.00"
-    
-    print_info "Création de la MULTIPASS..."
-    if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
-        ## MAILJET SEND MULTIPASS
-        YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${EMAIL})
-        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "$YOUSER MULTIPASS"
-    else
-        print_error "Erreur lors de la création de la MULTIPASS"
-        read -p "Appuyez sur ENTRÉE pour retourner au menu."
-        return
-    fi
-    
-    print_success "MULTIPASS créée avec succès pour $EMAIL !"
-    echo ""
-    
-    # Vérifier que le compte MULTIPASS a bien été créé
-    local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
-    if [[ $multipass_count -eq 0 ]]; then
-        print_error "Aucun compte MULTIPASS trouvé. La création a échoué."
-        return
-    fi
-    
-    print_success "Compte MULTIPASS détecté!"
-    
-    # Étape 2: Création ZEN Card via CLI
-    print_section "ÉTAPE 2: CRÉATION DE LA ZEN CARD"
-    
-    echo -e "${CYAN}Nous allons utiliser les informations de votre compte MULTIPASS pour créer votre ZEN Card.${NC}"
-    echo ""
-    echo -e "${YELLOW}Informations récupérées de votre MULTIPASS:${NC}"
-    
-    # Récupérer les informations du compte MULTIPASS le plus récent
-    local latest_multipass=$(ls -t ~/.zen/game/nostr 2>/dev/null | grep "@" | head -n 1)
-    if [[ -z "$latest_multipass" ]]; then
-        print_error "Impossible de trouver le compte MULTIPASS"
-        return
-    fi
-    
-    local multipass_dir="$HOME/.zen/game/nostr/$latest_multipass"
-    local email="$latest_multipass"
-    local npub_file="$multipass_dir/NPUB"
-    local hex_file="$multipass_dir/HEX"
-    local gps_file="$multipass_dir/GPS"
-    local npub=""
-    local hex=""
-    local lat=""
-    local lon=""
-    
-    if [[ -f "$npub_file" ]]; then
-        npub=$(cat "$npub_file")
-        echo -e "  🔑 NPUB: ${GREEN}$npub${NC}"
-    fi
-    if [[ -f "$hex_file" ]]; then
-        hex=$(cat "$hex_file")
-        echo -e "  🟩 HEX: ${GREEN}$hex${NC}"
-    fi
-    if [[ -f "$gps_file" ]]; then
-        source "$gps_file"
-        lat=$LAT
-        lon=$LON
-        echo -e "  📍 Latitude: ${GREEN}$lat${NC}"
-        echo -e "  📍 Longitude: ${GREEN}$lon${NC}"
-    fi
-    echo -e "  📧 Email: ${GREEN}$email${NC}"
-    echo ""
-    echo -e "${CYAN}Vous pouvez maintenant créer votre ZEN Card avec ces informations.${NC}"
-    echo ""
-    read -p "Voulez-vous utiliser ces informations pour créer la ZEN Card ? (oui/non): " use_multipass_info
-    
-    if [[ "$use_multipass_info" != "oui" && "$use_multipass_info" != "o" && "$use_multipass_info" != "y" && "$use_multipass_info" != "yes" ]]; then
-        print_info "Création de la ZEN Card annulée"
-        return
-    fi
-    
-    # Créer la ZEN Card avec les informations du MULTIPASS
-    print_info "Création de la ZEN Card..."
-    
-    # Génération automatique des secrets
-    local ppass=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
-    local npass=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
-    
-    print_info "Secret 1 généré: $ppass"
-    print_info "Secret 2 généré: $npass"
-    
-    # Créer la ZEN Card
-    if "${MY_PATH}/RUNTIME/VISA.new.sh" "$ppass" "$npass" "$email" "UPlanet" "$SYSLANG" "$lat" "$lon" "$npub" "$hex"; then
-        local pseudo=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
-        rm -f ~/.zen/tmp/PSEUDO
-        
-        print_success "ZEN Card créée avec succès pour $pseudo!"
-        echo ""
-        
-        # Définir comme carte courante
-        PLAYER="$email"
-        G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
-        ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1)
-        
-        # Mettre à jour .current
-        rm -f ~/.zen/game/players/.current
-        ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
-        
-        print_success "Configuration terminée avec succès!"
-        echo ""
-        echo -e "${GREEN}🎉 Félicitations! Votre station est maintenant configurée:${NC}"
-        echo "  • Compte MULTIPASS: $latest_multipass"
-        echo "  • ZEN Card: $PLAYER"
-        echo "  • G1PUB: $G1PUB"
-        echo "  • IPNS: $myIPFS/ipns/$ASTRONAUTENS"
-        echo ""
-        echo -e "${CYAN}Vous pouvez maintenant utiliser toutes les fonctionnalités d'Astroport.ONE!${NC}"
-        echo ""
-        
-        # Proposer d'imprimer la VISA
-        read -p "Voulez-vous imprimer votre VISA maintenant ? (oui/non): " print_visa
-        if [[ "$print_visa" == "oui" || "$print_visa" == "o" || "$print_visa" == "y" || "$print_visa" == "yes" ]]; then
-            print_info "Impression de la VISA..."
-            "${MY_PATH}/tools/VISA.print.sh" "$PLAYER"
+        print_error "Erreur lors de l'embarquement"
+        echo "Vous pouvez réessayer plus tard avec la commande: ./captain.sh"
         fi
         
         read -p "Appuyez sur ENTRÉE pour continuer..."
-        
-    else
-        print_error "Erreur lors de la création de la ZEN Card"
-        echo "Vous pouvez réessayer plus tard avec la commande: ./command.sh"
-    fi
 }
 
 # Fonction d'affichage du tableau de bord
@@ -1161,29 +1018,7 @@ handle_zen_card_management() {
     read -p "Votre choix: " zen_choice
     case $zen_choice in
         1) 
-            while true; do
-                print_section "MULTIPASS & ZEN Card"
-                printf "%-30s | %-20s\n" "MULTIPASS (Email)" "ZEN Card (Pseudo)"
-                printf -- "%.0s-" {1..55}; echo
-                for mp in $(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | sort); do
-                    pseudo=""
-                    # Cherche une ZEN Card associée (même email)
-                    for zc in $(ls ~/.zen/game/players 2>/dev/null | grep "@" | sort); do
-                        if [[ "$mp" == "$zc" ]]; then
-                            pseudo="$zc"
-                            break
-                        fi
-                    done
-                    if [[ -n "$pseudo" ]]; then
-                        printf "%-30s | %-20s\n" "$mp" "$pseudo"
-                    else
-                        printf "%-30s | %-20s\n" "$mp" "Aucune ZEN Card associée"
-                    fi
-                done
-                echo ""
-                read -p "Appuyez sur ENTRÉE pour revenir au menu de gestion..." _
-                break
-            done
+            list_multipass_zen_cards
             handle_zen_card_management
             ;;
         2)
@@ -1489,6 +1324,360 @@ handle_disconnect() {
         print_info "Déconnexion annulée"
     fi
     
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+}
+
+# Fonction pour lister les MULTIPASS & ZEN Card avec pagination et recherche
+list_multipass_zen_cards() {
+    print_section "MULTIPASS & ZEN Card"
+    
+    # Récupérer tous les MULTIPASS
+    local multipass_list=($(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | sort))
+    local zen_cards_list=($(ls ~/.zen/game/players 2>/dev/null | grep "@" | sort))
+    
+    if [[ ${#multipass_list[@]} -eq 0 ]]; then
+        print_error "Aucun MULTIPASS trouvé."
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        return
+    fi
+    
+    # Configuration de la pagination
+    local items_per_page=15
+    local total_items=${#multipass_list[@]}
+    local total_pages=$(( (total_items + items_per_page - 1) / items_per_page ))
+    local current_page=1
+    local filtered_list=("${multipass_list[@]}")
+    
+    # Fonction pour afficher la page courante
+    display_cards_page() {
+        local start_index=$(( (current_page - 1) * items_per_page ))
+        local end_index=$(( start_index + items_per_page - 1 ))
+        local display_count=${#filtered_list[@]}
+        
+        if [[ $end_index -ge $display_count ]]; then
+            end_index=$(( display_count - 1 ))
+        fi
+        
+        echo -e "${WHITE}MULTIPASS & ZEN Card (page $current_page/$total_pages) - ${display_count} comptes${NC}"
+        echo ""
+        
+        # En-tête du tableau
+        printf "%-4s %-35s %-35s %-15s\n" "N°" "MULTIPASS (Email)" "ZEN Card (Pseudo)" "Statut"
+        echo "────────────────────────────────────────────────────────────────────────────────────────────────────────"
+        
+        for ((i=start_index; i<=end_index && i<display_count; i++)); do
+            local multipass="${filtered_list[$i]}"
+            local zen_card=""
+            local status=""
+            
+            # Chercher une ZEN Card associée
+            for zc in "${zen_cards_list[@]}"; do
+                if [[ "$multipass" == "$zc" ]]; then
+                    zen_card="$zc"
+                    break
+                fi
+            done
+            
+            # Déterminer le statut
+            if [[ -n "$zen_card" ]]; then
+                status="${GREEN}Complète${NC}"
+            else
+                status="${YELLOW}MULTIPASS seul${NC}"
+                zen_card="Aucune ZEN Card"
+            fi
+            
+            local display_index=$((i + 1))
+            
+            # Tronquer les noms longs
+            local short_multipass="${multipass:0:34}"
+            if [[ ${#multipass} -gt 34 ]]; then
+                short_multipass="${multipass:0:31}..."
+            fi
+            
+            local short_zen_card="${zen_card:0:34}"
+            if [[ ${#zen_card} -gt 34 ]]; then
+                short_zen_card="${zen_card:0:31}..."
+            fi
+            
+            printf "${BLUE}%-4s${NC} ${WHITE}%-35s${NC} ${CYAN}%-35s${NC} %-15s\n" \
+                   "$display_index" "$short_multipass" "$short_zen_card" "$status"
+        done
+        echo ""
+    }
+    
+    # Fonction pour afficher les commandes de navigation
+    show_navigation_commands() {
+        echo -e "${YELLOW}Navigation:${NC}"
+        if [[ $total_pages -gt 1 ]]; then
+            echo -e "  ${WHITE}n${NC} - Page suivante  ${WHITE}p${NC} - Page précédente"
+        fi
+        echo -e "  ${WHITE}s${NC} - Rechercher  ${WHITE}r${NC} - Réinitialiser  ${WHITE}q${NC} - Quitter"
+        echo ""
+    }
+    
+    # Fonction de recherche
+    search_cards() {
+        echo -e "${WHITE}Rechercher par:${NC}"
+        echo "  1. Email MULTIPASS"
+        echo "  2. Pseudo ZEN Card"
+        echo "  3. Annuler"
+        echo ""
+        read -p "> " search_type
+        
+        case $search_type in
+            1|2)
+                echo -e "${WHITE}Terme de recherche:${NC}"
+                read -p "> " search_term
+                
+                if [[ -n "$search_term" ]]; then
+                    # Réinitialiser la liste filtrée
+                    filtered_list=()
+                    
+                    for multipass in "${multipass_list[@]}"; do
+                        local zen_card=""
+                        for zc in "${zen_cards_list[@]}"; do
+                            if [[ "$multipass" == "$zc" ]]; then
+                                zen_card="$zc"
+                                break
+                            fi
+                        done
+                        
+                        local match=false
+                        case $search_type in
+                            1) # Email MULTIPASS
+                                if [[ "$multipass" == *"$search_term"* ]]; then
+                                    match=true
+                                fi
+                                ;;
+                            2) # Pseudo ZEN Card
+                                if [[ -n "$zen_card" ]] && [[ "$zen_card" == *"$search_term"* ]]; then
+                                    match=true
+                                fi
+                                ;;
+                        esac
+                        
+                        if [[ "$match" == "true" ]]; then
+                            filtered_list+=("$multipass")
+                        fi
+                    done
+                    
+                    # Réinitialiser la pagination
+                    current_page=1
+                    total_pages=$(( (${#filtered_list[@]} + items_per_page - 1) / items_per_page ))
+                    if [[ $total_pages -eq 0 ]]; then
+                        total_pages=1
+                    fi
+                    
+                    print_success "Recherche terminée: ${#filtered_list[@]} comptes trouvés"
+                fi
+                ;;
+            3)
+                return
+                ;;
+            *)
+                print_error "Choix invalide"
+                ;;
+        esac
+    }
+    
+    # Boucle principale de sélection
+    while true; do
+        clear
+        print_section "MULTIPASS & ZEN Card"
+        
+        if [[ ${#filtered_list[@]} -eq 0 ]]; then
+            print_error "Aucun compte trouvé avec les critères de recherche."
+            echo ""
+            echo -e "${YELLOW}Options:${NC}"
+            echo "  r - Réinitialiser la recherche"
+            echo "  q - Quitter"
+            echo ""
+            read -p "> " choice
+            
+            case $choice in
+                "r"|"R")
+                    # Réinitialiser les filtres
+                    filtered_list=("${multipass_list[@]}")
+                    current_page=1
+                    total_pages=$(( (${#filtered_list[@]} + items_per_page - 1) / items_per_page ))
+                    ;;
+                "q"|"Q")
+                    return
+                    ;;
+                *)
+                    print_error "Choix invalide"
+                    sleep 1
+                    ;;
+            esac
+            continue
+        fi
+        
+        # Afficher les comptes de la page courante
+        display_cards_page
+        
+        # Afficher les commandes de navigation
+        show_navigation_commands
+        
+        # Afficher les options de sélection
+        echo -e "${WHITE}Entrez le numéro du compte ou une commande:${NC}"
+        read -p "> " selection
+        
+        case $selection in
+            "n"|"N")
+                if [[ $current_page -lt $total_pages ]]; then
+                    current_page=$((current_page + 1))
+                else
+                    print_warning "Vous êtes déjà à la dernière page."
+                    sleep 1
+                fi
+                ;;
+            "p"|"P")
+                if [[ $current_page -gt 1 ]]; then
+                    current_page=$((current_page - 1))
+                else
+                    print_warning "Vous êtes déjà à la première page."
+                    sleep 1
+                fi
+                ;;
+            "s"|"S")
+                search_cards
+                ;;
+            "r"|"R")
+                # Réinitialiser les filtres
+                filtered_list=("${multipass_list[@]}")
+                current_page=1
+                total_pages=$(( (${#filtered_list[@]} + items_per_page - 1) / items_per_page ))
+                print_success "Recherche réinitialisée"
+                sleep 1
+                ;;
+            "q"|"Q")
+                return
+                ;;
+            *)
+                # Vérifier si c'est un numéro de compte valide
+                if [[ "$selection" =~ ^[0-9]+$ ]]; then
+                    local selected_index=$((selection - 1))
+                    if [[ $selected_index -ge 0 && $selected_index -lt ${#filtered_list[@]} ]]; then
+                        local selected_multipass="${filtered_list[$selected_index]}"
+                        
+                        # Afficher les détails du compte sélectionné
+                        show_account_details "$selected_multipass"
+                        return
+                    else
+                        print_error "Numéro de compte invalide. Veuillez entrer un nombre entre 1 et ${#filtered_list[@]}."
+                        sleep 2
+                    fi
+                else
+                    print_error "Entrée invalide. Veuillez entrer un numéro de compte ou une commande."
+                    sleep 1
+                fi
+                ;;
+        esac
+    done
+}
+
+# Fonction pour afficher les détails d'un compte
+show_account_details() {
+    local multipass="$1"
+    local zen_card=""
+    
+    # Chercher une ZEN Card associée
+    for zc in $(ls ~/.zen/game/players 2>/dev/null | grep "@" | sort); do
+        if [[ "$multipass" == "$zc" ]]; then
+            zen_card="$zc"
+            break
+        fi
+    done
+    
+    print_section "DÉTAILS DU COMPTE"
+    
+    echo -e "${WHITE}MULTIPASS:${NC}"
+    echo -e "  📧 Email: ${CYAN}$multipass${NC}"
+    
+    # Afficher les fichiers MULTIPASS
+    local multipass_dir="$HOME/.zen/game/nostr/$multipass"
+    if [[ -d "$multipass_dir" ]]; then
+        echo -e "  📁 Répertoire: ${CYAN}$multipass_dir${NC}"
+        
+        # Lister les fichiers importants
+        local important_files=("G1PUBNOSTR" "NPUB" "HEX" "GPS" ".nostr.zine.html")
+        echo -e "  📄 Fichiers:"
+        for file in "${important_files[@]}"; do
+            if [[ -f "$multipass_dir/$file" ]]; then
+                local content=""
+                case $file in
+                    "G1PUBNOSTR")
+                        content=$(cat "$multipass_dir/$file" | head -c 20)
+                        echo -e "    ✅ $file: ${GREEN}${content}...${NC}"
+                        ;;
+                    "NPUB")
+                        content=$(cat "$multipass_dir/$file" | head -c 20)
+                        echo -e "    ✅ $file: ${GREEN}${content}...${NC}"
+                        ;;
+                    "HEX")
+                        content=$(cat "$multipass_dir/$file" | head -c 20)
+                        echo -e "    ✅ $file: ${GREEN}${content}...${NC}"
+                        ;;
+                    "GPS")
+                        content=$(cat "$multipass_dir/$file")
+                        echo -e "    ✅ $file: ${GREEN}$content${NC}"
+                        ;;
+                    ".nostr.zine.html")
+                        echo -e "    ✅ $file: ${GREEN}Présent${NC}"
+                        ;;
+                esac
+            else
+                echo -e "    ❌ $file: ${RED}Absent${NC}"
+            fi
+        done
+    fi
+    
+    echo ""
+    
+    if [[ -n "$zen_card" ]]; then
+        echo -e "${WHITE}ZEN Card:${NC}"
+        echo -e "  🎫 Pseudo: ${GREEN}$zen_card${NC}"
+        
+        # Afficher les fichiers ZEN Card
+        local zen_dir="$HOME/.zen/game/players/$zen_card"
+        if [[ -d "$zen_dir" ]]; then
+            echo -e "  📁 Répertoire: ${CYAN}$zen_dir${NC}"
+            
+            # Vérifier les fichiers importants
+            local zen_files=("secret.dunikey" ".pass" "ipfs/moa/index.html")
+            echo -e "  📄 Fichiers:"
+            for file in "${zen_files[@]}"; do
+                if [[ -f "$zen_dir/$file" ]]; then
+                    case $file in
+                        "secret.dunikey")
+                            local g1pub=$(grep "pub:" "$zen_dir/$file" | cut -d ' ' -f 2 2>/dev/null)
+                            if [[ -n "$g1pub" ]]; then
+                                echo -e "    ✅ $file: ${GREEN}${g1pub:0:20}...${NC}"
+                            else
+                                echo -e "    ✅ $file: ${GREEN}Présent${NC}"
+                            fi
+                            ;;
+                        ".pass")
+                            echo -e "    ✅ $file: ${GREEN}Présent${NC}"
+                            ;;
+                        "ipfs/moa/index.html")
+                            echo -e "    ✅ $file: ${GREEN}Présent${NC}"
+                            ;;
+                    esac
+                else
+                    echo -e "    ❌ $file: ${RED}Absent${NC}"
+                fi
+            done
+        fi
+    else
+        echo -e "${WHITE}ZEN Card:${NC}"
+        echo -e "  ❌ ${RED}Aucune ZEN Card associée${NC}"
+        echo ""
+        echo -e "${YELLOW}💡 Pour créer une ZEN Card à partir de ce MULTIPASS:${NC}"
+        echo "  Utilisez l'option '3. Créer une nouvelle ZEN Card' dans le menu de gestion"
+    fi
+    
+    echo ""
     read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 

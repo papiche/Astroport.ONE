@@ -147,7 +147,7 @@ select_nostr_account() {
     fi
     
     # Configuration de la pagination
-    local accounts_per_page=10
+    local accounts_per_page=20
     local total_accounts=${#nostr_accounts[@]}
     local total_pages=$(( (total_accounts + accounts_per_page - 1) / accounts_per_page ))
     local current_page=1
@@ -169,27 +169,35 @@ select_nostr_account() {
         echo -e "${WHITE}Comptes NOSTR (page $current_page/$total_pages) - ${display_count} comptes${NC}"
         echo ""
         
+        # Affichage en tableau compact
+        printf "%-4s %-25s %-12s %-20s\n" "N°" "Email" "Balance" "Public Key"
+        echo "──────────────────────────────────────────────────────────────────────────────"
+        
         for ((i=start_index; i<=end_index && i<display_count; i++)); do
             local account_name="${filtered_accounts[$i]}"
             local balance="${filtered_balances[$i]}"
             local g1pub="${filtered_pubkeys[$i]}"
-            local keyfile="${filtered_keys[$i]}"
             
             local display_index=$((i + 1))
-            echo -e "${BLUE}${display_index})${NC} ${WHITE}$account_name${NC}"
-            print_balance "$balance" "$g1pub"
-            echo -e "  ${WHITE}📁 Key File: ${CYAN}$keyfile${NC}"
-            echo ""
+            local short_pubkey="${g1pub:0:20}..."
+            local short_email="${account_name:0:24}"
+            if [[ ${#account_name} -gt 24 ]]; then
+                short_email="${account_name:0:21}..."
+            fi
+            
+            printf "${BLUE}%-4s${NC} ${WHITE}%-25s${NC} ${GREEN}%-12s${NC} ${CYAN}%-20s${NC}\n" \
+                   "$display_index" "$short_email" "$balance Ğ1" "$short_pubkey"
         done
+        echo ""
     }
     
     # Fonction pour afficher les commandes de navigation
     show_navigation_commands() {
         echo -e "${YELLOW}Navigation:${NC}"
         if [[ $total_pages -gt 1 ]]; then
-            echo "  ${WHITE}n${NC} - Page suivante  ${WHITE}p${NC} - Page précédente"
+            echo -e "  ${WHITE}n${NC} - Page suivante  ${WHITE}p${NC} - Page précédente"
         fi
-        echo "  ${WHITE}s${NC} - Rechercher  ${WHITE}r${NC} - Réinitialiser  ${WHITE}q${NC} - Quitter"
+        echo -e "  ${WHITE}s${NC} - Rechercher  ${WHITE}r${NC} - Réinitialiser  ${WHITE}q${NC} - Quitter"
         echo ""
     }
     
@@ -215,6 +223,7 @@ select_nostr_account() {
                     filtered_balances=()
                     filtered_pubkeys=()
                     
+                    # Recherche dans les comptes existants
                     for i in "${!nostr_accounts[@]}"; do
                         local account_name="${nostr_accounts[$i]}"
                         local g1pub="${nostr_pubkeys[$i]}"
@@ -223,19 +232,27 @@ select_nostr_account() {
                         
                         local match=false
                         case $search_type in
-                            1) # Email
+                            1) # Email - recherche dans le nom du compte
                                 if [[ "$account_name" == *"$search_term"* ]]; then
                                     match=true
                                 fi
                                 ;;
-                            2) # G1 Public Key
-                                if [[ "$g1pub" == *"$search_term"* ]]; then
-                                    match=true
+                            2) # G1 Public Key - recherche dans NOSTRG1PUB
+                                local nostr_g1pub_file="$HOME/.zen/game/nostr/${account_name}/NOSTRG1PUB"
+                                if [[ -f "$nostr_g1pub_file" ]]; then
+                                    local nostr_g1pub=$(cat "$nostr_g1pub_file" 2>/dev/null)
+                                    if [[ "$nostr_g1pub" == *"$search_term"* ]]; then
+                                        match=true
+                                    fi
                                 fi
                                 ;;
-                            3) # HEX
-                                if [[ "$g1pub" == *"$search_term"* ]]; then
-                                    match=true
+                            3) # HEX - recherche dans le fichier HEX
+                                local hex_file="$HOME/.zen/game/nostr/${account_name}/HEX"
+                                if [[ -f "$hex_file" ]]; then
+                                    local hex_value=$(cat "$hex_file" 2>/dev/null)
+                                    if [[ "$hex_value" == *"$search_term"* ]]; then
+                                        match=true
+                                    fi
                                 fi
                                 ;;
                         esac
@@ -389,7 +406,7 @@ get_payment_details() {
         if [[ -n "$amount" ]] && [[ $amount =~ ^[0-9]+([.][0-9]+)?$ ]]; then
             # Check if amount is greater than 0
             if (( $(echo "$amount > 0" | bc -l) )); then
-                break
+            break
             else
                 print_error "Le montant doit être supérieur à 0."
             fi
@@ -529,7 +546,7 @@ confirm_payment() {
                 ;;
             "non"|"n"|"no"|"NON"|"N"|"NO")
                 print_warning "Paiement annulé."
-                exit 0
+        exit 0
                 ;;
             *)
                 print_error "Veuillez répondre 'oui' ou 'non'"

@@ -111,20 +111,20 @@ get_fast_service_status() {
     fi
     if ss -tln 2>/dev/null | grep -q ":8001 "; then
         nextcloud_cloud_active="true"
-    fi
-    
-    # IPFS P2P Services
-    local p2p_services="[]"
-    if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
-        local p2p_array=()
-        for service in ~/.zen/tmp/${IPFSNODEID}/x_*.sh; do
-            if [[ -f "$service" ]]; then
-                local service_name=$(basename "$service")
-                p2p_array+=("\"$service_name\"")
-            fi
-        done
-        if [[ ${#p2p_array[@]} -gt 0 ]]; then
-            p2p_services="[$(IFS=,; echo "${p2p_array[*]}")]"
+        fi
+        
+        # IPFS P2P Services
+        local p2p_services="[]"
+        if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
+            local p2p_array=()
+            for service in ~/.zen/tmp/${IPFSNODEID}/x_*.sh; do
+                if [[ -f "$service" ]]; then
+                    local service_name=$(basename "$service")
+                    p2p_array+=("\"$service_name\"")
+                fi
+            done
+            if [[ ${#p2p_array[@]} -gt 0 ]]; then
+                p2p_services="[$(IFS=,; echo "${p2p_array[*]}")]"
         fi
     fi
     
@@ -251,7 +251,7 @@ export_json() {
             node_type="x_level"
         fi
     fi
-    
+
     local hostname=$(hostname -f)
     
     # Get Prometheus metrics if available

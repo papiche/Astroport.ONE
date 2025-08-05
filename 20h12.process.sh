@@ -196,7 +196,6 @@ mv ~/.zen/flashmem ~/.zen/tmp/flashmem
 
 ########################################################################
 ################################# updating ipfs bootstrap
-espeak "bootstrap refresh" > /dev/null 2>&1
 ipfs bootstrap rm --all > /dev/null 2>&1
 for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # remove comments
 do
@@ -226,7 +225,6 @@ echo "DRAGONS SHIELD ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 
 ## RESTART ASTROPORT
-# espeak "Restarting Astroport Services" > /dev/null 2>&1
 ## CLOSING API PORT
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) > /dev/null 2>&1
 ## KILL ALL REMAINING nc
@@ -296,7 +294,7 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     echo "  ZenCard Slots (128GB/slot): $ZENCARD_SLOTS"
     echo "  NOSTR/MULTIPASS Slots (10GB/slot): $NOSTR_SLOTS"
     echo "  Espace disque disponible (GB): $AVAILABLE_SPACE_GB"
-    
+
     echo "Statuts des services:"
     echo "  IPFS: $IPFS_ACTIVE"
     echo "  Astroport: $ASTROPORT_ACTIVE"
@@ -345,6 +343,6 @@ echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 ## MAIL LOG : support@qo-op.com ##
 ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null))"
 
-espeak "DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1
+espeak "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1 &
 
 exit 0
