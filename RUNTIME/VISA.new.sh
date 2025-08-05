@@ -37,6 +37,11 @@ LON=$(makecoord ${LON})
 NPUB="$8"
 HEX="$9"
 
+if [[ -z $NPUB || -z $HEX ]]; then
+    source ~/.zen/game/nostr/$PLAYER/.secret.nostr
+fi
+[[ -z $NPUB || -z $HEX ]] && echo "FATAL ERROR : missing MULTIPASS ~/.zen/game/nostr/$PLAYER" && exit 1
+
 ################################################################################
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 ################################################################################
