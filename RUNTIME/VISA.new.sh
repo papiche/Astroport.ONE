@@ -584,9 +584,9 @@ if [[ -s $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html  ]]; then
 else
     MZineLink="/ipns/copylaradio.com"
 fi
-if [[ -s $HOME/.zen/game/nostr/${PLAYER}/._${PLAYER}_QR.S41.png  ]]; then
-    SLINK=$(ipfs add -wq $HOME/.zen/game/nostr/${PLAYER}/._${PLAYER}_QR.S41.png | tail -n 1)
-    SLINKQR="/ipfs/$SLINK/._${PLAYER}_QR.S41.png"
+if [[ -s $HOME/.zen/game/nostr/${PLAYER}/._SSSSQR.png  ]]; then
+    SLINK=$(ipfs add -wq $HOME/.zen/game/nostr/${PLAYER}/._SSSSQR.png | tail -n 1)
+    SLINKQR="/ipfs/$SLINK/._SSSSQR.png"
 else
     SLINKQR="/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif"
 fi
