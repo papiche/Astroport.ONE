@@ -579,11 +579,19 @@ ipns2did=""
 
 ## Create MULTIPASS .nostr.zine.html QR linking
 if [[ -s $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html  ]]; then
-    MLINKI=$(ipfs add -wq $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html | tail -n 1)
-    MLINKF="/ipfs/$MLINKI/.nostr.zine.html"
+    MULTIPASSzine=$(ipfs add -wq $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html | tail -n 1)
+    MZineLink="/ipfs/$MULTIPASSzine/.nostr.zine.html"
 else
-    MLINKF="/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif"
+    MZineLink="/ipns/copylaradio.com"
 fi
+if [[ -s $HOME/.zen/game/nostr/${PLAYER}/._${PLAYER}_QR.S41.png  ]]; then
+    SLINK=$(ipfs add -wq $HOME/.zen/game/nostr/${PLAYER}/._${PLAYER}_QR.S41.png | tail -n 1)
+    SLINKQR="/ipfs/$SLINK/._${PLAYER}_QR.S41.png"
+else
+    SLINKQR="/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif"
+fi
+
+
 
 ##############################################################
 ## Split ipns key by 2 caracters ### OLD PASSPORT STYLE
@@ -606,7 +614,8 @@ echo -e "${ipns2did:1}"
 cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
             -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
-            -e "s~/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif~${MLINKF}~g" \
+            -e "s~_MULTIPASSZINELINK_~${MZineLink}~g" \
+            -e "s~/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif~${SLINKQR}~g" \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_PLAYER_~${PLAYER}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \

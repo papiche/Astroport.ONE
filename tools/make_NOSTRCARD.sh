@@ -189,9 +189,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE (Terminal Compatible)
     amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png \
-        -c -n ${EMAIL}.QR.png -d ~/.zen/tmp/${MOATS}/ &>/dev/null
+        -c -n ._${EMAIL}_QR.S41.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
-    SSSSQR=$(ipfs --timeout 20s add -q ~/.zen/tmp/${MOATS}/${EMAIL}.QR.png)
+    SSSSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/._${EMAIL}_QR.S41.png)
     ipfs pin rm /ipfs/${SSSSQR} 2>/dev/null
 
     ## Create G1PUBNOSTR QR Code
