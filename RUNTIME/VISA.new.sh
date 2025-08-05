@@ -577,6 +577,16 @@ $(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
 UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 ipns2did=""
 
+## Create MULTIPASS .nostr.zine.html QR linking
+if [[ -s $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html  ]]; then
+    MLINKI=$(ipfs add -wq $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html | tail -n 1)
+    MLINKF="/ipfs/$MLINKI/.nostr.zine.html"
+else
+    MLINKF="/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif"
+fi
+
+##############################################################
+## Split ipns key by 2 caracters ### OLD PASSPORT STYLE
 # Loop through the ASTRONAUTENS two characters at a time
 for ((i = 0; i < ${#ASTRONAUTENS}; i += 2)); do
     ipns2did+=" ${ASTRONAUTENS:i:2}"
@@ -596,6 +606,7 @@ echo -e "${ipns2did:1}"
 cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \
             -e "s~/ipfs/QmTL7VDgkYjpYC2qiiFCfah2pSqDMkTANMeMtjMndwXq9y~${IASTRO}~g" \
+            -e "s~/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif~${MLINKF}~g" \
             -e "s~_MOATS_~${MOATS}~g" \
             -e "s~_PLAYER_~${PLAYER}~g" \
             -e "s~_G1PUB_~${G1PUB}~g" \
