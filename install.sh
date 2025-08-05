@@ -199,6 +199,9 @@ ${MY_PATH}/install.lazydocker.sh
 echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
 ~/.zen/Astroport.ONE/youtube-dl.sh
 
+echo "=== SETUP ASTROPORT"
+~/.zen/Astroport.ONE/setup.sh
+
 end=`date +%s`
 echo Installation time was `expr $end - $start` seconds.
 
@@ -219,12 +222,10 @@ echo "### ASK FOR SUPPORT #########################"
 echo "### support@qo-op.com"
 echo "#############################################"
 echo "## TAKE CONTROL #################################"
-echo "* WEB : http://astroport.localhost:1234/"
-echo "* CLI : ~/.zen/Astroport.ONE/command.sh"
+echo "* WEB : http://astroport.localhost/ipns/copylaradio.com"
+echo "* CLI : ~/.zen/Astroport.ONE/captain.sh"
 echo "#############################################"
 
-echo "=== SETUP ASTROPORT"
-~/.zen/Astroport.ONE/setup.sh
 
 
 else
