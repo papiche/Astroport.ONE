@@ -288,7 +288,7 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
-    log "INFO" ">>>>>>>>>>>>>>>>>> Processing PLAYER: $PLAYER"
+    log "INFO" ">>>>>>>>>>>>>>>>>> Processing MULTIPASS : $PLAYER ============================================"
     start=$(date +%s)
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null)
     [[ -z "$HEX" ]] && log "ERROR" "Missing HEX for $PLAYER" && continue
@@ -739,7 +739,7 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
             ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ##
             if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
-                echo "## MULTIPASS ZenCard creation "
+                echo "## UPlanet ZEN : Zen Card creation "
                 source ~/.zen/game/nostr/${PLAYER}/GPS
                 PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
                 NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
@@ -762,14 +762,14 @@ for PLAYER in "${NOSTR[@]}"; do
                 ### + Zen Card (Ẑ/€?)
                 ### = PLAYER N1/N2 UPLANET ZEN
                 #########################################################
-                echo "MULTIPASS ZenCard existing : ~/.zen/game/players/${PLAYER}"
+                echo "MULTIPASS & ZenCard existing : ~/.zen/game/players/${PLAYER}"
                 ${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1
 
             fi
         ############## UPLANET ORIGIN #############################################
         else
             $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh ${PLAYER} | tail -n 1)
-            echo "$source MULTIPASS profile ($LAT $LON) : $HEX = $EMAIL"
+            echo "$source ORIGIN ($LAT $LON) : $HEX = $EMAIL"
 
         fi
     fi
@@ -777,7 +777,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################################
     # Use the generic primal wallet control function
     if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-    echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
+        echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
         # Get DISCO from PLAYER to create dunikey if needed
         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
             DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
