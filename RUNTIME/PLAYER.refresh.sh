@@ -57,6 +57,21 @@ for PLAYER in ${PLAYERONE[@]}; do
         && continue
 
     YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
+    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    mkdir -p ~/.zen/tmp/${MOATS}
+    echo "##### ${YOUSER} ################################ ~/.zen/tmp/${MOATS}"
+    echo "##################################################################"
+    echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW ?! "
+    echo "################################################ $(date)"
+    PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+    ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
+    # Get PLAYER wallet amount
+    $MY_PATH/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck
+    cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck ###DEBUG MODE
+    COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck | tail -n 1)
+    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
     #########################################################
     ######## ZEN ECONOMY INTEGRATION
@@ -77,6 +92,9 @@ for PLAYER in ${PLAYERONE[@]}; do
         BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
         # Calculate the difference in days
         DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+        DAYS_UNTIL_NEXT_PAYMENT=$(( 7 - (DIFF_DAYS % 7) ))
+        echo "Next payment in $DAYS_UNTIL_NEXT_PAYMENT days"
+
         [[ -z $NCARD ]] && NCARD=1
         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
         [[ -z $ZCARD ]] && ZCARD=4
@@ -101,21 +119,6 @@ for PLAYER in ${PLAYERONE[@]}; do
         fi
     fi
 
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-    mkdir -p ~/.zen/tmp/${MOATS}
-    echo "##### ${YOUSER} ################################ ~/.zen/tmp/${MOATS}"
-    echo "##################################################################"
-    echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW "
-    echo "################################################ $(date)"
-    PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
-    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
-    ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
-    # Get PLAYER wallet amount
-    $MY_PATH/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck
-    cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck ###DEBUG MODE
-    COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck | tail -n 1)
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
     #~ ## ZENCARD ARE ACTIVATED WITH 1 G1
     echo "## >>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
