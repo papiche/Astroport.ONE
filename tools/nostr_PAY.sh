@@ -97,6 +97,8 @@ select_nostr_account() {
     # Find all NOSTR accounts with G1PUBNOSTR files (much faster than finding .secret.dunikey)
     nostr_accounts=()
     nostr_keys=()
+    nostr_balances=()
+    nostr_pubkeys=()
     
     if [[ -d ~/.zen/game/nostr ]]; then
         # Use the same approach as nostr_DESTROY_TW.sh - find accounts with G1PUBNOSTR files
@@ -112,9 +114,10 @@ select_nostr_account() {
             exit 1
         fi
         
-        echo -e "${WHITE}Comptes NOSTR disponibles:${NC}"
+        echo -e "${WHITE}Comptes NOSTR disponibles: ${CYAN}${#account_names[@]} comptes trouvés${NC}"
         echo ""
         
+        # Charger tous les comptes avec leurs données
         for account_name in "${account_names[@]}"; do
             g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
             if [[ -n "$g1pub" ]]; then
@@ -129,12 +132,8 @@ select_nostr_account() {
                 if [[ -f "$keyfile" ]]; then
                     nostr_accounts+=("$account_name")
                     nostr_keys+=("$keyfile")
-                    
-                    local index=${#nostr_accounts[@]}
-                    echo -e "${BLUE}${index})${NC} ${WHITE}$account_name${NC}"
-                    print_balance "$balance" "$g1pub"
-                    echo -e "  ${WHITE}📁 Key File: ${CYAN}$keyfile${NC}"
-                    echo ""
+                    nostr_balances+=("$balance")
+                    nostr_pubkeys+=("$g1pub")
                 fi
             fi
         done
@@ -147,25 +146,235 @@ select_nostr_account() {
         exit 1
     fi
     
-    # Prompt user to select account
+    # Configuration de la pagination
+    local accounts_per_page=10
+    local total_accounts=${#nostr_accounts[@]}
+    local total_pages=$(( (total_accounts + accounts_per_page - 1) / accounts_per_page ))
+    local current_page=1
+    local filtered_accounts=("${nostr_accounts[@]}")
+    local filtered_keys=("${nostr_keys[@]}")
+    local filtered_balances=("${nostr_balances[@]}")
+    local filtered_pubkeys=("${nostr_pubkeys[@]}")
+    
+    # Fonction pour afficher les comptes de la page courante
+    display_accounts_page() {
+        local start_index=$(( (current_page - 1) * accounts_per_page ))
+        local end_index=$(( start_index + accounts_per_page - 1 ))
+        local display_count=${#filtered_accounts[@]}
+        
+        if [[ $end_index -ge $display_count ]]; then
+            end_index=$(( display_count - 1 ))
+        fi
+        
+        echo -e "${WHITE}Comptes NOSTR (page $current_page/$total_pages) - ${display_count} comptes${NC}"
+        echo ""
+        
+        for ((i=start_index; i<=end_index && i<display_count; i++)); do
+            local account_name="${filtered_accounts[$i]}"
+            local balance="${filtered_balances[$i]}"
+            local g1pub="${filtered_pubkeys[$i]}"
+            local keyfile="${filtered_keys[$i]}"
+            
+            local display_index=$((i + 1))
+            echo -e "${BLUE}${display_index})${NC} ${WHITE}$account_name${NC}"
+            print_balance "$balance" "$g1pub"
+            echo -e "  ${WHITE}📁 Key File: ${CYAN}$keyfile${NC}"
+            echo ""
+        done
+    }
+    
+    # Fonction pour afficher les commandes de navigation
+    show_navigation_commands() {
+        echo -e "${YELLOW}Navigation:${NC}"
+        if [[ $total_pages -gt 1 ]]; then
+            echo "  ${WHITE}n${NC} - Page suivante  ${WHITE}p${NC} - Page précédente"
+        fi
+        echo "  ${WHITE}s${NC} - Rechercher  ${WHITE}r${NC} - Réinitialiser  ${WHITE}q${NC} - Quitter"
+        echo ""
+    }
+    
+    # Fonction de recherche
+    search_accounts() {
+        echo -e "${WHITE}Rechercher par:${NC}"
+        echo "  1. Email (ex: user@domain.com)"
+        echo "  2. Clé publique G1 (ex: ABC123...)"
+        echo "  3. HEX (ex: 12D3KooW...)"
+        echo "  4. Annuler"
+        echo ""
+        read -p "> " search_type
+        
+        case $search_type in
+            1|2|3)
+                echo -e "${WHITE}Terme de recherche:${NC}"
+                read -p "> " search_term
+                
+                if [[ -n "$search_term" ]]; then
+                    # Réinitialiser les listes filtrées
+                    filtered_accounts=()
+                    filtered_keys=()
+                    filtered_balances=()
+                    filtered_pubkeys=()
+                    
+                    for i in "${!nostr_accounts[@]}"; do
+                        local account_name="${nostr_accounts[$i]}"
+                        local g1pub="${nostr_pubkeys[$i]}"
+                        local balance="${nostr_balances[$i]}"
+                        local keyfile="${nostr_keys[$i]}"
+                        
+                        local match=false
+                        case $search_type in
+                            1) # Email
+                                if [[ "$account_name" == *"$search_term"* ]]; then
+                                    match=true
+                                fi
+                                ;;
+                            2) # G1 Public Key
+                                if [[ "$g1pub" == *"$search_term"* ]]; then
+                                    match=true
+                                fi
+                                ;;
+                            3) # HEX
+                                if [[ "$g1pub" == *"$search_term"* ]]; then
+                                    match=true
+                                fi
+                                ;;
+                        esac
+                        
+                        if [[ "$match" == "true" ]]; then
+                            filtered_accounts+=("$account_name")
+                            filtered_keys+=("$keyfile")
+                            filtered_balances+=("$balance")
+                            filtered_pubkeys+=("$g1pub")
+                        fi
+                    done
+                    
+                    # Réinitialiser la pagination
+                    current_page=1
+                    total_pages=$(( (${#filtered_accounts[@]} + accounts_per_page - 1) / accounts_per_page ))
+                    if [[ $total_pages -eq 0 ]]; then
+                        total_pages=1
+                    fi
+                    
+                    print_success "Recherche terminée: ${#filtered_accounts[@]} comptes trouvés"
+                fi
+                ;;
+            4)
+                return
+                ;;
+            *)
+                print_error "Choix invalide"
+                ;;
+        esac
+    }
+    
+    # Boucle principale de sélection
     while true; do
-        echo -e "${WHITE}Entrez le numéro correspondant au compte:${NC} "
+        clear
+        print_section "SELECTION DU COMPTE NOSTR"
+        
+        if [[ ${#filtered_accounts[@]} -eq 0 ]]; then
+            print_error "Aucun compte trouvé avec les critères de recherche."
+            echo ""
+            echo -e "${YELLOW}Options:${NC}"
+            echo "  r - Réinitialiser la recherche"
+            echo "  q - Quitter"
+            echo ""
+            read -p "> " choice
+            
+            case $choice in
+                "r"|"R")
+                    # Réinitialiser les filtres
+                    filtered_accounts=("${nostr_accounts[@]}")
+                    filtered_keys=("${nostr_keys[@]}")
+                    filtered_balances=("${nostr_balances[@]}")
+                    filtered_pubkeys=("${nostr_pubkeys[@]}")
+                    current_page=1
+                    total_pages=$(( (${#filtered_accounts[@]} + accounts_per_page - 1) / accounts_per_page ))
+                    ;;
+                "q"|"Q")
+                    print_warning "Sélection annulée."
+                    exit 0
+                    ;;
+                *)
+                    print_error "Choix invalide"
+                    sleep 1
+                    ;;
+            esac
+            continue
+        fi
+        
+        # Afficher les comptes de la page courante
+        display_accounts_page
+        
+        # Afficher les commandes de navigation
+        show_navigation_commands
+        
+        # Afficher les options de sélection
+        echo -e "${WHITE}Entrez le numéro du compte ou une commande:${NC}"
         read -p "> " selection
         
-        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#nostr_accounts[@]} ]; then
-            break
-        else
-            print_error "Sélection invalide. Veuillez entrer un nombre entre 1 et ${#nostr_accounts[@]}."
-        fi
+        case $selection in
+            "n"|"N")
+                if [[ $current_page -lt $total_pages ]]; then
+                    current_page=$((current_page + 1))
+                else
+                    print_warning "Vous êtes déjà à la dernière page."
+                    sleep 1
+                fi
+                ;;
+            "p"|"P")
+                if [[ $current_page -gt 1 ]]; then
+                    current_page=$((current_page - 1))
+                else
+                    print_warning "Vous êtes déjà à la première page."
+                    sleep 1
+                fi
+                ;;
+            "s"|"S")
+                search_accounts
+                ;;
+            "r"|"R")
+                # Réinitialiser les filtres
+                filtered_accounts=("${nostr_accounts[@]}")
+                filtered_keys=("${nostr_keys[@]}")
+                filtered_balances=("${nostr_balances[@]}")
+                filtered_pubkeys=("${nostr_pubkeys[@]}")
+                current_page=1
+                total_pages=$(( (${#filtered_accounts[@]} + accounts_per_page - 1) / accounts_per_page ))
+                print_success "Recherche réinitialisée"
+                sleep 1
+                ;;
+            "q"|"Q")
+                print_warning "Sélection annulée."
+                exit 0
+                ;;
+            *)
+                # Vérifier si c'est un numéro de compte valide
+                if [[ "$selection" =~ ^[0-9]+$ ]]; then
+                    local selected_index=$((selection - 1))
+                    if [[ $selected_index -ge 0 && $selected_index -lt ${#filtered_accounts[@]} ]]; then
+                        selected_account="${filtered_accounts[$selected_index]}"
+                        selected_keyfile="${filtered_keys[$selected_index]}"
+                        selected_balance="${filtered_balances[$selected_index]}"
+                        selected_pubkey="${filtered_pubkeys[$selected_index]}"
+                        
+                        echo ""
+                        print_success "Compte sélectionné: $selected_account"
+                        echo -e "${WHITE}Fichier de clé: ${CYAN}$selected_keyfile${NC}"
+                        echo -e "${WHITE}Balance: ${GREEN}$selected_balance Ğ1${NC}"
+                        echo -e "${WHITE}Clé publique: ${CYAN}${selected_pubkey:0:20}...${NC}"
+                        return
+                    else
+                        print_error "Numéro de compte invalide. Veuillez entrer un nombre entre 1 et ${#filtered_accounts[@]}."
+                        sleep 2
+                    fi
+                else
+                    print_error "Entrée invalide. Veuillez entrer un numéro de compte ou une commande."
+                    sleep 1
+                fi
+                ;;
+        esac
     done
-    
-    selected_index=$((selection - 1))
-    selected_account="${nostr_accounts[$selected_index]}"
-    selected_keyfile="${nostr_keys[$selected_index]}"
-    
-    echo ""
-    print_success "Compte sélectionné: $selected_account"
-    echo -e "${WHITE}Fichier de clé: ${CYAN}$selected_keyfile${NC}"
 }
 
 # Function to get payment details interactively
