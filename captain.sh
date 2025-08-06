@@ -387,7 +387,7 @@ show_captain_dashboard() {
     # UPLANETNAME.G1 (Réserve Ğ1)
     local uplanet_g1_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
-        uplanet_g1_pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_G1" | cut -d ' ' -f 2 2>/dev/null)
+        uplanet_g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
     fi
     
     if [[ -n "$uplanet_g1_pubkey" ]]; then
@@ -405,7 +405,7 @@ show_captain_dashboard() {
     # UPLANETG1PUB (Services & Cash-Flow)
     local uplanet_services_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
-        uplanet_services_pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETG1PUB" | cut -d ' ' -f 2 2>/dev/null)
+        uplanet_services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
     fi
     
     if [[ -n "$uplanet_services_pubkey" ]]; then
@@ -424,7 +424,7 @@ show_captain_dashboard() {
     # UPLANETNAME.SOCIETY (Capital Social)
     local uplanet_society_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
-        uplanet_society_pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" | cut -d ' ' -f 2 2>/dev/null)
+        uplanet_society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
     fi
     
     if [[ -n "$uplanet_society_pubkey" ]]; then
@@ -744,7 +744,7 @@ show_detailed_dashboard() {
     # Total des portefeuilles système
     for wallet_file in "UPLANETNAME_G1" "UPLANETG1PUB" "UPLANETNAME_SOCIETY"; do
         if [[ -f "$HOME/.zen/tmp/$wallet_file" ]]; then
-            local pubkey=$(grep "pub:" "$HOME/.zen/tmp/$wallet_file" | cut -d ' ' -f 2 2>/dev/null)
+            local pubkey=$(cat "$HOME/.zen/tmp/$wallet_file" 2>/dev/null)
             if [[ -n "$pubkey" ]]; then
                 local balance=$(get_wallet_balance "$pubkey")
                 total_g1=$(echo "$total_g1 + $balance" | bc -l 2>/dev/null || echo "$total_g1")
@@ -787,7 +787,7 @@ refresh_data() {
     # Actualiser tous les portefeuilles système
     for wallet_file in "UPLANETNAME_G1" "UPLANETG1PUB" "UPLANETNAME_SOCIETY"; do
         if [[ -f "$HOME/.zen/tmp/$wallet_file" ]]; then
-            local pubkey=$(grep "pub:" "$HOME/.zen/tmp/$wallet_file" | cut -d ' ' -f 2 2>/dev/null)
+            local pubkey=$(cat "$HOME/.zen/tmp/$wallet_file" 2>/dev/null)
             if [[ -n "$pubkey" ]]; then
                 "${MY_PATH}/tools/COINScheck.sh" "$pubkey" >/dev/null 2>&1
             fi

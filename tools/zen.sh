@@ -26,6 +26,178 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Cache utility functions for optimized performance
+CACHE_DIR="$HOME/.zen/tmp/coucou"
+
+# Function to ensure cache directory exists
+ensure_cache_dir() {
+    [[ ! -d "$CACHE_DIR" ]] && mkdir -p "$CACHE_DIR"
+}
+
+# Function to get wallet balance from cache with automatic refresh
+get_wallet_balance() {
+    local pubkey="$1"
+    local auto_refresh="${2:-true}"
+    
+    ensure_cache_dir
+    
+    # Refresh cache if requested and pubkey is valid
+    if [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]]; then
+        ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+    fi
+    
+    # Get balance from cache
+    local balance=$(cat "$CACHE_DIR/${pubkey}.COINS" 2>/dev/null)
+    if [[ -z "$balance" || "$balance" == "null" ]]; then
+        echo "0"
+    else
+        echo "$balance"
+    fi
+}
+
+# Function to get primal transaction info from cache
+get_primal_info() {
+    local pubkey="$1"
+    
+    ensure_cache_dir
+    cat "$CACHE_DIR/${pubkey}.primal" 2>/dev/null
+}
+
+# Function to check if wallet has primal transaction
+has_primal_transaction() {
+    local pubkey="$1"
+    local primal_info=$(get_primal_info "$pubkey")
+    [[ -n "$primal_info" ]]
+}
+
+# Function to calculate Ẑen from Ğ1 balance (excluding primal transaction)
+calculate_zen_balance() {
+    local g1_balance="$1"
+    
+    if (( $(echo "$g1_balance > 1" | bc -l) )); then
+        echo "($g1_balance - 1) * 10" | bc | cut -d '.' -f 1
+    else
+        echo "0"
+    fi
+}
+
+# Function to validate public key format
+is_valid_public_key() {
+    local pubkey="$1"
+    [[ -n "$pubkey" ]] && [[ "$pubkey" =~ ^[1-9A-HJ-NP-Za-km-z]+$ ]]
+}
+
+# Function to get wallet status with optimized cache usage
+get_wallet_status() {
+    local pubkey="$1"
+    local wallet_type="$2"
+    
+    local balance=$(get_wallet_balance "$pubkey")
+    local has_primal=$(has_primal_transaction "$pubkey" && echo "true" || echo "false")
+    
+    # Calculate Ẑen for non-G1 wallets
+    local zen_balance=""
+    if [[ "$wallet_type" != "UPLANETNAME.G1" ]]; then
+        zen_balance=$(calculate_zen_balance "$balance")
+    fi
+    
+    echo "$balance|$has_primal|$zen_balance"
+}
+
+# Function to display wallet status with consistent formatting
+display_wallet_status() {
+    local pubkey="$1"
+    local wallet_name="$2"
+    local wallet_type="$3"
+    local show_zen="${4:-true}"
+    
+    local status=$(get_wallet_status "$pubkey" "$wallet_type")
+    local balance=$(echo "$status" | cut -d '|' -f 1)
+    local has_primal=$(echo "$status" | cut -d '|' -f 2)
+    local zen_balance=$(echo "$status" | cut -d '|' -f 3)
+    
+    # Format primal status
+    local primal_status=""
+    if [[ "$has_primal" == "true" ]]; then
+        primal_status="${GREEN}✓ Primal TX${NC}"
+    else
+        primal_status="${RED}✗ No Primal TX${NC}"
+    fi
+    
+    # Display balance
+    local balance_display="${YELLOW}$balance Ğ1${NC}"
+    if [[ "$show_zen" == "true" ]] && [[ -n "$zen_balance" ]] && [[ "$zen_balance" != "0" ]]; then
+        balance_display="${YELLOW}$balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+    fi
+    
+    echo -e "${BLUE}Wallet:${NC} ${GREEN}$wallet_name${NC}"
+    echo -e "${BLUE}Public Key:${NC} ${CYAN}$pubkey${NC}"
+    echo -e "${BLUE}Balance:${NC} $balance_display"
+    echo -e "${BLUE}Status:${NC} $primal_status"
+}
+
+# Function to clean and optimize cache
+clean_cache() {
+    local max_age_hours="${1:-24}"
+    local cache_dir="$CACHE_DIR"
+    
+    if [[ ! -d "$cache_dir" ]]; then
+        return 0
+    fi
+    
+    echo -e "${CYAN}🧹 Cleaning cache files older than $max_age_hours hours...${NC}"
+    
+    # Find and remove old cache files
+    local removed_count=0
+    while IFS= read -r -d '' file; do
+        if [[ -f "$file" ]]; then
+            rm -f "$file"
+            ((removed_count++))
+        fi
+    done < <(find "$cache_dir" -name "*.COINS" -o -name "*.primal" -mtime +$((max_age_hours/24)) -print0 2>/dev/null)
+    
+    echo -e "${GREEN}✅ Removed $removed_count old cache files${NC}"
+}
+
+# Function to refresh all wallet balances
+refresh_all_balances() {
+    echo -e "${CYAN}🔄 Refreshing all wallet balances...${NC}"
+    
+    # Refresh system wallets
+    local system_wallets=("UPLANETNAME_G1" "UPLANETG1PUB" "UPLANETNAME_SOCIETY")
+    for wallet_file in "${system_wallets[@]}"; do
+        local keyfile="$HOME/.zen/tmp/$wallet_file"
+        if [[ -f "$keyfile" ]]; then
+            local pubkey=$(cat "$keyfile" 2>/dev/null)
+            if [[ -n "$pubkey" ]]; then
+                ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+            fi
+        fi
+    done
+    
+    # Refresh MULTIPASS wallets
+    if [[ -d ~/.zen/game/nostr ]]; then
+        while IFS= read -r -d '' file; do
+            local pubkey=$(cat "$file" 2>/dev/null)
+            if [[ -n "$pubkey" ]]; then
+                ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+            fi
+        done < <(find ~/.zen/game/nostr -name "G1PUBNOSTR" -print0 2>/dev/null)
+    fi
+    
+    # Refresh ZenCard wallets
+    if [[ -d ~/.zen/game/players ]]; then
+        while IFS= read -r -d '' file; do
+            local pubkey=$(cat "$file" 2>/dev/null)
+            if [[ -n "$pubkey" ]]; then
+                ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+            fi
+        done < <(find ~/.zen/game/players -name ".g1pub" -print0 2>/dev/null)
+    fi
+    
+    echo -e "${GREEN}✅ All wallet balances refreshed${NC}"
+}
+
 # Function to display the flowchart position
 show_flowchart_position() {
     local wallet_type="$1"
@@ -108,15 +280,14 @@ list_multipass_wallets() {
             g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
             
             if [[ -n "$g1pub" ]]; then
-                # Get balance from cache
-                balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
-                if [[ -z "$balance" || "$balance" == "null" ]]; then
-                    balance="0"
-                fi
+                # Get wallet status with optimized cache usage
+                local status=$(get_wallet_status "$g1pub" "MULTIPASS")
+                local balance=$(echo "$status" | cut -d '|' -f 1)
+                local has_primal=$(echo "$status" | cut -d '|' -f 2)
                 
-                # Get primal transaction info from cache
-                primal_info=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
-                if [[ -n "$primal_info" ]]; then
+                # Format primal status
+                local primal_status=""
+                if [[ "$has_primal" == "true" ]]; then
                     primal_status="${GREEN}✓ Primal TX${NC}"
                 else
                     primal_status="${RED}✗ No Primal TX${NC}"
@@ -162,21 +333,21 @@ list_zencard_wallets() {
             g1pub=$(cat ~/.zen/game/players/${player_dir}/.g1pub 2>/dev/null)
             
             if [[ -n "$g1pub" ]]; then
-                # Get balance from cache
-                balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
-                if [[ -z "$balance" || "$balance" == "null" ]]; then
-                    balance="0"
-                fi
+                # Get wallet status with optimized cache usage
+                local status=$(get_wallet_status "$g1pub" "ZenCard")
+                local balance=$(echo "$status" | cut -d '|' -f 1)
+                local has_primal=$(echo "$status" | cut -d '|' -f 2)
                 
-                # Get primal transaction info from cache
-                primal_info=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
-                if [[ -n "$primal_info" ]]; then
+                # Format primal status
+                local primal_status=""
+                if [[ "$has_primal" == "true" ]]; then
                     primal_status="${GREEN}✓ Primal TX${NC}"
                 else
                     primal_status="${RED}✗ No Primal TX${NC}"
                 fi
                 
                 # Check if user is a sociétaire (has U.SOCIETY file or is captain)
+                local societaire_status=""
                 if [[ -s ~/.zen/game/players/${player_dir}/U.SOCIETY ]] || [[ "${player_dir}" == "${CAPTAINEMAIL}" ]]; then
                     societaire_status="${GREEN}✓ Sociétaire${NC}"
                 else
@@ -283,10 +454,9 @@ get_user_status() {
     echo "$status_info"
 }
 
-# Function to create or get system wallet key
-get_system_wallet_key() {
+# Function to get system wallet public key (read-only operations)
+get_system_wallet_public_key() {
     local wallet_type="$1"
-    local wallet_name="$2"
     
     local keyfile=""
     case "$wallet_type" in
@@ -301,28 +471,63 @@ get_system_wallet_key() {
             ;;
     esac
     
-    # Create keyfile if it doesn't exist
+    # Check if keyfile exists
     if [[ ! -f "$keyfile" ]]; then
-        echo -e "${YELLOW}Creating keyfile for $wallet_type...${NC}"
-        ${MY_PATH}/keygen -t duniter -o "$keyfile" "$wallet_name" "$wallet_name"
+        echo -e "${RED}Public key file not found: $keyfile${NC}"
+        return 1
+    fi
+    
+    # Read and validate public key from keyfile
+    local pubkey=$(cat "$keyfile" 2>/dev/null)
+    if [[ -z "$pubkey" ]]; then
+        echo -e "${RED}Could not read public key from $keyfile${NC}"
+        return 1
+    fi
+    
+    # Validate public key format
+    if ! is_valid_public_key "$pubkey"; then
+        echo -e "${RED}Invalid public key format in $keyfile${NC}"
+        return 1
+    fi
+    
+    echo "$pubkey"
+}
+
+# Function to get or create system wallet private key
+get_system_wallet_private_key() {
+    local wallet_type="$1"
+    local wallet_name="$2"
+    
+    local dunikey_file=""
+    case "$wallet_type" in
+        "UPLANETNAME.G1")
+            dunikey_file="$HOME/.zen/tmp/UPLANETNAME_G1.dunikey"
+            ;;
+        "UPLANETNAME")
+            dunikey_file="$HOME/.zen/tmp/UPLANETNAME.dunikey"
+            ;;
+        "UPLANETNAME.SOCIETY")
+            dunikey_file="$HOME/.zen/tmp/UPLANETNAME_SOCIETY.dunikey"
+            ;;
+    esac
+    
+    # Create dunikey file if it doesn't exist
+    if [[ ! -f "$dunikey_file" ]]; then
+        echo -e "${YELLOW}Creating private key for $wallet_type...${NC}"
+        ${MY_PATH}/keygen -t duniter -o "$dunikey_file" "$wallet_name" "$wallet_name"
         if [[ $? -ne 0 ]]; then
-            echo -e "${RED}Failed to create keyfile for $wallet_type${NC}"
+            echo -e "${RED}Failed to create private key for $wallet_type${NC}"
             return 1
         fi
     fi
     
-    # Check if keyfile has the correct format (should contain "pub:")
-    if [[ -f "$keyfile" ]] && ! grep -q "pub:" "$keyfile"; then
-        echo -e "${YELLOW}Converting keyfile format for $wallet_type...${NC}"
-        # If file contains only the public key, convert it to proper format
-        pubkey=$(cat "$keyfile")
-        if [[ -n "$pubkey" ]]; then
-            echo "pub: $pubkey" > "$keyfile.tmp"
-            mv "$keyfile.tmp" "$keyfile"
-        fi
+    # Verify dunikey file contains both pub: and sec: keys
+    if ! grep -q "pub:" "$dunikey_file" || ! grep -q "sec:" "$dunikey_file"; then
+        echo -e "${RED}Invalid dunikey file format: $dunikey_file${NC}"
+        return 1
     fi
     
-    echo "$keyfile"
+    echo "$dunikey_file"
 }
 
 # Function to display system wallet information
@@ -331,21 +536,17 @@ get_system_wallet_key() {
 # Send: G1 = Ẑen / 10 (no +1 needed as we're sending from existing balance)
 display_system_wallet_info() {
     local wallet_type="$1"
-    local keyfile="$2"
+    local source_pubkey="$2"
     
     echo -e "\n${CYAN}🏦 SYSTEM WALLET INFORMATION${NC}"
     echo -e "${YELLOW}============================${NC}"
     
-    # Get public key from keyfile
-    if [[ -f "$keyfile" ]]; then
-        source_pubkey=$(grep "pub:" "$keyfile" | cut -d ' ' -f 2 2>/dev/null)
         if [[ -n "$source_pubkey" ]]; then
-            # Refresh cache and get balance
-            ${MY_PATH}/COINScheck.sh "$source_pubkey" >/dev/null 2>&1
-            source_balance=$(cat ~/.zen/tmp/coucou/${source_pubkey}.COINS 2>/dev/null)
-            if [[ -z "$source_balance" || "$source_balance" == "null" ]]; then
-                source_balance="0"
-            fi
+        # Get wallet status with optimized cache usage
+        local status=$(get_wallet_status "$source_pubkey" "$wallet_type")
+        local balance=$(echo "$status" | cut -d '|' -f 1)
+        local has_primal=$(echo "$status" | cut -d '|' -f 2)
+        local zen_balance=$(echo "$status" | cut -d '|' -f 3)
             
             echo -e "${BLUE}Wallet Type:${NC} $wallet_type"
             echo -e "${BLUE}Public Key:${NC} ${CYAN}$source_pubkey${NC}"
@@ -353,33 +554,127 @@ display_system_wallet_info() {
             # Display balance in correct unit
             case "$wallet_type" in
                 "UPLANETNAME.G1")
-                    echo -e "${BLUE}Balance:${NC} ${YELLOW}$source_balance Ğ1${NC}"
+                echo -e "${BLUE}Balance:${NC} ${YELLOW}$balance Ğ1${NC}"
                     ;;
                 "UPLANETNAME"|"UPLANETNAME.SOCIETY")
-                    # Calculate Ẑen (exclude primal transaction)
-                    if (( $(echo "$source_balance > 1" | bc -l) )); then
-                        ZEN=$(echo "($source_balance - 1) * 10" | bc | cut -d '.' -f 1)
-                    else
-                        ZEN="0"
-                    fi
-                    echo -e "${BLUE}Balance:${NC} ${YELLOW}$source_balance Ğ1${NC} (${CYAN}$ZEN Ẑen${NC})"
+                echo -e "${BLUE}Balance:${NC} ${YELLOW}$balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
                     ;;
             esac
             
-            # Get primal transaction info
-            primal_info=$(cat ~/.zen/tmp/coucou/${source_pubkey}.primal 2>/dev/null)
-            if [[ -n "$primal_info" ]]; then
+        # Display status
+        if [[ "$has_primal" == "true" ]]; then
                 echo -e "${BLUE}Status:${NC} ${GREEN}✓ Active${NC}"
             else
                 echo -e "${BLUE}Status:${NC} ${RED}✗ Inactive${NC}"
             fi
         else
-            echo -e "${RED}Could not read public key from $keyfile${NC}"
-        fi
-    else
-        echo -e "${RED}Keyfile not found: $keyfile${NC}"
+        echo -e "${RED}Invalid public key provided${NC}"
     fi
     echo ""
+}
+
+# Function to validate transaction security
+validate_transaction_security() {
+    local source_pubkey="$1"
+    local dest_pubkey="$2"
+    local amount="$3"
+    
+    # Validate public keys
+    if ! is_valid_public_key "$source_pubkey"; then
+        echo -e "${RED}Invalid source public key format${NC}"
+        return 1
+    fi
+    
+    if ! is_valid_public_key "$dest_pubkey"; then
+        echo -e "${RED}Invalid destination public key format${NC}"
+        return 1
+    fi
+    
+    # Check if source and destination are different
+    if [[ "$source_pubkey" == "$dest_pubkey" ]]; then
+        echo -e "${RED}Cannot send to the same wallet${NC}"
+        return 1
+    fi
+    
+    # Validate amount
+    if ! [[ "$amount" =~ ^[0-9]+([.][0-9]+)?$ ]] || (( $(echo "$amount <= 0" | bc -l) )); then
+        echo -e "${RED}Invalid amount: must be a positive number${NC}"
+        return 1
+    fi
+    
+    # Check source balance
+    local source_balance=$(get_wallet_balance "$source_pubkey")
+    if (( $(echo "$source_balance < $amount" | bc -l) )); then
+        echo -e "${RED}Insufficient balance: $source_balance Ğ1 available, $amount Ğ1 required${NC}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to execute system wallet transaction
+execute_system_transaction() {
+    local source_wallet_type="$1"
+    local dest_pubkey="$2"
+    local amount="$3"
+    local comment="$4"
+    
+    echo -e "\n${CYAN}🚀 EXECUTING SYSTEM TRANSACTION${NC}"
+    echo -e "${YELLOW}==============================${NC}"
+    
+    # Get source wallet public key
+    local source_pubkey=$(get_system_wallet_public_key "$source_wallet_type")
+    if [[ -z "$source_pubkey" ]]; then
+        echo -e "${RED}Failed to get source wallet public key${NC}"
+        return 1
+    fi
+    
+    # Validate transaction
+    if ! validate_transaction_security "$source_pubkey" "$dest_pubkey" "$amount"; then
+        echo -e "${RED}Transaction validation failed${NC}"
+        return 1
+    fi
+    
+    # Get source wallet private key
+    local source_wallet_name=""
+    case "$source_wallet_type" in
+        "UPLANETNAME.G1")
+            source_wallet_name="${UPLANETNAME}.G1"
+            ;;
+        "UPLANETNAME")
+            source_wallet_name="${UPLANETNAME}"
+            ;;
+        "UPLANETNAME.SOCIETY")
+            source_wallet_name="${UPLANETNAME}.SOCIETY"
+            ;;
+    esac
+    
+    local dunikey_file=$(get_system_wallet_private_key "$source_wallet_type" "$source_wallet_name")
+    if [[ -z "$dunikey_file" ]]; then
+        echo -e "${RED}Failed to get source wallet private key${NC}"
+        return 1
+    fi
+    
+    # Execute transaction using PAYforSURE.sh
+    echo -e "${GREEN}Executing transaction with PAYforSURE.sh...${NC}"
+    echo -e "${BLUE}From:${NC} $source_wallet_type (${CYAN}${source_pubkey:0:8}...${NC})"
+    echo -e "${BLUE}To:${NC} ${CYAN}${dest_pubkey:0:8}...${NC}"
+    echo -e "${BLUE}Amount:${NC} ${YELLOW}$amount Ğ1${NC}"
+    
+    if [[ -n "$comment" ]]; then
+        echo -e "${BLUE}Comment:${NC} $comment"
+    fi
+    
+    # Execute the transaction
+    if ${MY_PATH}/PAYforSURE.sh "$dunikey_file" "$amount" "$dest_pubkey" "$comment"; then
+        echo -e "\n${GREEN}✅ Transaction successful!${NC}"
+        echo -e "${GREEN}System wallet transaction completed successfully.${NC}"
+        return 0
+    else
+        echo -e "\n${RED}❌ Transaction failed!${NC}"
+        echo -e "${RED}Please check the error messages above.${NC}"
+        return 1
+    fi
 }
 
 # Function to validate economic flow
@@ -392,12 +687,9 @@ validate_economic_flow() {
     echo -e "${YELLOW}==========================${NC}"
     
     # Check destination wallet status
-    dest_balance=$(cat ~/.zen/tmp/coucou/${dest_pubkey}.COINS 2>/dev/null)
-    if [[ -z "$dest_balance" || "$dest_balance" == "null" ]]; then
-        dest_balance="0"
-    fi
+    dest_balance=$(get_wallet_balance "$dest_pubkey")
     
-    dest_primal=$(cat ~/.zen/tmp/coucou/${dest_pubkey}.primal 2>/dev/null)
+    dest_primal=$(get_primal_info "$dest_pubkey")
     
     case "$wallet_type" in
         "UPLANETNAME.G1")
@@ -447,25 +739,15 @@ get_transaction_details() {
     echo -e "\n${CYAN}📝 TRANSACTION DETAILS${NC}"
     echo -e "${YELLOW}=====================${NC}"
     
-    # Get or create system wallet key
-    case "$wallet_type" in
-        "UPLANETNAME.G1")
-            keyfile=$(get_system_wallet_key "$wallet_type" "${UPLANETNAME}.G1")
-            ;;
-        "UPLANETNAME")
-            keyfile=$(get_system_wallet_key "$wallet_type" "${UPLANETNAME}")
-            ;;
-        "UPLANETNAME.SOCIETY")
-            keyfile=$(get_system_wallet_key "$wallet_type" "${UPLANETNAME}.SOCIETY")
-            ;;
-    esac
-    
-    if [[ -z "$keyfile" ]]; then
-        echo -e "${RED}Failed to get system wallet key for $wallet_type${NC}"
+    # Get system wallet public key for display
+    local source_pubkey=$(get_system_wallet_public_key "$wallet_type")
+    if [[ -z "$source_pubkey" ]]; then
+        echo -e "${RED}Failed to get system wallet public key for $wallet_type${NC}"
         exit 1
     fi
     
-    display_system_wallet_info "$wallet_type" "$keyfile"
+    # Display system wallet information
+    display_system_wallet_info "$wallet_type" "$source_pubkey"
     
     # Get amount with correct unit
     local unit=""
@@ -495,19 +777,50 @@ get_transaction_details() {
     done
     
     # Get destination public key
+    local dest_pubkey=""
+    if [[ "$target_wallet" == "UPLANETNAME" ]]; then
+        # Send to UPLANETNAME wallet
+        dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME")
+        if [[ -z "$dest_pubkey" ]]; then
+            echo -e "${RED}UPLANETNAME wallet not configured${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}Destination: UPLANETNAME (Services & Cash-Flow)${NC}"
+    elif [[ "$target_wallet" == "UPLANETNAME.SOCIETY" ]]; then
+        # Send to UPLANETNAME.SOCIETY wallet
+        dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+        if [[ -z "$dest_pubkey" ]]; then
+            echo -e "${RED}UPLANETNAME.SOCIETY wallet not configured${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}Destination: UPLANETNAME.SOCIETY (Social Capital)${NC}"
+    else
+        # External wallet - prompt for public key
     while true; do
         read -p "Enter destination public key: " dest_pubkey
         if [[ -n "$dest_pubkey" ]]; then
+                # Validate public key format
+                if is_valid_public_key "$dest_pubkey"; then
             # Test the public key with g1_to_ipfs.py
             if ${MY_PATH}/g1_to_ipfs.py "$dest_pubkey" >/dev/null 2>&1; then
                 break
             else
                 echo -e "${RED}Please enter a valid G1 public key${NC}"
+                    fi
+                else
+                    echo -e "${RED}Invalid public key format${NC}"
             fi
         else
             echo -e "${RED}Please enter a valid public key${NC}"
         fi
     done
+    fi
+    
+    # Validate transaction security
+    if ! validate_transaction_security "$source_pubkey" "$dest_pubkey" "$amount"; then
+        echo -e "${RED}Transaction validation failed. Please check the errors above.${NC}"
+        exit 1
+    fi
     
     # Validate economic flow
     validate_economic_flow "$wallet_type" "$dest_pubkey" "$amount"
@@ -536,17 +849,10 @@ get_transaction_details() {
     echo -e "${YELLOW}====================================${NC}"
     
     # Get source wallet info
-    source_pubkey=$(grep "pub:" "$keyfile" | cut -d ' ' -f 2 2>/dev/null)
-    source_balance=$(cat ~/.zen/tmp/coucou/${source_pubkey}.COINS 2>/dev/null)
-    if [[ -z "$source_balance" || "$source_balance" == "null" ]]; then
-        source_balance="0"
-    fi
+    source_balance=$(get_wallet_balance "$source_pubkey")
     
     # Get destination wallet info
-    dest_balance=$(cat ~/.zen/tmp/coucou/${dest_pubkey}.COINS 2>/dev/null)
-    if [[ -z "$dest_balance" || "$dest_balance" == "null" ]]; then
-        dest_balance="0"
-    fi
+    dest_balance=$(get_wallet_balance "$dest_pubkey")
     
     echo -e "${BLUE}From:${NC} $wallet_type"
     echo -e "${BLUE}Source Public Key:${NC} ${CYAN}$source_pubkey${NC}"
@@ -594,16 +900,10 @@ get_transaction_details() {
         exit 0
     fi
     
-    # Execute transaction using PAYforSURE.sh
-    echo -e "\n${CYAN}🚀 EXECUTING TRANSACTION...${NC}"
-    echo -e "${YELLOW}=======================${NC}"
-    
-    # Use the keyfile we already determined
-    # (keyfile is already set from get_system_wallet_key function)
-    
-    if ${MY_PATH}/PAYforSURE.sh "$keyfile" "$amount" "$dest_pubkey" "$comment"; then
+    # Execute system wallet transaction
+    if execute_system_transaction "$wallet_type" "$dest_pubkey" "$amount" "$comment"; then
         echo -e "\n${GREEN}✅ Transaction successful!${NC}"
-        echo -e "${GREEN}Transaction completed successfully.${NC}"
+        echo -e "${GREEN}System wallet transaction completed successfully.${NC}"
     else
         echo -e "\n${RED}❌ Transaction failed!${NC}"
         echo -e "${RED}Please check the error messages above and try again.${NC}"
@@ -620,7 +920,54 @@ handle_g1_reserve() {
     
     show_flowchart_position "UPLANETNAME.G1" "Ğ1 Reserve Management"
     
+    echo -e "\n${BLUE}TRANSACTION OPTIONS:${NC}"
+    echo -e "  1. Send Ğ1 to UPLANETNAME (Services & Cash-Flow)"
+    echo -e "  2. Send Ğ1 to UPLANETNAME.SOCIETY (Social Capital)"
+    echo -e "  3. Send Ğ1 to external wallet"
+    echo -e "  4. View wallet status only"
+    
+    read -p "Select option (1-4): " g1_choice
+    
+    case "$g1_choice" in
+        1)
+            # Send to UPLANETNAME
+            local dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME")
+            if [[ -n "$dest_pubkey" ]]; then
+                get_transaction_details "UPLANETNAME.G1" "UPLANETNAME"
+            else
+                echo -e "${RED}UPLANETNAME wallet not configured${NC}"
+                exit 1
+            fi
+            ;;
+        2)
+            # Send to UPLANETNAME.SOCIETY
+            local dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+            if [[ -n "$dest_pubkey" ]]; then
+                get_transaction_details "UPLANETNAME.G1" "UPLANETNAME.SOCIETY"
+            else
+                echo -e "${RED}UPLANETNAME.SOCIETY wallet not configured${NC}"
+                exit 1
+            fi
+            ;;
+        3)
+            # Send to external wallet
     get_transaction_details "UPLANETNAME.G1" ""
+            ;;
+        4)
+            # View status only
+            local source_pubkey=$(get_system_wallet_public_key "UPLANETNAME.G1")
+            if [[ -n "$source_pubkey" ]]; then
+                display_system_wallet_info "UPLANETNAME.G1" "$source_pubkey"
+            else
+                echo -e "${RED}UPLANETNAME.G1 wallet not configured${NC}"
+                exit 1
+            fi
+            ;;
+        *)
+            echo -e "${RED}Invalid selection. Please choose 1-4.${NC}"
+            exit 1
+            ;;
+    esac
 }
 
 # Function to handle UPLANETNAME operations
@@ -706,17 +1053,17 @@ handle_wallet_analysis() {
         # UPLANETNAME.G1
         selected_wallet="UPLANETNAME.G1"
         wallet_type="SYSTEM"
-        pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_G1" | cut -d ' ' -f 2 2>/dev/null)
+        pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
     elif [[ "$wallet_choice" -eq $((2+${#account_names[@]}+${#player_dirs[@]})) ]]; then
         # UPLANETNAME
         selected_wallet="UPLANETNAME"
         wallet_type="SYSTEM"
-        pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETG1PUB" | cut -d ' ' -f 2 2>/dev/null)
+        pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
     elif [[ "$wallet_choice" -eq $((3+${#account_names[@]}+${#player_dirs[@]})) ]]; then
         # UPLANETNAME.SOCIETY
         selected_wallet="UPLANETNAME.SOCIETY"
         wallet_type="SYSTEM"
-        pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" | cut -d ' ' -f 2 2>/dev/null)
+        pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
     else
         echo -e "${RED}Invalid selection.${NC}"
         exit 1
@@ -741,20 +1088,13 @@ show_analysis_menu() {
     echo -e "${YELLOW}===============================================${NC}"
     echo -e "${GREEN}Public Key: ${CYAN}$pubkey${NC}"
     
-    # Get current balance
-    ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
-    balance=$(cat ~/.zen/tmp/coucou/${pubkey}.COINS 2>/dev/null)
-    if [[ -z "$balance" || "$balance" == "null" ]]; then
-        balance="0"
-    fi
+    # Get wallet status with optimized cache usage
+    local status=$(get_wallet_status "$pubkey" "$wallet_type")
+    balance=$(echo "$status" | cut -d '|' -f 1)
+    ZEN=$(echo "$status" | cut -d '|' -f 3)
     
-    # Calculate Ẑen for non-G1 wallets
-    if [[ "$wallet_type" != "UPLANETNAME.G1" ]]; then
-        if (( $(echo "$balance > 1" | bc -l) )); then
-            ZEN=$(echo "($balance - 1) * 10" | bc | cut -d '.' -f 1)
-        else
-            ZEN="0"
-        fi
+    # Display balance
+    if [[ "$wallet_type" != "UPLANETNAME.G1" ]] && [[ -n "$ZEN" ]] && [[ "$ZEN" != "0" ]]; then
         echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC} (${CYAN}$ZEN Ẑen${NC})"
     else
         echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC}"
@@ -1034,14 +1374,9 @@ display_economic_dashboard() {
     
     # UPLANETNAME.G1
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
-        g1_pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_G1" | cut -d ' ' -f 2 2>/dev/null)
+        g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
         if [[ -n "$g1_pubkey" ]]; then
-            # Refresh cache and get balance
-            ${MY_PATH}/COINScheck.sh "$g1_pubkey" >/dev/null 2>&1
-            g1_balance=$(cat ~/.zen/tmp/coucou/${g1_pubkey}.COINS 2>/dev/null)
-            if [[ -z "$g1_balance" || "$g1_balance" == "null" ]]; then
-                g1_balance="0"
-            fi
+            g1_balance=$(get_wallet_balance "$g1_pubkey")
             echo -e "   • UPLANETNAME.G1: ${YELLOW}$g1_balance Ğ1${NC}"
         else
             echo -e "   • UPLANETNAME.G1: ${RED}Invalid keyfile${NC}"
@@ -1052,21 +1387,12 @@ display_economic_dashboard() {
     
     # UPLANETNAME
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
-        services_pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETG1PUB" | cut -d ' ' -f 2 2>/dev/null)
+        services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
         if [[ -n "$services_pubkey" ]]; then
-            # Refresh cache and get balance
-            ${MY_PATH}/COINScheck.sh "$services_pubkey" >/dev/null 2>&1
-            services_balance=$(cat ~/.zen/tmp/coucou/${services_pubkey}.COINS 2>/dev/null)
-            if [[ -z "$services_balance" || "$services_balance" == "null" ]]; then
-                services_balance="0"
-            fi
-            # Calculate Ẑen (exclude primal transaction)
-            if (( $(echo "$services_balance > 1" | bc -l) )); then
-                ZEN=$(echo "($services_balance - 1) * 10" | bc | cut -d '.' -f 1)
-            else
-                ZEN="0"
-            fi
-            echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$ZEN Ẑen${NC})"
+            local status=$(get_wallet_status "$services_pubkey" "UPLANETNAME")
+            services_balance=$(echo "$status" | cut -d '|' -f 1)
+            zen_balance=$(echo "$status" | cut -d '|' -f 3)
+            echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
         else
             echo -e "   • UPLANETNAME: ${RED}Invalid keyfile${NC}"
         fi
@@ -1076,21 +1402,12 @@ display_economic_dashboard() {
     
     # UPLANETNAME.SOCIETY
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
-        society_pubkey=$(grep "pub:" "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" | cut -d ' ' -f 2 2>/dev/null)
+        society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
-            # Refresh cache and get balance
-            ${MY_PATH}/COINScheck.sh "$society_pubkey" >/dev/null 2>&1
-            society_balance=$(cat ~/.zen/tmp/coucou/${society_pubkey}.COINS 2>/dev/null)
-            if [[ -z "$society_balance" || "$society_balance" == "null" ]]; then
-                society_balance="0"
-            fi
-            # Calculate Ẑen (exclude primal transaction)
-            if (( $(echo "$society_balance > 1" | bc -l) )); then
-                ZEN=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
-            else
-                ZEN="0"
-            fi
-            echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$ZEN Ẑen${NC})"
+            local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
+            society_balance=$(echo "$status" | cut -d '|' -f 1)
+            zen_balance=$(echo "$status" | cut -d '|' -f 3)
+            echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
         else
             echo -e "   • UPLANETNAME.SOCIETY: ${RED}Invalid keyfile${NC}"
         fi
@@ -1148,22 +1465,13 @@ display_economic_dashboard() {
         for account_name in "${account_names[@]}"; do
             g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
             if [[ -n "$g1pub" ]]; then
-                # Refresh cache and get balance
-                ${MY_PATH}/COINScheck.sh "$g1pub" >/dev/null 2>&1
-                balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
-                if [[ -z "$balance" || "$balance" == "null" ]]; then
-                    balance="0"
-                fi
-                
-                # Calculate Ẑen level
-                if (( $(echo "$balance > 1" | bc -l) )); then
-                    ZEN=$(echo "($balance - 1) * 10" | bc | cut -d '.' -f 1)
-                else
-                    ZEN="0"
-                fi
+                # Get wallet status with optimized cache usage
+                local status=$(get_wallet_status "$g1pub" "MULTIPASS")
+                balance=$(echo "$status" | cut -d '|' -f 1)
+                ZEN=$(echo "$status" | cut -d '|' -f 3)
                 
                 # Check primal transaction and its source
-                primal_info=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
+                primal_info=$(get_primal_info "$g1pub")
                 if [[ -n "$primal_info" ]]; then
                     primal_source=$(check_primal_source "$g1pub")
                     case "$primal_source" in
@@ -1192,22 +1500,13 @@ display_economic_dashboard() {
         for player_dir in "${player_dirs[@]}"; do
             g1pub=$(cat ~/.zen/game/players/${player_dir}/.g1pub 2>/dev/null)
             if [[ -n "$g1pub" ]]; then
-                # Refresh cache and get balance
-                ${MY_PATH}/COINScheck.sh "$g1pub" >/dev/null 2>&1
-                balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
-                if [[ -z "$balance" || "$balance" == "null" ]]; then
-                    balance="0"
-                fi
-                
-                # Calculate Ẑen level
-                if (( $(echo "$balance > 1" | bc -l) )); then
-                    ZEN=$(echo "($balance - 1) * 10" | bc | cut -d '.' -f 1)
-                else
-                    ZEN="0"
-                fi
+                # Get wallet status with optimized cache usage
+                local status=$(get_wallet_status "$g1pub" "ZenCard")
+                balance=$(echo "$status" | cut -d '|' -f 1)
+                ZEN=$(echo "$status" | cut -d '|' -f 3)
                 
                 # Check primal transaction and its source
-                primal_info=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
+                primal_info=$(get_primal_info "$g1pub")
                 if [[ -n "$primal_info" ]]; then
                     primal_source=$(check_primal_source "$g1pub")
                     case "$primal_source" in
@@ -1240,11 +1539,122 @@ display_economic_dashboard() {
     echo -e "${YELLOW}====================${NC}\n"
 }
 
+# Function to handle maintenance and optimization
+handle_maintenance() {
+    echo -e "\n${CYAN}🛠️  MAINTENANCE & OPTIMIZATION${NC}"
+    echo -e "${YELLOW}=============================${NC}"
+    echo -e "${GREEN}System maintenance and optimization tools.${NC}"
+    
+    echo -e "\n${BLUE}MAINTENANCE OPTIONS:${NC}"
+    echo -e "  1. 🔄 Refresh all wallet balances"
+    echo -e "  2. 🧹 Clean old cache files"
+    echo -e "  3. 🔍 System health check"
+    echo -e "  4. 🔙 Back to Main Menu"
+    
+    read -p "Select option (1-4): " maintenance_choice
+    
+    case "$maintenance_choice" in
+        1)
+            refresh_all_balances
+            ;;
+        2)
+            read -p "Enter cache age limit in hours (default: 24): " cache_age
+            cache_age="${cache_age:-24}"
+            clean_cache "$cache_age"
+            ;;
+        3)
+            perform_system_health_check
+            ;;
+        4)
+            echo -e "${GREEN}Returning to main menu...${NC}"
+            main "$@"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection. Please choose 1-4.${NC}"
+            handle_maintenance
+            ;;
+    esac
+}
+
+# Function to initialize system
+initialize_system() {
+    # Ensure cache directory exists
+    ensure_cache_dir
+    
+    # Set script options for better performance
+    set -o pipefail  # Exit on pipe failure
+    shopt -s nullglob  # Handle empty globs gracefully
+    shopt -s extglob  # Extended globbing for better pattern matching
+}
+
+# Function to perform system health check
+perform_system_health_check() {
+    echo -e "\n${CYAN}🔍 SYSTEM HEALTH CHECK${NC}"
+    echo -e "${YELLOW}====================${NC}"
+    
+    local issues=0
+    
+    # Check cache directory
+    if [[ ! -d "$CACHE_DIR" ]]; then
+        echo -e "${RED}✗ Cache directory not found: $CACHE_DIR${NC}"
+        ((issues++))
+    else
+        echo -e "${GREEN}✓ Cache directory exists${NC}"
+    fi
+    
+    # Check system wallet keyfiles
+    local system_wallets=("UPLANETNAME_G1" "UPLANETG1PUB" "UPLANETNAME_SOCIETY")
+    for wallet_file in "${system_wallets[@]}"; do
+        local keyfile="$HOME/.zen/tmp/$wallet_file"
+        if [[ -f "$keyfile" ]]; then
+            local pubkey=$(cat "$keyfile" 2>/dev/null)
+            if is_valid_public_key "$pubkey"; then
+                echo -e "${GREEN}✓ $wallet_file: Valid public key${NC}"
+            else
+                echo -e "${RED}✗ $wallet_file: Invalid public key format${NC}"
+                ((issues++))
+            fi
+        else
+            echo -e "${YELLOW}⚠ $wallet_file: Not configured${NC}"
+        fi
+    done
+    
+    # Check required tools
+    local required_tools=("silkaj" "bc" "jq")
+    for tool in "${required_tools[@]}"; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ $tool: Available${NC}"
+        else
+            echo -e "${RED}✗ $tool: Not found${NC}"
+            ((issues++))
+        fi
+    done
+    
+    # Check COINScheck.sh script
+    if [[ -f "${MY_PATH}/COINScheck.sh" ]]; then
+        echo -e "${GREEN}✓ COINScheck.sh: Available${NC}"
+    else
+        echo -e "${RED}✗ COINScheck.sh: Not found${NC}"
+        ((issues++))
+    fi
+    
+    # Summary
+    echo -e "\n${CYAN}HEALTH CHECK SUMMARY:${NC}"
+    if [[ $issues -eq 0 ]]; then
+        echo -e "${GREEN}✅ System is healthy (0 issues found)${NC}"
+    else
+        echo -e "${YELLOW}⚠ System has $issues issue(s) that should be addressed${NC}"
+    fi
+}
+
 # Main script logic
 main() {
     echo -e "${CYAN}🌟 ASTROPORT.ONE ZEN TRANSACTION MANAGER${NC}"
     echo -e "${YELLOW}========================================${NC}"
     echo -e "${GREEN}Welcome, Captain! Choose your transaction type:${NC}"
+    
+    # Initialize system
+    initialize_system
     
     # Check if UPLANETNAME is defined
     if [[ -z "$UPLANETNAME" ]]; then
@@ -1281,8 +1691,14 @@ main() {
     echo -e "   • Analyze wallet activities"
     echo ""
     
+    echo -e "${BLUE}5. 🛠️  MAINTENANCE & OPTIMIZATION${NC} - System Tools"
+    echo -e "   • Refresh all wallet balances"
+    echo -e "   • Clean old cache files"
+    echo -e "   • System health check"
+    echo ""
+    
     # Get user selection
-    read -p "Select wallet type (1-4): " choice
+    read -p "Select option (1-5): " choice
     
     case "$choice" in
         1)
@@ -1297,8 +1713,11 @@ main() {
         4)
             handle_wallet_analysis
             ;;
+        5)
+            handle_maintenance
+            ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, or 4.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, or 5.${NC}"
             exit 1
             ;;
     esac
