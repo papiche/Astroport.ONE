@@ -409,7 +409,7 @@ while true; do
     
     # Check if cache is fresh (< 12h)
     if [[ -s ${ANALYSIS_FILE} ]]; then
-        local cache_age=$(( $(date +%s) - $(stat -c %Y "${ANALYSIS_FILE}" 2>/dev/null || echo 0) ))
+        cache_age=$(( $(date +%s) - $(stat -c %Y "${ANALYSIS_FILE}" 2>/dev/null || echo 0) ))
         if [[ $cache_age -lt 43200 ]]; then  # 12h = 43200 seconds
             TEMP_CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities' 2>/dev/null)
             TEMP_SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services' 2>/dev/null)
