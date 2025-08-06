@@ -242,7 +242,7 @@ else
 fi
 
 ## ComfyUI need to get restarted to reduce VRAM
-[[ -s ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh ]] && sudo systemctl restart comfyui 
+[[ -s ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh ]] && sudo systemctl restart comfyui
 
 #####################################
 # Node refreshing
@@ -281,7 +281,7 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     ZENCARD_SLOTS=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.zencard_slots' 2>/dev/null)
     NOSTR_SLOTS=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.nostr_slots' 2>/dev/null)
     AVAILABLE_SPACE_GB=$(echo "$ANALYSIS_JSON" | jq -r '.capacities.available_space_gb' 2>/dev/null)
-    
+
     # Extraire les statuts des services
     IPFS_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.ipfs.active' 2>/dev/null)
     ASTROPORT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.astroport.active' 2>/dev/null)
@@ -308,18 +308,18 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     ANALYSIS_FILE=~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json
     echo "$ANALYSIS_JSON" > "$ANALYSIS_FILE"
     echo "✅ Analyse JSON sauvegardée dans $ANALYSIS_FILE"
-    
+
     # Mettre à jour 12345.json avec les données fraîches
     if [[ -f "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" ]]; then
         # Extraire capacities et services de l'analyse fraîche
-        local capacities=$(echo "$ANALYSIS_JSON" | jq -r '.capacities' 2>/dev/null)
-        local services=$(echo "$ANALYSIS_JSON" | jq -r '.services' 2>/dev/null)
-        
+        capacities=$(echo "$ANALYSIS_JSON" | jq -r '.capacities' 2>/dev/null)
+        services=$(echo "$ANALYSIS_JSON" | jq -r '.services' 2>/dev/null)
+
         # Mettre à jour 12345.json
         jq --argjson capacities "$capacities" --argjson services "$services" \
            '.capacities = $capacities | .services = $services' \
            "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" > "$HOME/.zen/tmp/${IPFSNODEID}/12345.json.tmp" 2>/dev/null
-        
+
         if [[ $? -eq 0 ]]; then
             mv "$HOME/.zen/tmp/${IPFSNODEID}/12345.json.tmp" "$HOME/.zen/tmp/${IPFSNODEID}/12345.json"
             echo "✅ 12345.json mis à jour avec les données fraîches"
