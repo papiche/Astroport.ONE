@@ -31,7 +31,7 @@ LOGS SURVEILLÉS:
 
     🌐 NOSTR Relay:
         - journalctl strfry
-        - ~/.zen/tmp/uplanet_messages.log
+        - ~/.zen/tmp/nostr_kind1_messages.log
         - ~/.zen/tmp/strfry.log
         - ~/.zen/tmp/nostr_likes.log
         - ~/.zen/tmp/nostpy.log
@@ -95,7 +95,7 @@ check_all_logs() {
     echo ""
     echo "🌐 NOSTR RELAY:"
     check_systemd_service "strfry" "Service strfry"
-    check_log_file "$HOME/.zen/tmp/uplanet_messages.log" "Messages UPlanet"
+    check_log_file "$HOME/.zen/tmp/nostr_kind1_messages.log" "Messages UPlanet"
     check_log_file "$HOME/.zen/tmp/strfry.log" "Log strfry"
     check_log_file "$HOME/.zen/tmp/nostr_likes.log" "Likes NOSTR"
     check_log_file "$HOME/.zen/tmp/nostpy.log" "Log nostpy"
@@ -132,7 +132,7 @@ journalctl -fu strfry &
         echo "⚠️  Service strfry non actif"
     fi
     
-    [[ -f "$HOME/.zen/tmp/uplanet_messages.log" ]] && tail -f "$HOME/.zen/tmp/uplanet_messages.log" &
+    [[ -f "$HOME/.zen/tmp/nostr_kind1_messages.log" ]] && tail -f "$HOME/.zen/tmp/nostr_kind1_messages.log" &
     [[ -f "$HOME/.zen/tmp/strfry.log" ]] && tail -f "$HOME/.zen/tmp/strfry.log" &
     [[ -f "$HOME/.zen/tmp/nostr_likes.log" ]] && tail -f "$HOME/.zen/tmp/nostr_likes.log" &
     [[ -f "$HOME/.zen/tmp/nostpy.log" ]] && tail -f "$HOME/.zen/tmp/nostpy.log" &
