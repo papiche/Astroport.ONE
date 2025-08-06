@@ -70,8 +70,8 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
             echo "## CLEANING NON-LOCAL REGION / SECTOR / UMAP CACHES"
 
             # Current region coordinates (integer part of LAT/LON)
-            RLAT=$(printf "%.0f" "$LAT")
-            RLON=$(printf "%.0f" "$LON")
+            RLAT=$(LC_NUMERIC=C printf "%.0f" "$LAT")
+            RLON=$(LC_NUMERIC=C printf "%.0f" "$LON")
             echo "Node's current region is _${RLAT}_${RLON}"
 
             # Create a list of regions to keep (current + 8 neighbors)
@@ -98,7 +98,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
                 sector_lat=$(echo "$sector_name" | cut -d '_' -f 2)
                 sector_lon=$(echo "$sector_name" | cut -d '_' -f 3)
                 # Determine the region for this sector
-                sector_region="_$(printf "%.0f" "$sector_lat")_$(printf "%.0f" "$sector_lon")"
+                sector_region="_$(LC_NUMERIC=C printf "%.0f" "$sector_lat")_$(LC_NUMERIC=C printf "%.0f" "$sector_lon")"
 
                 if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${sector_region} " ]]; then
                     echo "Deleting non-local SECTOR cache: $sector_path (Region: $sector_region)"
@@ -113,7 +113,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
                 umap_lon=$(echo "$umap_name" | cut -d '_' -f 3)
 
                 # Determine the region for this umap
-                umap_region="_$(printf "%.0f" "$umap_lat")_$(printf "%.0f" "$umap_lon")"
+                umap_region="_$(LC_NUMERIC=C printf "%.0f" "$umap_lat")_$(LC_NUMERIC=C printf "%.0f" "$umap_lon")"
 
                 if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${umap_region} " ]]; then
                     echo "Deleting non-local UMAP cache: $umap_path (Region: $umap_region)"
