@@ -55,7 +55,7 @@ The NOSTR message for your media could not be sent successfully.
 Media Details:
 - Title: ${title}
 - Media Key: ${mediakey}
-- IPFS Link: ${ipfs_link}
+- IPFS Link: ${myIPFS}${ipfs_link}
 - Timestamp: $(date -u)
 
 The media has been successfully added to your Astroport TiddlyWiki and IPFS, but the public NOSTR announcement failed.
@@ -562,7 +562,7 @@ then
             "$MEDIAKEY" \
             "$TITLE" \
             "$DESCRIPTION" \
-            "$myIPFS/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
+            "/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
             "$MIME" \
             "$FILE_SIZE" \
             "$DUREE" \
