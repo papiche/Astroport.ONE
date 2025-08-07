@@ -562,7 +562,7 @@ then
             "$MEDIAKEY" \
             "$TITLE" \
             "$DESCRIPTION" \
-            "/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
+            "$myLIBRA/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
             "$MIME" \
             "$FILE_SIZE" \
             "$DUREE" \
