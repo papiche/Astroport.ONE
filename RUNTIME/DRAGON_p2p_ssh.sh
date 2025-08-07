@@ -41,7 +41,7 @@ if [[ -s ~/.ssh/id_ed25519.pub ]]; then
     else
         # DEFAULT X LEVEL - IPFSNODEID not linked with SSH
         rm -f ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub 2>/dev/null
-        echo "LEVLEL X - IPFSNODEID not linked with SSH _____ ٩(̾●̮̮̃̾•̃̾)۶ _____"
+        echo "LEVEL X - IPFSNODEID not linked with SSH _____ ٩(̾●̮̮̃̾•̃̾)۶ _____"
         echo "${YIPNS} != ${IPFSNODEID}"
         cp ~/.ssh/id_ed25519.pub ~/.zen/tmp/${IPFSNODEID}/x_ssh.pub
     fi
