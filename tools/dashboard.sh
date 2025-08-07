@@ -1,11 +1,12 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 2.1 - Interface Capitaine (Bugs corrigés)
+# Version: 3.0 - Dashboard Économique UPlanet
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# ♥️BOX CONTROL V2 - Interface Capitaine UPlanet
-# Focus: Simplicité, utilité, économie ZEN
+# DASHBOARD ÉCONOMIQUE UPLANET - Interface Capitaine
+# Focus: Vue d'ensemble économique, statut services, actions rapides
+# Évite les redondances avec captain.sh (embarquement) et zen.sh (transactions)
 ################################################################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,16 +26,15 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration globale
-HEARTBOX_DIR="$HOME/.zen/heartbox"
-HEARTBOX_CACHE_DIR="$HOME/.zen/tmp/heartbox_cache"
-mkdir -p "$HEARTBOX_DIR" "$HEARTBOX_CACHE_DIR"
+CACHE_DIR="$HOME/.zen/tmp/coucou"
+mkdir -p "$CACHE_DIR"
 
 # Cache sudo pour éviter les demandes répétées
-SUDO_CACHE_FILE="$HEARTBOX_CACHE_DIR/sudo_check.cache"
+SUDO_CACHE_FILE="$HOME/.zen/tmp/sudo_check.cache"
 SUDO_CACHE_TIMEOUT=300  # 5 minutes
 
 #######################################################################
-# Utilitaires optimisés
+# Fonctions utilitaires communes (réutilisées de zen.sh)
 #######################################################################
 
 # Vérification sudo avec cache
@@ -55,6 +55,36 @@ check_sudo_cached() {
     fi
 }
 
+# Fonction pour obtenir le solde d'un portefeuille depuis le cache (réutilisée de zen.sh)
+get_wallet_balance() {
+    local pubkey="$1"
+    local auto_refresh="${2:-false}"
+    
+    # Refresh cache if requested and pubkey is valid
+    if [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]]; then
+        ${SCRIPT_DIR}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+    fi
+    
+    # Get balance from cache
+    local balance=$(cat "$CACHE_DIR/${pubkey}.COINS" 2>/dev/null)
+    if [[ -z "$balance" || "$balance" == "null" ]]; then
+        echo "0"
+    else
+        echo "$balance"
+    fi
+}
+
+# Fonction pour calculer les Ẑen (réutilisée de zen.sh)
+calculate_zen_balance() {
+    local g1_balance="$1"
+    
+    if (( $(echo "$g1_balance > 1" | bc -l 2>/dev/null || echo 0) )); then
+        echo "($g1_balance - 1) * 10" | bc -l 2>/dev/null | cut -d '.' -f 1
+    else
+        echo "0"
+    fi
+}
+
 # Formatage sécurisé des nombres
 safe_printf() {
     local format="$1"
@@ -65,12 +95,12 @@ safe_printf() {
 }
 
 #######################################################################
-# Dashboard Économique Simplifié
+# Dashboard Économique UPlanet
 #######################################################################
 
 show_captain_dashboard() {
     clear
-    local current_player=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "Anonyme")
+    local current_player=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "Non connecté")
     
     # En-tête Capitaine
     echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
@@ -79,8 +109,8 @@ show_captain_dashboard() {
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    # Statut économique en une ligne
-    show_economic_summary
+    # Statut économique UPlanet
+    show_uplanet_economic_status
     echo ""
     
     # Statut des services critiques
@@ -92,32 +122,111 @@ show_captain_dashboard() {
     echo ""
 }
 
-show_economic_summary() {
-    echo -e "${YELLOW}💰 ÉCONOMIE ZEN${NC}"
+show_uplanet_economic_status() {
+    echo -e "${YELLOW}💰 ÉCONOMIE UPLANET${NC}"
     
-    # Calcul du PAF (Prix d'Abonnement Fixe)
-    local paf_today=$(calculate_daily_paf)
-    local balance_zen=$(get_zen_balance)
-    local subscription_revenue=$(get_subscription_revenue)
-    
-    # Affichage en une ligne compacte avec formatage sécurisé
-    local balance_str=$(safe_printf "%.2f" "$balance_zen")
-    local paf_str=$(safe_printf "%.2f" "$paf_today")
-    local revenue_str=$(safe_printf "%.2f" "$subscription_revenue")
-    
-    printf "  💎 Solde: ${GREEN}%s Ẑ${NC} • 📊 PAF: ${CYAN}%s Ẑ/jour${NC} • 💼 Revenus: ${GREEN}+%s Ẑ${NC}\n" \
-        "$balance_str" "$paf_str" "$revenue_str"
-    
-    # Indicateur de santé économique (comparaison numérique sécurisée)
-    local autonomy_days=$(echo "scale=1; $balance_zen / $paf_today" | bc -l 2>/dev/null || echo "0")
-    
-    if (( $(echo "$autonomy_days > 7" | bc -l 2>/dev/null || echo 0) )); then
-        echo -e "  🟢 Santé: ${GREEN}Excellente${NC} (>7 jours d'autonomie)"
-    elif (( $(echo "$autonomy_days > 3" | bc -l 2>/dev/null || echo 0) )); then
-        echo -e "  🟡 Santé: ${YELLOW}Correcte${NC} (3-7 jours d'autonomie)"
-    else
-        echo -e "  🔴 Santé: ${RED}Attention${NC} (<3 jours d'autonomie)"
+    # Récupérer le capitaine actuel
+    local current_captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+    if [[ -z "$current_captain" ]]; then
+        echo -e "  ❌ ${RED}Aucun capitaine connecté${NC}"
+        echo -e "  💡 Utilisez 'c' pour vous connecter ou 'n' pour créer un compte"
+        return
     fi
+    
+    # Solde du capitaine (ZEN Card)
+    local captain_g1pub=$(cat ~/.zen/game/players/$current_captain/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    if [[ -n "$captain_g1pub" ]]; then
+        local captain_balance=$(get_wallet_balance "$captain_g1pub")
+        local captain_zen=$(calculate_zen_balance "$captain_balance")
+        
+        local balance_str=$(safe_printf "%.2f" "$captain_balance")
+        local zen_str=$(safe_printf "%.0f" "$captain_zen")
+        
+        echo -e "  💎 Capitaine: ${GREEN}$balance_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+    fi
+    
+    # Solde MULTIPASS du capitaine (si différent)
+    if [[ -d ~/.zen/game/nostr/$current_captain ]]; then
+        local multipass_g1pub=$(cat ~/.zen/game/nostr/$current_captain/G1PUBNOSTR 2>/dev/null)
+        if [[ -n "$multipass_g1pub" ]] && [[ "$multipass_g1pub" != "$captain_g1pub" ]]; then
+            local multipass_balance=$(get_wallet_balance "$multipass_g1pub")
+            local multipass_zen=$(calculate_zen_balance "$multipass_balance")
+            
+            local mp_balance_str=$(safe_printf "%.2f" "$multipass_balance")
+            local mp_zen_str=$(safe_printf "%.0f" "$multipass_zen")
+            
+            echo -e "  👥 MULTIPASS: ${GREEN}$mp_balance_str Ğ1${NC} (${CYAN}$mp_zen_str Ẑen${NC})"
+        fi
+    fi
+    
+    # Portefeuilles système UPlanet
+    show_system_wallets_summary
+    
+    # Statistiques utilisateurs
+    show_user_statistics
+}
+
+show_system_wallets_summary() {
+    echo ""
+    echo -e "${CYAN}🏛️  PORTEFEUILLES SYSTÈME UPLANET:${NC}"
+    
+    # UPLANETNAME.G1 (Réserve Ğ1)
+    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
+        local g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
+        if [[ -n "$g1_pubkey" ]]; then
+            local g1_balance=$(get_wallet_balance "$g1_pubkey")
+            local g1_str=$(safe_printf "%.2f" "$g1_balance")
+            echo -e "  🏛️  UPLANETNAME.G1: ${YELLOW}$g1_str Ğ1${NC} (Réserve)"
+        fi
+    fi
+    
+    # UPLANETG1PUB (Services & Cash-Flow)
+    if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
+        local services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
+        if [[ -n "$services_pubkey" ]]; then
+            local services_balance=$(get_wallet_balance "$services_pubkey")
+            local services_zen=$(calculate_zen_balance "$services_balance")
+            local services_str=$(safe_printf "%.2f" "$services_balance")
+            local zen_str=$(safe_printf "%.0f" "$services_zen")
+            echo -e "  💼 UPLANETG1PUB: ${YELLOW}$services_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+        fi
+    fi
+    
+    # UPLANETNAME.SOCIETY (Capital Social)
+    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
+        local society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
+        if [[ -n "$society_pubkey" ]]; then
+            local society_balance=$(get_wallet_balance "$society_pubkey")
+            local society_zen=$(calculate_zen_balance "$society_balance")
+            local society_str=$(safe_printf "%.2f" "$society_balance")
+            local zen_str=$(safe_printf "%.0f" "$society_zen")
+            echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+        fi
+    fi
+}
+
+show_user_statistics() {
+    echo ""
+    echo -e "${CYAN}👥 STATISTIQUES UTILISATEURS:${NC}"
+    
+    # Compter les MULTIPASS
+    local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+    echo -e "  👥 MULTIPASS: ${WHITE}$multipass_count${NC} compte(s)"
+    
+    # Compter les ZEN Cards
+    local zencard_count=$(ls ~/.zen/game/players 2>/dev/null | grep "@" | wc -l)
+    echo -e "  🎫 ZEN Cards: ${WHITE}$zencard_count${NC} carte(s)"
+    
+    # Compter les sociétaires
+    local societaire_count=0
+    for player_dir in ~/.zen/game/players/*@*.*/; do
+        if [[ -d "$player_dir" ]]; then
+            if [[ -s "${player_dir}U.SOCIETY" ]] || [[ "$(basename "$player_dir")" == "$(cat ~/.zen/game/players/.current/.player 2>/dev/null)" ]]; then
+                ((societaire_count++))
+            fi
+        fi
+    done
+    echo -e "  ⭐ Sociétaires: ${GREEN}$societaire_count${NC} membre(s)"
 }
 
 show_critical_services_status() {
@@ -140,12 +249,26 @@ show_critical_services_status() {
         status_parts+=("API:${RED}✗${NC}")
     fi
     
+    # uSPOT/uPassport
+    if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
+        status_parts+=("uSPOT:${GREEN}✓${NC}")
+    else
+        status_parts+=("uSPOT:${YELLOW}⚠${NC}")
+    fi
+    
+    # NOSTR Relay
+    if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
+        status_parts+=("NOSTR:${GREEN}✓${NC}")
+    else
+        status_parts+=("NOSTR:${YELLOW}⚠${NC}")
+    fi
+    
     # WireGuard (vérification optimisée)
     if check_sudo_cached && sudo -n wg show wg0 >/dev/null 2>&1; then
         local wg_peers=$(sudo -n wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
         status_parts+=("VPN:${GREEN}✓${NC}($wg_peers)")
     else
-        status_parts+=("VPN:${RED}✗${NC}")
+        status_parts+=("VPN:${YELLOW}⚠${NC}")
     fi
     
     # Swarm
@@ -171,20 +294,24 @@ show_captain_alerts() {
         alerts+=("💾 Espace disque faible: ${disk_usage}%")
     fi
     
-    # Vérification économique
-    local balance=$(get_zen_balance)
-    local paf=$(calculate_daily_paf)
-    if (( $(echo "$balance < $paf * 2" | bc -l 2>/dev/null || echo 0) )); then
-        alerts+=("💰 Solde ZEN bas: rechargez bientôt")
+    # Vérification capitaine connecté
+    local current_captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+    if [[ -z "$current_captain" ]]; then
+        alerts+=("👤 Aucun capitaine connecté")
     fi
     
-    # Vérification services
+    # Vérification services critiques
     if ! pgrep ipfs >/dev/null 2>&1; then
         alerts+=("🌐 IPFS arrêté")
     fi
     
     if ! pgrep -f "12345" >/dev/null 2>&1; then
         alerts+=("🚀 API Astroport arrêtée")
+    fi
+    
+    # Vérification portefeuilles système
+    if [[ ! -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
+        alerts+=("💰 Portefeuille UPLANETG1PUB non configuré")
     fi
     
     # Affichage des alertes
@@ -207,8 +334,9 @@ show_quick_actions() {
     echo -e "  ${GREEN}r${NC} - 🔄 Redémarrer tous les services"
     echo -e "  ${GREEN}s${NC} - 🔍 Découvrir l'essaim"
     echo -e "  ${GREEN}v${NC} - 🎫 Imprimer ma VISA"
-    echo -e "  ${GREEN}z${NC} - 💰 Vérifier économie ZEN"
-    echo -e "  ${GREEN}p${NC} - 🏴‍☠️ Changer de capitaine"
+    echo -e "  ${GREEN}z${NC} - 💰 Gestion économique (zen.sh)"
+    echo -e "  ${GREEN}c${NC} - 🏴‍☠️ Changer de capitaine"
+    echo -e "  ${GREEN}n${NC} - 🆕 Nouvel embarquement (captain.sh)"
     echo -e "  ${GREEN}h${NC} - ❓ Aide UPlanet"
     echo ""
     echo -e "  ${CYAN}1${NC} - 📊 Monitoring avancé"
@@ -217,54 +345,6 @@ show_quick_actions() {
     echo ""
     echo -e "  ${RED}0${NC} - ❌ Quitter"
     echo ""
-}
-
-#######################################################################
-# Fonctions économiques
-#######################################################################
-
-calculate_daily_paf() {
-    # Calcul du PAF basé sur les ressources système
-    local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo "1")
-    local mem_kb=$(grep "MemTotal" /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "1048576")
-    local mem_gb=$(echo "scale=2; $mem_kb / 1024 / 1024" | bc -l 2>/dev/null || echo "1")
-    
-    local disk_gb=$(df -BG / 2>/dev/null | tail -1 | awk '{print $2}' | sed 's/G//' || echo "10")
-    
-    # Formule PAF = f(CPU, RAM, Disque) avec gestion d'erreurs
-    local base_paf=1.0
-    local cpu_factor=$(echo "scale=2; $cpu_cores * 0.5" | bc -l 2>/dev/null || echo "0.5")
-    local mem_factor=$(echo "scale=2; $mem_gb * 0.1" | bc -l 2>/dev/null || echo "0.1")
-    local disk_factor=$(echo "scale=2; $disk_gb * 0.01" | bc -l 2>/dev/null || echo "0.1")
-    
-    local paf=$(echo "scale=2; $base_paf + $cpu_factor + $mem_factor + $disk_factor" | bc -l 2>/dev/null || echo "2.00")
-    echo "$paf"
-}
-
-get_zen_balance() {
-    # Simulation - à remplacer par la vraie logique ZEN
-    local balance_file="$HOME/.zen/tmp/zen_balance.cache"
-    
-    if [[ -f "$balance_file" ]]; then
-        cat "$balance_file"
-    else
-        # Calcul du solde basé sur les transactions
-        local balance=$(echo "scale=2; 50.0 + ($RANDOM % 100)" | bc -l 2>/dev/null || echo "50.00")
-        echo "$balance" > "$balance_file"
-        echo "$balance"
-    fi
-}
-
-get_subscription_revenue() {
-    # Revenus des abonnements reçus
-    local sub_file="$HOME/.zen/tmp/$IPFSNODEID/swarm_subscriptions_received.json"
-    
-    if [[ -f "$sub_file" ]]; then
-        local count=$(jq '.received_subscriptions | length' "$sub_file" 2>/dev/null || echo "0")
-        echo "scale=2; $count * 2.5" | bc -l 2>/dev/null || echo "0.00"
-    else
-        echo "0.00"
-    fi
 }
 
 #######################################################################
@@ -335,53 +415,15 @@ print_captain_visa() {
     read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 
-check_zen_economy() {
-    clear
-    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║${NC}                            ${YELLOW}💰 ÉCONOMIE ZEN${NC}                                 ${BLUE}║${NC}"
-    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+launch_zen_manager() {
+    echo -e "${CYAN}💰 Lancement du gestionnaire économique zen.sh...${NC}"
     echo ""
-    
-    local balance=$(get_zen_balance)
-    local paf=$(calculate_daily_paf)
-    local revenue=$(get_subscription_revenue)
-    local days_autonomy=$(echo "scale=1; $balance / $paf" | bc -l 2>/dev/null || echo "0.0")
-    
-    local balance_str=$(safe_printf "%.2f" "$balance")
-    local paf_str=$(safe_printf "%.2f" "$paf")
-    local revenue_str=$(safe_printf "%.2f" "$revenue")
-    local autonomy_str=$(safe_printf "%.1f" "$days_autonomy")
-    
-    echo -e "${WHITE}💎 Solde actuel:${NC} ${GREEN}$balance_str Ẑ${NC}"
-    echo -e "${WHITE}📊 PAF quotidien:${NC} ${CYAN}$paf_str Ẑ/jour${NC}"
-    echo -e "${WHITE}💼 Revenus abonnements:${NC} ${GREEN}+$revenue_str Ẑ/jour${NC}"
-    echo -e "${WHITE}⏰ Autonomie:${NC} $autonomy_str jours"
-    echo ""
-    
-    # Historique des 7 derniers jours
-    echo -e "${CYAN}📈 Historique (7 derniers jours):${NC}"
-    for i in {6..0}; do
-        local date_str=$(date -d "$i days ago" "+%d/%m" 2>/dev/null || echo "N/A")
-        local balance_day=$(echo "scale=2; $balance - $i * $paf + $i * $revenue" | bc -l 2>/dev/null || echo "0.00")
-        local balance_day_str=$(safe_printf "%.2f" "$balance_day")
-        printf "  %s: %s Ẑ\n" "$date_str" "$balance_day_str"
-    done
-    
-    echo ""
-    echo -e "${YELLOW}💡 Conseils:${NC}"
-    if (( $(echo "$days_autonomy < 3" | bc -l 2>/dev/null || echo 0) )); then
-        echo -e "  🔴 Rechargez votre solde ZEN rapidement"
-        echo -e "  🔍 Cherchez plus d'abonnés pour augmenter vos revenus"
-    elif (( $(echo "$days_autonomy < 7" | bc -l 2>/dev/null || echo 0) )); then
-        echo -e "  🟡 Surveillez votre solde ZEN"
-        echo -e "  📈 Optimisez vos services pour attirer plus d'abonnés"
+    if [[ -x "${SCRIPT_DIR}/zen.sh" ]]; then
+        "${SCRIPT_DIR}/zen.sh"
     else
-        echo -e "  🟢 Excellente santé économique !"
-        echo -e "  🚀 Vous pouvez investir dans de nouveaux services"
+        echo -e "${RED}❌ Script zen.sh non trouvé${NC}"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
     fi
-    
-    echo ""
-    read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 
 change_captain() {
@@ -403,15 +445,18 @@ change_captain() {
             fi
         done
         
-        echo -e "  0. 🆕 Nouveau capitaine"
+        echo -e "  0. 🆕 Nouveau capitaine (captain.sh)"
         echo ""
         
         read -p "Votre choix: " captain_choice
         
         if [[ "$captain_choice" == "0" ]]; then
-            read -p "Email du nouveau capitaine: " new_captain_email
-            echo "Création du nouveau capitaine: $new_captain_email"
-            # Logique de création à implémenter
+            echo -e "${CYAN}🆕 Lancement de captain.sh pour nouvel embarquement...${NC}"
+            if [[ -x "${SCRIPT_DIR}/../captain.sh" ]]; then
+                "${SCRIPT_DIR}/../captain.sh"
+            else
+                echo -e "${RED}❌ Script captain.sh non trouvé${NC}"
+            fi
         elif [[ "$captain_choice" =~ ^[0-9]+$ ]] && [[ $captain_choice -le ${#players[@]} ]]; then
             local selected_player="${players[$((captain_choice-1))]}"
             echo "$selected_player" > ~/.zen/game/players/.current/.player
@@ -421,10 +466,27 @@ change_captain() {
         fi
     else
         echo -e "${RED}❌ Aucun capitaine trouvé${NC}"
+        echo -e "${CYAN}💡 Lancement de captain.sh pour premier embarquement...${NC}"
+        if [[ -x "${SCRIPT_DIR}/../captain.sh" ]]; then
+            "${SCRIPT_DIR}/../captain.sh"
+        else
+            echo -e "${RED}❌ Script captain.sh non trouvé${NC}"
+        fi
     fi
     
     echo ""
     read -p "Appuyez sur ENTRÉE pour continuer..."
+}
+
+launch_captain_onboarding() {
+    echo -e "${CYAN}🆕 Lancement de captain.sh pour nouvel embarquement...${NC}"
+    echo ""
+    if [[ -x "${SCRIPT_DIR}/../captain.sh" ]]; then
+        "${SCRIPT_DIR}/../captain.sh"
+    else
+        echo -e "${RED}❌ Script captain.sh non trouvé${NC}"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+    fi
 }
 
 show_uplanet_help() {
@@ -440,25 +502,26 @@ show_uplanet_help() {
     echo "  (stockage, calcul, relais) et recevez des Ẑen en échange."
     echo ""
     
-    echo -e "${CYAN}💰 Économie Ẑen${NC}"
+    echo -e "${CYAN}💰 Économie UPlanet${NC}"
     echo "  • 1 Ẑen = 0.1 G1 (monnaie libre)"
-    echo "  • PAF = Prix d'Abonnement Fixe quotidien"
-    echo "  • Revenus = Abonnements reçus d'autres nodes"
-    echo "  • Équilibre = Revenus - PAF"
+    echo "  • MULTIPASS: Compte social NOSTR"
+    echo "  • ZEN Card: Identité économique"
+    echo "  • Sociétaire: Membre de la coopérative"
     echo ""
     
     echo -e "${CYAN}🔧 Services principaux${NC}"
     echo "  • IPFS: Stockage décentralisé"
     echo "  • Astroport: API et orchestration"
+    echo "  • uSPOT/uPassport: Services locaux"
+    echo "  • NOSTR Relay: Réseau social"
     echo "  • WireGuard: VPN pour les clients"
-    echo "  • Swarm: Découverte des autres nodes"
     echo ""
     
-    echo -e "${CYAN}🎯 Objectifs${NC}"
-    echo "  • Maintenir vos services actifs"
-    echo "  • Attirer des abonnés pour générer des revenus"
-    echo "  • Participer à l'essaim UPlanet"
-    echo "  • Contribuer à l'économie transparente"
+    echo -e "${CYAN}🎯 Scripts spécialisés${NC}"
+    echo "  • dashboard.sh: Vue d'ensemble (ce script)"
+    echo "  • captain.sh: Embarquement nouveaux utilisateurs"
+    echo "  • zen.sh: Gestion économique et transactions"
+    echo "  • command.sh: Interface principale complète"
     echo ""
     
     echo -e "${YELLOW}📚 Ressources${NC}"
@@ -493,8 +556,9 @@ main_loop() {
             "r") restart_all_services ;;
             "s") quick_swarm_discover ;;
             "v") print_captain_visa ;;
-            "z") check_zen_economy ;;
-            "p") change_captain ;;
+            "z") launch_zen_manager ;;
+            "c") change_captain ;;
+            "n") launch_captain_onboarding ;;
             "h") show_uplanet_help ;;
             
             # Menu technique (conservé mais simplifié)
@@ -549,7 +613,7 @@ fi
 
 # Démarrage de l'interface
 clear
-echo -e "${CYAN}♥️BOX CONTROL V2.1${NC} - Interface Capitaine"
+echo -e "${CYAN}DASHBOARD ÉCONOMIQUE UPLANET v3.0${NC}"
 echo -e "${YELLOW}🏴‍☠️ Bienvenue à bord !${NC}"
 sleep 2
 
