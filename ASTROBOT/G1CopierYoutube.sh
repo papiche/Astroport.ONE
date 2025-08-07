@@ -9,6 +9,192 @@ ME="${0##*/}"
 
 . "${MY_PATH}/../tools/my.sh"
 
+# Function to send email notification on NOSTR failure
+send_nostr_failure_email() {
+    local player="$1"
+    local youtube_id="$2"
+    local title="$3"
+    local ipfs_link="$4"
+    
+    # Check if mailjet.sh exists
+    if [[ ! -f "$MY_PATH/../tools/mailjet.sh" ]]; then
+        echo "⚠️  mailjet.sh not found, cannot send failure notification email"
+        return 1
+    fi
+    
+    # Check if player email is valid
+    if [[ ! "$player" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        echo "⚠️  Invalid player email format: $player, cannot send failure notification email"
+        return 1
+    fi
+    
+    # Create temporary message file
+    local temp_message_file="$HOME/.zen/tmp/nostr_failure_${youtube_id}.txt"
+    cat > "$temp_message_file" << EOF
+NOSTR Message Failure Notification
+
+Dear ${player},
+
+The NOSTR message for your YouTube copy could not be sent successfully.
+
+YouTube Copy Details:
+- Title: ${title}
+- YouTube ID: ${youtube_id}
+- IPFS Link: ${ipfs_link}
+- Timestamp: $(date -u)
+
+The video has been successfully copied from YouTube and added to your Astroport TiddlyWiki and IPFS, but the public NOSTR announcement failed.
+
+This could be due to:
+- Network connectivity issues
+- Relay server problems
+- NOSTR key configuration issues
+
+Your video is still available at: ${ipfs_link}
+
+Please check your NOSTR configuration or try again later.
+
+Best regards,
+Astroport.ONE System
+EOF
+    
+    # Send email using mailjet.sh
+    echo "📧 Sending NOSTR failure notification email to ${player}"
+    $MY_PATH/../tools/mailjet.sh "$player" "$temp_message_file" "NOSTR Message Failure - ${title}" 2>/dev/null
+    
+    local email_result=$?
+    
+    # Clean up temporary file
+    rm -f "$temp_message_file"
+    
+    if [[ $email_result -eq 0 ]]; then
+        echo "✅ NOSTR failure notification email sent successfully to ${player}"
+    else
+        echo "❌ Failed to send NOSTR failure notification email to ${player}"
+    fi
+    
+    return $email_result
+}
+
+# Function to send YouTube copy as public NOSTR message
+send_youtube_nostr_message() {
+    local player="$1"
+    local youtube_id="$2"
+    local title="$3"
+    local ipfs_link="$4"
+    local file_size="$5"
+    local duration="$6"
+    local resolution="$7"
+    local channel="$8"
+    local youtube_url="$9"
+    local g1pub="${10}"
+    
+    # Check if player has NOSTR keys
+    if [[ ! -f ~/.zen/game/nostr/${player}/.secret.nostr ]]; then
+        echo "No NOSTR keys found for player ${player}, skipping NOSTR message"
+        return 0
+    fi
+    
+    # Load NOSTR keys
+    source ~/.zen/game/nostr/${player}/.secret.nostr
+    if [[ -z "$NSEC" ]]; then
+        echo "No NSEC found for player ${player}, skipping NOSTR message"
+        return 0
+    fi
+    
+    # Convert NSEC to hex
+    NPRIV_HEX=$($MY_PATH/../tools/nostr2hex.py "$NSEC")
+    if [[ -z "$NPRIV_HEX" ]]; then
+        echo "Failed to convert NSEC to hex for player ${player}, skipping NOSTR message"
+        return 0
+    fi
+    
+    # Build NOSTR message content
+    local nostr_content="🎬 YouTube Copy Added: ${title}"
+    
+    if [[ -n "$channel" ]]; then
+        nostr_content="${nostr_content}
+
+📺 Channel: ${channel}"
+    fi
+    
+    nostr_content="${nostr_content}
+
+🔗 IPFS: ${ipfs_link}
+🌐 YouTube: ${youtube_url}"
+    
+    if [[ -n "$file_size" ]]; then
+        nostr_content="${nostr_content}
+📊 Size: ${file_size}"
+    fi
+    
+    if [[ -n "$duration" ]]; then
+        nostr_content="${nostr_content}
+⏱️ Duration: ${duration}"
+    fi
+    
+    if [[ -n "$resolution" ]]; then
+        nostr_content="${nostr_content}
+📺 Resolution: ${resolution}"
+    fi
+    
+    nostr_content="${nostr_content}
+
+#Astroport #YouTube #CopierYoutube #IPFS"
+    
+    # Send NOSTR message to primary relay
+    echo "Sending NOSTR message for YouTube copy: ${youtube_id}"
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 1 \
+        -content "$nostr_content" \
+        -tags "[['t', 'AstroportYouTube'], ['t', 'CopierYoutube'], ['t', 'YouTube'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['youtubeid', '${youtube_id}'], ['mime', 'video/mp4']]" \
+        --relay "$myRELAY" 2>/dev/null
+    
+    local primary_result=$?
+    if [[ $primary_result -eq 0 ]]; then
+        echo "✅ NOSTR message sent successfully to primary relay for ${youtube_id}"
+    else
+        echo "❌ Failed to send NOSTR message to primary relay for ${youtube_id}"
+    fi
+    
+    # Send to public relay if different from primary relay and on UPlanet ORIGIN
+    if [[ "$myRELAY" != "wss://relay.copylaradio.com" && "$UPLANETNAME" == "EnfinLibre" ]]; then
+        echo "Sending NOSTR message to public relay: wss://relay.copylaradio.com"
+        nostpy-cli send_event \
+            -privkey "$NPRIV_HEX" \
+            -kind 1 \
+            -content "$nostr_content" \
+            -tags "[['t', 'AstroportYouTube'], ['t', 'CopierYoutube'], ['t', 'YouTube'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['youtubeid', '${youtube_id}'], ['mime', 'video/mp4']]" \
+            --relay "wss://relay.copylaradio.com" 2>/dev/null
+        
+        local public_result=$?
+        if [[ $public_result -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully to public relay for ${youtube_id}"
+        else
+            echo "❌ Failed to send NOSTR message to public relay for ${youtube_id}"
+        fi
+        
+        # Overall success if at least one relay worked
+        if [[ $primary_result -eq 0 || $public_result -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully for ${youtube_id} (at least one relay)"
+        else
+            echo "❌ Failed to send NOSTR message for ${youtube_id} to any relay"
+            # Send email notification on failure
+            send_nostr_failure_email "$player" "$youtube_id" "$title" "$ipfs_link"
+        fi
+    else
+        # Primary relay is already the public relay or not on UPlanet ORIGIN
+        if [[ $primary_result -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully for ${youtube_id}"
+        else
+            echo "❌ Failed to send NOSTR message for ${youtube_id}"
+            # Send email notification on failure
+            send_nostr_failure_email "$player" "$youtube_id" "$title" "$ipfs_link"
+        fi
+    fi
+}
+
 echo "-----"
 echo "$ME RUNNING"
 #######################################################################
@@ -333,6 +519,20 @@ while read LINE;
         [[ $(diff ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} ) ]] \
             && mv ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} \
             && echo "===> Mise à jour ${INDEX}"
+
+        ## SEND YOUTUBE COPY AS PUBLIC NOSTR MESSAGE
+        echo "Sending YouTube copy as public NOSTR message..."
+        send_youtube_nostr_message \
+            "$PLAYER" \
+            "$YID" \
+            "$TITLE" \
+            "$myIPFS/ipfs/${ILINK}" \
+            "$FILE_SIZE" \
+            "$SEC" \
+            "$RES" \
+            "$CHANNEL" \
+            "$ZYURL" \
+            "$G1PUB"
 
     else
         echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"
