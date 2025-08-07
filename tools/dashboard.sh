@@ -285,7 +285,7 @@ restart_all_services() {
     # Astroport
     echo -e "  🚀 Astroport..."
     killall nc 12345.sh 2>/dev/null
-    "${MY_PATH}/../12345.sh" > ~/.zen/tmp/12345.log & 
+    "${SCRIPT_DIR}/../12345.sh" > ~/.zen/tmp/12345.log & 
     sleep 2 && echo -e "    ✅ OK"
     
     # WireGuard (optionnel)
@@ -303,8 +303,8 @@ restart_all_services() {
 
 quick_swarm_discover() {
     echo -e "${CYAN}🔍 Découverte de l'essaim...${NC}"
-    if [[ -x "${MY_PATH}/../RUNTIME/SWARM.discover.sh" ]]; then
-        "${MY_PATH}/../RUNTIME/SWARM.discover.sh" | head -20
+    if [[ -x "${SCRIPT_DIR}/../RUNTIME/SWARM.discover.sh" ]]; then
+        "${SCRIPT_DIR}/../RUNTIME/SWARM.discover.sh" | head -20
     else
         echo -e "${RED}❌ Script SWARM.discover.sh non trouvé${NC}"
     fi
@@ -317,8 +317,8 @@ print_captain_visa() {
     
     if [[ -n "$current_player" ]]; then
         echo -e "${CYAN}🎫 Impression VISA pour $current_player...${NC}"
-        if [[ -x "${MY_PATH}/VISA.print.sh" ]]; then
-            "${MY_PATH}/VISA.print.sh" "$current_player"
+        if [[ -x "${SCRIPT_DIR}/VISA.print.sh" ]]; then
+            "${SCRIPT_DIR}/VISA.print.sh" "$current_player"
         else
             echo -e "${RED}❌ Script VISA.print.sh non trouvé${NC}"
         fi
@@ -500,8 +500,8 @@ main_loop() {
             # Menu technique (conservé mais simplifié)
             "1") 
                 # Import des fonctions avancées du script original
-                if [[ -f "${MY_PATH}/heartbox_control.sh" ]]; then
-                    source "${MY_PATH}/heartbox_control.sh"
+                if [[ -f "${SCRIPT_DIR}/heartbox_control.sh" ]]; then
+                    source "${SCRIPT_DIR}/heartbox_control.sh"
                     show_detailed_monitoring
                 else
                     echo -e "${RED}❌ Script heartbox_control.sh non trouvé${NC}"
@@ -542,7 +542,7 @@ main_loop() {
 #######################################################################
 
 # Vérification des prérequis
-if [[ ! -f "${MY_PATH}/my.sh" ]]; then
+if [[ ! -f "${SCRIPT_DIR}/my.sh" ]]; then
     echo "❌ Fichier my.sh non trouvé. Exécutez depuis le répertoire Astroport.ONE/tools/"
     exit 1
 fi
