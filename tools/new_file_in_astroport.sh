@@ -24,6 +24,196 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
 
+# Function to send email notification on NOSTR failure
+send_nostr_failure_email() {
+    local player="$1"
+    local mediakey="$2"
+    local title="$3"
+    local ipfs_link="$4"
+    
+    # Check if mailjet.sh exists
+    if [[ ! -f "$MY_PATH/mailjet.sh" ]]; then
+        echo "⚠️  mailjet.sh not found, cannot send failure notification email"
+        return 1
+    fi
+    
+    # Check if player email is valid
+    if [[ ! "$player" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        echo "⚠️  Invalid player email format: $player, cannot send failure notification email"
+        return 1
+    fi
+    
+    # Create temporary message file
+    local temp_message_file="$HOME/.zen/tmp/nostr_failure_${mediakey}.txt"
+    cat > "$temp_message_file" << EOF
+NOSTR Message Failure Notification
+
+Dear ${player},
+
+The NOSTR message for your media could not be sent successfully.
+
+Media Details:
+- Title: ${title}
+- Media Key: ${mediakey}
+- IPFS Link: ${ipfs_link}
+- Timestamp: $(date -u)
+
+The media has been successfully added to your Astroport TiddlyWiki and IPFS, but the public NOSTR announcement failed.
+
+This could be due to:
+- Network connectivity issues
+- Relay server problems
+- NOSTR key configuration issues
+
+Your media is still available at: ${ipfs_link}
+
+Please check your NOSTR configuration or try again later.
+
+Best regards,
+Astroport.ONE System
+EOF
+    
+    # Send email using mailjet.sh
+    echo "📧 Sending NOSTR failure notification email to ${player}"
+    $MY_PATH/mailjet.sh "$player" "$temp_message_file" "NOSTR Message Failure - ${title}" 2>/dev/null
+    
+    local email_result=$?
+    
+    # Clean up temporary file
+    rm -f "$temp_message_file"
+    
+    if [[ $email_result -eq 0 ]]; then
+        echo "✅ NOSTR failure notification email sent successfully to ${player}"
+    else
+        echo "❌ Failed to send NOSTR failure notification email to ${player}"
+    fi
+    
+    return $email_result
+}
+
+# Function to send media as public NOSTR message
+send_media_nostr_message() {
+    local player="$1"
+    local mediakey="$2"
+    local title="$3"
+    local description="$4"
+    local ipfs_link="$5"
+    local mime_type="$6"
+    local file_size="$7"
+    local duration="$8"
+    local resolution="$9"
+    local hashtags="${10}"
+    local g1pub="${11}"
+    
+    # Check if player has NOSTR keys
+    if [[ ! -f ~/.zen/game/nostr/${player}/.secret.nostr ]]; then
+        echo "No NOSTR keys found for player ${player}, skipping NOSTR message"
+        return 0
+    fi
+    
+    # Load NOSTR keys
+    source ~/.zen/game/nostr/${player}/.secret.nostr
+    if [[ -z "$NSEC" ]]; then
+        echo "No NSEC found for player ${player}, skipping NOSTR message"
+        return 0
+    fi
+    
+    # Convert NSEC to hex
+    NPRIV_HEX=$($MY_PATH/nostr2hex.py "$NSEC")
+    if [[ -z "$NPRIV_HEX" ]]; then
+        echo "Failed to convert NSEC to hex for player ${player}, skipping NOSTR message"
+        return 0
+    fi
+    
+    # Build NOSTR message content
+    local nostr_content="🎬 New Media Added: ${title}"
+    
+    if [[ -n "$description" ]]; then
+        nostr_content="${nostr_content}
+
+📝 ${description}"
+    fi
+    
+    nostr_content="${nostr_content}
+
+🔗 IPFS: ${ipfs_link}"
+    
+    if [[ -n "$file_size" ]]; then
+        nostr_content="${nostr_content}
+📊 Size: ${file_size}"
+    fi
+    
+    if [[ -n "$duration" ]]; then
+        nostr_content="${nostr_content}
+⏱️ Duration: ${duration}"
+    fi
+    
+    if [[ -n "$resolution" ]]; then
+        nostr_content="${nostr_content}
+📺 Resolution: ${resolution}"
+    fi
+    
+    nostr_content="${nostr_content}
+
+#Astroport #Media #IPFS"
+    
+    if [[ -n "$hashtags" ]]; then
+        nostr_content="${nostr_content} ${hashtags}"
+    fi
+    
+    # Send NOSTR message to primary relay
+    echo "Sending NOSTR message for media: ${mediakey}"
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 1 \
+        -content "$nostr_content" \
+        -tags "[['t', 'AstroportMedia'], ['t', 'Media'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['mediakey', '${mediakey}'], ['mime', '${mime_type}']]" \
+        --relay "$myRELAY" 2>/dev/null
+    
+    local primary_result=$?
+    if [[ $primary_result -eq 0 ]]; then
+        echo "✅ NOSTR message sent successfully to primary relay for ${mediakey}"
+    else
+        echo "❌ Failed to send NOSTR message to primary relay for ${mediakey}"
+    fi
+    
+    # Send to public relay if different from primary relay
+    if [[ "$myRELAY" != "wss://relay.copylaradio.com" ]]; then
+        echo "Sending NOSTR message to public relay: wss://relay.copylaradio.com"
+        nostpy-cli send_event \
+            -privkey "$NPRIV_HEX" \
+            -kind 1 \
+            -content "$nostr_content" \
+            -tags "[['t', 'AstroportMedia'], ['t', 'Media'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['mediakey', '${mediakey}'], ['mime', '${mime_type}']]" \
+            --relay "wss://relay.copylaradio.com" 2>/dev/null
+        
+        local public_result=$?
+        if [[ $public_result -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully to public relay for ${mediakey}"
+        else
+            echo "❌ Failed to send NOSTR message to public relay for ${mediakey}"
+        fi
+        
+        # Overall success if at least one relay worked
+        if [[ $primary_result -eq 0 || $public_result -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully for ${mediakey} (at least one relay)"
+        else
+            echo "❌ Failed to send NOSTR message for ${mediakey} to any relay"
+            # Send email notification on failure
+            send_nostr_failure_email "$player" "$mediakey" "$title" "$ipfs_link"
+        fi
+    else
+        # Primary relay is already the public relay
+        if [[ $primary_result -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully for ${mediakey}"
+        else
+            echo "❌ Failed to send NOSTR message for ${mediakey}"
+            # Send email notification on failure
+            send_nostr_failure_email "$player" "$mediakey" "$title" "$ipfs_link"
+        fi
+    fi
+}
+
 # ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/${PLAYER}/kodi/vstream/${PREFIX}ASTRXBIAN
 # Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from $myIPFS/.$IPFNODEID/
 # Index File Format (could be enhanced) is using Kodi TMDB enhancement
@@ -244,9 +434,9 @@ if [[ "${type}" =~ ^(pdf|film|serie|youtube|video)$ ]]
 then
 
     ## ASK FOR EXTRA METADATA
-[[ ! $3 ]] && OUTPUT=$(zenity --forms --width 480 --title="METADATA" --text="Metadonnées (séparateur espace)" --separator="~" --add-entry="Description" --add-entry="extra tag(s)")
-[[ ! $3 ]] && DESCRIPTION=$(awk -F '~' '{print $1}' <<<$OUTPUT)
-[[ ! $3 ]] && HASHTAG=$(awk -F '~' '{print $2}' <<<$OUTPUT)
+    [[ ! $3 ]] && OUTPUT=$(zenity --forms --width 480 --title="METADATA" --text="Metadonnées (séparateur espace)" --separator="~" --add-entry="Description" --add-entry="extra tag(s)")
+    [[ ! $3 ]] && DESCRIPTION=$(awk -F '~' '{print $1}' <<<$OUTPUT)
+    [[ ! $3 ]] && HASHTAG=$(awk -F '~' '{print $2}' <<<$OUTPUT)
 
     # # # # ${MOATS}_ajouter_video.txt DATA # # # #
     if [[ -f ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/ajouter_video.txt ]]
@@ -356,12 +546,31 @@ then
     #~ "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MIME}/${MEDIAKEY}/${G1PUB}/tiddler.json"
 #############################################################################
 
-## TODO : Do we keep that ?
-# echo "SEND TW LINK to GCHANGE MESSAGE"
-[[ $3 ]] \
-&& ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
-    -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" \
-    -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
+
+
+    ## TODO : Do we keep that ?
+    # echo "SEND TW LINK to GCHANGE MESSAGE & MULTIPASS nostr messaging"
+    if [[ -n $3 ]]; then
+        ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
+        -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" \
+        -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
+
+        ## SEND MEDIA AS PUBLIC NOSTR MESSAGE
+        echo "Sending media as public NOSTR message..."
+        send_media_nostr_message \
+            "$PLAYER" \
+            "$MEDIAKEY" \
+            "$TITLE" \
+            "$DESCRIPTION" \
+            "$myIPFS/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
+            "$MIME" \
+            "$FILE_SIZE" \
+            "$DUREE" \
+            "$RES" \
+            "$HASHTAG" \
+            "$G1PUB"
+
+    fi
 
 fi
 

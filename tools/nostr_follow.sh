@@ -15,9 +15,9 @@ SOURCE_NSEC="$1"
 shift
 RELAY=""
 
-# Check if last argument is a relay URL (starts with wss://)
+# Check if last argument is a relay URL (starts with wss:// or ws:// for localhost:7777)
 for last; do true; done
-if [[ "$last" =~ ^wss:// ]]; then
+if [[ "$last" =~ ^(wss://|ws://) ]]; then
     RELAY="$last"
     # Remove relay from arguments
     set -- "${@:1:$(($#-1))}"
