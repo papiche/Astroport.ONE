@@ -172,7 +172,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
 
     ## QR CODE accès NOSTR VAULTNSQR
-    amzqr "${myIPFS}/ipns/$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
+    amzqr "${myIPFS}/ipns/$NOSTRNS/APP/uDRIVE" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
         -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     VAULTNSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
@@ -205,8 +205,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
     amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n MULTIPASS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
-    ## Add white margins of 100 pixels around the QR code image (for a flashable coracle profile picture)
-    convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png -bordercolor white -border 100x100 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
+    ## Add white margins around the QR code image (for a flashable coracle profile picture)
+    convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png -bordercolor white -border 90x90 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
 
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
@@ -223,11 +223,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
     ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) -
-    # ease Captain change # NEED HARDER SECURITY # Can be removed & be decoded from SSSS (or use encrypted RAM fs cycled every 20h12)
+    # for Captain use # HARDER SECURITY # use encrypted RAM fs cycled every 20h12
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
     ##############################################################
+    [[ "$Z" == ":ZEN" ]] && ZenECO="(1Ẑ = 1€)" || ZenECO="(1Ẑ = 0.1Ğ1)"
     ### PREPARE NOSTR ZINE
     cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \
     | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
@@ -244,6 +245,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_LON_~${ZLON}~g" \
             -e "s~_UMAP_~_${ZLAT}_${ZLON}~g" \
             -e "s~_NOSTRVAULT_~/ipns/${NOSTRNS}~g" \
+            -e "s~_WALLET_~${ZenECO}~g" \
             -e "s~_SALT_~${SALT}~g" \
             -e "s~_PEPPER_~${PEPPER}~g" \
             -e "s~_MYRELAY_~${myRELAY}~g" \
@@ -254,6 +256,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_DATE_~$(date -u)~g" \
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
+
+    if [[ "$Z" == ":ZEN" ]]; then
+        ## Replace Cesium Access with uSPOT/check_balance?g1pub=email (html output)
+        sed -i "s~${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
+            ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
+
+    fi
+
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} "
@@ -335,7 +345,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
     ## CREATE CESIUM + PROFILE
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
+    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey \
+        set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" \
+        --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
