@@ -8,6 +8,9 @@ The configuration is designed to:
 - **Ban IPs** that make more than **2 requests per 15 minutes**
 - **Ban duration**: 24 hours (86400 seconds)
 - **Monitor all Duniter ports**: 10901 (BMA), 20901 (WS2P), 30901 (GVA), 9220 (Debug)
+- **Whitelist G1 blockchain peers** to prevent legitimate peers from being banned
+- **Detect DDOS attacks** based on actual Duniter logs
+- **Ignore Docker internal networks** (172.20.0.0/16, 172.17.0.0/16)
 
 ## Files Description
 
@@ -19,16 +22,25 @@ Main fail2ban configuration file that defines:
 
 ### `duniter.conf`
 Custom filter configuration that:
+- Detects DDOS attacks based on actual Duniter logs (`ddos: denied: entry:`)
 - Detects failed HTTP requests (4xx and 5xx status codes)
 - Ignores successful requests (2xx status codes)
 - Ignores health checks and common monitoring endpoints
+- Ignores legitimate WS2P peer connections and blockchain operations
 
 ### `install_fail2ban.sh`
 Automated installation script that:
 - Installs fail2ban if not present
 - Copies configuration files to proper locations
 - Creates custom iptables actions for Docker
+- Updates G1 peers whitelist from the official API
 - Restarts and enables the fail2ban service
+
+### `g1_peers_whitelist.conf`
+Static whitelist of G1 blockchain peers that should never be banned.
+
+### `update_g1_peers.sh`
+Script to automatically update the G1 peers whitelist by fetching current peers from the official G1 network API.
 
 ## Installation
 
@@ -55,6 +67,11 @@ Automated installation script that:
 - **WS2P** (port 20901): WebSocket protocol for peer-to-peer communication
 - **GVA** (port 30901): GraphQL API for advanced queries
 - **Debug** (port 9220): Debug interface (if enabled)
+
+### Whitelisted Networks
+- **G1 Blockchain Peers**: All legitimate peers from the G1 network
+- **Docker Internal Networks**: 172.20.0.0/16, 172.17.0.0/16, 10.0.0.0/8, 192.168.0.0/16
+- **Localhost**: 127.0.0.1/8, ::1
 
 ### Log Monitoring
 The configuration monitors Docker container logs at:
@@ -129,6 +146,15 @@ findtime = 900    # Time window in seconds (15 minutes)
 
 ### Add Custom Filters
 Edit `duniter.conf` to add custom regex patterns for specific attack patterns.
+
+### Update G1 Peers Whitelist
+```bash
+# Update whitelist from official G1 API
+./update_g1_peers.sh
+
+# Restart fail2ban to apply changes
+sudo systemctl restart fail2ban
+```
 
 ## Troubleshooting
 

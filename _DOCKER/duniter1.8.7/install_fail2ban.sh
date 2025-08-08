@@ -34,9 +34,13 @@ cp fail2ban.conf /etc/fail2ban/jail.d/duniter.conf
 # Copy the filter configuration
 cp duniter.conf /etc/fail2ban/filter.d/duniter.conf
 
+# Copy the G1 peers whitelist
+cp g1_peers_whitelist.conf /etc/fail2ban/g1_peers_whitelist.conf
+
 # Set proper permissions
 chmod 644 /etc/fail2ban/jail.d/duniter.conf
 chmod 644 /etc/fail2ban/filter.d/duniter.conf
+chmod 644 /etc/fail2ban/g1_peers_whitelist.conf
 
 # Create a custom action for Docker containers
 cat > /etc/fail2ban/action.d/iptables-docker.conf << 'EOF'
@@ -61,6 +65,15 @@ port = ssh
 protocol = tcp
 EOF
 
+# Update G1 peers whitelist
+echo "Updating G1 peers whitelist..."
+if command -v jq &> /dev/null && command -v dig &> /dev/null; then
+    ./update_g1_peers.sh
+    cp g1_peers_whitelist.conf /etc/fail2ban/g1_peers_whitelist.conf
+else
+    echo "Warning: jq or dig not found. Using static whitelist."
+fi
+
 # Restart fail2ban service
 echo "Restarting fail2ban service..."
 systemctl restart fail2ban
@@ -84,6 +97,8 @@ echo "Configuration details:"
 echo "- Bans IPs making more than 2 requests per 15 minutes"
 echo "- Ban duration: 24 hours"
 echo "- Monitored ports: 10901 (BMA), 20901 (WS2P), 30901 (GVA), 9220 (Debug)"
+echo "- G1 blockchain peers are whitelisted and will never be banned"
+echo "- Docker internal networks (172.20.0.0/16, 172.17.0.0/16) are whitelisted"
 echo ""
 echo "Useful commands:"
 echo "- Check status: fail2ban-client status"
