@@ -187,12 +187,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
     #~ ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
 
-    ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE (Terminal Compatible)
-    amzqr "$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head):$NOSTRNS" -l H -p ${MY_PATH}/../templates/img/key.png \
+    ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE (Terminal Compatible) - "M-$SSSS_HEAD_B58"
+    SSSS_HEAD=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)
+    SSSS_HEAD_B58=$(${MY_PATH}/base58.py encode "${SSSS_HEAD}:$NOSTRNS")
+    amzqr "M-$SSSS_HEAD_B58" -l H -p ${MY_PATH}/../templates/img/key.png \
         -c -n ._SSSSQR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     SSSSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/._SSSSQR.png)
-    ipfs pin rm /ipfs/${SSSSQR} 2>/dev/null
+    # ipfs pin rm /ipfs/${SSSSQR} 2>/dev/null ## We can keep it
 
     ## Create G1PUBNOSTR QR Code
     ## Use webcam picture ?
