@@ -537,6 +537,16 @@ echo '[
         MP3TEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
         mkdir -p ${MP3TEMP}
         
+        # Extract YouTube ID and title first (faster than full download)
+        LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${URL}")"
+        YOUTUBE_ID=$(echo "$LINE" | cut -d '&' -f 1)
+        FILE_TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
+        
+        # Create MEDIAID and MEDIAKEY using YouTube ID
+        REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
+        MEDIAID="${REVSOURCE}${YOUTUBE_ID}"
+        MEDIAKEY="MP3_${MEDIAID}"
+        
         # Download MP3 to temp directory
         yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "${MP3TEMP}/%(autonumber)s_%(title)s.%(ext)s" "$URL"
         
@@ -546,12 +556,6 @@ echo '[
         
         # Extract file info
         FILE_NAME="$(basename "${MP3FILE}")"
-        FILE_TITLE="${FILE_NAME%.*}"
-        
-        # Create MEDIAID and MEDIAKEY
-        REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-        MEDIAID="$REVSOURCE$(echo "${FILE_TITLE}" | detox --inline)"
-        MEDIAKEY="MP3_${MEDIAID}"
         
         # Initialize missing variables for MP3
         SAISON=""
