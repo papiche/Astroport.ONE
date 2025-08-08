@@ -42,7 +42,7 @@ echo "ZEN ECONOMY: Starting daily payment process for $TODATE"
 # Captain : Le gestionnaire du Node
 #######################################################################
 echo "UPlanet G1PUB : ${UPLANETG1PUB}"
-UCOIN=$(${MY_PATH}/../tools/COINScheck.sh ${UPLANETG1PUB} | tail -n 1)
+UCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
 UZEN=$(echo "($UCOIN - 1) * 10" | bc | cut -d '.' -f 1)
 echo "$UZEN Ẑen"
 
