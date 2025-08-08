@@ -322,6 +322,11 @@ case ${type} in
         REFERENCE=$(echo "$path" | cut -d '/' -f 7 )
         TITLE="${file%.*}"
     ;;
+    mp3)
+        INDEXPREFIX="MP3_"
+        REFERENCE=$(echo "$path" | cut -d '/' -f 7 )
+        TITLE="${file%.*}"
+    ;;
     film | serie)
         INDEXPREFIX="TMDB_"
         REFERENCE=$(echo "$path" | cut -d '/' -f 7 ) # Path contains TMDB id
@@ -360,6 +365,10 @@ echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 ##########################
 
 ########################################################################
+# Check if file exists and is not empty
+[[ -z "$file" ]] && echo "ERROR: No file specified" && exit 1
+[[ ! -f "${path}${file}" ]] && echo "ERROR: File ${path}${file} not found" && exit 1
+
 echo "ADDING ${path}${file} to IPFS "
 echo "-----------------------------------------------------------------"
 
@@ -430,7 +439,7 @@ URLENCODE_FILE_NAME=$(echo ${file} | jq -Rr @uri)
 ########################################################################
 # type TW PUBLISHING
 ########################################################################
-if [[ "${type}" =~ ^(pdf|film|serie|youtube|video)$ ]]
+if [[ "${type}" =~ ^(pdf|film|serie|youtube|video|mp3)$ ]]
 then
 
     ## ASK FOR EXTRA METADATA
@@ -469,6 +478,10 @@ then
     && H1="<h1><a target='youtube' href='https://www.youtube.com/watch?v="$(echo ${REFERENCE} | rev | cut -d '_' -f 1 | rev)"'>"${TITLE}"</a></h1>" \
     && PATCH="Copier"
 
+    [[ $CAT == "Mp3" ]] \
+    && H1="<h1>🎵 ${TITLE}</h1>" \
+    && PATCH="Audio"
+
     echo $GENRE $SAISON
 
     ## Add screenshot
@@ -486,6 +499,15 @@ then
         TAGS="G1${PATCH}${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR $MIME"
         # TyPE="$MIME"
         # CANON="/ipfs/"${IPFSID}
+        CANON=''
+    elif [[ $(echo "$MIME" | grep 'audio') ]]; then
+
+        TEXT="<audio controls width=100%><source src='/ipfs/"${IPFSID}"' type='"${MIME}"'></audio>
+        <br>{{!!filesize}} - {{!!duration}} sec.<br>
+        "$H1"<h2>"$DESCRIPTION"</h2>"
+
+        TidType="text/vnd.tiddlywiki"
+        TAGS="G1${PATCH}${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR $MIME"
         CANON=''
     else
         TidType="${MIME}"
@@ -547,8 +569,6 @@ then
 #############################################################################
 
 
-
-    ## TODO : Do we keep that ?
     # echo "SEND TW LINK to GCHANGE MESSAGE & MULTIPASS nostr messaging"
     if [[ -n $3 ]]; then
         ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \

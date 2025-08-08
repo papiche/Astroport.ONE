@@ -131,7 +131,7 @@ if [ $URL ]; then
 fi
 ###
 
-COINS=$($MY_PATH/tools/COINScheck.sh $G1PUB | tail -n 1)
+COINS=$($MY_PATH/tools/G1check.sh $G1PUB | tail -n 1)
 echo "$PLAYER wallet = $COINS G1"
 
 
@@ -529,9 +529,50 @@ echo '[
         mkdir -p ~/Astroport/${PLAYER}/mp3
 
         [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
+        [[ $URL == "" ]] && echo "URL EMPTY" && exit 1
+        
         espeak "OK."
-        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "$HOME/Astroport/${PLAYER}/mp3/%(autonumber)s_%(title)s.%(ext)s" "$URL"
-        espeak "Ready. check your home Astoport mp3 directory"
+        
+        # Create TEMP directory for download
+        MP3TEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
+        mkdir -p ${MP3TEMP}
+        
+        # Download MP3 to temp directory
+        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "${MP3TEMP}/%(autonumber)s_%(title)s.%(ext)s" "$URL"
+        
+        # Find the downloaded file
+        MP3FILE=$(ls ${MP3TEMP}/*.mp3 2>/dev/null | head -n 1)
+        [[ -z $MP3FILE ]] && espeak "No MP3 file found" && exit 1
+        
+        # Extract file info
+        FILE_NAME="$(basename "${MP3FILE}")"
+        FILE_TITLE="${FILE_NAME%.*}"
+        
+        # Create MEDIAID and MEDIAKEY
+        REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
+        MEDIAID="$REVSOURCE$(echo "${FILE_TITLE}" | detox --inline)"
+        MEDIAKEY="MP3_${MEDIAID}"
+        
+        # Initialize missing variables for MP3
+        SAISON=""
+        GENRES="[\"Musique\", \"${PLAYER// /-}\"]"
+        RES="Audio"
+        
+        # Create proper directory structure
+        FILE_PATH="$HOME/Astroport/${PLAYER}/mp3/$MEDIAID"
+        mkdir -p ${FILE_PATH}
+        
+        # Move file to proper location
+        mv "${MP3FILE}" "${FILE_PATH}/${FILE_NAME}"
+        
+        # Create ajouter_video.txt
+        URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
+        echo "mp3;${MEDIAID};$(date -u +%s%N | cut -b1-13);${FILE_TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/mp3/${MEDIAID}/ajouter_video.txt
+        
+        # Clean up temp directory
+        rm -Rf ${MP3TEMP}
+        
+        espeak "Ready. MP3 file processed"
 
         break
     ;;
