@@ -176,53 +176,9 @@ send_media_nostr_message() {
     else
         echo "❌ Failed to send NOSTR message to primary relay for ${mediakey}"
     fi
-    
-    # Send to public relay if different from primary relay
-    if [[ "$myRELAY" != "wss://relay.copylaradio.com" ]]; then
-        echo "Sending NOSTR message to public relay: wss://relay.copylaradio.com"
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$nostr_content" \
-            -tags "[['t', 'AstroportMedia'], ['t', 'Media'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['mediakey', '${mediakey}'], ['mime', '${mime_type}']]" \
-            --relay "wss://relay.copylaradio.com" 2>/dev/null
-        
-        local public_result=$?
-        if [[ $public_result -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully to public relay for ${mediakey}"
-        else
-            echo "❌ Failed to send NOSTR message to public relay for ${mediakey}"
-        fi
-        
-        # Overall success if at least one relay worked
-        if [[ $primary_result -eq 0 || $public_result -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully for ${mediakey} (at least one relay)"
-        else
-            echo "❌ Failed to send NOSTR message for ${mediakey} to any relay"
-            # Send email notification on failure
-            send_nostr_failure_email "$player" "$mediakey" "$title" "$ipfs_link"
-        fi
-    else
-        # Primary relay is already the public relay
-        if [[ $primary_result -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully for ${mediakey}"
-        else
-            echo "❌ Failed to send NOSTR message for ${mediakey}"
-            # Send email notification on failure
-            send_nostr_failure_email "$player" "$mediakey" "$title" "$ipfs_link"
-        fi
-    fi
+
 }
 
-# ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/Astroport/${PLAYER}/kodi/vstream/${PREFIX}ASTRXBIAN
-# Astropot/Kodi/Vstream source reads ${PREFIX}ASTRXBIAN from $myIPFS/.$IPFNODEID/
-# Index File Format (could be enhanced) is using Kodi TMDB enhancement
-# https://github.com/Kodi-vStream/venom-xbmc-addons/wiki/Voir-et-partager-sa-biblioth%C3%A8que-priv%C3%A9e#d%C3%A9clarer-des-films
-########################################################################
-## RUN inotifywait process ~/Astroport/${PLAYER}/ NEW FILE DETECT
-# /usr/bin/inotifywait -r -e close_write -m /home/$YOU/astroport | while read dir flags file; do ~/.zen/Astroport.ONE/tools/new_file_in_astroport.sh "$dir" "$file"; done &
-# mkdir -p ~/Astroport/${PLAYER}/youtube
-# mkdir -p ~/Astroport/${PLAYER}/mp3
 ########################################################################
 path="$1"
 
@@ -350,20 +306,6 @@ esac
 [[ $MEDIAKEY == "" ]] && MEDIAKEY="${INDEXPREFIX}${REFERENCE}"
 echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 
-#~ ######################### Decimal convert
-    #~ rm ~/.zen/tmp/decimal
-    #~ echo "$CapitalGluedTitle" > ~/.zen/tmp/convert
-
-    #~ # iteracte through each like
-    #~ while read -r -n1 char; do
-        #~ arr+=$(printf '%d+' "'$char");
-    #~ done <<< ~/.zen/tmp/convert
-
-    #~ printf '%s' "${arr[@]::-3}" > ~/.zen/tmp/decimal
-    ## TODO USE IT TO MAKE A MEDIAKEY IMAGE KEY "SONDE" FOR FILTERING ?
-    # ISSUE11 : https://git.p2p.legal/qo-op/Astroport.ONE/issues/11
-##########################
-
 ########################################################################
 # Check if file exists and is not empty
 [[ -z "$file" ]] && echo "ERROR: No file specified" && exit 1
@@ -395,46 +337,6 @@ ipfsdur=`expr $end - $startipfs`
 echo "IPFS ADD time was $ipfsdur seconds. $URLENCODE_FILE_NAME"
 
 URLENCODE_FILE_NAME=$(echo ${file} | jq -Rr @uri)
-
-#~ ###########################################################
-#~ ############################################
-#~ ################################
-#~ APPNAME="KEY"
-#~ echo "-----------------------------------------------------------------"
-#~ echo "IPFS $file DIRECTORY: ipfs ls /ipfs/$IPFSREPFILEID"
-#~ echo "APP $APPNAME OUTPUT -----------------------------------------------------------------"
-#~ echo "$HOME/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/${APPNAME}/${MIME}/${MEDIAKEY}/${G1PUB}/ "
-#~ ### MEDIAKEY FORGE
-#~ ########################################################################
-#~ ## CREATE NEW ipns KEY : ${MEDIAKEY}
-#~ ########################################################################
-#~ ## IPFS SELF IPNS DATA STORAGE
-#~ ## ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/
-#~ ########################################################################
-#~ if [[ ! $(ipfs key list | grep -w "${MEDIAKEY}") ]]; then
-    #~ echo "CREATING NEW IPNS $MEDIAKEY"
-    #~ ## IPNS KEY CREATION ?
-    #~ mkdir -p ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}
-    #~ KEY=$(ipfs key gen "${MEDIAKEY}")
-    #~ KEYFILE=$(~/.zen/Astroport.ONE/tools/give_me_keystore_filename.py "${MEDIAKEY}") # better method applied
-#~ fi
-
-#~ ## IS IT NEW IPNS KEY?
-#~ if [[ $KEY ]]; then
-    #~ # memorize IPNS key filename for easiest exchange
-    #~ echo "$KEYFILE" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename
-    #~ # Publishing IPNS key
-    #~ echo "$KEY" > ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link
-    #~ # CREATE .zen = ZEN economic value counter
-    #~ touch ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.zen
-    #~ ################ STORE ENCRYPT keystore/$KEYFILE
-    #~ cp ~/.ipfs/keystore/$KEYFILE ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/
-#~ else
-    #~ KEY=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.link)
-    #~ KEYFILE=$(cat ~/.zen/game/players/$PLAYER/ipfs/.${IPFSNODEID}/KEY/${MEDIAKEY}/${G1PUB}/.ipns.key.keystore_filename)
-    #~ echo "## ALREADY EXISTING IPNS KEY $KEYFILE ($KEY)"
-#~ fi
-
 
 ########################################################################
 # type TW PUBLISHING
