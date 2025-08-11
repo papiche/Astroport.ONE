@@ -238,10 +238,10 @@ for UMAP in ${unique_combined[@]}; do
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
     "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "${TODATE} JOURNAL : VISIO : ${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
+    "${TODATE} JOURNAL : VISIO : ${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
-    "" "${myLIBRA}/ipfs/${UMAPROOT}" "" "${myLIBRA}${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
+    "" "${myLIBRA}/ipfs/${UMAPROOT}" "" "${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" \
     --zencard "$UPLANETNAME_G1"
 
@@ -272,10 +272,10 @@ fi
 ${MY_PATH}/../tools/nostr_setup_profile.py \
 "$UPLANETNSEC" \
 "UPLANET_${UPLANETG1PUB:0:8}" "${UPLANETG1PUB}" \
-"VISIO ROOM : ${myLIBRA}${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
+"VISIO ROOM : ${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record // UPlanet is a #Web3 key architecture offering Global #IPFS Storage through Geolocalized #Astroport Relays" \
 "${myLIBRA}/ipfs/QmSuoBkXoY6Fh7AshD71AdPaJdfjtmQdTavyTFNzbir8KR/UPlanetORIGIN.png" \
 "${myLIBRA}/ipfs/QmQMB9GkBXYdufZ7XicKsNsTFvN78G72co8vKrJrepXhs3/auto_heberger.jpg" \
-"" "${myLIBRA}/ipns/copylaradio.com" "" "$myIPFS$VDONINJA/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
+"" "${myLIBRA}/ipns/copylaradio.com" "" "${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
 "$myRELAY" \
 --zencard "$UPLANETNAME_G1" \
 | tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX

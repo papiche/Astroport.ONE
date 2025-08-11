@@ -560,10 +560,10 @@ fi
 ## https://git.p2p.legal/qo-op/OSM2IPFS
 FLIPPERCID="/ipns/copylaradio.com/coinflip" ### EASTER EGG
 
-###########################
-## VISIO ROOM APP
+###############################################
+## VISIO ROOM APP - DNS LINK
 ## https://github.com/steveseguin/vdo.ninja
-VDONINJA="/ipfs/QmeHPPHR5g4iW4VkCedZCpR8Vc6aBFJZSVbtsFxz3KaJzv"
+VDONINJA="https://vdo.copylaradio.com"
 ###########################
 ## CESIUM APP
 ## https://cesium.app

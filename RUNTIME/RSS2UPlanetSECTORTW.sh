@@ -186,7 +186,7 @@ Tiddler appears in <b>${unique_combined[*]}</b> TW(s)
 <li><a href='$(myIpfsGw)/ipfs/${INSIDETID}'>Actual Tiddler</a></li>
 <li><a href='$(myIpfsGw)/ipfs/${NEWTID}'>NEW Tiddler</a> being overwrite by ${NUNIQUE[*]}</li>
 </ul>
-<h2><a href='$(myIpfsGw)${VDONINJA}/?room=${MOATS}'>Record VISIO for this event...</a></h2>
+<h2><a href='${VDONINJA}/?room=${MOATS}'>Record VISIO for this event...</a></h2>
 </body></html>" > ~/.zen/tmp/${MOATS}/g1message
 
                 ${MY_PATH}/../tools/mailjet.sh "$email" ~/.zen/tmp/${MOATS}/g1message "Upgrade Tiddler : ${title}"
