@@ -431,7 +431,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"4.2\",
+    \"version\" : \"4.3\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -449,6 +449,8 @@ NODE12345="{
     \"captain\" : \"${CAPTAINEMAIL}\",
     \"captainZEN\" : \"${CAPTAINZEN}\",
     \"captainHEX\" : \"${captainHEX}\",
+    \"CAPTAING1PUB\" : \"${CAPTAING1PUB}\",
+    \"CAPTAINZENCARDG1PUB\" : \"${CAPTAINZENCARDG1PUB}\",
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"NODEZEN\" : \"${NODEZEN}\",
