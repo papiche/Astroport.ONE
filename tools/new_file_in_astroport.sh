@@ -104,6 +104,8 @@ send_media_nostr_message() {
     local resolution="$9"
     local hashtags="${10}"
     local g1pub="${11}"
+    local subtitles_desc="${12}"
+    local comments_link="${13}"
     
     # Check if player has NOSTR keys
     if [[ ! -f ~/.zen/game/nostr/${player}/.secret.nostr ]]; then
@@ -160,6 +162,19 @@ send_media_nostr_message() {
     if [[ -n "$hashtags" ]]; then
         nostr_content="${nostr_content} ${hashtags}"
     fi
+
+    # Optional extras
+    if [[ -n "$subtitles_desc" ]]; then
+        nostr_content="${nostr_content}
+
+🗒️ Subtitles: ${subtitles_desc}"
+    fi
+
+    if [[ -n "$comments_link" ]]; then
+        nostr_content="${nostr_content}
+
+💬 Comments: ${comments_link}"
+    fi
     
     # Send NOSTR message to primary relay
     echo "Sending NOSTR message for media: ${mediakey}"
@@ -167,7 +182,7 @@ send_media_nostr_message() {
         -privkey "$NPRIV_HEX" \
         -kind 1 \
         -content "$nostr_content" \
-        -tags "[['t', 'AstroportMedia'], ['t', 'Media'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['mediakey', '${mediakey}'], ['mime', '${mime_type}']]" \
+        -tags "[['t', 'AstroportMedia'], ['t', 'Media'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['g1pub', '${g1pub}'], ['mediakey', '${mediakey}'], ['mime', '${mime_type}']]" \
         --relay "$myRELAY" 2>/dev/null
     
     local primary_result=$?
@@ -311,7 +326,7 @@ echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 [[ -z "$file" ]] && echo "ERROR: No file specified" && exit 1
 [[ ! -f "${path}${file}" ]] && echo "ERROR: File ${path}${file} not found" && exit 1
 
-echo "ADDING ${path}${file} to IPFS "
+    echo "ADDING ${path}${file} to IPFS "
 echo "-----------------------------------------------------------------"
 
 ### FILE SIZING ####
@@ -337,6 +352,55 @@ ipfsdur=`expr $end - $startipfs`
 echo "IPFS ADD time was $ipfsdur seconds. $URLENCODE_FILE_NAME"
 
 URLENCODE_FILE_NAME=$(echo ${file} | jq -Rr @uri)
+
+########################################################################
+# Detect YouTube sidecar files (subtitles, comments, infojson)
+########################################################################
+SUBTITLES_JSON="[]"
+SUBTITLES_DESC=""
+COMMENTS_IPFS=""
+INFO_IPFS=""
+
+base_no_ext="${file%.*}"
+
+# Subtitles: *.vtt (all languages), optional *.srt
+subtitle_files=( $(ls "${path}"${base_no_ext}.*.vtt 2>/dev/null) )
+if [[ ${#subtitle_files[@]} -gt 0 ]]; then
+    tmp_subs_json="["
+    first=true
+    for subf in "${subtitle_files[@]}"; do
+        [[ ! -f "$subf" ]] && continue
+        sub_cid=$(ipfs add -q "$subf" | tail -n 1)
+        lang=$(basename "$subf")
+        lang=${lang#${base_no_ext}.}
+        lang=${lang%.*}
+        # Build JSON array and description list
+        if $first; then
+            first=false
+        else
+            tmp_subs_json+=" ,"
+        fi
+        tmp_subs_json+="{\"lang\":\"${lang}\",\"ipfs\":\"/ipfs/${sub_cid}\"}"
+        # Human-readable list for NOSTR
+        if [[ -z "$SUBTITLES_DESC" ]]; then
+            SUBTITLES_DESC="${lang}"
+        else
+            SUBTITLES_DESC="${SUBTITLES_DESC}, ${lang}"
+        fi
+    done
+    tmp_subs_json+="]"
+    SUBTITLES_JSON="$tmp_subs_json"
+fi
+
+# Comments JSON
+if [[ -f "${path}${base_no_ext}.comments.json" ]]; then
+    COMMENTS_IPFS=$(ipfs add -q "${path}${base_no_ext}.comments.json" | tail -n 1)
+fi
+
+# Info JSON
+if [[ -f "${path}${base_no_ext}.info.json" ]]; then
+    INFO_IPFS=$(ipfs add -q "${path}${base_no_ext}.info.json" | tail -n 1)
+fi
 
 ########################################################################
 # type TW PUBLISHING
@@ -397,6 +461,14 @@ then
         <br>{{!!filesize}} - {{!!duration}} sec. - vtratio(dur) =  {{!!vtratio}} ({{!!dur}})<br>
         "$H1"<h2>"$DESCRIPTION"</h2>"
 
+        # Append subtitles and comments links if available
+        if [[ "$SUBTITLES_JSON" != "[]" ]]; then
+            TEXT="${TEXT}<br>Subtitles: ${SUBTITLES_DESC}"
+        fi
+        if [[ -n "$COMMENTS_IPFS" ]]; then
+            TEXT="${TEXT}<br>Comments: <a href='${myLIBRA}/ipfs/${COMMENTS_IPFS}'>IPFS</a>"
+        fi
+
         TidType="text/vnd.tiddlywiki" ## MAYBE REAL ONCE TW CAN SHOW ATTACHED IPFS VIDEO (TODO: TESTINGS)
         TAGS="G1${PATCH}${CAT} ${PLAYER} ${FILETAG} $SAISON $GENRE ipfs ${HASHTAG} $YEAR $MIME"
         # TyPE="$MIME"
@@ -453,7 +525,11 @@ then
     "tmdb": "'${REFERENCE}'",
     "modified": "'${MOATS}'",
     "issuer": "'${PLAYER}'",
-    "tags": "'${TAGS}'" ' > ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
+    "tags": "'${TAGS}'",
+    "subtitles": '"${SUBTITLES_JSON}"',
+    "comments": "'/ipfs/${COMMENTS_IPFS}'",
+    "info": "'/ipfs/${INFO_IPFS}'"
+  ' > ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
 
     [[ ${CANON} != "" ]] && echo  ',
     "_canonical_uri": "'${CANON}'"' >> ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/${MEDIAKEY}.dragdrop.json
@@ -479,6 +555,13 @@ then
 
         ## SEND MEDIA AS PUBLIC NOSTR MESSAGE
         echo "Sending media as public NOSTR message..."
+        # Build optional extras for NOSTR
+        SUBS_DESC_NOSTR="$SUBTITLES_DESC"
+        COMMENTS_LINK_NOSTR=""
+        if [[ -n "$COMMENTS_IPFS" ]]; then
+            COMMENTS_LINK_NOSTR="${myLIBRA}/ipfs/${COMMENTS_IPFS}"
+        fi
+
         send_media_nostr_message \
             "$PLAYER" \
             "$MEDIAKEY" \
@@ -490,7 +573,9 @@ then
             "$DUREE" \
             "$RES" \
             "$HASHTAG" \
-            "$G1PUB"
+            "$G1PUB" \
+            "$SUBS_DESC_NOSTR" \
+            "$COMMENTS_LINK_NOSTR"
 
     fi
 

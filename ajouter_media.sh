@@ -271,8 +271,10 @@ TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
             --no-playlist \
             $BROWSER --verbose \
             --download-archive $HOME/.zen/.yt-dlp.list \
-             -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
-             -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
+            -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
+            --write-info-json --write-comments \
+            --write-sub --write-auto-sub --sub-langs all --convert-subs vtt \
+            -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
 
         DFILE=$(ls ${YTEMP}/*.mp4)
         echo "LISTING ${YTEMP} : $DFILE"
@@ -281,8 +283,10 @@ TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
             ## SECOND TRY
             espeak "first download failed... trying again"
             yt-dlp --no-playlist $BROWSER \
-                    -S res,ext:mp4:m4a --no-mtime --embed-thumbnail \
-                    --add-metadata -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
+                    -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail \
+                    --add-metadata --write-info-json --write-comments \
+                    --write-sub --write-auto-sub --sub-langs all --convert-subs vtt \
+                    -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
         fi
 
         DFILE=$(ls ${YTEMP}/*.mp4)
