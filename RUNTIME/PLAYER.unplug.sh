@@ -73,6 +73,28 @@ for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cu
     [[ ${vk} != "" ]] && ipfs key rm ${vk}
 done
 
+## CLEANUP NOSTR PROFILE - Remove zencard parameter
+## Before unplugging, update NOSTR profile to remove zencard parameter
+if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
+    echo "## Cleaning up NOSTR profile - removing ZENCARD parameter..."
+    source ~/.zen/game/nostr/${PLAYER}/.secret.nostr
+    
+    # Update NOSTR profile to remove zencard parameter
+    ${MY_PATH}/../tools/nostr_update_profile.py \
+        "$NSEC" \
+        "wss://relay.copylaradio.com" "$myRELAY" \
+        --zencard "" \
+        > ~/.zen/tmp/${MOATS}/nostr_cleanup_zencard.log 2>&1
+    
+    if [[ $? -eq 0 ]]; then
+        echo "✅ NOSTR profile cleaned - ZENCARD parameter removed"
+    else
+        echo "⚠️ NOSTR profile cleanup failed, check log: ~/.zen/tmp/${MOATS}/nostr_cleanup_zencard.log"
+    fi
+else
+    echo "⚠️ NOSTR secret not found, skipping profile cleanup"
+fi
+
 ## SEND PLAYER LAST KNOW TW
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='/ipfs/${TW}'>TW (${TW})</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "CIAO $SHOUT"

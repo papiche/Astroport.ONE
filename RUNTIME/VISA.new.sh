@@ -647,6 +647,39 @@ ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPL
 rm -Rf ~/.zen/tmp/${MOATS}
 
 #####################################################################"
+## UPDATE NOSTR PROFILE WITH ZENCARD PARAMETER
+## After ZEN Card creation, update the MULTIPASS NOSTR profile to include zencard
+if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
+    echo "## Updating NOSTR profile with ZENCARD parameter..."
+    source ~/.zen/game/nostr/${PLAYER}/.secret.nostr
+    
+    # Get the ZEN Card G1PUB address
+    ZENCARDG1=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+    
+    if [[ -n "$ZENCARDG1" ]]; then
+        echo "## Adding ZENCARD: $ZENCARDG1 to NOSTR profile"
+        
+        # Update NOSTR profile using nostr_update_profile.py
+        ${MY_PATH}/../tools/nostr_update_profile.py \
+            "$NSEC" \
+            "wss://relay.copylaradio.com" "$myRELAY" \
+            --zencard "$ZENCARDG1" \
+            > ~/.zen/game/nostr/${PLAYER}/nostr_update_zencard.log 2>&1
+        
+        if [[ $? -eq 0 ]]; then
+            echo "✅ NOSTR profile updated with ZENCARD parameter"
+            # Remove the old nostr_setup_profile to force refresh on next NOSTRCARD.refresh.sh run
+            rm -f ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
+        else
+            echo "⚠️ NOSTR profile update failed, check log: ~/.zen/game/nostr/${PLAYER}/nostr_update_zencard.log"
+        fi
+    else
+        echo "⚠️ ZENCARD G1PUB not found, skipping NOSTR profile update"
+    fi
+else
+    echo "⚠️ NOSTR secret not found, skipping profile update"
+fi
+
 ## FIRST ACCOUNT IS CAPTAIN
 ## CHECK .current
 [[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
