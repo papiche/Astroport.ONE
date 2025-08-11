@@ -475,7 +475,7 @@ echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
 
 ############ PREPARE HTTP 12345 JSON DOCUMENT
     HTTPSEND="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: \*
+Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET
 Server: Astroport.ONE
