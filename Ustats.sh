@@ -156,7 +156,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     ####################################
     # search for active NOSTR MULTIPASS
     ####################################
-    echo " ## SEARCH HEX in ~/.zen/tmp/{12*,swarm/*}/TW/*/HEX" >&2
+    echo " ## SEARCH HEX in ~/.zen/tmp/{12D3KooW*,swarm/*}/TW/*/HEX" >&2
     MENOSTR=($(ls ~/.zen/tmp/$IPFSNODEID/TW/*/HEX ~/.zen/tmp/swarm/*/TW/*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort -u))
 
     echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}" >&2
@@ -191,8 +191,8 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
         echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
         # Construct JSON object using printf and associative array
-        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s"}' \
-                        "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN")
+        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s", "SOURCE": "%s"}' \
+                        "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN" "${source}")
         nostr_array+=("$nostr_obj")
         [[ $ZEN -gt 0 ]] && nostrcount=$((nostrcount + 1))
     done
