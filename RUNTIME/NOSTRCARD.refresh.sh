@@ -9,7 +9,9 @@
 ################################################################################
 # Ce script gère l'évolution des cartes NOSTR (MULTIPASS) selon leur état :
 # 1. Vérifie et met à jour les données des cartes NOSTR
-# 2. Gère les paiements des cartes NOSTR (cycles 7 jours)
+# 2. Gère les paiements des cartes NOSTR (cycles 7 jours) avec distribution temporelle
+#    - Chaque carte a une heure de paiement aléatoire stockée dans .refresh_time
+#    - Les paiements ne sont traités qu'après l'heure programmée pour éviter la simultanéité
 # 3. Implémente le système de distribution des bénéfices
 # 4. Évolue le compte selon le type de PRIMAL :
 #    - PRIMAL = UPlanet wallet : Compte UPlanet ORIGIN (EnfinLibre)
@@ -500,29 +502,44 @@ for PLAYER in "${NOSTR[@]}"; do
                 # Check if payment was already made today
                 last_payment_file="${HOME}/.zen/game/nostr/${PLAYER}/.lastpayment"
                 if [[ ! -s "$last_payment_file" || "$(cat "$last_payment_file")" != "$TODATE" ]]; then
-                    if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
-                        ## Pay NCARD to CAPTAIN
-                        [[ -z $NCARD ]] && NCARD=1
-                        Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                        log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1)"
-                        payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
-                        if [[ $? -eq 0 ]]; then
-                            # Record successful payment
-                            echo "$TODATE" > "$last_payment_file"
-                            log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN)"
-                            log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
-                            PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+                    # Check if current time has passed the player's refresh time for payment
+                    current_time=$(date '+%H:%M')
+                    player_refresh_time=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
+                    [[ -z "$player_refresh_time" ]] && player_refresh_time="00:00"
+                    
+                    # Convert times to seconds since midnight for comparison
+                    current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
+                    refresh_seconds=$((10#${player_refresh_time%%:*} * 3600 + 10#${player_refresh_time##*:} * 60))
+                    
+                    # Only process payment if current time has passed the refresh time
+                    if [[ $current_seconds -ge $refresh_seconds ]]; then
+                        if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+                            ## Pay NCARD to CAPTAIN
+                            [[ -z $NCARD ]] && NCARD=1
+                            Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1)"
+                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
+                            if [[ $? -eq 0 ]]; then
+                                # Record successful payment
+                                echo "$TODATE" > "$last_payment_file"
+                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN)"
+                                log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
+                                PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+                            else
+                                log "WARN" "❌ Weekly payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
+                                log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
+                                PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
+                            fi
                         else
-                            log "WARN" "❌ Weekly payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
-                            log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
-                            PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
+                            log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Destroying if not captain"
+                            if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
+                                ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
+                            fi
+                            continue
                         fi
                     else
-                        log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Destroying if not captain"
-                        if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
-                            ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
-                        fi
-                        continue
+                        log "DEBUG" "[7 DAYS CYCLE] Payment time not reached for ${PLAYER} (current: $current_time, scheduled: $player_refresh_time)"
+                        PAYMENTS_ALREADY_DONE=$((PAYMENTS_ALREADY_DONE + 1))
                     fi
                 else
                     log "DEBUG" "[7 DAYS CYCLE] Weekly payment already processed for ${PLAYER} on $TODATE"
