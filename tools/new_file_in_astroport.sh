@@ -128,7 +128,7 @@ send_media_nostr_message() {
     fi
     
     # Build NOSTR message content
-    local nostr_content="🎬 New Media Added: ${title}"
+    local nostr_content="🎬 ${title}"
     
     if [[ -n "$description" ]]; then
         nostr_content="${nostr_content}
@@ -138,7 +138,7 @@ send_media_nostr_message() {
     
     nostr_content="${nostr_content}
 
-🔗 IPFS: ${ipfs_link}"
+🔗 ${ipfs_link}"
     
     if [[ -n "$file_size" ]]; then
         nostr_content="${nostr_content}
