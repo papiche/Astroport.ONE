@@ -856,7 +856,7 @@ update_sector_nostr_profile() {
         "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
         "" "${myIPFS}/ipfs/${SECROOT}" "" "${VDONINJA}/?room=${SECTORG1PUB:0:8}&effects&record" "" "" \
         "$myRELAY" "wss://relay.copylaradio.com" \
-        --zencard "$UPLANETNAME_G1"
+        --zencard "$UPLANETG1PUB"
 
     local TAGS_JSON=$(printf '%s\n' "${STAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
@@ -932,7 +932,7 @@ update_region_nostr_profile() {
         "${myIPFS}/ipfs/QmQAjxPE5UZWW4aQWcmsXgzpcFvfk75R1sSo2GuEgQ3Byu" \
         "" "${myIPFS}/ipfs/${REGROOT}" "" "${VDONINJA}/?room=${REGIONG1PUB:0:8}&effects&record" "" "" \
         "$myRELAY" "wss://relay.copylaradio.com" \
-        --zencard "$UPLANETNAME_G1"
+        --zencard "$UPLANETG1PUB"
 
     local TAGS_JSON=$(printf '%s\n' "${RTAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
