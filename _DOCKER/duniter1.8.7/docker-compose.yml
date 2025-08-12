@@ -41,10 +41,8 @@ services:
 
 networks:
   private:
-    name: ${DOCKER_NETWORK_PRIVATE:-duniter}
-    external: true
   public:
-    name: ${DOCKER_NETWORK_PUBLIC:-host}
+    name: host
     external: true
 
 volumes:
