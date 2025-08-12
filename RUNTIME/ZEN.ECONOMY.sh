@@ -83,9 +83,9 @@ DAILYPAF=$(makecoord $(echo "$PAF / 7" | bc -l))
 echo "ZEN ECONOMY : $PAF ($DAILYPAF ZEN) :: NCARD=$NCARD // ZCARD=$ZCARD"
 DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc -l))
 
-#######################################################################
-# Système de solidarité : Paiement de la PAF
-# Si le Captain a assez de Ẑen, il paie la PAF
+##################################################################################
+# Système de solidarité : Paiement de la PAF = House + Electricity + IP Connexion
+# Si le Captain a assez de Ẑen, il paie la PAF du NODE
 # Sinon, UPlanet (la caisse commune) paie la PAF
 #######################################################################
 if [[ $(echo "$DAILYG1 > 0" | bc -l) -eq 1 ]]; then
@@ -93,10 +93,10 @@ if [[ $(echo "$DAILYG1 > 0" | bc -l) -eq 1 ]]; then
         if [[ $(echo "$CAPTAINZEN > $DAILYPAF" | bc -l) -eq 1 ]]; then
             ## CAPTAIN CAN PAY NODE : ECONOMY +
             CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$CAPTYOUSER:PAF" 2>/dev/null
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:DAILYPAF" 2>/dev/null
         else
             ## UPLANET MUST PAY NODE: ECONOMY -
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:PAF" 2>/dev/null
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:---:DAILYPAF" 2>/dev/null
         fi
     else
         echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
@@ -104,7 +104,7 @@ if [[ $(echo "$DAILYG1 > 0" | bc -l) -eq 1 ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
             chmod 600 ~/.zen/game/uplanet.dunikey
         fi
-        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:$IPFSNODEID:INIT" 2>/dev/null
+        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT" 2>/dev/null
     fi
 fi
 
