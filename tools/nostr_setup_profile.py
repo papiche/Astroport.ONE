@@ -45,7 +45,7 @@ def nostr_setup_profile(args):
         tags.append(["i", f"ipfs_gw:{args.ipfs_gw}", ""])
     if args.ipns_vault:
         tags.append(["i", f"ipns_vault:{args.ipns_vault}", ""])
-    if args.ipfs_gw:
+    if args.zencard:
         tags.append(["i", f"zencard:{args.zencard}", ""])
     if args.tw_feed:
         tags.append(["i", f"tw_feed:{args.tw_feed}", ""])
