@@ -307,6 +307,38 @@ if [[ ! -z $(docker ps | grep perplexica) ]]; then
 
 fi
 
+############################################
+## PREPARE x_strfry.sh
+## REMOTE ACCESS COMMAND FROM DRAGONS FOR STRFRY RELAY
+############################################
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh 2>/dev/null
+if [[ ! -z $(ps auxf | grep "strfry relay" | grep -v grep) ]]; then
+    PORT=7777
+
+    echo "Launching STRFRY RELAY SHARE ACCESS /x/strfry-${IPFSNODEID}"
+    [[ ! $(ipfs p2p ls | grep "/x/strfry-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/strfry-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
+
+    echo '#!/bin/bash
+    if [[ ! $(ipfs p2p ls | grep x/strfry-'${IPFSNODEID}') ]]; then
+        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
+        [[ $? == 0 ]] \
+            && ipfs p2p forward /x/strfry-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/9999 /p2p/'${IPFSNODEID}' \
+            && echo "STRFRY RELAY PORT FOR '${IPFSNODEID}'" \
+            && echo "WebSocket URL: ws://127.0.0.1:9999" \
+            && echo "NOSTR Relay accessible via IPFS P2P tunnel on local port 9999" \
+            && echo "Local relay: ws://127.0.0.1:9999" \
+            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    else
+            echo "Tunnel /x/strfry already active..."
+            echo "ipfs p2p close -p /x/strfry-'${IPFSNODEID}'"
+    fi
+    ' > ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_strfry.sh | bash"
+
+fi
+
 echo "-----------------------------------------------------"
 echo "ipfs p2p ls"
 ipfs p2p ls
