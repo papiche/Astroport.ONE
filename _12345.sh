@@ -197,13 +197,27 @@ while true; do
         ${MY_PATH}/ping_bootstrap.sh
 
         # IPNS flashmem desactivated - reactivate as needed - _UPLANET.refresh.sh TW system
-        #~ #### UPLANET FLASHMEM UPDATES
+        #~ #### UPLANET FLASHMEM UPDATES 
+        ## - keep Zen Card & Geo Key ipns & ipfs copied to automaticaly propogate
         #~ GEOKEYSrunning=$(pgrep -au $USER -f 'GEOKEYS_refresh.sh' | tail -n 1 | xargs | cut -d " " -f 1)
         #~ [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
-
-        ### NOSTR refresh
+        
+        ##################################################################################
+        ### MULTIPASS refresh
         ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
-
+        ### NOSTR RELAY SYNCHRO for LAST 24 H
+        if [[ -s ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh ]]; then
+            # Use constellation_sync_trigger.sh for robust constellation synchronization
+            # This script handles locking, daily execution, and error management
+            ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh &
+        elif [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
+            # Fallback to direct backfill if trigger script not available
+            current_hour=$(date +%H)
+            if [[ $current_hour -ge 12 ]]; then
+                ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose &
+            fi
+        fi
+        ##################################################################################
         #####################################
         ( ##### SUB-PROCESS £
         start=`date +%s`
