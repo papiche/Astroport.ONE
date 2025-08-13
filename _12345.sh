@@ -211,6 +211,9 @@ while true; do
             ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh &
         fi
         ##################################################################################
+        # Check for IPFS P2P tunnels
+        [[ -z $(ipfs p2p ls) ]] && ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh ON
+
         #####################################
         ( ##### SUB-PROCESS £
         start=`date +%s`
