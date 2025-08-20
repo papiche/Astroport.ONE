@@ -77,6 +77,14 @@ setup_server() {
     
     convert_ssh_keys
 
+    # Détecter l'interface réseau principale
+    local WAN_INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
+    if [[ -z "$WAN_INTERFACE" ]]; then
+        echo -e "${RED}❌ Impossible de détecter l'interface réseau par défaut${NC}"
+        return 1
+    fi
+    echo -e "${WHITE}Interface détectée:${NC} $WAN_INTERFACE"
+
     # Vérifier si l'interface existe déjà
     if [[ -f "$SERVER_CONF" ]]; then
         echo -e "${YELLOW}⚠️ Configuration existante détectée. Sauvegarde...${NC}"
@@ -87,8 +95,8 @@ setup_server() {
 Address = ${NETWORK%.*}.1/24
 ListenPort = $SERVER_PORT
 PrivateKey = $(cat "$CONFIG_DIR/server.priv")
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $WAN_INTERFACE -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $WAN_INTERFACE -j MASQUERADE
 " | sudo tee "$SERVER_CONF" > /dev/null
 
     sudo systemctl enable --now wg-quick@wg0
