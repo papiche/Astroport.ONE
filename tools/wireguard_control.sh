@@ -219,7 +219,7 @@ list_clients() {
     
     print_section "CLIENTS CONFIGURÉS"
     
-    if [[ ! -f "$SERVER_CONF" ]] || ! sudo test -r "$SERVER_CONF" 2>/dev/null; then
+    if [[ ! -f "$SERVER_CONF" ]]; then
         echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée ou accessible${NC}"
         return 0
     fi
