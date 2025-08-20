@@ -10,8 +10,10 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-CONFIG_DIR="$HOME/.zen/wireguard"
-mkdir -p "$CONFIG_DIR"
+CONFIG_DIR="/etc/wireguard"
+KEYS_DIR="/etc/wireguard/keys"
+sudo mkdir -p "$KEYS_DIR"
+sudo chmod 700 "$KEYS_DIR"
 
 print_header() {
     echo -e "${BLUE}"
@@ -56,13 +58,13 @@ ssh_to_wg() {
 convert_ssh_keys() {
     # Clé privée - prendre les 32 derniers bytes
     awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
-        | base64 -d | tail -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/server.priv"
+        | base64 -d | tail -c 32 | base64 | tr -d '\n' | sudo tee "$KEYS_DIR/server.priv" > /dev/null
 
     # Clé publique - extraire la partie base64 et convertir
     local ssh_pubkey=$(awk '{print $2}' ~/.ssh/id_ed25519.pub)
-    ssh_to_wg "$ssh_pubkey" > "$CONFIG_DIR/server.pub"
+    ssh_to_wg "$ssh_pubkey" | sudo tee "$KEYS_DIR/server.pub" > /dev/null
 
-    chmod 600 "$CONFIG_DIR/server.priv"
+    sudo chmod 600 "$KEYS_DIR/server.priv"
     echo -e "${GREEN}✅ Clés SSH converties en WireGuard${NC}"
 }
 
@@ -94,7 +96,7 @@ setup_server() {
     echo "[Interface]
 Address = ${NETWORK%.*}.1/24
 ListenPort = $SERVER_PORT
-PrivateKey = $(cat "$CONFIG_DIR/server.priv")
+PrivateKey = $(sudo cat "$KEYS_DIR/server.priv")
 PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $WAN_INTERFACE -j MASQUERADE
 PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $WAN_INTERFACE -j MASQUERADE
 " | sudo tee "$SERVER_CONF" > /dev/null
@@ -103,7 +105,7 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -
     echo -e "${GREEN}✅ Serveur configuré avec succès${NC}"
     echo -e "${WHITE}Port:${NC} $SERVER_PORT"
     echo -e "${WHITE}Réseau:${NC} $NETWORK"
-    echo -e "${WHITE}Clé publique serveur:${NC} $(cat "$CONFIG_DIR/server.pub")"
+    echo -e "${WHITE}Clé publique serveur:${NC} $(sudo cat "$KEYS_DIR/server.pub")"
 }
 
 # Ajout d'un client LAN
@@ -140,18 +142,18 @@ AllowedIPs = $CLIENT_IP/32" | sudo tee -a "$SERVER_CONF" > /dev/null
 
     # Génération config client
     local CLIENT_CONF="$CONFIG_DIR/${CLIENT_NAME}_lan.conf"
-    cat > "$CLIENT_CONF" <<EOF
+    sudo bash -c "cat > $CLIENT_CONF <<EOF
 [Interface]
 PrivateKey = _REPLACE_WITH_CLIENT_PRIVATE_KEY_
 Address = $CLIENT_IP/32
 DNS = 1.1.1.1, 2606:4700:4700::1111
 
 [Peer]
-PublicKey = $(cat "$CONFIG_DIR/server.pub")
-Endpoint = $(curl -4 -s ifconfig.me):$SERVER_PORT
+PublicKey = \$(cat $KEYS_DIR/server.pub)
+Endpoint = $SERVER_ENDPOINT:$SERVER_PORT
 AllowedIPs = $NETWORK
 PersistentKeepalive = 25
-EOF
+EOF"
 
     # Appliquer la configuration
     sudo wg syncconf wg0 <(wg-quick strip wg0)
@@ -164,12 +166,12 @@ EOF
 
     echo -e "\n${GREEN}✅ Configuration LAN générée${NC}"
     echo -e "${WHITE}📋 Fichier:${NC} $CLIENT_CONF"
-    echo -e "${WHITE}🔑 Clé serveur:${NC} $(cat "$CONFIG_DIR/server.pub")"
+    echo -e "${WHITE}🔑 Clé serveur:${NC} $(sudo cat "$KEYS_DIR/server.pub")"
     echo -e "${WHITE}🌐 Endpoint:${NC} $SERVER_ENDPOINT:$SERVER_PORT"
     echo -e "${WHITE}📱 IP attribuée:${NC} $CLIENT_IP"
     echo -e "\n${YELLOW}📤 Instructions pour le client:${NC}"
     echo "1. Copier le fichier: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
-    echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(cat "$CONFIG_DIR/server.pub") $CLIENT_IP"
+    echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(sudo cat "$KEYS_DIR/server.pub") $CLIENT_IP"
 }
 
 # Supprimer un client
@@ -329,11 +331,11 @@ explain_client_config() {
     echo -e "${WHITE}3. Entrez les informations suivantes:${NC}"
     echo "   • Serveur: $SERVER_ENDPOINT"
     echo "   • Port: 51820"
-    echo "   • Clé serveur: $(cat "$CONFIG_DIR/server.pub")"
+    echo "   • Clé serveur: $(sudo cat "$KEYS_DIR/server.pub")"
     echo "   • IP client: $client_ip"
     echo ""
     echo -e "${WHITE}4. Ou utilisez la commande automatique:${NC}"
-    echo "   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(cat "$CONFIG_DIR/server.pub") $client_ip"
+    echo "   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(sudo cat "$KEYS_DIR/server.pub") $client_ip"
     echo ""
     echo -e "${WHITE}5. Vérifiez la connexion:${NC}"
     echo "   ping 10.99.99.1"

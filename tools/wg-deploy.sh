@@ -178,9 +178,9 @@ show_menu() {
                 ;;
             4)
                 print_section "INFORMATIONS DE CONNEXION"
-                if [[ -f ~/.zen/wireguard/server.pub ]]; then
+                if [[ -f /etc/wireguard/keys/server.pub ]]; then
                     echo -e "${WHITE}Clé publique serveur:${NC}"
-                    cat ~/.zen/wireguard/server.pub
+                    sudo cat /etc/wireguard/keys/server.pub
                     echo -e "\n${WHITE}Endpoint:${NC} $(curl -s ifconfig.me):51820"
                     echo -e "${WHITE}Réseau VPN:${NC} 10.99.99.0/24"
                 else
