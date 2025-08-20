@@ -134,7 +134,11 @@ EOF"
 }
 
 # Mode d'utilisation
-if [[ $# -ge 4 ]]; then
+if [[ $# -ge 5 ]] && [[ "$1" == "auto" ]]; then
+    check_deps
+    check_ssh_keys
+    auto_setup "$2" "$3" "$4" "$5"
+elif [[ $# -ge 4 ]]; then
     check_deps
     check_ssh_keys
     auto_setup "$1" "$2" "$3" "$4"
