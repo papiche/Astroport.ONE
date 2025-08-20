@@ -197,17 +197,22 @@ show_menu() {
 
 # Vérification des permissions
 check_permissions() {
-    if [[ $EUID -eq 0 ]]; then
-        echo -e "${RED}❌ Ce script ne doit pas être exécuté en tant que root${NC}"
-        echo "   Utilisez votre utilisateur normal avec sudo"
+    # Vérifier que sudo est disponible
+    if ! command -v sudo &> /dev/null; then
+        echo -e "${RED}❌ sudo n'est pas installé${NC}"
+        echo "   Installez sudo ou exécutez en tant que root"
         exit 1
     fi
     
-    if ! sudo -n true 2>/dev/null; then
-        echo -e "${YELLOW}⚠️ Ce script nécessite des privilèges sudo${NC}"
-        echo "   Veuillez configurer sudo ou exécuter: sudo visudo"
+    # Tester si sudo fonctionne (demandera le mot de passe si nécessaire)
+    echo -e "${YELLOW}🔐 Vérification des privilèges sudo...${NC}"
+    if ! sudo -v; then
+        echo -e "${RED}❌ Impossible d'obtenir les privilèges sudo${NC}"
+        echo "   Vérifiez votre configuration sudo"
         exit 1
     fi
+    
+    echo -e "${GREEN}✅ Privilèges sudo confirmés${NC}"
 }
 
 # Main
