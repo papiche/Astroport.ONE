@@ -45,14 +45,14 @@ print_status() {
     fi
 }
 
-# Fonction de conversion SSH vers WireGuard (corrigée)
+# Fonction de conversion SSH vers WireGuard 
 ssh_to_wg() {
     local ssh_key="$1"
     # Extract the base64 part and decode, then take the last 32 bytes
     echo "$ssh_key" | base64 -d | tail -c 32 | base64 | tr -d '\n'
 }
 
-# Conversion des clés SSH existantes (corrigée)
+# Conversion des clés SSH existantes 
 convert_ssh_keys() {
     # Clé privée - prendre les 32 derniers bytes
     awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
@@ -218,11 +218,6 @@ list_clients() {
     local SERVER_CONF="/etc/wireguard/wg0.conf"
     
     print_section "CLIENTS CONFIGURÉS"
-    
-    if [[ ! -f "$SERVER_CONF" ]]; then
-        echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée ou accessible${NC}"
-        return 0
-    fi
     
     echo -e "${WHITE}Configuration serveur:${NC}"
     sudo wg show wg0 2>/dev/null || echo "Service WireGuard non actif"
