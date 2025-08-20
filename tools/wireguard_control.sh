@@ -191,7 +191,7 @@ EOF"
 
     echo -e "\n${GREEN}✅ Configuration LAN générée${NC}"
     echo -e "${WHITE}📋 Fichier:${NC} $CLIENT_CONF"
-    echo -e "${WHITE}🔑 Clé serveur:${NC} $(sudo cat "$KEYS_DIR/server.pub")"
+    echo -e "${WHITE}🔑 Clé serveur:${NC} $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR: Clé serveur non trouvée")"
     echo -e "${WHITE}🌐 Endpoint:${NC} $SERVER_ENDPOINT:$SERVER_PORT"
     echo -e "${WHITE}📱 IP attribuée:${NC} $CLIENT_IP"
     echo -e "\n${YELLOW}📤 Instructions pour le client:${NC}"
@@ -204,7 +204,7 @@ EOF"
         echo "   sudo systemctl enable --now wg-quick@wg0"
     else
         echo "1. Copier le fichier: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
-        echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(sudo cat "$KEYS_DIR/server.pub") $CLIENT_IP"
+        echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $CLIENT_IP"
     fi
 }
 
@@ -365,11 +365,11 @@ explain_client_config() {
     echo -e "${WHITE}3. Entrez les informations suivantes:${NC}"
     echo "   • Serveur: $SERVER_ENDPOINT"
     echo "   • Port: 51820"
-    echo "   • Clé serveur: $(sudo cat "$KEYS_DIR/server.pub")"
+    echo "   • Clé serveur: $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR: Clé serveur non trouvée")"
     echo "   • IP client: $client_ip"
     echo ""
     echo -e "${WHITE}4. Ou utilisez la commande automatique:${NC}"
-    echo "   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(sudo cat "$KEYS_DIR/server.pub") $client_ip"
+    echo "   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $client_ip"
     echo ""
     echo -e "${WHITE}5. Vérifiez la connexion:${NC}"
     echo "   ping 10.99.99.1"
