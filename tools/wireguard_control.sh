@@ -111,15 +111,15 @@ add_lan_client() {
     # Conversion de la clé SSH client
     local CLIENT_WG_PUBKEY=$(ssh_to_wg "$CLIENT_SSH_PUBKEY")
 
-    # Vérification existence
-    if grep -q "$CLIENT_WG_PUBKEY" "$SERVER_CONF"; then
+    # Vérification existence avec sudo
+    if sudo grep -q "$CLIENT_WG_PUBKEY" "$SERVER_CONF" 2>/dev/null; then
         echo -e "${YELLOW}⚠️ Ce client est déjà configuré${NC}"
         return 1
     fi
 
-    # Trouver le prochain IP disponible
+    # Trouver le prochain IP disponible avec sudo
     local NEXT_IP=2
-    while grep -q "AllowedIPs = ${NETWORK%.*}.$NEXT_IP" "$SERVER_CONF"; do
+    while sudo grep -q "AllowedIPs = ${NETWORK%.*}.$NEXT_IP" "$SERVER_CONF" 2>/dev/null; do
         ((NEXT_IP++))
     done
     local CLIENT_IP="${NETWORK%.*}.$NEXT_IP"
@@ -140,7 +140,7 @@ DNS = 1.1.1.1, 2606:4700:4700::1111
 
 [Peer]
 PublicKey = $(cat "$CONFIG_DIR/server.pub")
-Endpoint = $(curl -s ifconfig.me):$SERVER_PORT
+Endpoint = $(curl -4 -s ifconfig.me):$SERVER_PORT
 AllowedIPs = $NETWORK
 PersistentKeepalive = 25
 EOF
@@ -148,14 +148,20 @@ EOF
     # Appliquer la configuration
     sudo wg syncconf wg0 <(wg-quick strip wg0)
 
+    # Obtenir l'endpoint IPv4
+    local SERVER_ENDPOINT=$(curl -4 -s ifconfig.me)
+    if [[ -z "$SERVER_ENDPOINT" ]]; then
+        SERVER_ENDPOINT=$(curl -s ifconfig.me | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+    fi
+
     echo -e "\n${GREEN}✅ Configuration LAN générée${NC}"
     echo -e "${WHITE}📋 Fichier:${NC} $CLIENT_CONF"
     echo -e "${WHITE}🔑 Clé serveur:${NC} $(cat "$CONFIG_DIR/server.pub")"
-    echo -e "${WHITE}🌐 Endpoint:${NC} $(curl -s ifconfig.me):$SERVER_PORT"
+    echo -e "${WHITE}🌐 Endpoint:${NC} $SERVER_ENDPOINT:$SERVER_PORT"
     echo -e "${WHITE}📱 IP attribuée:${NC} $CLIENT_IP"
     echo -e "\n${YELLOW}📤 Instructions pour le client:${NC}"
     echo "1. Copier le fichier: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
-    echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $(curl -s ifconfig.me) $SERVER_PORT $(cat "$CONFIG_DIR/server.pub") $CLIENT_IP"
+    echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(cat "$CONFIG_DIR/server.pub") $CLIENT_IP"
 }
 
 # Supprimer un client
@@ -236,7 +242,7 @@ list_clients() {
             local ip="${BASH_REMATCH[1]}"
             echo "     📱 IP: $ip"
         fi
-    done < "$SERVER_CONF"
+    done < <(sudo cat "$SERVER_CONF" 2>/dev/null || echo "")
     
     if [[ $client_count -eq 0 ]]; then
         echo "  Aucun client configuré"
@@ -256,7 +262,7 @@ explain_client_config() {
             local client_name="${BASH_REMATCH[1]}"
             clients+=("$client_name")
         fi
-    done < "$SERVER_CONF"
+    done < <(sudo cat "$SERVER_CONF" 2>/dev/null || echo "")
     
     if [[ ${#clients[@]} -eq 0 ]]; then
         echo -e "${YELLOW}⚠️ Aucun client configuré${NC}"
@@ -295,7 +301,7 @@ explain_client_config() {
                 client_ip="${BASH_REMATCH[1]}"
             fi
         fi
-    done < "$SERVER_CONF"
+    done < <(sudo cat "$SERVER_CONF" 2>/dev/null || echo "")
     
     if [[ -z "$client_ip" ]]; then
         echo -e "${RED}❌ Client $CLIENT_NAME non trouvé${NC}"
@@ -311,14 +317,20 @@ explain_client_config() {
     echo ""
     echo -e "${WHITE}2. Choisissez l'option 2 (Configurer ce client WireGuard)${NC}"
     echo ""
+    # Obtenir l'endpoint IPv4
+    local SERVER_ENDPOINT=$(curl -4 -s ifconfig.me)
+    if [[ -z "$SERVER_ENDPOINT" ]]; then
+        SERVER_ENDPOINT=$(curl -s ifconfig.me | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+    fi
+    
     echo -e "${WHITE}3. Entrez les informations suivantes:${NC}"
-    echo "   • Serveur: $(curl -s ifconfig.me)"
+    echo "   • Serveur: $SERVER_ENDPOINT"
     echo "   • Port: 51820"
     echo "   • Clé serveur: $(cat "$CONFIG_DIR/server.pub")"
     echo "   • IP client: $client_ip"
     echo ""
     echo -e "${WHITE}4. Ou utilisez la commande automatique:${NC}"
-    echo "   ./wg-client-setup.sh auto $(curl -s ifconfig.me) 51820 $(cat "$CONFIG_DIR/server.pub") $client_ip"
+    echo "   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(cat "$CONFIG_DIR/server.pub") $client_ip"
     echo ""
     echo -e "${WHITE}5. Vérifiez la connexion:${NC}"
     echo "   ping 10.99.99.1"
