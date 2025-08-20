@@ -12,8 +12,6 @@ NC='\033[0m' # No Color
 
 CONFIG_DIR="$HOME/.zen/wireguard"
 mkdir -p "$CONFIG_DIR"
-SERVER_PORT=51820
-NETWORK="10.99.99.0/24"
 
 print_header() {
     echo -e "${BLUE}"
@@ -71,6 +69,8 @@ convert_ssh_keys() {
 # Configuration serveur
 setup_server() {
     local SERVER_CONF="/etc/wireguard/wg0.conf"
+    local SERVER_PORT=51820
+    local NETWORK="10.99.99.0/24"
 
     print_section "CONFIGURATION DU SERVEUR LAN"
     echo "🚀 Initialisation du serveur WireGuard..."
@@ -219,8 +219,8 @@ list_clients() {
     
     print_section "CLIENTS CONFIGURÉS"
     
-    if [[ ! -f "$SERVER_CONF" ]]; then
-        echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée${NC}"
+    if [[ ! -f "$SERVER_CONF" ]] || ! sudo test -r "$SERVER_CONF" 2>/dev/null; then
+        echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée ou accessible${NC}"
         return 0
     fi
     
