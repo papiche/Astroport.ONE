@@ -1,14 +1,21 @@
 #!/bin/bash
 # Client WG-SSH Setup - Configure WireGuard à partir des clés SSH client
 
-CONFIG_DIR="$HOME/.zen/wireguard/wg-ssh-client"
-mkdir -p "$CONFIG_DIR"
+CONFIG_DIR="/etc/wireguard"
+KEYS_DIR="/etc/wireguard/keys"
+sudo mkdir -p "$KEYS_DIR"
+sudo chmod 700 "$KEYS_DIR"
 
-# Fonction de conversion SSH vers WireGuard (corrigée)
-ssh_to_wg() {
-    local ssh_key="$1"
-    # Extract the base64 part and decode, then take the last 32 bytes
-    echo "$ssh_key" | base64 -d | tail -c 32 | base64 | tr -d '\n'
+# Génération des clés WireGuard natives
+generate_wg_keys() {
+    # Générer une nouvelle clé privée WireGuard
+    wg genkey | sudo tee "$KEYS_DIR/client.priv" > /dev/null
+    
+    # Générer la clé publique correspondante
+    sudo cat "$KEYS_DIR/client.priv" | wg pubkey | sudo tee "$KEYS_DIR/client.pub" > /dev/null
+    
+    sudo chmod 600 "$KEYS_DIR/client.priv"
+    echo -e "${GREEN}✅ Clés WireGuard générées${NC}"
 }
 
 # Vérification des dépendances
@@ -21,11 +28,10 @@ check_deps() {
     done
 }
 
-# Vérification des clés SSH
-check_ssh_keys() {
-    if [[ ! -f ~/.ssh/id_ed25519 ]] || [[ ! -f ~/.ssh/id_ed25519.pub ]]; then
-        echo "❌ Clés SSH non trouvées. Veuillez générer des clés SSH d'abord:"
-        echo "   ssh-keygen -t ed25519"
+# Vérification de WireGuard
+check_wireguard() {
+    if ! command -v wg &> /dev/null; then
+        echo "❌ WireGuard n'est pas installé. Veuillez l'installer d'abord."
         exit 1
     fi
 }
@@ -48,14 +54,12 @@ interactive_setup() {
         exit 1
     fi
 
-    # Convertir la clé privée SSH
-    echo -e "\n🔐 Conversion de la clé SSH en clé WireGuard..."
-    awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
-        | base64 -d | tail -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/client.priv"
-    chmod 600 "$CONFIG_DIR/client.priv"
+    # Générer les clés WireGuard
+    echo -e "\n🔐 Génération des clés WireGuard..."
+    generate_wg_keys
 
-    # Convertir la clé publique SSH
-    CLIENT_PUBKEY=$(ssh_to_wg "$(awk '{print $2}' ~/.ssh/id_ed25519.pub)")
+    # Obtenir la clé publique client
+    CLIENT_PUBKEY=$(sudo cat "$KEYS_DIR/client.pub")
 
     # Générer la configuration WireGuard
     WG_CONFIG="/etc/wireguard/wg0.conf"
@@ -69,7 +73,7 @@ interactive_setup() {
 
     sudo bash -c "cat > $WG_CONFIG <<EOF
 [Interface]
-PrivateKey = $(cat "$CONFIG_DIR/client.priv")
+PrivateKey = \$(cat $KEYS_DIR/client.priv)
 Address = $CLIENT_IP
 DNS = 1.1.1.1, 2606:4700:4700::1111
 
@@ -108,15 +112,13 @@ auto_setup() {
     echo "   Serveur: $SERVER_ENDPOINT:$SERVER_PORT"
     echo "   IP client: $CLIENT_IP"
 
-    # Conversion des clés
-    awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
-        | base64 -d | tail -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/client.priv"
-    chmod 600 "$CONFIG_DIR/client.priv"
+    # Génération des clés WireGuard
+    generate_wg_keys
 
     # Génération config
     sudo bash -c "cat > /etc/wireguard/wg0.conf <<EOF
 [Interface]
-PrivateKey = $(cat "$CONFIG_DIR/client.priv")
+PrivateKey = \$(cat $KEYS_DIR/client.priv)
 Address = $CLIENT_IP
 DNS = 1.1.1.1, 2606:4700:4700::1111
 
@@ -129,21 +131,21 @@ EOF"
 
     sudo systemctl enable --now wg-quick@wg0
     echo "✅ Configuration automatique terminée."
-    echo "🔑 Clé publique client : $(ssh_to_wg "$(awk '{print $2}' ~/.ssh/id_ed25519.pub)")"
+    echo "🔑 Clé publique client : $(sudo cat "$KEYS_DIR/client.pub")"
     echo "🌐 Test de connectivité : ping 10.99.99.1"
 }
 
 # Mode d'utilisation
 if [[ $# -ge 5 ]] && [[ "$1" == "auto" ]]; then
     check_deps
-    check_ssh_keys
+    check_wireguard
     auto_setup "$2" "$3" "$4" "$5"
 elif [[ $# -ge 4 ]]; then
     check_deps
-    check_ssh_keys
+    check_wireguard
     auto_setup "$1" "$2" "$3" "$4"
 else
     check_deps
-    check_ssh_keys
+    check_wireguard
     interactive_setup
 fi

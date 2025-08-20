@@ -56,14 +56,20 @@ check_deps() {
     fi
 }
 
-# Génération des clés SSH si nécessaire
-generate_ssh_keys() {
-    if [[ ! -f ~/.ssh/id_ed25519 ]] || [[ ! -f ~/.ssh/id_ed25519.pub ]]; then
-        echo -e "${YELLOW}🔑 Génération des clés SSH...${NC}"
-        ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "wireguard-lan@$(hostname)"
-        echo -e "${GREEN}✅ Clés SSH générées${NC}"
+# Vérification de WireGuard
+check_wireguard() {
+    if ! command -v wg &> /dev/null; then
+        echo -e "${RED}❌ WireGuard n'est pas installé${NC}"
+        echo "   Installation en cours..."
+        if command -v apt &> /dev/null; then
+            sudo apt update && sudo apt install -y wireguard
+        elif command -v yum &> /dev/null; then
+            sudo yum install -y wireguard-tools
+        elif command -v dnf &> /dev/null; then
+            sudo dnf install -y wireguard-tools
+        fi
     else
-        echo -e "${GREEN}✅ Clés SSH existantes détectées${NC}"
+        echo -e "${GREEN}✅ WireGuard détecté${NC}"
     fi
 }
 
@@ -222,7 +228,7 @@ main() {
     
     check_permissions
     check_deps
-    generate_ssh_keys
+    check_wireguard
     
     echo -e "${GREEN}✅ Environnement prêt${NC}"
     echo ""

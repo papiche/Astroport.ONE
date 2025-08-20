@@ -47,25 +47,16 @@ print_status() {
     fi
 }
 
-# Fonction de conversion SSH vers WireGuard 
-ssh_to_wg() {
-    local ssh_key="$1"
-    # Extract the base64 part and decode, then take the last 32 bytes
-    echo "$ssh_key" | base64 -d | tail -c 32 | base64 | tr -d '\n'
-}
-
-# Conversion des clés SSH existantes 
-convert_ssh_keys() {
-    # Clé privée - prendre les 32 derniers bytes
-    awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
-        | base64 -d | tail -c 32 | base64 | tr -d '\n' | sudo tee "$KEYS_DIR/server.priv" > /dev/null
-
-    # Clé publique - extraire la partie base64 et convertir
-    local ssh_pubkey=$(awk '{print $2}' ~/.ssh/id_ed25519.pub)
-    ssh_to_wg "$ssh_pubkey" | sudo tee "$KEYS_DIR/server.pub" > /dev/null
-
+# Génération des clés WireGuard natives
+generate_wg_keys() {
+    # Générer une nouvelle clé privée WireGuard
+    wg genkey | sudo tee "$KEYS_DIR/server.priv" > /dev/null
+    
+    # Générer la clé publique correspondante
+    sudo cat "$KEYS_DIR/server.priv" | wg pubkey | sudo tee "$KEYS_DIR/server.pub" > /dev/null
+    
     sudo chmod 600 "$KEYS_DIR/server.priv"
-    echo -e "${GREEN}✅ Clés SSH converties en WireGuard${NC}"
+    echo -e "${GREEN}✅ Clés WireGuard générées${NC}"
 }
 
 # Configuration serveur
@@ -77,7 +68,7 @@ setup_server() {
     print_section "CONFIGURATION DU SERVEUR LAN"
     echo "🚀 Initialisation du serveur WireGuard..."
     
-    convert_ssh_keys
+    generate_wg_keys
 
     # Détecter l'interface réseau principale
     local WAN_INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
