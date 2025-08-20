@@ -315,32 +315,43 @@ explain_client_config() {
         return 1
     fi
     
-    # Afficher les instructions
-    echo -e "\n${GREEN}📋 Instructions pour configurer $CLIENT_NAME:${NC}"
-    echo ""
-    echo -e "${WHITE}1. Sur le client, exécutez:${NC}"
-    echo "   cd Astroport.ONE/tools"
-    echo "   ./wg-deploy.sh"
-    echo ""
-    echo -e "${WHITE}2. Choisissez l'option 2 (Configurer ce client WireGuard)${NC}"
-    echo ""
     # Obtenir l'endpoint IPv4
     local SERVER_ENDPOINT=$(curl -4 -s ifconfig.me)
     if [[ -z "$SERVER_ENDPOINT" ]]; then
         SERVER_ENDPOINT=$(curl -s ifconfig.me | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
     fi
     
-    echo -e "${WHITE}3. Entrez les informations suivantes:${NC}"
-    echo "   • Serveur: $SERVER_ENDPOINT"
-    echo "   • Port: 51820"
-    echo "   • Clé serveur: $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR: Clé serveur non trouvée")"
-    echo "   • IP client: $client_ip"
+    # Afficher les instructions
+    echo -e "\n${GREEN}📋 Instructions pour configurer $CLIENT_NAME:${NC}"
     echo ""
-    echo -e "${WHITE}4. Ou utilisez la commande automatique:${NC}"
-    echo "   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $client_ip"
+    echo -e "${WHITE}🔧 MÉTHODE 1 - Configuration automatique (RECOMMANDÉE):${NC}"
     echo ""
-    echo -e "${WHITE}5. Vérifiez la connexion:${NC}"
-    echo "   ping 10.99.99.1"
+    echo "1. Sur le client, exécutez cette commande complète :"
+    echo -e "${CYAN}   ./wg-client-setup.sh auto $SERVER_ENDPOINT 51820 $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $client_ip${NC}"
+    echo ""
+    echo -e "${WHITE}🔧 MÉTHODE 2 - Configuration interactive:${NC}"
+    echo ""
+    echo "1. Sur le client, exécutez :"
+    echo "   cd Astroport.ONE/tools"
+    echo "   ./wg-client-setup.sh"
+    echo ""
+    echo "2. Entrez les informations suivantes quand demandé :"
+    echo "   • Adresse du serveur : $SERVER_ENDPOINT"
+    echo "   • Port du serveur : 51820"
+    echo "   • Clé publique du serveur : $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR: Clé serveur non trouvée")"
+    echo "   • Adresse IP VPN attribuée : $client_ip"
+    echo ""
+    echo -e "${WHITE}🔍 VÉRIFICATION DE LA CONNEXION:${NC}"
+    echo ""
+    echo "Après configuration, testez la connexion :"
+    echo "   sudo wg show                    # Vérifier l'état du tunnel"
+    echo "   ping 10.99.99.1                # Tester la connectivité"
+    echo "   sudo systemctl status wg-quick@wg0  # Vérifier le service"
+    echo ""
+    echo -e "${YELLOW}⚠️  IMPORTANT :${NC}"
+    echo "• Le client doit avoir WireGuard installé"
+    echo "• Le port 51820 doit être ouvert sur le serveur"
+    echo "• Si la connexion échoue, vérifiez le pare-feu"
 }
 
 # Interface interactive

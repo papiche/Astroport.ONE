@@ -49,24 +49,26 @@ sudo cp /etc/wireguard/[nom_client]_lan.conf /etc/wireguard/wg0.conf
 sudo systemctl enable --now wg-quick@wg0
 ```
 
-## 🔧 **Améliorations Nécessaires**
+## 🔧 **Améliorations Apportées**
 
 ### **1. Script Serveur (`wireguard_control.sh`)**
 - ✅ Génération automatique des clés
 - ✅ Attribution automatique des IPs
 - ✅ Interface utilisateur claire
-- ❌ Manque de validation des clés
-- ❌ Pas de test de connectivité
+- ✅ **NOUVEAU :** Instructions de configuration client corrigées
+- ✅ **NOUVEAU :** Validation des clés et paramètres
+- ✅ **NOUVEAU :** Tests de connectivité inclus
 
 ### **2. Script Client (`wg-client-setup.sh`)**
 - ✅ Génération automatique des clés
 - ✅ Configuration interactive
-- ❌ Demande l'IP avant qu'elle soit attribuée
-- ❌ Pas de validation des paramètres serveur
+- ✅ **NOUVEAU :** Validation des paramètres serveur
+- ✅ **NOUVEAU :** Mode automatique avec validation
+- ✅ **NOUVEAU :** Gestion des erreurs améliorée
 
 ## 🚀 **Workflow Optimisé Recommandé**
 
-### **Version 1 : Workflow Manuel (Actuel)**
+### **Version 1 : Workflow Manuel (Actuel - Corrigé)**
 1. **Serveur** : Initialise le serveur WireGuard
 2. **Client** : Génère ses clés et fournit sa clé publique
 3. **Serveur** : Ajoute le client avec sa clé publique
@@ -80,7 +82,7 @@ sudo systemctl enable --now wg-quick@wg0
    - Récupère automatiquement sa configuration
    - Active la connexion
 
-## 📝 **Instructions pour les Utilisateurs**
+## 📝 **Instructions Détaillées pour les Utilisateurs**
 
 ### **Pour l'Administrateur Serveur :**
 ```bash
@@ -99,6 +101,12 @@ sudo systemctl enable --now wg-quick@wg0
 # 5. Vérifier les clients connectés
 ./wireguard_control.sh
 # Choisir option 4
+
+# 6. Expliquer la configuration à un client
+./wireguard_control.sh
+# Choisir option 5
+# Sélectionner le client
+# Suivre les instructions affichées
 ```
 
 ### **Pour le Client :**
@@ -119,6 +127,31 @@ sudo systemctl enable --now wg-quick@wg0
 ping 10.99.99.1
 ```
 
+## 🔍 **Configuration Client - Instructions Corrigées**
+
+### **Méthode 1 : Configuration Automatique (RECOMMANDÉE)**
+```bash
+# Sur le client, exécuter la commande complète fournie par le serveur
+./wg-client-setup.sh auto [SERVEUR_IP] 51820 [CLÉ_SERVEUR] [IP_CLIENT]
+```
+
+**Exemple :**
+```bash
+./wg-client-setup.sh auto 86.206.179.48 51820 3ZHij2SnNQmAlMG4kat72nsVGoE6/FS2BnHxNlf6BQ0= 10.99.99.2/32
+```
+
+### **Méthode 2 : Configuration Interactive**
+```bash
+# 1. Lancer le script
+./wg-client-setup.sh
+
+# 2. Entrer les informations quand demandé :
+#    - Adresse du serveur : [IP_SERVEUR]
+#    - Port du serveur : 51820
+#    - Clé publique du serveur : [CLÉ_SERVEUR]
+#    - Adresse IP VPN attribuée : [IP_CLIENT]
+```
+
 ## ⚠️ **Points d'Attention**
 
 1. **Sécurité des clés** : Les clés privées ne doivent jamais être partagées
@@ -126,6 +159,7 @@ ping 10.99.99.1
 3. **Réseau** : Vérifier que le port 51820 est ouvert sur le serveur
 4. **Sauvegarde** : Les configurations existantes sont sauvegardées automatiquement
 5. **Validation** : Toujours tester la connectivité après configuration
+6. **Pare-feu** : Vérifier que le pare-feu autorise le trafic WireGuard
 
 ## 🔍 **Tests de Validation**
 
@@ -141,3 +175,45 @@ sudo wg show wg0
 ping 10.99.99.1
 curl -I http://10.99.99.1
 ```
+
+## 🛠️ **Dépannage**
+
+### **Problèmes Courants :**
+
+1. **Service ne démarre pas :**
+   ```bash
+   sudo systemctl status wg-quick@wg0
+   sudo journalctl -u wg-quick@wg0
+   ```
+
+2. **Connexion échoue :**
+   ```bash
+   # Vérifier le pare-feu
+   sudo ufw status
+   # Vérifier les routes
+   ip route show
+   ```
+
+3. **Clés invalides :**
+   ```bash
+   # Regénérer les clés
+   sudo rm /etc/wireguard/keys/*
+   ./wg-client-setup.sh
+   ```
+
+## 📋 **Checklist de Configuration**
+
+### **Serveur :**
+- [ ] WireGuard installé
+- [ ] Serveur initialisé
+- [ ] Port 51820 ouvert
+- [ ] Pare-feu configuré
+- [ ] Clé publique serveur notée
+
+### **Client :**
+- [ ] WireGuard installé
+- [ ] Clés générées
+- [ ] Clé publique fournie au serveur
+- [ ] Configuration reçue du serveur
+- [ ] Service activé
+- [ ] Connectivité testée
