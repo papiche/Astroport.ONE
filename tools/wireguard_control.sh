@@ -160,10 +160,38 @@ EOF
 
 # Supprimer un client
 remove_client() {
-    local CLIENT_NAME="$1"
     local SERVER_CONF="/etc/wireguard/wg0.conf"
     
     print_section "SUPPRESSION D'UN CLIENT"
+    
+    # Lister les clients disponibles
+    local clients=()
+    while IFS= read -r line; do
+        if [[ $line =~ ^#\ (.+)\ \( ]]; then
+            local client_name="${BASH_REMATCH[1]}"
+            clients+=("$client_name")
+        fi
+    done < "$SERVER_CONF"
+    
+    if [[ ${#clients[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️ Aucun client configuré${NC}"
+        return 0
+    fi
+    
+    echo -e "${WHITE}Clients configurés:${NC}"
+    for i in "${!clients[@]}"; do
+        echo "  $((i+1)). ${clients[$i]}"
+    done
+    echo ""
+    
+    read -p "Numéro du client à supprimer (ou nom) : " choice
+    
+    local CLIENT_NAME=""
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#clients[@]} ]]; then
+        CLIENT_NAME="${clients[$((choice-1))]}"
+    else
+        CLIENT_NAME="$choice"
+    fi
     
     # Trouver et supprimer le client
     local start_line=$(grep -n "# $CLIENT_NAME" "$SERVER_CONF" | cut -d: -f1)
@@ -177,6 +205,123 @@ remove_client() {
     else
         echo -e "${RED}❌ Client $CLIENT_NAME non trouvé${NC}"
     fi
+}
+
+# Lister les clients configurés
+list_clients() {
+    local SERVER_CONF="/etc/wireguard/wg0.conf"
+    
+    print_section "CLIENTS CONFIGURÉS"
+    
+    if [[ ! -f "$SERVER_CONF" ]]; then
+        echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée${NC}"
+        return 0
+    fi
+    
+    echo -e "${WHITE}Configuration serveur:${NC}"
+    sudo wg show wg0 2>/dev/null || echo "Service WireGuard non actif"
+    
+    echo -e "\n${WHITE}Clients configurés:${NC}"
+    local client_count=0
+    while IFS= read -r line; do
+        if [[ $line =~ ^#\ (.+)\ \( ]]; then
+            local client_name="${BASH_REMATCH[1]}"
+            local client_type="${BASH_REMATCH[2]}"
+            ((client_count++))
+            echo "  $client_count. $client_name ($client_type)"
+        elif [[ $line =~ ^PublicKey\ =\ (.+)$ ]]; then
+            local pubkey="${BASH_REMATCH[1]}"
+            echo "     🔑 Clé: ${pubkey:0:20}..."
+        elif [[ $line =~ ^AllowedIPs\ =\ (.+)$ ]]; then
+            local ip="${BASH_REMATCH[1]}"
+            echo "     📱 IP: $ip"
+        fi
+    done < "$SERVER_CONF"
+    
+    if [[ $client_count -eq 0 ]]; then
+        echo "  Aucun client configuré"
+    fi
+}
+
+# Expliquer la configuration d'un client
+explain_client_config() {
+    local SERVER_CONF="/etc/wireguard/wg0.conf"
+    
+    print_section "CONFIGURATION D'UN CLIENT"
+    
+    # Lister les clients disponibles
+    local clients=()
+    while IFS= read -r line; do
+        if [[ $line =~ ^#\ (.+)\ \( ]]; then
+            local client_name="${BASH_REMATCH[1]}"
+            clients+=("$client_name")
+        fi
+    done < "$SERVER_CONF"
+    
+    if [[ ${#clients[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️ Aucun client configuré${NC}"
+        return 0
+    fi
+    
+    echo -e "${WHITE}Clients disponibles:${NC}"
+    for i in "${!clients[@]}"; do
+        echo "  $((i+1)). ${clients[$i]}"
+    done
+    echo ""
+    
+    read -p "Numéro du client (ou nom) : " choice
+    
+    local CLIENT_NAME=""
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#clients[@]} ]]; then
+        CLIENT_NAME="${clients[$((choice-1))]}"
+    else
+        CLIENT_NAME="$choice"
+    fi
+    
+    # Trouver les informations du client
+    local in_client_section=false
+    local client_ip=""
+    local client_pubkey=""
+    
+    while IFS= read -r line; do
+        if [[ $line =~ ^#\ $CLIENT_NAME ]]; then
+            in_client_section=true
+        elif [[ $in_client_section == true ]] && [[ $line =~ ^\[ ]]; then
+            break
+        elif [[ $in_client_section == true ]]; then
+            if [[ $line =~ ^PublicKey\ =\ (.+)$ ]]; then
+                client_pubkey="${BASH_REMATCH[1]}"
+            elif [[ $line =~ ^AllowedIPs\ =\ (.+)$ ]]; then
+                client_ip="${BASH_REMATCH[1]}"
+            fi
+        fi
+    done < "$SERVER_CONF"
+    
+    if [[ -z "$client_ip" ]]; then
+        echo -e "${RED}❌ Client $CLIENT_NAME non trouvé${NC}"
+        return 1
+    fi
+    
+    # Afficher les instructions
+    echo -e "\n${GREEN}📋 Instructions pour configurer $CLIENT_NAME:${NC}"
+    echo ""
+    echo -e "${WHITE}1. Sur le client, exécutez:${NC}"
+    echo "   cd Astroport.ONE/tools"
+    echo "   ./wg-deploy.sh"
+    echo ""
+    echo -e "${WHITE}2. Choisissez l'option 2 (Configurer ce client WireGuard)${NC}"
+    echo ""
+    echo -e "${WHITE}3. Entrez les informations suivantes:${NC}"
+    echo "   • Serveur: $(curl -s ifconfig.me)"
+    echo "   • Port: 51820"
+    echo "   • Clé serveur: $(cat "$CONFIG_DIR/server.pub")"
+    echo "   • IP client: $client_ip"
+    echo ""
+    echo -e "${WHITE}4. Ou utilisez la commande automatique:${NC}"
+    echo "   ./wg-client-setup.sh auto $(curl -s ifconfig.me) 51820 $(cat "$CONFIG_DIR/server.pub") $client_ip"
+    echo ""
+    echo -e "${WHITE}5. Vérifiez la connexion:${NC}"
+    echo "   ping 10.99.99.1"
 }
 
 # Interface interactive
@@ -198,8 +343,9 @@ show_menu() {
         echo "2. 👥 Ajouter un client LAN"
         echo "3. 🗑️  Supprimer un client"
         echo "4. 📋 Liste des clients"
-        echo "5. 🔄 Redémarrer service"
-        echo "6. ❌ Quitter"
+        echo "5. 📖 Expliquer configuration client"
+        echo "6. 🔄 Redémarrer service"
+        echo "7. ❌ Quitter"
         echo ""
         read -p "Choix : " choice
 
@@ -212,26 +358,24 @@ show_menu() {
                 add_lan_client "$name" "$pubkey"
                 ;;
             3)
-                read -p "Nom du client à supprimer : " name
-                remove_client "$name"
+                remove_client
                 ;;
             4)
-                print_section "CLIENTS CONNECTÉS"
-                echo -e "${WHITE}Configuration serveur:${NC}"
-                sudo wg show wg0
-                echo -e "\n${WHITE}Clients configurés:${NC}"
-                sudo grep -A3 "\[Peer\]" /etc/wireguard/wg0.conf || echo "Aucun client configuré"
+                list_clients
                 ;;
-            5) 
+            5)
+                explain_client_config
+                ;;
+            6) 
                 echo "🔄 Redémarrage du service..."
                 sudo systemctl restart wg-quick@wg0
                 echo -e "${GREEN}✅ Service redémarré${NC}"
                 ;;
-            6) exit 0 ;;
+            7) exit 0 ;;
             *) echo -e "${RED}❌ Option invalide${NC}" ;;
         esac
         
-        [[ $choice != "6" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
+        [[ $choice != "7" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
     done
 }
 
