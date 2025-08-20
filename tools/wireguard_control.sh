@@ -177,7 +177,7 @@ remove_client() {
             local client_name="${BASH_REMATCH[1]}"
             clients+=("$client_name")
         fi
-    done < "$SERVER_CONF"
+    done < <(sudo cat "$SERVER_CONF" 2>/dev/null || echo "")
     
     if [[ ${#clients[@]} -eq 0 ]]; then
         echo -e "${YELLOW}⚠️ Aucun client configuré${NC}"
