@@ -187,7 +187,7 @@ show_menu() {
                 if [[ -f /etc/wireguard/keys/server.pub ]]; then
                     echo -e "${WHITE}Clé publique serveur:${NC}"
                     sudo cat /etc/wireguard/keys/server.pub
-                    echo -e "\n${WHITE}Endpoint:${NC} $(curl -s ifconfig.me):51820"
+                    echo -e "\n${WHITE}Endpoint:${NC} $(curl -4 -s ifconfig.me):51820"
                     echo -e "${WHITE}Réseau VPN:${NC} 10.99.99.0/24"
                 else
                     echo -e "${YELLOW}⚠️ Serveur non configuré${NC}"

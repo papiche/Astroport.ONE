@@ -109,20 +109,12 @@ add_lan_client() {
     print_section "AJOUT D'UN CLIENT LAN"
     echo "👤 Client: $CLIENT_NAME"
     
-    # Si aucune clé fournie, générer une nouvelle clé WireGuard
+    # Vérifier que la clé publique est fournie
     if [[ -z "$CLIENT_PUBKEY" ]]; then
-        echo -e "${YELLOW}🔑 Génération d'une nouvelle clé WireGuard pour $CLIENT_NAME...${NC}"
-        local CLIENT_PRIVKEY=$(wg genkey)
-        CLIENT_PUBKEY=$(echo "$CLIENT_PRIVKEY" | wg pubkey)
-        
-        # Sauvegarder la clé privée pour le client
-        echo "$CLIENT_PRIVKEY" | sudo tee "$KEYS_DIR/${CLIENT_NAME}_client.priv" > /dev/null
-        echo "$CLIENT_PUBKEY" | sudo tee "$KEYS_DIR/${CLIENT_NAME}_client.pub" > /dev/null
-        sudo chmod 600 "$KEYS_DIR/${CLIENT_NAME}_client.priv"
-        
-        echo -e "${GREEN}✅ Clés générées pour $CLIENT_NAME${NC}"
-        echo -e "${WHITE}Clé privée:${NC} $CLIENT_PRIVKEY"
-        echo -e "${WHITE}Clé publique:${NC} $CLIENT_PUBKEY"
+        echo -e "${RED}❌ Clé publique du client requise${NC}"
+        echo "   Le client doit d'abord générer ses clés avec ./wg-client-setup.sh"
+        echo "   Puis fournir sa clé publique"
+        return 1
     fi
     
     local CLIENT_WG_PUBKEY="$CLIENT_PUBKEY"
@@ -146,27 +138,10 @@ add_lan_client() {
 PublicKey = $CLIENT_WG_PUBKEY
 AllowedIPs = $CLIENT_IP/32" | sudo tee -a "$SERVER_CONF" > /dev/null
 
-    # Génération config client
+    # Génération config client (template)
     local CLIENT_CONF="$CONFIG_DIR/${CLIENT_NAME}_lan.conf"
     
-    # Si nous avons généré une clé privée, l'utiliser
-    if [[ -f "$KEYS_DIR/${CLIENT_NAME}_client.priv" ]]; then
-        local CLIENT_PRIVKEY=$(sudo cat "$KEYS_DIR/${CLIENT_NAME}_client.priv")
-        sudo bash -c "cat > $CLIENT_CONF <<EOF
-[Interface]
-PrivateKey = $CLIENT_PRIVKEY
-Address = $CLIENT_IP/32
-DNS = 1.1.1.1, 2606:4700:4700::1111
-
-[Peer]
-PublicKey = \$(cat $KEYS_DIR/server.pub)
-Endpoint = $SERVER_ENDPOINT:$SERVER_PORT
-AllowedIPs = $NETWORK
-PersistentKeepalive = 25
-EOF"
-    else
-        # Sinon, créer un template avec placeholder
-        sudo bash -c "cat > $CLIENT_CONF <<EOF
+    sudo bash -c "cat > $CLIENT_CONF <<EOF
 [Interface]
 PrivateKey = _REPLACE_WITH_CLIENT_PRIVATE_KEY_
 Address = $CLIENT_IP/32
@@ -178,7 +153,6 @@ Endpoint = $SERVER_ENDPOINT:$SERVER_PORT
 AllowedIPs = $NETWORK
 PersistentKeepalive = 25
 EOF"
-    fi
 
     # Appliquer la configuration
     sudo wg syncconf wg0 <(wg-quick strip wg0)
@@ -195,17 +169,11 @@ EOF"
     echo -e "${WHITE}🌐 Endpoint:${NC} $SERVER_ENDPOINT:$SERVER_PORT"
     echo -e "${WHITE}📱 IP attribuée:${NC} $CLIENT_IP"
     echo -e "\n${YELLOW}📤 Instructions pour le client:${NC}"
-    
-    if [[ -f "$KEYS_DIR/${CLIENT_NAME}_client.priv" ]]; then
-        echo "1. Copier le fichier de configuration: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
-        echo "2. Copier la clé privée: scp $KEYS_DIR/${CLIENT_NAME}_client.priv ${CLIENT_NAME}:~/client.priv"
-        echo "3. Sur le client, installer la configuration:"
-        echo "   sudo cp ~/lan_client.conf /etc/wireguard/wg0.conf"
-        echo "   sudo systemctl enable --now wg-quick@wg0"
-    else
-        echo "1. Copier le fichier: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
-        echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $CLIENT_IP"
-    fi
+    echo "1. Copier le fichier de configuration: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
+    echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $CLIENT_IP"
+    echo ""
+    echo -e "${WHITE}Note:${NC} Le client générera ses propres clés et remplacera automatiquement"
+    echo "   le placeholder _REPLACE_WITH_CLIENT_PRIVATE_KEY_"
 }
 
 # Supprimer un client
@@ -404,19 +372,13 @@ show_menu() {
             1) setup_server ;;
             2)
                 read -p "Nom du client : " name
-                echo -e "${YELLOW}Options pour la clé du client:${NC}"
-                echo "1. Générer automatiquement une nouvelle clé WireGuard"
-                echo "2. Fournir une clé publique WireGuard existante"
-                read -p "Choix [1] : " key_choice
-                key_choice=${key_choice:-1}
-                
-                if [[ "$key_choice" == "2" ]]; then
-                    echo -e "${YELLOW}Collez la clé publique WireGuard du client:${NC}"
-                    read -p "> " pubkey
-                    add_lan_client "$name" "$pubkey"
-                else
-                    add_lan_client "$name" ""
-                fi
+                echo -e "${YELLOW}Instructions:${NC}"
+                echo "1. Le client doit d'abord exécuter: ./wg-client-setup.sh"
+                echo "2. Copier la clé publique affichée par le client"
+                echo ""
+                echo -e "${YELLOW}Collez la clé publique WireGuard du client:${NC}"
+                read -p "> " pubkey
+                add_lan_client "$name" "$pubkey"
                 ;;
             3)
                 remove_client

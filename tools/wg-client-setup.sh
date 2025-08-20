@@ -91,6 +91,10 @@ EOF"
     # Afficher le résumé
     echo -e "\n✅ Configuration terminée !"
     echo "🔑 Votre clé publique client : $CLIENT_PUBKEY"
+    echo ""
+    echo -e "${YELLOW}📤 IMPORTANT: Copiez cette clé publique et fournissez-la au serveur${NC}"
+    echo "   Le serveur a besoin de cette clé pour configurer le client"
+    echo ""
     echo "📋 Vous pouvez vérifier la connexion avec : sudo wg show"
     echo "🌐 Test de connectivité : ping 10.99.99.1"
 }
@@ -128,10 +132,20 @@ Endpoint = $SERVER_ENDPOINT:$SERVER_PORT
 AllowedIPs = 10.99.99.0/24
 PersistentKeepalive = 25
 EOF"
+    
+    # Si un fichier de configuration existe déjà, remplacer le placeholder
+    if [[ -f "/etc/wireguard/wg0.conf" ]] && grep -q "_REPLACE_WITH_CLIENT_PRIVATE_KEY_" "/etc/wireguard/wg0.conf"; then
+        echo "🔄 Remplacement du placeholder par la clé privée générée..."
+        sudo sed -i "s/_REPLACE_WITH_CLIENT_PRIVATE_KEY_/$(sudo cat $KEYS_DIR/client.priv)/g" /etc/wireguard/wg0.conf
+    fi
 
     sudo systemctl enable --now wg-quick@wg0
     echo "✅ Configuration automatique terminée."
     echo "🔑 Clé publique client : $(sudo cat "$KEYS_DIR/client.pub")"
+    echo ""
+    echo -e "${YELLOW}📤 IMPORTANT: Copiez cette clé publique et fournissez-la au serveur${NC}"
+    echo "   Le serveur a besoin de cette clé pour configurer le client"
+    echo ""
     echo "🌐 Test de connectivité : ping 10.99.99.1"
 }
 
