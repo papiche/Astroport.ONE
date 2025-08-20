@@ -4,19 +4,30 @@
 CONFIG_DIR="$HOME/.zen/wireguard/wg-ssh-client"
 mkdir -p "$CONFIG_DIR"
 
-# Fonction de conversion SSH vers WireGuard
+# Fonction de conversion SSH vers WireGuard (corrigée)
 ssh_to_wg() {
-    echo "$1" | base64 -d | tail -c +12 | head -c 32 | base64 | tr -d '\n'
+    local ssh_key="$1"
+    # Extract the base64 part and decode, then take the last 32 bytes
+    echo "$ssh_key" | base64 -d | tail -c 32 | base64 | tr -d '\n'
 }
 
 # Vérification des dépendances
 check_deps() {
-    for cmd in wg curl; do
+    for cmd in wg curl systemctl sudo; do
         if ! command -v "$cmd" &> /dev/null; then
             echo "❌ Veuillez installer $cmd avant de continuer"
             exit 1
         fi
     done
+}
+
+# Vérification des clés SSH
+check_ssh_keys() {
+    if [[ ! -f ~/.ssh/id_ed25519 ]] || [[ ! -f ~/.ssh/id_ed25519.pub ]]; then
+        echo "❌ Clés SSH non trouvées. Veuillez générer des clés SSH d'abord:"
+        echo "   ssh-keygen -t ed25519"
+        exit 1
+    fi
 }
 
 # Configuration interactive
@@ -31,10 +42,16 @@ interactive_setup() {
     read -p "Clé publique du serveur : " SERVER_PUBKEY
     read -p "Adresse IP VPN attribuée (ex: 10.99.99.2/32) : " CLIENT_IP
 
+    # Validation des entrées
+    if [[ -z "$SERVER_ENDPOINT" || -z "$SERVER_PUBKEY" || -z "$CLIENT_IP" ]]; then
+        echo "❌ Toutes les informations sont requises"
+        exit 1
+    fi
+
     # Convertir la clé privée SSH
     echo -e "\n🔐 Conversion de la clé SSH en clé WireGuard..."
     awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
-        | base64 -d | tail -c +16 | head -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/client.priv"
+        | base64 -d | tail -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/client.priv"
     chmod 600 "$CONFIG_DIR/client.priv"
 
     # Convertir la clé publique SSH
@@ -43,6 +60,12 @@ interactive_setup() {
     # Générer la configuration WireGuard
     WG_CONFIG="/etc/wireguard/wg0.conf"
     echo "📁 Génération de la configuration dans $WG_CONFIG"
+
+    # Sauvegarder l'ancienne config si elle existe
+    if [[ -f "$WG_CONFIG" ]]; then
+        echo "⚠️ Configuration existante détectée. Sauvegarde..."
+        sudo cp "$WG_CONFIG" "${WG_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
+    fi
 
     sudo bash -c "cat > $WG_CONFIG <<EOF
 [Interface]
@@ -53,7 +76,7 @@ DNS = 1.1.1.1, 2606:4700:4700::1111
 [Peer]
 PublicKey = $SERVER_PUBKEY
 Endpoint = $SERVER_ENDPOINT:$SERVER_PORT
-AllowedIPs = 0.0.0.0/0, ::/0
+AllowedIPs = 10.99.99.0/24
 PersistentKeepalive = 25
 EOF"
 
@@ -65,6 +88,7 @@ EOF"
     echo -e "\n✅ Configuration terminée !"
     echo "🔑 Votre clé publique client : $CLIENT_PUBKEY"
     echo "📋 Vous pouvez vérifier la connexion avec : sudo wg show"
+    echo "🌐 Test de connectivité : ping 10.99.99.1"
 }
 
 # Version automatique (pour déploiement scripté)
@@ -74,9 +98,19 @@ auto_setup() {
     SERVER_PUBKEY=$3
     CLIENT_IP=$4
 
+    # Validation des paramètres
+    if [[ -z "$SERVER_ENDPOINT" || -z "$SERVER_PUBKEY" || -z "$CLIENT_IP" ]]; then
+        echo "❌ Usage: $0 auto <endpoint> [port] <pubkey> <client_ip>"
+        exit 1
+    fi
+
+    echo "🚀 Configuration automatique WireGuard..."
+    echo "   Serveur: $SERVER_ENDPOINT:$SERVER_PORT"
+    echo "   IP client: $CLIENT_IP"
+
     # Conversion des clés
     awk '/BEGIN OPENSSH PRIVATE KEY/{flag=1; next} /END OPENSSH PRIVATE KEY/{flag=0} flag' ~/.ssh/id_ed25519 \
-        | base64 -d | tail -c +16 | head -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/client.priv"
+        | base64 -d | tail -c 32 | base64 | tr -d '\n' > "$CONFIG_DIR/client.priv"
     chmod 600 "$CONFIG_DIR/client.priv"
 
     # Génération config
@@ -89,18 +123,23 @@ DNS = 1.1.1.1, 2606:4700:4700::1111
 [Peer]
 PublicKey = $SERVER_PUBKEY
 Endpoint = $SERVER_ENDPOINT:$SERVER_PORT
-AllowedIPs = 0.0.0.0/0, ::/0
+AllowedIPs = 10.99.99.0/24
 PersistentKeepalive = 25
 EOF"
 
     sudo systemctl enable --now wg-quick@wg0
-    echo "Configuration automatique terminée. Clé publique client : $(ssh_to_wg "$(awk '{print $2}' ~/.ssh/id_ed25519.pub)")"
+    echo "✅ Configuration automatique terminée."
+    echo "🔑 Clé publique client : $(ssh_to_wg "$(awk '{print $2}' ~/.ssh/id_ed25519.pub)")"
+    echo "🌐 Test de connectivité : ping 10.99.99.1"
 }
 
 # Mode d'utilisation
 if [[ $# -ge 4 ]]; then
+    check_deps
+    check_ssh_keys
     auto_setup "$1" "$2" "$3" "$4"
 else
     check_deps
+    check_ssh_keys
     interactive_setup
 fi
