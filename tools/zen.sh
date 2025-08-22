@@ -1966,9 +1966,9 @@ display_users_summary() {
     local total_weekly_income=0
     local processed_users=()
     
-    # Header with better formatting
-    echo -e "${BLUE}$(printf "%-30s %-35s %-20s %-12s" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "MONTANT")${NC}"
-    echo -e "${YELLOW}$(printf '%.0s-' {1..90})${NC}"
+    # Header with better formatting including wallet balances
+    echo -e "${BLUE}$(printf "%-30s %-35s %-20s %-15s %-12s" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "SOLDES ACTUELS" "MONTANT")${NC}"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..115})${NC}"
     
     # Collect all unique users from both directories
     local all_users=()
@@ -2084,29 +2084,79 @@ display_users_summary() {
                 fi
             fi
             
+            # Get current wallet balances
+            local wallet_balances=""
+            local multipass_balance=""
+            local zencard_balance=""
+            
+            # Check MULTIPASS balance
+            if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+                local multipass_pubkey=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
+                if [[ -n "$multipass_pubkey" ]]; then
+                    local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
+                    if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
+                        local multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                        multipass_balance="${CYAN}M:${multipass_zen}Ẑ${NC}"
+                    else
+                        multipass_balance="${RED}M:0Ẑ${NC}"
+                    fi
+                fi
+            fi
+            
+            # Check ZenCard balance
+            if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+                local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
+                if [[ -n "$zencard_pubkey" ]]; then
+                    local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
+                    if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
+                        local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                        zencard_balance="${PURPLE}Z:${zencard_zen}Ẑ${NC}"
+                    else
+                        zencard_balance="${RED}Z:0Ẑ${NC}"
+                    fi
+                fi
+            fi
+            
+            # Combine balances
+            if [[ -n "$multipass_balance" && -n "$zencard_balance" ]]; then
+                wallet_balances="$multipass_balance $zencard_balance"
+            elif [[ -n "$multipass_balance" ]]; then
+                wallet_balances="$multipass_balance"
+            elif [[ -n "$zencard_balance" ]]; then
+                wallet_balances="$zencard_balance"
+            else
+                wallet_balances="${RED}Aucun${NC}"
+            fi
+            
             # Create clean versions for length calculations
             local clean_status=$(echo "$status" | sed 's/\x1b\[[0-9;]*m//g')
             local clean_formatted_date=$(echo "$formatted_date" | sed 's/\x1b\[[0-9;]*m//g')
             local clean_amount_info=$(echo "$amount_info" | sed 's/\x1b\[[0-9;]*m//g')
+            local clean_wallet_balances=$(echo "$wallet_balances" | sed 's/\x1b\[[0-9;]*m//g')
             
             # Calculate padding for alignment
             local email_padding=$(printf "%-30s" "$user_email")
             local status_padding=$(printf "%-35s" "$clean_status")
             local date_padding=$(printf "%-20s" "$clean_formatted_date")
+            local balance_padding=$(printf "%-15s" "$clean_wallet_balances")
             
             # Display with colors using echo -e for proper color rendering
-            echo -e "${email_padding} ${status} ${formatted_date} ${amount_info}"
+            echo -e "${email_padding} ${status} ${formatted_date} ${wallet_balances} ${amount_info}"
         fi
     done
     
     # Summary statistics
-    echo -e "${YELLOW}$(printf '%.0s-' {1..90})${NC}"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..115})${NC}"
     echo -e "${BLUE}STATISTIQUES:${NC}"
     echo -e "  • Total utilisateurs: ${CYAN}$total_users${NC}"
     echo -e "  • Sociétaires: ${GREEN}$societaires${NC}"
     echo -e "  • Locataires: ${YELLOW}$locataires${NC}"
     echo -e "  • Paiements dus: ${RED}$payments_due${NC}"
     echo -e "  • Revenus hebdomadaires estimés: ${CYAN}$total_weekly_income Ẑen${NC} (${YELLOW}$(echo "scale=1; $total_weekly_income / 10" | bc) Ğ1${NC})"
+    
+    echo -e "\n${BLUE}LÉGENDE DES SOLDES:${NC}"
+    echo -e "  • ${CYAN}M:XXẐ${NC} = Solde MULTIPASS (G1PUBNOSTR)"
+    echo -e "  • ${PURPLE}Z:XXẐ${NC} = Solde ZenCard (.g1pub)"
     
     return $payments_due
 }
