@@ -2089,28 +2089,49 @@ display_users_summary() {
             local multipass_balance=""
             local zencard_balance=""
             
-            # Check MULTIPASS balance
+            # Check MULTIPASS balance and primal source
             if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
                 local multipass_pubkey=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
                 if [[ -n "$multipass_pubkey" ]]; then
                     local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
                     if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
                         local multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
-                        multipass_balance="${CYAN}M:${multipass_zen}Ẑ${NC}"
+                        # Check primal source for MULTIPASS
+                        local multipass_primal=$(get_primal_info "$multipass_pubkey")
+                        if [[ -n "$multipass_primal" ]]; then
+                            multipass_balance="${CYAN}M:${multipass_zen}Ẑ${NC}"
+                        else
+                            multipass_balance="${ORANGE}M:${multipass_zen}Ẑ?${NC}"  # No primal yet
+                        fi
                     else
                         multipass_balance="${RED}M:0Ẑ${NC}"
                     fi
                 fi
             fi
             
-            # Check ZenCard balance
+            # Check ZenCard balance and primal source
             if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
                 local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
                 if [[ -n "$zencard_pubkey" ]]; then
                     local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
                     if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
                         local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
-                        zencard_balance="${PURPLE}Z:${zencard_zen}Ẑ${NC}"
+                        # Check primal source for ZenCard - determine if locataire or sociétaire
+                        local zencard_primal=$(get_primal_info "$zencard_pubkey")
+                        local primal_indicator=""
+                        if [[ -n "$zencard_primal" ]]; then
+                            # Get UPLANETNAME.SOCIETY pubkey for comparison
+                            local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                            if [[ "$zencard_primal" == "$society_pubkey" ]]; then
+                                primal_indicator="S"  # Sociétaire (from SOCIETY)
+                                zencard_balance="${PURPLE}Z:${zencard_zen}Ẑ(S)${NC}"
+                            else
+                                primal_indicator="L"  # Locataire (from UPLANETNAME)
+                                zencard_balance="${PURPLE}Z:${zencard_zen}Ẑ(L)${NC}"
+                            fi
+                        else
+                            zencard_balance="${ORANGE}Z:${zencard_zen}Ẑ?${NC}"  # No primal yet
+                        fi
                     else
                         zencard_balance="${RED}Z:0Ẑ${NC}"
                     fi
@@ -2156,7 +2177,9 @@ display_users_summary() {
     
     echo -e "\n${BLUE}LÉGENDE DES SOLDES:${NC}"
     echo -e "  • ${CYAN}M:XXẐ${NC} = Solde MULTIPASS (G1PUBNOSTR)"
-    echo -e "  • ${PURPLE}Z:XXẐ${NC} = Solde ZenCard (.g1pub)"
+    echo -e "  • ${PURPLE}Z:XXẐ(L)${NC} = Solde ZenCard Locataire (source: UPLANETNAME)"
+    echo -e "  • ${PURPLE}Z:XXẐ(S)${NC} = Solde ZenCard Sociétaire (source: UPLANETNAME.SOCIETY)"
+    echo -e "  • ${ORANGE}XX?${NC} = Portefeuille sans transaction primale"
     
     return $payments_due
 }
@@ -2258,6 +2281,624 @@ handle_opencollective_reporting() {
     main "$@"
 }
 
+# Function to handle payment transcription
+handle_payment_transcription() {
+    echo -e "\n${CYAN}📋 RETRANSCRIPTION DES VERSEMENTS${NC}"
+    echo -e "${YELLOW}=================================${NC}"
+    echo -e "${GREEN}Retranscription des versements par utilisateur selon leur source primale${NC}"
+    
+    echo -e "\n${BLUE}OPTIONS DE RETRANSCRIPTION:${NC}"
+    echo -e "  1. 📊 Rapport complet de tous les versements"
+    echo -e "  2. 👤 Versements d'un utilisateur spécifique"
+    echo -e "  3. 🏛️  Versements par source (UPLANETNAME vs UPLANETNAME.SOCIETY)"
+    echo -e "  4. 📈 Générer rapport CSV des versements"
+    echo -e "  5. 🔙 Retour au menu principal"
+    
+    read -p "Sélectionnez une option (1-5): " transcription_choice
+    
+    case "$transcription_choice" in
+        1)
+            generate_complete_payment_report
+            ;;
+        2)
+            transcribe_user_payments
+            ;;
+        3)
+            transcribe_payments_by_source
+            ;;
+        4)
+            generate_payment_csv_report
+            ;;
+        5)
+            echo -e "${GREEN}Retour au menu principal...${NC}"
+            main "$@"
+            ;;
+        *)
+            echo -e "${RED}Sélection invalide. Veuillez choisir 1-5.${NC}"
+            echo ""
+            read -p "Appuyez sur Entrée pour réessayer..." 
+            handle_payment_transcription
+            ;;
+    esac
+}
+
+# Function to generate complete payment report
+generate_complete_payment_report() {
+    echo -e "\n${CYAN}📊 RAPPORT COMPLET DES VERSEMENTS${NC}"
+    echo -e "${YELLOW}=================================${NC}"
+    
+    local report_file="$HOME/.zen/tmp/payment_report_$(date +%Y%m%d_%H%M%S).txt"
+    
+    echo "RAPPORT DES VERSEMENTS - $(date)" > "$report_file"
+    echo "=======================================" >> "$report_file"
+    echo "" >> "$report_file"
+    
+    # Collect all unique users
+    local all_users=()
+    
+    # Add users from players directory (ZenCard)
+    if [[ -d ~/.zen/game/players ]]; then
+        for player_dir in ~/.zen/game/players/*@*.*/; do
+            if [[ -d "$player_dir" ]]; then
+                local player_name=$(basename "$player_dir")
+                if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    all_users+=("$player_name")
+                fi
+            fi
+        done
+    fi
+    
+    # Add users from nostr directory (MULTIPASS) if not already in list
+    if [[ -d ~/.zen/game/nostr ]]; then
+        for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+            if [[ -d "$nostr_dir" ]]; then
+                local nostr_name=$(basename "$nostr_dir")
+                if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    local found=false
+                    for existing_user in "${all_users[@]}"; do
+                        if [[ "$existing_user" == "$nostr_name" ]]; then
+                            found=true
+                            break
+                        fi
+                    done
+                    if [[ "$found" == false ]]; then
+                        all_users+=("$nostr_name")
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    local total_multipass_zen=0
+    local total_zencard_zen=0
+    local total_locataire_zen=0
+    local total_societaire_zen=0
+    
+    echo -e "${BLUE}UTILISATEUR                    TYPE PORTEFEUILLE    SOLDE ACTUEL    SOURCE PRIMALE${NC}"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..85})${NC}"
+    
+    for user_email in "${all_users[@]}"; do
+        local user_report=""
+        local multipass_zen=0
+        local zencard_zen=0
+        local primal_source=""
+        
+        # Check MULTIPASS
+        if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+            local multipass_pubkey=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
+            if [[ -n "$multipass_pubkey" ]]; then
+                local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
+                if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
+                    multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    total_multipass_zen=$((total_multipass_zen + multipass_zen))
+                fi
+            fi
+        fi
+        
+        # Check ZenCard
+        if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+            local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
+            if [[ -n "$zencard_pubkey" ]]; then
+                local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
+                if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
+                    zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    total_zencard_zen=$((total_zencard_zen + zencard_zen))
+                    
+                    # Determine primal source
+                    local zencard_primal=$(get_primal_info "$zencard_pubkey")
+                    if [[ -n "$zencard_primal" ]]; then
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        if [[ "$zencard_primal" == "$society_pubkey" ]]; then
+                            primal_source="UPLANETNAME.SOCIETY (Sociétaire)"
+                            total_societaire_zen=$((total_societaire_zen + zencard_zen))
+                        else
+                            primal_source="UPLANETNAME (Locataire)"
+                            total_locataire_zen=$((total_locataire_zen + zencard_zen))
+                        fi
+                    else
+                        primal_source="Aucune transaction primale"
+                    fi
+                fi
+            fi
+        fi
+        
+        # Display user info if they have any wallet
+        if [[ $multipass_zen -gt 0 || $zencard_zen -gt 0 ]]; then
+            local wallet_type=""
+            local balance_display=""
+            
+            if [[ $multipass_zen -gt 0 && $zencard_zen -gt 0 ]]; then
+                wallet_type="MULTIPASS + ZenCard"
+                balance_display="M:${multipass_zen}Ẑ Z:${zencard_zen}Ẑ"
+            elif [[ $multipass_zen -gt 0 ]]; then
+                wallet_type="MULTIPASS"
+                balance_display="M:${multipass_zen}Ẑ"
+                primal_source="UPLANETNAME (MULTIPASS)"
+            else
+                wallet_type="ZenCard"
+                balance_display="Z:${zencard_zen}Ẑ"
+            fi
+            
+            printf "%-30s %-18s %-15s %-25s\n" \
+                "$user_email" \
+                "$wallet_type" \
+                "$balance_display" \
+                "$primal_source"
+            
+            # Add to report file
+            echo "$user_email,$wallet_type,$balance_display,$primal_source" >> "$report_file"
+        fi
+    done
+    
+    echo -e "${YELLOW}$(printf '%.0s-' {1..85})${NC}"
+    echo -e "${BLUE}TOTAUX:${NC}"
+    echo -e "  • Total MULTIPASS: ${CYAN}${total_multipass_zen} Ẑen${NC}"
+    echo -e "  • Total ZenCard: ${PURPLE}${total_zencard_zen} Ẑen${NC}"
+    echo -e "  • Total Locataires: ${YELLOW}${total_locataire_zen} Ẑen${NC}"
+    echo -e "  • Total Sociétaires: ${GREEN}${total_societaire_zen} Ẑen${NC}"
+    
+    # Add totals to report file
+    echo "" >> "$report_file"
+    echo "TOTAUX:" >> "$report_file"
+    echo "Total MULTIPASS: ${total_multipass_zen} Ẑen" >> "$report_file"
+    echo "Total ZenCard: ${total_zencard_zen} Ẑen" >> "$report_file"
+    echo "Total Locataires: ${total_locataire_zen} Ẑen" >> "$report_file"
+    echo "Total Sociétaires: ${total_societaire_zen} Ẑen" >> "$report_file"
+    
+    echo -e "\n${GREEN}✅ Rapport généré: ${CYAN}$report_file${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour revenir au menu de retranscription..." 
+    handle_payment_transcription
+}
+
+# Function to transcribe specific user payments
+transcribe_user_payments() {
+    echo -e "\n${CYAN}👤 VERSEMENTS D'UN UTILISATEUR SPÉCIFIQUE${NC}"
+    echo -e "${YELLOW}=========================================${NC}"
+    
+    # List available users
+    echo -e "${GREEN}Utilisateurs disponibles:${NC}"
+    local user_list=()
+    local counter=1
+    
+    # Collect users from both directories
+    if [[ -d ~/.zen/game/players ]]; then
+        for player_dir in ~/.zen/game/players/*@*.*/; do
+            if [[ -d "$player_dir" ]]; then
+                local player_name=$(basename "$player_dir")
+                if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    user_list+=("$player_name")
+                    echo -e "  ${counter}. $player_name"
+                    ((counter++))
+                fi
+            fi
+        done
+    fi
+    
+    if [[ -d ~/.zen/game/nostr ]]; then
+        for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+            if [[ -d "$nostr_dir" ]]; then
+                local nostr_name=$(basename "$nostr_dir")
+                if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    local found=false
+                    for existing_user in "${user_list[@]}"; do
+                        if [[ "$existing_user" == "$nostr_name" ]]; then
+                            found=true
+                            break
+                        fi
+                    done
+                    if [[ "$found" == false ]]; then
+                        user_list+=("$nostr_name")
+                        echo -e "  ${counter}. $nostr_name"
+                        ((counter++))
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    if [[ ${#user_list[@]} -eq 0 ]]; then
+        echo -e "${RED}Aucun utilisateur trouvé${NC}"
+        echo ""
+        read -p "Appuyez sur Entrée pour revenir au menu de retranscription..." 
+        handle_payment_transcription
+        return
+    fi
+    
+    echo ""
+    read -p "Sélectionnez un utilisateur (1-${#user_list[@]}) ou 'q' pour revenir: " user_choice
+    
+    if [[ "$user_choice" == "q" || "$user_choice" == "Q" ]]; then
+        handle_payment_transcription
+        return
+    fi
+    
+    if ! [[ "$user_choice" =~ ^[0-9]+$ ]] || [[ "$user_choice" -lt 1 ]] || [[ "$user_choice" -gt ${#user_list[@]} ]]; then
+        echo -e "${RED}Sélection invalide${NC}"
+        echo ""
+        read -p "Appuyez sur Entrée pour réessayer..." 
+        transcribe_user_payments
+        return
+    fi
+    
+    local selected_user="${user_list[$((user_choice - 1))]}"
+    
+    echo -e "\n${CYAN}📋 DÉTAIL DES VERSEMENTS POUR: ${GREEN}$selected_user${NC}"
+    echo -e "${YELLOW}$(printf '%.0s=' {1..60})${NC}"
+    
+    # Analyze user's wallets
+    local has_multipass=false
+    local has_zencard=false
+    local multipass_zen=0
+    local zencard_zen=0
+    
+    # Check MULTIPASS
+    if [[ -s ~/.zen/game/nostr/${selected_user}/G1PUBNOSTR ]]; then
+        has_multipass=true
+        local multipass_pubkey=$(cat ~/.zen/game/nostr/${selected_user}/G1PUBNOSTR 2>/dev/null)
+        if [[ -n "$multipass_pubkey" ]]; then
+            local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
+            if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
+                multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                echo -e "${CYAN}💳 MULTIPASS:${NC}"
+                echo -e "  • Clé publique: ${CYAN}$multipass_pubkey${NC}"
+                echo -e "  • Solde actuel: ${CYAN}${multipass_zen} Ẑen${NC} (${multipass_coins} Ğ1)"
+                echo -e "  • Source primale: ${YELLOW}UPLANETNAME${NC}"
+                echo -e "  • Type: ${YELLOW}Locataire${NC}"
+            fi
+        fi
+    fi
+    
+    # Check ZenCard
+    if [[ -s ~/.zen/game/players/${selected_user}/.g1pub ]]; then
+        has_zencard=true
+        local zencard_pubkey=$(cat ~/.zen/game/players/${selected_user}/.g1pub 2>/dev/null)
+        if [[ -n "$zencard_pubkey" ]]; then
+            local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
+            if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
+                zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                echo -e "\n${PURPLE}💎 ZENCARD:${NC}"
+                echo -e "  • Clé publique: ${PURPLE}$zencard_pubkey${NC}"
+                echo -e "  • Solde actuel: ${PURPLE}${zencard_zen} Ẑen${NC} (${zencard_coins} Ğ1)"
+                
+                # Determine primal source
+                local zencard_primal=$(get_primal_info "$zencard_pubkey")
+                if [[ -n "$zencard_primal" ]]; then
+                    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                    if [[ "$zencard_primal" == "$society_pubkey" ]]; then
+                        echo -e "  • Source primale: ${GREEN}UPLANETNAME.SOCIETY${NC}"
+                        echo -e "  • Type: ${GREEN}Sociétaire${NC}"
+                    else
+                        echo -e "  • Source primale: ${YELLOW}UPLANETNAME${NC}"
+                        echo -e "  • Type: ${YELLOW}Locataire${NC}"
+                    fi
+                else
+                    echo -e "  • Source primale: ${RED}Aucune transaction primale${NC}"
+                fi
+            fi
+        fi
+    fi
+    
+    # Summary for this user
+    local total_zen=$((multipass_zen + zencard_zen))
+    echo -e "\n${BLUE}📊 RÉSUMÉ:${NC}"
+    echo -e "  • Total des versements: ${CYAN}${total_zen} Ẑen${NC}"
+    
+    if [[ $has_multipass == true && $has_zencard == true ]]; then
+        echo -e "  • Répartition: MULTIPASS ${multipass_zen}Ẑ + ZenCard ${zencard_zen}Ẑ"
+    elif [[ $has_multipass == true ]]; then
+        echo -e "  • Type: MULTIPASS uniquement"
+    elif [[ $has_zencard == true ]]; then
+        echo -e "  • Type: ZenCard uniquement"
+    else
+        echo -e "  • ${RED}Aucun portefeuille avec solde${NC}"
+    fi
+    
+    echo ""
+    read -p "Appuyez sur Entrée pour revenir au menu de retranscription..." 
+    handle_payment_transcription
+}
+
+# Function to transcribe payments by source
+transcribe_payments_by_source() {
+    echo -e "\n${CYAN}🏛️  VERSEMENTS PAR SOURCE PRIMALE${NC}"
+    echo -e "${YELLOW}================================${NC}"
+    
+    local uplanetname_total=0
+    local society_total=0
+    local multipass_total=0
+    local no_primal_total=0
+    
+    echo -e "${BLUE}RÉPARTITION PAR SOURCE:${NC}"
+    echo ""
+    
+    # Collect all users and analyze their sources
+    local all_users=()
+    
+    # Add users from both directories
+    if [[ -d ~/.zen/game/players ]]; then
+        for player_dir in ~/.zen/game/players/*@*.*/; do
+            if [[ -d "$player_dir" ]]; then
+                local player_name=$(basename "$player_dir")
+                if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    all_users+=("$player_name")
+                fi
+            fi
+        done
+    fi
+    
+    if [[ -d ~/.zen/game/nostr ]]; then
+        for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+            if [[ -d "$nostr_dir" ]]; then
+                local nostr_name=$(basename "$nostr_dir")
+                if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    local found=false
+                    for existing_user in "${all_users[@]}"; do
+                        if [[ "$existing_user" == "$nostr_name" ]]; then
+                            found=true
+                            break
+                        fi
+                    done
+                    if [[ "$found" == false ]]; then
+                        all_users+=("$nostr_name")
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    echo -e "${GREEN}🏛️  SOURCE: UPLANETNAME (Locataires)${NC}"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..50})${NC}"
+    
+    for user_email in "${all_users[@]}"; do
+        local user_zen=0
+        
+        # Check MULTIPASS (always from UPLANETNAME)
+        if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+            local multipass_pubkey=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
+            if [[ -n "$multipass_pubkey" ]]; then
+                local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
+                if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
+                    local multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    user_zen=$((user_zen + multipass_zen))
+                    multipass_total=$((multipass_total + multipass_zen))
+                fi
+            fi
+        fi
+        
+        # Check ZenCard from UPLANETNAME
+        if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+            local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
+            if [[ -n "$zencard_pubkey" ]]; then
+                local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
+                if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
+                    local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    local zencard_primal=$(get_primal_info "$zencard_pubkey")
+                    if [[ -n "$zencard_primal" ]]; then
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        if [[ "$zencard_primal" != "$society_pubkey" ]]; then
+                            user_zen=$((user_zen + zencard_zen))
+                            uplanetname_total=$((uplanetname_total + zencard_zen))
+                        fi
+                    else
+                        no_primal_total=$((no_primal_total + zencard_zen))
+                    fi
+                fi
+            fi
+        fi
+        
+        if [[ $user_zen -gt 0 ]]; then
+            echo -e "  ${user_email}: ${CYAN}${user_zen} Ẑen${NC}"
+        fi
+    done
+    
+    echo -e "${YELLOW}Sous-total UPLANETNAME: ${CYAN}$((uplanetname_total + multipass_total)) Ẑen${NC}"
+    echo ""
+    
+    echo -e "${GREEN}⭐ SOURCE: UPLANETNAME.SOCIETY (Sociétaires)${NC}"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..50})${NC}"
+    
+    for user_email in "${all_users[@]}"; do
+        local user_zen=0
+        
+        # Check ZenCard from UPLANETNAME.SOCIETY
+        if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+            local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
+            if [[ -n "$zencard_pubkey" ]]; then
+                local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
+                if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
+                    local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    local zencard_primal=$(get_primal_info "$zencard_pubkey")
+                    if [[ -n "$zencard_primal" ]]; then
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        if [[ "$zencard_primal" == "$society_pubkey" ]]; then
+                            user_zen=$((user_zen + zencard_zen))
+                            society_total=$((society_total + zencard_zen))
+                        fi
+                    fi
+                fi
+            fi
+        fi
+        
+        if [[ $user_zen -gt 0 ]]; then
+            echo -e "  ${user_email}: ${PURPLE}${user_zen} Ẑen${NC}"
+        fi
+    done
+    
+    echo -e "${YELLOW}Sous-total UPLANETNAME.SOCIETY: ${PURPLE}${society_total} Ẑen${NC}"
+    echo ""
+    
+    if [[ $no_primal_total -gt 0 ]]; then
+        echo -e "${ORANGE}⚠️  PORTEFEUILLES SANS TRANSACTION PRIMALE: ${no_primal_total} Ẑen${NC}"
+        echo ""
+    fi
+    
+    echo -e "${BLUE}📊 TOTAUX GÉNÉRAUX:${NC}"
+    echo -e "${YELLOW}$(printf '%.0s=' {1..40})${NC}"
+    echo -e "  • MULTIPASS (UPLANETNAME): ${CYAN}${multipass_total} Ẑen${NC}"
+    echo -e "  • ZenCard Locataires: ${CYAN}${uplanetname_total} Ẑen${NC}"
+    echo -e "  • ZenCard Sociétaires: ${PURPLE}${society_total} Ẑen${NC}"
+    if [[ $no_primal_total -gt 0 ]]; then
+        echo -e "  • Sans transaction primale: ${ORANGE}${no_primal_total} Ẑen${NC}"
+    fi
+    echo -e "${YELLOW}$(printf '%.0s-' {1..40})${NC}"
+    echo -e "  • ${GREEN}TOTAL GÉNÉRAL: $((multipass_total + uplanetname_total + society_total + no_primal_total)) Ẑen${NC}"
+    
+    echo ""
+    read -p "Appuyez sur Entrée pour revenir au menu de retranscription..." 
+    handle_payment_transcription
+}
+
+# Function to generate CSV report
+generate_payment_csv_report() {
+    echo -e "\n${CYAN}📈 GÉNÉRATION RAPPORT CSV${NC}"
+    echo -e "${YELLOW}=========================${NC}"
+    
+    local csv_file="$HOME/.zen/tmp/versements_$(date +%Y%m%d_%H%M%S).csv"
+    
+    # CSV Header
+    echo "Email,Type_Portefeuille,Solde_MULTIPASS_Zen,Solde_ZenCard_Zen,Source_Primale,Statut,Total_Zen" > "$csv_file"
+    
+    # Collect all users
+    local all_users=()
+    
+    if [[ -d ~/.zen/game/players ]]; then
+        for player_dir in ~/.zen/game/players/*@*.*/; do
+            if [[ -d "$player_dir" ]]; then
+                local player_name=$(basename "$player_dir")
+                if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    all_users+=("$player_name")
+                fi
+            fi
+        done
+    fi
+    
+    if [[ -d ~/.zen/game/nostr ]]; then
+        for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+            if [[ -d "$nostr_dir" ]]; then
+                local nostr_name=$(basename "$nostr_dir")
+                if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    local found=false
+                    for existing_user in "${all_users[@]}"; do
+                        if [[ "$existing_user" == "$nostr_name" ]]; then
+                            found=true
+                            break
+                        fi
+                    done
+                    if [[ "$found" == false ]]; then
+                        all_users+=("$nostr_name")
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    local total_entries=0
+    
+    for user_email in "${all_users[@]}"; do
+        local multipass_zen=0
+        local zencard_zen=0
+        local wallet_type=""
+        local primal_source=""
+        local status=""
+        
+        # Check MULTIPASS
+        if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+            local multipass_pubkey=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
+            if [[ -n "$multipass_pubkey" ]]; then
+                local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
+                if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
+                    multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                fi
+            fi
+        fi
+        
+        # Check ZenCard
+        if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+            local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
+            if [[ -n "$zencard_pubkey" ]]; then
+                local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
+                if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
+                    zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    
+                    # Determine primal source
+                    local zencard_primal=$(get_primal_info "$zencard_pubkey")
+                    if [[ -n "$zencard_primal" ]]; then
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        if [[ "$zencard_primal" == "$society_pubkey" ]]; then
+                            primal_source="UPLANETNAME.SOCIETY"
+                            status="Sociétaire"
+                        else
+                            primal_source="UPLANETNAME"
+                            status="Locataire"
+                        fi
+                    else
+                        primal_source="Aucune_transaction_primale"
+                        status="Non_initialisé"
+                    fi
+                fi
+            fi
+        fi
+        
+        # Determine wallet type
+        if [[ $multipass_zen -gt 0 && $zencard_zen -gt 0 ]]; then
+            wallet_type="MULTIPASS+ZenCard"
+        elif [[ $multipass_zen -gt 0 ]]; then
+            wallet_type="MULTIPASS"
+            primal_source="UPLANETNAME"
+            status="Locataire"
+        elif [[ $zencard_zen -gt 0 ]]; then
+            wallet_type="ZenCard"
+        else
+            continue  # Skip users with no balance
+        fi
+        
+        local total_zen=$((multipass_zen + zencard_zen))
+        
+        # Add to CSV
+        echo "$user_email,$wallet_type,$multipass_zen,$zencard_zen,$primal_source,$status,$total_zen" >> "$csv_file"
+        ((total_entries++))
+    done
+    
+    echo -e "${GREEN}✅ Rapport CSV généré: ${CYAN}$csv_file${NC}"
+    echo -e "${GREEN}📊 Nombre d'entrées: ${CYAN}$total_entries${NC}"
+    echo -e "${GREEN}📁 Taille du fichier: ${CYAN}$(du -h "$csv_file" | cut -f1)${NC}"
+    
+    echo ""
+    echo -e "${BLUE}Colonnes du rapport:${NC}"
+    echo -e "  • Email: Adresse email de l'utilisateur"
+    echo -e "  • Type_Portefeuille: MULTIPASS, ZenCard, ou MULTIPASS+ZenCard"
+    echo -e "  • Solde_MULTIPASS_Zen: Solde en Ẑen du portefeuille MULTIPASS"
+    echo -e "  • Solde_ZenCard_Zen: Solde en Ẑen du portefeuille ZenCard"
+    echo -e "  • Source_Primale: UPLANETNAME ou UPLANETNAME.SOCIETY"
+    echo -e "  • Statut: Locataire ou Sociétaire"
+    echo -e "  • Total_Zen: Somme des soldes en Ẑen"
+    
+    echo ""
+    read -p "Appuyez sur Entrée pour revenir au menu de retranscription..." 
+    handle_payment_transcription
+}
+
 # Function to display captain dashboard (simplified)
 display_captain_dashboard() {
     echo -e "\n${CYAN}📊 TABLEAU DE BORD CAPITAINE${NC}"
@@ -2273,7 +2914,7 @@ display_captain_dashboard() {
             local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
             society_balance=$(echo "$status" | cut -d '|' -f 1)
             zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "   • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            echo -e "   • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${CYAN}$zen_balance Ẑen${NC} (${YELLOW}$society_balance Ğ1${NC})"
         else
             echo -e "   • ${RED}UPLANETNAME.SOCIETY: Erreur de configuration${NC}"
         fi
@@ -2288,7 +2929,7 @@ display_captain_dashboard() {
             local status=$(get_wallet_status "$services_pubkey" "UPLANETNAME")
             services_balance=$(echo "$status" | cut -d '|' -f 1)
             zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "   • ${GREEN}UPLANETNAME (Services):${NC} ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            echo -e "   • ${GREEN}UPLANETNAME (Services):${NC} ${CYAN}$zen_balance Ẑen${NC} (${YELLOW}$services_balance Ğ1${NC})"
         else
             echo -e "   • ${RED}UPLANETNAME: Erreur de configuration${NC}"
         fi
@@ -2699,26 +3340,32 @@ main() {
     echo -e "   • Génération de rapports financiers"
     echo ""
     
-    echo -e "${BLUE}5. 🔍 WALLET DETAILS & ANALYSIS${NC} - Advanced Features"
+    echo -e "${BLUE}5. 📋 RETRANSCRIPTION VERSEMENTS${NC} - Gestion des Paiements"
+    echo -e "   • Retranscrire les versements par utilisateur"
+    echo -e "   • Identifier les sources primales (Locataire/Sociétaire)"
+    echo -e "   • Générer les rapports de versements"
+    echo ""
+    
+    echo -e "${BLUE}6. 🔍 WALLET DETAILS & ANALYSIS${NC} - Advanced Features"
     echo -e "   • View transaction history and primal chain"
     echo -e "   • Generate accounting reports"
     echo -e "   • Analyze wallet activities"
     echo ""
     
-    echo -e "${BLUE}6. 🛠️  MAINTENANCE & OPTIMIZATION${NC} - System Tools"
+    echo -e "${BLUE}7. 🛠️  MAINTENANCE & OPTIMIZATION${NC} - System Tools"
     echo -e "   • Refresh all wallet balances"
     echo -e "   • Clean old cache files"
     echo -e "   • System health check"
     echo ""
     
-    echo -e "${BLUE}7. 💡 AIDE & CONSEILS CAPITAINE${NC} - Guide d'utilisation"
+    echo -e "${BLUE}8. 💡 AIDE & CONSEILS CAPITAINE${NC} - Guide d'utilisation"
     echo -e "   • Bonnes pratiques de gestion"
-    echo -e "   • Conseils de sécurité"
+    echo -e "   • Conseils recommandées"
     echo -e "   • Procédures recommandées"
     echo ""
     
     # Get user selection
-    read -p "Select option (1-7): " choice
+    read -p "Select option (1-8): " choice
     
     case "$choice" in
         1)
@@ -2734,19 +3381,22 @@ main() {
             handle_opencollective_reporting
             ;;
         5)
-            handle_wallet_analysis
+            handle_payment_transcription
             ;;
         6)
-            handle_maintenance
+            handle_wallet_analysis
             ;;
         7)
+            handle_maintenance
+            ;;
+        8)
             show_captain_tips
             echo ""
             read -p "Appuyez sur Entrée pour revenir au menu principal..." 
             main "$@"
             ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, 5, 6, or 7.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, 5, 6, 7, or 8.${NC}"
             exit 1
             ;;
     esac
