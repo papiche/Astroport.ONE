@@ -230,7 +230,7 @@ should_refresh() {
     cd ${player_dir}/APP/uDRIVE/
     UDRIVE=$(./generate_ipfs_structure.sh .)
     cd - 2>&1 >/dev/null
-    
+
     if [[ -n "$UDRIVE" ]]; then
         if [[ "$UDRIVE" != "$last_udrive" ]]; then
             if [[ -n "$last_udrive" ]]; then
@@ -267,7 +267,7 @@ should_refresh() {
     #             REFRESH_REASON="uworld_update"
     #             return 0
     #         fi
-    #     else         
+    #     else
     #         echo $UWORLD > "${last_uworld_file}"
     #         echo "UWORLD CID: $last_uworld"
     #     fi
@@ -281,7 +281,7 @@ should_refresh() {
 
 ########################################################################
 #  PRIMAL RX source determine the MULTIPASS owner
-#  on UPLanet ORIGIN (can be UPLANETG1PUB or Ğ1 member) 1Ẑ = 0.1Ğ1 
+#  on UPLanet ORIGIN (can be UPLANETG1PUB or Ğ1 member) 1Ẑ = 0.1Ğ1
 #  on UPlanet Ẑen (can be member only) 1Ẑ = 1€ !!
 ########################################################################
 # Get all emails from ~/.zen/game/nostr/
@@ -303,7 +303,7 @@ for PLAYER in "${NOSTR[@]}"; do
         mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
         cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
     fi
-    
+
     ## LAT & LON
     source ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS
 
@@ -341,11 +341,12 @@ for PLAYER in "${NOSTR[@]}"; do
     # Day 1: No PRIMAL yet (waiting for member TX)
     # Day 2+: If still no PRIMAL, UPlanet sends PRIMO TX (marks PRIMAL)
     # Only then: PRIMAL becomes available for caching
-    
+
     BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
-    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.birthdate ]] && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.birthdate ## Todo Remove
+    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.birthdate ]] \
+        && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.birthdate
     primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null)
-    
+
     # Check if we're still on the first day (PRIMAL not ready yet)
     if [[ "${TODATE}" == "${BIRTHDATE}" ]]; then
         log "DEBUG" "MULTIPASS first day - ${BIRTHDATE} : Waiting to receive Primo TX on $G1PUBNOSTR"
@@ -427,74 +428,75 @@ for PLAYER in "${NOSTR[@]}"; do
     ## s=/?email
     echo $s
 
-    ## CACHING SECRET & DISCO to nostr/${PLAYER}/.secret.nostr 
-    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then 
+    ## CACHING SECRET & DISCO to nostr/${PLAYER}/.secret.nostr
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
         NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
         NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
         echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX;" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr
         chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
     else
-        source ~/.zen/game/nostr/${PLAYER}/.secret.nostr 
+        source ~/.zen/game/nostr/${PLAYER}/.secret.nostr
     fi
 
     ## CREATE nostr/${PLAYER}/.secret.dunikey
-    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then 
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
         chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.dunikey
-    fi 
+    fi
     ########################################################################
     #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
     ############################################################ BLOCKING
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
-    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "${primal}" == "" ]]; then
-        ## 2nd day+ MULTIPASS should have received PRIMAL RX by now
-        if [[ ${TODATE} != ${BIRTHDATE} ]]; then
-            # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
-            log "INFO" "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation for $G1PUBNOSTR"
-            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:${YOUSER}:MULTIPASS" 2>/dev/null)
-            if [[ $? -eq 0 ]]; then
-                echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
-                log "INFO" "PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB}" wallet
-                log_metric "PRIMO_TX_SENT" "${G1LEVEL1}" "${PLAYER}"
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]]; then
+        if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "${primal}" == "" ]]; then
+            ## 2nd day+ MULTIPASS should have received PRIMAL RX by now
+            if [[ ${TODATE} != ${BIRTHDATE} ]]; then
+                # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
+                log "INFO" "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation for $G1PUBNOSTR"
+                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:${YOUSER}:MULTIPASS" 2>/dev/null)
+                if [[ $? -eq 0 ]]; then
+                    echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
+                    log "INFO" "PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB}" wallet
+                    log_metric "PRIMO_TX_SENT" "${G1LEVEL1}" "${PLAYER}"
+                else
+                    log "WARN" "PRIMO TX failed for ${PLAYER}"
+                    log_metric "PRIMO_TX_FAILED" "1" "${PLAYER}"
+                fi
             else
-                log "WARN" "PRIMO TX failed for ${PLAYER}"
-                log_metric "PRIMO_TX_FAILED" "1" "${PLAYER}"
+                ## 1st Day send welcome EMAIL...
+                if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
+                    cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+                    && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+                    && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
+                    log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
+                    log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
+                else
+                    log "INFO" "Welcome message sent... Waiting for PRIMAL TX : $TODATE"
+                fi
             fi
-        else
-            ## 1st Day send welcome EMAIL...
-            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
-                cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-                && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-                && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
-                log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
-                log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
-            else
-                log "INFO" "Welcome message sent... Waiting for PRIMAL TX : $TODATE"
-            fi
+            rm -Rf ~/.zen/tmp/${MOATS}
+            continue
         fi
-        rm -Rf ~/.zen/tmp/${MOATS}
-        continue
     fi
-
     ####################################################################
     ## EVERY 7 DAYS NOSTR CARD is PAYING CAPTAIN
     TODATE_SECONDS=$(date -d "$TODATE" +%s)
     BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
     # Calculate the difference in days
     DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
-    
+
     # Calculate next payment date (next multiple of 7 days from birthdate)
     NEXT_PAYMENT_DAYS=$(( ((DIFF_DAYS / 7) + 1) * 7 ))
     NEXT_PAYMENT_SECONDS=$(( BIRTHDATE_SECONDS + (NEXT_PAYMENT_DAYS * 86400) ))
     NEXT_PAYMENT_DATE=$(date -d "@$NEXT_PAYMENT_SECONDS" '+%Y-%m-%d')
-    
+
     # Get player's refresh time for payment hour
     PLAYER_REFRESH_TIME=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
     [[ -z "$PLAYER_REFRESH_TIME" ]] && PLAYER_REFRESH_TIME="00:00"
-    
+
     log "INFO" "💰 Next weekly payment for ${PLAYER}: $NEXT_PAYMENT_DATE at $PLAYER_REFRESH_TIME (in $((NEXT_PAYMENT_DAYS - DIFF_DAYS)) days)"
-    
+
     # Check if the difference is a multiple of 7 // Weekly cycle
     if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
         if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
@@ -506,11 +508,11 @@ for PLAYER in "${NOSTR[@]}"; do
                     current_time=$(date '+%H:%M')
                     player_refresh_time=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
                     [[ -z "$player_refresh_time" ]] && player_refresh_time="00:00"
-                    
+
                     # Convert times to seconds since midnight for comparison
                     current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
                     refresh_seconds=$((10#${player_refresh_time%%:*} * 3600 + 10#${player_refresh_time##*:} * 60))
-                    
+
                     # Only process payment if current time has passed the refresh time
                     if [[ $current_seconds -ge $refresh_seconds ]]; then
                         if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
@@ -597,7 +599,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## PRIMAL RX SOURCE ?!
     G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
-    
+
     ## Validate and clean G1PRIME if it contains debug output
     if [[ -n "$G1PRIME" && ("$G1PRIME" =~ "Trying primal check" || "$G1PRIME" =~ "BMAS NODE") ]]; then
         echo "Cleaning corrupted G1PRIME file for ${PLAYER}"
@@ -605,7 +607,7 @@ for PLAYER in "${NOSTR[@]}"; do
         G1PRIME=$(echo "$G1PRIME" | tail -n 1 | tr -d ' ')
         echo "$G1PRIME" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
     fi
-    
+
     ## CHECKING PRIMAL IPFS conversion (correction)
     # Validate G1PUB format (should be base58 encoded, typically 44 characters)
     if [[ -n "$G1PRIME" && ${#G1PRIME} -eq 44 && "$G1PRIME" =~ ^[1-9A-HJ-NP-Za-km-z]+$ ]]; then
@@ -713,7 +715,7 @@ for PLAYER in "${NOSTR[@]}"; do
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
-        ## Indicate "G1PUBNOSTR:primal" into nostr profile 
+        ## Indicate "G1PUBNOSTR:primal" into nostr profile
         if [[ -d ~/.zen/game/nostr/${PLAYER}/PRIMAL/N1 ]]; then
             # Member Wallet
             PoH=":${primal}"
@@ -828,7 +830,7 @@ for PLAYER in "${NOSTR[@]}"; do
     # Vérifier si le rafraîchissement est nécessaire
     should_refresh "${PLAYER}"
     refresh_needed=$?
-    
+
     # Si pas de rafraîchissement nécessaire, continuer
     if [[ $refresh_needed -eq 1 ]]; then
         echo "No refresh needed for ${PLAYER} - skipping"
@@ -842,7 +844,7 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ $refresh_needed -eq 0 ]]; then
         echo "IPNS update triggered for ${PLAYER} - Reason: $REFRESH_REASON"
         echo "## $myIPFS$NOSTRNS"
-        
+
         ## Keeping .secret.ipns (quicker ipfs processing)
         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.ipns ]]; then
             ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/nostr/${PLAYER}/.secret.ipns "${salt}" "${pepper}"
@@ -854,10 +856,10 @@ for PLAYER in "${NOSTR[@]}"; do
         ## UPDATE IPNS RESOLVE
         NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
         ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
-        
+
         # Record the last IPNS update time
         date +%s > ${HOME}/.zen/game/nostr/${PLAYER}/.last_ipns_update
-        
+
         # Update .todate only for daily updates, not for new files
         if [[ "$REFRESH_REASON" == "daily_update" ]]; then
             echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
