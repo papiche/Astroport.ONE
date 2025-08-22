@@ -1966,8 +1966,8 @@ display_users_summary() {
     local total_weekly_income=0
     local processed_users=()
     
-    # Header
-    printf "${BLUE}%-30s %-35s %-20s %-12s${NC}\n" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "MONTANT"
+    # Header with better formatting
+    echo -e "${BLUE}$(printf "%-30s %-35s %-20s %-12s" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "MONTANT")${NC}"
     echo -e "${YELLOW}$(printf '%.0s-' {1..90})${NC}"
     
     # Collect all unique users from both directories
@@ -2073,26 +2073,29 @@ display_users_summary() {
                     
                     if [[ "$days_until" == "0" ]]; then
                         ((payments_due++))
-                        formatted_date="${RED}$formatted_date (DÛ!)${NC}"
+                        formatted_date="${RED}🚨 $formatted_date (PAIEMENT DÛ!)${NC}"
+                        # Mark user as needing urgent attention
+                        user_email="${RED}⚠️  $user_email${NC}"
                     elif [[ "$days_until" -le "2" ]] && [[ "$days_until" != "?" ]]; then
-                        formatted_date="${YELLOW}$formatted_date${NC}"
+                        formatted_date="${YELLOW}⏰ $formatted_date (bientôt)${NC}"
                     elif [[ "$days_until" != "?" ]]; then
-                        formatted_date="${GREEN}$formatted_date${NC}"
+                        formatted_date="${GREEN}✅ $formatted_date${NC}"
                     fi
                 fi
             fi
             
-            # Clean status for display (remove color codes for printf)
+            # Create clean versions for length calculations
             local clean_status=$(echo "$status" | sed 's/\x1b\[[0-9;]*m//g')
             local clean_formatted_date=$(echo "$formatted_date" | sed 's/\x1b\[[0-9;]*m//g')
             local clean_amount_info=$(echo "$amount_info" | sed 's/\x1b\[[0-9;]*m//g')
             
-            # Display user info with proper formatting
-            printf "%-30s %-35s %-20s %-12s\n" \
-                "$user_email" \
-                "$clean_status" \
-                "$clean_formatted_date" \
-                "$clean_amount_info"
+            # Calculate padding for alignment
+            local email_padding=$(printf "%-30s" "$user_email")
+            local status_padding=$(printf "%-35s" "$clean_status")
+            local date_padding=$(printf "%-20s" "$clean_formatted_date")
+            
+            # Display with colors using echo -e for proper color rendering
+            echo -e "${email_padding} ${status} ${formatted_date} ${amount_info}"
         fi
     done
     
@@ -2555,16 +2558,72 @@ main() {
     display_users_summary
     local payments_due=$?
     
-    # Alert for due payments with detailed actions
+    # Alert for due payments with detailed actions and specific users
     if [[ $payments_due -gt 0 ]]; then
         echo -e "\n${RED}🚨 ALERTE CAPITAINE: $payments_due paiement(s) en retard!${NC}"
-        echo -e "${YELLOW}Actions recommandées:${NC}"
-        echo -e "  • Vérifier les soldes des locataires concernés"
-        echo -e "  • Envoyer des rappels de paiement si nécessaire"
-        echo -e "  • Considérer la déconnexion automatique après 28 jours"
-        echo -e "${CYAN}💡 Conseil: Utilisez l'option 5 (Analyse) pour examiner les portefeuilles${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
+        
+        # Show overdue users specifically
+        echo -e "${RED}👥 UTILISATEURS EN RETARD:${NC}"
+        
+        # Collect overdue users from both directories
+        local overdue_users=()
+        
+        # Check players directory (ZenCard)
+        if [[ -d ~/.zen/game/players ]]; then
+            for player_dir in ~/.zen/game/players/*@*.*/; do
+                if [[ -d "$player_dir" ]]; then
+                    local player_name=$(basename "$player_dir")
+                    if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                        local payment_info=$(get_user_payment_status "$player_name")
+                        local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
+                        if [[ "$days_until" == "0" ]]; then
+                            overdue_users+=("$player_name")
+                        fi
+                    fi
+                fi
+            done
+        fi
+        
+        # Check nostr directory (MULTIPASS) 
+        if [[ -d ~/.zen/game/nostr ]]; then
+            for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+                if [[ -d "$nostr_dir" ]]; then
+                    local nostr_name=$(basename "$nostr_dir")
+                    if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                        # Check if not already in overdue list
+                        local found=false
+                        for existing_user in "${overdue_users[@]}"; do
+                            if [[ "$existing_user" == "$nostr_name" ]]; then
+                                found=true
+                                break
+                            fi
+                        done
+                        if [[ "$found" == false ]]; then
+                            local payment_info=$(get_user_payment_status "$nostr_name")
+                            local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
+                            if [[ "$days_until" == "0" ]]; then
+                                overdue_users+=("$nostr_name")
+                            fi
+                        fi
+                    fi
+                fi
+            done
+        fi
+        
+        # Display overdue users
+        for overdue_user in "${overdue_users[@]}"; do
+            echo -e "  ${RED}⚠️  $overdue_user${NC} - Paiement immédiatement requis"
+        done
+        
+        echo -e "\n${YELLOW}📋 ACTIONS RECOMMANDÉES:${NC}"
+        echo -e "  1. ${CYAN}Vérifier les soldes des locataires concernés${NC} (Option 5: Analyse)"
+        echo -e "  2. ${CYAN}Envoyer des rappels de paiement${NC}"
+        echo -e "  3. ${CYAN}Considérer la déconnexion automatique après 28 jours${NC}"
+        echo -e "\n${CYAN}💡 Conseil: Utilisez l'option 5 (Analyse des portefeuilles) pour examiner en détail${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
     else
-        echo -e "\n${GREEN}✅ Tous les paiements sont à jour${NC}"
+        echo -e "\n${GREEN}✅ Tous les paiements sont à jour - Aucune action requise${NC}"
     fi
     
     # Display wallet options
