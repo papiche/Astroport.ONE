@@ -24,6 +24,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
+ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
 
 # Cache utility functions for optimized performance
@@ -41,25 +42,15 @@ get_wallet_balance() {
     
     ensure_cache_dir
     
-    # Check cache age (refresh if older than 1 hour for auto_refresh=true, or 6 hours for false)
+    # Check cache age (refresh if older than 5 minutes for performance)
     local cache_file="$CACHE_DIR/${pubkey}.COINS"
-    local max_age_seconds=3600  # 1 hour for auto refresh
-    if [[ "$auto_refresh" == "false" ]]; then
-        max_age_seconds=21600  # 6 hours for manual refresh
+    local cache_age=0
+    if [[ -f "$cache_file" ]]; then
+        cache_age=$(( $(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0) ))
     fi
     
-    local should_refresh=false
-    if [[ ! -f "$cache_file" ]]; then
-        should_refresh=true
-    else
-        local file_age=$(( $(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0) ))
-        if [[ $file_age -gt $max_age_seconds ]]; then
-            should_refresh=true
-        fi
-    fi
-    
-    # Refresh cache if needed and pubkey is valid
-    if [[ "$should_refresh" == "true" ]] && [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]]; then
+    # Refresh cache if requested, pubkey is valid, and cache is old or missing
+    if [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]] && [[ $cache_age -gt 300 ]]; then
         ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
     fi
     
@@ -1091,8 +1082,9 @@ handle_g1_reserve() {
     echo -e "  3. 💰 Envoyer Ğ1 vers portefeuille externe"
     echo -e "  4. 📊 Voir le statut du portefeuille uniquement"
     echo -e "  5. 🚀 Assistant d'initialisation Astroport"
+    echo -e "  6. 🔙 Retour au menu principal"
     
-    read -p "Select option (1-5): " g1_choice
+    read -p "Select option (1-6): " g1_choice
     
     case "$g1_choice" in
         1)
@@ -1127,9 +1119,14 @@ handle_g1_reserve() {
             # Assistant d'initialisation
             handle_astroport_initialization
             ;;
+        6)
+            # Retour au menu principal
+            echo -e "${GREEN}Retour au menu principal...${NC}"
+            main "$@"
+            ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1-5.${NC}"
-            exit 1
+            echo -e "${RED}Invalid selection. Please choose 1-6.${NC}"
+            handle_g1_reserve
             ;;
     esac
 }
@@ -1227,7 +1224,7 @@ handle_astroport_initialization() {
     echo -e "${GREEN}Cet assistant vous guide dans la configuration initiale de votre Astroport${NC}"
     
     echo -e "\n${BLUE}📋 ÉTAPES D'INITIALISATION:${NC}"
-    echo -e "  1. ⚙️ Configuration des paramètres économiques (.env)"
+    echo -e "  1. ⚙️  Configuration des paramètres économiques (.env)"
     echo -e "  2. ⭐ Valorisation du capital machine"
     echo -e "  3. 💰 Initialisation des portefeuilles système"
     echo -e "  4. 📊 Vérification de la configuration"
@@ -1527,15 +1524,15 @@ show_analysis_menu() {
         echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC}"
     fi
     
-    echo -e "\n${BLUE}ANALYSIS OPTIONS:${NC}"
-    echo -e "  1. 📊 View Transaction History"
-    echo -e "  2. 🔗 View Primal Chain Analysis"
-    echo -e "  3. 📈 Generate Accounting Report"
-    echo -e "  4. 🔍 Search Primal Chain"
-    echo -e "  5. 📋 Export History to CSV"
-    echo -e "  6. 🔙 Back to Main Menu"
+    echo -e "\n${BLUE}OPTIONS D'ANALYSE:${NC}"
+    echo -e "  1. 📊 Historique des transactions"
+    echo -e "  2. 🔗 Analyse de la chaîne primale"
+    echo -e "  3. 📈 Générer un rapport comptable"
+    echo -e "  4. 🔍 Rechercher dans la chaîne primale"
+    echo -e "  5. 📋 Exporter l'historique en CSV"
+    echo -e "  6. 🔙 Retour au menu principal"
     
-    read -p "Select option (1-6): " analysis_choice
+    read -p "Sélectionnez une option (1-6): " analysis_choice
     
     case "$analysis_choice" in
         1)
@@ -1554,11 +1551,13 @@ show_analysis_menu() {
             export_history_csv "$pubkey" "$wallet_name"
             ;;
         6)
-            echo -e "${GREEN}Returning to main menu...${NC}"
+            echo -e "${GREEN}Retour au menu principal...${NC}"
             main "$@"
             ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1-6.${NC}"
+            echo -e "${RED}Sélection invalide. Veuillez choisir 1-6.${NC}"
+            echo ""
+            read -p "Appuyez sur Entrée pour réessayer..." 
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
             ;;
     esac
@@ -1572,67 +1571,29 @@ show_transaction_history() {
     echo -e "\n${CYAN}📊 TRANSACTION HISTORY - $wallet_name${NC}"
     echo -e "${YELLOW}=====================================${NC}"
     
-    # Show recent transactions using JSON format for better display
-    echo -e "${GREEN}Recent transactions (last 10):${NC}"
-    local json_result=$(silkaj --json money history --full-pubkey "$pubkey" 2>/dev/null)
-    if [[ -n "$json_result" ]]; then
-        local current_balance=$(echo "$json_result" | jq -r '.current_balance')
-        local user=$(echo "$json_result" | jq -r '.user // "Unknown"')
-        
-        echo -e "${BLUE}Wallet:${NC} $user (${CYAN}$pubkey${NC})"
-        echo -e "${BLUE}Current Balance:${NC} ${YELLOW}$current_balance Ğ1${NC}"
-        echo ""
-        echo -e "${BLUE}Date                | From/To                                    | Amount      | Reference${NC}"
-        echo -e "${YELLOW}$(printf '%.0s-' {1..100})${NC}"
-        
-        echo "$json_result" | jq -r '.history[:10][] | 
-            "\(.Date) | \(.["Issuers/Recipients"][0:40]) | \(if .["Amounts Ğ1"] > 0 then "+" else "" end)\(.["Amounts Ğ1"]) Ğ1 | \(.Reference[0:30])"'
-    else
-        echo -e "${RED}Unable to fetch transaction history${NC}"
-        # Fallback to standard silkaj command
+    # Show recent transactions
+    echo -e "${GREEN}Recent transactions:${NC}"
     silkaj money history "$pubkey" | head -20
-    fi
     
     echo -e "\n${YELLOW}Options:${NC}"
-    echo -e "  1. View full history (JSON formatted)"
+    echo -e "  1. View full history"
     echo -e "  2. View with UIDs"
-    echo -e "  3. View last 50 transactions"
-    echo -e "  4. Raw silkaj output"
-    echo -e "  5. Back to analysis menu"
+    echo -e "  3. View with full public keys"
+    echo -e "  4. Back to analysis menu"
     
-    read -p "Select option (1-5): " history_choice
+    read -p "Select option (1-4): " history_choice
     
     case "$history_choice" in
         1)
-            echo -e "\n${CYAN}Full transaction history:${NC}"
-            if [[ -n "$json_result" ]]; then
-                echo -e "${BLUE}Date                | From/To                                    | Amount      | Reference${NC}"
-                echo -e "${YELLOW}$(printf '%.0s-' {1..100})${NC}"
-                echo "$json_result" | jq -r '.history[] | 
-                    "\(.Date) | \(.["Issuers/Recipients"][0:40]) | \(if .["Amounts Ğ1"] > 0 then "+" else "" end)\(.["Amounts Ğ1"]) Ğ1 | \(.Reference[0:30])"'
-            else
             silkaj money history "$pubkey"
-            fi
             ;;
         2)
             silkaj money history --uids "$pubkey"
             ;;
         3)
-            echo -e "\n${CYAN}Last 50 transactions:${NC}"
-            if [[ -n "$json_result" ]]; then
-                echo -e "${BLUE}Date                | From/To                                    | Amount      | Reference${NC}"
-                echo -e "${YELLOW}$(printf '%.0s-' {1..100})${NC}"
-                echo "$json_result" | jq -r '.history[:50][] | 
-                    "\(.Date) | \(.["Issuers/Recipients"][0:40]) | \(if .["Amounts Ğ1"] > 0 then "+" else "" end)\(.["Amounts Ğ1"]) Ğ1 | \(.Reference[0:30])"'
-            else
-                silkaj money history "$pubkey" | head -50
-            fi
-            ;;
-        4)
-            echo -e "\n${CYAN}Raw silkaj output:${NC}"
             silkaj money history --full-pubkey "$pubkey"
             ;;
-        5)
+        4)
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
             ;;
         *)
@@ -1649,89 +1610,25 @@ show_primal_chain() {
     echo -e "\n${CYAN}🔗 PRIMAL CHAIN ANALYSIS - $wallet_name${NC}"
     echo -e "${YELLOW}=====================================${NC}"
     
-    # Show primal transaction source using JSON format
+    # Show primal transaction source
     echo -e "${GREEN}Primal transaction source:${NC}"
-    local primal_json=$(silkaj --json money primal "$pubkey" 2>/dev/null)
-    if [[ -n "$primal_json" ]]; then
-        local primal_source=$(echo "$primal_json" | jq -r '.primal_source_pubkey // "None"')
-        local primal_amount=$(echo "$primal_json" | jq -r '.primal_amount // "0"')
-        local primal_date=$(echo "$primal_json" | jq -r '.primal_date // "Unknown"')
-        
-        echo -e "  ${BLUE}Source PubKey:${NC} ${CYAN}$primal_source${NC}"
-        echo -e "  ${BLUE}Amount:${NC} ${YELLOW}$primal_amount Ğ1${NC}"
-        echo -e "  ${BLUE}Date:${NC} $primal_date"
-        
-        # Check source type using primal_wallet_control.sh logic
-        local source_type=""
-        if [[ "$primal_source" == "$UPLANETG1PUB" ]]; then
-            source_type="UPLANET"
-        elif [[ "$primal_source" != "None" ]]; then
-            source_type="EXTERNAL"
-        else
-            source_type="NONE"
-        fi
-        
-        case "$source_type" in
-            "UPLANET")
-                echo -e "  ${BLUE}Type:${NC} ${GREEN}✓ UPlanet Official${NC}"
-                ;;
-            "EXTERNAL")
-                echo -e "  ${BLUE}Type:${NC} ${YELLOW}⚠ External Source${NC}"
-                ;;
-            "NONE")
-                echo -e "  ${BLUE}Type:${NC} ${RED}✗ No Primal Transaction${NC}"
-                ;;
-        esac
-        
-        # Advanced primal control using primal_wallet_control.sh if available
-        if [[ -f "${MY_PATH}/primal_wallet_control.sh" ]]; then
-            echo -e "\n${BLUE}Advanced Primal Control:${NC}"
-            echo -e "  Use: ${CYAN}${MY_PATH}/primal_wallet_control.sh <dunikey> $pubkey $primal_source <email>${NC}"
-        fi
-    else
-        echo -e "${RED}Unable to fetch primal transaction info${NC}"
-        # Fallback to standard silkaj command
     silkaj money primal "$pubkey"
-    fi
     
     echo -e "\n${YELLOW}Options:${NC}"
     echo -e "  1. Follow primal chain (recursive)"
     echo -e "  2. Follow primal chain (limited to 10)"
-    echo -e "  3. Raw JSON output"
-    echo -e "  4. Test primal control (if available)"
-    echo -e "  5. Back to analysis menu"
+    echo -e "  3. Back to analysis menu"
     
-    read -p "Select option (1-5): " primal_choice
+    read -p "Select option (1-3): " primal_choice
     
     case "$primal_choice" in
         1)
-            echo -e "\n${CYAN}Following full primal chain:${NC}"
             silkaj money primal --chain "$pubkey"
             ;;
         2)
-            echo -e "\n${CYAN}Following primal chain (limit 10):${NC}"
             silkaj money primal --chain --limit 10 "$pubkey"
             ;;
         3)
-            echo -e "\n${CYAN}Raw JSON primal data:${NC}"
-            silkaj --json money primal "$pubkey" | jq '.'
-            ;;
-        4)
-            if [[ -f "${MY_PATH}/primal_wallet_control.sh" && -n "$primal_json" ]]; then
-                local primal_source=$(echo "$primal_json" | jq -r '.primal_source_pubkey // "None"')
-                echo -e "\n${CYAN}Testing primal control functionality:${NC}"
-                echo -e "${YELLOW}Note: This is a read-only test. No wallet modifications will be made.${NC}"
-                read -p "Enter player email for test: " test_email
-                if [[ -n "$test_email" ]]; then
-                    echo -e "${GREEN}Command that would be executed:${NC}"
-                    echo -e "${CYAN}${MY_PATH}/primal_wallet_control.sh <dunikey> $pubkey $primal_source $test_email${NC}"
-                    echo -e "${YELLOW}(Dunikey path required for actual execution)${NC}"
-                fi
-            else
-                echo -e "${RED}primal_wallet_control.sh not found or no primal data available${NC}"
-            fi
-            ;;
-        5)
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
             ;;
         *)
@@ -1749,108 +1646,42 @@ generate_accounting_report() {
     echo -e "${YELLOW}=====================================${NC}"
     
     echo -e "${GREEN}Generate accounting report for:${NC}"
-    echo -e "  1. Current year (JSON summary)"
-    echo -e "  2. Previous year (JSON summary)"
-    echo -e "  3. Current month (JSON summary)"
+    echo -e "  1. Current year"
+    echo -e "  2. Previous year"
+    echo -e "  3. Current month"
     echo -e "  4. Custom period"
-    echo -e "  5. Full JSON export"
-    echo -e "  6. Back to analysis menu"
+    echo -e "  5. Back to analysis menu"
     
-    read -p "Select option (1-6): " report_choice
+    read -p "Select option (1-5): " report_choice
     
     case "$report_choice" in
         1)
             current_year=$(date +%Y)
             echo -e "${GREEN}Generating report for year $current_year...${NC}"
-            generate_period_summary "$pubkey" "$current_year"
+            silkaj money history --compta "$current_year" "$pubkey"
             ;;
         2)
             prev_year=$(( $(date +%Y) - 1 ))
             echo -e "${GREEN}Generating report for year $prev_year...${NC}"
-            generate_period_summary "$pubkey" "$prev_year"
+            silkaj money history --compta "$prev_year" "$pubkey"
             ;;
         3)
             current_month=$(date +%m-%Y)
             echo -e "${GREEN}Generating report for month $current_month...${NC}"
-            generate_period_summary "$pubkey" "$current_month"
+            silkaj money history --compta "$current_month" "$pubkey"
             ;;
         4)
             read -p "Enter period (e.g., '2024' for year, '03-2024' for month): " custom_period
             echo -e "${GREEN}Generating report for period $custom_period...${NC}"
-            generate_period_summary "$pubkey" "$custom_period"
+            silkaj money history --compta "$custom_period" "$pubkey"
             ;;
         5)
-            echo -e "${GREEN}Full JSON export:${NC}"
-            local json_result=$(silkaj --json money history "$pubkey" 2>/dev/null)
-            if [[ -n "$json_result" ]]; then
-                echo "$json_result" | jq '{
-                    pubkey: .pubkey,
-                    user: .user,
-                    current_balance: .current_balance,
-                    current_balance_ud: .current_balance_ud,
-                    currency: .currency,
-                    total_transactions: (.history | length),
-                    total_received: [.history[] | select(.["Amounts Ğ1"] > 0) | .["Amounts Ğ1"]] | add,
-                    total_sent: [.history[] | select(.["Amounts Ğ1"] < 0) | .["Amounts Ğ1"]] | add,
-                    net_change: [.history[] | .["Amounts Ğ1"]] | add
-                }'
-            else
-                echo -e "${RED}Unable to fetch transaction data${NC}"
-            fi
-            ;;
-        6)
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
             ;;
         *)
             echo -e "${RED}Invalid selection.${NC}"
             ;;
     esac
-}
-
-# Function to generate period summary from JSON
-generate_period_summary() {
-    local pubkey="$1"
-    local period="$2"
-    
-    local json_result=$(silkaj --json money history "$pubkey" 2>/dev/null)
-    if [[ -n "$json_result" ]]; then
-        echo -e "\n${BLUE}📊 SUMMARY FOR PERIOD: $period${NC}"
-        echo -e "${YELLOW}$(printf '%.0s-' {1..50})${NC}"
-        
-        # Extract current balance and user info
-        local current_balance=$(echo "$json_result" | jq -r '.current_balance')
-        local current_balance_ud=$(echo "$json_result" | jq -r '.current_balance_ud // 0')
-        local user=$(echo "$json_result" | jq -r '.user // "Unknown"')
-        
-        echo -e "${BLUE}User:${NC} $user"
-        echo -e "${BLUE}Current Balance:${NC} ${YELLOW}$current_balance Ğ1${NC} (${CYAN}$current_balance_ud UDĞ1${NC})"
-        
-        # Filter transactions by period and calculate summaries
-        echo "$json_result" | jq --arg period "$period" '
-            .history 
-            | map(select(.Date | startswith($period)))
-            | {
-                period: $period,
-                transaction_count: length,
-                total_received: [.[] | select(.["Amounts Ğ1"] > 0) | .["Amounts Ğ1"]] | add // 0,
-                total_sent: [.[] | select(.["Amounts Ğ1"] < 0) | .["Amounts Ğ1"]] | add // 0,
-                total_received_ud: [.[] | select(.["Amounts UDĞ1"] > 0) | .["Amounts UDĞ1"]] | add // 0,
-                total_sent_ud: [.[] | select(.["Amounts UDĞ1"] < 0) | .["Amounts UDĞ1"]] | add // 0,
-                net_change: ([.[] | .["Amounts Ğ1"]] | add // 0),
-                net_change_ud: ([.[] | .["Amounts UDĞ1"]] | add // 0),
-                first_transaction: (.[0].Date // "N/A"),
-                last_transaction: (.[-1].Date // "N/A")
-            }' | jq -r '
-            "Transaction Count: \(.transaction_count)",
-            "Total Received: +\(.total_received) Ğ1 (+\(.total_received_ud) UDĞ1)",
-            "Total Sent: \(.total_sent) Ğ1 (\(.total_sent_ud) UDĞ1)", 
-            "Net Change: \(.net_change) Ğ1 (\(.net_change_ud) UDĞ1)",
-            "Period: \(.first_transaction) to \(.last_transaction)"'
-    else
-        echo -e "${RED}Unable to fetch transaction data${NC}"
-        # Fallback to standard silkaj command
-        silkaj money history --compta "$period" "$pubkey"
-    fi
 }
 
 # Function to search primal chain
@@ -1908,40 +1739,15 @@ export_history_csv() {
     
     echo -e "${GREEN}Exporting transaction history to: ${CYAN}$filename${NC}"
     
-    # Export to CSV using JSON data
-    local json_result=$(silkaj --json money history --full-pubkey "$pubkey" 2>/dev/null)
-    if [[ -n "$json_result" ]]; then
-        # Create CSV header
-        echo "Date,Issuers/Recipients,Amount_G1,Amount_UDG1,Reference" > "$filename"
-        
-        # Convert JSON to CSV
-        echo "$json_result" | jq -r '.history[] | [.Date, .["Issuers/Recipients"], .["Amounts Ğ1"], .["Amounts UDĞ1"], .Reference] | @csv' >> "$filename"
+    # Export to CSV
+    silkaj money history --csv-file "$filename" "$pubkey"
     
     if [[ -f "$filename" ]]; then
         echo -e "${GREEN}✅ Export successful!${NC}"
         echo -e "${GREEN}File: ${CYAN}$filename${NC}"
         echo -e "${GREEN}Size: ${CYAN}$(du -h "$filename" | cut -f1)${NC}"
-            
-            # Show first few lines as preview
-            echo -e "\n${BLUE}Preview (first 5 lines):${NC}"
-            head -6 "$filename"
     else
         echo -e "${RED}❌ Export failed.${NC}"
-        fi
-    else
-        echo -e "${RED}❌ Unable to fetch transaction data${NC}"
-        # Fallback to standard silkaj command if available
-        if command -v "silkaj" >/dev/null 2>&1; then
-            echo -e "${YELLOW}Trying fallback method...${NC}"
-            silkaj money history --csv-file "$filename" "$pubkey" 2>/dev/null
-            if [[ -f "$filename" ]]; then
-                echo -e "${GREEN}✅ Fallback export successful!${NC}"
-                echo -e "${GREEN}File: ${CYAN}$filename${NC}"
-                echo -e "${GREEN}Size: ${CYAN}$(du -h "$filename" | cut -f1)${NC}"
-            else
-                echo -e "${RED}❌ All export methods failed.${NC}"
-            fi
-        fi
     fi
 }
 
@@ -1968,6 +1774,48 @@ handle_social_capital() {
     fi
 }
 
+# Function to get or create system wallet key  
+get_system_wallet_key() {
+    local wallet_type="$1"
+    local wallet_name="$2"
+    
+    # Create the public key cache file path based on wallet type
+    local pubkey_file=""
+    case "$wallet_type" in
+        "UPLANETNAME.G1")
+            pubkey_file="$HOME/.zen/tmp/UPLANETNAME_G1"
+            ;;
+        "UPLANETNAME")
+            pubkey_file="$HOME/.zen/tmp/UPLANETG1PUB"
+            ;;
+        "UPLANETNAME.SOCIETY")
+            pubkey_file="$HOME/.zen/tmp/UPLANETNAME_SOCIETY"
+            ;;
+    esac
+    
+    # Check if public key file exists
+    if [[ -f "$pubkey_file" ]]; then
+        local existing_pubkey=$(cat "$pubkey_file" 2>/dev/null)
+        if is_valid_public_key "$existing_pubkey"; then
+            return 0  # Already initialized
+        fi
+    fi
+    
+    # Generate new key and extract public key
+    local temp_dunikey="/tmp/${wallet_type}_temp.dunikey"
+    ${MY_PATH}/keygen -t duniter -o "$temp_dunikey" "$wallet_name" "$wallet_name"
+    
+    if [[ -f "$temp_dunikey" ]]; then
+        # Extract public key from dunikey file
+        local pubkey=$(grep "pub:" "$temp_dunikey" | cut -d ' ' -f 2)
+        if is_valid_public_key "$pubkey"; then
+            echo "$pubkey" > "$pubkey_file"
+            echo -e "${GREEN}✓ Created $wallet_type public key cache${NC}"
+        fi
+        rm -f "$temp_dunikey"
+    fi
+}
+
 # Function to initialize system wallets
 initialize_system_wallets() {
     echo -e "${YELLOW}Initializing system wallets...${NC}"
@@ -1991,55 +1839,59 @@ get_user_payment_status() {
     local status_info=""
     local next_payment_date=""
     local days_until_payment=""
-    local user_type=""
     
-    # Determine user type: ZenCard (players) or MULTIPASS (nostr) or both
-    local has_zencard=false
-    local has_multipass=false
+    # Check if user is sociétaire (check both players and nostr directories)
+    local is_societaire=false
+    local society_date=""
     
-    if [[ -d ~/.zen/game/players/${user_email} && -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
-        has_zencard=true
+    # Check if captain
+    if [[ "${user_email}" == "${CAPTAINEMAIL}" ]]; then
+        is_societaire=true
+        status_info="${GREEN}✓ Sociétaire (Capitaine)${NC}"
+        next_payment_date="PERMANENT"
+        days_until_payment="∞"
+    # Check U.SOCIETY file in players directory
+    elif [[ -s ~/.zen/game/players/${user_email}/U.SOCIETY ]]; then
+        is_societaire=true
+        society_date=$(cat ~/.zen/game/players/${user_email}/U.SOCIETY 2>/dev/null)
+    # Check U.SOCIETY file in nostr directory
+    elif [[ -s ~/.zen/game/nostr/${user_email}/U.SOCIETY ]]; then
+        is_societaire=true
+        society_date=$(cat ~/.zen/game/nostr/${user_email}/U.SOCIETY 2>/dev/null)
     fi
     
-    if [[ -d ~/.zen/game/nostr/${user_email} && -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
-        has_multipass=true
-    fi
-    
-    # Check if user is sociétaire (ZenCard with U.SOCIETY file or Captain)
-    if [[ "$has_zencard" == "true" ]] && ([[ -s ~/.zen/game/players/${user_email}/U.SOCIETY ]] || [[ "${user_email}" == "${CAPTAINEMAIL}" ]]); then
-        local society_date=$(cat ~/.zen/game/players/${user_email}/U.SOCIETY 2>/dev/null)
-        if [[ -n "$society_date" ]]; then
-            # Calculate expiration date (1 year from society date)
-            local society_seconds=$(date -d "$society_date" +%s 2>/dev/null || echo "0")
-            local expiry_seconds=$((society_seconds + 365*24*3600))
-            local expiry_date=$(date -d "@$expiry_seconds" +%Y%m%d%H%M%S 2>/dev/null || echo "")
-            local current_seconds=$(date +%s)
-            local days_left=$(( (expiry_seconds - current_seconds) / 86400 ))
-            
-            if [[ $days_left -gt 0 ]]; then
-                status_info="${GREEN}✓ Sociétaire ZenCard (${days_left}j restants)${NC}"
-                next_payment_date="$expiry_date"
-                days_until_payment="$days_left"
-            else
-                status_info="${RED}✗ Sociétaire ZenCard expiré${NC}"
-                next_payment_date="EXPIRED"
-                days_until_payment="0"
-            fi
+    if [[ "$is_societaire" == true && -n "$society_date" ]]; then
+        # Calculate expiration date (1 year from society date)
+        local society_seconds=$(date -d "$society_date" +%s 2>/dev/null || echo "0")
+        local expiry_seconds=$((society_seconds + 365*24*3600))
+        local expiry_date=$(date -d "@$expiry_seconds" +%Y%m%d%H%M%S 2>/dev/null || echo "")
+        local current_seconds=$(date +%s)
+        local days_left=$(( (expiry_seconds - current_seconds) / 86400 ))
+        
+        if [[ $days_left -gt 0 ]]; then
+            status_info="${GREEN}✓ Sociétaire (${days_left}j restants)${NC}"
+            next_payment_date="$expiry_date"
+            days_until_payment="$days_left"
         else
-            status_info="${GREEN}✓ Sociétaire Capitaine${NC}"
-            next_payment_date="PERMANENT"
-            days_until_payment="∞"
+            status_info="${RED}✗ Sociétaire expiré${NC}"
+            next_payment_date="EXPIRED"
+            days_until_payment="0"
         fi
-    elif [[ "$has_zencard" == "true" ]]; then
-        # ZenCard locataire - calculate next weekly payment (4 Ẑen)
+    elif [[ "$is_societaire" == false ]]; then
+        # Locataire - look for birthdate in multiple locations
         local birthdate=""
-        # Try multiple sources for birthdate
+        
+        # Try ZenCard birthdate first (TODATE in players)
         if [[ -s ~/.zen/game/players/${user_email}/TODATE ]]; then
-            birthdate=$(cat ~/.zen/game/players/${user_email}/TODATE)
+            birthdate=$(cat ~/.zen/game/players/${user_email}/TODATE 2>/dev/null)
+        # Try MULTIPASS birthdate (TODATE in nostr)
         elif [[ -s ~/.zen/game/nostr/${user_email}/TODATE ]]; then
-            birthdate=$(cat ~/.zen/game/nostr/${user_email}/TODATE)
+            birthdate=$(cat ~/.zen/game/nostr/${user_email}/TODATE 2>/dev/null)
+        # Try .birthdate file
+        elif [[ -s ~/.zen/game/players/${user_email}/.birthdate ]]; then
+            birthdate=$(cat ~/.zen/game/players/${user_email}/.birthdate 2>/dev/null)
         elif [[ -s ~/.zen/game/nostr/${user_email}/.birthdate ]]; then
-            birthdate=$(cat ~/.zen/game/nostr/${user_email}/.birthdate)
+            birthdate=$(cat ~/.zen/game/nostr/${user_email}/.birthdate 2>/dev/null)
         fi
         
         if [[ -n "$birthdate" ]]; then
@@ -2055,70 +1907,48 @@ get_user_payment_status() {
             local next_payment_seconds=$((todate_seconds + days_until_next * 86400))
             next_payment_date=$(date -d "@$next_payment_seconds" +%Y%m%d%H%M%S 2>/dev/null || echo "")
             
+            # Determine wallet type for better status display
+            local wallet_type=""
+            if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+                wallet_type="ZenCard"
+            elif [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+                wallet_type="MULTIPASS"
+            fi
+            
             if [[ $days_until_next -eq 0 ]]; then
-                status_info="${YELLOW}⚠ Locataire ZenCard (Paiement DÛ)${NC}"
+                status_info="${YELLOW}⚠ Locataire $wallet_type (Paiement DÛ)${NC}"
             else
-                status_info="${YELLOW}⚠ Locataire ZenCard (${days_until_next}j)${NC}"
+                status_info="${YELLOW}⚠ Locataire $wallet_type (${days_until_next}j)${NC}"
             fi
             days_until_payment="$days_until_next"
         else
-            # Get wallet balance to check if active
-            local g1pub=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
-            local balance=$(get_wallet_balance "$g1pub" false)  # Don't auto-refresh for performance
-            if [[ -n "$balance" && $(echo "$balance > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
-                status_info="${YELLOW}⚠ Locataire ZenCard (Actif, ${balance} Ğ1)${NC}"
+            # No birthdate found - check if user has wallets at all
+            local has_zencard=false
+            local has_multipass=false
+            
+            if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+                has_zencard=true
+            fi
+            if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+                has_multipass=true
+            fi
+            
+            if [[ "$has_zencard" == true || "$has_multipass" == true ]]; then
+                local wallet_info=""
+                if [[ "$has_zencard" == true && "$has_multipass" == true ]]; then
+                    wallet_info="ZenCard+MULTIPASS"
+                elif [[ "$has_zencard" == true ]]; then
+                    wallet_info="ZenCard"
+                else
+                    wallet_info="MULTIPASS"
+                fi
+                status_info="${ORANGE}⚠ $wallet_info (Date d'inscription manquante)${NC}"
             else
-                status_info="${RED}✗ ZenCard (Inactif ou vide)${NC}"
+                status_info="${RED}✗ Aucun portefeuille trouvé${NC}"
             fi
             next_payment_date="UNKNOWN"
             days_until_payment="?"
         fi
-    elif [[ "$has_multipass" == "true" ]]; then
-        # MULTIPASS only - calculate next weekly payment (1 Ẑen)
-        local birthdate=""
-        # Try multiple sources for birthdate
-        if [[ -s ~/.zen/game/nostr/${user_email}/TODATE ]]; then
-            birthdate=$(cat ~/.zen/game/nostr/${user_email}/TODATE)
-        elif [[ -s ~/.zen/game/nostr/${user_email}/.birthdate ]]; then
-            birthdate=$(cat ~/.zen/game/nostr/${user_email}/.birthdate)
-        fi
-        
-        if [[ -n "$birthdate" ]]; then
-            local todate_seconds=$(date +%s)
-            local birthdate_seconds=$(date -d "$birthdate" +%s 2>/dev/null || echo "$todate_seconds")
-            local diff_days=$(( (todate_seconds - birthdate_seconds) / 86400 ))
-            local days_until_next=$(( 7 - (diff_days % 7) ))
-            
-            if [[ $days_until_next -eq 7 ]]; then
-                days_until_next=0  # Payment due today
-            fi
-            
-            local next_payment_seconds=$((todate_seconds + days_until_next * 86400))
-            next_payment_date=$(date -d "@$next_payment_seconds" +%Y%m%d%H%M%S 2>/dev/null || echo "")
-            
-            if [[ $days_until_next -eq 0 ]]; then
-                status_info="${CYAN}⚠ MULTIPASS (Paiement DÛ)${NC}"
-            else
-                status_info="${CYAN}⚠ MULTIPASS (${days_until_next}j)${NC}"
-            fi
-            days_until_payment="$days_until_next"
-        else
-            # Get wallet balance to check if active
-            local g1pub=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
-            local balance=$(get_wallet_balance "$g1pub" false)  # Don't auto-refresh for performance
-            if [[ -n "$balance" && $(echo "$balance > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
-                status_info="${CYAN}⚠ MULTIPASS (Actif, ${balance} Ğ1)${NC}"
-            else
-                status_info="${RED}✗ MULTIPASS (Inactif ou vide)${NC}"
-            fi
-            next_payment_date="UNKNOWN"
-            days_until_payment="?"
-        fi
-    else
-        # No valid wallet found
-        status_info="${RED}✗ Aucun portefeuille valide${NC}"
-        next_payment_date="NONE"
-        days_until_payment="N/A"
     fi
     
     echo "$status_info|$next_payment_date|$days_until_payment"
@@ -2131,127 +1961,139 @@ display_users_summary() {
     
     local total_users=0
     local societaires=0
-    local zencard_locataires=0
-    local multipass_only=0
+    local locataires=0
     local payments_due=0
     local total_weekly_income=0
-    local inactive_users=0
+    local processed_users=()
+    
+    # Header
+    printf "${BLUE}%-30s %-35s %-20s %-12s${NC}\n" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "MONTANT"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..90})${NC}"
     
     # Collect all unique users from both directories
     local all_users=()
     
-    # Add ZenCard users
-    for player_dir in ~/.zen/game/players/*@*.*/; do
-        if [[ -d "$player_dir" ]]; then
-            local player_name=$(basename "$player_dir")
-            if [[ "$player_name" == *"@"* ]]; then
-                all_users+=("$player_name")
-            fi
-        fi
-    done
-    
-    # Add MULTIPASS-only users (not already in ZenCard)
-    for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
-        if [[ -d "$nostr_dir" ]]; then
-            local player_name=$(basename "$nostr_dir")
-            if [[ "$player_name" == *"@"* ]]; then
-                # Check if not already in all_users
-                local found=false
-                for existing_user in "${all_users[@]}"; do
-                    if [[ "$existing_user" == "$player_name" ]]; then
-                        found=true
-                        break
-                    fi
-                done
-                if [[ "$found" == "false" ]]; then
+    # Add users from players directory (ZenCard)
+    if [[ -d ~/.zen/game/players ]]; then
+        for player_dir in ~/.zen/game/players/*@*.*/; do
+            if [[ -d "$player_dir" ]]; then
+                local player_name=$(basename "$player_dir")
+                if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
                     all_users+=("$player_name")
                 fi
             fi
-        fi
-    done
+        done
+    fi
     
-    # Header
-    printf "${BLUE}%-30s %-25s %-20s %-12s${NC}\n" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "MONTANT"
-    echo -e "${YELLOW}$(printf '%.0s-' {1..90})${NC}"
-    
-    # Process all users
-    for player_name in "${all_users[@]}"; do
-        ((total_users++))
-        
-        # Get payment status
-        local payment_info=$(get_user_payment_status "$player_name")
-        local status=$(echo "$payment_info" | cut -d '|' -f 1)
-        local next_date=$(echo "$payment_info" | cut -d '|' -f 2)
-        local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
-        
-        # Format next payment date
-        local formatted_date=""
-        local amount_info=""
-        
-        if [[ "$next_date" == "PERMANENT" ]]; then
-            formatted_date="${GREEN}Permanent${NC}"
-            amount_info="${GREEN}0 Ẑen${NC}"
-        elif [[ "$next_date" == "EXPIRED" ]]; then
-            formatted_date="${RED}Expiré${NC}"
-            amount_info="${RED}Renouveler${NC}"
-        elif [[ "$next_date" == "UNKNOWN" || "$next_date" == "NONE" ]]; then
-            formatted_date="${RED}Inconnu${NC}"
-            amount_info="${RED}?${NC}"
-            ((inactive_users++))
-        else
-            # Format date as DD/MM/YYYY
-            local year=${next_date:0:4}
-            local month=${next_date:4:2}
-            local day=${next_date:6:2}
-            formatted_date="$day/$month/$year"
-            
-            # Determine amount and category based on status
-            if [[ "$status" == *"Sociétaire"* ]]; then
-                ((societaires++))
-                if [[ "$status" == *"expiré"* ]]; then
-                    amount_info="${YELLOW}50-540 Ẑen${NC}"
-                else
-                    amount_info="${GREEN}0 Ẑen${NC}"
+    # Add users from nostr directory (MULTIPASS) if not already in list
+    if [[ -d ~/.zen/game/nostr ]]; then
+        for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+            if [[ -d "$nostr_dir" ]]; then
+                local nostr_name=$(basename "$nostr_dir")
+                if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    # Check if user not already in list
+                    local found=false
+                    for existing_user in "${all_users[@]}"; do
+                        if [[ "$existing_user" == "$nostr_name" ]]; then
+                            found=true
+                            break
+                        fi
+                    done
+                    if [[ "$found" == false ]]; then
+                        all_users+=("$nostr_name")
+                    fi
                 fi
-            elif [[ "$status" == *"ZenCard"* ]]; then
-                ((zencard_locataires++))
-                amount_info="${YELLOW}4 Ẑen${NC}"
-                total_weekly_income=$((total_weekly_income + 4))
-                
-                if [[ "$days_until" == "0" ]]; then
-                    ((payments_due++))
-                    formatted_date="${RED}$formatted_date (DÛ!)${NC}"
-                elif [[ "$days_until" -le "2" ]]; then
-                    formatted_date="${YELLOW}$formatted_date${NC}"
-                else
-                    formatted_date="${GREEN}$formatted_date${NC}"
-                fi
-            elif [[ "$status" == *"MULTIPASS"* ]]; then
-                ((multipass_only++))
-                amount_info="${CYAN}1 Ẑen${NC}"
-                total_weekly_income=$((total_weekly_income + 1))
-                
-                if [[ "$days_until" == "0" ]]; then
-                    ((payments_due++))
-                    formatted_date="${RED}$formatted_date (DÛ!)${NC}"
-                elif [[ "$days_until" -le "2" ]]; then
-                    formatted_date="${YELLOW}$formatted_date${NC}"
-                else
-                    formatted_date="${GREEN}$formatted_date${NC}"
-                fi
-            else
-                # Inactive or unknown status
-                amount_info="${RED}N/A${NC}"
-                ((inactive_users++))
             fi
+        done
+    fi
+    
+    # Process each unique user
+    for user_email in "${all_users[@]}"; do
+        # Check if user has any wallet
+        local has_zencard=false
+        local has_multipass=false
+        
+        if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
+            has_zencard=true
+        fi
+        if [[ -s ~/.zen/game/nostr/${user_email}/G1PUBNOSTR ]]; then
+            has_multipass=true
         fi
         
-        # Display user info
-        printf "%-40s %-35s %-30s %-15s\n" \
-            "${GREEN}$player_name${NC}" \
-            "$status" \
-            "$formatted_date" \
-            "$amount_info"
+        # Only process users with at least one wallet
+        if [[ "$has_zencard" == true || "$has_multipass" == true ]]; then
+            ((total_users++))
+            
+            # Get payment status
+            local payment_info=$(get_user_payment_status "$user_email")
+            local status=$(echo "$payment_info" | cut -d '|' -f 1)
+            local next_date=$(echo "$payment_info" | cut -d '|' -f 2)
+            local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
+            
+            # Format next payment date
+            local formatted_date=""
+            local amount_info=""
+            if [[ "$next_date" == "PERMANENT" ]]; then
+                formatted_date="${GREEN}Permanent${NC}"
+                amount_info="${GREEN}0 Ẑen${NC}"
+            elif [[ "$next_date" == "EXPIRED" ]]; then
+                formatted_date="${RED}Expiré${NC}"
+                amount_info="${RED}Renouveler${NC}"
+            elif [[ "$next_date" == "UNKNOWN" ]]; then
+                formatted_date="${ORANGE}À configurer${NC}"
+                amount_info="${ORANGE}?${NC}"
+            else
+                # Format date as DD/MM/YYYY
+                local year=${next_date:0:4}
+                local month=${next_date:4:2}
+                local day=${next_date:6:2}
+                formatted_date="$day/$month/$year"
+                
+                # Determine amount based on status
+                if [[ "$status" == *"Sociétaire"* ]]; then
+                    ((societaires++))
+                    if [[ "$status" == *"expiré"* ]]; then
+                        amount_info="${YELLOW}50-540 Ẑen${NC}"
+                    else
+                        amount_info="${GREEN}0 Ẑen${NC}"
+                    fi
+                else
+                    ((locataires++))
+                    # Different amounts for different wallet types
+                    if [[ "$status" == *"ZenCard"* ]]; then
+                        amount_info="${YELLOW}4 Ẑen${NC}"
+                        total_weekly_income=$((total_weekly_income + 4))
+                    elif [[ "$status" == *"MULTIPASS"* ]]; then
+                        amount_info="${YELLOW}1 Ẑen${NC}"
+                        total_weekly_income=$((total_weekly_income + 1))
+                    else
+                        amount_info="${YELLOW}1-4 Ẑen${NC}"
+                        total_weekly_income=$((total_weekly_income + 2))  # Average
+                    fi
+                    
+                    if [[ "$days_until" == "0" ]]; then
+                        ((payments_due++))
+                        formatted_date="${RED}$formatted_date (DÛ!)${NC}"
+                    elif [[ "$days_until" -le "2" ]] && [[ "$days_until" != "?" ]]; then
+                        formatted_date="${YELLOW}$formatted_date${NC}"
+                    elif [[ "$days_until" != "?" ]]; then
+                        formatted_date="${GREEN}$formatted_date${NC}"
+                    fi
+                fi
+            fi
+            
+            # Clean status for display (remove color codes for printf)
+            local clean_status=$(echo "$status" | sed 's/\x1b\[[0-9;]*m//g')
+            local clean_formatted_date=$(echo "$formatted_date" | sed 's/\x1b\[[0-9;]*m//g')
+            local clean_amount_info=$(echo "$amount_info" | sed 's/\x1b\[[0-9;]*m//g')
+            
+            # Display user info with proper formatting
+            printf "%-30s %-35s %-20s %-12s\n" \
+                "$user_email" \
+                "$clean_status" \
+                "$clean_formatted_date" \
+                "$clean_amount_info"
+        fi
     done
     
     # Summary statistics
@@ -2259,183 +2101,11 @@ display_users_summary() {
     echo -e "${BLUE}STATISTIQUES:${NC}"
     echo -e "  • Total utilisateurs: ${CYAN}$total_users${NC}"
     echo -e "  • Sociétaires: ${GREEN}$societaires${NC}"
-    echo -e "  • Locataires ZenCard: ${YELLOW}$zencard_locataires${NC}"
-    echo -e "  • MULTIPASS seuls: ${CYAN}$multipass_only${NC}"
-    echo -e "  • Comptes inactifs: ${RED}$inactive_users${NC}"
+    echo -e "  • Locataires: ${YELLOW}$locataires${NC}"
     echo -e "  • Paiements dus: ${RED}$payments_due${NC}"
-    echo -e "  • Revenus hebdomadaires: ${CYAN}$total_weekly_income Ẑen${NC} (${YELLOW}$(echo "scale=1; $total_weekly_income / 10" | bc) Ğ1${NC})"
+    echo -e "  • Revenus hebdomadaires estimés: ${CYAN}$total_weekly_income Ẑen${NC} (${YELLOW}$(echo "scale=1; $total_weekly_income / 10" | bc) Ğ1${NC})"
     
     return $payments_due
-}
-
-# Function to diagnose user account issues
-diagnose_user_issues() {
-    echo -e "\n${CYAN}🔍 DIAGNOSTIC DES COMPTES UTILISATEURS${NC}"
-    echo -e "${YELLOW}====================================${NC}"
-    
-    local issues_found=0
-    
-    # Check ZenCard users
-    echo -e "\n${BLUE}📊 DIAGNOSTIC ZENCARD:${NC}"
-    for player_dir in ~/.zen/game/players/*@*.*/; do
-        if [[ -d "$player_dir" ]]; then
-            local player_name=$(basename "$player_dir")
-            echo -e "\n${GREEN}Utilisateur: $player_name${NC}"
-            
-            # Check essential files
-            local g1pub_file="${player_dir}.g1pub"
-            local todate_file="${player_dir}TODATE"
-            local society_file="${player_dir}U.SOCIETY"
-            
-            if [[ -s "$g1pub_file" ]]; then
-                local g1pub=$(cat "$g1pub_file")
-                echo -e "  ✓ G1PUB: ${CYAN}$g1pub${NC}"
-                
-                # Check balance
-                local balance=$(get_wallet_balance "$g1pub" false)
-                echo -e "  ✓ Balance: ${YELLOW}$balance Ğ1${NC}"
-            else
-                echo -e "  ${RED}✗ Fichier .g1pub manquant ou vide${NC}"
-                ((issues_found++))
-            fi
-            
-            if [[ -s "$todate_file" ]]; then
-                local todate=$(cat "$todate_file")
-                echo -e "  ✓ TODATE: $todate"
-            else
-                echo -e "  ${RED}✗ Fichier TODATE manquant${NC}"
-                # Try to find it in NOSTR directory
-                if [[ -s ~/.zen/game/nostr/${player_name}/TODATE ]]; then
-                    local nostr_todate=$(cat ~/.zen/game/nostr/${player_name}/TODATE)
-                    echo -e "  ${YELLOW}⚠ TODATE trouvé dans NOSTR: $nostr_todate${NC}"
-                    echo -e "  ${CYAN}💡 Suggestion: Copier TODATE depuis NOSTR vers ZenCard${NC}"
-                elif [[ -s ~/.zen/game/nostr/${player_name}/.birthdate ]]; then
-                    local birthdate=$(cat ~/.zen/game/nostr/${player_name}/.birthdate)
-                    echo -e "  ${YELLOW}⚠ .birthdate trouvé dans NOSTR: $birthdate${NC}"
-                    echo -e "  ${CYAN}💡 Suggestion: Utiliser .birthdate comme TODATE${NC}"
-                else
-                    echo -e "  ${RED}✗ Aucune date de naissance trouvée${NC}"
-                    ((issues_found++))
-                fi
-            fi
-            
-            if [[ -s "$society_file" ]]; then
-                local society_date=$(cat "$society_file")
-                echo -e "  ✓ Sociétaire depuis: $society_date"
-            else
-                echo -e "  ${YELLOW}⚠ Locataire (pas de fichier U.SOCIETY)${NC}"
-            fi
-        fi
-    done
-    
-    # Check MULTIPASS users
-    echo -e "\n${BLUE}📱 DIAGNOSTIC MULTIPASS:${NC}"
-    for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
-        if [[ -d "$nostr_dir" ]]; then
-            local player_name=$(basename "$nostr_dir")
-            
-            # Skip if already has ZenCard (already diagnosed above)
-            if [[ -d ~/.zen/game/players/${player_name} ]]; then
-                continue
-            fi
-            
-            echo -e "\n${GREEN}Utilisateur MULTIPASS: $player_name${NC}"
-            
-            # Check essential files
-            local g1pub_file="${nostr_dir}/G1PUBNOSTR"
-            local todate_file="${nostr_dir}/TODATE"
-            local birthdate_file="${nostr_dir}/.birthdate"
-            
-            if [[ -s "$g1pub_file" ]]; then
-                local g1pub=$(cat "$g1pub_file")
-                echo -e "  ✓ G1PUBNOSTR: ${CYAN}$g1pub${NC}"
-                
-                # Check balance
-                local balance=$(get_wallet_balance "$g1pub" false)
-                echo -e "  ✓ Balance: ${YELLOW}$balance Ğ1${NC}"
-            else
-                echo -e "  ${RED}✗ Fichier G1PUBNOSTR manquant ou vide${NC}"
-                ((issues_found++))
-            fi
-            
-            if [[ -s "$todate_file" ]]; then
-                local todate=$(cat "$todate_file")
-                echo -e "  ✓ TODATE: $todate"
-            elif [[ -s "$birthdate_file" ]]; then
-                local birthdate=$(cat "$birthdate_file")
-                echo -e "  ${YELLOW}⚠ .birthdate: $birthdate${NC}"
-                echo -e "  ${CYAN}💡 Suggestion: Créer TODATE depuis .birthdate${NC}"
-            else
-                echo -e "  ${RED}✗ Aucune date de naissance trouvée${NC}"
-                ((issues_found++))
-            fi
-        fi
-    done
-    
-    # Summary
-    echo -e "\n${CYAN}📋 RÉSUMÉ DU DIAGNOSTIC:${NC}"
-    if [[ $issues_found -eq 0 ]]; then
-        echo -e "${GREEN}✅ Aucun problème critique détecté${NC}"
-    else
-        echo -e "${RED}⚠ $issues_found problème(s) détecté(s)${NC}"
-        echo -e "\n${YELLOW}ACTIONS RECOMMANDÉES:${NC}"
-        echo -e "  1. Vérifier les fichiers TODATE manquants"
-        echo -e "  2. Copier les dates depuis les répertoires NOSTR si nécessaire"
-        echo -e "  3. Vérifier les soldes des portefeuilles vides"
-        echo -e "  4. Relancer les scripts de rafraîchissement"
-    fi
-}
-
-# Function to fix common user issues
-fix_user_issues() {
-    echo -e "\n${CYAN}🔧 RÉPARATION AUTOMATIQUE${NC}"
-    echo -e "${YELLOW}========================${NC}"
-    
-    local fixes_applied=0
-    
-    # Fix missing TODATE files in ZenCard from NOSTR data
-    for player_dir in ~/.zen/game/players/*@*.*/; do
-        if [[ -d "$player_dir" ]]; then
-            local player_name=$(basename "$player_dir")
-            local todate_file="${player_dir}TODATE"
-            
-            if [[ ! -s "$todate_file" ]]; then
-                # Try to copy from NOSTR
-                if [[ -s ~/.zen/game/nostr/${player_name}/TODATE ]]; then
-                    cp ~/.zen/game/nostr/${player_name}/TODATE "$todate_file"
-                    echo -e "${GREEN}✓ TODATE copié pour $player_name${NC}"
-                    ((fixes_applied++))
-                elif [[ -s ~/.zen/game/nostr/${player_name}/.birthdate ]]; then
-                    cp ~/.zen/game/nostr/${player_name}/.birthdate "$todate_file"
-                    echo -e "${GREEN}✓ TODATE créé depuis .birthdate pour $player_name${NC}"
-                    ((fixes_applied++))
-                fi
-            fi
-        fi
-    done
-    
-    # Fix missing TODATE files in NOSTR from .birthdate
-    for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
-        if [[ -d "$nostr_dir" ]]; then
-            local player_name=$(basename "$nostr_dir")
-            local todate_file="${nostr_dir}/TODATE"
-            local birthdate_file="${nostr_dir}/.birthdate"
-            
-            if [[ ! -s "$todate_file" ]] && [[ -s "$birthdate_file" ]]; then
-                cp "$birthdate_file" "$todate_file"
-                echo -e "${GREEN}✓ TODATE créé depuis .birthdate pour MULTIPASS $player_name${NC}"
-                ((fixes_applied++))
-            fi
-        fi
-    done
-    
-    echo -e "\n${CYAN}📋 RÉSUMÉ DES RÉPARATIONS:${NC}"
-    if [[ $fixes_applied -eq 0 ]]; then
-        echo -e "${YELLOW}Aucune réparation automatique nécessaire${NC}"
-    else
-        echo -e "${GREEN}✅ $fixes_applied réparation(s) appliquée(s)${NC}"
-        echo -e "${CYAN}💡 Relancez zen.sh pour voir les améliorations${NC}"
-    fi
 }
 
 # Function to handle OpenCollective reporting
@@ -2443,7 +2113,7 @@ handle_opencollective_reporting() {
     echo -e "\n${CYAN}💰 REPORTING OPENCOLLECTIVE${NC}"
     echo -e "${YELLOW}===========================${NC}"
     echo -e "${GREEN}Reporter les paiements reçus vers OpenCollective UPlanet${NC}"
-    echo -e "${BLUE}URL: https://opencollective.com/uplanet-zero${NC}"
+    echo -e "${BLUE}URL: https://opencollective.com/uplanet-zeropar${NC}"
     
     # Display current pending payments
     echo -e "\n${CYAN}📋 PAIEMENTS EN ATTENTE DE REPORT:${NC}"
@@ -2491,7 +2161,7 @@ handle_opencollective_reporting() {
     
     if [[ $total_to_report -gt 0 ]]; then
         echo -e "\n${BLUE}ÉTAPES POUR REPORTER SUR OPENCOLLECTIVE:${NC}"
-        echo -e "  1. ${YELLOW}Ouvrir: https://opencollective.com/uplanet-zero${NC}"
+        echo -e "  1. ${YELLOW}Ouvrir: https://opencollective.com/uplanet-zeropar${NC}"
         echo -e "  2. ${YELLOW}Se connecter avec le compte administrateur${NC}"
         echo -e "  3. ${YELLOW}Aller dans 'Submit Expense' ou 'Add Funds'${NC}"
         echo -e "  4. ${YELLOW}Montant: $total_to_report Ẑen (équivalent $(echo "scale=2; $total_to_report / 10" | bc) Ğ1)${NC}"
@@ -2504,7 +2174,7 @@ handle_opencollective_reporting() {
         done
         
         echo -e "\n${CYAN}Confirmer le report sur OpenCollective?${NC}"
-        read -p "Tapez 'CONFIRME' pour marquer comme reporté: " confirm
+        read -p "Tapez 'CONFIRME' pour marquer comme reporté (ou 'q' pour revenir): " confirm
         
         if [[ "$confirm" == "CONFIRME" ]]; then
             # Create a report file
@@ -2519,12 +2189,20 @@ handle_opencollective_reporting() {
             
             echo -e "${GREEN}✅ Report marqué comme effectué${NC}"
             echo -e "${GREEN}Fichier de rapport: ${CYAN}$report_file${NC}"
+        elif [[ "$confirm" == "q" || "$confirm" == "Q" ]]; then
+            echo -e "${YELLOW}Retour au menu principal${NC}"
+            main "$@"
+            return
         else
             echo -e "${YELLOW}Report annulé${NC}"
         fi
     else
         echo -e "${YELLOW}Aucun paiement récent à reporter${NC}"
     fi
+    
+    echo ""
+    read -p "Appuyez sur Entrée pour revenir au menu principal..." 
+    main "$@"
 }
 
 # Function to display captain dashboard (simplified)
@@ -2751,7 +2429,7 @@ handle_maintenance() {
     echo -e "  1. 🔄 Refresh all wallet balances"
     echo -e "  2. 🧹 Clean old cache files"
     echo -e "  3. 🔍 System health check"
-    echo -e "  4. 🔙 Back to Main Menu"
+    echo -e "  4. 🔙 Retour au menu principal"
     
     read -p "Select option (1-4): " maintenance_choice
     
@@ -2768,11 +2446,13 @@ handle_maintenance() {
             perform_system_health_check
             ;;
         4)
-            echo -e "${GREEN}Returning to main menu...${NC}"
+            echo -e "${GREEN}Retour au menu principal...${NC}"
             main "$@"
             ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1-4.${NC}"
+            echo -e "${RED}Sélection invalide. Veuillez choisir 1-4.${NC}"
+            echo ""
+            read -p "Appuyez sur Entrée pour réessayer..." 
             handle_maintenance
             ;;
     esac
@@ -2922,20 +2602,14 @@ main() {
     echo -e "   • System health check"
     echo ""
     
-    echo -e "${BLUE}7. 🔍 DIAGNOSTIC & RÉPARATION${NC} - Résolution de problèmes"
-    echo -e "   • Diagnostic des comptes utilisateurs"
-    echo -e "   • Réparation automatique des problèmes"
-    echo -e "   • Analyse des données manquantes"
-    echo ""
-    
-    echo -e "${BLUE}8. 💡 AIDE & CONSEILS CAPITAINE${NC} - Guide d'utilisation"
+    echo -e "${BLUE}7. 💡 AIDE & CONSEILS CAPITAINE${NC} - Guide d'utilisation"
     echo -e "   • Bonnes pratiques de gestion"
     echo -e "   • Conseils de sécurité"
     echo -e "   • Procédures recommandées"
     echo ""
     
     # Get user selection
-    read -p "Select option (1-8): " choice
+    read -p "Select option (1-7): " choice
     
     case "$choice" in
         1)
@@ -2957,219 +2631,16 @@ main() {
             handle_maintenance
             ;;
         7)
-            handle_diagnostic_repair
-            ;;
-        8)
             show_captain_tips
             echo ""
             read -p "Appuyez sur Entrée pour revenir au menu principal..." 
             main "$@"
             ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, 5, 6, 7, or 8.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, 5, 6, or 7.${NC}"
             exit 1
             ;;
     esac
-}
-
-# Function to handle diagnostic and repair operations
-handle_diagnostic_repair() {
-    echo -e "\n${CYAN}🔍 DIAGNOSTIC & RÉPARATION${NC}"
-    echo -e "${YELLOW}=========================${NC}"
-    echo -e "${GREEN}Outils de diagnostic et de réparation des comptes utilisateurs${NC}"
-    
-    echo -e "\n${BLUE}OPTIONS DISPONIBLES:${NC}"
-    echo -e "  1. 🔍 Diagnostic complet des comptes"
-    echo -e "  2. 🔧 Réparation automatique"
-    echo -e "  3. 📊 Analyse détaillée d'un utilisateur"
-    echo -e "  4. 🔄 Rafraîchir le cache des soldes"
-    echo -e "  5. 🔙 Retour au menu principal"
-    
-    read -p "Choisissez une option (1-5): " diag_choice
-    
-    case "$diag_choice" in
-        1)
-            diagnose_user_issues
-            ;;
-        2)
-            fix_user_issues
-            ;;
-        3)
-            echo -e "\n${YELLOW}Analyse détaillée d'un utilisateur:${NC}"
-            read -p "Entrez l'email de l'utilisateur: " user_email
-            if [[ -n "$user_email" ]]; then
-                analyze_single_user "$user_email"
-            else
-                echo -e "${RED}Email invalide${NC}"
-            fi
-            ;;
-        4)
-            echo -e "\n${CYAN}Rafraîchissement du cache...${NC}"
-            refresh_all_balances
-            ;;
-        5)
-            echo -e "${GREEN}Retour au menu principal...${NC}"
-            main "$@"
-            ;;
-        *)
-            echo -e "${RED}Sélection invalide. Choisissez 1-5.${NC}"
-            handle_diagnostic_repair
-            ;;
-    esac
-    
-    echo ""
-    read -p "Appuyez sur Entrée pour continuer..." 
-    handle_diagnostic_repair
-}
-
-# Function to analyze a single user in detail
-analyze_single_user() {
-    local user_email="$1"
-    
-    echo -e "\n${CYAN}🔍 ANALYSE DÉTAILLÉE: $user_email${NC}"
-    echo -e "${YELLOW}================================${NC}"
-    
-    # Check if user exists
-    local has_zencard=false
-    local has_multipass=false
-    
-    if [[ -d ~/.zen/game/players/${user_email} ]]; then
-        has_zencard=true
-        echo -e "${GREEN}✓ ZenCard trouvée${NC}"
-    fi
-    
-    if [[ -d ~/.zen/game/nostr/${user_email} ]]; then
-        has_multipass=true
-        echo -e "${GREEN}✓ MULTIPASS trouvé${NC}"
-    fi
-    
-    if [[ "$has_zencard" == "false" && "$has_multipass" == "false" ]]; then
-        echo -e "${RED}✗ Utilisateur non trouvé${NC}"
-        return 1
-    fi
-    
-    # Get payment status
-    local payment_info=$(get_user_payment_status "$user_email")
-    local status=$(echo "$payment_info" | cut -d '|' -f 1)
-    local next_date=$(echo "$payment_info" | cut -d '|' -f 2)
-    local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
-    
-    echo -e "\n${BLUE}📊 STATUT ACTUEL:${NC}"
-    echo -e "  Statut: $status"
-    echo -e "  Prochaine échéance: $next_date"
-    echo -e "  Jours restants: $days_until"
-    
-    # ZenCard details
-    if [[ "$has_zencard" == "true" ]]; then
-        echo -e "\n${BLUE}💎 ZENCARD:${NC}"
-        local g1pub=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
-        if [[ -n "$g1pub" ]]; then
-            local balance=$(get_wallet_balance "$g1pub" true)
-            local zen_balance=$(calculate_zen_balance "$balance")
-            echo -e "  G1PUB: ${CYAN}$g1pub${NC}"
-            echo -e "  Balance: ${YELLOW}$balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
-        fi
-        
-        local todate=$(cat ~/.zen/game/players/${user_email}/TODATE 2>/dev/null)
-        echo -e "  TODATE: ${todate:-${RED}Manquant${NC}}"
-        
-        if [[ -s ~/.zen/game/players/${user_email}/U.SOCIETY ]]; then
-            local society_date=$(cat ~/.zen/game/players/${user_email}/U.SOCIETY)
-            echo -e "  U.SOCIETY: ${GREEN}$society_date${NC}"
-        else
-            echo -e "  U.SOCIETY: ${YELLOW}Locataire${NC}"
-        fi
-    fi
-    
-    # MULTIPASS details
-    if [[ "$has_multipass" == "true" ]]; then
-        echo -e "\n${BLUE}💳 MULTIPASS:${NC}"
-        local g1pub=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
-        if [[ -n "$g1pub" ]]; then
-            local balance=$(get_wallet_balance "$g1pub" true)
-            local zen_balance=$(calculate_zen_balance "$balance")
-            echo -e "  G1PUBNOSTR: ${CYAN}$g1pub${NC}"
-            echo -e "  Balance: ${YELLOW}$balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
-        fi
-        
-        local todate=$(cat ~/.zen/game/nostr/${user_email}/TODATE 2>/dev/null)
-        local birthdate=$(cat ~/.zen/game/nostr/${user_email}/.birthdate 2>/dev/null)
-        echo -e "  TODATE: ${todate:-${RED}Manquant${NC}}"
-        echo -e "  .birthdate: ${birthdate:-${RED}Manquant${NC}}"
-        
-        if [[ -s ~/.zen/game/nostr/${user_email}/HEX ]]; then
-            local hex=$(cat ~/.zen/game/nostr/${user_email}/HEX)
-            echo -e "  HEX: ${CYAN}$hex${NC}"
-        fi
-    fi
-    
-    # Primal control check using primal_wallet_control.sh
-    if [[ "$has_zencard" == "true" || "$has_multipass" == "true" ]]; then
-        echo -e "\n${BLUE}🔐 CONTRÔLE PRIMAL:${NC}"
-        
-        # Get wallet public key for primal check
-        local check_pubkey=""
-        local dunikey_path=""
-        
-        if [[ "$has_zencard" == "true" ]]; then
-            check_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
-            dunikey_path="~/.zen/game/players/${user_email}/secret.dunikey"
-        elif [[ "$has_multipass" == "true" ]]; then
-            check_pubkey=$(cat ~/.zen/game/nostr/${user_email}/G1PUBNOSTR 2>/dev/null)
-            dunikey_path="~/.zen/game/nostr/${user_email}/.secret.dunikey"
-        fi
-        
-        if [[ -n "$check_pubkey" && -f "${MY_PATH}/primal_wallet_control.sh" ]]; then
-            # Get primal source using JSON
-            local primal_json=$(silkaj --json money primal "$check_pubkey" 2>/dev/null)
-            if [[ -n "$primal_json" ]]; then
-                local primal_source=$(echo "$primal_json" | jq -r '.primal_source_pubkey // "None"')
-                
-                echo -e "  Portefeuille: ${CYAN}$check_pubkey${NC}"
-                echo -e "  Source primale: ${CYAN}$primal_source${NC}"
-                
-                # Determine expected primal source
-                local expected_primal=""
-                if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-                    # For UPlanet Ẑen, expected primal should be UPLANETNAME.SOCIETY
-                    expected_primal=$(cat ~/.zen/tmp/UPLANETNAME_SOCIETY 2>/dev/null)
-                    if [[ -z "$expected_primal" ]]; then
-                        expected_primal=$(${MY_PATH}/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY")
-                        echo "$expected_primal" > ~/.zen/tmp/UPLANETNAME_SOCIETY
-                    fi
-                else
-                    # For UPlanet ORIGIN, expected primal is UPLANETG1PUB
-                    expected_primal="$UPLANETG1PUB"
-                fi
-                
-                if [[ "$primal_source" == "$expected_primal" ]]; then
-                    echo -e "  ${GREEN}✓ Source primale conforme${NC}"
-                elif [[ "$primal_source" == "None" ]]; then
-                    echo -e "  ${RED}✗ Aucune transaction primale${NC}"
-                else
-                    echo -e "  ${YELLOW}⚠ Source primale externe: ${primal_source:0:8}...${NC}"
-                fi
-                
-                echo -e "  ${CYAN}💡 Pour contrôler: ${MY_PATH}/primal_wallet_control.sh $dunikey_path $check_pubkey $expected_primal $user_email${NC}"
-            else
-                echo -e "  ${RED}✗ Impossible de vérifier la source primale${NC}"
-            fi
-        else
-            echo -e "  ${YELLOW}⚠ primal_wallet_control.sh non disponible ou portefeuille invalide${NC}"
-        fi
-    fi
-    
-    # Recommendations
-    echo -e "\n${YELLOW}💡 RECOMMANDATIONS:${NC}"
-    if [[ -z "$todate" && "$has_zencard" == "true" ]]; then
-        echo -e "  • Créer le fichier TODATE pour ZenCard"
-    fi
-    if [[ -z "$todate" && "$has_multipass" == "true" ]]; then
-        echo -e "  • Créer le fichier TODATE pour MULTIPASS"
-    fi
-    if [[ "$has_multipass" == "true" && "$has_zencard" == "false" ]]; then
-        echo -e "  • Considérer la création d'une ZenCard pour cet utilisateur"
-    fi
 }
 
 # Check if help is requested
