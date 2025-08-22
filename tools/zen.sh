@@ -236,25 +236,64 @@ show_flowchart_position() {
 usage() {
     echo -e "${CYAN}Usage: $ME [--detailed]${NC}"
     echo ""
-    echo -e "${YELLOW}This script allows captains to perform transactions using different wallet types:${NC}"
+    echo -e "${YELLOW}🎯 GUIDE CAPITAINE - Gestionnaire de Transactions Zen${NC}"
     echo ""
-    echo -e "${BLUE}1. UPLANETNAME.G1${NC} - Ğ1 Reserve Wallet"
-    echo -e "   • Purpose: Manage Ğ1 donations and reserves"
-    echo -e "   • Flow: External donations → Reserve management"
+    echo -e "${GREEN}Ce script vous permet de gérer l'économie UPlanet en toute sécurité:${NC}"
     echo ""
-    echo -e "${BLUE}2. UPLANETNAME${NC} - Services & Cash-Flow Wallet"
-    echo -e "   • Purpose: Handle service operations and MULTIPASS transactions"
-    echo -e "   • Flow: Service payments → MULTIPASS wallet operations"
+    echo -e "${BLUE}📊 TABLEAU DE BORD:${NC}"
+    echo -e "   • Vision synthétique des utilisateurs et échéances"
+    echo -e "   • Alertes automatiques pour les paiements en retard"
+    echo -e "   • Suivi des revenus hebdomadaires"
     echo ""
-    echo -e "${BLUE}3. UPLANETNAME.SOCIETY${NC} - Social Capital Wallet"
-    echo -e "   • Purpose: Manage cooperative shares and ZenCard operations"
-    echo -e "   • Flow: Investment operations → ZenCard wallet management"
+    echo -e "${BLUE}💰 REPORTING OPENCOLLECTIVE:${NC}"
+    echo -e "   • Identification automatique des paiements à reporter"
+    echo -e "   • Instructions étape par étape pour OpenCollective"
+    echo -e "   • Génération de rapports de suivi"
+    echo ""
+    echo -e "${BLUE}🏛️  PORTEFEUILLES SYSTÈME:${NC}"
+    echo -e "   • UPLANETNAME.G1: Réserves et donations Ğ1"
+    echo -e "   • UPLANETNAME: Services et MULTIPASS"
+    echo -e "   • UPLANETNAME.SOCIETY: Capital social et ZenCard"
     echo ""
     echo -e "${GREEN}Options:${NC}"
-    echo -e "  ${CYAN}--detailed${NC}  Show detailed status of all users"
+    echo -e "  ${CYAN}--detailed${NC}  Affichage détaillé de tous les utilisateurs"
     echo ""
-    echo -e "${GREEN}The script will guide you through the selection process.${NC}"
+    echo -e "${YELLOW}⚠️  SÉCURITÉ:${NC}"
+    echo -e "   • Validation automatique des transactions"
+    echo -e "   • Vérification des chaînes primales"
+    echo -e "   • Confirmations obligatoires pour les actions critiques"
+    echo ""
+    echo -e "${GREEN}Le script vous guidera pas à pas pour éviter toute erreur.${NC}"
     exit 1
+}
+
+# Function to display captain help and tips
+show_captain_tips() {
+    echo -e "\n${CYAN}💡 CONSEILS CAPITAINE${NC}"
+    echo -e "${YELLOW}===================${NC}"
+    echo -e "${GREEN}Bonnes pratiques pour une gestion sûre:${NC}"
+    echo ""
+    echo -e "${BLUE}1. VÉRIFICATIONS QUOTIDIENNES:${NC}"
+    echo -e "   • Consulter le tableau de bord pour les paiements dus"
+    echo -e "   • Vérifier les soldes des portefeuilles système"
+    echo -e "   • Contrôler les nouvelles inscriptions"
+    echo ""
+    echo -e "${BLUE}2. REPORTING OPENCOLLECTIVE:${NC}"
+    echo -e "   • Reporter les paiements reçus chaque semaine"
+    echo -e "   • Conserver les fichiers de rapport générés"
+    echo -e "   • Vérifier la cohérence avec les transactions blockchain"
+    echo ""
+    echo -e "${BLUE}3. GESTION DES SOCIÉTAIRES:${NC}"
+    echo -e "   • Surveiller les dates d'expiration (alertes automatiques)"
+    echo -e "   • Traiter les renouvellements via UPLANETNAME.SOCIETY"
+    echo -e "   • Confirmer la création des fichiers U.SOCIETY"
+    echo ""
+    echo -e "${BLUE}4. SÉCURITÉ:${NC}"
+    echo -e "   • Toujours vérifier les clés publiques avant transaction"
+    echo -e "   • Confirmer les montants en Ẑen ET en Ğ1"
+    echo -e "   • Sauvegarder les rapports de transaction"
+    echo ""
+    echo -e "${YELLOW}En cas de doute, utilisez l'option 'Analyse' pour vérifier les portefeuilles.${NC}"
 }
 
 # Function to list available MULTIPASS wallets
@@ -612,6 +651,89 @@ validate_transaction_security() {
     return 0
 }
 
+# Function to create U.SOCIETY file for sociétaire
+create_usociety_file() {
+    local player_email="$1"
+    local transaction_amount="$2"
+    local zen_amount="$3"
+    
+    echo -e "\n${CYAN}⭐ CREATING U.SOCIETY FILE FOR SOCIÉTAIRE${NC}"
+    echo -e "${YELLOW}=========================================${NC}"
+    
+    # Check if player has ZenCard
+    if [[ ! -d ~/.zen/game/players/${player_email} ]]; then
+        echo -e "${RED}❌ ZenCard not found for ${player_email}${NC}"
+        return 1
+    fi
+    
+    # Determine subscription duration based on amount
+    local subscription_type=""
+    local duration_days=""
+    
+    # Convert Ğ1 amount to Ẑen for comparison (amount * 10)
+    local total_zen=$(echo "$transaction_amount * 10" | bc | cut -d '.' -f 1)
+    
+    if [[ "$total_zen" -eq 50 ]]; then
+        subscription_type="RPi Share (1 year)"
+        duration_days=365
+    elif [[ "$total_zen" -eq 540 ]]; then
+        subscription_type="PC Share (3 years)"
+        duration_days=1095
+    else
+        echo -e "${YELLOW}⚠ Custom amount: ${total_zen} Ẑen - Default 1 year subscription${NC}"
+        subscription_type="Custom Share (1 year)"
+        duration_days=365
+    fi
+    
+    # Create U.SOCIETY file with current date
+    local society_date="$TODATE"
+    echo "$society_date" > ~/.zen/game/players/${player_email}/U.SOCIETY
+    
+    # Also create in NOSTR directory if exists (create symlink like u.command.sh)
+    if [[ -d ~/.zen/game/nostr/${player_email} ]]; then
+        ln -sf ~/.zen/game/players/${player_email}/U.SOCIETY ~/.zen/game/nostr/${player_email}/U.SOCIETY
+    fi
+    
+    echo -e "${GREEN}✅ U.SOCIETY file created for ${player_email}${NC}"
+    echo -e "${BLUE}Subscription Type:${NC} $subscription_type"
+    echo -e "${BLUE}Start Date:${NC} $society_date"
+    echo -e "${BLUE}Duration:${NC} $duration_days days"
+    echo -e "${BLUE}Amount:${NC} ${YELLOW}$transaction_amount Ğ1${NC} (${CYAN}$total_zen Ẑen${NC})"
+    
+    # Send confirmation email
+    local email_content="<html><head><meta charset='UTF-8'>
+    <style>
+        body { font-family: 'Courier New', monospace; }
+        .header { color: #2E8B57; font-size: 24px; font-weight: bold; }
+        .info { background-color: #f0f8ff; padding: 10px; margin: 10px 0; }
+    </style></head><body>
+    <div class='header'>🎉 Bienvenue dans la Coopérative UPlanet !</div>
+    <div class='info'>
+        <h3>Votre statut de Sociétaire est activé :</h3>
+        <ul>
+            <li><strong>Type :</strong> $subscription_type</li>
+            <li><strong>Date d'activation :</strong> $society_date</li>
+            <li><strong>Durée :</strong> $duration_days jours</li>
+            <li><strong>Montant :</strong> $transaction_amount Ğ1 ($total_zen Ẑen)</li>
+        </ul>
+        <p><strong>Avantages :</strong></p>
+        <ul>
+            <li>✅ Exemption de loyer pendant la durée de votre souscription</li>
+            <li>✅ Droit de vote dans la coopérative</li>
+            <li>✅ Part de propriété sur les biens communs</li>
+            <li>✅ Accès aux services sans frais supplémentaires</li>
+        </ul>
+        <p>Votre ZenCard est maintenant configurée en mode Sociétaire.</p>
+        <p><a href='${myIPFS}/ipns/copylaradio.com'>Accéder à UPlanet</a></p>
+    </div>
+    </body></html>"
+    
+    echo "$email_content" > ~/.zen/tmp/usociety_welcome_${player_email//[@.]/_}.html
+    ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/usociety_welcome_${player_email//[@.]/_}.html "🎉 Statut Sociétaire Activé - UPlanet Coopérative"
+    
+    return 0
+}
+
 # Function to execute system wallet transaction
 execute_system_transaction() {
     local source_wallet_type="$1"
@@ -668,6 +790,32 @@ execute_system_transaction() {
     # Execute the transaction
     if ${MY_PATH}/PAYforSURE.sh "$dunikey_file" "$amount" "$dest_pubkey" "$comment"; then
         echo -e "\n${GREEN}✅ Transaction successful!${NC}"
+        
+        # Special handling for UPLANETNAME.SOCIETY transactions (sociétaire creation)
+        if [[ "$source_wallet_type" == "UPLANETNAME.SOCIETY" ]]; then
+            # Find the player email from the destination pubkey
+            local player_email=""
+            if [[ -d ~/.zen/game/players ]]; then
+                for player_dir in ~/.zen/game/players/*@*.*/; do
+                    if [[ -d "$player_dir" ]]; then
+                        local player_g1pub=$(cat "${player_dir}.g1pub" 2>/dev/null)
+                        if [[ "$player_g1pub" == "$dest_pubkey" ]]; then
+                            player_email=$(basename "$player_dir")
+                            break
+                        fi
+                    fi
+                done
+            fi
+            
+            # Create U.SOCIETY file if player found
+            if [[ -n "$player_email" ]]; then
+                local zen_amount=$(echo "$amount * 10" | bc | cut -d '.' -f 1)
+                create_usociety_file "$player_email" "$amount" "$zen_amount"
+            else
+                echo -e "${YELLOW}⚠ Could not identify player for U.SOCIETY creation${NC}"
+            fi
+        fi
+        
         echo -e "${GREEN}System wallet transaction completed successfully.${NC}"
         return 0
     else
@@ -915,18 +1063,19 @@ get_transaction_details() {
 handle_g1_reserve() {
     echo -e "\n${CYAN}🏛️  UPLANETNAME.G1 - Ğ1 RESERVE WALLET${NC}"
     echo -e "${YELLOW}=====================================${NC}"
-    echo -e "${GREEN}This wallet manages Ğ1 donations and reserves.${NC}"
-    echo -e "${GREEN}Flow: External donations → Reserve management${NC}"
+    echo -e "${GREEN}Ce portefeuille gère les réserves Ğ1 et les donations externes.${NC}"
+    echo -e "${GREEN}Flux: Donations externes → Gestion des réserves${NC}"
     
     show_flowchart_position "UPLANETNAME.G1" "Ğ1 Reserve Management"
     
-    echo -e "\n${BLUE}TRANSACTION OPTIONS:${NC}"
-    echo -e "  1. Send Ğ1 to UPLANETNAME (Services & Cash-Flow)"
-    echo -e "  2. Send Ğ1 to UPLANETNAME.SOCIETY (Social Capital)"
-    echo -e "  3. Send Ğ1 to external wallet"
-    echo -e "  4. View wallet status only"
+    echo -e "\n${BLUE}OPTIONS DE TRANSACTION:${NC}"
+    echo -e "  1. 💼 Alimenter UPLANETNAME (Services & Cash-Flow)"
+    echo -e "  2. ⭐ Valoriser Capital Machine → UPLANETNAME.SOCIETY"
+    echo -e "  3. 💰 Envoyer Ğ1 vers portefeuille externe"
+    echo -e "  4. 📊 Voir le statut du portefeuille uniquement"
+    echo -e "  5. 🚀 Assistant d'initialisation Astroport"
     
-    read -p "Select option (1-4): " g1_choice
+    read -p "Select option (1-5): " g1_choice
     
     case "$g1_choice" in
         1)
@@ -940,18 +1089,12 @@ handle_g1_reserve() {
             fi
             ;;
         2)
-            # Send to UPLANETNAME.SOCIETY
-            local dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
-            if [[ -n "$dest_pubkey" ]]; then
-                get_transaction_details "UPLANETNAME.G1" "UPLANETNAME.SOCIETY"
-            else
-                echo -e "${RED}UPLANETNAME.SOCIETY wallet not configured${NC}"
-                exit 1
-            fi
+            # Valoriser Capital Machine
+            handle_capital_valuation
             ;;
         3)
             # Send to external wallet
-    get_transaction_details "UPLANETNAME.G1" ""
+            get_transaction_details "UPLANETNAME.G1" ""
             ;;
         4)
             # View status only
@@ -963,11 +1106,278 @@ handle_g1_reserve() {
                 exit 1
             fi
             ;;
+        5)
+            # Assistant d'initialisation
+            handle_astroport_initialization
+            ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1-4.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1-5.${NC}"
             exit 1
             ;;
     esac
+}
+
+# Function to handle capital machine valuation
+handle_capital_valuation() {
+    echo -e "\n${CYAN}⭐ VALORISATION DU CAPITAL MACHINE${NC}"
+    echo -e "${YELLOW}=================================${NC}"
+    echo -e "${GREEN}Valorisez l'apport en capital de votre machine dans la coopérative${NC}"
+    
+    echo -e "\n${BLUE}💻 TYPES DE MACHINES STANDARDS:${NC}"
+    echo -e "  1. 🛰️  Satellite/RPi (500€ → 500 Ẑen)"
+    echo -e "  2. 🎮 PC Gamer (4000€ → 4000 Ẑen)"
+    echo -e "  3. 💼 Serveur Pro (8000€ → 8000 Ẑen)"
+    echo -e "  4. 🔧 Valorisation personnalisée"
+    
+    read -p "Choisissez le type de machine (1-4): " machine_choice
+    
+    local machine_value=""
+    local machine_type=""
+    
+    case "$machine_choice" in
+        1)
+            machine_value="500"
+            machine_type="Satellite/RPi"
+            ;;
+        2)
+            machine_value="4000"
+            machine_type="PC Gamer"
+            ;;
+        3)
+            machine_value="8000"
+            machine_type="Serveur Pro"
+            ;;
+        4)
+            echo -e "\n${YELLOW}Valorisation personnalisée:${NC}"
+            read -p "Entrez la valeur en euros de votre machine: " custom_value
+            if [[ "$custom_value" =~ ^[0-9]+$ ]] && [[ "$custom_value" -gt 0 ]]; then
+                machine_value="$custom_value"
+                machine_type="Machine personnalisée"
+            else
+                echo -e "${RED}Valeur invalide. Opération annulée.${NC}"
+                return 1
+            fi
+            ;;
+        *)
+            echo -e "${RED}Sélection invalide.${NC}"
+            return 1
+            ;;
+    esac
+    
+    # Convert euros to Ẑen (1€ = 1Ẑ) then to Ğ1 (1Ẑ = 0.1Ğ1)
+    local zen_amount="$machine_value"
+    local g1_amount=$(echo "scale=1; $zen_amount / 10" | bc)
+    
+    echo -e "\n${CYAN}📋 RÉCAPITULATIF DE LA VALORISATION:${NC}"
+    echo -e "${BLUE}Type de machine:${NC} $machine_type"
+    echo -e "${BLUE}Valeur:${NC} ${YELLOW}$machine_value €${NC} = ${CYAN}$zen_amount Ẑen${NC} = ${YELLOW}$g1_amount Ğ1${NC}"
+    echo -e "\n${GREEN}Cette valorisation sera inscrite au capital social de la coopérative.${NC}"
+    echo -e "${GREEN}Flux: UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZenCard Capitaine${NC}"
+    
+    read -p "Confirmer la valorisation? (y/N): " confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${YELLOW}Valorisation annulée.${NC}"
+        return 0
+    fi
+    
+    # Get UPLANETNAME.SOCIETY public key
+    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+    if [[ -z "$society_pubkey" ]]; then
+        echo -e "${RED}UPLANETNAME.SOCIETY wallet not configured${NC}"
+        return 1
+    fi
+    
+    # Execute capital valuation transaction
+    local comment="CAPITAL:MACHINE:$machine_type:$machine_value€"
+    if execute_system_transaction "UPLANETNAME.G1" "$society_pubkey" "$g1_amount" "$comment"; then
+        echo -e "\n${GREEN}✅ Valorisation du capital réussie!${NC}"
+        echo -e "${GREEN}Votre machine ($machine_type) est maintenant inscrite au capital social.${NC}"
+        
+        # Update .env file with machine info
+        update_env_machine_info "$machine_type" "$machine_value"
+        
+        return 0
+    else
+        echo -e "\n${RED}❌ Échec de la valorisation du capital${NC}"
+        return 1
+    fi
+}
+
+# Function to handle Astroport initialization
+handle_astroport_initialization() {
+    echo -e "\n${CYAN}🚀 ASSISTANT D'INITIALISATION ASTROPORT${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    echo -e "${GREEN}Cet assistant vous guide dans la configuration initiale de votre Astroport${NC}"
+    
+    echo -e "\n${BLUE}📋 ÉTAPES D'INITIALISATION:${NC}"
+    echo -e "  1. ⚙️  Configuration des paramètres économiques (.env)"
+    echo -e "  2. ⭐ Valorisation du capital machine"
+    echo -e "  3. 💰 Initialisation des portefeuilles système"
+    echo -e "  4. 📊 Vérification de la configuration"
+    
+    read -p "Commencer l'initialisation? (y/N): " start_init
+    if [[ "$start_init" != "y" && "$start_init" != "Y" ]]; then
+        echo -e "${YELLOW}Initialisation annulée.${NC}"
+        return 0
+    fi
+    
+    # Step 1: Configure economic parameters
+    echo -e "\n${CYAN}⚙️  ÉTAPE 1: Configuration économique${NC}"
+    configure_economic_parameters
+    
+    # Step 2: Machine valuation
+    echo -e "\n${CYAN}⭐ ÉTAPE 2: Valorisation du capital${NC}"
+    handle_capital_valuation
+    
+    # Step 3: Initialize system wallets
+    echo -e "\n${CYAN}💰 ÉTAPE 3: Initialisation des portefeuilles${NC}"
+    initialize_system_wallets_complete
+    
+    # Step 4: Verification
+    echo -e "\n${CYAN}📊 ÉTAPE 4: Vérification${NC}"
+    verify_astroport_configuration
+    
+    echo -e "\n${GREEN}🎉 Initialisation de l'Astroport terminée!${NC}"
+    echo -e "${GREEN}Votre station est maintenant prête à accueillir des utilisateurs.${NC}"
+}
+
+# Function to configure economic parameters
+configure_economic_parameters() {
+    echo -e "\n${YELLOW}Configuration des paramètres économiques:${NC}"
+    
+    # Get current values or defaults
+    local current_paf=$(grep "^PAF=" ~/.zen/Astroport.ONE/.env 2>/dev/null | cut -d '=' -f 2 || echo "14")
+    local current_ncard=$(grep "^NCARD=" ~/.zen/Astroport.ONE/.env 2>/dev/null | cut -d '=' -f 2 || echo "1")
+    local current_zcard=$(grep "^ZCARD=" ~/.zen/Astroport.ONE/.env 2>/dev/null | cut -d '=' -f 2 || echo "4")
+    
+    echo -e "${BLUE}Paramètres actuels:${NC}"
+    echo -e "  • PAF (Participation Aux Frais hebdomadaire): ${CYAN}$current_paf Ẑen${NC}"
+    echo -e "  • NCARD (MULTIPASS hebdomadaire): ${CYAN}$current_ncard Ẑen${NC}"
+    echo -e "  • ZCARD (ZenCard hebdomadaire): ${CYAN}$current_zcard Ẑen${NC}"
+    
+    read -p "Modifier ces paramètres? (y/N): " modify_params
+    if [[ "$modify_params" == "y" || "$modify_params" == "Y" ]]; then
+        
+        echo -e "\n${YELLOW}Nouveaux paramètres:${NC}"
+        
+        read -p "PAF hebdomadaire (Ẑen) [$current_paf]: " new_paf
+        new_paf="${new_paf:-$current_paf}"
+        
+        read -p "NCARD hebdomadaire (Ẑen) [$current_ncard]: " new_ncard
+        new_ncard="${new_ncard:-$current_ncard}"
+        
+        read -p "ZCARD hebdomadaire (Ẑen) [$current_zcard]: " new_zcard
+        new_zcard="${new_zcard:-$current_zcard}"
+        
+        # Update .env file
+        update_env_economic_params "$new_paf" "$new_ncard" "$new_zcard"
+        
+        echo -e "${GREEN}✅ Paramètres économiques mis à jour${NC}"
+    else
+        echo -e "${GREEN}✅ Paramètres économiques conservés${NC}"
+    fi
+}
+
+# Function to update .env file with economic parameters
+update_env_economic_params() {
+    local paf="$1"
+    local ncard="$2"
+    local zcard="$3"
+    
+    local env_file="$HOME/.zen/Astroport.ONE/.env"
+    
+    # Create .env from template if it doesn't exist
+    if [[ ! -f "$env_file" ]]; then
+        cp "$HOME/.zen/Astroport.ONE/.env.template" "$env_file"
+    fi
+    
+    # Update parameters
+    sed -i "s/^PAF=.*/PAF=$paf/" "$env_file"
+    sed -i "s/^NCARD=.*/NCARD=$ncard/" "$env_file"
+    sed -i "s/^ZCARD=.*/ZCARD=$zcard/" "$env_file"
+    
+    echo -e "${GREEN}Fichier .env mis à jour: $env_file${NC}"
+}
+
+# Function to update .env file with machine info
+update_env_machine_info() {
+    local machine_type="$1"
+    local machine_value="$2"
+    
+    local env_file="$HOME/.zen/Astroport.ONE/.env"
+    
+    # Add machine info section if not exists
+    if ! grep -q "MACHINE_TYPE" "$env_file" 2>/dev/null; then
+        echo "" >> "$env_file"
+        echo "###################################" >> "$env_file"
+        echo "## ASTROPORT MACHINE CONFIGURATION" >> "$env_file"
+        echo "###################################" >> "$env_file"
+        echo "MACHINE_TYPE=\"$machine_type\"" >> "$env_file"
+        echo "MACHINE_VALUE=$machine_value" >> "$env_file"
+        echo "CAPITAL_DATE=$(date +%Y%m%d%H%M%S)" >> "$env_file"
+    else
+        sed -i "s/^MACHINE_TYPE=.*/MACHINE_TYPE=\"$machine_type\"/" "$env_file"
+        sed -i "s/^MACHINE_VALUE=.*/MACHINE_VALUE=$machine_value/" "$env_file"
+    fi
+}
+
+# Function to initialize system wallets completely
+initialize_system_wallets_complete() {
+    echo -e "${YELLOW}Initialisation complète des portefeuilles système...${NC}"
+    
+    # Initialize all system wallets
+    initialize_system_wallets
+    
+    # Display status
+    echo -e "\n${BLUE}État des portefeuilles système:${NC}"
+    
+    # Check each wallet
+    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    for wallet in "${wallets[@]}"; do
+        local pubkey=$(get_system_wallet_public_key "$wallet")
+        if [[ -n "$pubkey" ]]; then
+            local balance=$(get_wallet_balance "$pubkey")
+            echo -e "  • ${GREEN}$wallet${NC}: ${CYAN}$pubkey${NC} (${YELLOW}$balance Ğ1${NC})"
+        else
+            echo -e "  • ${RED}$wallet${NC}: Non configuré"
+        fi
+    done
+}
+
+# Function to verify Astroport configuration
+verify_astroport_configuration() {
+    echo -e "${YELLOW}Vérification de la configuration...${NC}"
+    
+    local issues=0
+    
+    # Check .env file
+    if [[ -f "$HOME/.zen/Astroport.ONE/.env" ]]; then
+        echo -e "${GREEN}✓ Fichier .env configuré${NC}"
+    else
+        echo -e "${RED}✗ Fichier .env manquant${NC}"
+        ((issues++))
+    fi
+    
+    # Check system wallets
+    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    for wallet in "${wallets[@]}"; do
+        local pubkey=$(get_system_wallet_public_key "$wallet")
+        if [[ -n "$pubkey" ]]; then
+            echo -e "${GREEN}✓ $wallet configuré${NC}"
+        else
+            echo -e "${RED}✗ $wallet non configuré${NC}"
+            ((issues++))
+        fi
+    done
+    
+    # Summary
+    if [[ $issues -eq 0 ]]; then
+        echo -e "\n${GREEN}🎉 Configuration complète et valide!${NC}"
+        echo -e "${GREEN}Votre Astroport est prêt à fonctionner.${NC}"
+    else
+        echo -e "\n${YELLOW}⚠ Configuration incomplète ($issues problème(s))${NC}"
+        echo -e "${YELLOW}Certains éléments nécessitent votre attention.${NC}"
+    fi
 }
 
 # Function to handle UPLANETNAME operations
@@ -1364,10 +1774,298 @@ initialize_system_wallets() {
     echo -e "${GREEN}System wallets initialized.${NC}"
 }
 
-# Function to display economic dashboard
+# Function to get user payment status and next due date
+get_user_payment_status() {
+    local user_email="$1"
+    
+    local status_info=""
+    local next_payment_date=""
+    local days_until_payment=""
+    
+    # Check if user is sociétaire
+    if [[ -s ~/.zen/game/players/${user_email}/U.SOCIETY ]] || [[ "${user_email}" == "${CAPTAINEMAIL}" ]]; then
+        local society_date=$(cat ~/.zen/game/players/${user_email}/U.SOCIETY 2>/dev/null)
+        if [[ -n "$society_date" ]]; then
+            # Calculate expiration date (1 year from society date)
+            local society_seconds=$(date -d "$society_date" +%s 2>/dev/null || echo "0")
+            local expiry_seconds=$((society_seconds + 365*24*3600))
+            local expiry_date=$(date -d "@$expiry_seconds" +%Y%m%d%H%M%S 2>/dev/null || echo "")
+            local current_seconds=$(date +%s)
+            local days_left=$(( (expiry_seconds - current_seconds) / 86400 ))
+            
+            if [[ $days_left -gt 0 ]]; then
+                status_info="${GREEN}✓ Sociétaire (${days_left}j restants)${NC}"
+                next_payment_date="$expiry_date"
+                days_until_payment="$days_left"
+            else
+                status_info="${RED}✗ Sociétaire expiré${NC}"
+                next_payment_date="EXPIRED"
+                days_until_payment="0"
+            fi
+        else
+            status_info="${GREEN}✓ Sociétaire (Capitaine)${NC}"
+            next_payment_date="PERMANENT"
+            days_until_payment="∞"
+        fi
+    else
+        # Locataire - calculate next weekly payment
+        local birthdate=$(cat ~/.zen/game/players/${user_email}/TODATE 2>/dev/null)
+        if [[ -n "$birthdate" ]]; then
+            local todate_seconds=$(date +%s)
+            local birthdate_seconds=$(date -d "$birthdate" +%s 2>/dev/null || echo "$todate_seconds")
+            local diff_days=$(( (todate_seconds - birthdate_seconds) / 86400 ))
+            local days_until_next=$(( 7 - (diff_days % 7) ))
+            
+            if [[ $days_until_next -eq 7 ]]; then
+                days_until_next=0  # Payment due today
+            fi
+            
+            local next_payment_seconds=$((todate_seconds + days_until_next * 86400))
+            next_payment_date=$(date -d "@$next_payment_seconds" +%Y%m%d%H%M%S 2>/dev/null || echo "")
+            
+            if [[ $days_until_next -eq 0 ]]; then
+                status_info="${YELLOW}⚠ Locataire (Paiement DÛ)${NC}"
+            else
+                status_info="${YELLOW}⚠ Locataire (${days_until_next}j)${NC}"
+            fi
+            days_until_payment="$days_until_next"
+        else
+            status_info="${RED}✗ Locataire (Données manquantes)${NC}"
+            next_payment_date="UNKNOWN"
+            days_until_payment="?"
+        fi
+    fi
+    
+    echo "$status_info|$next_payment_date|$days_until_payment"
+}
+
+# Function to display users summary with payment status
+display_users_summary() {
+    echo -e "\n${CYAN}👥 RÉSUMÉ DES UTILISATEURS & ÉCHÉANCES${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    local total_users=0
+    local societaires=0
+    local locataires=0
+    local payments_due=0
+    local total_weekly_income=0
+    
+    # Header
+    printf "${BLUE}%-30s %-20s %-15s %-12s${NC}\n" "UTILISATEUR" "STATUT" "PROCHAINE ÉCHÉANCE" "MONTANT"
+    echo -e "${YELLOW}$(printf '%.0s-' {1..80})${NC}"
+    
+    # Process all users
+    for player_dir in ~/.zen/game/players/*@*.*/; do
+        if [[ -d "$player_dir" ]]; then
+            local player_name=$(basename "$player_dir")
+            local g1pub=$(cat "${player_dir}.g1pub" 2>/dev/null)
+            
+            if [[ -n "$g1pub" ]]; then
+                ((total_users++))
+                
+                # Get payment status
+                local payment_info=$(get_user_payment_status "$player_name")
+                local status=$(echo "$payment_info" | cut -d '|' -f 1)
+                local next_date=$(echo "$payment_info" | cut -d '|' -f 2)
+                local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
+                
+                # Format next payment date
+                local formatted_date=""
+                local amount_info=""
+                if [[ "$next_date" == "PERMANENT" ]]; then
+                    formatted_date="${GREEN}Permanent${NC}"
+                    amount_info="${GREEN}0 Ẑen${NC}"
+                elif [[ "$next_date" == "EXPIRED" ]]; then
+                    formatted_date="${RED}Expiré${NC}"
+                    amount_info="${RED}Renouveler${NC}"
+                elif [[ "$next_date" == "UNKNOWN" ]]; then
+                    formatted_date="${RED}Inconnu${NC}"
+                    amount_info="${RED}?${NC}"
+                else
+                    # Format date as DD/MM/YYYY
+                    local year=${next_date:0:4}
+                    local month=${next_date:4:2}
+                    local day=${next_date:6:2}
+                    formatted_date="$day/$month/$year"
+                    
+                    # Determine amount based on status
+                    if [[ "$status" == *"Sociétaire"* ]]; then
+                        ((societaires++))
+                        if [[ "$status" == *"expiré"* ]]; then
+                            amount_info="${YELLOW}50-540 Ẑen${NC}"
+                        else
+                            amount_info="${GREEN}0 Ẑen${NC}"
+                        fi
+                    else
+                        ((locataires++))
+                        amount_info="${YELLOW}4 Ẑen${NC}"
+                        total_weekly_income=$((total_weekly_income + 4))
+                        
+                        if [[ "$days_until" == "0" ]]; then
+                            ((payments_due++))
+                            formatted_date="${RED}$formatted_date (DÛ!)${NC}"
+                        elif [[ "$days_until" -le "2" ]]; then
+                            formatted_date="${YELLOW}$formatted_date${NC}"
+                        else
+                            formatted_date="${GREEN}$formatted_date${NC}"
+                        fi
+                    fi
+                fi
+                
+                # Display user info
+                printf "%-40s %-30s %-25s %-15s\n" \
+                    "${GREEN}$player_name${NC}" \
+                    "$status" \
+                    "$formatted_date" \
+                    "$amount_info"
+            fi
+        fi
+    done
+    
+    # Summary statistics
+    echo -e "${YELLOW}$(printf '%.0s-' {1..80})${NC}"
+    echo -e "${BLUE}STATISTIQUES:${NC}"
+    echo -e "  • Total utilisateurs: ${CYAN}$total_users${NC}"
+    echo -e "  • Sociétaires: ${GREEN}$societaires${NC}"
+    echo -e "  • Locataires: ${YELLOW}$locataires${NC}"
+    echo -e "  • Paiements dus: ${RED}$payments_due${NC}"
+    echo -e "  • Revenus hebdomadaires: ${CYAN}$total_weekly_income Ẑen${NC} (${YELLOW}$(echo "scale=1; $total_weekly_income / 10" | bc) Ğ1${NC})"
+    
+    return $payments_due
+}
+
+# Function to handle OpenCollective reporting
+handle_opencollective_reporting() {
+    echo -e "\n${CYAN}💰 REPORTING OPENCOLLECTIVE${NC}"
+    echo -e "${YELLOW}===========================${NC}"
+    echo -e "${GREEN}Reporter les paiements reçus vers OpenCollective UPlanet${NC}"
+    echo -e "${BLUE}URL: https://opencollective.com/uplanet-zeropar${NC}"
+    
+    # Display current pending payments
+    echo -e "\n${CYAN}📋 PAIEMENTS EN ATTENTE DE REPORT:${NC}"
+    
+    local total_to_report=0
+    local payments_list=()
+    
+    # Check for recent transactions in UPLANETNAME.SOCIETY wallet
+    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+    if [[ -n "$society_pubkey" ]]; then
+        echo -e "${GREEN}Portefeuille UPLANETNAME.SOCIETY: ${CYAN}$society_pubkey${NC}"
+        
+        # Get recent transactions (last 30 days)
+        echo -e "\n${YELLOW}Transactions récentes (30 derniers jours):${NC}"
+        
+        # Use silkaj to get recent history
+        local temp_history="/tmp/society_history_$(date +%s).txt"
+        silkaj money history "$society_pubkey" 2>/dev/null | head -20 > "$temp_history"
+        
+        if [[ -s "$temp_history" ]]; then
+            local line_count=0
+            while IFS= read -r line; do
+                if [[ "$line" == *"+"* ]] && [[ "$line" != *"Ğ1"* ]]; then
+                    # This is an incoming transaction
+                    local amount=$(echo "$line" | grep -o '+[0-9.]*' | sed 's/+//')
+                    if [[ -n "$amount" ]]; then
+                        local zen_amount=$(echo "$amount * 10" | bc | cut -d '.' -f 1)
+                        payments_list+=("$zen_amount Ẑen ($amount Ğ1)")
+                        total_to_report=$((total_to_report + zen_amount))
+                        echo -e "  • ${GREEN}+$zen_amount Ẑen${NC} (${YELLOW}$amount Ğ1${NC})"
+                        ((line_count++))
+                    fi
+                fi
+                
+                if [[ $line_count -ge 10 ]]; then
+                    break
+                fi
+            done < "$temp_history"
+        fi
+        
+        rm -f "$temp_history"
+    fi
+    
+    echo -e "\n${CYAN}💰 TOTAL À REPORTER: ${GREEN}$total_to_report Ẑen${NC}"
+    
+    if [[ $total_to_report -gt 0 ]]; then
+        echo -e "\n${BLUE}ÉTAPES POUR REPORTER SUR OPENCOLLECTIVE:${NC}"
+        echo -e "  1. ${YELLOW}Ouvrir: https://opencollective.com/uplanet-zeropar${NC}"
+        echo -e "  2. ${YELLOW}Se connecter avec le compte administrateur${NC}"
+        echo -e "  3. ${YELLOW}Aller dans 'Submit Expense' ou 'Add Funds'${NC}"
+        echo -e "  4. ${YELLOW}Montant: $total_to_report Ẑen (équivalent $(echo "scale=2; $total_to_report / 10" | bc) Ğ1)${NC}"
+        echo -e "  5. ${YELLOW}Description: 'Paiements UPlanet reçus - $(date +%d/%m/%Y)'${NC}"
+        echo -e "  6. ${YELLOW}Catégorie: 'UPlanet Operations'${NC}"
+        
+        echo -e "\n${GREEN}Détail des paiements:${NC}"
+        for payment in "${payments_list[@]}"; do
+            echo -e "  • $payment"
+        done
+        
+        echo -e "\n${CYAN}Confirmer le report sur OpenCollective?${NC}"
+        read -p "Tapez 'CONFIRME' pour marquer comme reporté: " confirm
+        
+        if [[ "$confirm" == "CONFIRME" ]]; then
+            # Create a report file
+            local report_file="$HOME/.zen/tmp/opencollective_report_$(date +%Y%m%d_%H%M%S).txt"
+            echo "OpenCollective Report - $(date)" > "$report_file"
+            echo "Total reporté: $total_to_report Ẑen" >> "$report_file"
+            echo "Équivalent Ğ1: $(echo "scale=2; $total_to_report / 10" | bc) Ğ1" >> "$report_file"
+            echo "Détail des paiements:" >> "$report_file"
+            for payment in "${payments_list[@]}"; do
+                echo "  • $payment" >> "$report_file"
+            done
+            
+            echo -e "${GREEN}✅ Report marqué comme effectué${NC}"
+            echo -e "${GREEN}Fichier de rapport: ${CYAN}$report_file${NC}"
+        else
+            echo -e "${YELLOW}Report annulé${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Aucun paiement récent à reporter${NC}"
+    fi
+}
+
+# Function to display captain dashboard (simplified)
+display_captain_dashboard() {
+    echo -e "\n${CYAN}📊 TABLEAU DE BORD CAPITAINE${NC}"
+    echo -e "${YELLOW}============================${NC}"
+    
+    # Quick system status
+    echo -e "${BLUE}🏛️  PORTEFEUILLES SYSTÈME:${NC}"
+    
+    # UPLANETNAME.SOCIETY (most important for captain)
+    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
+        society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
+        if [[ -n "$society_pubkey" ]]; then
+            local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
+            society_balance=$(echo "$status" | cut -d '|' -f 1)
+            zen_balance=$(echo "$status" | cut -d '|' -f 3)
+            echo -e "   • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+        else
+            echo -e "   • ${RED}UPLANETNAME.SOCIETY: Erreur de configuration${NC}"
+        fi
+    else
+        echo -e "   • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
+    fi
+    
+    # UPLANETNAME (services)
+    if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
+        services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
+        if [[ -n "$services_pubkey" ]]; then
+            local status=$(get_wallet_status "$services_pubkey" "UPLANETNAME")
+            services_balance=$(echo "$status" | cut -d '|' -f 1)
+            zen_balance=$(echo "$status" | cut -d '|' -f 3)
+            echo -e "   • ${GREEN}UPLANETNAME (Services):${NC} ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+        else
+            echo -e "   • ${RED}UPLANETNAME: Erreur de configuration${NC}"
+        fi
+    else
+        echo -e "   • ${RED}UPLANETNAME: Non configuré${NC}"
+    fi
+}
+
+# Function to display economic dashboard (full version)
 display_economic_dashboard() {
-    echo -e "\n${CYAN}📊 ECONOMIC DASHBOARD${NC}"
-    echo -e "${YELLOW}====================${NC}"
+    echo -e "\n${CYAN}📊 TABLEAU DE BORD ÉCONOMIQUE COMPLET${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
     
     # System wallets info
     echo -e "${BLUE}🏛️  SYSTEM WALLETS:${NC}"
@@ -1666,10 +2364,27 @@ main() {
     # Initialize system wallets
     initialize_system_wallets
     
-    # Display economic dashboard
-    display_economic_dashboard "$1"
+    # Display economic dashboard (simplified for captain workflow)
+    display_captain_dashboard "$1"
+    
+    # Display users summary with payment tracking
+    display_users_summary
+    local payments_due=$?
+    
+    # Alert for due payments with detailed actions
+    if [[ $payments_due -gt 0 ]]; then
+        echo -e "\n${RED}🚨 ALERTE CAPITAINE: $payments_due paiement(s) en retard!${NC}"
+        echo -e "${YELLOW}Actions recommandées:${NC}"
+        echo -e "  • Vérifier les soldes des locataires concernés"
+        echo -e "  • Envoyer des rappels de paiement si nécessaire"
+        echo -e "  • Considérer la déconnexion automatique après 28 jours"
+        echo -e "${CYAN}💡 Conseil: Utilisez l'option 5 (Analyse) pour examiner les portefeuilles${NC}"
+    else
+        echo -e "\n${GREEN}✅ Tous les paiements sont à jour${NC}"
+    fi
     
     # Display wallet options
+    echo -e "\n${CYAN}🎯 ACTIONS DISPONIBLES:${NC}"
     echo -e "${BLUE}1. 🏛️  UPLANETNAME.G1${NC} - Ğ1 Reserve Wallet"
     echo -e "   • Manage Ğ1 donations and reserves"
     echo -e "   • External donations → Reserve management"
@@ -1685,20 +2400,32 @@ main() {
     echo -e "   • Investment operations → ZenCard wallet management"
     echo ""
     
-    echo -e "${BLUE}4. 🔍 WALLET DETAILS & ANALYSIS${NC} - Advanced Features"
+    echo -e "${BLUE}4. 💰 REPORTING OPENCOLLECTIVE${NC} - Gestion des Reports"
+    echo -e "   • Reporter les paiements vers OpenCollective"
+    echo -e "   • Suivi des revenus et contributions"
+    echo -e "   • Génération de rapports financiers"
+    echo ""
+    
+    echo -e "${BLUE}5. 🔍 WALLET DETAILS & ANALYSIS${NC} - Advanced Features"
     echo -e "   • View transaction history and primal chain"
     echo -e "   • Generate accounting reports"
     echo -e "   • Analyze wallet activities"
     echo ""
     
-    echo -e "${BLUE}5. 🛠️  MAINTENANCE & OPTIMIZATION${NC} - System Tools"
+    echo -e "${BLUE}6. 🛠️  MAINTENANCE & OPTIMIZATION${NC} - System Tools"
     echo -e "   • Refresh all wallet balances"
     echo -e "   • Clean old cache files"
     echo -e "   • System health check"
     echo ""
     
+    echo -e "${BLUE}7. 💡 AIDE & CONSEILS CAPITAINE${NC} - Guide d'utilisation"
+    echo -e "   • Bonnes pratiques de gestion"
+    echo -e "   • Conseils de sécurité"
+    echo -e "   • Procédures recommandées"
+    echo ""
+    
     # Get user selection
-    read -p "Select option (1-5): " choice
+    read -p "Select option (1-7): " choice
     
     case "$choice" in
         1)
@@ -1711,13 +2438,22 @@ main() {
             handle_social_capital
             ;;
         4)
-            handle_wallet_analysis
+            handle_opencollective_reporting
             ;;
         5)
+            handle_wallet_analysis
+            ;;
+        6)
             handle_maintenance
             ;;
+        7)
+            show_captain_tips
+            echo ""
+            read -p "Appuyez sur Entrée pour revenir au menu principal..." 
+            main "$@"
+            ;;
         *)
-            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, or 5.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, 5, 6, or 7.${NC}"
             exit 1
             ;;
     esac

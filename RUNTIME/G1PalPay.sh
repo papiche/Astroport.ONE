@@ -67,14 +67,23 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
 if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-    echo "CONTROL UPLANET ORIGIN"
+    echo "CONTROL UPLANET ZEN - ZenCard primal control"
     
-    # Use the generic primal wallet control function
+    # For ZenCard wallets, use UPLANETNAME.SOCIETY as expected primal source
+    # Get UPLANETNAME.SOCIETY public key
+    SOCIETY_PUBKEY=$(cat ~/.zen/tmp/UPLANETNAME_SOCIETY 2>/dev/null)
+    if [[ -z "$SOCIETY_PUBKEY" ]]; then
+        # Generate UPLANETNAME.SOCIETY public key if not cached
+        SOCIETY_PUBKEY=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY")
+        echo "$SOCIETY_PUBKEY" > ~/.zen/tmp/UPLANETNAME_SOCIETY
+    fi
+    
+    # Use the generic primal wallet control function with SOCIETY wallet as master primal
     ${MY_PATH}/../tools/primal_wallet_control.sh \
         "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
         "${G1PUB}" \
-        "${UPLANETG1PUB}" \
-        "${EMAIL}"
+        "${SOCIETY_PUBKEY}" \
+        "${PLAYER}"
 else
     echo "UPlanet ORIGIN - No Control -"
 fi

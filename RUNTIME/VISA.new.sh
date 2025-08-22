@@ -634,14 +634,23 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "... ẐEN Card activated ..."
 
-### SEND INITIAL G1 - IF failing PLAYER.refresh.sh will make TX again
+### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME.SOCIETY FOR ZENCARD
 
 YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
-&& ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT" 2>/dev/null \
-&& echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
-&& rm ~/.zen/tmp/${MOATS}/${MOATS}.key
 
+# For any UPlanet ORIGIN/Ẑen, send primo transaction from UPLANETNAME.SOCIETY wallet
+echo "UPlanet ZEN : Sending PRIMO TX from UPLANETNAME.SOCIETY to ZenCard"
+
+# Create or get UPLANETNAME.SOCIETY dunikey
+SOCIETY_DUNIKEY="~/.zen/tmp/UPLANETNAME_SOCIETY.dunikey"
+if [[ ! -f "$SOCIETY_DUNIKEY" ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o "$SOCIETY_DUNIKEY" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
+    chmod 600 "$SOCIETY_DUNIKEY"
+fi
+
+# Send primo transaction from UPLANETNAME.SOCIETY to establish primal chain
+${MY_PATH}/../tools/PAYforSURE.sh "$SOCIETY_DUNIKEY" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:SOCIETY:PRIMO" 2>/dev/null \
+&& echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:SOCIETY:PRIMO" && echo "(⌐■_■) ~~~ SOCIETY PRIMO TX ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}
