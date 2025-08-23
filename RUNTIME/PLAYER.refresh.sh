@@ -744,8 +744,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     if [[ -s ~/.ipfs/swarm.key ]]; then
         if [[ $(echo "$COINS < ${G1LEVEL1}" | bc -l) -eq 1 ]]; then
             [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
-                && echo "1 DAY. PLAYER STEP ONE SUCCEED." \
-                && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}" "${UPLANETNAME}" \
+                && echo "1 DAY. ZENCARD  PRIMAL RX .SOCIETY" \
+                && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY" \
                 && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" 2>/dev/null \
                 && echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
                 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
