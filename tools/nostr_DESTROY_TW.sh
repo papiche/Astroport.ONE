@@ -137,14 +137,12 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL with g1pubnostr.QR
-# Load and process the HTML template
-EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html")
-# Replace template variables
-EMAIL_TEMPLATE="${EMAIL_TEMPLATE//\{myIPFS\}/${myIPFS}}"
-EMAIL_TEMPLATE="${EMAIL_TEMPLATE//\{NOSTRIFS\}/${NOSTRIFS}}"
-EMAIL_TEMPLATE="${EMAIL_TEMPLATE//\{salt\}/${salt}}"
-EMAIL_TEMPLATE="${EMAIL_TEMPLATE//\{pepper\}/${pepper}}"
-EMAIL_TEMPLATE="${EMAIL_TEMPLATE//\{uSPOT\}/${uSPOT}}"
+EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
+    | sed -e "s~_myIPFS_~${myIPFS}~g" \
+          -e "s~_NOSTRIFS_~${NOSTRIFS}~g" \
+          -e "s~_SALT_~${salt}~g" \
+          -e "s~_PEPPER_~${pepper}~g" \
+          -e "s~_uSPOT_~${uSPOT}~g")
 
 ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
