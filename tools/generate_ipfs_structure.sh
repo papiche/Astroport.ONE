@@ -1778,6 +1778,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             border-bottom: 1px solid #444;
             gap: 10px;
             flex-wrap: wrap;
+            min-height: 60px;
         }
 
         .markdown-toolbar-group {
@@ -1807,6 +1808,17 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
         .markdown-btn.active {
             background: #4CAF50;
             box-shadow: 0 2px 5px rgba(76, 175, 80, 0.4);
+        }
+
+        .markdown-btn.disabled-for-guest {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: rgba(128, 128, 128, 0.3) !important;
+        }
+
+        .markdown-btn.disabled-for-guest:hover {
+            background: rgba(128, 128, 128, 0.3) !important;
+            transform: none !important;
         }
 
         .markdown-content {
@@ -2199,10 +2211,163 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
         }
 
         .modal-content.markdown-modal {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             max-width: 100vw;
             max-height: 100vh;
+            margin: 0;
+            border-radius: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+        }
+
+        /* Responsive styles for Markdown Editor */
+        @media (max-width: 1024px) {
+            .markdown-toolbar {
+                padding: 8px 12px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                min-height: auto;
+            }
+
+            .markdown-toolbar-group {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .markdown-btn {
+                flex: 1;
+                min-width: 80px;
+                max-width: 120px;
+                font-size: 0.75em;
+                padding: 8px 12px;
+            }
+
+            .markdown-content {
+                flex-direction: column;
+            }
+
+            .markdown-editor-pane,
+            .markdown-preview-pane {
+                flex: 1;
+                border-right: none;
+                border-bottom: 1px solid #444;
+                min-height: 300px;
+            }
+
+            .markdown-editor-pane.fullwidth,
+            .markdown-preview-pane.fullwidth {
+                min-height: calc(100vh - 120px);
+            }
+
+            .pane-header {
+                padding: 6px 10px;
+                font-size: 0.85em;
+            }
+
+            .markdown-textarea {
+                font-size: 13px;
+                padding: 12px;
+            }
+
+            .markdown-preview {
+                font-size: 14px;
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .markdown-toolbar {
+                padding: 6px 8px;
+            }
+
+            .markdown-btn {
+                font-size: 0.7em;
+                padding: 6px 8px;
+                min-width: 60px;
+                max-width: 100px;
+            }
+
+            .markdown-textarea {
+                font-size: 12px;
+                padding: 10px;
+                line-height: 1.5;
+            }
+
+            .markdown-preview {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .markdown-status {
+                padding: 4px 8px;
+                font-size: 0.75em;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .markdown-editor-pane.fullwidth,
+            .markdown-preview-pane.fullwidth {
+                min-height: calc(100vh - 100px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .markdown-toolbar {
+                padding: 4px 6px;
+            }
+
+            .markdown-toolbar-group {
+                gap: 3px;
+            }
+
+            .markdown-btn {
+                font-size: 0.65em;
+                padding: 4px 6px;
+                min-width: 50px;
+                max-width: 80px;
+            }
+
+            .pane-header {
+                padding: 4px 8px;
+                font-size: 0.8em;
+            }
+
+            .markdown-textarea {
+                font-size: 11px;
+                padding: 8px;
+                line-height: 1.4;
+            }
+
+            .markdown-preview {
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            .markdown-status {
+                padding: 3px 6px;
+                font-size: 0.7em;
+            }
+
+            .markdown-editor-pane.fullwidth,
+            .markdown-preview-pane.fullwidth {
+                min-height: calc(100vh - 80px);
+            }
+        }
+
+        /* Force full width for markdown modal on all screen sizes */
+        .modal.markdown-modal-active {
+            padding: 0;
+        }
+
+        .modal.markdown-modal-active .modal-content {
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
             margin: 0;
             border-radius: 0;
         }
@@ -2883,7 +3048,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             $('#closeModal').click(closeModal);
             $('#prevFile').click(() => navigateFile(-1));
             $('#nextFile').click(() => navigateFile(1));
-            $('#downloadFile').click(downloadCurrentFile);
+
             $('#copyLinkBtn').click(copyIpfsLink); // NEW: Add click handler for copy button
 
             // Close modal on background click
@@ -3324,6 +3489,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                     // Check if it's a markdown file
                     if (item.name.match(/\.(md|markdown)$/i)) {
                         modalContent.addClass('markdown-modal');
+                        $('#fileModal').addClass('markdown-modal-active');
                         loadMarkdownEditor(ipfsUrl, item.name);
                     } else if (item.type === 'text' || item.name.match(/\.(txt|log|conf|ini|cfg|yaml|yml)$/i)) {
                         // Affichage texte optimisé
@@ -3456,8 +3622,8 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 }
             });
 
-            // Démarrer en mode édition plein écran
-            setMarkdownViewMode('edit');
+            // Toujours démarrer en mode preview (lecture seule)
+            setMarkdownViewMode('preview');
         }
 
         function updateMarkdownPreview() {
@@ -3474,19 +3640,74 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             const editorPane = $('.markdown-editor-pane');
             const previewPane = $('.markdown-preview-pane');
 
+            // Vérifier les permissions pour les modes d'édition
+            const isOwner = currentManifest && userPublicKey && 
+                           (currentManifest.owner_hex_pubkey === userPublicKey || 
+                            !currentManifest.owner_hex_pubkey); // Si pas de propriétaire défini, autoriser l'édition
+
+            if ((mode === 'edit' || mode === 'split') && !isOwner) {
+                console.log('🔒 Mode édition restreint au propriétaire du uDRIVE');
+                mode = 'preview'; // Forcer le mode lecture seule
+            }
+
             switch(mode) {
                 case 'preview':
                     editorPane.addClass('hidden');
-                    previewPane.removeClass('hidden').removeClass('fullwidth');
+                    previewPane.removeClass('hidden').addClass('fullwidth');
                     break;
                 case 'edit':
                     previewPane.addClass('hidden');
                     editorPane.removeClass('hidden').addClass('fullwidth');
                     break;
                 case 'split':
-                default:
                     editorPane.removeClass('hidden').removeClass('fullwidth');
                     previewPane.removeClass('hidden').removeClass('fullwidth');
+                    break;
+                default:
+                    // Mode par défaut : preview
+                    editorPane.addClass('hidden');
+                    previewPane.removeClass('hidden').addClass('fullwidth');
+                    break;
+            }
+
+            // Mettre à jour les boutons de la toolbar
+            updateMarkdownToolbarButtons(mode, isOwner);
+        }
+
+        function updateMarkdownToolbarButtons(mode, isOwner) {
+            // Gérer l'affichage des boutons selon les permissions
+            const editBtn = $('.markdown-toolbar .markdown-btn:contains("Edit")');
+            const splitBtn = $('.markdown-toolbar .markdown-btn:contains("Split")');
+            const saveBtn = $('.markdown-toolbar .markdown-btn:contains("Save")');
+
+            if (!isOwner) {
+                // Si pas propriétaire, désactiver les boutons d'édition
+                editBtn.prop('disabled', true).attr('title', 'Edition réservée au propriétaire du uDRIVE');
+                splitBtn.prop('disabled', true).attr('title', 'Edition réservée au propriétaire du uDRIVE');
+                saveBtn.prop('disabled', true).attr('title', 'Sauvegarde réservée au propriétaire du uDRIVE');
+                
+                // Ajouter une classe visuelle pour indiquer l'état désactivé
+                editBtn.add(splitBtn).add(saveBtn).addClass('disabled-for-guest');
+            } else {
+                // Si propriétaire, réactiver les boutons
+                editBtn.prop('disabled', false).removeAttr('title');
+                splitBtn.prop('disabled', false).removeAttr('title');
+                saveBtn.prop('disabled', false).removeAttr('title');
+                
+                editBtn.add(splitBtn).add(saveBtn).removeClass('disabled-for-guest');
+            }
+
+            // Mettre à jour l'état actif des boutons selon le mode
+            $('.markdown-toolbar .markdown-btn').removeClass('active');
+            switch(mode) {
+                case 'preview':
+                    $('.markdown-toolbar .markdown-btn:contains("Preview")').addClass('active');
+                    break;
+                case 'edit':
+                    $('.markdown-toolbar .markdown-btn:contains("Edit")').addClass('active');
+                    break;
+                case 'split':
+                    $('.markdown-toolbar .markdown-btn:contains("Split")').addClass('active');
                     break;
             }
         }
@@ -3617,6 +3838,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             modalContent.removeClass('image-modal text-modal markdown-modal');
             modalHeader.removeClass('text-header');
             modalBody.removeClass('text-body');
+            $('#fileModal').removeClass('markdown-modal-active');
         }
 
         // NEW: Function to copy IPFS link to clipboard
@@ -3700,6 +3922,16 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 npub: userPublicKey
             };
 
+            // Ajouter les données du propriétaire du drive source si disponibles
+            if (currentManifest && currentManifest.owner_hex_pubkey) {
+                syncData.owner_hex_pubkey = currentManifest.owner_hex_pubkey;
+                console.log('Ajout de owner_hex_pubkey à la synchronisation:', currentManifest.owner_hex_pubkey.substring(0, 12) + '...');
+            }
+            if (currentManifest && currentManifest.owner_email) {
+                syncData.owner_email = currentManifest.owner_email;
+                console.log('Ajout de owner_email à la synchronisation:', currentManifest.owner_email);
+            }
+
             // Fournir un feedback visuel
             button.html('<i class="fas fa-spinner fa-spin"></i> Syncing...').prop('disabled', true);
 
@@ -3766,86 +3998,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             console.log('Downloading:', item.name, 'from', ipfsUrl);
         }
 
-        function deleteCurrentFile(index) {
-            const item = filteredItems[index !== undefined ? index : currentFileIndex];
-            if (!item) return;
 
-            const originalButton = $(`.delete-btn[data-index="${index}"]`);
-            const originalContent = originalButton.html(); // Save original content
-
-            // Vérifier l'authentification NOSTR
-            if (!userPublicKey) {
-                console.log('❌ Authentification NOSTR requise pour supprimer un fichier.');
-                originalButton.html('<i class="fas fa-exclamation-triangle"></i> No Auth'); // Temporary message
-                setTimeout(() => {
-                    originalButton.html(originalContent).prop('disabled', false); // Restore button
-                }, 2000);
-                return;
-            }
-
-            // Demander confirmation avec détails (on conserve le confirm)
-            const confirmMessage = `⚠️ ATTENTION - Suppression définitive ⚠️\n\n` +
-                                 `Fichier : ${item.name}\n` +
-                                 `Type : ${item.type}\n` +
-                                 `Chemin : ${item.path}\n\n` +
-                                 `Cette action est IRRÉVERSIBLE.\n` +
-                                 `Êtes-vous sûr de vouloir supprimer ce fichier ?`;
-
-            if (!confirm(confirmMessage)) {
-                console.log('Suppression annulée par l\'utilisateur');
-                return;
-            }
-
-            console.log('DEBUG delete - isNostrConnected:', isNostrConnected, 'userPublicKey:', userPublicKey ? 'présente' : 'absente');
-            console.log('Suppression du fichier:', item.name, 'chemin:', item.path);
-
-            const apiBaseUrl = getAPIBaseUrl();
-
-            // Préparer les données de suppression
-            const deleteData = {
-                file_path: item.path,
-                npub: userPublicKey
-            };
-
-            console.log('Envoi de la requête de suppression:', deleteData);
-
-            // Afficher un indicateur de progression sur le bouton
-            originalButton.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
-
-            $.ajax({
-                url: `${apiBaseUrl}/api/delete`,
-                type: 'POST',
-                data: JSON.stringify(deleteData),
-                contentType: 'application/json',
-                success: function(response) {
-                    console.log('Suppression réussie:', response);
-                    originalButton.html('<i class="fas fa-check"></i> Deleted!'); // Temporary success message
-
-                    // Rediriger vers le nouveau CID ou recharger la page
-                    if (response.new_cid) {
-                        redirectToNewCid(response.new_cid);
-                    } else {
-                        // Recharger la page si pas de nouveau CID
-                        setTimeout(() => {
-                            window.location.reload(); // Reload after a short delay to show message
-                        }, 1000);
-        }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erreur de suppression:', error, xhr.responseJSON);
-
-                    let errorMessage = 'Deletion failed';
-                    if (xhr.responseJSON && xhr.responseJSON.detail) {
-                        errorMessage = xhr.responseJSON.detail;
-                    }
-
-                    originalButton.html('<i class="fas fa-times"></i> Failed!').prop('disabled', false); // Temporary error message
-                    setTimeout(() => {
-                        originalButton.html(originalContent); // Restore button
-                    }, 3000);
-                }
-            });
-        }
 
         function uploadFiles(files) {
             console.log('Starting upload of', files.length, 'files');
@@ -3881,8 +4034,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                     // Utiliser la clé si elle est disponible, même si isNostrConnected peut être faux
                     let npub = userPublicKey;
                     if (userPublicKey.length === 64) {
-                        // Si c'est une clé hex, on la convertit (nécessiterait NostrTools.nip19.npubEncode)
-                        // Pour l'instant on utilise directement la clé
                         console.log('Ajout de la clé publique à l\'upload:', userPublicKey);
                         formData.append('npub', userPublicKey);
                     } else if (userPublicKey.startsWith('npub1')) {
@@ -3999,86 +4150,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             window.location.href = newURL;
         }
 
-        function deleteCurrentFile(index) {
-            const item = filteredItems[index !== undefined ? index : currentFileIndex];
-            if (!item) return;
 
-            const originalButton = $(`.delete-btn[data-index="${index}"]`);
-            const originalContent = originalButton.html(); // Save original content
-
-            // Vérifier l'authentification NOSTR
-            if (!userPublicKey) {
-                console.log('❌ Authentification NOSTR requise pour supprimer un fichier.');
-                originalButton.html('<i class="fas fa-exclamation-triangle"></i> No Auth'); // Temporary message
-                setTimeout(() => {
-                    originalButton.html(originalContent).prop('disabled', false); // Restore button
-                }, 2000);
-                return;
-            }
-
-            // Demander confirmation avec détails (on conserve le confirm)
-            const confirmMessage = `⚠️ ATTENTION - Suppression définitive ⚠️\n\n` +
-                                 `Fichier : ${item.name}\n` +
-                                 `Type : ${item.type}\n` +
-                                 `Chemin : ${item.path}\n\n` +
-                                 `Cette action est IRRÉVERSIBLE.\n` +
-                                 `Êtes-vous sûr de vouloir supprimer ce fichier ?`;
-
-            if (!confirm(confirmMessage)) {
-                console.log('Suppression annulée par l\'utilisateur');
-                return;
-            }
-
-            console.log('DEBUG delete - isNostrConnected:', isNostrConnected, 'userPublicKey:', userPublicKey ? 'présente' : 'absente');
-            console.log('Suppression du fichier:', item.name, 'chemin:', item.path);
-
-            const apiBaseUrl = getAPIBaseUrl();
-
-            // Préparer les données de suppression
-            const deleteData = {
-                file_path: item.path,
-                npub: userPublicKey
-            };
-
-            console.log('Envoi de la requête de suppression:', deleteData);
-
-            // Afficher un indicateur de progression sur le bouton
-            originalButton.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
-
-            $.ajax({
-                url: `${apiBaseUrl}/api/delete`,
-                type: 'POST',
-                data: JSON.stringify(deleteData),
-                contentType: 'application/json',
-                success: function(response) {
-                    console.log('Suppression réussie:', response);
-                    originalButton.html('<i class="fas fa-check"></i> Deleted!'); // Temporary success message
-
-                    // Rediriger vers le nouveau CID ou recharger la page
-                    if (response.new_cid) {
-                        redirectToNewCid(response.new_cid);
-                    } else {
-                        // Recharger la page si pas de nouveau CID
-                        setTimeout(() => {
-                            window.location.reload(); // Reload after a short delay to show message
-                        }, 1000);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erreur de suppression:', error, xhr.responseJSON);
-
-                    let errorMessage = 'Deletion failed';
-                    if (xhr.responseJSON && xhr.responseJSON.detail) {
-                        errorMessage = xhr.responseJSON.detail;
-                    }
-
-                    originalButton.html('<i class="fas fa-times"></i> Failed!').prop('disabled', false); // Temporary error message
-                    setTimeout(() => {
-                        originalButton.html(originalContent); // Restore button
-                    }, 3000);
-                }
-            });
-        }
 
         function openModalForApp(index) {
             const app = allApps[index];
@@ -4125,10 +4197,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             downloadFile(item);
         }
 
-        function downloadCurrentFile() {
-            const item = filteredItems[currentFileIndex];
-            downloadFile(item);
-        }
+
 
         function deleteFileByIndex(index) {
             if (!isNostrConnected || !userPublicKey) {
@@ -4181,57 +4250,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             });
         }
 
-        function syncFileByIndex(index) {
-            if (!isNostrConnected || !userPublicKey) {
-                alert('Please connect to NOSTR to sync files.');
-                return;
-            }
-            const item = filteredItems[index];
-            if (!item || !item.ipfs_link) {
-                alert('This file does not have a valid IPFS link to sync.');
-                return;
-            }
 
-            // Add syncing animation
-            const fileCard = $(`.file-card[data-index="${index}"]`);
-            fileCard.addClass('syncing');
-
-            const syncUrl = `${upassportUrl}/api/upload_from_drive`;
-            const payload = {
-                ipfs_link: item.ipfs_link,
-                npub: userPublicKey
-            };
-            console.log('Syncing file:', payload);
-            $.ajax({
-                url: syncUrl,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function(response) {
-                    if (response.success) {
-                        alert(`Successfully synced "${item.name}" to your drive!`);
-                        if (response.new_cid) {
-                            reloadManifest(response.new_cid, true);
-                        }
-                    } else {
-                        alert('Failed to sync file: ' + (response.message || 'Unknown error'));
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error syncing file:', xhr.responseText);
-                    let errorMsg = 'An error occurred while syncing the file.';
-                    try {
-                        const err_json = JSON.parse(xhr.responseText);
-                        errorMsg = err_json.detail || err_json.error || errorMsg;
-                    } catch (e) {}
-                    alert('Error: ' + errorMsg);
-                },
-                complete: function() {
-                    // Remove syncing animation
-                    fileCard.removeClass('syncing');
-                }
-            });
-        }
 
         function openUploadModal() {
             if (!isNostrConnected) {
@@ -4250,80 +4269,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             $('#uploadModal').hide();
         }
 
-        async function uploadFiles(files) {
-            if (!isNostrConnected || !userPublicKey) {
-                alert('NOSTR connection is required to upload files.');
-                return;
-            }
 
-            const uploadUrl = `${upassportUrl}/api/upload`;
-            const resultsContainer = $('#upload-results');
-            const progressContainer = $('#upload-progress');
-            const progressFill = $('#progress-fill');
-            const progressText = $('#progress-text');
-
-            progressContainer.show();
-            resultsContainer.empty().hide();
-
-            let uploadedCount = 0;
-            const totalFiles = files.length;
-            let lastNewCid = null;
-
-            for (let i = 0; i < totalFiles; i++) {
-                const file = files[i];
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('npub', userPublicKey);
-
-                // Update progress bar
-                const progress = ((i + 1) / totalFiles) * 100;
-                progressFill.css('width', `${progress}%`);
-                progressText.text(`Uploading ${i + 1} of ${totalFiles}: ${file.name}`);
-
-                try {
-                    const response = await $.ajax({
-                        url: uploadUrl,
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                    });
-
-                    resultsContainer.show();
-                    resultsContainer.append(`<div class="upload-result-item success"><span class="upload-result-file">${file.name}</span><span class="upload-result-status">Success</span></div>`);
-                    uploadedCount++;
-                    if (response.new_cid) {
-                        lastNewCid = response.new_cid;
-                    }
-
-                } catch (xhr) {
-                    console.error('Upload error:', xhr.responseText);
-                    let errorMsg = 'Upload failed.';
-                    try {
-                        const err_json = JSON.parse(xhr.responseText);
-                        errorMsg = err_json.detail || err_json.error || errorMsg;
-                    } catch (e) {}
-
-                    resultsContainer.show();
-                    resultsContainer.append(`<div class="upload-result-item error"><span class="upload-result-file">${file.name}</span><span class="upload-result-status">Error: ${errorMsg}</span></div>`);
-                }
-            }
-
-            progressText.text(`Upload complete. ${uploadedCount} of ${totalFiles} files succeeded.`);
-
-            // Auto-reload after a successful upload
-            if (uploadedCount > 0 && lastNewCid) {
-                progressText.text('Upload complete. Refreshing view...');
-                setTimeout(() => {
-                    reloadManifest(lastNewCid, false);
-                }, 1000);
-            } else if (uploadedCount > 0) {
-                 setTimeout(() => {
-                    closeUploadModal();
-                    loadManifest(); // Fallback if no CID was returned
-                }, 2000);
-            }
-        }
 
         function reloadManifest(newCid, isSync = false) {
             const manifestUrl = `/ipfs/${newCid}/manifest.json`;
