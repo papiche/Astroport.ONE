@@ -2435,7 +2435,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
     <div class="bottom-panel">
         <div class="collapsible-section" id="directory-info">
             <div class="section-header" data-target="info-content">
-                <h3><i class="fas fa-info-circle"></i> Capsule Information</h3>
+                <h3><i class="fas fa-info-circle"></i> uDRIVE Information</h3>
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
             <div class="section-content" id="info-content">
@@ -3378,7 +3378,8 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             }
 
             const generatedDate = new Date(manifest.generated_at).toLocaleString();
-            const currentHash = getCurrentIPFSHash();
+            // Utiliser final_cid du manifest en priorité, sinon getCurrentIPFSHash()
+            const currentHash = manifest.final_cid || getCurrentIPFSHash();
             const hashDisplay = currentHash ?
                 `<code style="font-size:0.8em;"><i class="fas fa-fingerprint"></i> ${currentHash}</code>` :
                 '<span style="color: #ffa500; font-size:0.8em;"><i class="fas fa-clock"></i> Not published to IPFS</span>';
