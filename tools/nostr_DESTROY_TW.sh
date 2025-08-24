@@ -147,7 +147,7 @@ EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
 ${MY_PATH}/../tools/mailjet.sh \
     "${player}" \
     "${EMAIL_TEMPLATE}" \
-    "${youser} : MULTIPASS #BRO access temporarily paused - your data is safe!"
+    "${youser} : MULTIPASS missing ẐEN !"
 
 ## REMOVE NOSTR IPNS VAULT key
 #~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/MULTIPASS.QR.png.cid") ## "G1QR" CID
