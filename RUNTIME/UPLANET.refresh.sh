@@ -120,8 +120,8 @@ for UMAP in ${unique_combined[@]}; do
     }
     ## ==== PARTIE 1 : Umap.jpg et Usat.jpg (vue large) ====
     if [[ ! -s "${UMAPPATH}/Umap.jpg" ]] || [[ ! -s "${UMAPPATH}/Usat.jpg" ]]; then
-        UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-        USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
+        UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1"
+        USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1"
 
         find_or_generate_image "Umap.jpg" "${myIPFS}${UMAPGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.jpg"
         find_or_generate_image "Usat.jpg" "${myIPFS}${USATGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.jpg"
@@ -190,12 +190,10 @@ for UMAP in ${unique_combined[@]}; do
 
     ##########################################################
     ### UMAP = 0.01° UPlanet UMAP ACCESS
-    UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipfs=$(cat ${UMAPPATH}/ipfs.${TODATE} 2>/dev/null)"
-    USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01&ipfs=$(cat ${UMAPPATH}/ipfs.${TODATE} 2>/dev/null)"
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPGEN}'\" />" \
+    UMAPRENDER="/ipns/copylaradio.com/map_render.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1&ipfs=$(cat ${UMAPPATH}/ipfs.${TODATE} 2>/dev/null)"
+    echo "<meta http-equiv=\"refresh\" content=\"0; url='${UMAPRENDER}'\" />" \
         > ${UMAPPATH}/Umap.html
-    echo "<meta http-equiv=\"refresh\" content=\"0; url='${USATGEN}'\" />" \
-        > ${UMAPPATH}/Usat.html
+    rm ${UMAPPATH}/Usat.html 2>/dev/null ## TODO Remove
 
     ##########################################################
     UMAPROOT=$(ipfs add -rwq ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/* | tail -n 1)
