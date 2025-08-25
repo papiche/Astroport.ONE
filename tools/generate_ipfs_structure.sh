@@ -3327,7 +3327,12 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             $('.sync-btn').click(function(e) {
                 e.stopPropagation();
                 const index = $(this).data('index');
-                syncFileByIndex(index);
+                const item = filteredItems[index];
+                if (item && item.ipfs_link) {
+                    syncFile(item.ipfs_link);
+                } else {
+                    console.error('Cannot sync file: invalid item or missing ipfs_link', item);
+                }
             });
         }
 
