@@ -235,10 +235,10 @@ should_refresh() {
         if [[ "$UDRIVE" != "$last_udrive" ]]; then
             if [[ -n "$last_udrive" ]]; then
                 ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
-                echo "$UDRIVE" > "${last_udrive_file}"
-                REFRESH_REASON="udrive_update"
-                return 0
             fi
+            echo "$UDRIVE" > "${last_udrive_file}"
+            REFRESH_REASON="udrive_update"
+            return 0
         else
             echo "$UDRIVE" > "${last_udrive_file}"
             echo "UDRIVE CID: $last_udrive"
@@ -263,10 +263,10 @@ should_refresh() {
     #     if [[ "$UWORLD" != "$last_uworld"  ]]; then
     #        if [[ -n "$last_uworld" ]]; then
     #             ipfs --timeout 20s pin rm "$last_uworld" 2>/dev/null
-    #             echo $UWORLD > "${last_uworld_file}"
-    #             REFRESH_REASON="uworld_update"
-    #             return 0
     #         fi
+    #         echo $UWORLD > "${last_uworld_file}"
+    #         REFRESH_REASON="uworld_update"
+    #         return 0
     #     else
     #         echo $UWORLD > "${last_uworld_file}"
     #         echo "UWORLD CID: $last_uworld"
