@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-# Version: 0.2
+# Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 #
 # Script pour générer les liens géographiques entre UMAPs adjacentes
@@ -61,14 +61,18 @@ fi
 UMAP="_${LAT}_${LON}"
 THEDATE=""
 
-# Vérification du répertoire de travail
-if [[ ! -d "$HOME/.zen/tmp/${UMAP}" ]]; then
-    echo "ERREUR : Missing : ~/.zen/tmp/${UMAP} directory" >&2
+# Création du répertoire de cache permanent
+CACHE_DIR="$HOME/.zen/tmp/coucou/${UMAP}"
+mkdir -p "$CACHE_DIR"
+
+# Vérification que le répertoire a été créé
+if [[ ! -d "$CACHE_DIR" ]]; then
+    echo "ERREUR : Impossible de créer le répertoire de cache : $CACHE_DIR" >&2
     exit 1
 fi
 
-[[ -s ~/.zen/tmp/${UMAP}/nostr_geolinks.json ]] \
-    && cat ~/.zen/tmp/${UMAP}/nostr_geolinks.json \
+[[ -s "$CACHE_DIR/nostr_geolinks.json" ]] \
+    && cat "$CACHE_DIR/nostr_geolinks.json" \
     && exit 0
 
 # Fonction pour générer une UMAP adjacente
@@ -141,7 +145,7 @@ SEUMAPNS=$(generate_adjacent_umap "SOUTH EAST" "$SELAT" "$SELON")
 ##############################################################
 ## GENERATION DU FICHIER GEOJSON
 ##############################################################
-mkdir - p ~/.zen/tmp/${UMAP}/
+# Le répertoire de cache est déjà créé plus haut
 
 jq -n \
   --arg north "${NUMAPNS}" \
@@ -154,9 +158,9 @@ jq -n \
   --arg southwest "${SWUMAPNS}" \
   --arg here "${UMAPNS}" \
   '{north: $north, south: $south, east: $east, west: $west, northeast: $northeast, northwest: $northwest, southeast: $southeast, southwest: $southwest, here: $here}' \
-  > ~/.zen/tmp/${UMAP}/nostr_geolinks.json
+  > "$CACHE_DIR/nostr_geolinks.json"
 
-cat ~/.zen/tmp/${UMAP}/nostr_geolinks.json
+cat "$CACHE_DIR/nostr_geolinks.json"
 
 exit 0
 
