@@ -64,22 +64,22 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW ?! "
     echo "################################################ $(date)"
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
-    G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+    G1PUB=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
-    # Get PLAYER wallet amount
+    # Get PLAYER MULTIPASS wallet amount
     $MY_PATH/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck
     cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck ###DEBUG MODE
     COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
-    echo "+++ WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
+    echo "+++ MULTIPASS WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
-    #########################################################
-    ######## ZEN ECONOMY INTEGRATION
-    #########################################################
-    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/players/${PLAYER}/TODATE 2>/dev/null)
+    ######################################################################################
+    ######## ZEN ECONOMY INTEGRATION - MULTIPASS used for ZEN Card service level payment
+    ######################################################################################
+    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
     [[ -z $BIRTHDATE ]] \
         && BIRTHDATE="$TODATE" \
-        && echo "$TODATE" > ~/.zen/game/players/${PLAYER}/TODATE ## INIT BIRTHDATE
+        && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.birthdate ## INIT BIRTHDATE
     ####################################################################
     
     if [[ -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
@@ -101,14 +101,38 @@ for PLAYER in ${PLAYERONE[@]}; do
         Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
         # Check if the difference is a multiple of 7
         if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
-            if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 ]]; then
-                ## Pay ZCARD to CAPTAIN
-                echo "[7 DAYS CYCLE] $TODATE ZENCARD is paying $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
-                [[ ${PLAYER} != ${CAPTAINEMAIL} ]] \
-                    && ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null
-                ## RECHARGE MULTIPASS
-                g1dest=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/${PLAYER}/secret.dunikey" "$Npaf" "${g1dest}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:4NCARD" 2>/dev/null
+            if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 && ${PLAYER} != ${CAPTAINEMAIL} ]]; then
+                ## Pay ZCARD to CAPTAIN with TVA provision
+                echo "[7 DAYS CYCLE] $TODATE MULTIPASS is paying ZENCARD access $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
+                
+                # Calculate TVA provision (20% of ZENCard payment)
+                [[ -z $TVA_RATE ]] && TVA_RATE=20
+                TVA_AMOUNT=$(echo "scale=4; $Gpaf * $TVA_RATE / 100" | bc -l)
+                TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                
+                echo "[7 DAYS CYCLE] TVA provision: $TVA_AMOUNT ẐEN (${TVA_RATE}% of $Gpaf ẐEN)"
+                
+                # Main ZENCard MULTIPASS payment to CAPTAIN
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null
+                
+                # CAPTAIN pay for TVA provision to UPlanet IMPOTS wallet
+                if [[ $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
+                    # Ensure IMPOTS wallet exists
+                    if [[ ! -s ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey ]]; then
+                        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+                        chmod 600 ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey
+                    fi
+                    
+                    # Get IMPOTS wallet G1PUB
+                    IMPOTS_G1PUB=$(cat ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey | grep -o 'G1[1-9A-HJ-NP-Za-km-z]*' | head -1)
+                    
+                    if [[ -n "$IMPOTS_G1PUB" ]]; then
+                        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:CAPTAIN:${YOUSER}:TVA" 2>/dev/null
+                        echo "✅ TVA provision sent to IMPOTS wallet: $TVA_AMOUNT ẐEN"
+                    else
+                        echo "❌ IMPOTS wallet not found for TVA provision"
+                    fi
+                fi
             else
                 echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
                 $MY_PATH/../tools/mailjet.sh "${PLAYER}" "$COINS Ğ1" "ZEN Card is missing Ẑen..."

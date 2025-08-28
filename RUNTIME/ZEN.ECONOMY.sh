@@ -1,6 +1,6 @@
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ ZEN.ECONOMY.sh
@@ -8,7 +8,7 @@
 ################################################################################
 # Ce script gère l'économie de l'écosystème UPlanet :
 # 1. Vérifie les soldes des différents acteurs (UPlanet, Node, Captain)
-# 2. Gère le paiement quotidien de la PAF (Participation Aux Frais)
+# 2. Gère le paiement hebdomadaire de la PAF (Participation Aux Frais)
 # 3. Implémente le système de solidarité entre les nœuds
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -18,22 +18,28 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 start=`date +%s`
 
 #######################################################################
-# Daily payment check - ensure payment is made only once per day
-# Check if payment was already done today using marker file
+# Weekly payment check - ensure payment is made only once per week
+# Check if payment was already done this week using marker file
 #######################################################################
-PAYMENT_MARKER="$HOME/.zen/game/.payment.done"
+PAYMENT_MARKER="$HOME/.zen/game/.weekly_payment.done"
+rm -f "$HOME/.zen/game/.payment.done" ## TODO REMOVE
 
-# Check if payment was already done today
+# Get current week number (ISO week)
+CURRENT_WEEK=$(date +%V)
+CURRENT_YEAR=$(date +%Y)
+WEEK_KEY="${CURRENT_YEAR}-W${CURRENT_WEEK}"
+
+# Check if payment was already done this week
 if [[ -f "$PAYMENT_MARKER" ]]; then
-    LAST_PAYMENT_DATE=$(cat "$PAYMENT_MARKER")
-    if [[ "$LAST_PAYMENT_DATE" == "$TODATE" ]]; then
-        echo "ZEN ECONOMY: Daily payment already completed today ($TODATE)"
+    LAST_PAYMENT_WEEK=$(cat "$PAYMENT_MARKER")
+    if [[ "$LAST_PAYMENT_WEEK" == "$WEEK_KEY" ]]; then
+        echo "ZEN ECONOMY: Weekly payment already completed this week ($WEEK_KEY)"
         echo "Skipping payment process..."
         exit 0
     fi
 fi
 
-echo "ZEN ECONOMY: Starting daily payment process for $TODATE"
+echo "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
 
 #######################################################################
 # Vérification des soldes des différents acteurs du système
@@ -74,29 +80,31 @@ echo "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 # NCARD : Coût hebdomadaire de la carte NOSTR
 # ZCARD : Coût hebdomadaire de la carte ZEN
 #######################################################################
-[[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut (56/4 semaines)
+[[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut
 [[ -z $NCARD ]] && NCARD=1  # Coût hebdomadaire carte NOSTR
 [[ -z $ZCARD ]] && ZCARD=4  # Coût hebdomadaire carte ZEN
 
-# Calcul du PAF quotidien (PAF hebdomadaire / 7 jours)
-DAILYPAF=$(makecoord $(echo "$PAF / 7" | bc -l))
-echo "ZEN ECONOMY : $PAF ($DAILYPAF ZEN) :: NCARD=$NCARD // ZCARD=$ZCARD"
-DAILYG1=$(makecoord $(echo "$DAILYPAF / 10" | bc -l))
+# PAF hebdomadaire (pas de division par 7)
+WEEKLYPAF=$PAF
+echo "ZEN ECONOMY : PAF=$WEEKLYPAF ZEN/week :: NCARD=$NCARD // ZCARD=$ZCARD"
+WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l))
 
 ##################################################################################
-# Système de solidarité : Paiement de la PAF = House + Electricity + IP Connexion
-# Si le Captain a assez de Ẑen, il paie la PAF du NODE
-# Sinon, UPlanet (la caisse commune) paie la PAF
+# Système de solidarité : Paiement hebdomadaire de la PAF = House + Electricity + IP Connexion
+# Le Captain paie la PAF hebdomadaire au NODE
+# Si le Captain n'a pas assez de Ẑen, UPlanet (la caisse commune) paie la PAF
 #######################################################################
-if [[ $(echo "$DAILYG1 > 0" | bc -l) -eq 1 ]]; then
+if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
     if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
-        if [[ $(echo "$CAPTAINZEN > $DAILYPAF" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$CAPTAINZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
             ## CAPTAIN CAN PAY NODE : ECONOMY +
             CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:DAILYPAF" 2>/dev/null
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF" 2>/dev/null
+            echo "CAPTAIN paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
         else
             ## UPLANET MUST PAY NODE: ECONOMY -
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "$DAILYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:---:DAILYPAF" 2>/dev/null
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:---:WEEKLYPAF" 2>/dev/null
+            echo "UPLANET paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE (Captain insufficient funds)"
         fi
     else
         echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
@@ -114,10 +122,27 @@ fi
 ${MY_PATH}/ZEN.SWARM.payments.sh
 
 #######################################################################
-# Mark daily payment as completed
-# Create marker file with today's date to prevent duplicate payments
+# Cooperative allocation check - trigger 3x1/3 allocation if conditions are met
+# This will be executed after PAF payment to ensure proper economic flow
 #######################################################################
-echo "$TODATE" > "$PAYMENT_MARKER"
-echo "ZEN ECONOMY: Daily payment completed and marked for $TODATE"
+echo "ZEN ECONOMY: Checking cooperative allocation conditions..."
+if [[ -f "${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh" ]]; then
+    echo "ZEN ECONOMY: Triggering cooperative allocation process..."
+    ${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
+    if [[ $? -eq 0 ]]; then
+        echo "ZEN ECONOMY: Cooperative allocation process completed successfully"
+    else
+        echo "ZEN ECONOMY: Cooperative allocation process completed (no allocation triggered or insufficient funds)"
+    fi
+else
+    echo "ZEN ECONOMY: WARNING - ZEN.COOPERATIVE.3x1-3.sh not found"
+fi
+
+#######################################################################
+# Mark weekly payment as completed
+# Create marker file with current week to prevent duplicate payments
+#######################################################################
+echo "$WEEK_KEY" > "$PAYMENT_MARKER"
+echo "ZEN ECONOMY: Weekly payment completed and marked for week $WEEK_KEY"
 
 exit 0

@@ -516,15 +516,49 @@ for PLAYER in "${NOSTR[@]}"; do
                     # Only process payment if current time has passed the refresh time
                     if [[ $current_seconds -ge $refresh_seconds ]]; then
                         if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
-                            ## Pay NCARD to CAPTAIN
+                            ## Pay NCARD to CAPTAIN with TVA provision
                             [[ -z $NCARD ]] && NCARD=1
                             Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1)"
+                            
+                            # Calculate TVA provision (20% of rental payment)
+                            [[ -z $TVA_RATE ]] && TVA_RATE=20
+                            TVA_AMOUNT=$(echo "scale=4; $Npaf * $TVA_RATE / 100" | bc -l)
+                            TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                            
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) + TVA $TVA_AMOUNT ẐEN"
+                            
+                            # Main rental payment to CAPTAIN
                             payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
+                            
+                            # TVA provision to UPlanet IMPOTS wallet
+                            if [[ $? -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
+                                # Ensure IMPOTS wallet exists
+                                if [[ ! -s ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey ]]; then
+                                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+                                    chmod 600 ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey
+                                fi
+                                
+                                # Get IMPOTS wallet G1PUB
+                                IMPOTS_G1PUB=$(cat ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey | grep -o 'G1[1-9A-HJ-NP-Za-km-z]*' | head -1)
+                                
+                                if [[ -n "$IMPOTS_G1PUB" ]]; then
+                                    tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
+                                    if [[ $? -eq 0 ]]; then
+                                        log "INFO" "✅ TVA provision recorded for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                        log_metric "TVA_PROVISION_SUCCESS" "$TVA_AMOUNT" "${PLAYER}"
+                                    else
+                                        log "WARN" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                        log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
+                                    fi
+                                else
+                                    log "ERROR" "❌ IMPOTS wallet not found for TVA provision"
+                                fi
+                            fi
+                            
                             if [[ $? -eq 0 ]]; then
                                 # Record successful payment
                                 echo "$TODATE" > "$last_payment_file"
-                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN)"
+                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN + TVA $TVA_AMOUNT ẐEN)"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
                             else
