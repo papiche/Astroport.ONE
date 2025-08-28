@@ -101,7 +101,7 @@ graph TD
 
 ### **Conformité Légale 100%**
 
-- ✅ **Pad légal P2P** : Respect strict des statuts
+- ✅ **Respect strict des statuts** : https://pad.p2p.legal/s/legal#
 - ✅ **Fiscalité française** : TVA 20% + IS 15%/25%
 - ✅ **Modèle coopératif** : Allocation 3x1/3 conforme
 - ✅ **Transparence** : Audit automatique complet
@@ -154,19 +154,6 @@ UPLANETNAME.TREASURY    # Trésorerie
 UPLANETNAME.RND         # Recherche & Développement  
 UPLANETNAME.ASSETS      # Forêts & Jardins
 UPLANETNAME.IMPOT       # Provisions fiscales
-```
-
-## 🚀 Utilisation
-
-### **Vérification des soldes**
-
-```bash
-# Vérifier les soldes
-${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB}
-${MY_PATH}/../tools/COINScheck.sh ${CAPTAING1PUB} # with silkaj fallback
-
-# Vérifier les allocations
-${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
 ```
 
 ## 📈 Évolutions Futures
