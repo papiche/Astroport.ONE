@@ -113,10 +113,11 @@ for PLAYER in ${PLAYERONE[@]}; do
                 echo "[7 DAYS CYCLE] TVA provision: $TVA_AMOUNT ẐEN (${TVA_RATE}% of $Gpaf ẐEN)"
                 
                 # Main ZENCard MULTIPASS payment to CAPTAIN
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null
+                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null)
+                payment_success=$?
                 
-                # CAPTAIN pay for TVA provision to UPlanet IMPOTS wallet
-                if [[ $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
+                # CAPTAIN pay for TVA provision to UPlanet IMPOTS wallet (only if main payment succeeded)
+                if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
                     # Ensure IMPOTS wallet exists
                     if [[ ! -s ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey ]]; then
                         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
@@ -132,6 +133,30 @@ for PLAYER in ${PLAYERONE[@]}; do
                     else
                         echo "❌ IMPOTS wallet not found for TVA provision"
                     fi
+                elif [[ $payment_success -ne 0 ]]; then
+                    # Main payment failed - send error email
+                    echo "❌ Main ZENCard payment failed for ${PLAYER} on $TODATE ($Gpaf ẐEN)"
+                    
+                    # Send error email via mailjet
+                    error_message="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .error { color: red; font-weight: bold; }
+    .details { background-color: #f5f5f5; padding: 10px; margin: 10px 0; }
+</style></head><body>
+<h2 class='error'>❌ ZENCard Payment Error</h2>
+<div class='details'>
+<p><strong>Player:</strong> ${PLAYER}</p>
+<p><strong>Date:</strong> $TODATE</p>
+<p><strong>Amount:</strong> $Gpaf ẐEN</p>
+<p><strong>Error:</strong> Main payment to CAPTAIN failed</p>
+<p><strong>Balance:</strong> $COINS G1 ($ZEN ẐEN)</p>
+</div>
+<p>TVA provision was not processed due to main payment failure.</p>
+</body></html>"
+                    
+                    ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"
+                    echo "Error email sent to ${PLAYER} for payment failure"
                 fi
             else
                 echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"

@@ -529,9 +529,10 @@ for PLAYER in "${NOSTR[@]}"; do
                             
                             # Main rental payment to CAPTAIN
                             payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
+                            payment_success=$?
                             
-                            # TVA provision to UPlanet IMPOTS wallet
-                            if [[ $? -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
+                            # TVA provision to UPlanet IMPOTS wallet (only if main payment succeeded)
+                            if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
                                 # Ensure IMPOTS wallet exists
                                 if [[ ! -s ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey ]]; then
                                     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
@@ -553,18 +554,39 @@ for PLAYER in "${NOSTR[@]}"; do
                                 else
                                     log "ERROR" "❌ IMPOTS wallet not found for TVA provision"
                                 fi
+                            elif [[ $payment_success -ne 0 ]]; then
+                                # Main payment failed - send error email
+                                log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
+                                log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
+                                
+                                # Send error email via mailjet
+                                error_message="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .error { color: red; font-weight: bold; }
+    .details { background-color: #f5f5f5; padding: 10px; margin: 10px 0; }
+</style></head><body>
+<h2 class='error'>❌ MULTIPASS Payment Error</h2>
+<div class='details'>
+<p><strong>Player:</strong> ${PLAYER}</p>
+<p><strong>Date:</strong> $TODATE</p>
+<p><strong>Amount:</strong> $Npaf ẐEN</p>
+<p><strong>Error:</strong> Main payment to CAPTAIN failed</p>
+<p><strong>Balance:</strong> $COINS G1 ($ZEN ẐEN)</p>
+</div>
+<p>TVA provision was not processed due to main payment failure.</p>
+</body></html>"
+                                
+                                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "MULTIPASS Payment Error - $TODATE"
+                                log "INFO" "Error email sent to ${PLAYER} for payment failure"
                             fi
                             
-                            if [[ $? -eq 0 ]]; then
+                            if [[ $payment_success -eq 0 ]]; then
                                 # Record successful payment
                                 echo "$TODATE" > "$last_payment_file"
                                 log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN + TVA $TVA_AMOUNT ẐEN)"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
-                            else
-                                log "WARN" "❌ Weekly payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
-                                log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
-                                PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
                             fi
                         else
                             log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Destroying if not captain"
