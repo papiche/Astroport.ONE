@@ -73,20 +73,55 @@ PAYMENT_AMOUNT=4 * PAF = 56 Ẑen
 
 ```mermaid
 graph TD
-    A[MULTIPASS Payment] --> B[1 Ẑen + TVA 0.2 Ẑen]
-    C[ZenCard Payment] --> D[4 Ẑen + TVA 0.8 Ẑen]
-    B --> E[CAPTAIN Wallet]
-    D --> E
-    B --> F[IMPOTS Wallet - TVA]
-    D --> F
+    %% MULTIPASS Payment Flow
+    A[MULTIPASS Payment] --> B{Payment Success?}
+    B -->|Yes| C[1 Ẑen to CAPTAIN]
+    B -->|No| D[Error Email to Player]
+    C --> E[TVA 0.2 Ẑen to IMPOTS]
+    E --> F[Log Success]
     
-    G[Weekly PAF] --> H[4x PAF to NODE]
-    H --> I[Surplus Calculation]
-    I --> J[IS Provision 25%]
-    J --> K[3x1/3 Allocation]
-    K --> L[Treasury 33.33%]
-    K --> M[R&D 33.33%]
-    K --> N[Assets 33.34%]
+    %% ZenCard Payment Flow
+    G[ZenCard Payment] --> H{Payment Success?}
+    H -->|Yes| I[4 Ẑen to CAPTAIN]
+    H -->|No| J[Error Email to Player]
+    I --> K[TVA 0.8 Ẑen to IMPOTS]
+    K --> L[Log Success]
+    
+    %% Weekly PAF Flow
+    M[Weekly PAF Check] --> N{Captain Balance > 4x PAF?}
+    N -->|Yes| O[Captain pays 56 Ẑen to NODE]
+    N -->|No| P[UPlanet pays 56 Ẑen to NODE]
+    O --> Q[SWARM Payments]
+    P --> Q
+    
+    %% Cooperative Allocation
+    Q --> R[ZEN.COOPERATIVE.3x1-3.sh]
+    R --> S{Captain Balance > 4x PAF?}
+    S -->|Yes| T[Calculate Surplus]
+    S -->|No| U[Skip Allocation]
+    T --> V[IS Provision 25%]
+    V --> W[3x1/3 Allocation]
+    W --> X[Treasury 33.33%]
+    W --> Y[R&D 33.33%]
+    W --> Z[Assets 33.34%]
+    
+    %% Email Reports
+    F --> AA[Weekly Report Email]
+    L --> AA
+    X --> BB[Monthly Report Email]
+    Y --> BB
+    Z --> BB
+    
+    %% Styling
+    classDef success fill:#d4edda,stroke:#155724,color:#155724
+    classDef error fill:#f8d7da,stroke:#721c24,color:#721c24
+    classDef process fill:#d1ecf1,stroke:#0c5460,color:#0c5460
+    classDef decision fill:#fff3cd,stroke:#856404,color:#856404
+    
+    class C,I,O,X,Y,Z,F,L,AA,BB success
+    class D,J error
+    class A,G,M,R,T,V,W process
+    class B,H,N,S decision
 ```
 
 ### **Cycle Mensuel (Allocation Coopérative)**
