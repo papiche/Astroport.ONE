@@ -146,7 +146,10 @@ fi
 #######################################################################
 
 ## AFTER PAF PAYMENT: CHECK SWARM SUBSCRIPTIONS
-${MY_PATH}/ZEN.SWARM.payments.sh
+# ${MY_PATH}/ZEN.SWARM.payments.sh
+## Ouverture d'un compte sur un autre noeud de l'essaim pour activer des services...
+## Il suffit d'alimenter le MULTIPASS pour payer sur place.
+
 
 #######################################################################
 # Cooperative allocation check - trigger 3x1/3 allocation if conditions are met
