@@ -1,19 +1,18 @@
 graph TD
-    subgraph "Monde_Reel_Euro"
+    subgraph "Monde Réel (€)"
         A["Compte Bancaire SCIC (€)"]
-        B["Hôte Fiscal OpenCollective"]
-        C["Membre (Utilisateur)"]
+        B["Hôte Fiscal<br>(OpenCollective)"]
+        C["Membre Utilisateur"]
 
         C -- "1. Apport/Achat (€)" --> B
         B -- "Transfert fonds" --> A
     end
 
-    subgraph "Portefeuilles_Centraux_SCIC"
-        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b><br>(Émission / Burn)"]
+    subgraph "Portefeuilles Centraux de la SCIC"
+        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b> (Mint & Burn)"]
         SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]
         OPE["UPLANETNAME<br><b>Compte d'Exploitation</b>"]
         IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]
-        %% Portefeuille ajouté pour la conformité 3x1/3
         TRE["UPLANETNAME.TREASURY<br><b>Réserves/Trésorerie</b>"]
         ASS["UPLANETNAME.ASSETS<br><b>Projets (Forêts)</b>"]
         RND["UPLANETNAME.RND<br><b>R&D G1FabLab</b>"]
@@ -21,50 +20,54 @@ graph TD
         A -.-> G1 -- "2. Émet Ẑen" --> SOC & OPE
     end
 
-    subgraph "Portefeuilles_Membre"
-        MP["MULTIPASS<br><b>Revenus d'Activité</b>"]
-        ZC["ZenCard<br><b>Capital & Parts Sociales</b>"]
-        MP_Cap["MULTIPASS (Capitaine)"]
-        NODE["Portefeuille NODE (Armateur)"]
+    subgraph "Portefeuilles des Membres"
+        MP["MULTIPASS (Locataire)<br><b>Activité Commerciale</b>"]
+        ZC["ZenCard (Sociétaire)<br><b>Capital & Parts Sociales</b>"]
+        MP_Cap["MULTIPASS (Capitaine)<br><b>Revenus d'Activité</b>"]
+        NODE["Portefeuille NODE (Armateur)<br><b>Revenus PAF</b>"]
     end
 
-    %% FLUX DE CAPITALISATION
-    subgraph "Flux_Capitalisation"
+    subgraph "Flux de Capitalisation"
         SOC -- "3. Verse Parts Sociales" --> ZC
     end
 
-    %% FLUX D'EXPLOITATION
-    subgraph "Flux_Exploitation"
+    subgraph "Flux d'Exploitation"
         OPE -- "4. Recharge Locataire" --> MP
-        MP -- "5. Paiement Loyer" --> MP_Cap
-        MP_Cap -- "6a. TVA (20%)" --> IMP
-        MP_Cap -- "6b. PAF (x3)" --> NODE
-        ZC -- "7. PAF (si déficit)" --> NODE
-        MP_Cap -- "8. Surplus > 3xPAF" --> OPE
-        OPE -- "9a. IS (25%)" --> IMP
-        %% Flux corrigé pour refléter la répartition 3x1/3
-        OPE -- "9b. Allocation 3x1/3" --> TRE & ASS & RND
+        MP -- "5. Paiement Service (Loyer)" --> MP_Cap
+        MP_Cap -- "6. Calcul Résultat Capitaine" --> RES_CAP
+        RES_CAP -- "Paiement PAF (3x)" --> NODE
+        ZC -- "PAF si déficit" --> NODE
+        RES_CAP -- "TVA (20%)" --> IMP
+        RES_CAP -- "Surplus > 3xPAF" --> OPE
+        OPE -- "7. Calcul Surplus Coopérative" --> RES_COOP
+        RES_COOP -- "Provision IS (25%)" --> IMP
+        RES_COOP -- "Allocation 3x1/3" --> TRE & ASS & RND
     end
 
-    %% FLUX DE CONVERSION ET DE DON
-    subgraph "Flux_Conversion_Don"
-        MP -- "10a. Don Projet" --> ASS
-        ZC -- "10b. Don Projet" --> ASS
-        MP -- "11a. Demande Conversion (Gains)" --> G1
-        ZC -- "11b. Demande Conversion (Capital)" --> G1
-        
-        %% Flux décomposé pour plus de clarté
-        G1 -- "12. Valide 'Burn' & Déclenche paiement" --> A
-        A -- "13. Virement SEPA (€)" --> C
+    subgraph "Pont de Liquidité (Conversion €) & Dons"
+        subgraph "Dons Projets"
+            MP -- "Don" --> ASS
+            ZC -- "Don" --> ASS
+        end
+        subgraph "Conversion en €"
+            MP -- "Demande" --> PONT
+            ZC -- "Demande" --> PONT
+            NODE -- "Demande" --> PONT
+            PONT{"Processus<br>Validation & Burn"} -- "Envoie Ẑen à détruire" --> G1
+            G1 -- "Déclenche Paiement" --> A
+            A -- "Virement SEPA (€)" --> C
+        end
     end
 
     %% Styling
-    classDef real fill:#f9f,stroke:#333,stroke-width:2px
-    classDef central fill:#cff,stroke:#333,stroke-width:2px
-    classDef member fill:#cfc,stroke:#333,stroke-width:2px
+    classDef real fill:#f9f9f9,stroke:#666,stroke-width:2px,stroke-dasharray: 5 5
+    classDef central fill:#e0f7fa,stroke:#00796b,stroke-width:2px
+    classDef member fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     classDef flowbox fill:#fff,stroke:#ccc,stroke-width:1px
+    classDef logic fill:#fffde7,stroke:#fbc02d,stroke-width:2px
 
     class A,B,C real
     class G1,SOC,OPE,IMP,TRE,ASS,RND central
     class MP,ZC,MP_Cap,NODE member
-    class Flux_Capitalisation,Flux_Exploitation,Flux_Conversion_Don flowbox
+    class Flux_Capitalisation,Flux_Exploitation,"Pont de Liquidité (Conversion €) & Dons" flowbox
+    class RES_CAP, RES_COOP, PONT logic
