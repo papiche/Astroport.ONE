@@ -12,8 +12,8 @@
 # 2. 1/3 R&D (G1FabLab) - Recherche et développement
 # 3. 1/3 Forêts Jardins (Actifs Réels) - Investissement régénératif
 # 
-# Déclenchement : Allocation uniquement si le compte MULTIPASS du Capitaine 
-# dépasse 4 fois la PAF hebdomadaire
+# Déclenchement : Allocation hebdomadaire basée sur le birthday du capitaine
+# Le capitaine reçoit sa part chaque semaine (même si faible)
 #
 # Conformité fiscale : Provision automatique TVA (20%) et IS (25%)
 # via le portefeuille UPLANETNAME.IMPOT
@@ -94,15 +94,14 @@ echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
 # Configuration de la PAF hebdomadaire
 [[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut
-CAPTAIN_THRESHOLD=$(echo "$PAF * 4" | bc -l)
 CAPTAIN_SHARE_TARGET=$(echo "$PAF * 2" | bc -l)  # Part cible du capitaine (2x PAF)
 
-echo "Captain threshold (4x PAF): $CAPTAIN_THRESHOLD Ẑen"
 echo "Captain share target (2x PAF): $CAPTAIN_SHARE_TARGET Ẑen"
+echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
-# Vérification du seuil du Capitaine
-if [[ $(echo "$CAPTAINZEN < $CAPTAIN_THRESHOLD" | bc -l) -eq 1 ]]; then
-    echo "ZEN COOPERATIVE: Captain's balance insufficient for allocation ($CAPTAINZEN Ẑen < $CAPTAIN_THRESHOLD Ẑen)"
+# Vérification du solde minimum pour allocation
+if [[ $(echo "$CAPTAINZEN <= 0" | bc -l) -eq 1 ]]; then
+    echo "ZEN COOPERATIVE: Captain's balance is zero or negative ($CAPTAINZEN Ẑen)"
     echo "Skipping allocation process..."
     exit 0
 fi
@@ -116,16 +115,9 @@ if [[ $(echo "$CAPTAINZEN >= $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
     CAPTAIN_SHARE=$CAPTAIN_SHARE_TARGET
     echo "✅ Captain can receive full share: $CAPTAIN_SHARE Ẑen"
 else
-    # Le capitaine reçoit ce qui est disponible (mais au moins 1x PAF)
-    MIN_SHARE=$(echo "$PAF * 1" | bc -l)
-    if [[ $(echo "$CAPTAINZEN >= $MIN_SHARE" | bc -l) -eq 1 ]]; then
-        CAPTAIN_SHARE=$CAPTAINZEN
-        echo "⚠️  Captain receives available balance: $CAPTAIN_SHARE Ẑen (less than target $CAPTAIN_SHARE_TARGET Ẑen)"
-    else
-        echo "❌ Captain's balance too low for any share ($CAPTAINZEN Ẑen < $MIN_SHARE Ẑen)"
-        echo "Skipping allocation process..."
-        exit 0
-    fi
+    # Le capitaine reçoit tout ce qui est disponible (même si < 2x PAF)
+    CAPTAIN_SHARE=$CAPTAINZEN
+    echo "⚠️  Captain receives available balance: $CAPTAIN_SHARE Ẑen (less than target $CAPTAIN_SHARE_TARGET Ẑen)"
 fi
 
 #######################################################################
@@ -155,14 +147,16 @@ else
 fi
 
 #######################################################################
-# Vérification du solde restant pour allocation (doit être ≥ 3x PAF)
+# Vérification du solde restant pour allocation coopérative
 #######################################################################
-REMAINING_THRESHOLD=$(echo "$PAF * 3" | bc -l)
-echo "Remaining threshold for allocation (3x PAF): $REMAINING_THRESHOLD Ẑen"
+REMAINING_BALANCE=$(echo "scale=2; $CAPTAINZEN - $CAPTAIN_SHARE" | bc -l)
+echo "Remaining balance after Captain's share: $REMAINING_BALANCE Ẑen"
 
-if [[ $(echo "$CAPTAINZEN < $REMAINING_THRESHOLD" | bc -l) -eq 1 ]]; then
-    echo "ZEN COOPERATIVE: Remaining balance insufficient for allocation ($CAPTAINZEN Ẑen < $REMAINING_THRESHOLD Ẑen)"
-    echo "Captain keeps remaining balance on MULTIPASS"
+# Si le solde restant est insuffisant pour l'allocation coopérative, 
+# le capitaine garde tout et on arrête le processus
+if [[ $(echo "$REMAINING_BALANCE <= 0" | bc -l) -eq 1 ]]; then
+    echo "ZEN COOPERATIVE: No remaining balance for cooperative allocation"
+    echo "Captain keeps all available balance on MULTIPASS"
     exit 0
 fi
 
@@ -202,19 +196,19 @@ fi
 IMPOTSG1PUB=$(cat $HOME/.zen/game/uplanet.impots.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
 # Conversion du surplus restant en euros (1 Ẑen ≈ 1 €)
-SURPLUS_EUR=$(echo "scale=2; $CAPTAINZEN * 1" | bc -l)
+SURPLUS_EUR=$(echo "scale=2; $REMAINING_BALANCE * 1" | bc -l)
 
-echo "Processing tax provision on remaining surplus: $CAPTAINZEN Ẑen ($SURPLUS_EUR €)"
+echo "Processing tax provision on remaining surplus: $REMAINING_BALANCE Ẑen ($SURPLUS_EUR €)"
 
 # Calcul de l'IS selon les tranches fiscales françaises
 if [[ $(echo "$SURPLUS_EUR <= $IS_THRESHOLD" | bc -l) -eq 1 ]]; then
     # Taux réduit 15% pour les bénéfices jusqu'à 42 500 €
-    TAX_PROVISION=$(echo "scale=2; $CAPTAINZEN * $IS_RATE_REDUCED / 100" | bc -l)
+    TAX_PROVISION=$(echo "scale=2; $REMAINING_BALANCE * $IS_RATE_REDUCED / 100" | bc -l)
     TAX_RATE_USED=$IS_RATE_REDUCED
     echo "Using reduced tax rate: $IS_RATE_REDUCED% (surplus: $SURPLUS_EUR € <= $IS_THRESHOLD €)"
 else
     # Taux normal 25% pour les bénéfices au-delà de 42 500 €
-    TAX_PROVISION=$(echo "scale=2; $CAPTAINZEN * $IS_RATE_NORMAL / 100" | bc -l)
+    TAX_PROVISION=$(echo "scale=2; $REMAINING_BALANCE * $IS_RATE_NORMAL / 100" | bc -l)
     TAX_RATE_USED=$IS_RATE_NORMAL
     echo "Using normal tax rate: $IS_RATE_NORMAL% (surplus: $SURPLUS_EUR € > $IS_THRESHOLD €)"
 fi
@@ -233,7 +227,7 @@ else
 fi
 
 # Calcul du surplus net après provision fiscale
-NET_SURPLUS=$(echo "scale=2; $CAPTAINZEN - $TAX_PROVISION" | bc -l)
+NET_SURPLUS=$(echo "scale=2; $REMAINING_BALANCE - $TAX_PROVISION" | bc -l)
 echo "Net surplus after tax provision: $NET_SURPLUS Ẑen"
 
 #######################################################################
@@ -336,7 +330,7 @@ if [[ $(echo "$CAPTAIN_SHARE == $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
 else
     echo "👨‍✈️ Captain's earning (partial): $CAPTAIN_SHARE Ẑen of $CAPTAIN_SHARE_TARGET Ẑen target"
 fi
-echo "📊 Remaining surplus for allocation: $CAPTAINZEN Ẑen"
+echo "📊 Remaining surplus for allocation: $REMAINING_BALANCE Ẑen"
 echo "💰 Tax provision (${TAX_RATE_USED}%): $TAX_PROVISION Ẑen"
 echo "📈 Net surplus allocated: $NET_SURPLUS Ẑen"
 echo "🏦 Treasury (1/3): $TREASURY_AMOUNT Ẑen"
@@ -362,10 +356,9 @@ UPlanet: ${UPLANETG1PUB:0:8}
 
 ECONOMIC DATA:
 - Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $CAPTAIN_SHARE + $TAX_PROVISION" | bc -l) Ẑen
-- Captain threshold (4x PAF): $CAPTAIN_THRESHOLD Ẑen
 - Captain share target (2x PAF): $CAPTAIN_SHARE_TARGET Ẑen
 - Captain's share transferred: $CAPTAIN_SHARE Ẑen
-- Remaining surplus for allocation: $CAPTAINZEN Ẑen
+- Remaining surplus for allocation: $REMAINING_BALANCE Ẑen
 
 TAX PROVISION:
 - Tax rate applied: ${TAX_RATE_USED}%

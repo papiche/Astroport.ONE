@@ -130,12 +130,13 @@ Le script `ZEN.COOPERATIVE.3x1-3.sh` implémente automatiquement la création et
 
 # Fréquence d'exécution : Hebdomadaire (basée sur le birthday du capitaine)
 # Fichier de marquage : ~/.zen/game/.cooperative_allocation.done
+# Seuil : Aucun seuil minimum - le capitaine reçoit sa part chaque semaine
 ```
 
 **Processus d'Allocation Automatisé :**
-1. **Vérification du seuil** : Allocation uniquement si MULTIPASS Capitaine > 4x PAF
-2. **Transfert part Capitaine** : 2x PAF vers `UPLANETNAME.$CAPTAINEMAIL` (convertible en euros)
-3. **Vérification solde restant** : Allocation uniquement si solde restant ≥ 3x PAF
+1. **Vérification du solde** : Allocation si MULTIPASS Capitaine > 0
+2. **Transfert part Capitaine** : 2x PAF (ou solde disponible si inférieur) vers `UPLANETNAME.$CAPTAINEMAIL` (convertible en euros)
+3. **Vérification solde restant** : Allocation coopérative si solde restant > 0
 4. **Provision fiscale** : Calcul automatique IS (15%/25%) vers `UPLANETNAME.IMPOT`
 5. **Allocation 3x1/3** : Répartition du surplus net vers les 3 portefeuilles dédiés
 6. **Rapport automatisé** : Envoi hebdomadaire par email au Capitaine avec traçabilité complète
@@ -204,9 +205,9 @@ graph TD
         B --> C[Si insuffisant: UPlanet paie]
     end
     
-    subgraph "Cycle Mensuel (ZEN.COOPERATIVE.3x1-3.sh)"
-        D[Surplus > 4x PAF] --> E[Transfert 2x PAF vers UPLANETNAME.$CAPTAINEMAIL]
-        E --> F[Si solde restant ≥ 3x PAF: Provision IS vers UPLANETNAME.IMPOT]
+    subgraph "Cycle Hebdomadaire (ZEN.COOPERATIVE.3x1-3.sh)"
+        D[Surplus > 0] --> E[Transfert 2x PAF (ou solde disponible) vers UPLANETNAME.$CAPTAINEMAIL]
+        E --> F[Si solde restant > 0: Provision IS vers UPLANETNAME.IMPOT]
         F --> G[Allocation 3x1/3 vers portefeuilles dédiés]
         G --> H[Rapport automatisé]
     end
@@ -399,7 +400,7 @@ Pour accompagner nos membres, la coopérative mettra en place un **service d'ass
     *   Total des Ẑen gagnés (likes, services) sur la période.
     *   Total des Ẑen convertis en Euros sur la période.
     *   Un rappel : "Le montant à déclarer à l'URSSAF pour ce trimestre est de **XX.XX €**. Nous vous recommandons le régime de la Micro-Entreprise (BNC) avec versement libératoire."
-    *   Un lien vers un guide détaillé ("*Déclarer ses Ẑen pour les Nuls*").
+    *  Rédiger un guide détaillé : **"*Déclarer ses Ẑen pour les Nuls*"**.
 
 Ce service à haute valeur ajoutée renforce la confiance, simplifie la vie des membres et garantit une conformité fiscale à l'échelle de tout l'écosystème.
 

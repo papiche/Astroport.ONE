@@ -51,8 +51,8 @@ PAF=14 Ẑen
 ### **3. Allocation Coopérative 3x1/3**
 
 **Processus d'allocation :**
-1. **Transfert part Capitaine** : 2x PAF vers `UPLANETNAME.$CAPTAINEMAIL` (convertible en euros)
-2. **Vérification solde restant** : Allocation uniquement si ≥ 3x PAF
+1. **Transfert part Capitaine** : 2x PAF (ou solde disponible si inférieur) vers `UPLANETNAME.$CAPTAINEMAIL` (convertible en euros)
+2. **Vérification solde restant** : Allocation coopérative si solde restant > 0
 3. **Provision fiscale** : IS (15%/25%) vers `UPLANETNAME.IMPOT`
 4. **Répartition 3x1/3** : Surplus net vers les portefeuilles dédiés
 
@@ -109,10 +109,10 @@ graph TD
     
     %% Cooperative Allocation
     S --> T[ZEN.COOPERATIVE.3x1-3.sh]
-    T --> U{Captain Balance > 4x PAF?}
-    U -->|Yes| V[Transfer 2x PAF to Captain Wallet]
+    T --> U{Captain Balance > 0?}
+    U -->|Yes| V[Transfer 2x PAF (or available) to Captain Wallet]
     U -->|No| W[Skip Allocation]
-    V --> X{Remaining ≥ 3x PAF?}
+    V --> X{Remaining > 0?}
     X -->|Yes| Y[IS Provision 15%/25%]
     X -->|No| Z[Captain keeps remaining]
     Y --> AA[3x1/3 Allocation]
@@ -141,9 +141,9 @@ graph TD
 
 ### **Cycle Hebdomadaire (Allocation Coopérative)**
 
-1. **Vérification du seuil** : Solde Capitaine > 4x PAF
-2. **Transfert part Capitaine** : 2x PAF vers portefeuille dédié
-3. **Vérification solde restant** : ≥ 3x PAF pour allocation
+1. **Vérification du solde** : Solde Capitaine > 0
+2. **Transfert part Capitaine** : 2x PAF (ou solde disponible) vers portefeuille dédié
+3. **Vérification solde restant** : > 0 pour allocation coopérative
 4. **Provision fiscale** : IS (15%/25%) selon tranches françaises
 5. **Allocation 3x1/3** : Répartition du surplus net
 6. **Rapport automatique** : Envoi hebdomadaire par email
