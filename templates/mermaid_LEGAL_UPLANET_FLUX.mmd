@@ -1,73 +1,74 @@
 graph TD
-    subgraph "Monde Réel (€)"
+    subgraph "Monde Réel (Euros €)"
         A["Compte Bancaire SCIC (€)"]
-        B["Hôte Fiscal<br>(OpenCollective)"]
-        C["Membre Utilisateur"]
+        B["Hôte Fiscal OpenCollective"]
+        C["Membre (Utilisateur)"]
 
         C -- "1. Apport/Achat (€)" --> B
         B -- "Transfert fonds" --> A
     end
 
-    subgraph "Portefeuilles Centraux de la SCIC"
-        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b> (Mint & Burn)"]
+    subgraph "Portefeuilles Centraux SCIC"
+        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b><br>(Émission / Conversion)"]
         SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]
         OPE["UPLANETNAME<br><b>Compte d'Exploitation</b>"]
         IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]
         TRE["UPLANETNAME.TREASURY<br><b>Réserves/Trésorerie</b>"]
         ASS["UPLANETNAME.ASSETS<br><b>Projets (Forêts)</b>"]
         RND["UPLANETNAME.RND<br><b>R&D G1FabLab</b>"]
-
-        A -.-> G1 -- "2. Émet Ẑen" --> SOC & OPE
+        
+        A -- "2. Échange euro → Ẑen" --> G1
+        G1 -- "Émission Ẑen" --> SOC & OPE
     end
 
-    subgraph "Portefeuilles des Membres"
-        MP["MULTIPASS (Locataire)<br><b>Activité Commerciale</b>"]
-        ZC["ZenCard (Sociétaire)<br><b>Capital & Parts Sociales</b>"]
-        MP_Cap["MULTIPASS (Capitaine)<br><b>Revenus d'Activité</b>"]
-        NODE["Portefeuille NODE (Armateur)<br><b>Revenus PAF</b>"]
+    subgraph "Portefeuilles Membre"
+        MP["MULTIPASS<br><b>Compte Courant</b><br>Revenus d'Activité"]
+        ZC["ZenCard<br><b>Compte Capital</b><br>Capital & Parts Sociales"]
+        MP_Cap["MULTIPASS (Capitaine)"]
+        NODE["Portefeuille NODE (Armateur)"]
     end
 
-    subgraph Flux_Capitalisation ["Flux de Capitalisation"]
-        SOC -- "3. Verse Parts Sociales" --> ZC
-    end
+    %% FLUX DE CAPITALISATION
+    SOC -- "3. Attribution Parts Sociales" --> ZC
 
-    subgraph Flux_Exploitation ["Flux d'Exploitation"]
-        OPE -- "4. Recharge Locataire" --> MP
-        MP -- "5. Paiement Service (Loyer)" --> MP_Cap
-        MP_Cap -- "6. Calcul Résultat Capitaine" --> RES_CAP
-        RES_CAP -- "Paiement PAF (3x)" --> NODE
-        ZC -- "PAF si déficit" --> NODE
-        RES_CAP -- "TVA (20%)" --> IMP
-        RES_CAP -- "Surplus > 3xPAF" --> OPE
-        OPE -- "7. Calcul Surplus Coopérative" --> RES_COOP
-        RES_COOP -- "Provision IS (25%)" --> IMP
-        RES_COOP -- "Allocation 3x1/3" --> TRE & ASS & RND
-    end
+    %% FLUX D'EXPLOITATION
+    OPE -- "4. Recharge MULTIPASS" --> MP
+    MP -- "5. Paiement Loyer" --> MP_Cap
+    MP_Cap -- "6a. TVA (20%)" --> IMP
+    MP_Cap -- "6b. PAF (Paiement Armateur Fixe)" --> NODE
+    ZC -. "7. PAF complémentaire<br>(si déficit)" .-> NODE
+    
+    %% CRITIQUE 1: Clarification du surplus
+    MP_Cap -- "8. Surplus = Revenus - (TVA + 3xPAF)" --> OPE
+    
+    OPE -- "9a. IS (Impôt Société - 25%)" --> IMP
+    OPE -- "9b. Répartition 3x1/3" --> TRE & ASS & RND
 
-    subgraph PONT_LIQUIDITE ["Pont de Liquidité (Conversion €) & Dons"]
-        subgraph "Dons Projets"
-            MP -- "Don" --> ASS
-            ZC -- "Don" --> ASS
-        end
-        subgraph "Conversion en €"
-            MP -- "Demande" --> PONT
-            ZC -- "Demande" --> PONT
-            NODE -- "Demande" --> PONT
-            PONT{"Processus<br>Validation & Burn"} -- "Envoie Ẑen à détruire" --> G1
-            G1 -- "Déclenche Paiement" --> A
-            A -- "Virement SEPA (€)" --> C
-        end
+    %% CRITIQUE 2: Armateur utilise aussi le pont de liquidité
+    NODE -- "10a. Demande Conversion (Armateur)" --> G1
+
+    %% FLUX DE CONVERSION ET DE DON
+    MP -- "10b. Demande Conversion (Revenus)" --> G1
+    ZC -- "10c. Demande Conversion (Capital)" --> G1
+    MP -- "11a. Don Projet" --> ASS
+    ZC -- "11b. Don Projet" --> ASS
+
+    %% CRITIQUE 4: Processus de conversion détaillé
+    subgraph "Pont de Liquidité [Processus]"
+        G1 -- "12. Validation Burn" --> VAL{"Valide demande"}
+        VAL -- "13. Calcul montant €" --> A
+        A -- "14. Virement SEPA (€)" --> C
     end
 
     %% Styling
-    classDef real fill:#f9f9f9,stroke:#666,stroke-width:2px,stroke-dasharray: 5 5
-    classDef central fill:#e0f7fa,stroke:#00796b,stroke-width:2px
-    classDef member fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    classDef flowbox fill:#fff,stroke:#ccc,stroke-width:1px
-    classDef logic fill:#fffde7,stroke:#fbc02d,stroke-width:2px
+    classDef real fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef central fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef member fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef flowbox fill:#fff,stroke:#ccc,stroke-width:1px,stroke-dasharray: 5 5
 
     class A,B,C real
     class G1,SOC,OPE,IMP,TRE,ASS,RND central
     class MP,ZC,MP_Cap,NODE member
-    class Flux_Capitalisation,Flux_Exploitation,PONT_LIQUIDITE flowbox
-    class RES_CAP, RES_COOP, PONT logic
+    class Flux_Capitalisation,Flux_Exploitation,Flux_Conversion_Don flowbox
+    class Pont_de_Liquidité process
