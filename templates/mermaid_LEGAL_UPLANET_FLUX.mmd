@@ -47,9 +47,12 @@ graph TD
     subgraph "Flux_Conversion_Don"
         MP -- "10a. Don Projet" --> ASS
         ZC -- "10b. Don Projet" --> ASS
-        MP -- "11a. Demande Conversion €" --> G1
-        ZC -- "11b. Demande Conversion €" --> G1
-        G1 -- "12. Valide le 'Burn'" -.-> A -- "13. Virement SEPA (€)" --> C
+        MP -- "11a. Demande Conversion" --> G1
+        ZC -- "11b. Demande Conversion" --> G1
+        
+        %% Ligne corrigée : décomposition en deux étapes
+        G1 -- "12. Valide le 'Burn' & Déclenche paiement" --> A
+        A -- "13. Virement SEPA (€)" --> C
     end
 
     %% Styling
