@@ -293,7 +293,7 @@ graph TD
     subgraph "Allocation Coopérative"
         S --> T[ZEN.COOPERATIVE.3x1-3.sh]
         T --> U{Captain Balance > 0?}
-        U -->|Yes| V[Transfer 2 x PAF (or available) to Captain Wallet]
+        U -->|Yes| V[Transfer 2xPAF to Captain Wallet]
         U -->|No| W[Skip Allocation]
         V --> X{Remaining > 0?}
         X -->|Yes| Y[IS Provision 15%/25%]
