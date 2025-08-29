@@ -206,10 +206,12 @@ graph TD
     end
     
     subgraph "Cycle Hebdomadaire (ZEN.COOPERATIVE.3x1-3.sh)"
-        D[Surplus > 0] --> E[Transfert 2x PAF (ou solde disponible) vers UPLANETNAME.$CAPTAINEMAIL]
-        E --> F[Si solde restant > 0: Provision IS vers UPLANETNAME.IMPOT]
-        F --> G[Allocation 3x1/3 vers portefeuilles dédiés]
-        G --> H[Rapport automatisé]
+        D[Surplus > 0] --> E[Transfert 2x PAF vers UPLANETNAME.$CAPTAINEMAIL]
+        E --> F{Si solde restant > 0?}
+        F -->|Oui| G[Provision IS vers UPLANETNAME.IMPOT]
+        F -->|Non| H[Fin du processus]
+        G --> I[Allocation 3x1/3 vers portefeuilles dédiés]
+        I --> J[Rapport automatisé]
     end
 ```
 
@@ -407,3 +409,81 @@ Ce service à haute valeur ajoutée renforce la confiance, simplifie la vie des 
 ### **Conclusion**
 
 Le modèle économique de CopyLaRadio est une **matrice organisationnelle auto-exécutable**. Ce document de concordance démontre que son innovation radicale n'est pas incompatible avec les cadres légaux et fiscaux existants, mais les intègre de manière transparente et automatisée. Ce n'est pas seulement une entreprise. **C'est un protocole pour générer des coopératives résilientes, transparentes et régénératrices.**
+
+```mermaid
+graph TD
+    subgraph "Monde Réel (Euros €)"
+        A["Compte Bancaire SCIC (€)"]
+        B["Hôte Fiscal OpenCollective"]
+        C["Membre (Utilisateur)"]
+
+        C -- "1. Apport/Achat (€)" --> B
+        B -- "Transfert fonds" --> A
+    end
+
+    subgraph "Portefeuilles Centraux SCIC"
+        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b><br>(Émission / Conversion)"]
+        SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]
+        OPE["UPLANETNAME<br><b>Compte d'Exploitation</b>"]
+        IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]
+        TRE["UPLANETNAME.TREASURY<br><b>Réserves/Trésorerie</b>"]
+        ASS["UPLANETNAME.ASSETS<br><b>Projets (Forêts)</b>"]
+        RND["UPLANETNAME.RND<br><b>R&D G1FabLab</b>"]
+        
+        A -- "2. Échange euro → Ẑen" --> G1
+        G1 -- "Émission Ẑen" --> SOC & OPE
+    end
+
+    subgraph "Portefeuilles Membre"
+        MP["MULTIPASS<br><b>Compte Courant</b><br>Revenus d'Activité"]
+        ZC["ZenCard<br><b>Compte Capital</b><br>Capital & Parts Sociales"]
+        MP_Cap["MULTIPASS (Capitaine)"]
+        NODE["Portefeuille NODE (Armateur)"]
+    end
+
+    %% FLUX DE CAPITALISATION
+    SOC -- "3. Attribution Parts Sociales" --> ZC
+
+    %% FLUX D'EXPLOITATION
+    OPE -- "4. Recharge MULTIPASS" --> MP
+    MP -- "5. Paiement Loyer" --> MP_Cap
+    MP_Cap -- "6a. TVA (20%)" --> IMP
+    MP_Cap -- "6b. PAF (Paiement Armateur Fixe)" --> NODE
+    ZC -. "7. PAF complémentaire<br>(si déficit)" .-> NODE
+    
+    %% CRITIQUE 1: Clarification du surplus
+    MP_Cap -- "8. Surplus = Revenus - (TVA + 3xPAF)" --> OPE
+    
+    OPE -- "9a. IS (Impôt Société - 25%)" --> IMP
+    OPE -- "9b. Répartition 3x1/3" --> TRE & ASS & RND
+
+    %% CRITIQUE 2: Armateur utilise aussi le pont de liquidité
+    NODE -- "10a. Demande Conversion (Armateur)" --> G1
+
+    %% FLUX DE CONVERSION ET DE DON
+    MP -- "10b. Demande Conversion (Revenus)" --> G1
+    ZC -- "10c. Demande Conversion (Capital)" --> G1
+    MP -- "11a. Don Projet" --> ASS
+    ZC -- "11b. Don Projet" --> ASS
+
+    %% CRITIQUE 4: Processus de conversion détaillé
+    subgraph "Pont de Liquidité [Processus]"
+        G1 -- "12. Validation Burn" --> VAL{"Valide demande"}
+        VAL -- "13. Calcul montant €" --> A
+        A -- "14. Virement SEPA (€)" --> C
+    end
+
+    %% Styling
+    classDef real fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef central fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef member fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef flowbox fill:#fff,stroke:#ccc,stroke-width:1px,stroke-dasharray: 5 5
+
+    class A,B,C real
+    class G1,SOC,OPE,IMP,TRE,ASS,RND central
+    class MP,ZC,MP_Cap,NODE member
+    class Flux_Capitalisation,Flux_Exploitation,Flux_Conversion_Don flowbox
+    class Pont_de_Liquidité process
+```
+
