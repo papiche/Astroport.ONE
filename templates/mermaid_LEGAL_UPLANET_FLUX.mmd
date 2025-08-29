@@ -27,11 +27,11 @@ graph TD
         NODE["Portefeuille NODE (Armateur)<br><b>Revenus PAF</b>"]
     end
 
-    subgraph "Flux de Capitalisation"
+    subgraph Flux_Capitalisation ["Flux de Capitalisation"]
         SOC -- "3. Verse Parts Sociales" --> ZC
     end
 
-    subgraph "Flux d'Exploitation"
+    subgraph Flux_Exploitation ["Flux d'Exploitation"]
         OPE -- "4. Recharge Locataire" --> MP
         MP -- "5. Paiement Service (Loyer)" --> MP_Cap
         MP_Cap -- "6. Calcul Résultat Capitaine" --> RES_CAP
@@ -44,7 +44,7 @@ graph TD
         RES_COOP -- "Allocation 3x1/3" --> TRE & ASS & RND
     end
 
-    subgraph "Pont de Liquidité (Conversion €) & Dons"
+    subgraph PONT_LIQUIDITE ["Pont de Liquidité (Conversion €) & Dons"]
         subgraph "Dons Projets"
             MP -- "Don" --> ASS
             ZC -- "Don" --> ASS
@@ -69,5 +69,5 @@ graph TD
     class A,B,C real
     class G1,SOC,OPE,IMP,TRE,ASS,RND central
     class MP,ZC,MP_Cap,NODE member
-    class Flux_Capitalisation,Flux_Exploitation,"Pont de Liquidité (Conversion €) & Dons" flowbox
+    class Flux_Capitalisation,Flux_Exploitation,PONT_LIQUIDITE flowbox
     class RES_CAP, RES_COOP, PONT logic
