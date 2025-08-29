@@ -252,7 +252,7 @@ Cela montre que **tous les membres sont logés à la même enseigne** et que le 
 ```mermaid
 graph TD
     %% Styling definitions
-    classDef success fill:#d4edda,stroke:#155724,color:#155724
+    classDef success fill:#d4edda,stroke:##155724,color:#155724
     classDef error fill:#f8d7da,stroke:#721c24,color:#721c24
     classDef process fill:#d1ecf1,stroke:#0c5460,color:#0c5460
     classDef decision fill:#fff3cd,stroke:#856404,color:#856404
