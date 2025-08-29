@@ -25,6 +25,8 @@ Our model is simple: **we turn the cost of infrastructure into shared capital.**
 *   **The Ẑen (Ẑ):** To manage our projects, we use an internal, stable accounting unit called the Ẑen. Within our cooperative, **1 Ẑen = 1€**. It allows us to transparently manage our assets (servers, domains, etc.) and our expenses.
 *   **Shared Ownership:** When you contribute to the cooperative, you're not just "paying for a service." You are buying parts of the shared infrastructure, becoming a co-owner of the servers, and investing in our collective future—including real-world assets like forests.
 
+> **📜 For a complete understanding of our cooperative legal framework, see our [Constitution of the UPlanet Ecosystem](LEGAL.md)**
+
 ## 🚀 Your Journey in Our Ecosystem: 3 Paths to Sovereignty
 
 We offer three clear ways to join, each with its own Zine (flyer) to guide you.
@@ -100,6 +102,7 @@ For those who want to dive deeper into the nuts and bolts of our system.
 *   **[🏗️ ARCHITECTURE.md](ARCHITECTURE.md)**: A complete technical overview of the system, data flows, and economic models.
 *   **[📖 DOCUMENTATION.md](DOCUMENTATION.md)**: Our central documentation hub for all components.
 *   **[🌍 ANARCHITECTE.md](ANARCHITECTE.md)**: **The philosophical and architectural overview** of the UPlanet ecosystem - vision, concepts, and the bridge between digital sovereignty and ecological regeneration.
+*   **[📜 LEGAL.md](LEGAL.md)**: **The Constitution of the UPlanet Ecosystem** - our cooperative legal framework, governance principles, and social contract.
 *   **[💰 ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md)**: **The technical implementation of our cooperative economic model** - automated payments, tax provisions, and 3x1/3 allocation system (100% compliant with French cooperative law).
 *   **[GitBook Guide](https://astroport-1.gitbook.io/astroport.one/)**: User-friendly documentation and tutorials.
 *   **[📋 Le Livre Blanc Astroport.ONE](BOOKS/Le%20Livre%20Blanc%20Astroport.ONE%20_%20De%20la%20Souveraineté%20Numérique%20à%20la%20Régénération%20Écologique.md)**: The comprehensive white paper detailing our vision from digital sovereignty to ecological regeneration (French).
