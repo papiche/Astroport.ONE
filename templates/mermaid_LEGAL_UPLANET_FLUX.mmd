@@ -1,5 +1,5 @@
 graph TD
-    subgraph Monde Réel (€)
+    subgraph "Monde_Reel_Euro"
         A["Compte Bancaire SCIC (€)"]
         B["Hôte Fiscal OpenCollective"]
         C["Membre (Utilisateur)"]
@@ -8,40 +8,43 @@ graph TD
         B -- "Transfert fonds" --> A
     end
 
-    subgraph Portefeuilles Centraux de la SCIC (La "Banque")
+    subgraph "Portefeuilles_Centraux_SCIC"
         G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b><br>(Émission / Burn)"]
         SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]
         OPE["UPLANETNAME<br><b>Exploitation & Surplus</b>"]
         IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]
         ASS["UPLANETNAME.ASSETS<br><b>Projets (Forêts)</b>"]
+        RND["UPLANETNAME.RND<br><b>R&D G1FabLab</b>"]
 
         A -.-> G1 -- "2. Émet Ẑen" --> SOC & OPE
     end
 
-    subgraph Portefeuilles du Membre (Capitaine/Sociétaire/Locataire)
+    subgraph "Portefeuilles_Membre"
         MP["MULTIPASS<br><b>Revenus d'Activité</b>"]
         ZC["ZenCard<br><b>Capital & Parts Sociales</b>"]
+        MP_Cap["MULTIPASS (Capitaine)"]
+        NODE["Portefeuille NODE (Armateur)"]
     end
 
     %% FLUX DE CAPITALISATION
-    subgraph Flux de Capitalisation
+    subgraph "Flux_Capitalisation"
         SOC -- "3. Verse Parts Sociales" --> ZC
     end
 
     %% FLUX D'EXPLOITATION
-    subgraph Flux d'Exploitation
+    subgraph "Flux_Exploitation"
         OPE -- "4. Recharge Locataire" --> MP
-        MP -- "5. Paiement Loyer" --> MP_Cap["MULTIPASS (Capitaine)"]
+        MP -- "5. Paiement Loyer" --> MP_Cap
         MP_Cap -- "6a. TVA" --> IMP
-        MP_Cap -- "6b. PAF" --> NODE["Portefeuille NODE (Armateur)"]
+        MP_Cap -- "6b. PAF" --> NODE
         ZC -- "7. PAF (si déficit)" --> NODE
         MP_Cap -- "8. Surplus > 3xPAF" --> OPE
         OPE -- "9a. IS" --> IMP
-        OPE -- "9b. Allocation 3x1/3" --> OPE & ASS & RND["UPLANETNAME.RND"]
+        OPE -- "9b. Allocation 3x1/3" --> OPE & ASS & RND
     end
 
     %% FLUX DE CONVERSION ET DE DON
-    subgraph Flux de Conversion et Don
+    subgraph "Flux_Conversion_Don"
         MP -- "10a. Don Projet" --> ASS
         ZC -- "10b. Don Projet" --> ASS
         MP -- "11a. Demande Conversion €" --> G1
@@ -58,4 +61,4 @@ graph TD
     class A,B,C real
     class G1,SOC,OPE,IMP,ASS,RND central
     class MP,ZC,MP_Cap,NODE member
-    class Flux_de_Capitalisation,Flux_d_Exploitation,Flux_de_Conversion_et_Don flowbox
+    class Flux_Capitalisation,Flux_Exploitation,Flux_Conversion_Don flowbox
