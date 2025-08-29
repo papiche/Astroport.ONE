@@ -13,7 +13,7 @@ Le système **ZEN.ECONOMY** est l'incarnation technique du pacte social de la SC
 | Script | Fonction | Fréquence | Statut |
 |--------|----------|-----------|--------|
 | `ZEN.ECONOMY.sh` | Paiement hebdomadaire PAF | Hebdomadaire | ✅ **CONFORME** |
-| `ZEN.COOPERATIVE.3x1-3.sh` | Allocation coopérative | Mensuelle | ✅ **CONFORME** |
+| `ZEN.COOPERATIVE.3x1-3.sh` | Allocation coopérative | Hebdomadaire | ✅ **CONFORME** |
 | `ZEN.SWARM.payments.sh` | Paiements inter-nœuds | Quotidienne | ✅ **CONFORME** |
 | `NOSTRCARD.refresh.sh` | Paiements MULTIPASS + TVA | Hebdomadaire | ✅ **CONFORME** |
 | `PLAYER.refresh.sh` | Paiements ZenCard + TVA | Hebdomadaire | ✅ **CONFORME** |
@@ -24,33 +24,43 @@ Le système **ZEN.ECONOMY** est l'incarnation technique du pacte social de la SC
 
 **Fréquence :** Hebdomadaire  
 **Acteur :** Capitaine → NODE  
-**Montant :** 4x PAF (seuil de sécurité)  
+**Montant :** PAF hebdomadaire (14 Ẑen)  
+**Logique de paiement :** Hiérarchie MULTIPASS → ZEN Card → UPlanet  
 **Conformité :** ✅ 100% conforme au pad légal
 
 ```bash
 # Exemple de paiement hebdomadaire
 PAF=14 Ẑen
-PAYMENT_AMOUNT=4 * PAF = 56 Ẑen
+# 1. Si MULTIPASS > PAF → Paiement depuis MULTIPASS
+# 2. Sinon, si ZEN Card > PAF → Paiement depuis ZEN Card  
+# 3. Sinon → UPlanet paie (solidarité)
 ```
 
 ### **2. Provision Fiscale Automatique**
 
 **TVA (20%) :** Collectée automatiquement sur tous les paiements de services
-- **MULTIPASS** : TVA sur le loyer hebdomadaire (1 Ẑen)
-- **ZenCard** : TVA sur le paiement hebdomadaire (4 Ẑen)
+- **MULTIPASS** : TVA sur le loyer hebdomadaire (1 Ẑen → 0.2 Ẑen TVA)
+- **ZenCard** : TVA sur le paiement hebdomadaire (4 Ẑen → 0.8 Ẑen TVA)
 - **Portefeuille** : `UPLANETNAME.IMPOT` créé automatiquement
 
 **Impôt sur les Sociétés :** Calculé selon la réglementation française
 - **Taux réduit 15%** : Bénéfices jusqu'à 42 500€
 - **Taux normal 25%** : Bénéfices au-delà de 42 500€
-- **Provision** : 25% du surplus avant allocation coopérative
+- **Provision** : Calculé sur le surplus restant après transfert de la part capitaine
 
 ### **3. Allocation Coopérative 3x1/3**
+
+**Processus d'allocation :**
+1. **Transfert part Capitaine** : 2x PAF vers `UPLANETNAME.$CAPTAINEMAIL` (convertible en euros)
+2. **Vérification solde restant** : Allocation uniquement si ≥ 3x PAF
+3. **Provision fiscale** : IS (15%/25%) vers `UPLANETNAME.IMPOT`
+4. **Répartition 3x1/3** : Surplus net vers les portefeuilles dédiés
 
 **Répartition du surplus net (après provision fiscale) :**
 
 | Destination | Pourcentage | Objectif | Portefeuille |
 |-------------|-------------|----------|--------------|
+| **Part Capitaine** | 2x PAF | Revenus personnels (convertibles) | `UPLANETNAME.$CAPTAINEMAIL` |
 | **Trésorerie** | 33.33% | Liquidité et stabilité | `UPLANETNAME.TREASURY` |
 | **R&D** | 33.33% | Recherche et développement | `UPLANETNAME.RND` |
 | **Forêts Jardins** | 33.34% | Actifs réels régénératifs | `UPLANETNAME.ASSETS` |
@@ -62,8 +72,8 @@ PAYMENT_AMOUNT=4 * PAF = 56 Ẑen
 - Accès aux services UPlanet
 - Statut temporaire
 
-**Sociétaires (U.SOCIETY) :**
-- Accès gratuit pendant 1 an
+**Sociétaires (ZenCard) :**
+- Paiement hebdomadaire : 4 Ẑen + TVA 20%
 - Statut de co-propriétaire
 - Participation à la gouvernance
 
@@ -88,29 +98,34 @@ graph TD
     K --> L[Log Success]
     
     %% Weekly PAF Flow
-    M[Weekly PAF Check] --> N{Captain Balance > 4x PAF?}
-    N -->|Yes| O[Captain pays 56 Ẑen to NODE]
-    N -->|No| P[UPlanet pays 56 Ẑen to NODE]
-    O --> Q[SWARM Payments]
-    P --> Q
+    M[Weekly PAF Check] --> N{Captain MULTIPASS > PAF?}
+    N -->|Yes| O[Captain pays PAF from MULTIPASS]
+    N -->|No| P{Captain ZEN Card > PAF?}
+    P -->|Yes| Q[Captain pays PAF from ZEN Card]
+    P -->|No| R[UPlanet pays PAF (solidarity)]
+    O --> S[SWARM Payments]
+    Q --> S
+    R --> S
     
     %% Cooperative Allocation
-    Q --> R[ZEN.COOPERATIVE.3x1-3.sh]
-    R --> S{Captain Balance > 4x PAF?}
-    S -->|Yes| T[Calculate Surplus]
-    S -->|No| U[Skip Allocation]
-    T --> V[IS Provision 25%]
-    V --> W[3x1/3 Allocation]
-    W --> X[Treasury 33.33%]
-    W --> Y[R&D 33.33%]
-    W --> Z[Assets 33.34%]
+    S --> T[ZEN.COOPERATIVE.3x1-3.sh]
+    T --> U{Captain Balance > 4x PAF?}
+    U -->|Yes| V[Transfer 2x PAF to Captain Wallet]
+    U -->|No| W[Skip Allocation]
+    V --> X{Remaining ≥ 3x PAF?}
+    X -->|Yes| Y[IS Provision 15%/25%]
+    X -->|No| Z[Captain keeps remaining]
+    Y --> AA[3x1/3 Allocation]
+    AA --> BB[Treasury 33.33%]
+    AA --> CC[R&D 33.33%]
+    AA --> DD[Assets 33.34%]
     
     %% Email Reports
-    F --> AA[Weekly Report Email]
-    L --> AA
-    X --> BB[Monthly Report Email]
-    Y --> BB
-    Z --> BB
+    F --> EE[Weekly Report Email]
+    L --> EE
+    BB --> FF[Weekly Report Email]
+    CC --> FF
+    DD --> FF
     
     %% Styling
     classDef success fill:#d4edda,stroke:#155724,color:#155724
@@ -124,13 +139,14 @@ graph TD
     class B,H,N,S decision
 ```
 
-### **Cycle Mensuel (Allocation Coopérative)**
+### **Cycle Hebdomadaire (Allocation Coopérative)**
 
 1. **Vérification du seuil** : Solde Capitaine > 4x PAF
-2. **Calcul du surplus** : Revenus - Dépenses
-3. **Provision fiscale** : 25% pour l'IS
-4. **Allocation 3x1/3** : Répartition du surplus net
-5. **Rapport automatique** : Envoi par email
+2. **Transfert part Capitaine** : 2x PAF vers portefeuille dédié
+3. **Vérification solde restant** : ≥ 3x PAF pour allocation
+4. **Provision fiscale** : IS (15%/25%) selon tranches françaises
+5. **Allocation 3x1/3** : Répartition du surplus net
+6. **Rapport automatique** : Envoi hebdomadaire par email
 
 ## 🛡️ Sécurité et Conformité
 
@@ -155,19 +171,18 @@ graph TD
 ```bash
 # Exemple de métriques collectées
 TOTAL_PLAYERS=42
-DAILY_UPDATES=15
-PAYMENTS_PROCESSED=28
+WEEKLY_PAF_PAYMENTS=28
 TVA_COLLECTED=5.6
+CAPTAIN_SHARE_TRANSFERRED=56
 IS_PROVISIONED=12.5
 ALLOCATION_SUCCESS=100%
 ```
 
 ### **Rapports Automatiques**
 
-- **Rapport hebdomadaire** : Paiements et TVA
-- **Rapport mensuel** : Allocation coopérative
+- **Rapport hebdomadaire** : Paiements PAF, TVA et allocation coopérative
 - **Rapport fiscal** : Provisions TVA et IS
-- **Rapport d'audit** : Traçabilité complète
+- **Rapport d'audit** : Traçabilité complète des transactions
 
 ## 🔧 Configuration
 
@@ -185,10 +200,13 @@ IS_RATE_NORMAL=25
 
 ```bash
 # Création automatique des portefeuilles
-UPLANETNAME.TREASURY    # Trésorerie
-UPLANETNAME.RND         # Recherche & Développement  
-UPLANETNAME.ASSETS      # Forêts & Jardins
-UPLANETNAME.IMPOT       # Provisions fiscales
+UPLANETNAME.$CAPTAINEMAIL  # Part du Capitaine (convertible en euros)
+UPLANETNAME.TREASURY       # Trésorerie
+UPLANETNAME.RND            # Recherche & Développement  
+UPLANETNAME.ASSETS         # Forêts & Jardins
+UPLANETNAME.IMPOT          # Provisions fiscales
+
+# Fréquence d'exécution : Hebdomadaire (basée sur le birthday du capitaine)
 ```
 
 ## 📈 Évolutions Futures

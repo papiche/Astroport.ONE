@@ -31,27 +31,58 @@ if [[ $PAF == 0 ]]; then
     exit 0
 fi
 #######################################################################
-# Cooperative allocation check - ensure allocation is made only once per month
-# Check if allocation was already done this month using marker file
+# Cooperative allocation check - ensure allocation is made only once per week
+# Check if allocation was already done this week using captain's birthday
 #######################################################################
 ALLOCATION_MARKER="$HOME/.zen/game/.cooperative_allocation.done"
 
-# Get current month and year
-CURRENT_MONTH=$(date +%m)
-CURRENT_YEAR=$(date +%Y)
-MONTH_KEY="${CURRENT_YEAR}-M${CURRENT_MONTH}"
+# Get current date and captain's birthday
+TODATE=$(date +%Y-%m-%d)
+CAPTAIN_BIRTHDAY_FILE="$HOME/.zen/game/nostr/$CAPTAINEMAIL/TODATE"
 
-# Check if allocation was already done this month
+# Check if captain's birthday file exists
+if [[ ! -f "$CAPTAIN_BIRTHDAY_FILE" ]]; then
+    echo "ZEN COOPERATIVE: Captain's birthday file not found: $CAPTAIN_BIRTHDAY_FILE"
+    echo "Skipping allocation process..."
+    exit 0
+fi
+
+CAPTAIN_BIRTHDAY=$(cat "$CAPTAIN_BIRTHDAY_FILE")
+echo "Captain's birthday: $CAPTAIN_BIRTHDAY"
+echo "Current date: $TODATE"
+
+# Check if allocation was already done this week (since captain's birthday)
 if [[ -f "$ALLOCATION_MARKER" ]]; then
-    LAST_ALLOCATION_MONTH=$(cat "$ALLOCATION_MARKER")
-    if [[ "$LAST_ALLOCATION_MONTH" == "$MONTH_KEY" ]]; then
-        echo "ZEN COOPERATIVE: Monthly allocation already completed this month ($MONTH_KEY)"
+    LAST_ALLOCATION_DATE=$(cat "$ALLOCATION_MARKER")
+    # Calculate days since last allocation
+    DAYS_SINCE_LAST=$(echo "($(date -d "$TODATE" +%s) - $(date -d "$LAST_ALLOCATION_DATE" +%s)) / 86400" | bc)
+    
+    if [[ $DAYS_SINCE_LAST -lt 7 ]]; then
+        echo "ZEN COOPERATIVE: Weekly allocation already completed this week (last: $LAST_ALLOCATION_DATE, days ago: $DAYS_SINCE_LAST)"
         echo "Skipping allocation process..."
         exit 0
     fi
 fi
 
-echo "ZEN COOPERATIVE: Starting monthly allocation process for $MONTH_KEY"
+echo "ZEN COOPERATIVE: Starting weekly allocation process (captain's birthday: $CAPTAIN_BIRTHDAY)"
+
+#######################################################################
+# Création et vérification du portefeuille CAPTAIN dédié
+#######################################################################
+echo "🔄 Processing Captain dedicated wallet..."
+
+# Créer le portefeuille CAPTAIN s'il n'existe pas
+if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+    chmod 600 ~/.zen/game/uplanet.captain.dunikey
+fi
+
+CAPTAING1PUB_DEDICATED=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
+# Vérifier le solde du portefeuille CAPTAIN dédié
+CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
+CAPTAIN_DEDICATED_ZEN=$(echo "($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc | cut -d '.' -f 1)
+echo "Captain dedicated wallet balance: $CAPTAIN_DEDICATED_ZEN Ẑen"
 
 #######################################################################
 # Vérification du solde du compte MULTIPASS du Capitaine
@@ -64,8 +95,10 @@ echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 # Configuration de la PAF hebdomadaire
 [[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut
 CAPTAIN_THRESHOLD=$(echo "$PAF * 4" | bc -l)
+CAPTAIN_SHARE_TARGET=$(echo "$PAF * 2" | bc -l)  # Part cible du capitaine (2x PAF)
 
 echo "Captain threshold (4x PAF): $CAPTAIN_THRESHOLD Ẑen"
+echo "Captain share target (2x PAF): $CAPTAIN_SHARE_TARGET Ẑen"
 
 # Vérification du seuil du Capitaine
 if [[ $(echo "$CAPTAINZEN < $CAPTAIN_THRESHOLD" | bc -l) -eq 1 ]]; then
@@ -75,7 +108,66 @@ if [[ $(echo "$CAPTAINZEN < $CAPTAIN_THRESHOLD" | bc -l) -eq 1 ]]; then
 fi
 
 #######################################################################
-# Vérification du surplus disponible sur le portefeuille coopératif
+# Adaptation de la part du Capitaine au solde disponible
+#######################################################################
+# Calculer la part réelle que le capitaine peut recevoir
+if [[ $(echo "$CAPTAINZEN >= $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
+    # Le capitaine peut recevoir sa part complète (2x PAF)
+    CAPTAIN_SHARE=$CAPTAIN_SHARE_TARGET
+    echo "✅ Captain can receive full share: $CAPTAIN_SHARE Ẑen"
+else
+    # Le capitaine reçoit ce qui est disponible (mais au moins 1x PAF)
+    MIN_SHARE=$(echo "$PAF * 1" | bc -l)
+    if [[ $(echo "$CAPTAINZEN >= $MIN_SHARE" | bc -l) -eq 1 ]]; then
+        CAPTAIN_SHARE=$CAPTAINZEN
+        echo "⚠️  Captain receives available balance: $CAPTAIN_SHARE Ẑen (less than target $CAPTAIN_SHARE_TARGET Ẑen)"
+    else
+        echo "❌ Captain's balance too low for any share ($CAPTAINZEN Ẑen < $MIN_SHARE Ẑen)"
+        echo "Skipping allocation process..."
+        exit 0
+    fi
+fi
+
+#######################################################################
+# Transfert de la part du Capitaine vers son portefeuille dédié
+#######################################################################
+echo "🔄 Transferring Captain's share ($CAPTAIN_SHARE Ẑen) to dedicated wallet..."
+
+# Calculer le montant à transférer
+TRANSFER_AMOUNT_G1=$(echo "scale=2; $CAPTAIN_SHARE / 10" | bc -l)
+
+# Transfert depuis le MULTIPASS vers le portefeuille dédié
+captain_share_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TRANSFER_AMOUNT_G1" "${CAPTAING1PUB_DEDICATED}" "UPLANET:${UPLANETG1PUB:0:8}:CAPTAIN:2xPAF" 2>/dev/null)
+
+if [[ $? -eq 0 ]]; then
+    if [[ $(echo "$CAPTAIN_SHARE == $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
+        echo "✅ Captain's full share transferred: $CAPTAIN_SHARE Ẑen ($TRANSFER_AMOUNT_G1 G1)"
+    else
+        echo "✅ Captain's partial share transferred: $CAPTAIN_SHARE Ẑen ($TRANSFER_AMOUNT_G1 G1) of $CAPTAIN_SHARE_TARGET Ẑen target"
+    fi
+    # Mettre à jour le solde après transfert
+    CAPTAINZEN=$(echo "scale=2; $CAPTAINZEN - $CAPTAIN_SHARE" | bc -l)
+    echo "Captain MULTIPASS remaining balance: $CAPTAINZEN Ẑen"
+else
+    echo "❌ Captain's share transfer failed"
+    echo "Skipping allocation process..."
+    exit 0
+fi
+
+#######################################################################
+# Vérification du solde restant pour allocation (doit être ≥ 3x PAF)
+#######################################################################
+REMAINING_THRESHOLD=$(echo "$PAF * 3" | bc -l)
+echo "Remaining threshold for allocation (3x PAF): $REMAINING_THRESHOLD Ẑen"
+
+if [[ $(echo "$CAPTAINZEN < $REMAINING_THRESHOLD" | bc -l) -eq 1 ]]; then
+    echo "ZEN COOPERATIVE: Remaining balance insufficient for allocation ($CAPTAINZEN Ẑen < $REMAINING_THRESHOLD Ẑen)"
+    echo "Captain keeps remaining balance on MULTIPASS"
+    exit 0
+fi
+
+#######################################################################
+# Vérification du solde disponible sur le portefeuille coopératif
 #######################################################################
 echo "UPlanet Cooperative G1PUB : ${UPLANETG1PUB}"
 UPLANETCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
@@ -109,8 +201,10 @@ fi
 
 IMPOTSG1PUB=$(cat $HOME/.zen/game/uplanet.impots.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-# Conversion du surplus en euros (1 Ẑen ≈ 1 €)
+# Conversion du surplus restant en euros (1 Ẑen ≈ 1 €)
 SURPLUS_EUR=$(echo "scale=2; $CAPTAINZEN * 1" | bc -l)
+
+echo "Processing tax provision on remaining surplus: $CAPTAINZEN Ẑen ($SURPLUS_EUR €)"
 
 # Calcul de l'IS selon les tranches fiscales françaises
 if [[ $(echo "$SURPLUS_EUR <= $IS_THRESHOLD" | bc -l) -eq 1 ]]; then
@@ -236,7 +330,13 @@ fi
 # Rapport d'allocation avec conformité fiscale
 #######################################################################
 echo "============================================ COOPERATIVE ALLOCATION SUMMARY"
-echo "📊 Total surplus: $CAPTAINZEN Ẑen"
+echo "📊 Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $CAPTAIN_SHARE + $TAX_PROVISION" | bc -l) Ẑen"
+if [[ $(echo "$CAPTAIN_SHARE == $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
+    echo "👨‍✈️ Captain's earning (full 2x PAF): $CAPTAIN_SHARE Ẑen"
+else
+    echo "👨‍✈️ Captain's earning (partial): $CAPTAIN_SHARE Ẑen of $CAPTAIN_SHARE_TARGET Ẑen target"
+fi
+echo "📊 Remaining surplus for allocation: $CAPTAINZEN Ẑen"
 echo "💰 Tax provision (${TAX_RATE_USED}%): $TAX_PROVISION Ẑen"
 echo "📈 Net surplus allocated: $NET_SURPLUS Ẑen"
 echo "🏦 Treasury (1/3): $TREASURY_AMOUNT Ẑen"
@@ -250,19 +350,22 @@ echo "============================================ COOPERATIVE ALLOCATION DONE."
 echo "🔄 Sending allocation report via email..."
 
 # Créer le fichier de rapport
-REPORT_FILE="$HOME/.zen/tmp/cooperative_allocation_report_${MONTH_KEY}.txt"
+REPORT_FILE="$HOME/.zen/tmp/cooperative_allocation_report_${TODATE}.txt"
 
 cat > "$REPORT_FILE" << EOF
 ============================================
 COOPERATIVE ALLOCATION REPORT
 ============================================
 Date: $(date '+%Y-%m-%d %H:%M:%S')
-Period: $MONTH_KEY
+Period: $TODATE (Captain's birthday: $CAPTAIN_BIRTHDAY)
 UPlanet: ${UPLANETG1PUB:0:8}
 
 ECONOMIC DATA:
-- Captain MULTIPASS balance: $CAPTAINZEN Ẑen
+- Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $CAPTAIN_SHARE + $TAX_PROVISION" | bc -l) Ẑen
 - Captain threshold (4x PAF): $CAPTAIN_THRESHOLD Ẑen
+- Captain share target (2x PAF): $CAPTAIN_SHARE_TARGET Ẑen
+- Captain's share transferred: $CAPTAIN_SHARE Ẑen
+- Remaining surplus for allocation: $CAPTAINZEN Ẑen
 
 TAX PROVISION:
 - Tax rate applied: ${TAX_RATE_USED}%
@@ -275,6 +378,7 @@ ALLOCATION 3x1/3 (on net surplus):
 - Assets (1/3): $ASSETS_AMOUNT Ẑen
 
 WALLET ADDRESSES:
+- Captain dedicated: ${CAPTAING1PUB_DEDICATED:0:8}...
 - Treasury: ${TREASURYG1PUB:0:8}...
 - R&D: ${RNDG1PUB:0:8}...
 - Assets: ${ASSETSG1PUB:0:8}...
@@ -287,7 +391,7 @@ EOF
 # Envoyer le rapport par email au Capitaine
 if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
     echo "📧 Sending report to Captain: $CAPTAINEMAIL"
-    ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $MONTH_KEY"
+    ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
     
     if [[ $? -eq 0 ]]; then
         echo "✅ Report sent successfully to Captain"
@@ -299,10 +403,10 @@ else
 fi
 
 #######################################################################
-# Mark monthly allocation as completed
-# Create marker file with current month to prevent duplicate allocations
+# Mark weekly allocation as completed
+# Create marker file with current date to prevent duplicate allocations
 #######################################################################
-echo "$MONTH_KEY" > "$ALLOCATION_MARKER"
-echo "ZEN COOPERATIVE: Monthly allocation completed and marked for $MONTH_KEY"
+echo "$TODATE" > "$ALLOCATION_MARKER"
+echo "ZEN COOPERATIVE: Weekly allocation completed and marked for $TODATE"
 
 exit 0
