@@ -48,7 +48,7 @@ LON=$(makecoord $LON)
 $($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
 
 ## GET COINS
-COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+COINS=$($MY_PATH/../tools/G1check.sh ${SECTORG1PUB} | tail -n 1)
 echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
 
 ## UNPLUG => SEND 10 ZEN

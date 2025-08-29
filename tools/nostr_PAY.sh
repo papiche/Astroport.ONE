@@ -121,7 +121,7 @@ select_nostr_account() {
         for account_name in "${account_names[@]}"; do
             g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
             if [[ -n "$g1pub" ]]; then
-                # Get balance from cache (much faster than COINScheck.sh)
+                # Get balance from cache (much faster than G1check.sh)
                 balance=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS 2>/dev/null)
                 if [[ -z "$balance" || "$balance" == "null" ]]; then
                     balance="0"
@@ -488,7 +488,7 @@ confirm_payment() {
     # Get source public key
     source_pubkey=$(grep "pub:" "$keyfile" | cut -d ' ' -f 2 2>/dev/null)
     
-    # Get source balance from cache (much faster than COINScheck.sh)
+    # Get source balance from cache (much faster than G1check.sh)
     source_balance=$(cat ~/.zen/tmp/coucou/${source_pubkey}.COINS 2>/dev/null)
     if [[ -z "$source_balance" || "$source_balance" == "null" ]]; then
         source_balance="0"

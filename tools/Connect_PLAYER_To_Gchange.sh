@@ -157,7 +157,7 @@ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${m
 
 ########################################################################
         # Get PLAYER wallet amount :: ~/.zen/tmp/coucou/${G1PUB}
-        COINS=$($MY_PATH/COINScheck.sh ${G1PUB} | tail -n 1)
+        COINS=$($MY_PATH/G1check.sh ${G1PUB} | tail -n 1)
         echo "+++ YOU have ${COINS} Ğ1 Coins +++"
 ########################################################################
 

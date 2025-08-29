@@ -60,7 +60,7 @@ COINS=""
 
 while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
     log "Attempting to get balance (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-    COINS=$($MY_PATH/COINScheck.sh ${ISSUERPUB} | tail -n 1)
+    COINS=$($MY_PATH/G1check.sh ${ISSUERPUB} | tail -n 1)
     if [[ -n $COINS ]]; then
         log "Successfully retrieved balance: $COINS"
         break

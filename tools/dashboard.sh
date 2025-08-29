@@ -62,7 +62,7 @@ get_wallet_balance() {
     
     # Refresh cache if requested and pubkey is valid
     if [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]]; then
-        ${SCRIPT_DIR}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+        ${SCRIPT_DIR}/G1check.sh "$pubkey" >/dev/null 2>&1
     fi
     
     # Get balance from cache

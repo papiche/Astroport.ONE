@@ -165,8 +165,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.key  "$salt" "$pepper"
             G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.key | grep 'pub:' | cut -d ' ' -f 2)
 
-            echo "COINScheck.sh ${G1PUB}"
-            ${MY_PATH}/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
+            echo "G1check.sh ${G1PUB}"
+            ${MY_PATH}/../tools/G1check.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
             CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | xargs | cut -d '.' -f 1)
             CURZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
             echo "= $CURCOINS G1 / $CURZEN ZEN"
@@ -179,7 +179,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             [[ ${CHK::3} == "ZEN" ]] && echo "ZENCARD $VAL"
 
             ## GET DESTINATION ACCOUNT AMOUNT
-            DESTM=$(${MY_PATH}/../tools/COINScheck.sh ${G1DEST} | tail -n 1)
+            DESTM=$(${MY_PATH}/../tools/G1check.sh ${G1DEST} | tail -n 1)
             DESTMZEN=$(echo "($DESTM - 1) * 10" | bc | cut -d '.' -f 1)
             echo "DEST WALLET = $DESTM G1 / $DESTMZEN ZEN"
 
@@ -426,7 +426,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
 
             ## CHECK PLAYERORIG1 WALLETS
             echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${PLAYERORIG1}"
-            PLAYERCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${PLAYERORIG1} | tail -n 1)
+            PLAYERCOINS=$(${MY_PATH}/../tools/G1check.sh ${PLAYERORIG1} | tail -n 1)
             echo "<br><b>${player} $PLAYERCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
             ###  IF EMPTY ??? WHAT  TODO
 
@@ -461,7 +461,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 && echo "@PASS LINK TO G1BILLET+ :: ${extra1} :: ${extra2}" \
                 && EXTRAG1=$(${MY_PATH}/../tools/keygen "${extra1}" "${extra2}") \
                 && ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/extrasecret.ipfs  "${extra1}" "${extra2}" \
-                && EXTRAG1COINS=$(${MY_PATH}/../tools/COINScheck.sh ${EXTRAG1} | tail -n 1) \
+                && EXTRAG1COINS=$(${MY_PATH}/../tools/G1check.sh ${EXTRAG1} | tail -n 1) \
                 && echo "<br><b>EXTRA ${VoeuName} $EXTRAG1COINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
 
             # Don't care if ORIGIN PLAYER is THERE
@@ -469,7 +469,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             #~ echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
 
             echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1VOEUPUB}"
-            G1VOEUCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${G1VOEUPUB} | tail -n 1)
+            G1VOEUCOINS=$(${MY_PATH}/../tools/G1check.sh ${G1VOEUPUB} | tail -n 1)
             echo "<br><b>${VoeuName} $G1VOEUCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
 
             echo ${WARNING} >> ~/.zen/tmp/${MOATS}/disco
@@ -672,8 +672,8 @@ echo "##########################################################################
 echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
 
     ## GET VISITOR G1 WALLET AMOUNT : VISITORCOINS
-    echo "${ZCHK}  COINScheck ${QRCODE}"
-    VISITORCOINS=$(${MY_PATH}/../tools/COINScheck.sh ${QRCODE} | tail -n 1)
+    echo "${ZCHK}  G1check ${QRCODE}"
+    VISITORCOINS=$(${MY_PATH}/../tools/G1check.sh ${QRCODE} | tail -n 1)
     COINSFILE=$HOME/.zen/tmp/${MOATS}/${QRCODE}.COINS
 
     [[ ${VISITORCOINS} != "null" ]] \

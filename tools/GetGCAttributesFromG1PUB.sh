@@ -143,7 +143,7 @@ if [[ ! -s ~/.zen/tmp/coucou/${G1PUB}.cplus.json ]]; then
             echo "AUCUN CCPLUS : NO MEMBER LINK"
         else
             cp -f ~/.zen/tmp/${MOATS}/${G1PUB}.cplus.json ~/.zen/tmp/coucou/
-            CPLUSCOIN=$(${MY_PATH}/COINScheck.sh ${CPLUS} | tail -n 1)
+            CPLUSCOIN=$(${MY_PATH}/G1check.sh ${CPLUS} | tail -n 1)
             echo "${G1PUB} IS LINKED TO MEMBER ${CPLUS} POSSESSING  ${CPLUSCOIN} G1"
         fi
 

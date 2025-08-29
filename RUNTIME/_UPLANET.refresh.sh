@@ -71,7 +71,7 @@ for UMAP in ${unique_combined[@]}; do
     UMAPG1PUB=$(cat ~/.zen/tmp/${MOATS}/${UMAP}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     [[ ! ${UMAPG1PUB} ]] && echo "ERROR generating UMAP WALLET" && exit 1
 
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${UMAPG1PUB} | tail -n 1)
+    COINS=$($MY_PATH/../tools/G1check.sh ${UMAPG1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
     echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${UMAPG1PUB}"
@@ -212,7 +212,7 @@ for UMAP in ${unique_combined[@]}; do
     SECTORHEX=$(${MY_PATH}/../tools/nostr2hex.py $SECTORNPUB)
     SECTORG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
     [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+    COINS=$($MY_PATH/../tools/G1check.sh ${SECTORG1PUB} | tail -n 1)
     echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${TODATE}${UPLANETNAME}${SECTOR}" "${TODATE}${UPLANETNAME}${SECTOR}"
@@ -235,7 +235,7 @@ for UMAP in ${unique_combined[@]}; do
     REGIONHEX=$(${MY_PATH}/../tools/nostr2hex.py $REGIONNPUB)
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
+    COINS=$($MY_PATH/../tools/G1check.sh ${REGIONG1PUB} | tail -n 1)
     echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${TODATE}${UPLANETNAME}${REGION}" "${TODATE}${UPLANETNAME}${REGION}"

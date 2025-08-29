@@ -82,7 +82,7 @@ for REGION in ${REGIONS[@]}; do
     REGIONG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}")
     [[ ! ${REGIONG1PUB} ]] && echo "ERROR generating REGION WALLET" && exit 1
 
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${REGIONG1PUB} | tail -n 1)
+    COINS=$($MY_PATH/../tools/G1check.sh ${REGIONG1PUB} | tail -n 1)
     echo "REGION : ${REGION} (${COINS} G1) WALLET : ${REGIONG1PUB}"
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/REGION.priv "${UPLANETNAME}${REGION}" "${UPLANETNAME}${REGION}"

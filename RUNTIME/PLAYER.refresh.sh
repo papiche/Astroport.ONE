@@ -67,16 +67,16 @@ for PLAYER in ${PLAYERONE[@]}; do
     G1PUB=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
     # Get PLAYER MULTIPASS wallet amount
-    $MY_PATH/../tools/COINScheck.sh ${G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck
-    cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck ###DEBUG MODE
-    COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.COINScheck | tail -n 1)
+    $MY_PATH/../tools/G1check.sh ${G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check
+    cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check ###DEBUG MODE
+    COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
     echo "+++ MULTIPASS WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
     ######################################################################################
     ######## ZEN ECONOMY INTEGRATION - MULTIPASS used for ZEN Card service level payment
     ######################################################################################
-    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
     [[ -z $BIRTHDATE ]] \
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.birthdate ## INIT BIRTHDATE

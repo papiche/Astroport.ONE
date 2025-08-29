@@ -40,7 +40,7 @@ SECTOR="_${SLAT}_${SLON}"
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
 SECTORG1PUB=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}.priv | grep "pub:" | cut -d ' ' -f 2)
 [[ ! ${SECTORG1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
-COINS=$($MY_PATH/../tools/COINScheck.sh ${SECTORG1PUB} | tail -n 1)
+COINS=$($MY_PATH/../tools/G1check.sh ${SECTORG1PUB} | tail -n 1)
 echo "SECTOR : ${SECTOR} (${COINS} G1) WALLET : ${SECTORG1PUB}"
 
 ## RETRIEVE FROM SECTOR UKEY

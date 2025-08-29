@@ -72,7 +72,7 @@ for SECTOR in ${SECTORS[@]}; do
     G1PUB=$(cat ~/.zen/tmp/${MOATS}/${SECTOR}.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     [[ ! ${G1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
 
-    COINS=$($MY_PATH/../tools/COINScheck.sh ${G1PUB} | tail -n 1)
+    COINS=$($MY_PATH/../tools/G1check.sh ${G1PUB} | tail -n 1)
     ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"

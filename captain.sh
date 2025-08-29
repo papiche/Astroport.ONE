@@ -343,7 +343,7 @@ get_wallet_balance() {
     fi
     
     # Fallback: actualiser le cache
-    "${MY_PATH}/tools/COINScheck.sh" "$pubkey" >/dev/null 2>&1
+    "${MY_PATH}/tools/G1check.sh" "$pubkey" >/dev/null 2>&1
     local balance=$(cat "$cache_file" 2>/dev/null)
     if [[ -n "$balance" && "$balance" != "null" ]]; then
         echo "$balance"
@@ -789,7 +789,7 @@ refresh_data() {
         if [[ -f "$HOME/.zen/tmp/$wallet_file" ]]; then
             local pubkey=$(cat "$HOME/.zen/tmp/$wallet_file" 2>/dev/null)
             if [[ -n "$pubkey" ]]; then
-                "${MY_PATH}/tools/COINScheck.sh" "$pubkey" >/dev/null 2>&1
+                "${MY_PATH}/tools/G1check.sh" "$pubkey" >/dev/null 2>&1
             fi
         fi
     done
@@ -799,7 +799,7 @@ refresh_data() {
         for account_name in $(ls ~/.zen/game/nostr/*@*.*/G1PUBNOSTR 2>/dev/null | rev | cut -d '/' -f 2 | rev); do
             local g1pub=$(cat ~/.zen/game/nostr/${account_name}/G1PUBNOSTR 2>/dev/null)
             if [[ -n "$g1pub" ]]; then
-                "${MY_PATH}/tools/COINScheck.sh" "$g1pub" >/dev/null 2>&1
+                "${MY_PATH}/tools/G1check.sh" "$g1pub" >/dev/null 2>&1
             fi
         done
     fi
@@ -808,7 +808,7 @@ refresh_data() {
         for player_dir in $(ls ~/.zen/game/players/*@*.*/.g1pub 2>/dev/null | rev | cut -d '/' -f 2 | rev); do
             local g1pub=$(cat ~/.zen/game/players/${player_dir}/.g1pub 2>/dev/null)
             if [[ -n "$g1pub" ]]; then
-                "${MY_PATH}/tools/COINScheck.sh" "$g1pub" >/dev/null 2>&1
+                "${MY_PATH}/tools/G1check.sh" "$g1pub" >/dev/null 2>&1
             fi
         done
     fi

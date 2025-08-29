@@ -4,7 +4,7 @@
 # Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-#~ COINScheck.sh
+#~ G1check.sh
 #~ Indiquez une clef publique G1.
 #~ Il verifie le montant présent dans le cache
 #~ ou le raffraichi quand il est plus ancien que 24H

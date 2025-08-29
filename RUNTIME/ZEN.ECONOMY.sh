@@ -55,13 +55,13 @@ echo "$UZEN Ẑen"
 # Vérification du Node (Astroport)
 NODEG1PUB=$($MY_PATH/../tools/ipfs_to_g1.py ${IPFSNODEID})
 echo "NODE G1PUB : ${NODEG1PUB}"
-NODECOIN=$(${MY_PATH}/../tools/COINScheck.sh ${NODEG1PUB} | tail -n 1)
+NODECOIN=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
 NODEZEN=$(echo "($NODECOIN - 1) * 10" | bc | cut -d '.' -f 1)
 echo "$NODEZEN Ẑen"
 
 # Vérification du Captain (gestionnaire) - MULTIPASS (NOSTR)
 echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
-CAPTAINCOIN=$(${MY_PATH}/../tools/COINScheck.sh ${CAPTAING1PUB} | tail -n 1)
+CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
 CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
 echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
@@ -71,7 +71,7 @@ if [[ -n "$CAPTAINEMAIL" ]]; then
     if [[ -d "$CAPTAIN_ZENCARD_PATH" && -s "$CAPTAIN_ZENCARD_PATH/secret.dunikey" ]]; then
         CAPTAIN_ZENCARD_PUB=$(cat "$CAPTAIN_ZENCARD_PATH/secret.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
         if [[ -n "$CAPTAIN_ZENCARD_PUB" ]]; then
-            CAPTAIN_ZENCARD_COIN=$(${MY_PATH}/../tools/COINScheck.sh ${CAPTAIN_ZENCARD_PUB} | tail -n 1)
+            CAPTAIN_ZENCARD_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_ZENCARD_PUB} | tail -n 1)
             CAPTAIN_ZENCARD_ZEN=$(echo "($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc | cut -d '.' -f 1)
             echo "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
         else

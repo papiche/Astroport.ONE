@@ -84,7 +84,7 @@ do
            sed -i "s~G1Voeu~voeu~g" $INDEX
            break
     else
-        VCOINS=$($MY_PATH/../tools/COINScheck.sh $VOEUKEY | tail -n 1)
+        VCOINS=$($MY_PATH/../tools/G1check.sh $VOEUKEY | tail -n 1)
         [[ $VCOINS == "" || $VCOINS == "null" ]] \
         && echo "G1WALLET NOT EXISTING YET : $VCOINS" \
         || echo "WISH G1WALLET = $VCOINS G1"

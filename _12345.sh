@@ -50,7 +50,7 @@ ncrunning=$(pgrep -au $USER -f 'nc -l -p 12345' | tail -n 1 | xargs | cut -d " "
 
 ## WHAT IS NODEG1PUB
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
-NODECOINS=$($MY_PATH/tools/COINScheck.sh ${NODEG1PUB} | tail -n 1)
+NODECOINS=$($MY_PATH/tools/G1check.sh ${NODEG1PUB} | tail -n 1)
 NODEZEN=$(echo "($NODECOINS - 1) * 10" | bc | cut -d '.' -f 1)
 ##############################################
 [[ ${IPFSNODEID} == "" || ${IPFSNODEID} == "null" ]] && echo "IPFSNODEID is empty" && exit 1
@@ -143,7 +143,7 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.z
 echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ###############################################
-UPLANETCOINS=$($MY_PATH/tools/COINScheck.sh ${UPLANETG1PUB} | tail -n 1)
+UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
 UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
 ###############################################
 #### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN

@@ -120,7 +120,7 @@ $MY_PATH/../tools/nostr_remove_profile.py "${secnostr}" "$myRELAY" "wss://relay.
 
 ## 2. CASH BACK
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/nostr.dunikey "${salt}" "${pepper}"
-AMOUNT=$(${MY_PATH}/../tools/COINScheck.sh ${g1pubnostr} | tail -n 1)
+AMOUNT=$(${MY_PATH}/../tools/G1check.sh ${g1pubnostr} | tail -n 1)
 echo "______ AMOUNT = ${AMOUNT} G1"
 ## EMPTY AMOUNT G1 to PRIMAL
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)

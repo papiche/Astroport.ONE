@@ -51,7 +51,7 @@ get_wallet_balance() {
     
     # Refresh cache if requested, pubkey is valid, and cache is old or missing
     if [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]] && [[ $cache_age -gt 300 ]]; then
-        ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+        ${MY_PATH}/G1check.sh "$pubkey" >/dev/null 2>&1
     fi
     
     # Get balance from cache
@@ -178,7 +178,7 @@ refresh_all_balances() {
         if [[ -f "$keyfile" ]]; then
             local pubkey=$(cat "$keyfile" 2>/dev/null)
             if [[ -n "$pubkey" ]]; then
-                ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+                ${MY_PATH}/G1check.sh "$pubkey" >/dev/null 2>&1
             fi
         fi
     done
@@ -188,7 +188,7 @@ refresh_all_balances() {
         while IFS= read -r -d '' file; do
             local pubkey=$(cat "$file" 2>/dev/null)
             if [[ -n "$pubkey" ]]; then
-                ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+                ${MY_PATH}/G1check.sh "$pubkey" >/dev/null 2>&1
             fi
         done < <(find ~/.zen/game/nostr -name "G1PUBNOSTR" -print0 2>/dev/null)
     fi
@@ -198,7 +198,7 @@ refresh_all_balances() {
         while IFS= read -r -d '' file; do
             local pubkey=$(cat "$file" 2>/dev/null)
             if [[ -n "$pubkey" ]]; then
-                ${MY_PATH}/COINScheck.sh "$pubkey" >/dev/null 2>&1
+                ${MY_PATH}/G1check.sh "$pubkey" >/dev/null 2>&1
             fi
         done < <(find ~/.zen/game/players -name ".g1pub" -print0 2>/dev/null)
     fi
@@ -3206,11 +3206,11 @@ perform_system_health_check() {
         fi
     done
     
-    # Check COINScheck.sh script
-    if [[ -f "${MY_PATH}/COINScheck.sh" ]]; then
-        echo -e "${GREEN}✓ COINScheck.sh: Available${NC}"
+    # Check G1check.sh script
+    if [[ -f "${MY_PATH}/G1check.sh" ]]; then
+        echo -e "${GREEN}✓ G1check.sh: Available${NC}"
     else
-        echo -e "${RED}✗ COINScheck.sh: Not found${NC}"
+        echo -e "${RED}✗ G1check.sh: Not found${NC}"
         ((issues++))
     fi
     
