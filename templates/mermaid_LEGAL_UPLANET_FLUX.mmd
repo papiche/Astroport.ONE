@@ -1,29 +1,29 @@
 graph TD
     subgraph "Monde_Reel_Euro"
-        A["Compte Bancaire SCIC (€)"]
-        B["Hôte Fiscal OpenCollective"]
-        C["Membre (Utilisateur)"]
+        A["Compte Bancaire SCIC (€)"]:::bank
+        B["Hôte Fiscal OpenCollective"]:::fiscal
+        C["Membre (Utilisateur)"]:::user
 
         C -- "1. Apport/Achat (€)" --> B
         B -- "Transfert fonds" --> A
     end
 
     subgraph "Portefeuilles_Centraux_SCIC"
-        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b><br>(Émission / Burn)"]
-        SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]
-        OPE["UPLANETNAME<br><b>Exploitation & Surplus</b>"]
-        IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]
-        ASS["UPLANETNAME.ASSETS<br><b>Projets (Forêts)</b>"]
-        RND["UPLANETNAME.RND<br><b>R&D G1FabLab</b>"]
+        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b><br>(Émission / Burn)"]:::reserve
+        SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]:::capital
+        OPE["UPLANETNAME<br><b>Exploitation & Surplus</b>"]:::operations
+        IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]:::tax
+        ASS["UPLANETNAME.ASSETS<br><b>Projets (Forêts)</b>"]:::assets
+        RND["UPLANETNAME.RND<br><b>R&D G1FabLab</b>"]:::rnd
 
         A -.-> G1 -- "2. Émet Ẑen" --> SOC & OPE
     end
 
     subgraph "Portefeuilles_Membre"
-        MP["MULTIPASS<br><b>Revenus d'Activité</b>"]
-        ZC["ZenCard<br><b>Capital & Parts Sociales</b>"]
-        MP_Cap["MULTIPASS (Capitaine)"]
-        NODE["Portefeuille NODE (Armateur)"]
+        MP["MULTIPASS<br><b>Revenus d'Activité</b>"]:::income
+        ZC["ZenCard<br><b>Capital & Parts Sociales</b>"]:::shares
+        MP_Cap["MULTIPASS (Capitaine)"]:::captain
+        NODE["Portefeuille NODE (Armateur)"]:::node
     end
 
     %% FLUX DE CAPITALISATION
@@ -56,10 +56,23 @@ graph TD
     end
 
     %% Styling
-    classDef real fill:#f9f,stroke:#333,stroke-width:2px
-    classDef central fill:#cff,stroke:#333,stroke-width:2px
-    classDef member fill:#cfc,stroke:#333,stroke-width:2px
-    classDef flowbox fill:#fff,stroke:#ccc,stroke-width:1px
+    classDef bank fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef fiscal fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef user fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    
+    classDef reserve fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef capital fill:#e8eaf6,stroke:#283593,stroke-width:2px
+    classDef operations fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef tax fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef assets fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef rnd fill:#fce4ec,stroke:#ad1457,stroke-width:2px
+    
+    classDef income fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef shares fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef captain fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef node fill:#d1c4e9,stroke:#4527a0,stroke-width:2px
+    
+    classDef flowbox fill:#fafafa,stroke:#bdbdbd,stroke-width:1px
 
     class A,B,C real
     class G1,SOC,OPE,IMP,ASS,RND central
