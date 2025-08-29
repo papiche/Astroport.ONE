@@ -102,7 +102,7 @@ graph TD
     N -->|Yes| O[Captain pays PAF from MULTIPASS]
     N -->|No| P{Captain ZEN Card > PAF?}
     P -->|Yes| Q[Captain pays PAF from ZEN Card]
-    P -->|No| R[UPlanet pays PAF (solidarity)]
+    P -->|No| R[UPlanet pays PAF : solidarity]
     O --> S[SWARM Payments]
     Q --> S
     R --> S
