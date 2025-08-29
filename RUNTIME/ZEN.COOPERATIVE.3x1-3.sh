@@ -24,6 +24,12 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ################################################################################
 start=`date +%s`
 
+ ## DESACTIVATE ZEN ECONOMY 
+if [[ $PAF == 0 ]]; then
+    echo "ZEN COOPERATIVE: PAF = 0"
+    echo "Skipping allocation process..."
+    exit 0
+fi
 #######################################################################
 # Cooperative allocation check - ensure allocation is made only once per month
 # Check if allocation was already done this month using marker file
@@ -58,6 +64,7 @@ echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 # Configuration de la PAF hebdomadaire
 [[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut
 CAPTAIN_THRESHOLD=$(echo "$PAF * 4" | bc -l)
+
 echo "Captain threshold (4x PAF): $CAPTAIN_THRESHOLD Ẑen"
 
 # Vérification du seuil du Capitaine
@@ -71,18 +78,9 @@ fi
 # Vérification du surplus disponible sur le portefeuille coopératif
 #######################################################################
 echo "UPlanet Cooperative G1PUB : ${UPLANETG1PUB}"
-UCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
-UZEN=$(echo "($UCOIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "Cooperative balance: $UZEN Ẑen"
-
-# Seuil minimum pour déclencher l'allocation (4x PAF)
-MIN_ALLOCATION_THRESHOLD=$CAPTAIN_THRESHOLD  # 4x PAF pour déclencher l'allocation
-
-if [[ $(echo "$UZEN < $MIN_ALLOCATION_THRESHOLD" | bc -l) -eq 1 ]]; then
-    echo "ZEN COOPERATIVE: Insufficient cooperative surplus for allocation ($UZEN Ẑen < $MIN_ALLOCATION_THRESHOLD Ẑen)"
-    echo "Skipping allocation process..."
-    exit 0
-fi
+UPLANETCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
+UPLANETZEN=$(echo "($UPLANETCOIN - 1) * 10" | bc | cut -d '.' -f 1)
+echo "Cooperative balance: $UPLANETZEN Ẑen"
 
 #######################################################################
 # Configuration des paramètres fiscaux
@@ -111,18 +109,18 @@ fi
 
 IMPOTSG1PUB=$(cat $HOME/.zen/game/uplanet.impots.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-# Conversion du surplus en euros (approximative: 1 Ẑen ≈ 1 €)
-SURPLUS_EUR=$(echo "scale=2; $UZEN * 1" | bc -l)
+# Conversion du surplus en euros (1 Ẑen ≈ 1 €)
+SURPLUS_EUR=$(echo "scale=2; $CAPTAINZEN * 1" | bc -l)
 
 # Calcul de l'IS selon les tranches fiscales françaises
 if [[ $(echo "$SURPLUS_EUR <= $IS_THRESHOLD" | bc -l) -eq 1 ]]; then
     # Taux réduit 15% pour les bénéfices jusqu'à 42 500 €
-    TAX_PROVISION=$(echo "scale=2; $UZEN * $IS_RATE_REDUCED / 100" | bc -l)
+    TAX_PROVISION=$(echo "scale=2; $CAPTAINZEN * $IS_RATE_REDUCED / 100" | bc -l)
     TAX_RATE_USED=$IS_RATE_REDUCED
     echo "Using reduced tax rate: $IS_RATE_REDUCED% (surplus: $SURPLUS_EUR € <= $IS_THRESHOLD €)"
 else
     # Taux normal 25% pour les bénéfices au-delà de 42 500 €
-    TAX_PROVISION=$(echo "scale=2; $UZEN * $IS_RATE_NORMAL / 100" | bc -l)
+    TAX_PROVISION=$(echo "scale=2; $CAPTAINZEN * $IS_RATE_NORMAL / 100" | bc -l)
     TAX_RATE_USED=$IS_RATE_NORMAL
     echo "Using normal tax rate: $IS_RATE_NORMAL% (surplus: $SURPLUS_EUR € > $IS_THRESHOLD €)"
 fi
@@ -141,7 +139,7 @@ else
 fi
 
 # Calcul du surplus net après provision fiscale
-NET_SURPLUS=$(echo "scale=2; $UZEN - $TAX_PROVISION" | bc -l)
+NET_SURPLUS=$(echo "scale=2; $CAPTAINZEN - $TAX_PROVISION" | bc -l)
 echo "Net surplus after tax provision: $NET_SURPLUS Ẑen"
 
 #######################################################################
@@ -238,7 +236,7 @@ fi
 # Rapport d'allocation avec conformité fiscale
 #######################################################################
 echo "============================================ COOPERATIVE ALLOCATION SUMMARY"
-echo "📊 Total surplus: $UZEN Ẑen"
+echo "📊 Total surplus: $CAPTAINZEN Ẑen"
 echo "💰 Tax provision (${TAX_RATE_USED}%): $TAX_PROVISION Ẑen"
 echo "📈 Net surplus allocated: $NET_SURPLUS Ẑen"
 echo "🏦 Treasury (1/3): $TREASURY_AMOUNT Ẑen"
@@ -265,7 +263,6 @@ UPlanet: ${UPLANETG1PUB:0:8}
 ECONOMIC DATA:
 - Captain MULTIPASS balance: $CAPTAINZEN Ẑen
 - Captain threshold (4x PAF): $CAPTAIN_THRESHOLD Ẑen
-- Cooperative surplus: $UZEN Ẑen
 
 TAX PROVISION:
 - Tax rate applied: ${TAX_RATE_USED}%

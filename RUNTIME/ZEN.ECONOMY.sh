@@ -59,11 +59,33 @@ NODECOIN=$(${MY_PATH}/../tools/COINScheck.sh ${NODEG1PUB} | tail -n 1)
 NODEZEN=$(echo "($NODECOIN - 1) * 10" | bc | cut -d '.' -f 1)
 echo "$NODEZEN Ẑen"
 
-# Vérification du Captain (gestionnaire)
+# Vérification du Captain (gestionnaire) - MULTIPASS (NOSTR)
 echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
 CAPTAINCOIN=$(${MY_PATH}/../tools/COINScheck.sh ${CAPTAING1PUB} | tail -n 1)
 CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "$CAPTAINZEN Ẑen"
+echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
+
+# Vérification de la ZEN Card du Captain (PLAYERS)
+if [[ -n "$CAPTAINEMAIL" ]]; then
+    CAPTAIN_ZENCARD_PATH="$HOME/.zen/game/players/$CAPTAINEMAIL"
+    if [[ -d "$CAPTAIN_ZENCARD_PATH" && -s "$CAPTAIN_ZENCARD_PATH/secret.dunikey" ]]; then
+        CAPTAIN_ZENCARD_PUB=$(cat "$CAPTAIN_ZENCARD_PATH/secret.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+        if [[ -n "$CAPTAIN_ZENCARD_PUB" ]]; then
+            CAPTAIN_ZENCARD_COIN=$(${MY_PATH}/../tools/COINScheck.sh ${CAPTAIN_ZENCARD_PUB} | tail -n 1)
+            CAPTAIN_ZENCARD_ZEN=$(echo "($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc | cut -d '.' -f 1)
+            echo "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
+        else
+            CAPTAIN_ZENCARD_ZEN=0
+            echo "Captain ZEN Card not found or invalid"
+        fi
+    else
+        CAPTAIN_ZENCARD_ZEN=0
+        echo "Captain ZEN Card not found"
+    fi
+else
+    CAPTAIN_ZENCARD_ZEN=0
+    echo "Captain email not configured"
+fi
 
 #######################################################################
 # Comptage des utilisateurs actifs
@@ -84,7 +106,7 @@ echo "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 [[ -z $NCARD ]] && NCARD=1  # Coût hebdomadaire carte NOSTR
 [[ -z $ZCARD ]] && ZCARD=4  # Coût hebdomadaire carte ZEN
 
-# PAF hebdomadaire (pas de division par 7)
+# PAF hebdomadaire
 WEEKLYPAF=$PAF
 echo "ZEN ECONOMY : PAF=$WEEKLYPAF ZEN/week :: NCARD=$NCARD // ZCARD=$ZCARD"
 WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l))
@@ -97,14 +119,19 @@ WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l))
 if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
     if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
         if [[ $(echo "$CAPTAINZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            ## CAPTAIN CAN PAY NODE : ECONOMY +
+            ## CAPTAIN MULTIPASS CAN PAY NODE : ECONOMY +
             CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/.current/secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF" 2>/dev/null
-            echo "CAPTAIN paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF" 2>/dev/null
+            echo "CAPTAIN MULTIPASS paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
+        elif [[ $(echo "$CAPTAIN_ZENCARD_ZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
+            ## CAPTAIN ZEN CARD CAN PAY NODE : ECONOMY +
+            CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/players/$CAPTAINEMAIL/secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF_ZENCARD" 2>/dev/null
+            echo "CAPTAIN ZEN CARD paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
         else
             ## UPLANET MUST PAY NODE: ECONOMY -
             ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:---:WEEKLYPAF" 2>/dev/null
-            echo "UPLANET paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE (Captain insufficient funds)"
+            echo "UPLANET paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE (Captain insufficient funds on both MULTIPASS and ZEN Card)"
         fi
     else
         echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
@@ -126,17 +153,7 @@ ${MY_PATH}/ZEN.SWARM.payments.sh
 # This will be executed after PAF payment to ensure proper economic flow
 #######################################################################
 echo "ZEN ECONOMY: Checking cooperative allocation conditions..."
-if [[ -f "${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh" ]]; then
-    echo "ZEN ECONOMY: Triggering cooperative allocation process..."
-    ${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
-    if [[ $? -eq 0 ]]; then
-        echo "ZEN ECONOMY: Cooperative allocation process completed successfully"
-    else
-        echo "ZEN ECONOMY: Cooperative allocation process completed (no allocation triggered or insufficient funds)"
-    fi
-else
-    echo "ZEN ECONOMY: WARNING - ZEN.COOPERATIVE.3x1-3.sh not found"
-fi
+${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
 
 #######################################################################
 # Mark weekly payment as completed
