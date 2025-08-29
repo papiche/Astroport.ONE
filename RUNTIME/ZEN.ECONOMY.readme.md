@@ -94,27 +94,42 @@ Où :
 ### **Exemple Chiffré Concret**
 
 ```bash
-# Scénario : 10 locataires MULTIPASS + 5 sociétaires ZenCard
-Revenus Locatifs = (10 × 1 Ẑen) + (5 × 4 Ẑen) = 30 Ẑen
+# Scénario : 15 locataires MULTIPASS + 8 sociétaires ZenCard
+Revenus Locatifs = (15 × 1 Ẑen) + (8 × 4 Ẑen) = 47 Ẑen
 
-TVA Collectée = (10 × 0.2 Ẑen) + (5 × 0.8 Ẑen) = 6 Ẑen
+TVA Collectée = (15 × 0.2 Ẑen) + (8 × 0.8 Ẑen) = 9.4 Ẑen
 
 Rémunération Totale = 3 × 14 Ẑen = 42 Ẑen
 
-Surplus = 30 - (6 + 42) = -18 Ẑen
-# Résultat : Pas de surplus cette semaine
+Surplus = 47 - (9.4 + 42) = -4.4 Ẑen
+# Résultat : Pas encore de surplus, mais proche de l'équilibre
 ```
 
 ```bash
-# Scénario : 20 locataires MULTIPASS + 10 sociétaires ZenCard
-Revenus Locatifs = (20 × 1 Ẑen) + (10 × 4 Ẑen) = 60 Ẑen
+# Scénario : 25 locataires MULTIPASS + 15 sociétaires ZenCard
+Revenus Locatifs = (25 × 1 Ẑen) + (15 × 4 Ẑen) = 85 Ẑen
 
-TVA Collectée = (20 × 0.2 Ẑen) + (10 × 0.8 Ẑen) = 12 Ẑen
+TVA Collectée = (25 × 0.2 Ẑen) + (15 × 0.8 Ẑen) = 17 Ẑen
 
 Rémunération Totale = 3 × 14 Ẑen = 42 Ẑen
 
-Surplus = 60 - (12 + 42) = 6 Ẑen
-# Résultat : 6 Ẑen de surplus pour la coopérative
+Surplus = 85 - (17 + 42) = 26 Ẑen
+# Résultat : 26 Ẑen de surplus pour la coopérative !
+# Allocation 3x1/3 : 8.67 Ẑen vers chaque portefeuille dédié
+```
+
+```bash
+# Scénario optimal : 30 locataires MULTIPASS + 20 sociétaires ZenCard
+Revenus Locatifs = (30 × 1 Ẑen) + (20 × 4 Ẑen) = 110 Ẑen
+
+TVA Collectée = (30 × 0.2 Ẑen) + (20 × 0.8 Ẑen) = 22 Ẑen
+
+Rémunération Totale = 3 × 14 Ẑen = 42 Ẑen
+
+Surplus = 110 - (22 + 42) = 46 Ẑen
+# Résultat : 46 Ẑen de surplus pour la coopérative !
+# Allocation 3x1/3 : 15.33 Ẑen vers chaque portefeuille dédié
+# Impact : Acquisition de terrains, développement R&D, réserves de trésorerie
 ```
 
 ### **3. Allocation Coopérative 3x1/3**
@@ -187,12 +202,13 @@ Conversion : Illimitée (parts sociales)
 
 **Exemple concret :**
 ```bash
-Revenus hebdomadaires : 60 Ẑen (20 locataires + 10 sociétaires)
-TVA collectée : 12 Ẑen
+Revenus hebdomadaires : 85 Ẑen (25 locataires + 15 sociétaires)
+TVA collectée : 17 Ẑen
 PAF Armateur : 14 Ẑen
 Part Capitaine : 28 Ẑen
-Surplus coopératif : 6 Ẑen
-Allocation 3x1/3 : 2 Ẑen vers chaque portefeuille dédié
+Surplus coopératif : 26 Ẑen
+Allocation 3x1/3 : 8.67 Ẑen vers chaque portefeuille dédié
+Impact : Acquisition de terrains, développement R&D, réserves de trésorerie
 ```
 
 ---
@@ -363,17 +379,11 @@ UPLANETNAME.IMPOT          # Provisions fiscales
 
 ## 📈 **ÉVOLUTIONS FUTURES**
 
-### **Phase 2 : Intelligence Économique**
+### ** Intelligence Économique Fractale**
 
 - **IA Prédictive** : Analyse des tendances
 - **Gouvernance Automatisée** : Votes automatisés
 - **Expansion Fractale** : Création de coopératives filles
-
-### **Phase 3 : Écosystème Décentralisé**
-
-- **Smart Contracts** : Contrats automatisés
-- **DAO Integration** : Gouvernance décentralisée
-- **Blockchain Native** : Exécution décentralisée
 
 ---
 
