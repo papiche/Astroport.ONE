@@ -292,19 +292,7 @@ graph TD
     F --> EE[Weekly Report Email]
     L --> EE
     BB --> FF[Weekly Report Email]
-    CC --> FF
-    DD --> FF
-    
-    %% Styling
-    classDef success fill:#d4edda,stroke:#155724,color:#155724
-    classDef error fill:#f8d7da,stroke:#721c24,color:#721c24
-    classDef process fill:#d1ecf1,stroke:#0c5460,color:#0c5460
-    classDef decision fill:#fff3cd,stroke:#856404,color:#856404
-    
-    class C,I,O,X,Y,Z,F,L,AA,BB success
-    class D,J error
-    class A,G,M,R,T,V,W process
-    class B,H,N,S decision
+   
 ```
 
 ### **Cycle Hebdomadaire (Allocation Coopérative)**
