@@ -94,42 +94,27 @@ Où :
 ### **Exemple Chiffré Concret**
 
 ```bash
-# Scénario : 15 locataires MULTIPASS + 8 sociétaires ZenCard
-Revenus Locatifs = (15 × 1 Ẑen) + (8 × 4 Ẑen) = 47 Ẑen
+# Scénario : 10 locataires MULTIPASS + 5 sociétaires ZenCard
+Revenus Locatifs = (10 × 1 Ẑen) + (5 × 4 Ẑen) = 30 Ẑen
 
-TVA Collectée = (15 × 0.2 Ẑen) + (8 × 0.8 Ẑen) = 9.4 Ẑen
+TVA Collectée = (10 × 0.2 Ẑen) + (5 × 0.8 Ẑen) = 6 Ẑen
 
 Rémunération Totale = 3 × 14 Ẑen = 42 Ẑen
 
-Surplus = 47 - (9.4 + 42) = -4.4 Ẑen
-# Résultat : Pas encore de surplus, mais proche de l'équilibre
+Surplus = 30 - (6 + 42) = -18 Ẑen
+# Résultat : Pas de surplus cette semaine
 ```
 
 ```bash
-# Scénario : 25 locataires MULTIPASS + 15 sociétaires ZenCard
-Revenus Locatifs = (25 × 1 Ẑen) + (15 × 4 Ẑen) = 85 Ẑen
+# Scénario : 20 locataires MULTIPASS + 10 sociétaires ZenCard
+Revenus Locatifs = (20 × 1 Ẑen) + (10 × 4 Ẑen) = 60 Ẑen
 
-TVA Collectée = (25 × 0.2 Ẑen) + (15 × 0.8 Ẑen) = 17 Ẑen
-
-Rémunération Totale = 3 × 14 Ẑen = 42 Ẑen
-
-Surplus = 85 - (17 + 42) = 26 Ẑen
-# Résultat : 26 Ẑen de surplus pour la coopérative !
-# Allocation 3x1/3 : 8.67 Ẑen vers chaque portefeuille dédié
-```
-
-```bash
-# Scénario optimal : 30 locataires MULTIPASS + 20 sociétaires ZenCard
-Revenus Locatifs = (30 × 1 Ẑen) + (20 × 4 Ẑen) = 110 Ẑen
-
-TVA Collectée = (30 × 0.2 Ẑen) + (20 × 0.8 Ẑen) = 22 Ẑen
+TVA Collectée = (20 × 0.2 Ẑen) + (10 × 0.8 Ẑen) = 12 Ẑen
 
 Rémunération Totale = 3 × 14 Ẑen = 42 Ẑen
 
-Surplus = 110 - (22 + 42) = 46 Ẑen
-# Résultat : 46 Ẑen de surplus pour la coopérative !
-# Allocation 3x1/3 : 15.33 Ẑen vers chaque portefeuille dédié
-# Impact : Acquisition de terrains, développement R&D, réserves de trésorerie
+Surplus = 60 - (12 + 42) = 6 Ẑen
+# Résultat : 6 Ẑen de surplus pour la coopérative
 ```
 
 ### **3. Allocation Coopérative 3x1/3**
@@ -151,65 +136,88 @@ Surplus = 110 - (22 + 42) = 46 Ẑen
 
 ---
 
-## 👥 **USER STORIES : LA VIE DES MEMBRES**
+## 👥 **USER STORIES : LES BÉNÉFICES POUR CHAQUE MEMBRE**
 
-### **🏠 La Vie d'un Locataire (MULTIPASS)**
+### **🏠 MULTIPASS : Votre Passport vers la Souveraineté Numérique**
 
-> **"Je paie mon loyer, je gagne des Ẑen par les likes, et je peux les convertir en euros"**
+> **"Je paie 1 Ẑen/semaine et je gagne ma liberté numérique"**
 
-**Parcours hebdomadaire :**
-1. **Paiement automatique** : 1 Ẑen + 0.2 Ẑen TVA vers le Capitaine
-2. **Génération de revenus** : Likes et services → Ẑen sur MULTIPASS
-3. **Conversion possible** : Pont de liquidité (règle du 1/3)
-4. **Statut** : Client temporaire, pas de participation aux bénéfices
+**🎯 Ce que vous obtenez :**
+- **Identité souveraine** : Votre clé NOSTR personnelle, inaliénable
+- **Assistant IA personnel** : #BRO vous aide dans vos projets
+- **Stockage décentralisé** : uDRIVE sur IPFS, résistant à la censure
+- **Revenus passifs** : Gagnez des Ẑen quand vos contenus sont appréciés
+- **Conversion en euros** : Transformez vos gains en monnaie réelle (règle du 1/3)
 
-**Exemple concret :**
+**💰 Exemple de gains hebdomadaires :**
 ```bash
-Loyer hebdomadaire : 1 Ẑen + 0.2 Ẑen TVA
+Loyer : -1 Ẑen
 Revenus likes : +3 Ẑen
-Solde MULTIPASS : +2 Ẑen
-Conversion possible : 0.67 Ẑen/an (1/3 de 2 Ẑen)
+Net hebdomadaire : +2 Ẑen
+Gains annuels : +104 Ẑen (≈ 104€)
+Conversion possible : 35€/an (1/3 des gains)
 ```
 
-### **👑 La Vie d'un Sociétaire (ZenCard)**
+**🚀 Pourquoi choisir MULTIPASS ?**
+- **Coût minimal** : Moins cher qu'un abonnement Netflix
+- **Souveraineté maximale** : Vos données, vos règles
+- **Économie participative** : Gagnez en contribuant à la communauté
 
-> **"J'investis, je suis exempté de loyer, je participe à la gouvernance"**
+---
 
-**Parcours hebdomadaire :**
-1. **Paiement automatique** : 4 Ẑen + 0.8 Ẑen TVA vers le Capitaine
-2. **Statut privilégié** : Co-propriétaire de l'hôtel coopératif
-3. **Gouvernance** : Participation aux décisions collectives
-4. **Conversion illimitée** : Parts sociales non soumises à la règle du 1/3
+### **👑 ZENCARD : Devenez Co-propriétaire de l'Infrastructure**
 
-**Exemple concret :**
+> **"J'investis 4 Ẑen/semaine et je deviens propriétaire de mon avenir numérique"**
+
+**🎯 Ce que vous obtenez :**
+- **Tout de MULTIPASS** : Identité, IA, stockage, revenus
+- **Cloud privé 128GB** : NextCloud complet (fichiers, contacts, calendriers)
+- **Statut de co-propriétaire** : Participez aux décisions de la coopérative
+- **Parts sociales** : Investissez dans l'infrastructure physique
+- **Conversion illimitée** : Vos parts sociales sont toujours convertibles
+
+**💰 Exemple d'investissement :**
 ```bash
-Contribution hebdomadaire : 4 Ẑen + 0.8 Ẑen TVA
-Statut : Co-propriétaire
-Droits : Vote + participation aux bénéfices
-Conversion : Illimitée (parts sociales)
+Contribution hebdomadaire : 4 Ẑen
+Contribution annuelle : 208 Ẑen (≈ 208€)
+Statut : Co-propriétaire de la coopérative
+Droits : Vote + participation aux bénéfices + parts sociales
 ```
 
-### **👨‍✈️ La Vie d'un Capitaine**
+**🚀 Pourquoi choisir ZENCARD ?**
+- **Dégooglez votre vie** : Cloud privé et sécurisé
+- **Investissement réel** : Parts dans l'infrastructure physique
+- **Gouvernance** : Participez aux décisions collectives
+- **Croissance** : Vos parts prennent de la valeur avec l'écosystème
 
-> **"Je gère mon essaim, je perçois les loyers, je paie la PAF, je génère un surplus"**
+---
 
-**Parcours hebdomadaire :**
-1. **Collecte des loyers** : MULTIPASS + ZenCard → Revenus totaux
-2. **Paiement PAF** : 14 Ẑen vers l'Armateur (électricité, internet)
-3. **Reception part personnelle** : 2x PAF (28 Ẑen) vers portefeuille dédié
-4. **Génération surplus** : Si revenus > (TVA + 3x PAF)
-5. **Allocation coopérative** : 3x1/3 sur le surplus net
+### **👨‍✈️ CAPTAIN : Créez de la Valeur et Gagnez en Autonomie**
 
-**Exemple concret :**
+> **"Je transforme mon ordinateur en source de revenus et je participe à la construction d'un monde meilleur"**
+
+**🎯 Ce que vous obtenez :**
+- **Revenus hebdomadaires** : 2x PAF (28 Ẑen) garantis chaque semaine
+- **Statut de fournisseur** : Membre de la coopérative CopyLaRadio
+- **Formation complète** : Support technique et communautaire
+- **Croissance de l'essaim** : Plus d'utilisateurs = plus de revenus
+- **Impact écologique** : Vos revenus contribuent à l'achat de forêts
+
+**💰 Exemple de revenus avec un essaim actif :**
 ```bash
-Revenus hebdomadaires : 85 Ẑen (25 locataires + 15 sociétaires)
-TVA collectée : 17 Ẑen
-PAF Armateur : 14 Ẑen
-Part Capitaine : 28 Ẑen
-Surplus coopératif : 26 Ẑen
-Allocation 3x1/3 : 8.67 Ẑen vers chaque portefeuille dédié
-Impact : Acquisition de terrains, développement R&D, réserves de trésorerie
+Revenus hebdomadaires : 60 Ẑen (20 MULTIPASS + 10 ZENCARD)
+Part personnelle : 28 Ẑen (garantie)
+Surplus coopératif : 6 Ẑen
+Impact écologique : 2 Ẑen vers les forêts/jardins
+Revenus annuels : 1 456 Ẑen (≈ 1 456€)
 ```
+
+**🚀 Pourquoi devenir CAPTAIN ?**
+- **Revenus garantis** : 28 Ẑen/semaine minimum
+- **Autonomie technique** : Maîtrisez votre infrastructure
+- **Impact positif** : Contribuez à la régénération écologique
+- **Croissance** : Développez votre essaim et vos revenus
+- **Formation** : Apprenez les technologies décentralisées
 
 ---
 
@@ -379,11 +387,17 @@ UPLANETNAME.IMPOT          # Provisions fiscales
 
 ## 📈 **ÉVOLUTIONS FUTURES**
 
-### ** Intelligence Économique Fractale**
+### **Phase 2 : Intelligence Économique**
 
 - **IA Prédictive** : Analyse des tendances
 - **Gouvernance Automatisée** : Votes automatisés
 - **Expansion Fractale** : Création de coopératives filles
+
+### **Phase 3 : Écosystème Décentralisé**
+
+- **Smart Contracts** : Contrats automatisés
+- **DAO Integration** : Gouvernance décentralisée
+- **Blockchain Native** : Exécution décentralisée
 
 ---
 
