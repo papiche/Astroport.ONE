@@ -251,47 +251,75 @@ Cela montre que **tous les membres sont logés à la même enseigne** et que le 
 
 ```mermaid
 graph TD
+    %% Styling definitions
+    classDef success fill:#d4edda,stroke:#155724,color:#155724
+    classDef error fill:#f8d7da,stroke:#721c24,color:#721c24
+    classDef process fill:#d1ecf1,stroke:#0c5460,color:#0c5460
+    classDef decision fill:#fff3cd,stroke:#856404,color:#856404
+    classDef payment fill:#e8deee,stroke:#4a2d7e,color:#4a2d7e
+    classDef allocation fill:#deedf7,stroke:#0b5394,color:#0b5394
+
     %% MULTIPASS Payment Flow
-    A[MULTIPASS Payment] --> B{Payment Success?}
-    B -->|Yes| C[1 Ẑen to CAPTAIN]
-    B -->|No| D[Error Email to Player]
-    C --> E[TVA 0.2 Ẑen to IMPOTS]
-    E --> F[Log Success]
-    
+    subgraph "Paiements MULTIPASS"
+        A[MULTIPASS Payment] --> B{Payment Success?}
+        B -->|Yes| C[1 Ẑen to CAPTAIN]
+        B -->|No| D[Error Email to Player]
+        C --> E[TVA 0.2 Ẑen to IMPOTS]
+        E --> F[Log Success]
+    end
+
     %% ZenCard Payment Flow
-    G[ZenCard Payment] --> H{Payment Success?}
-    H -->|Yes| I[4 Ẑen to CAPTAIN]
-    H -->|No| J[Error Email to Player]
-    I --> K[TVA 0.8 Ẑen to IMPOTS]
-    K --> L[Log Success]
-    
+    subgraph "Paiements ZenCard"
+        G[ZenCard Payment] --> H{Payment Success?}
+        H -->|Yes| I[4 Ẑen to CAPTAIN]
+        H -->|No| J[Error Email to Player]
+        I --> K[TVA 0.8 Ẑen to IMPOTS]
+        K --> L[Log Success]
+    end
+
     %% Weekly PAF Flow
-    M[Weekly PAF Check] --> N{Captain MULTIPASS > PAF?}
-    N -->|Yes| O[Captain pays PAF from MULTIPASS]
-    N -->|No| P{Captain ZEN Card > PAF?}
-    P -->|Yes| Q[Captain pays PAF from ZEN Card]
-    P -->|No| R[UPlanet pays PAF : solidarity]
-    O --> S[SWARM Payments]
-    Q --> S
-    R --> S
-    
+    subgraph "PAF Hebdomadaire"
+        M[Weekly PAF Check] --> N{Captain MULTIPASS > PAF?}
+        N -->|Yes| O[Captain pays PAF from MULTIPASS]
+        N -->|No| P{Captain ZEN Card > PAF?}
+        P -->|Yes| Q[Captain pays PAF from ZEN Card]
+        P -->|No| R[UPlanet pays PAF : solidarity]
+        O --> S[SWARM Payments]
+        Q --> S
+        R --> S
+    end
+
     %% Cooperative Allocation
-    S --> T[ZEN.COOPERATIVE.3x1-3.sh]
-    T --> U{Captain Balance > 0?}
-    U -->|Yes| V[Transfer 2x PAF (or available) to Captain Wallet]
-    U -->|No| W[Skip Allocation]
-    V --> X{Remaining > 0?}
-    X -->|Yes| Y[IS Provision 15%/25%]
-    X -->|No| Z[Captain keeps remaining]
-    Y --> AA[3x1/3 Allocation]
-    AA --> BB[Treasury 33.33%]
-    AA --> CC[R&D 33.33%]
-    AA --> DD[Assets 33.34%]
-    
+    subgraph "Allocation Coopérative"
+        S --> T[ZEN.COOPERATIVE.3x1-3.sh]
+        T --> U{Captain Balance > 0?}
+        U -->|Yes| V[Transfer 2x PAF (or available) to Captain Wallet]
+        U -->|No| W[Skip Allocation]
+        V --> X{Remaining > 0?}
+        X -->|Yes| Y[IS Provision 15%/25%]
+        X -->|No| Z[Captain keeps remaining]
+        Y --> AA[3x1/3 Allocation]
+        AA --> BB[Treasury 33.33%]
+        AA --> CC[R&D 33.33%]
+        AA --> DD[Assets 33.34%]
+    end
+
     %% Email Reports
-    F --> EE[Weekly Report Email]
-    L --> EE
-    BB --> FF[Weekly Report Email]
+    subgraph "Rapports"
+        F --> EE[Weekly Report Email]
+        L --> EE
+        BB --> FF[Weekly Report Email]
+        CC --> FF
+        DD --> FF
+    end
+
+    %% Apply styling
+    class C,I,O,Q,F,L,BB,CC,DD success
+    class D,J,R,W error
+    class A,G,M,T,V process
+    class B,H,N,P,U,X decision
+    class E,K,Y payment
+    class S,AA allocation
    
 ```
 
