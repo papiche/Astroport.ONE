@@ -524,3 +524,98 @@ L'économie du Ẑen, telle qu'implémentée par la SCIC CopyLaRadio, est conçu
 Le Ẑen n'est pas une "alternative" à l'Euro. C'est une **invitation à changer de monde**. C'est un outil pour quitter la géométrie de la compétition perpétuelle et commencer à bâtir un territoire économique dont la physique même est basée sur la collaboration, la transparence et la création de biens communs.
 
 En choisissant le Ẑen, vous ne choisissez pas un token. Vous choisissez une nouvelle géométrie pour vos projets.
+
+---
+
+## **Recommandations Fiscales pour les Membres de l'Écosystème UPlanet/CopyLaRadio**
+
+**Philosophie Générale :** Notre système est conçu pour la transparence. Le but n'est pas d'échapper à la fiscalité, mais de la rendre simple, juste et automatisée. Le fait générateur de l'impôt est la **conversion de vos Ẑen en Euros**. Tant que vos Ẑen restent dans l'écosystème, ils sont considérés comme des "jetons utilitaires" internes à la coopérative.
+
+---
+
+# GUIDE pour ENTREPRENEUR
+
+## **Le Statut Recommandé pour Débuter : La Micro-Entreprise (BNC)**
+
+Pour 99% des membres qui génèrent des revenus (Armateurs, Capitaines, Créateurs de contenu), le statut de **Micro-Entrepreneur** en **Bénéfices Non Commerciaux (BNC)** est la solution la plus simple, la moins coûteuse et la plus adaptée.
+
+### **Pourquoi BNC (Bénéfices Non Commerciaux) ?**
+Parce que les activités au sein de notre écosystème sont des **prestations de services intellectuelles ou techniques**, pas de l'achat/revente de marchandises. Exemples :
+*   Hébergement de données (Armateur)
+*   Maintenance informatique (Capitaine)
+*   Création de contenu en ligne (Utilisateur gagnant des likes)
+
+### **Guide Pratique : Devenir Micro-Entrepreneur en 15 minutes**
+
+1.  **Création (Gratuite) :**
+    *   Rendez-vous sur le site officiel du guichet unique de l'INPI.
+    *   Déclarez votre début d'activité en choisissant "Entrepreneur Individuel" puis le régime "Micro-Entrepreneur".
+    *   Dans la description de l'activité, soyez simple et précis. Exemples :
+        *   Pour un **Armateur** : "Hébergement informatique, prestations de services numériques".
+        *   Pour un **Capitaine** : "Maintenance de systèmes informatiques, support technique".
+        *   Pour un **Utilisateur** : "Création de contenu en ligne, animation de communauté".
+
+2.  **Gestion (Simplifiée) :**
+    *   Vous n'avez pas besoin d'un comptable. Vous devez simplement tenir un **registre des recettes**. Un simple tableur suffit.
+    *   **Colonne 1 :** Date de la conversion en €.
+    *   **Colonne 2 :** Origine des Ẑen (ex: "PAF Armateur", "Gains Likes", "Rémunération Capitaine").
+    *   **Colonne 3 :** Montant en **Euros** reçu sur votre compte bancaire. C'est ce montant qui fait foi.
+
+3.  **Fiscalité (Ultra-Simplifiée avec le Versement Libératoire) :**
+    *   Chaque mois ou trimestre, vous déclarez le montant en euros de vos recettes sur le site de l'URSSAF.
+    *   En choisissant l'option du **versement libératoire**, vous payez en même temps :
+        *   Vos cotisations sociales (~21-22% de vos recettes).
+        *   Votre impôt sur le revenu (~2,2% de vos recettes).
+    *   **Avantage :** Une fois ce paiement effectué, vous êtes en règle. Pas de surprise en fin d'année. C'est clair, net et prévisible.
+
+---
+
+## **Application par Rôle**
+
+### **1. Pour l'Armateur**
+*   **Son Revenu :** Il reçoit la PAF pour couvrir ses frais réels (électricité, internet...).
+*   **Le Processus :** Une fois par mois (par exemple), il a accumulé 50 Ẑen de PAF sur son wallet. Il a une facture d'électricité de 50€. Il utilise le "Pont de Liquidité" pour convertir 50 Ẑen en 50€.
+*   **Sa Déclaration :** Il inscrit "50€" dans son registre des recettes et les déclare à l'URSSAF.
+
+### **2. Pour le Capitaine**
+*   **Son Revenu :** Il reçoit 2x la PAF pour son travail de maintenance + le surplus des loyers de son essaim. C'est sa rémunération.
+*   **Le Processus :** Il accumule des Ẑen sur son MULTIPASS. Il décide de convertir 300 Ẑen en 300€ pour ses dépenses personnelles.
+*   **Sa Déclaration :** Il inscrit "300€" dans son registre des recettes et les déclare.
+
+### **3. Pour l'Utilisateur (qui convertit 1/3 de ses Ẑen)**
+*   **Son Revenu :** Il a gagné 150 Ẑen grâce aux "likes" sur ses publications.
+*   **Le Processus :** Il a le droit de convertir `150 / 3 = 50 Ẑen` cette année. Il utilise le "Pont de Liquidité" pour convertir ces 50 Ẑen en 50€.
+*   **Sa Déclaration :** S'il s'agit d'un gain occasionnel, il peut le déclarer en **"revenu non commercial non professionnel"** sur sa déclaration annuelle. Si cela devient régulier, il est fortement encouragé à passer en Micro-Entrepreneur pour plus de clarté.
+
+---
+
+## **Les Paliers : Quand Changer de Structure ?**
+
+Le régime Micro-Entrepreneur est formidable, mais il a des limites. Il devient intéressant de changer de structure lorsque vous franchissez l'un de ces deux paliers :
+
+### **Palier 1 : Le Plafond de Chiffre d'Affaires**
+*   **Le Seuil :** Le régime Micro-Entrepreneur est limité à un certain plafond de chiffre d'affaires annuel (actuellement **77 700 €** pour les BNC).
+*   **Que se passe-t-il si on dépasse ?** Vous basculez automatiquement au régime de l'**Entreprise Individuelle "au réel"** (appelé aussi "déclaration contrôlée").
+
+### **Palier 2 : Le Seuil de Rentabilité (Le plus important !)**
+*   **La Règle :** En Micro-Entreprise, vous ne pouvez pas déduire vos frais réels. L'État vous accorde un abattement forfaitaire de **34%** (pour les BNC).
+*   **Le Calcul :** Le régime Micro est intéressant tant que **vos frais réels sont inférieurs à 34% de votre chiffre d'affaires**.
+*   **Exemple Concret pour un Armateur/Capitaine :**
+    *   Fred achète un PC Gamer puissant pour être un nœud "Hub". Coût : 4000€.
+    *   Il a aussi un abonnement fibre pro à 50€/mois (600€/an) et une consommation électrique estimée à 400€/an.
+    *   Ses frais réels (amortissement du PC + charges) sont très élevés. Ils dépassent largement les 34% de ses revenus en Ẑen la première année.
+    *   **Conclusion :** Pour Fred, le régime Micro n'est plus intéressant. Il paie des impôts sur de l'argent qu'il n'a pas vraiment gagné, car il ne peut pas déduire son énorme investissement initial.
+
+## **Les Structures Juridiques Alternatives**
+
+| Structure | **Entreprise Individuelle (EI) au Réel** | **Société (SASU ou EURL)** |
+| :--- | :--- | :--- |
+| **Pour Qui ?** | L'opérateur solo (Armateur, Capitaine) dont les **frais réels sont élevés** (>34% du CA). | L'opérateur qui a un **projet d'envergure**, qui veut embaucher, lever des fonds, ou simplement **protéger son patrimoine personnel**. |
+| **Principe** | C'est comme la Micro-Entreprise, mais vous tenez une **comptabilité complète (recettes - dépenses)**. Vous êtes imposé sur votre **bénéfice réel**. | Vous créez une **personne morale distincte** de vous. La société a son propre patrimoine. |
+| **Avantages** | ✅ **Déduction de tous vos frais réels** (matériel, électricité, internet, etc.). <br> ✅ Pas de plafond de CA aussi bas. | ✅ **Protection totale de votre patrimoine personnel**. En cas de faillite, vos biens personnels sont à l'abri.<br> ✅ **Crédibilité accrue** (pour les banques, les investisseurs).<br> ✅ **Optimisation fiscale** (choix entre salaire et dividendes). |
+| **Inconvénients** | ❌ **Comptabilité plus complexe** (souvent besoin d'un expert-comptable).<br> ❌ Votre patrimoine personnel et professionnel est confondu. | ❌ **Coûts de création et de gestion élevés** (statuts, expert-comptable obligatoire, etc.).<br> ❌ Plus de formalisme administratif. |
+
+**En résumé :**
+1.  **Commencez TOUS en Micro-Entrepreneur.** C'est simple et sans risque.
+2.  **Surveillez vos frais.** Quand l'achat de matériel devient conséquent, faites le calcul : si `Frais > 0.34 * Recettes`, alors discutez avec un comptable pour passer en **EI au réel**.
+3.  **Pensez en "projet".** Quand votre essaim devient une véritable petite entreprise, que vous voulez investir à plusieurs ou sécuriser votre famille, alors la création d'une **société (SASU/EURL)** devient l'étape logique.
