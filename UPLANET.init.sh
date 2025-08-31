@@ -202,17 +202,67 @@ get_wallet_public_key() {
     fi
 }
 
+# Function to create missing wallet files
+create_missing_wallet() {
+    local wallet_name="$1"
+    local dunikey_file="$2"
+    
+    echo -e "${CYAN}🔧 CRÉATION DU PORTEFEUILLE $wallet_name${NC}"
+    
+    # Create directory if it doesn't exist
+    local wallet_dir=$(dirname "$dunikey_file")
+    [[ ! -d "$wallet_dir" ]] && mkdir -p "$wallet_dir"
+    
+    # Create wallet using keygen like in ZEN.COOPERATIVE.3x1-3.sh and my.sh
+    case "$wallet_name" in
+        "UPLANETNAME.CASH")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
+            ;;
+        "UPLANETNAME.RND")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.RND" "${UPLANETNAME}.RND"
+            ;;
+        "UPLANETNAME.ASSETS")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
+            ;;
+        "UPLANETNAME.SOCIETY")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
+            ;;
+        "UPLANETNAME")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}" "${UPLANETNAME}"
+            ;;
+        *)
+            echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_name${NC}"
+            return 1
+            ;;
+    esac
+    
+    # Set proper permissions
+    chmod 600 "$dunikey_file"
+    
+    if [[ -f "$dunikey_file" ]]; then
+        local pubkey=$(get_wallet_public_key "$dunikey_file")
+        echo -e "${GREEN}✅ Portefeuille $wallet_name créé avec succès${NC}"
+        echo -e "${BLUE}Clé publique:${NC} ${CYAN}${pubkey:0:8}...${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Échec de la création du portefeuille $wallet_name${NC}"
+        return 1
+    fi
+}
+
 # Function to check cooperative wallet status
 check_cooperative_wallets() {
     echo -e "${CYAN}🏛️  VÉRIFICATION DES PORTEFEUILLES COOPÉRATIFS${NC}"
     echo -e "${YELLOW}=============================================${NC}"
     
     local wallets_to_initialize=()
+    local wallets_to_create=()
     local total_required=0
     
     echo -e "${BLUE}Portefeuilles à vérifier:${NC}"
-    echo -e "${YELLOW}$(printf '%-25s %-15s %-15s %-10s' "PORTEFEUILLE" "SOLDE ACTUEL" "STATUT" "ACTION")${NC}"
-    echo -e "${YELLOW}$(printf '%.0s-' {1..70})${NC}"
+    printf "%-25s %-15s %-15s %-10s\n" "PORTEFEUILLE" "SOLDE ACTUEL" "STATUT" "ACTION"
+    printf "%.0s-" {1..70}
+    echo ""
     
     for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
         local dunikey_file="${COOPERATIVE_WALLETS[$wallet_name]}"
@@ -230,32 +280,54 @@ check_cooperative_wallets() {
                 
                 # Determine status and action
                 if (( $(echo "$balance < $MIN_BALANCE" | bc -l) )); then
-                    status="${RED}Vide${NC}"
-                    action="${YELLOW}Initialiser${NC}"
+                    status="Vide"
+                    action="Initialiser"
                     wallets_to_initialize+=("$wallet_name")
                     total_required=$((total_required + 1))
                 else
-                    status="${GREEN}OK${NC}"
-                    action="${GREEN}Aucune${NC}"
+                    status="OK"
+                    action="Aucune"
                 fi
             else
-                status="${RED}Erreur clé${NC}"
-                action="${RED}Vérifier${NC}"
+                status="Erreur clé"
+                action="Vérifier"
             fi
         else
-            status="${RED}Fichier manquant${NC}"
-            action="${RED}Créer${NC}"
+            status="Fichier manquant"
+            action="Créer"
+            wallets_to_create+=("$wallet_name")
         fi
         
-        # Display wallet status
+        # Display wallet status (without ANSI codes in printf)
         printf "%-25s %-15s %-15s %-10s\n" \
             "$wallet_name" \
-            "${YELLOW}$balance Ğ1${NC}" \
+            "$balance Ğ1" \
             "$status" \
             "$action"
     done
     
-    echo -e "${YELLOW}$(printf '%.0s-' {1..70})${NC}"
+    printf "%.0s-" {1..70}
+    echo ""
+    
+    # Create missing wallets first
+    if [[ ${#wallets_to_create[@]} -gt 0 ]]; then
+        echo -e "${BLUE}📁 CRÉATION DES PORTEFEUILLES MANQUANTS${NC}"
+        for wallet_name in "${wallets_to_create[@]}"; do
+            local dunikey_file="${COOPERATIVE_WALLETS[$wallet_name]}"
+            if create_missing_wallet "$wallet_name" "$dunikey_file"; then
+                # After creation, check if it needs initialization
+                local pubkey=$(get_wallet_public_key "$dunikey_file")
+                if [[ -n "$pubkey" ]]; then
+                    local balance=$(get_wallet_balance "$pubkey")
+                    if (( $(echo "$balance < $MIN_BALANCE" | bc -l) )); then
+                        wallets_to_initialize+=("$wallet_name")
+                        total_required=$((total_required + 1))
+                    fi
+                fi
+            fi
+        done
+        echo ""
+    fi
     
     # Summary
     if [[ ${#wallets_to_initialize[@]} -eq 0 ]]; then
@@ -265,7 +337,7 @@ check_cooperative_wallets() {
         echo -e "${BLUE}📊 RÉSUMÉ:${NC}"
         echo -e "  • Portefeuilles à initialiser: ${CYAN}${#wallets_to_initialize[@]}${NC}"
         echo -e "  • Montant total requis: ${YELLOW}$total_required Ğ1${NC}"
-        echo -e "  • Source: ${CYAN}secret.G1.dunikey${NC}"
+        echo -e "  • Source: ${CYAN}uplanet.G1.dunikey${NC}"
         echo ""
         
         if [[ "$DRY_RUN" == true ]]; then
@@ -442,8 +514,9 @@ display_final_status() {
     echo -e "${YELLOW}=============================================${NC}"
     
     echo -e "${BLUE}Portefeuilles:${NC}"
-    echo -e "${YELLOW}$(printf '%-25s %-15s %-15s' "PORTEFEUILLE" "SOLDE ACTUEL" "STATUT")${NC}"
-    echo -e "${YELLOW}$(printf '%.0s-' {1..60})${NC}"
+    printf "%-25s %-15s %-15s\n" "PORTEFEUILLE" "SOLDE ACTUEL" "STATUT"
+    printf "%.0s-" {1..60}
+    echo ""
     
     for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
         local dunikey_file="${COOPERATIVE_WALLETS[$wallet_name]}"
@@ -457,24 +530,24 @@ display_final_status() {
                 balance=$(get_wallet_balance "$pubkey")
                 
                 if (( $(echo "$balance >= $MIN_BALANCE" | bc -l) )); then
-                    status="${GREEN}✓ Initialisé${NC}"
+                    status="✓ Initialisé"
                 else
-                    status="${RED}✗ Vide${NC}"
+                    status="✗ Vide"
                 fi
             else
-                status="${RED}✗ Erreur clé${NC}"
+                status="✗ Erreur clé"
             fi
         else
-            status="${RED}✗ Fichier manquant${NC}"
+            status="✗ Fichier manquant"
         fi
         
         printf "%-25s %-15s %-15s\n" \
             "$wallet_name" \
-            "${YELLOW}$balance Ğ1${NC}" \
+            "$balance Ğ1" \
             "$status"
     done
     
-    echo -e "${YELLOW}$(printf '%.0s-' {1..60})${NC}"
+    printf "%.0s-" {1..60}
     echo ""
 }
 
