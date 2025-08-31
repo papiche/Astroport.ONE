@@ -374,44 +374,20 @@ initialize_wallet() {
         return 0
     fi
     
-    # Execute transaction using silkaj
+    # Execute transaction using PAYforSURE.sh (like in ZEN.COOPERATIVE.3x1-3.sh)
     echo -e "${YELLOW}Exécution de la transaction...${NC}"
     
+    # Convert amount to G1 for PAYforSURE.sh
+    local transfer_amount_g1=$(echo "scale=2; $INIT_AMOUNT" | bc -l)
+    
+    # Use PAYforSURE.sh like in the cooperative script
     local transfer_result
-    transfer_result=$(silkaj --json --dunikey-file "$SOURCE_WALLET" money transfer \
-        -r "$pubkey" \
-        -a "$INIT_AMOUNT" \
-        --reference "INIT:$wallet_name" \
-        --yes 2>/dev/null)
+    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:INIT:$wallet_name" 2>/dev/null)
     
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_name${NC}"
-        
-        # Wait a moment for transaction to be processed
-        echo -e "${YELLOW}⏳ Attente de la confirmation...${NC}"
-        sleep 5
-        
-        # Verify new balance
-        local new_balance=$(get_wallet_balance "$pubkey")
-        echo -e "${BLUE}Nouveau solde:${NC} ${YELLOW}$new_balance Ğ1${NC}"
-        
-        if (( $(echo "$new_balance >= $MIN_BALANCE" | bc -l) )); then
-            echo -e "${GREEN}✅ $wallet_name initialisé avec succès${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Solde encore insuffisant, attente supplémentaire...${NC}"
-            sleep 10
-            local final_balance=$(get_wallet_balance "$pubkey")
-            echo -e "${BLUE}Solde final:${NC} ${YELLOW}$final_balance Ğ1${NC}"
-            
-            if (( $(echo "$final_balance >= $MIN_BALANCE" | bc -l) )); then
-                echo -e "${GREEN}✅ $wallet_name initialisé avec succès${NC}"
-                return 0
-            else
-                echo -e "${RED}❌ Échec de l'initialisation de $wallet_name${NC}"
-                return 1
-            fi
-        fi
+        echo -e "${GREEN}✅ $wallet_name initialisé avec succès${NC}"
+        return 0
     else
         echo -e "${RED}❌ Échec de la transaction pour $wallet_name${NC}"
         echo "$transfer_result"
