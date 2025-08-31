@@ -868,6 +868,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "${G1PUBNOSTR}" \
             "${UPLANETG1PUB}" \
             "${PLAYER}"
+
     else
         echo "UPlanet ORIGIN - No primal control"
     fi

@@ -259,6 +259,13 @@ control_primal_transactions() {
         return 1
     }
 
+    # Check if player is CAPTAIN - authorize UPLANET sources as valid primal
+    local is_captain=false
+    if [[ "$player_email" == "$CAPTAINEMAIL" ]]; then
+        is_captain=true
+        echo "CAPTAIN DETECTED: Authorizing UPLANET sources as valid primal"
+    fi
+
     echo "Checking primal transactions for wallet ${wallet_pubkey:0:8}"
     echo "Master primal: ${master_primal:0:8}"
 
@@ -312,8 +319,22 @@ control_primal_transactions() {
         local tx_primal=$(get_primal_source "${TXIPUBKEY}")
 
         if [[ -n "$tx_primal" && "$tx_primal" != "null" ]]; then
+            # For CAPTAIN: also authorize UPLANET sources as valid primal
+            local is_valid_primal=false
+            if [[ "$is_captain" == true ]]; then
+                # CAPTAIN can receive from master_primal, UPLANETG1PUB, and UPLANETNAME_SOCIETY
+                if [[ "$master_primal" == "$tx_primal" || "$tx_primal" == "$UPLANETG1PUB" || "$tx_primal" == "$UPLANETNAME_SOCIETY" ]]; then
+                    is_valid_primal=true
+                fi
+            else
+                # Regular players: only master_primal is valid
+                if [[ "$master_primal" == "$tx_primal" ]]; then
+                    is_valid_primal=true
+                fi
+            fi
+
             # Verify if transaction is from a valid wallet with same primal
-            if [[ "$master_primal" != "$tx_primal" ]]; then
+            if [[ "$is_valid_primal" == false ]]; then
                 echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
 
                 # Check if we've already reached the maximum intrusions
@@ -347,7 +368,11 @@ control_primal_transactions() {
                     echo "ERROR: Failed to refund intrusion transaction"
                 fi
             else
-                echo "GOOD PRIMAL WALLET TX by ${tx_primal:0:8}"
+                if [[ "$is_captain" == true ]]; then
+                    echo "GOOD PRIMAL WALLET TX by ${tx_primal:0:8} (CAPTAIN authorized source)"
+                else
+                    echo "GOOD PRIMAL WALLET TX by ${tx_primal:0:8}"
+                fi
             fi
         else
             echo "WARNING: Could not determine primal source for ${TXIPUBKEY:0:8}"
@@ -364,8 +389,7 @@ control_primal_transactions() {
 
     # Cleanup
     rm -f "$temp_history_file" "$inline_history_file"
-
-    return 0
+    return 0    
 }
 
 # Main execution

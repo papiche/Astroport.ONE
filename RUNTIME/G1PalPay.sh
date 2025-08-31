@@ -70,22 +70,16 @@ if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
     echo "CONTROL UPLANET ZEN - ZenCard primal control"
     
     # For ZenCard wallets, use UPLANETNAME.SOCIETY as expected primal source
-    # Get UPLANETNAME.SOCIETY public key
-    SOCIETY_PUBKEY=$(cat ~/.zen/tmp/UPLANETNAME_SOCIETY 2>/dev/null)
-    if [[ -z "$SOCIETY_PUBKEY" ]]; then
-        # Generate UPLANETNAME.SOCIETY public key if not cached
-        SOCIETY_PUBKEY=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY")
-        echo "$SOCIETY_PUBKEY" > ~/.zen/tmp/UPLANETNAME_SOCIETY
-    fi
-    
-    # Use the generic primal wallet control function with SOCIETY wallet as master primal
     ${MY_PATH}/../tools/primal_wallet_control.sh \
         "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
         "${G1PUB}" \
-        "${SOCIETY_PUBKEY}" \
+        "${UPLANETNAME_SOCIETY}" \
         "${PLAYER}"
+
 else
+
     echo "UPlanet ORIGIN - No Control -"
+
 fi
 
 ##########################################################
