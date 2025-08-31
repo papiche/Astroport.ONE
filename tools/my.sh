@@ -619,28 +619,28 @@ CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null)
 ## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
 [[ ! -s $HOME/.zen/game/uplanet.G1.dunikey ]] \
     && UPLANETNAME_G1=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
-    && UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep ":pub" | cut -d " " -f 2) \
+    && UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
-UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep ":pub" | cut -d " " -f 2)
+UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2)
 echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
 ## UPLANETNAME Ẑen wallet for Locative Service Layer
 [[ ! -s $HOME/.zen/game/uplanet.dunikey ]] \
     && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}") \
-    && UPLANETG1PUB=$(cat $HOME/.zen/game/uplanet.dunikey | grep ":pub" | cut -d " " -f 2) \
+    && UPLANETG1PUB=$(cat $HOME/.zen/game/uplanet.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
-UPLANETG1PUB=$(cat $HOME/.zen/game/uplanet.dunikey | grep ":pub" | cut -d " " -f 2)
+UPLANETG1PUB=$(cat $HOME/.zen/game/uplanet.dunikey | grep "pub" | cut -d " " -f 2)
 echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
 ## UPLANETNAME_SOCIETY wallet for Cooperative Holders 
 [[ ! -s $HOME/.zen/game/uplanet.SOCIETY.dunikey ]] \
     && UPLANETNAME_SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.SOCIETY.dunikey "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
-    && UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep ":pub" | cut -d " " -f 2) \
+    && UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 
-UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep ":pub" | cut -d " " -f 2)
+UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2)
 echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
