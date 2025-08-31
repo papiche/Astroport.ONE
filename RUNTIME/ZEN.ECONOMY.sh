@@ -22,7 +22,6 @@ start=`date +%s`
 # Check if payment was already done this week using marker file
 #######################################################################
 PAYMENT_MARKER="$HOME/.zen/game/.weekly_payment.done"
-rm -f "$HOME/.zen/game/.payment.done" ## TODO REMOVE
 
 # Get current week number (ISO week)
 CURRENT_WEEK=$(date +%V)

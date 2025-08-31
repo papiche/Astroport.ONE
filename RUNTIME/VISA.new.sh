@@ -642,7 +642,7 @@ YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 echo "UPlanet ZEN : Sending PRIMO TX from UPLANETNAME.SOCIETY to ZenCard"
 
 # Create or get UPLANETNAME.SOCIETY dunikey
-SOCIETY_DUNIKEY="~/.zen/tmp/UPLANETNAME_SOCIETY.dunikey"
+SOCIETY_DUNIKEY="~/.zen/game/uplanet.SOCIETY.dunikey"
 if [[ ! -f "$SOCIETY_DUNIKEY" ]]; then
     ${MY_PATH}/../tools/keygen -t duniter -o "$SOCIETY_DUNIKEY" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
     chmod 600 "$SOCIETY_DUNIKEY"

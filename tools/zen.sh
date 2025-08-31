@@ -2899,43 +2899,72 @@ generate_payment_csv_report() {
     handle_payment_transcription
 }
 
-# Function to display captain dashboard (simplified)
-display_captain_dashboard() {
-    echo -e "\n${CYAN}📊 TABLEAU DE BORD CAPITAINE${NC}"
-    echo -e "${YELLOW}============================${NC}"
+# Function to display station overview
+display_station_overview() {
+    echo -e "\n${CYAN}🏠 APERÇU DE LA STATION UPLANET ẐEN${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
     
-    # Quick system status
-    echo -e "${BLUE}🏛️  PORTEFEUILLES SYSTÈME:${NC}"
+    # Station identity
+    echo -e "${BLUE}🏛️  IDENTITÉ DE LA STATION:${NC}"
+    echo -e "  • Nom: ${GREEN}$UPLANETNAME${NC}"
+    echo -e "  • Capitaine: ${GREEN}$CAPTAINEMAIL${NC}"
+    echo -e "  • Date: ${CYAN}$(date +%d/%m/%Y)${NC}"
+    echo -e "  • Heure: ${CYAN}$(date +%H:%M:%S)${NC}"
     
-    # UPLANETNAME.SOCIETY (most important for captain)
-    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
-        society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
-        if [[ -n "$society_pubkey" ]]; then
-            local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
-            society_balance=$(echo "$status" | cut -d '|' -f 1)
-            zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "   • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${CYAN}$zen_balance Ẑen${NC} (${YELLOW}$society_balance Ğ1${NC})"
+    # System wallets status
+    echo -e "\n${BLUE}💰 PORTEFEUILLES SYSTÈME:${NC}"
+    
+    # UPLANETNAME.G1
+    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
+        g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
+        if [[ -n "$g1_pubkey" ]]; then
+            g1_balance=$(get_wallet_balance "$g1_pubkey")
+            echo -e "  • ${GREEN}UPLANETNAME.G1:${NC} ${YELLOW}$g1_balance Ğ1${NC} (Réserves)"
         else
-            echo -e "   • ${RED}UPLANETNAME.SOCIETY: Erreur de configuration${NC}"
+            echo -e "  • ${RED}UPLANETNAME.G1: Erreur de configuration${NC}"
         fi
     else
-        echo -e "   • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
+        echo -e "  • ${RED}UPLANETNAME.G1: Non configuré${NC}"
     fi
     
-    # UPLANETNAME (services)
+    # UPLANETNAME
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
         services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
         if [[ -n "$services_pubkey" ]]; then
             local status=$(get_wallet_status "$services_pubkey" "UPLANETNAME")
             services_balance=$(echo "$status" | cut -d '|' -f 1)
             zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "   • ${GREEN}UPLANETNAME (Services):${NC} ${CYAN}$zen_balance Ẑen${NC} (${YELLOW}$services_balance Ğ1${NC})"
+            echo -e "  • ${GREEN}UPLANETNAME:${NC} ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
         else
-            echo -e "   • ${RED}UPLANETNAME: Erreur de configuration${NC}"
+            echo -e "  • ${RED}UPLANETNAME: Erreur de configuration${NC}"
         fi
     else
-        echo -e "   • ${RED}UPLANETNAME: Non configuré${NC}"
+        echo -e "  • ${RED}UPLANETNAME: Non configuré${NC}"
     fi
+    
+    # UPLANETNAME.SOCIETY
+    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
+        society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
+        if [[ -n "$society_pubkey" ]]; then
+            local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
+            society_balance=$(echo "$status" | cut -d '|' -f 1)
+            zen_balance=$(echo "$status" | cut -d '|' -f 3)
+            echo -e "  • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+        else
+            echo -e "  • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
+        fi
+    else
+        echo -e "  • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
+    fi
+    
+    # Quick user stats
+    echo -e "\n${BLUE}👥 UTILISATEURS:${NC}"
+    local multipass_count=$(ls ~/.zen/game/nostr/*@*.*/G1PUBNOSTR 2>/dev/null | wc -l)
+    local zencard_count=$(ls ~/.zen/game/players/*@*.*/.g1pub 2>/dev/null | wc -l)
+    echo -e "  • MULTIPASS: ${CYAN}$multipass_count${NC}"
+    echo -e "  • ZenCard: ${PURPLE}$zencard_count${NC}"
+    
+    echo -e "${YELLOW}═══════════════════════════════════════${NC}"
 }
 
 # Function to display economic dashboard (full version)
@@ -3225,181 +3254,683 @@ perform_system_health_check() {
 
 # Main script logic
 main() {
-    echo -e "${CYAN}🌟 ASTROPORT.ONE ZEN TRANSACTION MANAGER${NC}"
-    echo -e "${YELLOW}========================================${NC}"
-    echo -e "${GREEN}Welcome, Captain! Choose your transaction type:${NC}"
-    
-    # Initialize system
-    initialize_system
-    
-    # Check if UPLANETNAME is defined
-    if [[ -z "$UPLANETNAME" ]]; then
-        echo -e "${RED}❌ ERROR: UPLANETNAME is not defined!${NC}"
-        echo -e "${YELLOW}Please ensure UPLANETNAME is set in your environment.${NC}"
-        exit 1
-    fi
-    
-    # Initialize system wallets
-    initialize_system_wallets
-    
-    # Display economic dashboard (simplified for captain workflow)
-    display_captain_dashboard "$1"
-    
-    # Display users summary with payment tracking
-    display_users_summary
-    local payments_due=$?
-    
-    # Alert for due payments with detailed actions and specific users
-    if [[ $payments_due -gt 0 ]]; then
-        echo -e "\n${RED}🚨 ALERTE CAPITAINE: $payments_due paiement(s) en retard!${NC}"
-        echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
+    while true; do
+        clear
+        echo -e "${CYAN}🌟 ASTROPORT.ONE ZEN TRANSACTION MANAGER${NC}"
+        echo -e "${YELLOW}========================================${NC}"
+        echo -e "${GREEN}Bienvenue, Capitaine ! Gérez votre station UPlanet ẐEN${NC}"
         
-        # Show overdue users specifically
-        echo -e "${RED}👥 UTILISATEURS EN RETARD:${NC}"
+        # Initialize system
+        initialize_system
         
-        # Collect overdue users from both directories
-        local overdue_users=()
-        
-        # Check players directory (ZenCard)
-        if [[ -d ~/.zen/game/players ]]; then
-            for player_dir in ~/.zen/game/players/*@*.*/; do
-                if [[ -d "$player_dir" ]]; then
-                    local player_name=$(basename "$player_dir")
-                    if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
-                        local payment_info=$(get_user_payment_status "$player_name")
-                        local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
-                        if [[ "$days_until" == "0" ]]; then
-                            overdue_users+=("$player_name")
-                        fi
-                    fi
-                fi
-            done
+        # Check if UPLANETNAME is defined
+        if [[ -z "$UPLANETNAME" ]]; then
+            echo -e "${RED}❌ ERREUR: UPLANETNAME n'est pas défini !${NC}"
+            echo -e "${YELLOW}Veuillez vous assurer que UPLANETNAME est défini dans votre environnement.${NC}"
+            exit 1
         fi
         
-        # Check nostr directory (MULTIPASS) 
-        if [[ -d ~/.zen/game/nostr ]]; then
-            for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
-                if [[ -d "$nostr_dir" ]]; then
-                    local nostr_name=$(basename "$nostr_dir")
-                    if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
-                        # Check if not already in overdue list
-                        local found=false
-                        for existing_user in "${overdue_users[@]}"; do
-                            if [[ "$existing_user" == "$nostr_name" ]]; then
-                                found=true
-                                break
-                            fi
-                        done
-                        if [[ "$found" == false ]]; then
-                            local payment_info=$(get_user_payment_status "$nostr_name")
+        # Initialize system wallets
+        initialize_system_wallets
+        
+        # Display station overview
+        display_station_overview
+        
+        # Display users summary with payment tracking
+        display_users_summary
+        local payments_due=$?
+        
+        # Alert for due payments
+        if [[ $payments_due -gt 0 ]]; then
+            echo -e "\n${RED}🚨 ALERTE CAPITAINE: $payments_due paiement(s) en retard !${NC}"
+            echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
+            
+            # Show overdue users specifically
+            echo -e "${RED}👥 UTILISATEURS EN RETARD:${NC}"
+            
+            # Collect overdue users from both directories
+            local overdue_users=()
+            
+            # Check players directory (ZenCard)
+            if [[ -d ~/.zen/game/players ]]; then
+                for player_dir in ~/.zen/game/players/*@*.*/; do
+                    if [[ -d "$player_dir" ]]; then
+                        local player_name=$(basename "$player_dir")
+                        if [[ "$player_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                            local payment_info=$(get_user_payment_status "$player_name")
                             local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
                             if [[ "$days_until" == "0" ]]; then
-                                overdue_users+=("$nostr_name")
+                                overdue_users+=("$player_name")
                             fi
                         fi
                     fi
-                fi
+                done
+            fi
+            
+            # Check nostr directory (MULTIPASS) 
+            if [[ -d ~/.zen/game/nostr ]]; then
+                for nostr_dir in ~/.zen/game/nostr/*@*.*/; do
+                    if [[ -d "$nostr_dir" ]]; then
+                        local nostr_name=$(basename "$nostr_dir")
+                        if [[ "$nostr_name" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                            # Check if not already in overdue list
+                            local found=false
+                            for existing_user in "${overdue_users[@]}"; do
+                                if [[ "$existing_user" == "$nostr_name" ]]; then
+                                    found=true
+                                    break
+                                fi
+                            done
+                            if [[ "$found" == false ]]; then
+                                local payment_info=$(get_user_payment_status "$nostr_name")
+                                local days_until=$(echo "$payment_info" | cut -d '|' -f 3)
+                                if [[ "$days_until" == "0" ]]; then
+                                    overdue_users+=("$nostr_name")
+                                fi
+                            fi
+                        fi
+                    fi
+                done
+            fi
+            
+            # Display overdue users
+            for overdue_user in "${overdue_users[@]}"; do
+                echo -e "  ${RED}⚠️  $overdue_user${NC} - Paiement immédiatement requis"
             done
+            
+            echo -e "\n${YELLOW}📋 ACTIONS RECOMMANDÉES:${NC}"
+            echo -e "  1. ${CYAN}Vérifier les soldes des locataires concernés${NC} (Option 6: Analyse)"
+            echo -e "  2. ${CYAN}Envoyer des rappels de paiement${NC}"
+            echo -e "  3. ${CYAN}Considérer la déconnexion automatique après 28 jours${NC}"
+            echo -e "\n${CYAN}💡 Conseil: Utilisez l'option 6 (Analyse des portefeuilles) pour examiner en détail${NC}"
+            echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
+        else
+            echo -e "\n${GREEN}✅ Tous les paiements sont à jour - Aucune action requise${NC}"
         fi
         
-        # Display overdue users
-        for overdue_user in "${overdue_users[@]}"; do
-            echo -e "  ${RED}⚠️  $overdue_user${NC} - Paiement immédiatement requis"
-        done
+        # Display main menu
+        echo -e "\n${CYAN}🎯 MENU PRINCIPAL - GESTION DE LA STATION${NC}"
+        echo -e "${YELLOW}===========================================${NC}"
         
-        echo -e "\n${YELLOW}📋 ACTIONS RECOMMANDÉES:${NC}"
-        echo -e "  1. ${CYAN}Vérifier les soldes des locataires concernés${NC} (Option 5: Analyse)"
-        echo -e "  2. ${CYAN}Envoyer des rappels de paiement${NC}"
-        echo -e "  3. ${CYAN}Considérer la déconnexion automatique après 28 jours${NC}"
-        echo -e "\n${CYAN}💡 Conseil: Utilisez l'option 5 (Analyse des portefeuilles) pour examiner en détail${NC}"
-        echo -e "${YELLOW}═══════════════════════════════════════════════════════${NC}"
-    else
-        echo -e "\n${GREEN}✅ Tous les paiements sont à jour - Aucune action requise${NC}"
-    fi
+        echo -e "${BLUE}1. 🏛️  PORTEFEUILLES SYSTÈME${NC} - Gestion des comptes centraux"
+        echo -e "   • UPLANETNAME.G1 (Réserves Ğ1)"
+        echo -e "   • UPLANETNAME (Services & MULTIPASS)"
+        echo -e "   • UPLANETNAME.SOCIETY (Capital social)"
+        echo ""
+        
+        echo -e "${BLUE}2. 👥 GESTION DES UTILISATEURS${NC} - Suivi et paiements"
+        echo -e "   • Tableau de bord des utilisateurs"
+        echo -e "   • Gestion des paiements en retard"
+        echo -e "   • Création de comptes utilisateurs"
+        echo ""
+        
+        echo -e "${BLUE}3. 💰 REPORTING & COMPTABILITÉ${NC} - Suivi financier"
+        echo -e "   • Reporting OpenCollective"
+        echo -e "   • Retranscription des versements"
+        echo -e "   • Rapports comptables"
+        echo ""
+        
+        echo -e "${BLUE}4. 🔍 ANALYSE & DIAGNOSTIC${NC} - Outils avancés"
+        echo -e "   • Analyse des portefeuilles"
+        echo -e "   • Historique des transactions"
+        echo -e "   • Diagnostic de la chaîne primale"
+        echo ""
+        
+        echo -e "${BLUE}5. ⚙️  CONFIGURATION & MAINTENANCE${NC} - Administration"
+        echo -e "   • Configuration de la station"
+        echo -e "   • Maintenance système"
+        echo -e "   • Santé de la station"
+        echo ""
+        
+        echo -e "${BLUE}6. 📚 AIDE & DOCUMENTATION${NC} - Guide et conseils"
+        echo -e "   • Guide du capitaine"
+        echo -e "   • Documentation ẐEN"
+        echo -e "   • Bonnes pratiques"
+        echo ""
+        
+        echo -e "${BLUE}0. 🚪 QUITTER${NC} - Sortir du gestionnaire"
+        echo ""
+        
+        # Get user selection
+        read -p "Sélectionnez une option (0-6): " choice
+        
+        case "$choice" in
+            0)
+                echo -e "${GREEN}👋 Au revoir, Capitaine !${NC}"
+                exit 0
+                ;;
+            1)
+                handle_system_wallets
+                ;;
+            2)
+                handle_user_management
+                ;;
+            3)
+                handle_reporting_accounting
+                ;;
+            4)
+                handle_analysis_diagnostics
+                ;;
+            5)
+                handle_configuration_maintenance
+                ;;
+            6)
+                handle_help_documentation
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-6.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to handle system wallets management
+handle_system_wallets() {
+    while true; do
+        clear
+        echo -e "${CYAN}🏛️  GESTION DES PORTEFEUILLES SYSTÈME${NC}"
+        echo -e "${YELLOW}=====================================${NC}"
+        echo -e "${GREEN}Gérez les comptes centraux de votre station UPlanet${NC}"
+        
+        echo -e "\n${BLUE}PORTEFEUILLES DISPONIBLES:${NC}"
+        echo -e "  1. 🏛️  UPLANETNAME.G1 - Réserves Ğ1 et donations"
+        echo -e "  2. 💼 UPLANETNAME - Services et MULTIPASS"
+        echo -e "  3. ⭐ UPLANETNAME.SOCIETY - Capital social et ZenCard"
+        echo -e "  4. 📊 Vue d'ensemble de tous les portefeuilles"
+        echo -e "  5. 🔧 Initialisation des portefeuilles manquants"
+        echo -e "  0. 🔙 Retour au menu principal"
+        
+        read -p "Sélectionnez une option (0-5): " wallet_choice
+        
+        case "$wallet_choice" in
+            0)
+                return 0
+                ;;
+            1)
+                handle_g1_reserve
+                ;;
+            2)
+                handle_services
+                ;;
+            3)
+                handle_social_capital
+                ;;
+            4)
+                display_all_system_wallets
+                ;;
+            5)
+                initialize_missing_wallets
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to handle user management
+handle_user_management() {
+    while true; do
+        clear
+        echo -e "${CYAN}👥 GESTION DES UTILISATEURS${NC}"
+        echo -e "${YELLOW}===========================${NC}"
+        echo -e "${GREEN}Gérez les utilisateurs et suivez leurs paiements${NC}"
+        
+        echo -e "\n${BLUE}OPTIONS DISPONIBLES:${NC}"
+        echo -e "  1. 📊 Tableau de bord des utilisateurs"
+        echo -e "  2. 🚨 Gestion des paiements en retard"
+        echo -e "  3. ➕ Créer un nouveau compte utilisateur"
+        echo -e "  4. 🔍 Rechercher un utilisateur spécifique"
+        echo -e "  5. 📧 Envoyer des rappels de paiement"
+        echo -e "  0. 🔙 Retour au menu principal"
+        
+        read -p "Sélectionnez une option (0-5): " user_choice
+        
+        case "$user_choice" in
+            0)
+                return 0
+                ;;
+            1)
+                display_users_summary
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+            2)
+                handle_overdue_payments
+                ;;
+            3)
+                create_new_user_account
+                ;;
+            4)
+                search_user_account
+                ;;
+            5)
+                send_payment_reminders
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to handle reporting and accounting
+handle_reporting_accounting() {
+    while true; do
+        clear
+        echo -e "${CYAN}💰 REPORTING & COMPTABILITÉ${NC}"
+        echo -e "${YELLOW}================================${NC}"
+        echo -e "${GREEN}Suivi financier et rapports de votre station${NC}"
+        
+        echo -e "\n${BLUE}OPTIONS DISPONIBLES:${NC}"
+        echo -e "  1. 📊 Reporting OpenCollective"
+        echo -e "  2. 📋 Retranscription des versements"
+        echo -e "  3. 📈 Rapports comptables"
+        echo -e "  4. 💳 Suivi des revenus hebdomadaires"
+        echo -e "  5. 📁 Export des données financières"
+        echo -e "  0. 🔙 Retour au menu principal"
+        
+        read -p "Sélectionnez une option (0-5): " report_choice
+        
+        case "$report_choice" in
+            0)
+                return 0
+                ;;
+            1)
+                handle_opencollective_reporting
+                ;;
+            2)
+                handle_payment_transcription
+                ;;
+            3)
+                generate_accounting_reports
+                ;;
+            4)
+                track_weekly_revenue
+                ;;
+            5)
+                export_financial_data
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to handle analysis and diagnostics
+handle_analysis_diagnostics() {
+    while true; do
+        clear
+        echo -e "${CYAN}🔍 ANALYSE & DIAGNOSTIC${NC}"
+        echo -e "${YELLOW}==========================${NC}"
+        echo -e "${GREEN}Outils avancés pour analyser votre station${NC}"
+        
+        echo -e "\n${BLUE}OUTILS DISPONIBLES:${NC}"
+        echo -e "  1. 🔍 Analyse des portefeuilles"
+        echo -e "  2. 📜 Historique des transactions"
+        echo -e "  3. 🔗 Diagnostic de la chaîne primale"
+        echo -e "  4. 📊 Statistiques de la station"
+        echo -e "  5. 🚨 Vérification de la santé système"
+        echo -e "  0. 🔙 Retour au menu principal"
+        
+        read -p "Sélectionnez une option (0-5): " analysis_choice
+        
+        case "$analysis_choice" in
+            0)
+                return 0
+                ;;
+            1)
+                handle_wallet_analysis
+                ;;
+            2)
+                show_transaction_history_menu
+                ;;
+            3)
+                diagnose_primal_chain
+                ;;
+            4)
+                show_station_statistics
+                ;;
+            5)
+                perform_system_health_check
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to handle configuration and maintenance
+handle_configuration_maintenance() {
+    while true; do
+        clear
+        echo -e "${CYAN}⚙️  CONFIGURATION & MAINTENANCE${NC}"
+        echo -e "${YELLOW}==================================${NC}"
+        echo -e "${GREEN}Administrez et maintenez votre station${NC}"
+        
+        echo -e "\n${BLUE}OPTIONS DISPONIBLES:${NC}"
+        echo -e "  1. ⚙️  Configuration de la station"
+        echo -e "  2. 🛠️  Maintenance système"
+        echo -e "  3. 🔄 Rafraîchir les soldes"
+        echo -e "  4. 🧹 Nettoyer le cache"
+        echo -e "  5. 🚀 Assistant d'initialisation"
+        echo -e "  0. 🔙 Retour au menu principal"
+        
+        read -p "Sélectionnez une option (0-5): " config_choice
+        
+        case "$config_choice" in
+            0)
+                return 0
+                ;;
+            1)
+                configure_station
+                ;;
+            2)
+                handle_maintenance
+                ;;
+            3)
+                refresh_all_balances
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+            4)
+                read -p "Entrez la limite d'âge du cache en heures (défaut: 24): " cache_age
+                cache_age="${cache_age:-24}"
+                clean_cache "$cache_age"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+            5)
+                handle_astroport_initialization
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to handle help and documentation
+handle_help_documentation() {
+    while true; do
+        clear
+        echo -e "${CYAN}📚 AIDE & DOCUMENTATION${NC}"
+        echo -e "${YELLOW}==========================${NC}"
+        echo -e "${GREEN}Guide et conseils pour le capitaine${NC}"
+        
+        echo -e "\n${BLUE}RESSOURCES DISPONIBLES:${NC}"
+        echo -e "  1. 💡 Guide du capitaine"
+        echo -e "  2. 📖 Documentation ẐEN"
+        echo -e "  3. ✅ Bonnes pratiques"
+        echo -e "  4. 🔧 Procédures recommandées"
+        echo -e "  5. 📞 Support et contact"
+        echo -e "  0. 🔙 Retour au menu principal"
+        
+        read -p "Sélectionnez une option (0-5): " help_choice
+        
+        case "$help_choice" in
+            0)
+                return 0
+                ;;
+            1)
+                show_captain_tips
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+            2)
+                show_zen_documentation
+                ;;
+            3)
+                show_best_practices
+                ;;
+            4)
+                show_recommended_procedures
+                ;;
+            5)
+                show_support_contact
+                ;;
+            *)
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
+                echo ""
+                read -p "Appuyez sur Entrée pour continuer..." 
+                ;;
+        esac
+    done
+}
+
+# Function to display all system wallets
+display_all_system_wallets() {
+    echo -e "\n${CYAN}📊 VUE D'ENSEMBLE DES PORTEFEUILLES SYSTÈME${NC}"
+    echo -e "${YELLOW}===========================================${NC}"
     
-    # Display wallet options
-    echo -e "\n${CYAN}🎯 ACTIONS DISPONIBLES:${NC}"
-    echo -e "${BLUE}1. 🏛️  UPLANETNAME.G1${NC} - Ğ1 Reserve Wallet"
-    echo -e "   • Manage Ğ1 donations and reserves"
-    echo -e "   • External donations → Reserve management"
+    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    for wallet in "${wallets[@]}"; do
+        local pubkey=$(get_system_wallet_public_key "$wallet")
+        if [[ -n "$pubkey" ]]; then
+            local balance=$(get_wallet_balance "$pubkey")
+            echo -e "${BLUE}$wallet:${NC} ${CYAN}$pubkey${NC} (${YELLOW}$balance Ğ1${NC})"
+        else
+            echo -e "${RED}$wallet: Non configuré${NC}"
+        fi
+    done
+    
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to initialize missing wallets
+initialize_missing_wallets() {
+    echo -e "\n${CYAN}🔧 INITIALISATION DES PORTEFEUILLES MANQUANTS${NC}"
+    echo -e "${YELLOW}=============================================${NC}"
     
-    echo -e "${BLUE}2. 💼 UPLANETNAME${NC} - Services & Cash-Flow Wallet"
-    echo -e "   • Handle service operations and MULTIPASS transactions"
-    echo -e "   • Service payments → MULTIPASS wallet operations"
+    echo -e "${GREEN}Initialisation des portefeuilles système...${NC}"
+    initialize_system_wallets
+    
+    echo -e "\n${BLUE}État des portefeuilles:${NC}"
+    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    for wallet in "${wallets[@]}"; do
+        local pubkey=$(get_system_wallet_public_key "$wallet")
+        if [[ -n "$pubkey" ]]; then
+            local balance=$(get_wallet_balance "$pubkey")
+            echo -e "  • ${GREEN}$wallet${NC}: ${CYAN}$pubkey${NC} (${YELLOW}$balance Ğ1${NC})"
+        else
+            echo -e "  • ${RED}$wallet${NC}: Non configuré"
+        fi
+    done
+    
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to handle overdue payments
+handle_overdue_payments() {
+    echo -e "\n${CYAN}🚨 GESTION DES PAIEMENTS EN RETARD${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
     
-    echo -e "${BLUE}3. ⭐ UPLANETNAME.SOCIETY${NC} - Social Capital Wallet"
-    echo -e "   • Manage cooperative shares and ZenCard operations"
-    echo -e "   • Investment operations → ZenCard wallet management"
+    # This function would implement overdue payment management
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to create new user account
+create_new_user_account() {
+    echo -e "\n${CYAN}➕ CRÉATION D'UN NOUVEAU COMPTE UTILISATEUR${NC}"
+    echo -e "${YELLOW}===========================================${NC}"
     
-    echo -e "${BLUE}4. 💰 REPORTING OPENCOLLECTIVE${NC} - Gestion des Reports"
-    echo -e "   • Reporter les paiements vers OpenCollective"
-    echo -e "   • Suivi des revenus et contributions"
-    echo -e "   • Génération de rapports financiers"
+    # This function would implement user account creation
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to search user account
+search_user_account() {
+    echo -e "\n${CYAN}🔍 RECHERCHE D'UN COMPTE UTILISATEUR${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
     
-    echo -e "${BLUE}5. 📋 RETRANSCRIPTION VERSEMENTS${NC} - Gestion des Paiements"
-    echo -e "   • Retranscrire les versements par utilisateur"
-    echo -e "   • Identifier les sources primales (Locataire/Sociétaire)"
-    echo -e "   • Générer les rapports de versements"
+    # This function would implement user account search
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to send payment reminders
+send_payment_reminders() {
+    echo -e "\n${CYAN}📧 ENVOI DE RAPPELS DE PAIEMENT${NC}"
+    echo -e "${YELLOW}===================================${NC}"
     
-    echo -e "${BLUE}6. 🔍 WALLET DETAILS & ANALYSIS${NC} - Advanced Features"
-    echo -e "   • View transaction history and primal chain"
-    echo -e "   • Generate accounting reports"
-    echo -e "   • Analyze wallet activities"
+    # This function would implement payment reminder sending
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to generate accounting reports
+generate_accounting_reports() {
+    echo -e "\n${CYAN}📈 GÉNÉRATION DE RAPPORTS COMPTABLES${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
     
-    echo -e "${BLUE}7. 🛠️  MAINTENANCE & OPTIMIZATION${NC} - System Tools"
-    echo -e "   • Refresh all wallet balances"
-    echo -e "   • Clean old cache files"
-    echo -e "   • System health check"
+    # This function would implement accounting report generation
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to track weekly revenue
+track_weekly_revenue() {
+    echo -e "\n${CYAN}💳 SUIVI DES REVENUS HEBDOMADAIRES${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
     
-    echo -e "${BLUE}8. 💡 AIDE & CONSEILS CAPITAINE${NC} - Guide d'utilisation"
-    echo -e "   • Bonnes pratiques de gestion"
-    echo -e "   • Conseils recommandées"
-    echo -e "   • Procédures recommandées"
+    # This function would implement weekly revenue tracking
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
     echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to export financial data
+export_financial_data() {
+    echo -e "\n${CYAN}📁 EXPORT DES DONNÉES FINANCIÈRES${NC}"
+    echo -e "${YELLOW}===================================${NC}"
     
-    # Get user selection
-    read -p "Select option (1-8): " choice
+    # This function would implement financial data export
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to show transaction history menu
+show_transaction_history_menu() {
+    echo -e "\n${CYAN}📜 HISTORIQUE DES TRANSACTIONS${NC}"
+    echo -e "${YELLOW}=================================${NC}"
     
-    case "$choice" in
-        1)
-            handle_g1_reserve
-            ;;
-        2)
-            handle_services
-            ;;
-        3)
-            handle_social_capital
-            ;;
-        4)
-            handle_opencollective_reporting
-            ;;
-        5)
-            handle_payment_transcription
-            ;;
-        6)
-            handle_wallet_analysis
-            ;;
-        7)
-            handle_maintenance
-            ;;
-        8)
-            show_captain_tips
-            echo ""
-            read -p "Appuyez sur Entrée pour revenir au menu principal..." 
-            main "$@"
-            ;;
-        *)
-            echo -e "${RED}Invalid selection. Please choose 1, 2, 3, 4, 5, 6, 7, or 8.${NC}"
-            exit 1
-            ;;
-    esac
+    # This function would implement transaction history menu
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to diagnose primal chain
+diagnose_primal_chain() {
+    echo -e "\n${CYAN}🔗 DIAGNOSTIC DE LA CHAÎNE PRIMALE${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    
+    # This function would implement primal chain diagnosis
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to show station statistics
+show_station_statistics() {
+    echo -e "\n${CYAN}📊 STATISTIQUES DE LA STATION${NC}"
+    echo -e "${YELLOW}=================================${NC}"
+    
+    # This function would implement station statistics display
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to configure station
+configure_station() {
+    echo -e "\n${CYAN}⚙️  CONFIGURATION DE LA STATION${NC}"
+    echo -e "${YELLOW}===================================${NC}"
+    
+    # This function would implement station configuration
+    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to show zen documentation
+show_zen_documentation() {
+    echo -e "\n${CYAN}📖 DOCUMENTATION ẐEN${NC}"
+    echo -e "${YELLOW}========================${NC}"
+    
+    echo -e "${GREEN}Documentation de l'écosystème UPlanet ẐEN:${NC}"
+    echo -e "  • Constitution: ${CYAN}./LEGAL.md${NC}"
+    echo -e "  • Code de la Route: ${CYAN}./RUNTIME/ZEN.ECONOMY.readme.md${NC}"
+    echo -e "  • Diagramme des flux: ${CYAN}./templates/mermaid_LEGAL_UPLANET_FLUX.mmd${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to show best practices
+show_best_practices() {
+    echo -e "\n${CYAN}✅ BONNES PRATIQUES${NC}"
+    echo -e "${YELLOW}========================${NC}"
+    
+    echo -e "${GREEN}Bonnes pratiques pour la gestion de la station:${NC}"
+    echo -e "  • Vérifier quotidiennement les paiements dus"
+    echo -e "  • Maintenir des sauvegardes régulières"
+    echo -e "  • Surveiller la santé du système"
+    echo -e "  • Documenter toutes les opérations importantes"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to show recommended procedures
+show_recommended_procedures() {
+    echo -e "\n${CYAN}🔧 PROCÉDURES RECOMMANDÉES${NC}"
+    echo -e "${YELLOW}================================${NC}"
+    
+    echo -e "${GREEN}Procédures recommandées:${NC}"
+    echo -e "  • Initialisation hebdomadaire des paiements"
+    echo -e "  • Vérification mensuelle des portefeuilles"
+    echo -e "  • Rapport trimestriel OpenCollective"
+    echo -e "  • Maintenance système mensuelle"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
+}
+
+# Function to show support and contact
+show_support_contact() {
+    echo -e "\n${CYAN}📞 SUPPORT ET CONTACT${NC}"
+    echo -e "${YELLOW}==========================${NC}"
+    
+    echo -e "${GREEN}Support disponible:${NC}"
+    echo -e "  • Email: ${CYAN}support@qo-op.com${NC}"
+    echo -e "  • Documentation: ${CYAN}./docs/${NC}"
+    echo -e "  • Communauté: ${CYAN}https://uplanet.one${NC}"
+    echo ""
+    read -p "Appuyez sur Entrée pour continuer..." 
 }
 
 # Check if help is requested

@@ -548,11 +548,21 @@ myASTROTUBE="https://$(myAstroTube)"
 if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 # GET SCREEN DIMENSIONS
     if [[ -z $large && -z $haut ]]; then
-    screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
-    width=$(echo $screen | cut -d 'x' -f 1)
-    height=$(echo $screen | cut -d 'x' -f 2)
-    large=$((width-300))
-    haut=$((height-200))
+        # Check cache first
+        cache_file="$HOME/.zen/tmp/screen_dimensions"
+        if [[ -f "$cache_file" ]]; then
+            large=$(cat "$cache_file" | cut -d '|' -f1)
+            haut=$(cat "$cache_file" | cut -d '|' -f2)
+        else
+            # Get dimensions and cache them
+            screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
+            width=$(echo $screen | cut -d 'x' -f 1)
+            height=$(echo $screen | cut -d 'x' -f 2)
+            large=$((width-300))
+            haut=$((height-200))
+            mkdir -p "$HOME/.zen/tmp"
+            echo "${large}|${haut}" > "$cache_file"
+        fi
     fi
 ###
 fi
@@ -608,21 +618,25 @@ CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null)
 
 ## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
 UPLANETNAME_G1=$(cat $HOME/.zen/tmp/UPLANETNAME_G1 2>/dev/null) ## UPLANETNAME_G1 (G1 source)
-[[ -z ${UPLANETNAME_G1} ]] \
-    && UPLANETNAME_G1=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
-    && echo ${UPLANETNAME_G1} > $HOME/.zen/tmp/UPLANETNAME_G1
+[[ -z ${UPLANETNAME_G1} || ! -s $HOME/.zen/game/uplanet.G1.dunikey ]] \
+    && UPLANETNAME_G1=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
+    && UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep ":pub" | cut -d " " -f 2) \
+    && echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
 ## UPLANETNAME Ẑen wallet for Locative Service Layer
 UPLANETG1PUB=$(cat $HOME/.zen/tmp/UPLANETG1PUB 2>/dev/null) ## UPLANETG1PUB (Zen for Services)
-[[ -z ${UPLANETG1PUB} ]] \
-    && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}") \
+[[ -z ${UPLANETG1PUB} || ! -s $HOME/.zen/game/uplanet.dunikey ]] \
+    && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}") \
+    && UPLANETG1PUB=$(cat $HOME/.zen/game/uplanet.dunikey | grep ":pub" | cut -d " " -f 2) \
     && echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
 ## UPLANETNAME_SOCIETY wallet for Cooperative Holders 
 UPLANETNAME_SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME_SOCIETY 2>/dev/null) ## UPLANETNAME_SOCIETY (Zen for Cooperative Holders)
-[[ -z ${UPLANETNAME_SOCIETY} ]] \
-    && UPLANETNAME_SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
+[[ -z ${UPLANETNAME_SOCIETY} || ! -s $HOME/.zen/game/uplanet.SOCIETY.dunikey ]] \
+    && UPLANETNAME_SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.SOCIETY.dunikey "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
+    && UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep ":pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
+
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \

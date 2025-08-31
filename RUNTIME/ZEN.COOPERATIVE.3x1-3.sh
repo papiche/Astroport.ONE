@@ -11,7 +11,7 @@
 # 1. 1/3 Trésorerie (Réserves) - Liquidité et stabilité
 # 2. 1/3 R&D (G1FabLab) - Recherche et développement
 # 3. 1/3 Forêts Jardins (Actifs Réels) - Investissement régénératif
-# 
+#
 # Déclenchement : Allocation hebdomadaire basée sur le birthday du capitaine
 # Le capitaine reçoit sa part chaque semaine (même si faible)
 #
@@ -24,7 +24,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ################################################################################
 start=`date +%s`
 
- ## DESACTIVATE ZEN ECONOMY 
+ ## DESACTIVATE ZEN ECONOMY
 if [[ $PAF == 0 ]]; then
     echo "ZEN COOPERATIVE: PAF = 0"
     echo "Skipping allocation process..."
@@ -56,7 +56,7 @@ if [[ -f "$ALLOCATION_MARKER" ]]; then
     LAST_ALLOCATION_DATE=$(cat "$ALLOCATION_MARKER")
     # Calculate days since last allocation
     DAYS_SINCE_LAST=$(echo "($(date -d "$TODATE" +%s) - $(date -d "$LAST_ALLOCATION_DATE" +%s)) / 86400" | bc)
-    
+
     if [[ $DAYS_SINCE_LAST -lt 7 ]]; then
         echo "ZEN COOPERATIVE: Weekly allocation already completed this week (last: $LAST_ALLOCATION_DATE, days ago: $DAYS_SINCE_LAST)"
         echo "Skipping allocation process..."
@@ -152,7 +152,7 @@ fi
 REMAINING_BALANCE=$(echo "scale=2; $CAPTAINZEN - $CAPTAIN_SHARE" | bc -l)
 echo "Remaining balance after Captain's share: $REMAINING_BALANCE Ẑen"
 
-# Si le solde restant est insuffisant pour l'allocation coopérative, 
+# Si le solde restant est insuffisant pour l'allocation coopérative,
 # le capitaine garde tout et on arrête le processus
 if [[ $(echo "$REMAINING_BALANCE <= 0" | bc -l) -eq 1 ]]; then
     echo "ZEN COOPERATIVE: No remaining balance for cooperative allocation"
@@ -188,12 +188,12 @@ echo "ZEN COOPERATIVE: Corporate Tax - Reduced: $IS_RATE_REDUCED% (up to $IS_THR
 echo "🔄 Processing automatic tax provision..."
 
 # Créer le portefeuille IMPOTS s'il n'existe pas
-if [[ ! -s ~/.zen/game/uplanet.impots.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.impots.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
-    chmod 600 ~/.zen/game/uplanet.impots.dunikey
+if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+    chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
 fi
 
-IMPOTSG1PUB=$(cat $HOME/.zen/game/uplanet.impots.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+IMPOTSG1PUB=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
 # Conversion du surplus restant en euros (1 Ẑen ≈ 1 €)
 SURPLUS_EUR=$(echo "scale=2; $REMAINING_BALANCE * 1" | bc -l)
@@ -254,12 +254,12 @@ echo "ZEN COOPERATIVE: Allocation amounts - Treasury: $TREASURY_AMOUNT Ẑen | R
 echo "🔄 Processing Treasury allocation (1/3): $TREASURY_AMOUNT Ẑen"
 
 # Créer le portefeuille trésorerie s'il n'existe pas
-if [[ ! -s ~/.zen/game/uplanet.treasury.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.treasury.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
-    chmod 600 ~/.zen/game/uplanet.treasury.dunikey
+if [[ ! -s ~/.zen/game/uplanet.CASH.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.CASH.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
+    chmod 600 ~/.zen/game/uplanet.CASH.dunikey
 fi
 
-TREASURYG1PUB=$(cat $HOME/.zen/game/uplanet.treasury.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+TREASURYG1PUB=$(cat $HOME/.zen/game/uplanet.CASH.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 # Calcul en G1
 TREASURY_G1=$(echo "scale=2; $TREASURY_AMOUNT / 10" | bc -l)
 
@@ -278,12 +278,12 @@ fi
 echo "🔄 Processing R&D allocation (1/3): $RND_AMOUNT Ẑen"
 
 # Créer le portefeuille R&D s'il n'existe pas
-if [[ ! -s ~/.zen/game/uplanet.rnd.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.rnd.dunikey "${UPLANETNAME}.RND" "${UPLANETNAME}.RND"
-    chmod 600 ~/.zen/game/uplanet.rnd.dunikey
+if [[ ! -s ~/.zen/game/uplanet.RnD.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.RnD.dunikey "${UPLANETNAME}.RND" "${UPLANETNAME}.RND"
+    chmod 600 ~/.zen/game/uplanet.RnD.dunikey
 fi
 
-RNDG1PUB=$(cat $HOME/.zen/game/uplanet.rnd.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+RNDG1PUB=$(cat $HOME/.zen/game/uplanet.RnD.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 # Calcul en G1
 RND_G1=$(echo "scale=2; $RND_AMOUNT / 10" | bc -l)
 
@@ -302,12 +302,12 @@ fi
 echo "🔄 Processing Assets allocation (1/3): $ASSETS_AMOUNT Ẑen"
 
 # Créer le portefeuille actifs s'il n'existe pas
-if [[ ! -s ~/.zen/game/uplanet.assets.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.assets.dunikey "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
-    chmod 600 ~/.zen/game/uplanet.assets.dunikey
+if [[ ! -s ~/.zen/game/uplanet.ASSETS.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.ASSETS.dunikey "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
+    chmod 600 ~/.zen/game/uplanet.ASSETS.dunikey
 fi
 
-ASSETSG1PUB=$(cat $HOME/.zen/game/uplanet.assets.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+ASSETSG1PUB=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 # Calcul en G1
 ASSETS_G1=$(echo "scale=2; $ASSETS_AMOUNT / 10" | bc -l)
 
@@ -385,7 +385,7 @@ EOF
 if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
     echo "📧 Sending report to Captain: $CAPTAINEMAIL"
     ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
-    
+
     if [[ $? -eq 0 ]]; then
         echo "✅ Report sent successfully to Captain"
     else

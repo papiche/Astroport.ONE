@@ -519,29 +519,29 @@ for PLAYER in "${NOSTR[@]}"; do
                             ## Pay NCARD to CAPTAIN with TVA provision
                             [[ -z $NCARD ]] && NCARD=1
                             Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-                            
+
                             # Calculate TVA provision (20% of rental payment)
                             [[ -z $TVA_RATE ]] && TVA_RATE=20
                             TVA_AMOUNT=$(echo "scale=4; $Npaf * $TVA_RATE / 100" | bc -l)
                             TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
-                            
+
                             log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) + TVA $TVA_AMOUNT ẐEN"
-                            
+
                             # Main rental payment to CAPTAIN
                             payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
                             payment_success=$?
-                            
+
                             # TVA provision to UPlanet IMPOTS wallet (only if main payment succeeded)
                             if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
                                 # Ensure IMPOTS wallet exists
-                                if [[ ! -s ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey ]]; then
-                                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
-                                    chmod 600 ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey
+                                if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
+                                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+                                    chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
                                 fi
-                                
+
                                 # Get IMPOTS wallet G1PUB
-                                IMPOTS_G1PUB=$(cat ~/.zen/game/${UPLANETNAME}.IMPOT.dunikey | grep -o 'G1[1-9A-HJ-NP-Za-km-z]*' | head -1)
-                                
+                                IMPOTS_G1PUB=$(cat ~/.zen/game/uplanet.IMPOT.dunikey |  grep "pub:" | cut -d ' ' -f 2)
+
                                 if [[ -n "$IMPOTS_G1PUB" ]]; then
                                     tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
                                     if [[ $? -eq 0 ]]; then
@@ -558,7 +558,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Main payment failed - send error email
                                 log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
                                 log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
-                                
+
                                 # Send error email via mailjet
                                 error_message="<html><head><meta charset='UTF-8'>
 <style>
@@ -576,11 +576,11 @@ for PLAYER in "${NOSTR[@]}"; do
 </div>
 <p>TVA provision was not processed due to main payment failure.</p>
 </body></html>"
-                                
+
                                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "MULTIPASS Payment Error - $TODATE"
                                 log "INFO" "Error email sent to ${PLAYER} for payment failure"
                             fi
-                            
+
                             if [[ $payment_success -eq 0 ]]; then
                                 # Record successful payment
                                 echo "$TODATE" > "$last_payment_file"
