@@ -212,34 +212,106 @@ Parce que les activités au sein de notre écosystème sont des **prestations de
 
 ---
 
-## **Les Paliers : Quand Changer de Structure ?**
+### **Le Statut de Base : Micro-Entrepreneur (BNC) - Notre Recommandation**
 
-Le régime Micro-Entrepreneur est formidable, mais il a des limites. Il devient intéressant de changer de structure lorsque vous franchissez l'un de ces deux paliers :
+Pour démarrer, ce régime est imbattable.
+*   **Coût :** 0€ pour la création.
+*   **Comptabilité :** Tenir un simple registre des recettes en EUROS.
+*   **Fiscalité :** On paie des cotisations et des impôts uniquement sur ce qu'on a **réellement encaissé en euros**.
 
-### **Palier 1 : Le Plafond de Chiffre d'Affaires**
-*   **Le Seuil :** Le régime Micro-Entrepreneur est limité à un certain plafond de chiffre d'affaires annuel (actuellement **77 700 €** pour les BNC).
-*   **Que se passe-t-il si on dépasse ?** Vous basculez automatiquement au régime de l'**Entreprise Individuelle "au réel"** (appelé aussi "déclaration contrôlée").
+**La règle d'or à retenir :** On ne déclare pas des Ẑen. On déclare les **EUROS** reçus sur son compte en banque après avoir utilisé le service de conversion ("Pont de Liquidité") de la coopérative.
 
-### **Palier 2 : Le Seuil de Rentabilité (Le plus important !)**
-*   **La Règle :** En Micro-Entreprise, vous ne pouvez pas déduire vos frais réels. L'État vous accorde un abattement forfaitaire de **34%** (pour les BNC).
-*   **Le Calcul :** Le régime Micro est intéressant tant que **vos frais réels sont inférieurs à 34% de votre chiffre d'affaires**.
-*   **Exemple Concret pour un Armateur/Capitaine :**
-    *   Fred achète un PC Gamer puissant pour être un nœud "Hub". Coût : 4000€.
-    *   Il a aussi un abonnement fibre pro à 50€/mois (600€/an) et une consommation électrique estimée à 400€/an.
-    *   Ses frais réels (amortissement du PC + charges) sont très élevés. Ils dépassent largement les 34% de ses revenus en Ẑen la première année.
-    *   **Conclusion :** Pour Fred, le régime Micro n'est plus intéressant. Il paie des impôts sur de l'argent qu'il n'a pas vraiment gagné, car il ne peut pas déduire son énorme investissement initial.
+---
 
-## **Les Structures Juridiques Alternatives**
+### **Simulation 1 : Fred est Armateur/Capitaine d'un Satellite RPi**
 
-| Structure | **Entreprise Individuelle (EI) au Réel** | **Société (SASU ou EURL)** |
-| :--- | :--- | :--- |
-| **Pour Qui ?** | L'opérateur solo (Armateur, Capitaine) dont les **frais réels sont élevés** (>34% du CA). | L'opérateur qui a un **projet d'envergure**, qui veut embaucher, lever des fonds, ou simplement **protéger son patrimoine personnel**. |
-| **Principe** | C'est comme la Micro-Entreprise, mais vous tenez une **comptabilité complète (recettes - dépenses)**. Vous êtes imposé sur votre **bénéfice réel**. | Vous créez une **personne morale distincte** de vous. La société a son propre patrimoine. |
-| **Avantages** | ✅ **Déduction de tous vos frais réels** (matériel, électricité, internet, etc.). <br> ✅ Pas de plafond de CA aussi bas. | ✅ **Protection totale de votre patrimoine personnel**. En cas de faillite, vos biens personnels sont à l'abri.<br> ✅ **Crédibilité accrue** (pour les banques, les investisseurs).<br> ✅ **Optimisation fiscale** (choix entre salaire et dividendes). |
-| **Inconvénients** | ❌ **Comptabilité plus complexe** (souvent besoin d'un expert-comptable).<br> ❌ Votre patrimoine personnel et professionnel est confondu. | ❌ **Coûts de création et de gestion élevés** (statuts, expert-comptable obligatoire, etc.).<br> ❌ Plus de formalisme administratif. |
+*   **Investissement Initial :** Fred apporte un RPi5 + 4To. Valeur : **500€**.
+*   **Son Capital Ẑen :** Sa `ZenCard` est créditée de **500 Ẑen**. C'est son capital de départ.
+*   **Hypothèse d'Activité :** Son nœud est attractif. Il héberge :
+    *   10 Sociétaires (qui ont acheté une part à 50€/an).
+    *   50 Locataires MULTIPASS (à 1 Ẑen/semaine).
+*   **Calcul de ses Revenus Annuels en Ẑen :**
+    *   **Sa propre Rémunération (3xPAF) :** La PAF pour un RPi est fixée (disons 10 Ẑen/semaine). Il touche donc 30 Ẑen/semaine. Soit `30 * 52 = 1560 Ẑen/an`.
+    *   **Revenus Locatifs :** 50 locataires * 1 Ẑen/semaine * 52 semaines = `2600 Ẑen/an`.
+    *   **Total Brut en Ẑen :** `1560 + 2600 = 4160 Ẑen/an`.
+    *   **Charges (PAF à payer au Node) :** `-10 * 52 = -520 Ẑen/an`.
+    *   **Revenu Net en Ẑen :** `4160 - 520 = 3640 Ẑen`.
+*   **Conversion en Euros :** Fred a besoin de liquidités. Il décide de convertir **2000 Ẑen** en **2000€** via la coopérative. C'est son **chiffre d'affaires déclarable**.
+*   **Analyse Fiscale (Régime Micro-BNC) :**
+    *   **Chiffre d'Affaires :** 2000€.
+    *   **Abattement Forfaitaire pour Frais (34%) :** 680€.
+    *   **Revenu Imposable :** `2000 - 680 = 1320€`.
+    *   **Ses Frais Réels :** Son abonnement internet (disons 360€/an) + électricité (~100€/an) = **460€**.
+    *   **Conclusion :** `460€ (frais réels) < 680€ (abattement)`. Le régime Micro-Entrepreneur est **extrêmement avantageux** pour lui.
 
-**En résumé :**
-1.  **Commencez TOUS en Micro-Entrepreneur.** C'est simple et sans risque.
-2.  **Surveillez vos frais.** Quand l'achat de matériel devient conséquent, faites le calcul : si `Frais > 0.34 * Recettes`, alors discutez avec un comptable pour passer en **EI au réel**.
-3.  **Pensez en "projet".** Quand votre essaim devient une véritable petite entreprise, que vous voulez investir à plusieurs ou sécuriser votre famille, alors la création d'une **société (SASU/EURL)** devient l'étape logique.
+---
+
+### **Simulation 2 : Fred est Armateur/Capitaine d'un Hub PC Gamer**
+
+*   **Investissement Initial :** Fred apporte un PC Gamer d'occasion. Valeur : **2000€**.
+*   **Son Capital Ẑen :** Sa `ZenCard` est créditée de **2000 Ẑen**.
+*   **Hypothèse d'Activité :** Son nœud est complet. Il héberge :
+    *   24 Sociétaires.
+    *   250 Locataires MULTIPASS.
+*   **Calcul de ses Revenus Annuels en Ẑen :**
+    *   **Sa propre Rémunération (3xPAF) :** La PAF pour un PC est plus élevée (disons 30 Ẑen/semaine). Il touche donc 90 Ẑen/semaine. Soit `90 * 52 = 4680 Ẑen/an`.
+    *   **Revenus Locatifs :** 250 locataires * 1 Ẑen/semaine * 52 semaines = `13000 Ẑen/an`.
+    *   **Total Brut en Ẑen :** `4680 + 13000 = 17680 Ẑen`.
+    *   **Charges (PAF à payer au Node) :** `-30 * 52 = -1560 Ẑen/an`.
+    *   **Revenu Net en Ẑen :** `17680 - 1560 = 16120 Ẑen`.
+*   **Conversion en Euros :** Fred a des revenus conséquents. Il convertit **12000 Ẑen** en **12000€**. C'est son **chiffre d'affaires déclarable**.
+*   **Analyse Fiscale (Régime Micro-BNC) :**
+    *   **Chiffre d'Affaires :** 12000€.
+    *   **Abattement Forfaitaire (34%) :** 4080€.
+    *   **Revenu Imposable :** `12000 - 4080 = 7920€`.
+    *   **Ses Frais Réels (1ère année) :** L'amortissement comptable de son PC (disons sur 3 ans, soit ~667€/an) + fibre pro (600€/an) + électricité (400€/an) = **~1667€**.
+    *   **Conclusion :** `1667€ (frais réels) < 4080€ (abattement)`. Le régime Micro-BNC reste **très avantageux**, même avec un gros investissement. Il ne devient moins intéressant que si les frais réels (par exemple, si Fred louait un local dédié) dépassaient 34% de ses revenus.
+
+---
+
+### **Les "Traces à Suivre" : Comment le Système Génère vos Justificatifs**
+
+C'est là que notre modèle prend tout son sens. **Vous n'avez pas à "suivre" les traces. Le système les génère pour vous.**
+
+Notre infrastructure utilise les transactions sur **Open Collective** et sur les **wallets Ẑen** pour créer des exports automatisés, prêts à être transmis à l'administration.
+
+#### **Solution Proposée : Le "Tableau de Bord Fiscal" du Capitaine**
+
+Directement accessible depuis le Terminal Astroport (ou une future interface web), chaque membre pourra accéder à son tableau de bord et exporter des documents officiels.
+
+#### **Export N°1 : Le Registre des Recettes (Pour votre déclaration Micro-BNC)**
+C'est le document clé. En un clic, le système génère un fichier CSV ou PDF qui ressemble à ça :
+
+| Date | Libellé | Montant Ẑen Converti | Montant EUR Reçu | Justificatif (Lien) |
+| :--- | :--- | :--- | :--- | :--- |
+| 15/02/2025 | Conversion Rémunération Capitaine | 300 Ẑen | 300,00 € | [lien vers tx sur OpenCollective] |
+| 28/03/2025 | Conversion PAF Armateur | 50 Ẑen | 50,00 € | [lien vers tx sur OpenCollective] |
+| ... | ... | ... | ... | ... |
+| **TOTAL À DÉCLARER** | | | **XXX,XX €** | |
+
+Ce document est la **preuve irréfutable** de vos revenus. Vous n'avez qu'à reporter le total dans votre déclaration URSSAF.
+
+#### **Export N°2 : Le Relevé de Compte Courant d'Associé**
+Ce document interne à la coopérative vous montre comment votre capital a "travaillé".
+
+| Date | Opération | Revenus (MULTIPASS) | Charges (PAF) | Prélèvement Capital (ZenCard) | Solde Capital (ZenCard) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 07/01/2025 | Paiement PAF | +10 Ẑen | -15 Ẑen | **-5 Ẑen** | 1995 Ẑen |
+| 14/01/2025 | Paiement PAF | +20 Ẑen | -15 Ẑen | **0 Ẑen** | 1995 Ẑen |
+
+Ce relevé prouve le mécanisme de "compte courant d'associé automatisé". C'est un outil de gestion puissant pour l'opérateur et un gage de transparence totale.
+
+#### **Export N°3 : Le Justificatif d'Apport en Capital**
+Pour les Sociétaires, le système peut générer un PDF certifié :
+> "La SCIC CopyLaRadio certifie que `Prénom Nom` (clé Ğ1 : `G1...`) a réalisé un apport en capital de **50 Ẑen** (cinquante Zen) le `jj/mm/aaaa`, lui conférant le statut de Sociétaire."
+
+### **Conclusion : L'Infrastructure comme Expert-Comptable**
+
+L'écosystème UPlanet n'est pas qu'une infrastructure technique ; c'est une **infrastructure administrative et fiscale**. Il est conçu pour que l'entrepreneuriat ne soit plus une charge mentale.
+
+1.  **Le Régime le plus Adapté :** Commencez en **Micro-Entrepreneur (BNC)**. C'est simple, peu coûteux et avantageux dans la majorité des cas simulés.
+2.  **Les Traces à Utiliser :** Ne les cherchez pas. Laissez le système les **générer pour vous** via le Tableau de Bord Fiscal.
+3.  **La Solution :** Notre infrastructure est la solution. Elle utilise les données d'**Open Collective** (pour les flux en €) et des **wallets Ẑen** (pour les flux internes) pour créer des **exports comptables prêts à l'emploi**.
+
+Le but est de vous libérer de la complexité pour que vous puissiez vous concentrer sur ce qui compte : bâtir un internet décentralisé et une économie régénératrice.
 
