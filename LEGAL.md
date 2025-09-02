@@ -3,14 +3,6 @@
 *Version 3.1 - "La Coopérative Auto-Exécutable et Régénératrice"*
 
 ---
-> ### **Notes de Version 3.1**
-> Cette version affine et clarifie plusieurs points critiques :
-> - **Précision du Rôle des Portefeuilles Membres :** Clarification du `MULTIPASS` comme compte courant et de la `ZenCard` comme compte de capital.
-> - **Calcul du Surplus du Capitaine :** Le diagramme et la logique reflètent désormais le calcul exact : `Surplus = Revenus Locatifs - (TVA + PAF Armateur + Rémunération Capitaine)`.
-> - **Clarification de la Règle du 1/3 :** La règle s'applique aux revenus d'activité. La conversion du capital social suit les règles du droit des sociétés.
-> - **Amélioration du Diagramme des Flux :** Le diagramme a été entièrement revu pour plus de clarté, de précision et pour illustrer la séquence logique des opérations.
-
----
 
 ## **PRÉAMBULE : NOTRE MISSION**
 
