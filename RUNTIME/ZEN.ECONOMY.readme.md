@@ -302,8 +302,10 @@ Ce document interne à la coopérative vous montre comment votre capital a "trav
 Ce relevé prouve le mécanisme de "compte courant d'associé automatisé". C'est un outil de gestion puissant pour l'opérateur et un gage de transparence totale.
 
 #### **Export N°3 : Le Justificatif d'Apport en Capital**
-Pour les Sociétaires, le système peut générer un PDF certifié :
+Pour les Sociétaires, le système peut facilmement générer un PDF certifié :
 > "La SCIC CopyLaRadio certifie que `Prénom Nom` (clé Ğ1 : `G1...`) a réalisé un apport en capital de **50 Ẑen** (cinquante Zen) le `jj/mm/aaaa`, lui conférant le statut de Sociétaire."
+
+Il peut le faire lui même depuis son compte Open Collective !
 
 ### **Conclusion : L'Infrastructure comme Expert-Comptable**
 
