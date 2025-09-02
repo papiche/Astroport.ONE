@@ -129,70 +129,71 @@ Ce document constitue la **Constitution de l'écosystème UPlanet ẐEN**. Il d�
 
 ```mermaid
 graph TD
-    subgraph "Monde Réel (Euros €)"
-        A["Compte Bancaire SCIC (€)"]
-        B["Hôte Fiscal (OpenCollective)"]
-        C["Membre (Personne Physique)"]
+    %% Styling definitions for clarity and consistency
+    classDef realWorld fill:#e0f2f7,stroke:#26c6da,stroke-width:2px,color:#000
+    classDef cooperativeCentral fill:#e8f5e9,stroke:#66bb6a,stroke-width:2px,color:#000
+    classDef memberWallet fill:#ffe0b2,stroke:#ffb74d,stroke-width:2px,color:#000
+    classDef processStep fill:#f3e5f5,stroke:#ba68c8,stroke-width:1px,color:#000
+    classDef internalFlow stroke-dasharray: 5 5,color:#555
+    classDef externalFlow stroke-width:1.5px,color:#333
+    classDef decisionPoint fill:#fff9c4,stroke:#ffeb3b,stroke-width:2px,color:#000
+    classDef allocationType fill:#c8e6c9,stroke:#388e3c,stroke-width:1px,color:#000
 
-        C -- "1. Achat de Part (€)" --> B
-        B -- "Transfert fonds" --> A
+    subgraph "Monde Réel (Euros €)"
+        MB_SCIC["Compte Bancaire SCIC (€)"]:::realWorld
+        HoteFiscal["Hôte Fiscal (OpenCollective)"]:::realWorld
+        MembrePhysique["Membre (Personne Physique)"]:::realWorld
+
+        MembrePhysique -- "1. Achat de Part (€)" --> HoteFiscal
+        HoteFiscal -- "Transfert fonds" --> MB_SCIC
     end
 
-    subgraph "Portefeuilles Coopérative"
-        G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b>"]
-        SOC["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]
-        OPE["UPLANETNAME<br><b>Compte d'Exploitation</b>"]
-        IMP["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]
-        TRE["UPLANETNAME.TREASURY<br><b>Réserves (1/3)</b>"]
-        ASS["UPLANETNAME.ASSETS<br><b>Projets (1/3)</b>"]
-        RND["UPLANETNAME.RND<br><b>R&D (1/3)</b>"]
+    subgraph "Portefeuilles Coopérative UPLANET"
+        UPLANETNAME_G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b>"]:::cooperativeCentral
+        UPLANETNAME_SOCIETY["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]:::cooperativeCentral
+        UPLANETNAME["UPLANETNAME<br><b>Compte d'Exploitation</b>"]:::cooperativeCentral
+        UPLANETNAME_IMPOT["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]:::cooperativeCentral
+        UPLANETNAME_TREASURY["UPLANETNAME.TREASURY<br><b>Trésorerie (1/3)</b>"]:::allocationType
+        UPLANETNAME_ASSETS["UPLANETNAME.ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
+        UPLANETNAME_RND["UPLANETNAME.RND<br><b>R&D (1/3)</b>"]:::allocationType
         
-        A -- "2. Échange € → Ẑen" --> G1
-        G1 -- "3. Émission Ẑen" --> SOC
+        MB_SCIC -- "2. Échange € → Ẑen" --> UPLANETNAME_G1
+        UPLANETNAME_G1 -- "3. Émission Ẑen" --> UPLANETNAME_SOCIETY
     end
 
     subgraph "Portefeuilles Membre"
-        MP_Loc["Locataire (MULTIPASS)"]
-        Cap["Capitaine (MULTIPASS)<br><i>Compte Courant</i>"]
-        ZC_Cap["Capitaine (ZenCard)<br><i>Compte Capital</i>"]
-        Arm["Armateur (NODE)"]
+        MULTIPASS_Loc["Locataire (MULTIPASS)"]:::memberWallet
+        Capitaine_MP["Capitaine (MULTIPASS)<br><i>Compte Courant</i>"]:::memberWallet
+        Capitaine_ZC["Capitaine (ZenCard)<br><i>Compte Capital</i>"]:::memberWallet
+        Armateur_Node["Armateur (NODE)"]:::memberWallet
     end
 
     %% FLUX DE CAPITALISATION
-    SOC -- "4. Attribution Parts Sociales" --> ZC_Cap
+    UPLANETNAME_SOCIETY -- "4. Attribution Parts Sociales" --> Capitaine_ZC
 
     %% FLUX D'EXPLOITATION
-    MP_Loc -- "5. Paiement Loyer (1 ou 4 Ẑen)" --> Cap
+    MULTIPASS_Loc -- "5. Paiement Loyer (1 ou 4 Ẑen)" --> Capitaine_MP
     
-    Cap -- "6a. TVA (20%)" --> IMP
-    Cap -- "6b. PAF (14 Ẑen)" --> Arm
-    Cap -- "6c. Rémunération (28 Ẑen)" --> Cap
-    ZC_Cap -. "6d. Couverture si déficit" .-> Arm
+    Capitaine_MP -- "6a. TVA (20%)" --> UPLANETNAME_IMPOT
+    Capitaine_MP -- "6b. PAF (14 Ẑen)" --> Armateur_Node
+    Capitaine_MP -- "6c. Rémunération (28 Ẑen)" --> Capitaine_MP
+    Capitaine_ZC -. "6d. Couverture si déficit" .-> Armateur_Node:::internalFlow
     
-    Cap -- "7. Versement Surplus" --> OPE
+    Capitaine_MP -- "7. Versement Surplus" --> UPLANETNAME
     
-    OPE -- "8a. IS (25%)" --> IMP
-    OPE -- "8b. Allocation 3x1/3" --> TRE & ASS & RND
+    UPLANETNAME -- "8a. IS (25%)" --> UPLANETNAME_IMPOT
+    UPLANETNAME -- "8b. Allocation 3x1/3" --> UPLANETNAME_TREASURY
+    UPLANETNAME -- "8c. Allocation 3x1/3" --> UPLANETNAME_ASSETS
+    UPLANETNAME -- "8d. Allocation 3x1/3" --> UPLANETNAME_RND
 
     %% FLUX DE CONVERSION (PONT DE LIQUIDITÉ)
     subgraph "Pont de Liquidité"
-        Arm -- "9a. Demande Conversion (PAF)" --> G1
-        Cap -- "9b. Demande Conversion (Rémunération)" --> G1
-        ZC_Cap -- "9c. Demande Conversion (Capital)" --> G1
+        Armateur_Node -- "9a. Demande Conversion (PAF)" --> UPLANETNAME_G1
+        Capitaine_MP -- "9b. Demande Conversion (Rémunération)" --> UPLANETNAME_G1
+        Capitaine_ZC -- "9c. Demande Conversion (Capital)" --> UPLANETNAME_G1
 
-        G1 -- "10. Burn & Validation" --> VAL{"Valide"}
-        VAL -- "11. Autorise Paiement €" --> A
-        A -- "12. Virement SEPA (€)" --> C
+        UPLANETNAME_G1 -- "10. Burn & Validation" --> Validation{"Valide"}:::decisionPoint
+        Validation -- "11. Autorise Paiement €" --> MB_SCIC
+        MB_SCIC -- "12. Virement SEPA (€)" --> MembrePhysique
     end
-
-    %% Styling
-    classDef real fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef central fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef member fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:1px
-
-    class A,B,C real
-    class G1,SOC,OPE,IMP,TRE,ASS,RND central
-    class MP_Loc,Cap,ZC_Cap,Arm member
-    class Pont_de_Liquidité process
 ```
