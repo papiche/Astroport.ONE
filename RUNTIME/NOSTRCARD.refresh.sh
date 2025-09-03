@@ -543,7 +543,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 IMPOTS_G1PUB=$(cat ~/.zen/game/uplanet.IMPOT.dunikey |  grep "pub:" | cut -d ' ' -f 2)
 
                                 if [[ -n "$IMPOTS_G1PUB" ]]; then
-                                    tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
+                                    tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
                                     if [[ $? -eq 0 ]]; then
                                         log "INFO" "✅ TVA provision recorded for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
                                         log_metric "TVA_PROVISION_SUCCESS" "$TVA_AMOUNT" "${PLAYER}"
