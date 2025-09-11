@@ -21,6 +21,9 @@ With your Station, you can:
 
 This isn't just about technology. It's about building a sustainable, cooperative economy. The legal and social backbone of our project is the **[CopyLaRadio](https://www.copylaradio.com) SCIC**, a French cooperative society.
 
+![UPlanet SolarPunk Society](images/UPlanet_SolarPunk.society.jpg)
+*A vision of our cooperative future: technology in harmony with nature, creating real-world commons*
+
 Our model is simple: **we turn the cost of infrastructure into shared capital.**
 *   **The Ẑen (Ẑ):** To manage our projects, we use an internal, stable accounting unit called the Ẑen. Within our cooperative, **1 Ẑen = 1€**. It allows us to transparently manage our assets (servers, domains, etc.) and our expenses.
 *   **Shared Ownership:** When you contribute to the cooperative, you're not just "paying for a service." You are buying parts of the shared infrastructure, becoming a co-owner of the servers, and investing in our collective future—including real-world assets like forests.
@@ -34,7 +37,10 @@ We offer three clear ways to join, each with its own Zine (flyer) to guide you.
 ### 1. 🌐 [MULTIPASS](https://ipfs.copylaradio.com/ipfs/QmcjpCAfSCn3pucSSWKP5i7HqQCkXnfesVo5z7m6btT5Mv/multipass.html) - Your First Step
 **The User Path (1 Ẑen/week)**
 
-This is your digital passport. It’s the easiest way to explore the ecosystem, secure your identity, and start using our services.
+This is your digital passport. It's the easiest way to explore the ecosystem, secure your identity, and start using our services.
+
+![UPlanet IPFS uDRIVE Network](images/UPlanet_IPFS_uDRIVE.jpg)
+*Your personal decentralized storage space on the InterPlanetary File System*
 
 *   **What you get:**
     *   ✅ A sovereign **NOSTR Identity**.

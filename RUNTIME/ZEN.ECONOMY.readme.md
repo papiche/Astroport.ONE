@@ -19,6 +19,9 @@ L'économie de la monnaie-dette, dont l'Euro est un représentant, est un univer
 
 L'économie du Ẑen est conçue pour avoir une géométrie radicalement différente : celle d'un **plan en expansion, ancré sur un socle coopératif**.
 
+![UPlanet ẐEN Monetary Graph](../images/UPlanet_ZEN_monetary_graph.jpg)
+*Visualisation des flux monétaires ẐEN dans l'écosystème coopératif UPlanet*
+
 *   **Ses Propriétés :** Ouvert, infini en potentiel, collaboratif. Le Ẑen est créé par l'**apport de valeur réelle** (matériel, compétences) à la coopérative. L'espace est en expansion, rendant le jeu à **somme positive**.
 *   **L'Expérience Vécue :**
     > **"C'est un monde qui grandit avec ceux qui construisent, chacun sur un chemin qui enrichit le territoire commun."**
