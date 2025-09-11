@@ -145,6 +145,32 @@ echo 0 > ~/.zen/tmp/random.sleep
 ###############################################
 UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
 UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+
+## CREATE UPLANET ECOSYSTEM WALLETS IF NOT EXISTS AND GET PUBKEYS
+# UPLANETNAME.TREASURY wallet
+[[ ! -s ~/.zen/game/uplanet.TREASURY.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.TREASURY.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY" \
+    && chmod 600 ~/.zen/game/uplanet.TREASURY.dunikey
+UPLANETNAME_TREASURY=$(cat ~/.zen/game/uplanet.TREASURY.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
+# UPLANETNAME.RND wallet
+[[ ! -s ~/.zen/game/uplanet.RnD.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.RnD.dunikey "${UPLANETNAME}.RND" "${UPLANETNAME}.RND" \
+    && chmod 600 ~/.zen/game/uplanet.RnD.dunikey
+UPLANETNAME_RND=$(cat ~/.zen/game/uplanet.RnD.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
+# UPLANETNAME.ASSETS wallet
+[[ ! -s ~/.zen/game/uplanet.ASSETS.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.ASSETS.dunikey "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS" \
+    && chmod 600 ~/.zen/game/uplanet.ASSETS.dunikey
+UPLANETNAME_ASSETS=$(cat ~/.zen/game/uplanet.ASSETS.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
+# UPLANETNAME.IMPOT wallet
+[[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT" \
+    && chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
+UPLANETNAME_IMPOT=$(cat ~/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
 ###############################################
 #### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
 if [[ $UPLANETNAME != "EnfinLibre" ]]; then
@@ -441,7 +467,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"4.3\",
+    \"version\" : \"3.0\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -466,6 +492,10 @@ NODE12345="{
     \"NODEHEX\" : \"${hex}\",
     \"UPLANETNAME_G1\" : \"${UPLANETNAME_G1}\",
     \"UPLANETNAME_SOCIETY\" : \"${UPLANETNAME_SOCIETY}\",
+    \"UPLANETNAME_TREASURY\" : \"${UPLANETNAME_TREASURY}\",
+    \"UPLANETNAME_RND\" : \"${UPLANETNAME_RND}\",
+    \"UPLANETNAME_ASSETS\" : \"${UPLANETNAME_ASSETS}\",
+    \"UPLANETNAME_IMPOT\" : \"${UPLANETNAME_IMPOT}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
     \"UPLANETG1\" : \"${UPLANETCOINS}\",
     \"UPLANETZEN\" : \"${UPLANETZEN}\",

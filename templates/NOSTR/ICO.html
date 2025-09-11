@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICO ẐEN | Bâtissez l'Internet Libre</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #f5f5f5;
+            --container-bg: white;
+            --border-color: #e9ecef;
+            --highlight-bg: #fffde7;
+            --info-box-bg: #e8f4f8;
+            --warning-box-bg: #fff3cd;
+            --table-header-bg: #f8f9fa;
+            --table-hover-bg: #f5f5f5;
+            --cta-button-bg: #27ae60;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #64b5f6;
+            --text-color: #e0e0e0;
+            --bg-color: #1a1a1a;
+            --container-bg: #2d2d2d;
+            --border-color: #404040;
+            --highlight-bg: #2d2d1a;
+            --info-box-bg: #1a2d33;
+            --warning-box-bg: #332d1a;
+            --table-header-bg: #2d2d2d;
+            --table-hover-bg: #363636;
+            --cta-button-bg: #2ecc71;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .theme-switch button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .theme-switch button:hover {
+            opacity: 0.9;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        .language-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .language-tab {
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: var(--table-header-bg);
+            transition: all 0.3s ease;
+        }
+
+        .language-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .language-tab:hover {
+            background-color: var(--table-hover-bg);
+        }
+
+        .language-section {
+            display: none;
+            margin-bottom: 40px;
+        }
+
+        .language-section.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .info-box {
+            background-color: var(--info-box-bg);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .warning-box {
+            background-color: var(--warning-box-bg);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .cta-section {
+            text-align: center;
+            padding: 30px;
+            background-color: var(--info-box-bg);
+            border-radius: 8px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: var(--cta-button-bg);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+        }
+
+        .offer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .offer-table th, .offer-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .offer-table th {
+            background-color: var(--table-header-bg);
+            color: var(--primary-color);
+        }
+
+        .offer-table tr:hover {
+            background-color: var(--table-hover-bg);
+        }
+
+        .offer-features {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .offer-features li {
+            margin: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .offer-features li:before {
+            content: "✓";
+            color: #27ae60;
+            position: absolute;
+            left: 0;
+        }
+
+        .highlight {
+            background-color: var(--highlight-bg);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-style: italic;
+            text-align: center;
+            color: var(--text-color);
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch">
+        <button onclick="toggleTheme()">🌓</button>
+    </div>
+
+    <img src="http://127.0.0.1:8080/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" 
+         alt="UPlanet Logo" 
+         style="max-width: 150px; display: block; margin: 20px auto 0 auto;">
+
+    <div class="container">
+        <h1>Devenez Bâtisseur de l'Internet Libre</h1>
+
+        <div class="language-tabs">
+            <div class="language-tab active" data-lang="fr">Français</div>
+            <div class="language-tab" data-lang="en">English</div>
+            <div class="language-tab" data-lang="es">Español</div>
+        </div>
+
+        <!-- SECTION FRANÇAIS -->
+        <div class="language-section active" id="fr">
+            <div class="info-box">
+                <p><strong>L'ICO ẐEN / CopyLaRadio</strong> n'est pas une levée de fonds classique. C'est une invitation à construire et posséder ensemble l'infrastructure d'un web décentralisé, éthique et coopératif. Chaque contribution vous rend copropriétaire.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Le Problème : Le Web nous a Échappé</h2>
+                <p>Aujourd'hui, le web est dominé par des géants qui contrôlent nos données, censurent nos voix et exploitent notre attention. Les alternatives, bien que prometteuses, manquent souvent d'un modèle économique stable et d'une structure légale solide pour garantir leur pérennité.</p>
+                <ul>
+                    <li><strong>Centralisation :</strong> Dépendance envers des serveurs et des entreprises uniques.</li>
+                    <li><strong>Manque de Souveraineté :</strong> Nos identités numériques et nos données ne nous appartiennent pas réellement.</li>
+                    <li><strong>Instabilité Économique :</strong> Les projets libres peinent à se financer durablement.</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Notre Solution : Un Écosystème Coopératif</h2>
+                <p>UPlanet est un système d'information résilient, construit sur des technologies libres comme <span class="highlight">Nostr</span> (réseau social) et <span class="highlight">IPFS</span> (stockage). L'ensemble est géré par la **SCIC CopyLaRadio**, une coopérative française qui garantit que le pouvoir et la propriété restent entre les mains de sa communauté.</p>
+                <p>Le <span class="highlight">Ẑen (Ẑ)</span> est notre unité de compte stable, adossée à l'économie réelle de la coopérative, permettant de payer les services et de rémunérer les contributeurs de manière juste et transparente.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Pourquoi une ICO ? À quoi serviront les fonds ?</h2>
+                <p>Cette levée de fonds initiale est cruciale pour bâtir les fondations matérielles de notre réseau. Votre investissement sera directement alloué à :</p>
+                <ul class="offer-features">
+                    <li><strong>Achat des Serveurs "Constellation" :</strong> Acquérir la première génération de serveurs (<span class="highlight">♥BOX</span>) qui formeront l'épine dorsale de UPlanet, garantissant performance et indépendance.</li>
+                    <li><strong>Recherche & Développement :</strong> Financer le développement continu de nos logiciels libres et l'amélioration de l'écosystème.</li>
+                    <li><strong>Frais Légaux et Administratifs :</strong> Assurer le fonctionnement solide et conforme de notre structure coopérative (SCIC).</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2 class="section-title">Paliers d'Investissement : Plus qu'un Achat, une Prise de Part</h2>
+                <p>En participant, vous n'achetez pas un service, vous achetez des parts de l'infrastructure commune.</p>
+                <table class="offer-table">
+                    <tr>
+                        <th>PALIER SOUTIEN</th>
+                        <th>PALIER BÂTISSEUR</th>
+                        <th>PALIER COOPÉRATEUR</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p><strong>Contribution : 50 €</strong></p>
+                            <ul class="offer-features">
+                                <li>MULTIPASS offert 1 an</li>
+                                <li>Accès anticipé aux services</li>
+                                <li>Rôle "Soutien" dans la communauté</li>
+                                <li>1 part sociale de la SCIC</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <p><strong>Contribution : 250 €</strong></p>
+                            <ul class="offer-features">
+                                <li>Tous les avantages "Soutien"</li>
+                                <li>1 part de notre infrastructure ♥BOX</li>
+                                <li>Revenus passifs en Ẑen</li>
+                                <li>5 parts sociales de la SCIC</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <p><strong>Contribution : 1000 €</strong></p>
+                            <ul class="offer-features">
+                                <li>Tous les avantages "Bâtisseur"</li>
+                                <li>Siège au conseil de gouvernance</li>
+                                <li>Implication dans les décisions stratégiques</li>
+                                <li>20 parts sociales de la SCIC</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="cta-section">
+                <h2 class="section-title">Prêt à nous rejoindre ?</h2>
+                <p>Construisons ensemble l'avenir de l'Internet. Votre participation est un acte fondateur.</p>
+                <a href="https://VOTRE_LIEN_ICO_ICI" class="cta-button">Participer à l'ICO</a>
+            </div>
+        </div>
+
+        <!-- SECTION ENGLISH -->
+        <div class="language-section" id="en">
+            <div class="info-box">
+                <p><strong>The ẐEN / CopyLaRadio ICO</strong> is not a typical fundraiser. It's an invitation to build and own the infrastructure of a decentralized, ethical, and cooperative web together. Every contribution makes you a co-owner.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">The Problem: We've Lost Control of the Web</h2>
+                <p>Today's web is dominated by giants who control our data, censor our voices, and exploit our attention. Alternatives, while promising, often lack a stable economic model and a solid legal structure to ensure their longevity.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Our Solution: A Cooperative Ecosystem</h2>
+                <p>UPlanet is a resilient information system built on free technologies like <span class="highlight">Nostr</span> (social network) and <span class="highlight">IPFS</span> (storage). The entire system is managed by the **SCIC CopyLaRadio**, a French cooperative ensuring that power and ownership remain in the hands of its community.</p>
+                <p>The <span class="highlight">Ẑen (Ẑ)</span> is our stable unit of account, backed by the cooperative's real economy, allowing for fair and transparent payment for services and remuneration for contributors.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Why an ICO? What Will the Funds Be Used For?</h2>
+                <p>This initial fundraising is crucial to build the physical foundations of our network. Your investment will be directly allocated to:</p>
+                <ul class="offer-features">
+                    <li><strong>Purchase "Constellation" Servers:</strong> Acquiring the first generation of servers (<span class="highlight">♥BOX</span>) that will form the backbone of UPlanet, ensuring performance and independence.</li>
+                    <li><strong>Research & Development:</strong> Funding the continuous development of our free software and the improvement of the ecosystem.</li>
+                    <li><strong>Legal and Administrative Costs:</strong> Ensuring the robust and compliant operation of our cooperative structure (SCIC).</li>
+                </ul>
+            </div>
+            
+             <div class="section">
+                <h2 class="section-title">Investment Tiers: More Than a Purchase, a Share</h2>
+                <p>By participating, you are not buying a service, you are buying shares in the common infrastructure.</p>
+                <table class="offer-table">
+                    <tr>
+                        <th>SUPPORTER TIER</th>
+                        <th>BUILDER TIER</th>
+                        <th>COOPERATOR TIER</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p><strong>Contribution: €50</strong></p>
+                            <ul class="offer-features">
+                                <li>1 year of MULTIPASS included</li>
+                                <li>Early access to services</li>
+                                <li>"Supporter" role in the community</li>
+                                <li>1 cooperative share (SCIC)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <p><strong>Contribution: €250</strong></p>
+                            <ul class="offer-features">
+                                <li>All "Supporter" benefits</li>
+                                <li>1 share of our ♥BOX hardware</li>
+                                <li>Passive income in Ẑen</li>
+                                <li>5 cooperative shares (SCIC)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <p><strong>Contribution: €1000</strong></p>
+                            <ul class="offer-features">
+                                <li>All "Builder" benefits</li>
+                                <li>Seat on the governance council</li>
+                                <li>Involvement in strategic decisions</li>
+                                <li>20 cooperative shares (SCIC)</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="cta-section">
+                <h2 class="section-title">Ready to Join Us?</h2>
+                <p>Let's build the future of the Internet together. Your participation is a founding act.</p>
+                <a href="https://YOUR_ICO_LINK_HERE" class="cta-button">Participate in the ICO</a>
+            </div>
+        </div>
+
+        <!-- SECTION ESPAÑOL -->
+        <div class="language-section" id="es">
+            <div class="info-box">
+                <p><strong>La ICO ẐEN / CopyLaRadio</strong> no es una recaudación de fondos clásica. Es una invitación a construir y poseer juntos la infraestructura de una web descentralizada, ética y cooperativa. Cada contribución te convierte en copropietario.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">El Problema: La Web se nos ha Escapado</h2>
+                <p>Hoy, la web está dominada por gigantes que controlan nuestros datos, censuran nuestras voces y explotan nuestra atención. Las alternativas, aunque prometedoras, a menudo carecen de un modelo económico estable y una estructura legal sólida para garantizar su pervivencia.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Nuestra Solución: Un Ecosistema Cooperativo</h2>
+                <p>UPlanet es un sistema de información resiliente, construido sobre tecnologías libres como <span class="highlight">Nostr</span> (red social) e <span class="highlight">IPFS</span> (almacenamiento). Todo el sistema está gestionado por la **SCIC CopyLaRadio**, una cooperativa francesa que garantiza que el poder y la propiedad permanezcan en manos de su comunidad.</p>
+                <p>El <span class="highlight">Ẑen (Ẑ)</span> es nuestra unidad de cuenta estable, respaldada por la economía real de la cooperativa, permitiendo pagar los servicios y remunerar a los contribuidores de forma justa y transparente.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">¿Por qué una ICO? ¿Para qué se usarán los fondos?</h2>
+                <p>Esta recaudación inicial es crucial para construir los cimientos materiales de nuestra red. Tu inversión se destinará directamente a:</p>
+                 <ul class="offer-features">
+                    <li><strong>Compra de Servidores "Constelación":</strong> Adquirir la primera generación de servidores (<span class="highlight">♥BOX</span>) que formarán la columna vertebral de UPlanet, garantizando rendimiento e independencia.</li>
+                    <li><strong>Investigación y Desarrollo:</strong> Financiar el desarrollo continuo de nuestro software libre y la mejora del ecosistema.</li>
+                    <li><strong>Costes Legales y Administrativos:</strong> Asegurar el funcionamiento sólido y conforme a la ley de nuestra estructura cooperativa (SCIC).</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Niveles de Inversión: Más que una Compra, una Participación</h2>
+                <p>Al participar, no compras un servicio, compras participaciones de la infraestructura común.</p>
+                <table class="offer-table">
+                    <tr>
+                        <th>NIVEL APOYO</th>
+                        <th>NIVEL CONSTRUCTOR</th>
+                        <th>NIVEL COOPERADOR</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p><strong>Contribución: 50 €</strong></p>
+                            <ul class="offer-features">
+                                <li>MULTIPASS por 1 año incluido</li>
+                                <li>Acceso anticipado a servicios</li>
+                                <li>Rol de "Apoyo" en la comunidad</li>
+                                <li>1 participación social de la SCIC</li>
+                            </ul>
+                        </td>
+                        <td>
+                           <p><strong>Contribución: 250 €</strong></p>
+                            <ul class="offer-features">
+                                <li>Todos los beneficios de "Apoyo"</li>
+                                <li>1 parte de nuestra infraestructura ♥BOX</li>
+                                <li>Ingresos pasivos en Ẑen</li>
+                                <li>5 participaciones sociales de la SCIC</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <p><strong>Contribución: 1000 €</strong></p>
+                            <ul class="offer-features">
+                                <li>Todos los beneficios de "Constructor"</li>
+                                <li>Asiento en el consejo de gobernanza</li>
+                                <li>Implicación en decisiones estratégicas</li>
+                                <li>20 participaciones sociales de la SCIC</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="cta-section">
+                <h2 class="section-title">¿Listo para unirte?</h2>
+                <p>Construyamos juntos el futuro de Internet. Tu participación es un acto fundador.</p>
+                <a href="https://TU_ENLACE_ICO_AQUÍ" class="cta-button">Participar en la ICO</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Pour en savoir plus, consultez notre documentation complète :</p>
+            <p>
+                <a href="https://pad.p2p.legal/Astroport.ONE.FR" target="_blank" style="color: var(--primary-color);">Livre Blanc</a> | 
+                <a href="https://pad.p2p.legal/s/CopyLaRadio" target="_blank" style="color: var(--primary-color);">Statuts de la SCIC</a> |
+                <a href="https://copylaradio.com" target="_blank" style="color: var(--primary-color);">Visitez CopyLaRadio.com</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.language-tab');
+            const sections = document.querySelectorAll('.language-section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    const lang = tab.getAttribute('data-lang');
+                    document.getElementById(lang).classList.add('active');
+                });
+            });
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.setAttribute('data-theme', savedTheme);
+        }
+    </script>
+</body>
+</html>
