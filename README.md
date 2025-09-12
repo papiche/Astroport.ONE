@@ -6,7 +6,7 @@
 
 **Astroport.ONE is a declaration of digital independence.** It's not just another platform; it's a suite of open-source tools and a social contract designed to help individuals and communities build a Web3 ecosystem they truly own.
 
-Powered by the **[CopyLaRadio](https://copylaradio.com) Cooperative**, our mission is to transform users from digital tenants into sovereign co-owners of their infrastructure.
+Powered by the **[G1FabLab](https://g1sms.fr)**, our mission is to transform users from digital tenants into sovereign co-owners of their infrastructure.
 
 ## 🌍 What is Astroport.ONE?
 
