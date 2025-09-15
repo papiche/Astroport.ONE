@@ -199,12 +199,12 @@ get_fast_capacities() {
     local nostr_slots=0
     
     if [[ $(echo "$nextcloud_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
-        zencard_slots=$(echo "($nextcloud_available_gb - 8*128) / 128" | bc 2>/dev/null || echo "0")
+        zencard_slots=$(echo "($nextcloud_available_gb) / 128" | bc 2>/dev/null || echo "0")
         [[ $(echo "$zencard_slots < 0" | bc 2>/dev/null) -eq 1 ]] && zencard_slots=0
     fi
     
     if [[ $(echo "$ipfs_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
-        nostr_slots=$(echo "($ipfs_available_gb - 8*10) / 10" | bc 2>/dev/null || echo "0")
+        nostr_slots=$(echo "($ipfs_available_gb) / 10" | bc 2>/dev/null || echo "0")
         [[ $(echo "$nostr_slots < 0" | bc 2>/dev/null) -eq 1 ]] && nostr_slots=0
     fi
     
